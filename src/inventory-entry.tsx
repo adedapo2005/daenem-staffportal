@@ -1,0 +1,9 @@
+import React,{useEffect,useState}from'react';
+import{createRoot}from'react-dom/client';
+import{Boxes}from'lucide-react';
+import{api,type WorkforceContext}from'./auth';
+import{InventoryWorkspace}from'./inventory';
+import'./inventory-entry.css';
+function hasInventory(context:WorkforceContext){return context.roles.some(r=>r.code==='owner')||(context.permissions['inventory.access']||'none')!=='none'}
+function InventoryLauncher(){const[context,setContext]=useState<WorkforceContext|null>(null),[open,setOpen]=useState(false);useEffect(()=>{let active=true;const refresh=async()=>{try{const result=await api<{authenticated:boolean;context?:WorkforceContext}>('/api/auth/me');if(active)setContext(result.context&&hasInventory(result.context)?result.context:null)}catch{if(active)setContext(null)}};refresh();const command=(event:Event)=>{if((event as CustomEvent<{module?:string}>).detail?.module==='inventory')setOpen(true)};window.addEventListener('focus',refresh);window.addEventListener('daenem:open-module',command as EventListener);const timer=window.setInterval(refresh,120000);return()=>{active=false;window.removeEventListener('focus',refresh);window.removeEventListener('daenem:open-module',command as EventListener);window.clearInterval(timer)}},[]);if(!context)return null;return <><button className="inventory-launcher" onClick={()=>setOpen(true)}><Boxes size={18}/><span>Inventory</span></button>{open&&<InventoryWorkspace context={context} onClose={()=>setOpen(false)}/>}</>}
+const host=document.createElement('div');host.id='inventory-workspace-launcher';document.body.appendChild(host);createRoot(host).render(<InventoryLauncher/>);

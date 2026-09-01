@@ -1,0 +1,51 @@
+import { readFileSync } from 'node:fs';
+
+const read=(path)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+const migration=read('migrations/0041_platform_integration_websites.sql');
+const worker=read('worker/platform-center.ts');
+const runtime=read('worker/runtime.ts');
+const navigation=read('worker/navigation-workspace.ts');
+const moduleHub=read('src/module-hub.tsx');
+const client=read('src/platform-center-entry.tsx');
+const css=read('src/platform-center.css');
+const guide=read('worker/ai-guide.ts');
+const release=read('src/main.tsx');
+const packageJson=JSON.parse(read('package.json'));
+const assertions=[];
+function check(name,condition){assertions.push({name,ok:Boolean(condition)});if(!condition)process.exitCode=1}
+
+check('migration creates integration metadata, webhooks and bounded logs',['integration_connections','integration_webhooks','integration_request_logs'].every((table)=>migration.includes(`CREATE TABLE IF NOT EXISTS ${table}`)));
+check('migration creates sites, pages, revisions, media and publish requests',['website_sites','website_pages','website_page_revisions','website_media_assets','website_publish_requests'].every((table)=>migration.includes(`CREATE TABLE IF NOT EXISTS ${table}`)));
+check('all five non-farm businesses receive website workspaces',['PRINT','BAKERY','AUTOS','LOGISTICS','PROPERTIES'].every((code)=>migration.includes(`'${code}'`))&&!migration.includes("'FARMS'"));
+check('credentials are represented only by binding names',migration.includes('secret_binding_name')&&migration.includes('integrations.store_secret_values')&&migration.includes("'false','boolean'"));
+check('platform routes require an authenticated runtime context',runtime.includes("url.pathname.startsWith('/api/platform/')")&&runtime.includes('routePlatformCenter(request, env, context)'));
+check('published website routes run before session authentication',runtime.indexOf("url.pathname.startsWith('/api/public/websites/')")<runtime.indexOf('const specialized'));
+check('every business request verifies assignment and company permission',worker.includes('companyFor(context, companyId)')&&worker.includes("hasPermission(context, permission, minimum, companyId)"));
+check('Owner has no unassigned-company bypass',!worker.includes("isOwner(context)")&&!worker.includes("role.code === 'owner'"));
+check('Cloudflare health covers D1, R2, KV, Queue, AI and Email',['DB','FILES','SOCIAL_CACHE','SOCIAL_QUEUE','AI','EMAIL'].every((binding)=>worker.includes(`key: '${binding}'`)));
+check('existing Social OAuth connections are reused without token fields',worker.includes('social_platform_connections pc JOIN social_brands')&&worker.includes("source: 'Daenem Social Engine'")&&!worker.includes('access_token_ciphertext'));
+check('connection validation accepts only safe uppercase secret binding names',worker.includes('secretBindingPattern')&&worker.includes('Do not enter the secret value'));
+check('API catalogue is permission filtered',worker.includes('visibleCatalogue(context, companyId)')&&worker.includes('hasPermission(context, entry.permission'));
+check('Staff Portal and Farms website domains are protected',worker.includes("'staffportal.daenem.com'")&&worker.includes("'portal.farms.daenem.com'")&&worker.includes("'farms.daenem.com'"));
+check('website editor stores structured content and no raw HTML',worker.includes('contentPayload')&&worker.includes('structuredContentOnly: true')&&!client.includes('dangerouslySetInnerHTML'));
+check('raw HTML input is rejected server-side',worker.includes('Raw HTML is not accepted')&&worker.includes('/<\\/?[a-z][^>]*>/i'));
+check('each content save creates an immutable numbered revision',worker.includes('INSERT INTO website_page_revisions')&&worker.includes('current_version_no')&&worker.includes('versionNo'));
+check('publication requires submit, approve and manage-level publish',worker.includes("status='pending'")&&worker.includes("status='approved'")&&worker.includes("'website.publish', 'approve'")&&worker.includes("'website.publish', 'manage'"));
+check('employees cannot approve their own publication request',worker.includes('found.requestedBy === context.employee.id')&&worker.includes('independent authorized reviewer'));
+check('public feed must be deliberately enabled with a valid domain',worker.includes('!found.publicFeedEnabled || !domain')&&worker.includes('enable the public content feed before publishing'));
+check('public feed selects published pages only',worker.includes("status='published' AND published_content_json IS NOT NULL"));
+check('public responses have exact-site CORS, cache and ETag',worker.includes("`https://${site.domain}`")&&worker.includes("'if-none-match'")&&worker.includes('stale-while-revalidate'));
+check('R2 uploads are MIME and size constrained',['image/jpeg','image/png','image/webp','image/gif'].every((mime)=>worker.includes(mime))&&worker.includes('5 * 1024 * 1024'));
+check('failed metadata writes clean up uploaded R2 objects',worker.includes('await env.FILES.delete(key)'));
+check('R2 public media streams the object body',worker.includes('new Response(object.body')&&worker.includes('object.writeHttpMetadata(headers)'));
+check('new workspaces are permission-gated and lazy loaded',moduleHub.includes("permissions: ['integrations.access']")&&moduleHub.includes("permissions: ['website.access']")&&moduleHub.includes("import('./platform-center-entry')"));
+check('authorized navigation includes clear integration and website descriptions',navigation.includes("key:'api-integrations'")&&navigation.includes("key:'website-admin'")&&navigation.includes('safe API metadata')&&navigation.includes('controlled publishing'));
+check('Smart Help includes plain-language guidance for both functions',guide.includes("'api-integrations':")&&guide.includes("'website-admin':")&&guide.includes('WhoUses')===false);
+check('client explains all sensitive actions and secret handling',client.includes('Credential values remain Cloudflare Worker secrets')&&client.includes('Raw HTML is not accepted')&&client.includes('Submit latest revision for review'));
+check('client supports responsive phone and tablet layouts',css.includes('@media(max-width:1050px)')&&css.includes('@media(max-width:720px)'));
+check('release notes announce the new control centres',release.includes('API & Integrations Centre')&&release.includes('Website Administration'));
+check('build runs the platform control contract',packageJson.scripts.prebuild.includes('check-platform-center.mjs'));
+
+for(const result of assertions)console.log(`${result.ok?'✓':'✗'} ${result.name}`);
+if(process.exitCode)console.error(`\n${assertions.filter((item)=>!item.ok).length} platform-centre contract assertion(s) failed.`);
+else console.log(`\n${assertions.length} platform-centre contract assertions passed.`);

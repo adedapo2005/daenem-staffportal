@@ -1,0 +1,9 @@
+import React,{useEffect,useState}from'react';
+import{createRoot}from'react-dom/client';
+import{Building2}from'lucide-react';
+import{api,type WorkforceContext}from'./auth';
+import{PropertiesWorkspace}from'./properties';
+import'./properties-entry.css';
+function hasProperties(context:WorkforceContext){return context.roles.some(r=>r.code==='owner')||(context.permissions['properties.access']||'none')!=='none'}
+function Launcher(){const[context,setContext]=useState<WorkforceContext|null>(null),[open,setOpen]=useState(false);useEffect(()=>{let active=true;const refresh=async()=>{try{const r=await api<{authenticated:boolean;context?:WorkforceContext}>('/api/auth/me');if(active)setContext(r.context&&hasProperties(r.context)?r.context:null)}catch{if(active)setContext(null)}};refresh();const command=(event:Event)=>{if((event as CustomEvent<{module?:string}>).detail?.module==='properties')setOpen(true)};window.addEventListener('focus',refresh);window.addEventListener('daenem:open-module',command as EventListener);const timer=window.setInterval(refresh,120000);return()=>{active=false;window.removeEventListener('focus',refresh);window.removeEventListener('daenem:open-module',command as EventListener);window.clearInterval(timer)}},[]);if(!context)return null;return <><button className="properties-launcher" onClick={()=>setOpen(true)}><Building2 size={18}/><span>Properties CRM</span></button>{open&&<PropertiesWorkspace context={context} onClose={()=>setOpen(false)}/>}</>}
+const host=document.createElement('div');host.id='properties-workspace-launcher';document.body.appendChild(host);createRoot(host).render(<Launcher/>);

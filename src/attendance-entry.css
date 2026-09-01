@@ -1,0 +1,9 @@
+.quick-attendance-button { position: fixed; right: 18px; bottom: 18px; z-index: 95; min-height: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: linear-gradient(135deg, var(--accent), var(--secondary)); color: #fff; display: flex; align-items: center; gap: 8px; box-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 28%, rgba(0,0,0,.18)); cursor: pointer; font-weight: 800; font-size: 11px; }
+.quick-attendance-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(9,15,28,.46); backdrop-filter: blur(5px); display: flex; justify-content: flex-end; }
+.quick-attendance-drawer { width: min(100%, 480px); height: 100%; background: var(--canvas); border-left: 1px solid var(--border); box-shadow: -18px 0 50px rgba(0,0,0,.16); padding: 16px; overflow-y: auto; }
+.quick-attendance-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 4px 2px; }
+.quick-attendance-head span, .quick-attendance-head strong { display: block; }
+.quick-attendance-head span { color: var(--accent); font-size: 8px; letter-spacing: .14em; font-weight: 850; }
+.quick-attendance-head strong { margin-top: 4px; font-size: 14px; }
+.quick-attendance-head button { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); color: var(--text); display: grid; place-items: center; cursor: pointer; }
+@media (max-width: 720px) { .quick-attendance-button { right: 14px; bottom: 78px; } .quick-attendance-drawer { width: 100%; border-left: 0; } }

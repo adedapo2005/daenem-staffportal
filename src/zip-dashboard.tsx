@@ -1,0 +1,633 @@
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Activity, AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Bell, BriefcaseBusiness, CalendarCheck2, CheckCircle2,
+  ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CloudSun, Factory, Gauge, GripVertical, Home, LayoutDashboard, MapPin, Menu, Plus,
+  Moon, PackageSearch, Palette, Radio, RefreshCw, Search, Settings2, ShieldCheck, Sparkles,
+  Sun, Users, WalletCards, Wrench, X, Boxes,
+} from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
+import type { AccessLevel, WorkforceContext } from './auth';
+import { getErpNavigation, isModuleVisible, moduleDefinitions, type ErpId, type HierarchyItem, type ModuleDefinition } from './module-hub';
+import { hasWorkforcePermission } from './auth';
+import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
+import { themeList } from './theme-system';
+
+export type ZipDashboardSummary = {
+  workDate: string;
+  employees: number;
+  present: number;
+  incompleteAttendance: number;
+  pendingApprovals: number;
+  securityAlerts: number;
+  overdueRequirements: number;
+  maintenanceAlerts: number;
+  attendanceRule: string;
+};
+
+export type ZipCompanyChoice = {
+  id: string | null;
+  code: string;
+  name: string;
+  icon: React.ComponentType<{ size?: number }>;
+};
+
+type ViewName = 'overview' | 'people' | 'forms' | 'security' | 'broadcasts' | 'facilities' | 'help';
+type WidgetId = 'trend' | 'comparison' | 'category' | 'forecast' | 'queue' | 'status' | 'news' | 'motivation';
+
+type WeatherState = {
+  label: string;
+  temperature?: number;
+  description?: string;
+  loading?: boolean;
+};
+
+type ReleaseInfo = {
+  version: string;
+  date: string;
+};
+
+type ZipDashboardProps = {
+  context: WorkforceContext;
+  view: ViewName;
+  content: ReactNode;
+  company: ZipCompanyChoice;
+  companyChoices: ZipCompanyChoice[];
+  setCompany: (company: ZipCompanyChoice) => void;
+  summary: ZipDashboardSummary | null;
+  liveIntelligence?: ReactNode;
+  refreshSummary: () => void;
+  onNavigate: (view: ViewName) => void;
+  onOpenModule: (id: string) => void;
+  onOpenModuleHub: () => void;
+  onOpenAdmin: () => void;
+  onLogout: () => Promise<void>;
+  visibleNav: Array<{
+    id: ViewName;
+    label: string;
+    description: string;
+    icon: React.ComponentType<{ size?: number }>;
+  }>;
+  theme: ThemeId;
+  modePreference: ModePreference;
+  setTheme: (theme: ThemeId) => void;
+  setModePreference: (mode: ModePreference) => void;
+  dashboardLayout: LayoutVariant;
+  themeName: string;
+  clock: string;
+  weather: WeatherState;
+  enableLocation: () => void;
+  online: boolean;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  release: ReleaseInfo;
+  releaseOpen: boolean;
+  setReleaseOpen: (open: boolean) => void;
+};
+
+const initialWidgets: WidgetId[] = [
+  'trend', 'comparison', 'category', 'forecast', 'queue', 'status', 'news', 'motivation',
+];
+
+function can(context: WorkforceContext, permission: string, minimum: AccessLevel = 'view', companyId?: string | null) {
+  return hasWorkforcePermission(context, permission, minimum, companyId);
+}
+
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'DG';
+}
+
+function numberValue(value: number | undefined, fallback = '—') {
+  return value === undefined ? fallback : new Intl.NumberFormat('en-NG').format(value);
+}
+
+function percentage(value: number) {
+  return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
+}
+
+function attendanceRate(summary: ZipDashboardSummary | null) {
+  if (!summary || summary.employees <= 0) return 0;
+  return (summary.present / summary.employees) * 100;
+}
+
+function ZipTopBar({
+  context,
+  theme,
+  modePreference,
+  setTheme,
+  setModePreference,
+  themeName,
+  clock,
+  weather,
+  enableLocation,
+  onNavigate,
+  onOpenAdmin,
+  onLogout,
+  company,
+  companyChoices,
+  setCompany,
+}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'enableLocation' | 'onNavigate' | 'onOpenAdmin' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany'>) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const employeeInitials = initials(context.employee.displayName);
+  const primaryRole = context.roles[0]?.name || (context.employee.status === 'provisional' ? 'Provisional Employee' : 'Employee');
+  const canAsk = can(context, 'ai_guide.access');
+
+  return <header className="top-bar">
+    <div className="search-wrap">
+      <Search size={17} aria-hidden="true" />
+      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask anything about your workspace" aria-label="Search workforce hub" />
+      {query && <button className="icon-button subtle" onClick={() => setQuery('')} aria-label="Clear search"><X size={15} /></button>}
+      <span className="search-shortcut">⌘ K</span>
+    </div>
+
+    <div className="top-actions">
+      {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
+      <button className="top-action support-action" onClick={() => setSupportOpen((open) => !open)} aria-expanded={supportOpen}><ShieldCheck size={16} /><span>Help & Support</span></button>
+      <button className="icon-button notification-button" aria-label="Notifications"><Bell size={18} /><i className="alert-dot" /></button>
+      <button className="weather-mini" onClick={enableLocation} title="Enable location and weather">
+        <CloudSun size={19} />
+        <span><b>{weather.temperature !== undefined ? `${Math.round(weather.temperature)}°C` : 'WAT'}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span>
+      </button>
+      <div className="profile-wrap">
+        <button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen}>
+          <span className="avatar">{employeeInitials}</span>
+          <span className="profile-name"><strong>{context.employee.displayName}</strong><small>{primaryRole}</small></span>
+          <ChevronDown size={16} />
+        </button>
+        {profileOpen && <div className="profile-menu">
+          <div className="profile-scope">
+            <small>Company scope</small>
+            <div>{companyChoices.map((item) => {
+              const Icon = item.icon;
+              return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.code}</span></button>;
+            })}</div>
+          </div>
+          <strong>Workspace appearance</strong>
+          {themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}
+          <div className="mode-picker">
+            <small>Display mode</small>
+            <div>
+              <button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Day</button>
+              <button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Night</button>
+              <button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button>
+            </div>
+          </div>
+          <button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button>
+          <button className="logout-menu" onClick={() => void onLogout()}><span>Sign out</span></button>
+        </div>}
+      </div>
+    </div>
+
+    {supportOpen && <div className="support-popover">
+      <div className="popover-title"><b>Help & Support</b><button className="icon-button subtle" onClick={() => setSupportOpen(false)} aria-label="Close help"><X size={15} /></button></div>
+      <p>Find answers, view product guidance, or contact the platform team.</p>
+      <div className="support-links"><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Browse FAQs <span>→</span></button><button onClick={() => { setSupportOpen(false); onOpenAdmin(); }}>Read admin docs <span>→</span></button><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Contact support <span>→</span></button></div>
+    </div>}
+  </header>;
+}
+
+function HierarchyIcon({ iconKey, size = 14 }: { iconKey: string; size?: number }) {
+  const Icon = iconKey === 'users' ? Users
+    : iconKey === 'factory' ? Factory
+      : iconKey === 'briefcase' ? BriefcaseBusiness
+        : iconKey === 'home' ? Home
+          : iconKey === 'money' ? CircleDollarSign
+            : iconKey === 'package' ? PackageSearch
+              : iconKey === 'shield' ? ShieldCheck
+                : iconKey === 'gauge' ? Gauge
+                  : iconKey === 'forms' ? ClipboardCheck
+                    : iconKey === 'radio' ? Radio
+                      : iconKey === 'wrench' ? Wrench
+                        : iconKey === 'sparkles' ? Sparkles
+                          : Boxes;
+  return <Icon size={size} />;
+}
+
+function Sidebar({
+  context,
+  company,
+  visibleNav,
+  online,
+  sidebarOpen,
+  setSidebarOpen,
+  onNavigate,
+  onOpenModuleHub,
+  onOpenModule,
+  release,
+  setReleaseOpen,
+  activeView,
+}: Pick<ZipDashboardProps, 'context' | 'company' | 'visibleNav' | 'online' | 'sidebarOpen' | 'setSidebarOpen' | 'onNavigate' | 'onOpenModuleHub' | 'onOpenModule' | 'release' | 'setReleaseOpen'> & { activeView: ViewName }) {
+  const employeeInitials = initials(context.employee.displayName);
+  const primaryRole = context.roles[0]?.name || (context.employee.status === 'provisional' ? 'Provisional Employee' : 'Employee');
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ staff: true });
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+  const [openSubsubmenus, setOpenSubsubmenus] = useState<Record<string, boolean>>({});
+  const availableModules = useMemo(
+    () => moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)),
+    [company.code, company.id, context],
+  );
+  const navigation = useMemo(
+    () => getErpNavigation(availableModules, visibleNav.map((item) => item.id)),
+    [availableModules, visibleNav],
+  );
+
+  useEffect(() => {
+    const activeGroup = navigation.find((group) => group.submenus.some((submenu) => submenu.submenus.some((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId))));
+    if (!activeGroup) return;
+    const activeSubmenu = activeGroup.submenus.find((submenu) => submenu.submenus.some((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId)));
+    const activeSubsubmenu = activeSubmenu?.submenus.find((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId));
+    setOpenGroups((current) => current[activeGroup.id] ? current : { ...current, [activeGroup.id]: true });
+    if (activeSubmenu) setOpenSubmenus((current) => current[`${activeGroup.id}:${activeSubmenu.id}`] ? current : { ...current, [`${activeGroup.id}:${activeSubmenu.id}`]: true });
+    if (activeSubmenu && activeSubsubmenu) setOpenSubsubmenus((current) => current[`${activeGroup.id}:${activeSubmenu.id}:${activeSubsubmenu.id}`] ? current : { ...current, [`${activeGroup.id}:${activeSubmenu.id}:${activeSubsubmenu.id}`]: true });
+  }, [activeModuleId, activeView, navigation]);
+
+  function openView(id: ViewName) {
+    setActiveModuleId(null);
+    setSidebarOpen(false);
+    onNavigate(id);
+  }
+
+  function openModule(id: string, group: ErpId) {
+    setActiveModuleId(id);
+    setSidebarOpen(false);
+    setOpenGroups((current) => current[group] ? current : { ...current, [group]: true });
+    onOpenModule(id);
+  }
+
+  function openItem(item: HierarchyItem, group: ErpId) {
+    if (item.kind === 'view' && item.view) openView(item.view);
+    else if (item.kind === 'module' && item.moduleId) openModule(item.moduleId, group);
+    else if (item.utility === 'module-hub') {
+      setSidebarOpen(false);
+      onOpenModuleHub();
+    }
+  }
+
+  function renderFunctionalItem(item: HierarchyItem, group: ErpId) {
+    const active = item.view === activeView || item.moduleId === activeModuleId;
+    return <button key={`${item.kind}-${item.id}`} className={`sidebar-functional-item ${active ? 'active' : ''}`} type="button" title={item.detail} onClick={() => openItem(item, group)}>
+      <span className="sidebar-functional-icon"><HierarchyIcon iconKey={item.iconKey} /></span>
+      <span className="sidebar-functional-copy"><strong>{item.label}</strong><small>{item.detail}</small></span>
+    </button>;
+  }
+
+  function renderGroup(group: ReturnType<typeof getErpNavigation>[number]) {
+    const childCount = group.submenus.reduce((count, submenu) => count + submenu.submenus.reduce((subtotal, subsubmenu) => subtotal + subsubmenu.items.length, 0), 0);
+    if (!childCount) return null;
+    const expanded = openGroups[group.id] ?? false;
+    const hasActiveItem = group.submenus.some((submenu) => submenu.submenus.some((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId)));
+    return <div className={`sidebar-group ${expanded ? 'is-expanded' : ''} ${hasActiveItem ? 'has-active' : ''}`} key={group.id}>
+      <button className="sidebar-group-toggle" type="button" aria-expanded={expanded} aria-controls={`sidebar-submenu-${group.id}`} onClick={() => setOpenGroups((current) => ({ ...current, [group.id]: !expanded }))} title={group.detail}>
+        <span className="module-icon"><HierarchyIcon iconKey={group.iconKey} size={17} /></span>
+        <span className="sidebar-group-copy"><strong>{group.label}</strong><small>{group.detail}</small></span>
+        <span className="sidebar-group-meta"><b>{childCount}</b><ChevronRight className="sidebar-group-chevron" size={15} /></span>
+      </button>
+      {expanded && <div className="sidebar-submenu" id={`sidebar-submenu-${group.id}`}>
+        {group.submenus.map((submenu) => {
+          const submenuKey = `${group.id}:${submenu.id}`;
+          const submenuExpanded = openSubmenus[submenuKey] ?? false;
+          const submenuCount = submenu.submenus.reduce((count, subsubmenu) => count + subsubmenu.items.length, 0);
+          return <div className={`sidebar-submenu-group ${submenuExpanded ? 'is-expanded' : ''}`} key={submenu.id}>
+            <button className="sidebar-submenu-toggle" type="button" aria-expanded={submenuExpanded} aria-controls={`sidebar-subsubmenu-${submenuKey}`} onClick={() => setOpenSubmenus((current) => ({ ...current, [submenuKey]: !submenuExpanded }))} title={submenu.detail}>
+              <span className="sidebar-submenu-copy"><strong>{submenu.label}</strong><small>{submenu.detail}</small></span><span className="sidebar-group-meta"><b>{submenuCount}</b><ChevronRight className="sidebar-submenu-chevron" size={14} /></span>
+            </button>
+            {submenuExpanded && <div className="sidebar-subsubmenu" id={`sidebar-subsubmenu-${submenuKey}`}>
+              {submenu.submenus.map((subsubmenu) => {
+                const subsubmenuKey = `${submenuKey}:${subsubmenu.id}`;
+                const subsubmenuExpanded = openSubsubmenus[subsubmenuKey] ?? false;
+                return <div className={`sidebar-subsubmenu-group ${subsubmenuExpanded ? 'is-expanded' : ''}`} key={subsubmenu.id}>
+                  <button className="sidebar-subsubmenu-toggle" type="button" aria-expanded={subsubmenuExpanded} aria-controls={`sidebar-functional-${subsubmenuKey}`} onClick={() => setOpenSubsubmenus((current) => ({ ...current, [subsubmenuKey]: !subsubmenuExpanded }))} title={subsubmenu.detail}>
+                    <span><strong>{subsubmenu.label}</strong><small>{subsubmenu.detail}</small></span><ChevronRight className="sidebar-subsubmenu-chevron" size={13} />
+                  </button>
+                  {subsubmenuExpanded && <div className="sidebar-functional-items" id={`sidebar-functional-${subsubmenuKey}`}>
+                    {subsubmenu.items.map((item) => renderFunctionalItem(item, group.id))}
+                  </div>}
+                </div>;
+              })}
+            </div>}
+          </div>;
+        })}
+      </div>}
+    </div>;
+  }
+
+  return <aside className={`sidebar ${sidebarOpen ? 'is-open open' : ''}`}>
+    <div className="sidebar-head">
+      <div className="brand-mark"><span>D</span></div>
+      <div className="sidebar-copy"><strong>Daenem</strong><span>Business ERP</span></div>
+      <button className="icon-button sidebar-close mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close navigation"><X size={18} /></button>
+    </div>
+    <div className="sidebar-label">Workspace</div>
+    <nav className="sidebar-nav" aria-label="ERP workspace navigation">
+      <section className="sidebar-section" aria-label="ERP workspaces">
+        <div className="sidebar-section-heading"><span>ERP WORKSPACES</span><small>{availableModules.length} authorized modules</small></div>
+        {navigation.map(renderGroup)}
+      </section>
+    </nav>
+    <div className="sidebar-bottom">
+      <div className="sidebar-status"><i className={online ? '' : 'offline'} /><span>{online ? 'All systems operational' : 'Offline mode'}</span></div>
+      <div className="mini-user"><div className="avatar">{employeeInitials}</div><div><strong>{context.employee.displayName}</strong><span>{primaryRole}</span></div></div>
+      <small>{context.companies.length} company assignment{context.companies.length === 1 ? '' : 's'} · RBAC enforced</small>
+      <button className="version-chip" onClick={() => setReleaseOpen(true)}><span>Version {release.version}</span><small>What changed</small></button>
+    </div>
+  </aside>;
+}
+
+function DashboardHeading({ context, company, clock, onOpenModuleHub }: Pick<ZipDashboardProps, 'context' | 'company' | 'clock' | 'onOpenModuleHub'>) {
+  const firstName = context.employee.displayName.split(' ')[0] || context.employee.displayName;
+  return <div className="dashboard-heading overview-heading">
+    <div>
+      <span className="eyebrow">{clock}</span>
+      <h1>Good day, {firstName} <span>✦</span></h1>
+      <p>Here is your connected operations pulse across {company.id ? company.name : 'the workspace'}.</p>
+    </div>
+    <div className="heading-actions">
+      <button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Customize view</button>
+      <button className="primary-button" onClick={onOpenModuleHub}><Plus size={16} /> New action</button>
+    </div>
+  </div>;
+}
+
+function KpiStrip({ summary, company }: Pick<ZipDashboardProps, 'summary' | 'company'>) {
+  const cards = [
+    { label: 'Employees', value: numberValue(summary?.employees), detail: company.id ? company.code : 'All assigned companies', icon: Users, tone: 'blue' },
+    { label: 'Present today', value: numberValue(summary?.present), detail: summary?.workDate || 'Live attendance', icon: CalendarCheck2, tone: 'green' },
+    { label: 'Needs review', value: numberValue((summary?.incompleteAttendance ?? 0) + (summary?.pendingApprovals ?? 0) + (summary?.overdueRequirements ?? 0)), detail: 'Attendance, approvals & requirements', icon: AlertTriangle, tone: 'amber' },
+    { label: 'Security health', value: summary ? (summary.securityAlerts ? 'Review' : 'Good') : '—', detail: summary ? `${summary.securityAlerts} high-risk event(s)` : 'Loading scoped status', icon: ShieldCheck, tone: summary?.securityAlerts ? 'red' : 'violet' },
+  ];
+  return <div className="kpi-grid">{cards.map(({ label, value, detail, icon: Icon, tone }) => <article className={`kpi-card tone-${tone}`} key={label}><span className="kpi-icon"><Icon size={16} /></span><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</div>;
+}
+
+function ChartHeader({ eyebrow, title, icon }: { eyebrow: string; title: string; icon: React.ComponentType<{ size?: number }> }) {
+  const Icon = icon;
+  return <header className="chart-heading"><div><span className="eyebrow">{eyebrow}</span><h3>{title}</h3></div><Icon size={19} /></header>;
+}
+
+function TrendWidget({ summary, refreshSummary }: Pick<ZipDashboardProps, 'summary' | 'refreshSummary'>) {
+  const rate = attendanceRate(summary);
+  return <article className="chart-card trend-card">
+    <ChartHeader eyebrow="WORKFORCE PULSE" title="Attendance trend" icon={Activity} />
+    <div className="chart-legend"><span><i style={{ background: 'var(--primary)' }} /> Present today</span><span><i style={{ background: 'var(--accent)' }} /> Incomplete</span></div>
+    <div className="chart-canvas zip-chart-canvas" role="img" aria-label={summary ? `Attendance completion is ${percentage(rate)}` : 'Attendance trend is unavailable'}>
+      <div className="chart-grid-lines"><i /><i /><i /><i /></div>
+      <svg viewBox="0 0 600 180" preserveAspectRatio="none" aria-hidden="true">
+        <path d={`M0 ${150 - rate * .55} C 90 ${142 - rate * .45}, 130 ${122 - rate * .35}, 205 ${132 - rate * .4} S 330 ${102 - rate * .25}, 405 ${118 - rate * .28} S 520 ${78 - rate * .2}, 600 ${105 - rate * .25}`} />
+        <path className="secondary-line" d={`M0 ${164 - (100 - rate) * .18} C 100 ${158 - (100 - rate) * .2}, 180 ${155 - (100 - rate) * .15}, 260 ${160 - (100 - rate) * .18} S 430 ${141 - (100 - rate) * .12}, 600 ${150 - (100 - rate) * .14}`} />
+      </svg>
+      {!summary && <div className="chart-empty"><PackageSearch size={18} /><span>Trend data is not available for this scope yet.</span></div>}
+    </div>
+    <footer className="chart-footer"><span>{summary ? `${percentage(rate)} completion` : 'Scoped trend'}</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh</button></footer>
+  </article>;
+}
+
+function ComparisonWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
+  const metrics = [
+    ['Attendance', attendanceRate(summary)],
+    ['Requirements', summary && summary.employees > 0 ? ((summary.employees - summary.overdueRequirements) / summary.employees) * 100 : 0],
+    ['Security', summary ? (summary.securityAlerts === 0 ? 100 : Math.max(0, 100 - summary.securityAlerts * 10)) : 0],
+  ] as const;
+  return <article className="chart-card comparison-card"><ChartHeader eyebrow="SCOPED COMPARISON" title="Workspace health" icon={ArrowRight} /><div className="comparison-list">{metrics.map(([label, value]) => <div key={label}><div><span>{label}</span><b>{summary ? percentage(value) : '—'}</b></div><i><em style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></i></div>)}</div><p className="widget-note">Values are calculated only from records your current role can access.</p></article>;
+}
+
+function CategoryWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
+  const present = summary?.present || 0;
+  const incomplete = summary?.incompleteAttendance || 0;
+  const absent = summary ? Math.max(0, summary.employees - present - incomplete) : 0;
+  const total = summary?.employees || 0;
+  const presentDegrees = total ? (present / total) * 360 : 0;
+  const incompleteDegrees = total ? (incomplete / total) * 360 : 0;
+  const style = { '--category-ring': `conic-gradient(var(--primary) 0deg ${presentDegrees}deg, var(--accent) ${presentDegrees}deg ${presentDegrees + incompleteDegrees}deg, color-mix(in srgb, var(--muted) 18%, transparent) ${presentDegrees + incompleteDegrees}deg 360deg)` } as CSSProperties;
+  return <article className="chart-card category-card"><ChartHeader eyebrow="TODAY'S MIX" title="Attendance categories" icon={CalendarCheck2} /><div className="donut-layout"><div className="donut" style={style}><div className="donut-ring" /><div className="donut-center"><strong>{summary ? percentage(attendanceRate(summary)) : '—'}</strong><span>present</span></div></div><div className="donut-legend"><span><i style={{ background: 'var(--primary)' }} />Present <b>{numberValue(present)}</b></span><span><i style={{ background: 'var(--accent)' }} />Incomplete <b>{numberValue(incomplete)}</b></span><span><i style={{ background: 'var(--muted)' }} />Other <b>{numberValue(absent)}</b></span></div></div></article>;
+}
+
+function ForecastWidget() {
+  return <article className="insight-card forecast-card"><span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">WORKSPACE INSIGHT</span><h3>Make the next action obvious.</h3><p>Use the authorized queue to open the exact record that needs attention. No private or unauthorized data is inferred here.</p><div className="forecast-meter"><span style={{ width: '58%' }} /></div><div className="insight-foot"><span>Permission-aware guidance</span><ArrowRight size={15} /></div></article>;
+}
+
+function QueueWidget({ summary, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'onNavigate' | 'onOpenModule'>) {
+  const queue = [
+    { label: 'Incomplete attendance', detail: 'Open Attendance & GPS', value: summary?.incompleteAttendance ?? 0, action: () => onOpenModule('attendance') },
+    { label: 'Pending approvals', detail: 'Open People & Payroll', value: summary?.pendingApprovals ?? 0, action: () => onNavigate('people') },
+    { label: 'Overdue requirements', detail: 'Review assigned forms', value: summary?.overdueRequirements ?? 0, action: () => onNavigate('forms') },
+    { label: 'Security alerts', detail: 'Open Security Center', value: summary?.securityAlerts ?? 0, action: () => onNavigate('security') },
+  ];
+  return <article className="queue-card"><span className="queue-accent" /><ChartHeader eyebrow="ACTION QUEUE" title="Needs your attention" icon={AlertTriangle} /><div className="queue-list">{queue.map((item) => <button key={item.label} onClick={item.action}><span className="queue-number">{String(item.value).padStart(2, '0')}</span><span><b>{item.label}</b><small>{item.detail}</small></span><ArrowRight size={14} /></button>)}</div><div className="queue-footer"><span>Open records remain company-scoped</span><CheckCircle2 size={15} /></div></article>;
+}
+
+function StatusWidget({ online, context, company }: Pick<ZipDashboardProps, 'online' | 'context' | 'company'>) {
+  const statusRows = [
+    ['Portal', online, online ? 'Online' : 'Offline'],
+    ['Identity', true, 'Verified'],
+    ['Company scope', true, company.id ? company.code : `${context.companies.length} assigned`],
+    ['RBAC', true, 'Enforced'],
+  ] as const;
+  return <article className="status-card"><ChartHeader eyebrow="SYSTEM STATUS" title="Workspace status" icon={ShieldCheck} /><div className="status-list">{statusRows.map(([label, okay, value]) => <div key={label}><span><i className={okay ? 'status-ok' : 'status-warn'} />{label}</span><b>{value}</b><small>{okay ? 'Ready' : 'Check connection'}</small></div>)}</div><div className="status-footer"><span>Last checked {new Date().toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })}</span><b>{online ? 'Operational' : 'Offline'}</b></div></article>;
+}
+
+function NewsWidget({ release }: Pick<ZipDashboardProps, 'release'>) {
+  const items = [
+    { date: release.date, title: `Staff Portal ${release.version}`, detail: 'Protected workspace release' },
+    { date: 'LIVE', title: 'Company-scoped access', detail: 'Permissions stay inside assigned businesses' },
+    { date: 'NOW', title: 'Module loading', detail: 'Open only the ERP workspace you need' },
+  ];
+  return <article className="news-card"><ChartHeader eyebrow="PORTAL NOTES" title="Latest updates" icon={PackageSearch} /><div className="news-list">{items.map((item) => <div className="news-item" key={`${item.date}-${item.title}`}><span className="news-date">{item.date}</span><p><b>{item.title}</b><small>{item.detail}</small></p><ArrowRight size={14} /></div>)}</div></article>;
+}
+
+function MotivationWidget({ onNavigate, enabled }: { onNavigate: (view: ViewName) => void; enabled: boolean }) {
+  return <article className="motivation-card"><span className="motivation-spark"><Sparkles size={17} /></span><span className="eyebrow">DAILY WORD</span><h3>Small improvements compound.</h3><p>Keep the next task clear, complete the record, and leave the workspace stronger for the next person.</p><div className="motivation-foot"><span>Human-approved communication</span>{enabled ? <button onClick={() => onNavigate('broadcasts')}>Open Broadcasts <ArrowRight size={13} /></button> : <span>Workspace guidance</span>}</div></article>;
+}
+
+function WidgetActions({ index, count, onMove }: { index: number; count: number; onMove: (index: number, direction: -1 | 1) => void }) {
+  return <span className="widget-actions" onClick={(event) => event.stopPropagation()}>
+    <button type="button" aria-label="Move card up" disabled={index === 0} onClick={() => onMove(index, -1)}><ArrowUp size={12} /></button>
+    <button type="button" aria-label="Move card down" disabled={index === count - 1} onClick={() => onMove(index, 1)}><ArrowDown size={12} /></button>
+  </span>;
+}
+
+function DashboardWidgets({
+  widgets,
+  summary,
+  company,
+  context,
+  online,
+  refreshSummary,
+  onNavigate,
+  onOpenModule,
+  release,
+}: Pick<ZipDashboardProps, 'summary' | 'company' | 'context' | 'online' | 'refreshSummary' | 'onNavigate' | 'onOpenModule' | 'release'> & { widgets: WidgetId[] }) {
+  const [dragged, setDragged] = useState<WidgetId | null>(null);
+  const [order, setOrder] = useState(widgets);
+
+  function moveWidget(target: WidgetId) {
+    if (!dragged || dragged === target) return;
+    setOrder((current) => {
+      const next = [...current];
+      const from = next.indexOf(dragged);
+      const to = next.indexOf(target);
+      next.splice(from, 1);
+      next.splice(to, 0, dragged);
+      return next;
+    });
+    setDragged(null);
+  }
+
+  function moveByKeyboard(index: number, direction: -1 | 1) {
+    setOrder((current) => {
+      const target = index + direction;
+      if (target < 0 || target >= current.length) return current;
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  function renderWidget(widget: WidgetId) {
+    switch (widget) {
+      case 'trend': return <TrendWidget summary={summary} refreshSummary={refreshSummary} />;
+      case 'comparison': return <ComparisonWidget summary={summary} />;
+      case 'category': return <CategoryWidget summary={summary} />;
+      case 'forecast': return <ForecastWidget />;
+      case 'queue': return <QueueWidget summary={summary} onNavigate={onNavigate} onOpenModule={onOpenModule} />;
+      case 'status': return <StatusWidget online={online} context={context} company={company} />;
+      case 'news': return <NewsWidget release={release} />;
+      case 'motivation': return <MotivationWidget onNavigate={onNavigate} enabled={can(context, 'broadcasts.access', 'view', company.id)} />;
+    }
+  }
+
+  return <div className="dashboard-grid">
+    {order.map((widget, index) => <div
+      key={widget}
+      className={`widget-slot widget-${widget}`}
+      draggable
+      onDragStart={() => setDragged(widget)}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={() => moveWidget(widget)}
+    >
+      <WidgetActions index={index} count={order.length} onMove={moveByKeyboard} />
+      {renderWidget(widget)}
+    </div>)}
+  </div>;
+}
+
+function ReleaseDialog({ release, onClose }: { release: ReleaseInfo; onClose: () => void }) {
+  return <div className="release-backdrop" onClick={onClose}><section className="release-panel" role="dialog" aria-modal="true" aria-labelledby="release-title" onClick={(event) => event.stopPropagation()}>
+    <header><div><span className="eyebrow">DAENEM STAFF PORTAL</span><h2 id="release-title">Version {release.version}</h2><p>Prepared {release.date} through the protected release branch.</p></div><button className="icon-button" onClick={onClose} aria-label="Close version details"><X size={20} /></button></header>
+    <div className="release-status"><ShieldCheck size={19} /><span><strong>Protected release</strong><small>Every listed change passes controlled validation before production activation.</small></span></div>
+    <ul><li>ZIP-aligned authenticated dashboard shell and responsive workspace layout.</li><li>Company-scoped modules, controls and permissions remain connected.</li><li>Lazy-loaded ERP workspaces stay available through Module Hub.</li></ul>
+  </section></div>;
+}
+
+export function ZipDashboard({
+  context,
+  view,
+  content,
+  company,
+  companyChoices,
+  setCompany,
+  summary,
+  liveIntelligence,
+  refreshSummary,
+  onNavigate,
+  onOpenModule,
+  onOpenModuleHub,
+  onOpenAdmin,
+  onLogout,
+  visibleNav,
+  theme,
+  modePreference,
+  setTheme,
+  setModePreference,
+  dashboardLayout,
+  themeName,
+  clock,
+  weather,
+  enableLocation,
+  online,
+  sidebarOpen,
+  setSidebarOpen,
+  release,
+  releaseOpen,
+  setReleaseOpen,
+}: ZipDashboardProps) {
+  useEffect(() => {
+    document.body.classList.add('dashboard-active');
+    return () => document.body.classList.remove('dashboard-active');
+  }, []);
+
+  const activeView = view;
+  const moduleLabel = useMemo(() => visibleNav.find((item) => item.id === activeView)?.label || 'Overview', [activeView, visibleNav]);
+
+  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView}`}>
+    <Sidebar
+      context={context}
+      company={company}
+      visibleNav={visibleNav}
+      online={online}
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+      onNavigate={onNavigate}
+      onOpenModuleHub={onOpenModuleHub}
+      onOpenModule={onOpenModule}
+      release={release}
+      setReleaseOpen={setReleaseOpen}
+      activeView={activeView}
+    />
+    {sidebarOpen && <button className="mobile-backdrop" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
+
+    <section className="dashboard-content">
+      <ZipTopBar
+        context={context}
+        company={company}
+        companyChoices={companyChoices}
+        setCompany={setCompany}
+        theme={theme}
+        modePreference={modePreference}
+        setTheme={setTheme}
+        setModePreference={setModePreference}
+        themeName={themeName}
+        clock={clock}
+        weather={weather}
+        enableLocation={enableLocation}
+        onNavigate={onNavigate}
+        onOpenAdmin={onOpenAdmin}
+        onLogout={onLogout}
+      />
+      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><span>D</span></div><span>{moduleLabel}</span></div>
+      <div className="dashboard-main">
+        {view === 'overview'
+          ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} />
+          : <div className="dashboard-heading module-page-heading"><div><span className="eyebrow">DAENEM BUSINESS ERP</span><h1>{moduleLabel}</h1><p>Open records and workflows assigned to your role and company scope.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Module Hub</button></div></div>}
+        <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}</button></div>
+        <div className="company-switcher" role="list" aria-label="Company filter">{companyChoices.map((item) => {
+          const Icon = item.icon;
+          return <button key={item.code} onClick={() => setCompany(item)} className={company.code === item.code ? 'active' : ''}><Icon size={15} /><span>{item.code}</span></button>;
+        })}</div>
+        {view === 'overview' ? <>
+          <KpiStrip summary={summary} company={company} />
+          <div className="widget-toolbar"><span><GripVertical size={15} /> Drag cards to personalize your view</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div>
+          <DashboardWidgets
+            widgets={initialWidgets}
+            summary={summary}
+            company={company}
+            context={context}
+            online={online}
+            refreshSummary={refreshSummary}
+            onNavigate={onNavigate}
+            onOpenModule={onOpenModule}
+            release={release}
+          />
+          {liveIntelligence && <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section>}
+        </> : <div className="zip-module-content">{content}</div>}
+        <footer className="dashboard-footer"><span>Daenem Business ERP · {themeName}</span><span>Live sync · <b>{online ? 'Operational' : 'Offline'}</b></span></footer>
+      </div>
+    </section>
+
+    {releaseOpen && <ReleaseDialog release={release} onClose={() => setReleaseOpen(false)} />}
+  </main>;
+}
+
+function Clock3Icon() {
+  return <span className="clock-glyph" aria-hidden="true">◷</span>;
+}

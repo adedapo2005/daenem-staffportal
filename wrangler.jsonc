@@ -1,0 +1,80 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "daenem-workforce-hub",
+  "compatibility_date": "2026-08-18",
+  "main": "./worker/runtime.ts",
+  "routes": [
+    {
+      "pattern": "staffportal.daenem.com",
+      "custom_domain": true
+    }
+  ],
+  "limits": {
+    "cpu_ms": 300000
+  },
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "daenem-workforce-hub",
+      "database_id": "TO_BE_PROVISIONED",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "daenem-workforce-files"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SOCIAL_CACHE",
+      "id": "TO_BE_PROVISIONED_SOCIAL_CACHE"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SOCIAL_QUEUE",
+        "queue": "daenem-social-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "daenem-social-jobs",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5
+      }
+    ]
+  },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": [
+        "portal@daenem.com"
+      ]
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "vars": {
+    "APP_NAME": "Daenem Workforce Hub",
+    "TIMEZONE": "Africa/Lagos",
+    "APP_STAGE": "bootstrap",
+    "WORKFORCE_EMAIL_FROM": "portal@daenem.com",
+    "META_GRAPH_VERSION": "v24.0"
+  }
+}

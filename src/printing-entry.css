@@ -1,0 +1,6 @@
+.printing-launcher-stack { position:fixed; right:18px; bottom:130px; z-index:93; display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+.printing-launcher { position:static; min-height:44px; padding:0 14px; border:1px solid rgba(255,138,50,.28); border-radius:999px; background:var(--surface); color:var(--text); display:flex; align-items:center; gap:8px; box-shadow:var(--shadow); cursor:pointer; font-size:10px; font-weight:850; }
+.printing-launcher svg { color:#e87824; }
+.printing-launcher.production { border-color:rgba(53,92,211,.25); }
+.printing-launcher.production svg { color:#355cd3; }
+@media (max-width:720px) { .printing-launcher-stack { right:14px; bottom:186px; } .printing-launcher { min-height:41px; padding:0 11px; } }

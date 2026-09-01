@@ -1,0 +1,310 @@
+import { getSessionContext, hasPermission, routeAuth, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
+
+interface Env extends AuthEnv {
+  FILES: R2Bucket;
+  AI: Ai;
+  ASSETS: Fetcher;
+  TIMEZONE: string;
+}
+
+type JsonValue = Record<string, unknown> | unknown[];
+
+const json = (body: JsonValue, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+  },
+});
+
+const weatherDescriptions: Record<number, string> = {
+  0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+  45: 'Fog', 48: 'Depositing rime fog', 51: 'Light drizzle', 53: 'Drizzle',
+  55: 'Heavy drizzle', 61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+  80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy rain showers',
+  95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Severe thunderstorm with hail',
+};
+
+function securityHeaders(response: Response) {
+  const headers = new Headers(response.headers);
+  headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  headers.set('x-frame-options', 'DENY');
+  headers.set('x-permitted-cross-domain-policies', 'none');
+  headers.set('cross-origin-opener-policy', 'same-origin');
+  headers.set('permissions-policy', 'camera=(self), geolocation=(self), microphone=()');
+  headers.set('content-security-policy', "default-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.open-meteo.com; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function weather(request: Request) {
+  const url = new URL(request.url);
+  const lat = Number(url.searchParams.get('lat'));
+  const lon = Number(url.searchParams.get('lon'));
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    return json({ error: 'Valid latitude and longitude are required.' }, 400);
+  }
+
+  const api = new URL('https://api.open-meteo.com/v1/forecast');
+  api.searchParams.set('latitude', String(lat));
+  api.searchParams.set('longitude', String(lon));
+  api.searchParams.set('current', 'temperature_2m,weather_code');
+  api.searchParams.set('timezone', 'auto');
+
+  const result = await fetch(api.toString(), { cf: { cacheTtl: 300, cacheEverything: true } });
+  if (!result.ok) return json({ error: 'Weather service is temporarily unavailable.' }, 502);
+  const data = await result.json() as { current?: { temperature_2m?: number; weather_code?: number } };
+  const cf = (request as Request & { cf?: IncomingRequestCfProperties }).cf;
+  const code = data.current?.weather_code;
+
+  return json({
+    location: cf?.city ? `${cf.city}${cf.region ? `, ${cf.region}` : ''}` : 'Current work location',
+    temperature: data.current?.temperature_2m,
+    description: typeof code === 'number' ? (weatherDescriptions[code] || 'Current conditions') : 'Current conditions',
+  });
+}
+
+function allowedModules(context: SessionContext) {
+  return Object.entries(context.permissions)
+    .filter(([, level]) => level !== 'none')
+    .map(([code]) => code.replace(/\.access$/, ''));
+}
+
+const guideModules = [
+  { id: 'dashboard', title: 'Group Overview', permission: 'dashboard.access', setup: 'required', summary: 'See authorized workforce, attendance, approval and operational signals.', steps: ['Choose a company or Group view.', 'Review the live indicators.', 'Open the source module before acting on an alert.'] },
+  { id: 'users', title: 'People & Approvals', permission: 'users.access', setup: 'required', summary: 'Review provisional signups and maintain authorized employee records.', steps: ['Open People & Payroll.', 'Review the employee identity and company.', 'Assign only the approved role and record the decision.'] },
+  { id: 'roles', title: 'Roles & Access Control', permission: 'roles.access', setup: 'required', summary: 'Assign audited access levels, View Only overrides and temporary access expiry.', steps: ['Open Access Control.', 'Choose the employee or role.', 'Set the least access needed, add expiry where temporary, then save.'] },
+  { id: 'attendance', title: 'Attendance & GPS', permission: 'attendance.access', setup: 'required', summary: 'Clock in and out under the assigned evidence and geofence policy.', steps: ['Allow location or photo evidence when policy requires it.', 'Clock in at the approved work location.', 'Clock out to complete the work day.'] },
+  { id: 'forms', title: 'Forms Center', permission: 'forms.access', setup: 'optional', summary: 'Create, assign, submit or review forms according to access level.', steps: ['Choose a form template.', 'Select a valid audience and due date.', 'Publish or submit, then monitor completion.'] },
+  { id: 'broadcasts', title: 'Broadcast Center', permission: 'broadcasts.access', setup: 'optional', summary: 'Send targeted notices, scheduled updates, Daily Word and emergency alerts.', steps: ['Choose company and audience.', 'Write the notice, schedule and expiry.', 'Submit for approval or publish when authorized.'] },
+  { id: 'finance', title: 'Finance', permission: 'finance.access', setup: 'optional', summary: 'Work with authorized ledger, receivable, budget and reporting records.', steps: ['Choose the correct company.', 'Open the required transaction or report.', 'Follow approval and audit controls before posting.'] },
+  { id: 'payroll', title: 'Payroll', permission: 'payroll.access', setup: 'optional', summary: 'Prepare, review, approve and record payroll at the assigned access level.', steps: ['Select company and pay period.', 'Resolve attendance and payroll exceptions.', 'Submit, approve or record only when your level permits.'] },
+  { id: 'inventory', title: 'Inventory & Procurement', permission: 'inventory.access', setup: 'optional', summary: 'Manage authorized catalog, stock and movement workflows.', steps: ['Choose the company and stock location.', 'Record the source document and quantity.', 'Complete the required review or approval.'] },
+  { id: 'facilities', title: 'Facilities', permission: 'facilities.access', setup: 'optional', summary: 'Track assets, utilities, work orders and maintenance evidence.', steps: ['Select the facility or asset.', 'Record the issue, priority and evidence.', 'Assign, complete and verify the work order.'] },
+  { id: 'security', title: 'Security Center', permission: 'security.access', setup: 'required', summary: 'Investigate login, device, geofence and denied-access events.', steps: ['Review severity and identity.', 'Check the event evidence and audit trail.', 'Escalate or close according to security policy.'] },
+  { id: 'tracking', title: 'Location Tracking', permission: 'tracking.access', setup: 'optional', summary: 'View or configure authorized mobile tracking under policy controls.', steps: ['Confirm the employee policy and consent basis.', 'Select the permitted tracking window.', 'Review only the location data your role allows.'] },
+  { id: 'printing', title: 'Daenem Printing', permission: 'printing.access', setup: 'optional', summary: 'Follow printing quotations, jobs, production and delivery workflows.', steps: ['Open the customer job.', 'Update the authorized production stage.', 'Record completion and delivery evidence.'] },
+  { id: 'bakery', title: 'Daenem Bakery', permission: 'bakery.access', setup: 'optional', summary: 'Manage bakery production, batches, stock and sales workflows.', steps: ['Select the production day or batch.', 'Record ingredients and output.', 'Complete authorized stock or sales actions.'] },
+  { id: 'autos', title: 'Daenem Autos', permission: 'autos.access', setup: 'optional', summary: 'Manage vehicle inventory, enquiries, deals and documentation.', steps: ['Open the vehicle or customer record.', 'Update the authorized deal stage.', 'Attach evidence and complete approvals.'] },
+  { id: 'logistics', title: 'Daenem Logistics', permission: 'logistics.access', setup: 'optional', summary: 'Plan dispatch, vehicles, drivers and proof of delivery.', steps: ['Open the shipment or trip.', 'Assign permitted vehicle and driver.', 'Record movement and delivery evidence.'] },
+  { id: 'properties', title: 'Homes & Properties', permission: 'properties.access', setup: 'optional', summary: 'Manage property inventory, leads, inspections and transactions.', steps: ['Open the property or lead.', 'Schedule and record the next activity.', 'Complete the authorized approval or closing step.'] },
+  { id: 'construction', title: 'Construction & Projects', permission: 'construction.access', setup: 'optional', summary: 'Track projects, milestones, cost control and site activity.', steps: ['Choose the project and work package.', 'Update progress, cost or site evidence.', 'Submit changes through the approval path.'] },
+  { id: 'social', title: 'Daenem Social', permission: 'social.access', setup: 'optional', summary: 'Plan, approve and publish authorized brand content.', steps: ['Choose the company and connected channel.', 'Prepare content and schedule.', 'Complete approval before provider dispatch.'] },
+] as const;
+
+function permissionGuide(context: SessionContext) {
+  return guideModules
+    .filter((module) => hasPermission(context, module.permission, 'view'))
+    .map((module) => ({ ...module, accessLevel: context.permissions[module.permission] || 'none' }));
+}
+
+async function aiGuideCatalog(context: SessionContext) {
+  if (!hasPermission(context, 'ai_guide.access', 'view')) return json({ error: 'AI Guide access is not assigned to this employee.' }, 403);
+  return json({
+    employee: context.employee.displayName,
+    roles: context.roles.map((role) => role.name),
+    modules: permissionGuide(context),
+    accessControlAvailable: hasPermission(context, 'roles.access', 'manage') || hasPermission(context, 'users.access', 'manage'),
+    guidance: {
+      required: 'Required items protect identity, access, attendance and security. Complete them before optional workflows.',
+      optional: 'Optional modules appear only when your role includes them and should be configured for your assigned duties.',
+    },
+  });
+}
+
+async function aiHelp(request: Request, env: Env, context: SessionContext) {
+  if (!hasPermission(context, 'ai_guide.access', 'view')) return json({ error: 'AI Guide access is not assigned to this employee.' }, 403);
+  let payload: { question?: string };
+  try { payload = await request.json(); } catch { return json({ error: 'Invalid JSON body.' }, 400); }
+  const question = String(payload.question || '').trim();
+  if (!question) return json({ error: 'A question is required.' }, 400);
+
+  const roleText = context.roles.map((role) => role.name).join(', ') || 'Provisional Employee';
+  const companyText = context.companies.map((company) => company.name).join(', ') || 'Daenem Group';
+  const modules = allowedModules(context);
+  const moduleAccess = permissionGuide(context).map((module) => `${module.title}: ${module.accessLevel}`);
+  const system = [
+    'You are the built-in Daenem Workforce Hub user guide.',
+    'Explain only functions the requesting employee is authorized to access.',
+    'Never tell an employee how to bypass permissions, geofencing, attendance evidence, approvals or audit controls.',
+    'Never claim an action was completed unless the application API confirms it.',
+    'Give concise step-by-step guidance and use Nigerian workplace context when useful.',
+    'For Owner/Admin configuration, explain the operational and security impact before suggesting changes.',
+    `Employee: ${context.employee.displayName}.`,
+    `Role(s): ${roleText}.`,
+    `Company access: ${companyText}.`,
+    `Allowed modules: ${modules.join(', ') || 'onboarding only'}.`,
+    `Effective access levels: ${moduleAccess.join('; ') || 'No module access assigned'}.`,
+  ].join('\n');
+
+  const answer = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    messages: [{ role: 'system', content: system }, { role: 'user', content: question }],
+    max_tokens: 700,
+  }) as { response?: string };
+
+  await env.DB.prepare(`
+    INSERT INTO ai_activity_logs (id, employee_id, company_id, feature, prompt_category, input_redacted, output_redacted)
+    VALUES (?, ?, ?, 'user_guide', 'help', ?, ?)
+  `).bind(
+    `ai-${crypto.randomUUID()}`, context.employee.id, context.companies[0]?.id || null,
+    question.slice(0, 500), String(answer.response || '').slice(0, 1200),
+  ).run();
+
+  return json({ answer: answer.response || 'The AI guide did not return an answer.' });
+}
+
+function nigeriaDate() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+function permittedCompanyIds(context: SessionContext, permission: string, minimum: AccessLevel = 'view') {
+  return context.companies
+    .filter((company) => hasPermission(context, permission, minimum, company.id))
+    .map((company) => company.id);
+}
+
+function sqlList(values: string[]) {
+  return values.map(() => '?').join(',');
+}
+
+async function dashboardSummary(request: Request, env: Env, context: SessionContext) {
+  const url = new URL(request.url);
+  const requestedCompany = url.searchParams.get('companyId');
+  const dashboardCompanyIds = permittedCompanyIds(context, 'dashboard.access');
+  if (!dashboardCompanyIds.length) return json({ error: 'Dashboard access is not assigned.' }, 403);
+  if (requestedCompany && !dashboardCompanyIds.includes(requestedCompany)) {
+    return json({ error: 'Dashboard access is not assigned for this business.' }, 403);
+  }
+  const companyId = requestedCompany || null;
+  const companyIds = companyId ? [companyId] : dashboardCompanyIds;
+  const companyPlaceholders = sqlList(companyIds);
+  const workDate = nigeriaDate();
+
+  const employeeCount = await env.DB.prepare(`SELECT COUNT(DISTINCT employee_id) AS count FROM employee_company_memberships WHERE active = 1 AND company_id IN (${companyPlaceholders})`).bind(...companyIds).first<{ count: number }>();
+  const incomplete = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendance_days WHERE work_date = ? AND status = 'incomplete' AND company_id IN (${companyPlaceholders})`).bind(workDate, ...companyIds).first<{ count: number }>();
+  const present = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendance_days WHERE work_date = ? AND status = 'present' AND company_id IN (${companyPlaceholders})`).bind(workDate, ...companyIds).first<{ count: number }>();
+
+  const usersCompanyIds = companyIds.filter((id) => hasPermission(context, 'users.access', 'view', id));
+  const securityCompanyIds = companyIds.filter((id) => hasPermission(context, 'security.access', 'view', id));
+  const formsCompanyIds = companyIds.filter((id) => hasPermission(context, 'forms.access', 'view', id));
+  const facilitiesCompanyIds = companyIds.filter((id) => hasPermission(context, 'facilities.access', 'view', id));
+  const pendingApprovals = usersCompanyIds.length
+    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM signup_requests WHERE status = 'pending' AND requested_company_id IN (${sqlList(usersCompanyIds)})`).bind(...usersCompanyIds).first<{ count: number }>()
+    : null;
+  const securityAlerts = securityCompanyIds.length
+    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM security_logs WHERE reviewed_at IS NULL AND severity IN ('high','critical') AND company_id IN (${sqlList(securityCompanyIds)})`).bind(...securityCompanyIds).first<{ count: number }>()
+    : null;
+  const overdueRequirements = formsCompanyIds.length
+    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM requirement_completions WHERE status = 'overdue' AND company_id IN (${sqlList(formsCompanyIds)})`).bind(...formsCompanyIds).first<{ count: number }>()
+    : null;
+  const maintenance = facilitiesCompanyIds.length
+    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM maintenance_work_orders WHERE status NOT IN ('completed','verified','cancelled') AND priority IN ('high','critical') AND company_id IN (${sqlList(facilitiesCompanyIds)})`).bind(...facilitiesCompanyIds).first<{ count: number }>()
+    : null;
+
+  return json({
+    workDate,
+    companyId,
+    employees: Number(employeeCount?.count || 0),
+    present: Number(present?.count || 0),
+    incompleteAttendance: Number(incomplete?.count || 0),
+    pendingApprovals: Number(pendingApprovals?.count || 0),
+    securityAlerts: Number(securityAlerts?.count || 0),
+    overdueRequirements: Number(overdueRequirements?.count || 0),
+    maintenanceAlerts: Number(maintenance?.count || 0),
+    attendanceRule: 'Present requires a policy-valid clock-in and clock-out. An incomplete day does not count as worked.',
+  });
+}
+
+async function recentSecurity(request: Request, env: Env, context: SessionContext) {
+  const requestedCompanyId = new URL(request.url).searchParams.get('companyId');
+  const allowedCompanyIds = permittedCompanyIds(context, 'security.access');
+  if (!allowedCompanyIds.length) return json({ error: 'Security Center access is not assigned.' }, 403);
+  if (requestedCompanyId && !allowedCompanyIds.includes(requestedCompanyId)) {
+    return json({ error: 'Security Center access is not assigned for this business.' }, 403);
+  }
+  const companyIds = requestedCompanyId ? [requestedCompanyId] : allowedCompanyIds;
+  const result = await env.DB.prepare(`
+    SELECT sl.id, sl.occurred_at AS occurredAt, sl.event_type AS eventType, sl.severity,
+           sl.result, sl.ip_address AS ipAddress, sl.location_label AS locationLabel,
+           sl.risk_score AS riskScore, sl.details_json AS detailsJson,
+           e.display_name AS employeeName, c.name AS companyName
+    FROM security_logs sl
+    LEFT JOIN employees e ON e.id = sl.employee_id
+    LEFT JOIN companies c ON c.id = sl.company_id
+    WHERE sl.company_id IN (${sqlList(companyIds)})
+    ORDER BY sl.occurred_at DESC LIMIT 100
+  `).bind(...companyIds).all<Record<string, unknown>>();
+  return json({ events: result.results || [] });
+}
+
+async function rolesForCompany(request: Request, env: Env, context: SessionContext) {
+  const url = new URL(request.url);
+  const companyId = url.searchParams.get('companyId');
+  const allowedCompanyIds = context.companies
+    .filter((company) => hasPermission(context, 'users.access', 'view', company.id) || hasPermission(context, 'roles.access', 'view', company.id))
+    .map((company) => company.id);
+  if (!allowedCompanyIds.length) return json({ error: 'User or Role administration permission is required.' }, 403);
+  if (companyId && !allowedCompanyIds.includes(companyId)) return json({ error: 'Role administration is not assigned for this business.' }, 403);
+  const companyIds = companyId ? [companyId] : allowedCompanyIds;
+  const result = await env.DB.prepare(`SELECT id, code, name, company_id AS companyId FROM roles WHERE active = 1 AND (company_id IN (${sqlList(companyIds)}) OR company_id IS NULL) ORDER BY is_system DESC, name`).bind(...companyIds).all<Record<string, unknown>>();
+  return json({ roles: result.results || [] });
+}
+
+export default {
+  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/api/health') {
+      return json({
+        ok: true,
+        app: env.APP_NAME || 'Daenem Workforce Hub',
+        stage: env.APP_STAGE || 'bootstrap',
+        timezone: env.TIMEZONE || 'Africa/Lagos',
+        version: '7.0.0-alpha.8',
+      });
+    }
+
+    if (url.pathname === '/api/bootstrap') {
+      return json({
+        app: 'Daenem Workforce Hub',
+        companies: ['printing', 'bakery', 'autos', 'logistics', 'properties'],
+        permissionLevels: ['none', 'view', 'create', 'edit', 'approve', 'manage'],
+        attendanceRule: 'A completed work day requires the policy-required clock-in and clock-out events.',
+        auth: {
+          selfSignup: true,
+          oneTimeCode: true,
+          loginLocationPolicy: true,
+          productionCodeDeliveryConfigured: Boolean(env.AUTH_DELIVERY_URL),
+        },
+        features: {
+          securityCenter: true, auditLogs: true, payroll: true, geofencing: true,
+          backgroundTrackingPolicy: true, forms: true, broadcasts: true, aiGuide: true,
+          facilities: true, offlineFirst: true,
+        },
+      });
+    }
+
+    const authResponse = await routeAuth(request, env);
+    if (authResponse) return securityHeaders(authResponse);
+
+    if (url.pathname === '/api/context/weather' && request.method === 'GET') return securityHeaders(await weather(request));
+
+    if (url.pathname.startsWith('/api/')) {
+      const context = await getSessionContext(request, env);
+      if (!context) return securityHeaders(json({ error: 'Authentication required.' }, 401));
+      if (url.pathname === '/api/ai/help' && request.method === 'POST') return securityHeaders(await aiHelp(request, env, context));
+      if (url.pathname === '/api/ai/guide/catalog' && request.method === 'GET') return securityHeaders(await aiGuideCatalog(context));
+      if (url.pathname === '/api/dashboard/summary' && request.method === 'GET') return securityHeaders(await dashboardSummary(request, env, context));
+      if (url.pathname === '/api/security/recent' && request.method === 'GET') return securityHeaders(await recentSecurity(request, env, context));
+      if (url.pathname === '/api/admin/roles' && request.method === 'GET') return securityHeaders(await rolesForCompany(request, env, context));
+      return securityHeaders(json({ error: 'API route not found.' }, 404));
+    }
+
+    const response = await env.ASSETS.fetch(request);
+    return securityHeaders(response);
+  },
+} satisfies ExportedHandler<Env>;

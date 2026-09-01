@@ -1,0 +1,640 @@
+.gea-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--canvas) 66%, #071222);
+  backdrop-filter: blur(7px);
+}
+
+.gea-shell {
+  width: min(1440px, 96vw);
+  height: min(900px, 94vh);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 32px 90px color-mix(in srgb, #071222 28%, transparent);
+}
+
+.gea-shell > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.gea-shell > header small,
+.gea-payment-builder > div > small {
+  color: var(--primary);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+
+.gea-shell > header h2 {
+  margin: 4px 0 2px;
+  color: var(--text);
+  font: 800 27px/1.15 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.04em;
+}
+
+.gea-shell > header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.gea-shell > header > button,
+.gea-inner-modal header > button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  color: var(--text);
+  background: var(--surface-strong);
+  cursor: pointer;
+}
+
+.gea-shell > header > button:hover,
+.gea-inner-modal header > button:hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+  color: var(--primary);
+}
+
+.gea-shell > nav {
+  display: flex;
+  gap: 6px;
+  overflow: auto;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.gea-shell > nav button {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.gea-shell > nav button:hover,
+.gea-shell > nav button.active {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 11%, var(--surface));
+}
+
+.gea-shell > main {
+  overflow: auto;
+  padding: 20px 24px 30px;
+}
+
+.gea-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.gea-toolbar select,
+.gea-toolbar input,
+.gea-form-grid input,
+.gea-form-grid select,
+.gea-payment-builder select {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 10px;
+}
+
+.gea-toolbar select {
+  min-width: 220px;
+}
+
+.gea-toolbar > button,
+.gea-table-wrap button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--on-primary, #fff);
+  background: var(--primary);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.gea-search {
+  min-width: 220px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.gea-search input {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+}
+
+.gea-message {
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-radius: 10px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  font-size: 11px;
+}
+
+.gea-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.gea-metrics article {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-strong);
+}
+
+.gea-metrics article svg {
+  width: 20px;
+  color: var(--primary);
+}
+
+.gea-metrics span,
+.gea-table-wrap td b,
+.gea-table-wrap td small,
+.gea-resource-grid article div,
+.gea-tool-list button span {
+  display: grid;
+}
+
+.gea-metrics small,
+.gea-table-wrap td small,
+.gea-resource-grid small,
+.gea-tool-list small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.gea-metrics b {
+  color: var(--text);
+  font-size: 19px;
+}
+
+.gea-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.gea-table-wrap table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.gea-table-wrap th,
+.gea-table-wrap td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.gea-table-wrap th {
+  position: sticky;
+  top: 0;
+  color: var(--muted);
+  background: var(--surface-strong);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.gea-table-wrap td b {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.gea-table-wrap td small {
+  margin-top: 3px;
+}
+
+.gea-status {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.gea-inner-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--canvas) 52%, transparent);
+}
+
+.gea-inner-modal > section {
+  width: min(820px, 94vw);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.gea-inner-modal header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.gea-inner-modal h3 {
+  margin: 3px 0;
+  color: var(--text);
+  font: 800 23px/1.2 var(--font-heading, "Manrope"), sans-serif;
+}
+
+.gea-inner-modal p {
+  margin: 0 0 15px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.gea-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gea-form-grid label,
+.gea-payment-builder label {
+  display: grid;
+  gap: 6px;
+}
+
+.gea-form-grid label span,
+.gea-payment-builder label span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.gea-inner-modal h4 {
+  margin: 20px 0 10px;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.gea-primary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 11px;
+  color: var(--on-primary, #fff);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.gea-payment-builder {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.6fr) minmax(190px, .7fr) minmax(190px, .7fr) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 18px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-strong);
+}
+
+.gea-payment-builder h3 {
+  margin: 3px 0;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.gea-payment-builder p {
+  max-width: 700px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.gea-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.gea-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gea-resource-grid article {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-strong);
+}
+
+.gea-resource-grid article div {
+  flex: 1;
+  gap: 3px;
+}
+
+.gea-resource-grid article b {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.gea-health {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.gea-health.healthy {
+  background: var(--success);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--success) 11%, transparent);
+}
+
+.gea-health.degraded {
+  background: var(--warning);
+}
+
+.gea-health.down {
+  background: var(--accent);
+}
+
+.gea-toolbox {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.gea-tool-list {
+  display: grid;
+  gap: 9px;
+}
+
+.gea-tool-list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--surface-strong);
+  cursor: pointer;
+  text-align: left;
+}
+
+.gea-tool-list button > svg {
+  color: var(--primary);
+}
+
+.gea-tool-list button span {
+  gap: 3px;
+}
+
+.gea-tool-list button b {
+  font-size: 10px;
+}
+
+.gea-toolbox pre {
+  min-height: 350px;
+  overflow: auto;
+  padding: 16px;
+  margin: 0;
+  border-radius: 14px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--canvas) 80%, #071222);
+  font-size: 10px;
+}
+
+.gea-suggestions {
+  position: fixed;
+  z-index: 10100;
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.gea-suggestions button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gea-suggestions button:hover {
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+.gea-suggestions button > span {
+  display: grid;
+  gap: 2px;
+}
+
+.gea-suggestions b {
+  font-size: 11px;
+}
+
+.gea-suggestions small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+@media (max-width: 1000px) {
+  .gea-shell {
+    width: 98vw;
+    height: 96vh;
+    border-radius: 18px;
+  }
+
+  .gea-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gea-payment-builder {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .gea-payment-builder > div {
+    grid-column: 1 / -1;
+  }
+
+  .gea-toolbox {
+    grid-template-columns: 1fr;
+  }
+
+  .gea-tool-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gea-resource-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .gea-backdrop {
+    padding: 0;
+    backdrop-filter: none;
+  }
+
+  .gea-shell {
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .gea-shell > header {
+    padding: 18px 16px 14px;
+  }
+
+  .gea-shell > header h2 {
+    font-size: 22px;
+  }
+
+  .gea-shell > main {
+    padding: 14px 12px 24px;
+  }
+
+  .gea-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gea-toolbar select,
+  .gea-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .gea-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .gea-metrics article {
+    padding: 11px;
+  }
+
+  .gea-metrics b {
+    font-size: 16px;
+  }
+
+  .gea-form-grid,
+  .gea-payment-builder,
+  .gea-tool-list {
+    grid-template-columns: 1fr;
+  }
+
+  .gea-inner-modal {
+    padding: 0;
+  }
+
+  .gea-inner-modal > section {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .gea-suggestions {
+    right: 10px;
+    left: 10px !important;
+    width: auto !important;
+    max-height: 55vh;
+  }
+
+  .gea-table-wrap {
+    border: 0;
+  }
+
+  .gea-table-wrap table {
+    min-width: 720px;
+  }
+}

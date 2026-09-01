@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="180" viewBox="0 0 720 180" role="img" aria-labelledby="title desc">
+  <title id="title">Daenem Business ERP</title>
+  <desc id="desc">Gradient D mark with Daenem Business ERP wordmark</desc>
+  <defs>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff7d5a"/>
+      <stop offset=".42" stop-color="#ee4e86"/>
+      <stop offset=".75" stop-color="#246cd9"/>
+      <stop offset="1" stop-color="#13b9b0"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(14 14)">
+    <circle cx="52" cy="20" r="12" fill="#ff7d5a"/>
+    <path d="M27 41h30c34 0 54 21 54 54s-20 54-54 54H27V41Zm29 24v60h3c16 0 27-11 27-30S75 65 59 65h-3Z" fill="url(#mark)"/>
+    <path d="M27 41h29v119H27z" fill="url(#mark)" opacity=".95"/>
+    <text x="154" y="77" fill="#17304b" font-family="Manrope, Inter, Arial, sans-serif" font-size="55" font-weight="800" letter-spacing="-2">Daenem</text>
+    <text x="158" y="121" fill="#246cd9" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="700" letter-spacing="1">BUSINESS ERP</text>
+    <text x="158" y="151" fill="#728096" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="500">Modern Business. Naturally Better.</text>
+  </g>
+</svg>
