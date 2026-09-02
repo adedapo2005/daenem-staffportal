@@ -4,7 +4,7 @@ import {
   KeyRound, LockKeyhole, Mail, ShieldCheck,
 } from 'lucide-react';
 import {
-  applyThemeToDocument, readModePreference, readThemeId, themeById, type ModePreference, type ThemeId,
+  applyThemeToDocument, readModePreference, readThemeId, themeById, themePersonalityById, type ModePreference, type ThemeId,
 } from './theme-system';
 
 export type AccessLevel = 'none' | 'view' | 'create' | 'edit' | 'approve' | 'manage';
@@ -12,7 +12,7 @@ export type WorkforceContext = {
   sessionId: string;
   employee: {
     id: string; employeeNo?: string; displayName: string; email?: string; phone?: string;
-    jobTitle?: string; department?: string; status: string; preferredTheme?: string;
+    jobTitle?: string; department?: string; status: string; preferredTheme?: string; team?: string; lastLoginAt?: string;
   };
   companies: Array<{ id: string; code: string; name: string; locationId?: string; primary: boolean }>;
   roles: Array<{ id: string; code: string; name: string; companyId: string }>;
@@ -203,6 +203,17 @@ function PasswordStatus({ checks }: { checks: PasswordCheck[] }) {
   </div>;
 }
 
+function PasswordStrengthMeter({ checks, password }: { checks: PasswordCheck[]; password: string }) {
+  const passed = checks.filter((check) => check.ok).length;
+  const percent = Math.round((passed / checks.length) * 100);
+  const label = !password ? 'Not set' : passed <= 1 ? 'Weak' : passed <= 3 ? 'Good' : passed < checks.length ? 'Strong' : 'Excellent';
+  const state = !password ? 'empty' : passed <= 1 ? 'weak' : passed <= 3 ? 'good' : passed < checks.length ? 'strong' : 'excellent';
+  return <div className={`password-meter ${state}`} aria-label={`Password strength: ${label}`} aria-live="polite">
+    <div className="password-meter-meta"><span>Password strength</span><strong>{label}</strong></div>
+    <div className="password-meter-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={label}><span className="password-meter-fill" style={{ width: `${percent}%` }} /></div>
+  </div>;
+}
+
 function timeText(zone: string) {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: zone, hour: 'numeric', minute: '2-digit', hour12: true,
@@ -211,8 +222,21 @@ function timeText(zone: string) {
 
 function dateText(zone: string) {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: zone, month: 'short', day: '2-digit', year: 'numeric',
+    timeZone: zone, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   }).format(new Date());
+}
+
+function timeZoneText(zone: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, timeZoneName: 'short',
+  }).formatToParts(new Date()).find((part) => part.type === 'timeZoneName')?.value || zone;
+}
+
+function dayNightText(zone: string) {
+  const hour = Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, hour: '2-digit', hour12: false,
+  }).format(new Date()));
+  return hour >= 6 && hour < 18 ? 'Daylight' : 'Night';
 }
 
 function clockHands(zone: string) {
@@ -227,7 +251,17 @@ function clockHands(zone: string) {
   } as React.CSSProperties;
 }
 
-function WorldClocks() {
+export const WORLD_CLOCKS = [
+  { name: 'Daenem Complex', region: 'Ibadan, Nigeria', zone: 'Africa/Lagos', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
+  { name: 'Toronto', region: 'Canada', zone: 'America/Toronto', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
+  { name: 'London', region: 'United Kingdom', zone: 'Europe/London', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
+  { name: 'New York', region: 'United States', zone: 'America/New_York', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
+  { name: 'Moscow', region: 'Russia', zone: 'Europe/Moscow', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
+  { name: 'Tokyo', region: 'Japan', zone: 'Asia/Tokyo', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
+  { name: 'Beijing / Shanghai', region: 'China', zone: 'Asia/Shanghai', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
+] as const;
+
+export function WorldClocks() {
   const [, setTick] = useState(0);
   useEffect(() => {
     let timer = 0;
@@ -242,23 +276,26 @@ function WorldClocks() {
     start();
     return () => { stop(); document.removeEventListener('visibilitychange', start); };
   }, []);
-  const rows = [
-    { name: 'Lagos', zone: 'Africa/Lagos' },
-    { name: 'Toronto', zone: 'America/Toronto' },
-    { name: 'London', zone: 'Europe/London' },
-    { name: 'New York', zone: 'America/New_York' },
-    { name: 'Tokyo', zone: 'Asia/Tokyo' },
-  ];
-  return <div className="world-clocks" aria-label="Daenem business times">
-    {rows.map((item) => <div className="world-clock" key={item.zone}>
-      <div className="analog-clock" style={clockHands(item.zone)} aria-hidden="true">
-        <span className="clock-hand clock-hand-hour" />
-        <span className="clock-hand clock-hand-minute" />
-        <span className="clock-center" />
-        {[0, 1, 2, 3, 4, 5].map((tick) => <i key={tick} style={{ transform: `rotate(${tick * 60}deg)` }} />)}
-      </div>
-      <div className="clock-info"><strong>{item.name}</strong><b>{timeText(item.zone)}</b><small>{dateText(item.zone)}</small></div>
-    </div>)}
+  return <div className="world-clocks" aria-label="Daenem seven-city world clock">
+    <div className="world-clocks-heading"><span className="eyebrow">GLOBAL OPERATIONS CLOCK</span><strong>Seven locations · live local time</strong></div>
+    <div className="world-clocks-grid">
+      {WORLD_CLOCKS.map((item) => <article className="world-clock" key={item.zone} tabIndex={0}>
+        <div className="analog-clock" style={clockHands(item.zone)} aria-hidden="true">
+          <span className="clock-hand clock-hand-hour" />
+          <span className="clock-hand clock-hand-minute" />
+          <span className="clock-center" />
+          {[0, 1, 2, 3, 4, 5].map((tick) => <i key={tick} style={{ transform: `rotate(${tick * 60}deg)` }} />)}
+        </div>
+        <div className="clock-info">
+          <div className="clock-location"><strong>{item.name}</strong><span>{item.region}</span></div>
+          <b className="clock-time">{timeText(item.zone)}</b>
+          <small className="clock-date">{dateText(item.zone)}</small>
+          <small className="clock-timezone">{timeZoneText(item.zone)}</small>
+          <span className={`clock-day-state ${dayNightText(item.zone).toLowerCase()}`}><i />{dayNightText(item.zone)}</span>
+          <span className="clock-weather"><span aria-hidden="true">{item.weatherIcon}</span>{item.weather} · {item.temperature}</span>
+        </div>
+      </article>)}
+    </div>
   </div>;
 }
 
@@ -303,7 +340,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   useEffect(() => {
     const theme = themeById(themeId);
     applyThemeToDocument(theme.id, modePreference);
-    document.title = `${theme.name} · Daenem Business ERP`;
+    document.title = `${theme.name} · Daenem Staff Portal`;
   }, [modePreference, themeId]);
 
   useEffect(() => {
@@ -311,7 +348,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }, [mode, signupStep, recoveryStep]);
 
   function unavailableOAuth(provider: 'Microsoft' | 'Google') {
-    setMessage({ type: 'info', text: `${provider} sign-in is not enabled for this Staff Portal deployment. Use your employee username or email and password.` });
+    setMessage({ type: 'info', text: `${provider} access is not enabled for this Staff Portal deployment. Use your employee username or email and password, or ask your administrator to enable it.` });
   }
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
@@ -469,17 +506,24 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       : { title: recoveryStep === 'reset' ? 'Create your password' : recoveryStep === 'verify' ? 'Verify your identity' : 'Recover your account', body: recoveryStep === 'reset' ? 'Choose your password, then return to sign in.' : recoveryStep === 'verify' ? 'Enter the one-time code sent to your email.' : 'Enter your username or email. This also activates approved first-time employee access.' };
 
   const theme = themeById(themeId);
+  const personality = themePersonalityById(themeId);
+  const themeNumber = theme.imageKey.match(/^theme-(\\d+)/)?.[1] || '01';
   const heroStyle = { '--hero-image': `url(/reference-images/signin/${theme.imageKey}.png)` } as React.CSSProperties;
 
   return <main className={`signin-page signin-${theme.signInLayout}`} style={heroStyle}>
     <div className="signin-surface">
       <section className="signin-hero">
-        <div className="hero-brand"><div className="brand-lockup"><span className="brand-mark"><span>D</span></span><span className="brand-copy"><strong>Daenem</strong><span>Business ERP</span></span></div></div>
+        <div className="hero-brand"><div className="brand-lockup"><span className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></span><span className="brand-copy"><strong>Daenem</strong><span>Staff Portal</span></span></div></div>
         <div className="hero-topline"><span className="status-dot" /> Private workspace <span className="hero-secure-label"><ShieldCheck size={14} /> Secure employee access</span></div>
         <div className="hero-content">
-          <p className="hero-tagline">Modern Business. Naturally Better.</p>
-          <div className="hero-theme-copy"><strong>{theme.name}</strong><small>{theme.focus}</small></div>
-          <div className="hero-tiles" aria-hidden="true"><span>Bakery</span><span>Technology</span><span>Mobility</span><span>Operations</span></div>
+          <p className="hero-tagline">Technology That Transforms Tomorrow</p>
+          <div className="hero-theme-copy"><strong>THEME {themeNumber} · {personality.identity}</strong><small>{personality.heroImagery}</small></div>
+          <div className="hero-tiles" aria-hidden="true"><span>Staff ERP</span><span>Bakery & Printing</span><span>Auto & Homes</span><span>Logistics & Jobs</span></div>
+          <section className="hero-widgets" aria-label="Staff portal inspiration and updates">
+            <article className="hero-widget hero-widget-ai"><span>AI INSPIRATION</span><strong>Make the next task feel obvious.</strong><small>Role-aware guidance across your authorized ERPs.</small></article>
+            <article className="hero-widget hero-widget-motivation"><span>EMPLOYEE MOTIVATION</span><strong>Progress compounds into momentum.</strong><small>See what matters, then move one useful thing forward.</small></article>
+            <article className="hero-widget hero-widget-news"><span>DAENEM NEWS</span><strong>One connected staff experience.</strong><small>People, production, properties, mobility, and operations in one secure portal.</small></article>
+          </section>
         </div>
         <div className="hero-footer"><ShieldCheck size={16} /> Secure enterprise access <span>•</span> Designed for web, tablet and mobile</div>
       </section>
@@ -509,6 +553,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
             <TextField label="Phone / WhatsApp" value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
             <TextField label="Create Username" value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper="4–32 characters. Letters, numbers, dot, underscore or hyphen." />
             <div className="auth-two password-pair"><PasswordField label="Create Password" value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} /><PasswordField label="Confirm Password" value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} /></div>
+            <PasswordStrengthMeter checks={signupChecks} password={signup.password} />
             <PasswordStatus checks={signupChecks} />
             <div className="auth-two"><TextField label="Department / Work Area" value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label="Job Title" value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
             <TextField label="Role / Position Information" value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
@@ -541,13 +586,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
             <div className="reset-unlocked"><CheckCircle2 size={20} /><div><strong>Identity verified</strong><span>Create your password to finish securing your access.</span></div></div>
             <PasswordField label="New Password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} />
             <PasswordField label="Confirm New Password" value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} />
+            <PasswordStrengthMeter checks={resetChecks} password={newPassword} />
             <PasswordStatus checks={resetChecks} />
             <button className="primary-button submit-button" disabled={busy} type="submit">{busy ? 'Securing account…' : 'Create password'}<KeyRound size={17} /></button>
           </form>}
 
-          {mode !== 'forgot' && <><div className="or-divider"><span /> or <span /></div><div className="social-buttons"><button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="microsoft-mark"><i /><i /><i /><i /></span> Sign in with Microsoft</button><button type="button" onClick={() => unavailableOAuth('Google')}><b className="google-mark">G</b> Sign in with Google</button></div><p className="social-note">Use your Microsoft or Google account when your organization has enabled the provider.</p></>}
+          {mode !== 'forgot' && <><div className="or-divider"><span /> or <span /></div><div className="social-buttons"><button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="microsoft-mark"><i /><i /><i /><i /></span> {mode === 'signup' ? 'Create Account with Microsoft' : 'Sign In with Microsoft'}</button><button type="button" onClick={() => unavailableOAuth('Google')}><b className="google-mark">G</b> {mode === 'signup' ? 'Create Account with Google' : 'Sign In with Google'}</button></div><p className="social-note">Use your Microsoft or Google account to sign in or create an account.</p></>}
 
-          <div className="legal-copy">By continuing to log in, you agree to Daenem Business ERP’s <a href="#terms">Terms and Conditions</a> and <a href="#privacy">Privacy Policy</a>.</div>
+          <div className="legal-copy">By continuing to log in, you agree to Daenem Farms’ <a href="#terms">Terms and Conditions</a>. <a href="#privacy">Privacy Policy</a>.</div>
           <div className="panel-footer-actions"><span className="operational-pill"><i /> Operational</span><button className="install-button" type="button" onClick={() => setMessage({ type: 'info', text: 'Install instructions are available from App & GPS after you sign in.' })}><Download size={16} /> Install Daenem ERP App</button></div>
         </section>
       </section>
