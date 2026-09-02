@@ -17,7 +17,7 @@ import {
 import './zip-theme.css';
 import './zip-dashboard.css';
 import './premium-staffportal.css';
-import { ZipDashboard, type ZipDashboardSummary } from './zip-dashboard';
+import { ZipDashboard, type LiveDataStatus, type ZipDashboardSummary } from './zip-dashboard';
 
 const FormsCenter = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
 const FacilitiesCenter = lazy(() => import('./centers').then((module) => ({ default: module.FacilitiesCenter })));
@@ -265,6 +265,9 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   const [temperatureUnit, setTemperatureUnit] = useState<TemperatureUnit>(() => localStorage.getItem('daenem-weather-unit') === 'C' ? 'C' : 'F');
   const [online, setOnline] = useState(navigator.onLine);
   const [summary, setSummary] = useState<ZipDashboardSummary | null>(null);
+  const [summaryStatus, setSummaryStatus] = useState<LiveDataStatus>('loading');
+  const [summaryError, setSummaryError] = useState('');
+  const [summaryLastSyncedAt, setSummaryLastSyncedAt] = useState<string | null>(null);
 
   useEffect(() => {
     const appliedTheme = applyThemeToDocument(theme, modePreference);
@@ -288,7 +291,28 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
     window.addEventListener('online', on); window.addEventListener('offline', off);
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshClock); window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
-  useEffect(() => { if (can(context, 'dashboard.access')) refreshSummary(); }, [company.id]);
+  useEffect(() => {
+    setSummary(null);
+    setSummaryStatus('loading');
+    setSummaryError('');
+    setSummaryLastSyncedAt(null);
+    if (can(context, 'dashboard.access')) void refreshSummary();
+  }, [company.id]);
+
+  useEffect(() => {
+    if (!can(context, 'dashboard.access')) return undefined;
+    const refreshVisibleData = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) void refreshSummary();
+    };
+    const timer = window.setInterval(refreshVisibleData, 30_000);
+    document.addEventListener('visibilitychange', refreshVisibleData);
+    window.addEventListener('online', refreshVisibleData);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshVisibleData);
+      window.removeEventListener('online', refreshVisibleData);
+    };
+  }, [company.id]);
 
   const visibleNav = nav.filter((item) => {
     if (item.id === 'people') return can(context, 'users.access', 'view', company.id) || can(context, 'payroll.access', 'view', company.id) || can(context, 'payslips.access', 'view', company.id);
@@ -304,7 +328,13 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       const query = company.id ? `?companyId=${encodeURIComponent(company.id)}` : '';
       const result = await api<ZipDashboardSummary>(`/api/dashboard/summary${query}`);
       setSummary(result);
-    } catch { setSummary(null); }
+      setSummaryStatus('ready');
+      setSummaryError('');
+      setSummaryLastSyncedAt(result.refreshedAt || new Date().toISOString());
+    } catch (error) {
+      setSummaryStatus('error');
+      setSummaryError(error instanceof Error ? error.message : 'Live dashboard data is temporarily unavailable.');
+    }
   }
 
   async function enableLocation() {
@@ -354,6 +384,9 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       companyChoices={companyChoices}
       setCompany={setCompany}
       summary={summary}
+      dataStatus={summaryStatus}
+      dataLastSyncedAt={summaryLastSyncedAt}
+      dataError={summaryError}
       refreshSummary={refreshSummary}
       onNavigate={navigate}
       onOpenModule={openErpModule}

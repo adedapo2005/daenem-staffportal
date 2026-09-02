@@ -206,6 +206,7 @@ async function dashboardSummary(request: Request, env: Env, context: SessionCont
     : null;
 
   return json({
+    refreshedAt: new Date().toISOString(),
     workDate,
     companyId,
     employees: Number(employeeCount?.count || 0),

@@ -617,12 +617,11 @@ html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .hero-tiles span
 .dashboard-page::before {
   opacity: .17;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--canvas) 88%, transparent), color-mix(in srgb, var(--canvas) 96%, transparent)),
-    var(--dashboard-image, none),
     radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 30rem),
-    radial-gradient(circle at 30% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 32rem);
-  background-size: cover, min(1600px, 100%) auto, cover, auto;
-  background-position: center top, center top, center top, center;
+    radial-gradient(circle at 30% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 32rem),
+    linear-gradient(135deg, color-mix(in srgb, var(--canvas) 88%, transparent), color-mix(in srgb, var(--canvas) 96%, transparent));
+  background-size: cover, cover, cover;
+  background-position: center top, center bottom, center;
   background-repeat: no-repeat;
   mix-blend-mode: multiply;
   animation: dashboard-ambient 28s var(--premium-ease) infinite alternate;
@@ -4570,4 +4569,33 @@ html[data-theme="lagos-sunrise"] .signin-surface {
   html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks {
     display: none !important;
   }
+}
+
+/* Live-data signal: this chip reflects the authenticated D1 summary request. */
+.dashboard-page .data-sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 999px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.dashboard-page .data-sync-chip i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--secondary);
+}
+.dashboard-page .data-sync-chip.data-sync-ready i { background: var(--success); }
+.dashboard-page .data-sync-chip.data-sync-error i { background: var(--warning); }
+.dashboard-page .data-sync-chip.data-sync-loading i {
+  background: var(--secondary);
+  animation: status-pulse 1.4s ease-in-out infinite;
 }

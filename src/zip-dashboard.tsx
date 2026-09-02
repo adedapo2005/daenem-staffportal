@@ -14,6 +14,7 @@ import { themeList, themePersonalityById } from './theme-system';
 
 export type ZipDashboardSummary = {
   workDate: string;
+  refreshedAt?: string;
   employees: number;
   present: number;
   incompleteAttendance: number;
@@ -23,6 +24,8 @@ export type ZipDashboardSummary = {
   maintenanceAlerts: number;
   attendanceRule: string;
 };
+
+export type LiveDataStatus = 'loading' | 'ready' | 'error';
 
 export type ZipCompanyChoice = {
   id: string | null;
@@ -56,6 +59,9 @@ type ZipDashboardProps = {
   companyChoices: ZipCompanyChoice[];
   setCompany: (company: ZipCompanyChoice) => void;
   summary: ZipDashboardSummary | null;
+  dataStatus: LiveDataStatus;
+  dataLastSyncedAt?: string | null;
+  dataError?: string;
   liveIntelligence?: ReactNode;
   refreshSummary: () => void;
   onNavigate: (view: ViewName) => void;
@@ -109,6 +115,17 @@ function formatWeatherTemperature(value: number | undefined, unit: TemperatureUn
   if (value === undefined) return `—°${unit}`;
   const converted = unit === 'F' ? (value * 9) / 5 + 32 : value;
   return `${Math.round(converted)}°${unit}`;
+}
+
+function formatLastSyncedAt(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-NG', {
+    timeZone: 'Africa/Lagos',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function percentage(value: number) {
@@ -457,8 +474,14 @@ function CategoryWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
   return <article className="chart-card category-card"><ChartHeader eyebrow="TODAY'S MIX" title="Attendance categories" icon={CalendarCheck2} /><div className="donut-layout"><div className="donut" style={style}><div className="donut-ring" /><div className="donut-center"><strong>{summary ? percentage(attendanceRate(summary)) : '—'}</strong><span>present</span></div></div><div className="donut-legend"><span><i style={{ background: 'var(--primary)' }} />Present <b>{numberValue(present)}</b></span><span><i style={{ background: 'var(--accent)' }} />Incomplete <b>{numberValue(incomplete)}</b></span><span><i style={{ background: 'var(--muted)' }} />Other <b>{numberValue(absent)}</b></span></div></div></article>;
 }
 
-function ForecastWidget() {
-  return <article className="insight-card forecast-card"><span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">WORKSPACE INSIGHT</span><h3>Make the next action obvious.</h3><p>Use the authorized queue to open the exact record that needs attention. No private or unauthorized data is inferred here.</p><div className="forecast-meter"><span style={{ width: '58%' }} /></div><div className="insight-foot"><span>Permission-aware guidance</span><ArrowRight size={15} /></div></article>;
+function ForecastWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
+  const followUps = summary
+    ? summary.incompleteAttendance + summary.pendingApprovals + summary.overdueRequirements + summary.securityAlerts
+    : 0;
+  const readiness = summary && summary.employees > 0
+    ? Math.max(0, 100 - (followUps / summary.employees) * 25)
+    : 0;
+  return <article className="insight-card forecast-card"><span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">WORKSPACE INSIGHT</span><h3>Make the next action obvious.</h3><p>Use the authorized queue to open the exact record that needs attention. No private or unauthorized data is inferred here.</p><div className="forecast-meter"><span style={{ width: `${readiness}%` }} /></div><div className="insight-foot"><span>{summary ? `${numberValue(followUps)} open follow-up${followUps === 1 ? '' : 's'}` : 'Waiting for live records'}</span><ArrowRight size={15} /></div></article>;
 }
 
 function QueueWidget({ summary, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'onNavigate' | 'onOpenModule'>) {
@@ -722,7 +745,7 @@ function DashboardWidgets({
       case 'trend': return <TrendWidget summary={summary} refreshSummary={refreshSummary} />;
       case 'comparison': return <ComparisonWidget summary={summary} />;
       case 'category': return <CategoryWidget summary={summary} />;
-      case 'forecast': return <ForecastWidget />;
+      case 'forecast': return <ForecastWidget summary={summary} />;
       case 'queue': return <QueueWidget summary={summary} onNavigate={onNavigate} onOpenModule={onOpenModule} />;
       case 'status': return <StatusWidget online={online} context={context} company={company} />;
       case 'news': return <NewsWidget release={release} />;
@@ -764,6 +787,9 @@ export function ZipDashboard({
   companyChoices,
   setCompany,
   summary,
+  dataStatus,
+  dataLastSyncedAt,
+  dataError,
   liveIntelligence,
   refreshSummary,
   onNavigate,
@@ -798,6 +824,12 @@ export function ZipDashboard({
 
   const activeView = view;
   const moduleLabel = useMemo(() => visibleNav.find((item) => item.id === activeView)?.label || 'Overview', [activeView, visibleNav]);
+  const liveDataLabel = dataStatus === 'ready'
+    ? (online ? 'Live data' : 'Last synced')
+    : dataStatus === 'error'
+      ? 'Data unavailable'
+      : 'Syncing live data';
+  const liveDataDetail = dataError || (dataLastSyncedAt ? `Updated ${formatLastSyncedAt(dataLastSyncedAt)}` : 'Reading secured D1 records');
 
   return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView}`}>
     <Sidebar
@@ -847,7 +879,7 @@ export function ZipDashboard({
         {view === 'overview'
           ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} />
           : <div className="dashboard-heading module-page-heading"><div><span className="eyebrow">DAENEM BUSINESS ERP</span><h1>{moduleLabel}</h1><p>Open records and workflows assigned to your role and company scope.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Module Hub</button></div></div>}
-        <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}{weather.temperature !== undefined ? ` · ${formatWeatherTemperature(weather.temperature, temperatureUnit)}` : ''}</button></div>
+        <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}{weather.temperature !== undefined ? ` · ${formatWeatherTemperature(weather.temperature, temperatureUnit)}` : ''}</button><span className={`data-sync-chip data-sync-${dataStatus}`} title={liveDataDetail}><i /> {liveDataLabel}{dataLastSyncedAt && dataStatus !== 'loading' ? ` · ${formatLastSyncedAt(dataLastSyncedAt)}` : ''}</span></div>
         <div className="company-switcher" role="list" aria-label="Company filter">{companyChoices.map((item) => {
           const Icon = item.icon;
           return <button key={item.code} onClick={() => setCompany(item)} className={company.code === item.code ? 'active' : ''}><Icon size={15} /><span>{item.code}</span></button>;
@@ -855,7 +887,7 @@ export function ZipDashboard({
         {view === 'overview' ? <>
           <WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />
           <ErpPulseGrid context={context} company={company} summary={summary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />
-          <SmartLoadingCard pending={!summary} />
+          <SmartLoadingCard pending={dataStatus === 'loading'} />
           <KpiStrip summary={summary} company={company} />
           <div className="widget-toolbar"><span><GripVertical size={15} /> Drag cards to personalize your view</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div>
           <DashboardWidgets
@@ -873,7 +905,7 @@ export function ZipDashboard({
           {liveIntelligence && <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section>}
           <section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>
         </> : <div className="zip-module-content">{content}</div>}
-        <footer className="dashboard-footer"><span>Daenem Business ERP · {themeName}</span><span>Live sync · <b>{online ? 'Operational' : 'Offline'}</b></span></footer>
+        <footer className="dashboard-footer"><span>Daenem Business ERP · {themeName}</span><span>Live D1 data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
       </div>
     </section>
 
