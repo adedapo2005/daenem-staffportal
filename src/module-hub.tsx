@@ -117,6 +117,10 @@ const modules: ModuleDefinition[] = [
   { id: 'toolbox', label: 'Advanced Toolbox', detail: 'Database, sessions, payroll readiness and critical-error checks', group: 'Management', permissions: ['toolbox.access'], minimum: 'manage', erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'observability', functionalItem: 'Advanced toolbox', load: () => import('./group-erp-admin-entry'), event: { name: 'daenem:open-group-erp', detail: { tab: 'toolbox' } } },
   { id: 'api-integrations', label: 'API & Integrations', detail: 'Cloudflare health, safe connection metadata, API catalogue, webhooks and request logs.', group: 'Management', permissions: ['integrations.access'], erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'api-integrations', functionalItem: 'API integrations', load: () => import('./platform-center-entry'), selector: '.integration-center-launcher' },
 
+  { id: 'jobs-applications', label: 'Job Applications', detail: 'Review and organize authorized candidate applications', group: 'Management', permissions: ['jobs.access'], erpId: 'jobs', submenuId: 'talent-acquisition', subsubmenuId: 'applications', functionalItem: 'Applications', load: () => import('./jobs-entry'), selector: '.jobs-erp-launcher' },
+  { id: 'jobs-interviews', label: 'Interview Pipeline', detail: 'Coordinate interview stages and interviewer notes', group: 'Management', permissions: ['jobs.access'], erpId: 'jobs', submenuId: 'talent-acquisition', subsubmenuId: 'interviews', functionalItem: 'Interviews', load: () => import('./jobs-entry'), selector: '.jobs-erp-launcher' },
+  { id: 'jobs-hiring', label: 'Hiring Workflow', detail: 'Move approved candidates through hiring workflow', group: 'Management', permissions: ['jobs.access'], erpId: 'jobs', submenuId: 'talent-acquisition', subsubmenuId: 'hiring', functionalItem: 'Hiring', load: () => import('./jobs-entry'), selector: '.jobs-erp-launcher' },
+
   { id: 'social', label: 'Social Engine', detail: 'Content, publishing and campaign workspace', group: 'Social', prefixes: ['social.'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'campaigns', functionalItem: 'Social publishing', load: () => import('./social-entry'), selector: '.social-engine-launcher' },
   { id: 'social-controls', label: 'Social Controls', detail: 'Automation settings and approval controls', group: 'Social', prefixes: ['social.automation', 'social.settings'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'automation', functionalItem: 'Social automation', load: () => import('./social-automation-entry'), selector: '.sa-launcher' },
   { id: 'social-accounts', label: 'Social Accounts', detail: 'Official provider account connections', group: 'Social', permissions: ['social.connections'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'accounts', functionalItem: 'Social accounts', load: () => import('./social-connections-entry'), selector: '.scn-launcher' },
@@ -155,6 +159,17 @@ const hierarchyTemplate: HierarchyTemplate[] = [
         { id: 'payroll-operations', label: 'Payroll operations', detail: 'Payroll records, approvals and payslips' },
       ] },
     ],
+  },
+  {
+    id: 'jobs',
+    label: 'Jobs ERP',
+    detail: 'Applications, interviews and hiring',
+    iconKey: 'briefcase',
+    submenus: [{ id: 'talent-acquisition', label: 'Talent acquisition', detail: 'Candidate and hiring operations', submenus: [
+      { id: 'applications', label: 'Applications', detail: 'Candidate applications and review stages' },
+      { id: 'interviews', label: 'Interviews', detail: 'Interview coordination and feedback' },
+      { id: 'hiring', label: 'Hiring', detail: 'Approved candidate hiring workflow' },
+    ] }],
   },
   {
     id: 'printing',
