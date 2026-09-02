@@ -3,7 +3,7 @@ import {
   Activity, AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Bell, BriefcaseBusiness, CalendarCheck2, CheckCircle2,
   ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CloudSun, Factory, Gauge, GripVertical, Home, LayoutDashboard, MapPin, Menu, Plus,
   Moon, PackageSearch, Palette, Radio, RefreshCw, Search, Settings2, ShieldCheck, Sparkles,
-  Sun, Users, WalletCards, Wrench, X, Boxes,
+  Sun, Users, WalletCards, Wrench, X, Boxes, MessageSquareText, Star,
 } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { AccessLevel, WorkforceContext } from './auth';
@@ -176,6 +176,8 @@ function ZipTopBar({
       {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
       <button className="top-action top-utility-button" onClick={onOpenModuleHub}><Plus size={16} /><span>Quick actions</span></button>
       <button className="top-action support-action" onClick={() => setSupportOpen((open) => !open)} aria-expanded={supportOpen}><ShieldCheck size={16} /><span>Help & Support</span></button>
+      <button className="top-action messages-action" onClick={() => onNavigate('help')} title="Open messages center"><MessageSquareText size={16} /><span>Messages</span></button>
+      <button className="top-action favorites-action" onClick={onOpenModuleHub} title="Open saved and authorized modules"><Star size={16} /><span>Favorites</span></button>
       <div className="notification-wrap">
         <button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className="alert-dot" /></button>
         {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications">
