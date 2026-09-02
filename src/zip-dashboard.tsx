@@ -205,7 +205,7 @@ function ZipTopBar({
               return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.name}</span></button>;
             })}</div>
           </div>}
-          <strong>Workspace appearance</strong>
+          <strong>Workspace appearance · {themeName}</strong>
           {themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}
           <div className="mode-picker">
             <small>Display mode · light is default</small>
