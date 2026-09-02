@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="Daylight sunrise city illustration">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dce9f3"/>
+      <stop offset=".45" stop-color="#f8e8da"/>
+      <stop offset=".78" stop-color="#ffd8a6"/>
+      <stop offset="1" stop-color="#efaa82"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3c59f"/>
+      <stop offset="1" stop-color="#c7dce1"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".82"/>
+      <stop offset=".5" stop-color="#cfe0e9" stop-opacity=".46"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity=".18"/>
+    </linearGradient>
+    <radialGradient id="sun">
+      <stop offset="0" stop-color="#fffbe8"/>
+      <stop offset=".45" stop-color="#ffe5a9" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#ffc98e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur40"><feGaussianBlur stdDeviation="40"/></filter>
+    <filter id="blur14"><feGaussianBlur stdDeviation="14"/></filter>
+    <linearGradient id="building" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#829eb4" stop-opacity=".56"/>
+      <stop offset="1" stop-color="#47728e" stop-opacity=".8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <ellipse cx="270" cy="605" rx="360" ry="360" fill="url(#sun)" filter="url(#blur14)"/>
+  <circle cx="270" cy="615" r="74" fill="#fff3c1" opacity=".9"/>
+  <g opacity=".22" fill="#fff">
+    <circle cx="1180" cy="130" r="7"/><circle cx="1290" cy="88" r="4"/><circle cx="1370" cy="182" r="6"/>
+    <circle cx="1000" cy="240" r="4"/><circle cx="1480" cy="310" r="5"/><circle cx="840" cy="120" r="3"/>
+  </g>
+  <path d="M0 620 C260 550 430 570 650 640 S1110 695 1600 545 V1000 H0Z" fill="url(#water)" opacity=".7"/>
+  <g opacity=".38" fill="#fff">
+    <path d="M0 695h420l-75 22H0z"/><path d="M160 750h500l-130 17H160z"/><path d="M940 765h520l-155 18H940z"/>
+    <path d="M1100 850h390l-110 15h-280z"/>
+  </g>
+  <g fill="url(#building)">
+    <path d="M610 570V330h84v240z"/><path d="M708 570V215h112v355z"/><path d="M846 570V284h94v286z"/>
+    <path d="M965 570V170h130v400z"/><path d="M1118 570V315h86v255z"/><path d="M1230 570V250h120v320z"/>
+    <path d="M1370 570V365h78v205z"/><path d="M1480 570V300h120v270z"/>
+  </g>
+  <g fill="#e8f4f5" opacity=".6">
+    <path d="M629 355h46v15h-46zM629 395h46v15h-46zM629 435h46v15h-46zM629 475h46v15h-46z"/>
+    <path d="M727 250h74v17h-74zM727 290h74v17h-74zM727 330h74v17h-74zM727 370h74v17h-74zM727 410h74v17h-74zM727 450h74v17h-74z"/>
+    <path d="M985 205h90v18h-90zM985 247h90v18h-90zM985 289h90v18h-90zM985 331h90v18h-90zM985 373h90v18h-90zM985 415h90v18h-90zM985 457h90v18h-90z"/>
+    <path d="M1250 280h80v18h-80zM1250 322h80v18h-80zM1250 364h80v18h-80zM1250 406h80v18h-80zM1250 448h80v18h-80z"/>
+  </g>
+  <g opacity=".55" fill="none" stroke="#f8f3ed" stroke-width="10">
+    <path d="M-80 730 Q310 385 815 735 T1680 665"/>
+    <path d="M60 820 Q450 510 880 785 T1650 760"/>
+  </g>
+  <g opacity=".34" fill="none" stroke="#fff" stroke-width="3">
+    <path d="M0 660 Q480 520 930 690 T1600 610"/>
+    <path d="M0 700 Q500 570 1000 730 T1600 660"/>
+  </g>
+  <g opacity=".42" fill="#fff">
+    <circle cx="500" cy="620" r="10"/><circle cx="890" cy="650" r="8"/><circle cx="1450" cy="625" r="11"/>
+  </g>
+  <path d="M0 920 C330 880 540 910 760 934 S1210 970 1600 906 V1000H0Z" fill="#f9f4ed" opacity=".76"/>
+  <path d="M0 902 C340 865 520 885 760 918 S1220 955 1600 890" fill="none" stroke="#ffffff" stroke-opacity=".7" stroke-width="8"/>
+  <g opacity=".16" fill="#fff" filter="url(#blur40)">
+    <ellipse cx="1360" cy="740" rx="270" ry="65"/><ellipse cx="470" cy="835" rx="330" ry="50"/>
+  </g>
+  <path d="M0 0h1600v1000H0z" fill="url(#glass)" opacity=".08"/>
+</svg>
