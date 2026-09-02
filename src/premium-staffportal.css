@@ -560,7 +560,6 @@ button:active:not(:disabled) {
 .dashboard-page::before {
   opacity: .2;
   background:
-    var(--dashboard-image),
     radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 30rem),
     radial-gradient(circle at 30% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 32rem);
   background-size: cover, auto, auto;
@@ -2916,4 +2915,142 @@ html[data-theme="minimal-tech-white"] .hero-widget {
 
 .world-clocks::before {
   display: none;
+}
+
+
+/* Final Staff Portal release: legacy reference artwork is disabled.
+   The active theme set is rendered from the live premium system and never
+   imports an old branded screenshot or legacy tagline. */
+.signin-page .signin-hero > .hero-brand,
+.signin-page .signin-hero > .hero-content {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.signin-page.signin-split .hero-widgets {
+  position: absolute;
+  top: auto;
+  right: auto;
+  bottom: 106px;
+  left: 74px;
+  width: min(590px, calc(100% - 148px));
+  max-width: 590px;
+  margin: 0;
+}
+
+.signin-page .signin-hero::before {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+/* Every active theme has its own daylight hero composition without legacy
+   embedded branding, screenshots, or dark/midnight artwork. */
+html[data-theme="lagos-sunrise"] .signin-hero::before {
+  background-image:
+    radial-gradient(circle at 18% 20%, rgba(255,255,255,.46) 0 6rem, transparent 18rem),
+    radial-gradient(ellipse at 78% 78%, rgba(255,125,90,.34), transparent 34rem),
+    linear-gradient(135deg, #155bd7 0%, #13b9b0 58%, #ff7d5a 100%);
+}
+
+html[data-theme="print-neon-grid"] .signin-hero::before {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.18) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.15) 0 1px, transparent 1px 32px),
+    linear-gradient(135deg, #2857e6 0%, #00b8d9 52%, #e94db9 100%);
+}
+
+html[data-theme="digital-indigo"] .signin-hero::before {
+  background-image:
+    repeating-radial-gradient(ellipse at 72% 30%, rgba(255,255,255,.2) 0 1px, transparent 1px 34px),
+    radial-gradient(circle at 20% 84%, rgba(255,255,255,.26), transparent 20rem),
+    linear-gradient(145deg, #3157d9 0%, #5966db 53%, #12b8ad 100%);
+}
+
+html[data-theme="auto-showroom-night"] .signin-hero::before {
+  background-image:
+    linear-gradient(115deg, transparent 0 30%, rgba(255,255,255,.38) 30% 31%, transparent 31% 62%, rgba(255,255,255,.24) 62% 63%, transparent 63%),
+    radial-gradient(ellipse at 30% 26%, rgba(255,255,255,.46), transparent 20rem),
+    linear-gradient(135deg, #2d6fd4 0%, #16b7ba 55%, #f2b85e 100%);
+}
+
+html[data-theme="urban-property-skyline"] .signin-hero::before {
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 1px, transparent 1px 76px),
+    linear-gradient(180deg, rgba(255,255,255,.3) 0 38%, transparent 38% 68%, rgba(255,255,255,.12) 68%),
+    linear-gradient(135deg, #2b63c8 0%, #14b3b6 58%, #f2a47d 100%);
+}
+
+html[data-theme="cargo-flow"] .signin-hero::before {
+  background-image:
+    repeating-linear-gradient(155deg, rgba(255,255,255,.16) 0 2px, transparent 2px 43px),
+    radial-gradient(circle at 82% 20%, rgba(255,255,255,.34), transparent 16rem),
+    linear-gradient(135deg, #2461c7 0%, #11b7bd 56%, #f4a54d 100%);
+}
+
+html[data-theme="executive-boardroom"] .signin-hero::before {
+  background-image:
+    radial-gradient(circle at 26% 24%, rgba(255,255,255,.5), transparent 17rem),
+    linear-gradient(90deg, rgba(255,255,255,.16) 0 1px, transparent 1px 96px),
+    linear-gradient(135deg, #4169bd 0%, #18abae 60%, #dca85d 100%);
+}
+
+html[data-theme="job-market-pulse"] .signin-hero::before {
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(255,255,255,.42) 0 2.5rem, transparent 2.6rem),
+    radial-gradient(circle at 76% 72%, rgba(255,255,255,.2) 0 7rem, transparent 7.2rem),
+    linear-gradient(135deg, #425fcf 0%, #13b9b0 54%, #ff806d 100%);
+}
+
+html[data-theme="global-operations-mesh"] .signin-hero::before {
+  background-image:
+    repeating-radial-gradient(ellipse at 32% 42%, rgba(255,255,255,.18) 0 1px, transparent 1px 38px),
+    radial-gradient(circle at 80% 18%, rgba(255,255,255,.32), transparent 17rem),
+    linear-gradient(135deg, #285bcc 0%, #15b9b1 54%, #f2b460 100%);
+}
+
+html[data-theme="minimal-tech-white"] .signin-hero::before {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.18) 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 1px, transparent 1px 42px),
+    linear-gradient(135deg, #4b82d8 0%, #26b9b1 62%, #f0c37c 100%);
+}
+
+.dashboard-page::before {
+  background:
+    radial-gradient(circle at 88% 4%, color-mix(in srgb, var(--secondary) 23%, transparent), transparent 25rem),
+    radial-gradient(circle at 20% 94%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 30rem),
+    linear-gradient(135deg, color-mix(in srgb, var(--canvas) 84%, white), var(--canvas));
+  background-size: auto, auto, auto;
+  mix-blend-mode: normal;
+  opacity: .72;
+  animation: dashboard-ambient 28s var(--premium-ease) infinite alternate;
+}
+
+@media (max-width: 980px) {
+  .signin-page.signin-split .hero-widgets {
+    bottom: 84px;
+    left: 42px;
+    width: calc(100% - 84px);
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .signin-page.signin-split .hero-widgets {
+    right: 22px;
+    bottom: 24px;
+    left: 22px;
+    width: auto;
+    max-width: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .signin-page.signin-split .hero-widgets {
+    bottom: 18px;
+    grid-template-columns: 1fr;
+  }
 }
