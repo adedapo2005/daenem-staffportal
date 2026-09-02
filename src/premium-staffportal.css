@@ -5990,3 +5990,16 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
   position: relative !important;
   inset: auto !important;
 }
+
+
+/* Final viewport-fit correction: preserve the artwork aspect ratio while
+   fitting the complete live composition inside desktop, tablet, and mobile
+   viewports. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split {
+  align-items: center !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-surface {
+  width: min(100%, 121.6dvh) !important;
+  margin-inline: auto !important;
+}
