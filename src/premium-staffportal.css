@@ -5972,3 +5972,21 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel
     font-size: 7px !important;
   }
 }
+
+
+/* Final fit correction: the single approved surface must participate in
+   document flow so its full responsive artwork cannot be clipped by the
+   legacy absolute split-layout rule. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split {
+  background: #faf6f0 !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split::before,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split::after {
+  display: none !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
+  position: relative !important;
+  inset: auto !important;
+}
