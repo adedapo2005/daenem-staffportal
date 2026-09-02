@@ -2732,3 +2732,66 @@ html[data-theme="minimal-tech-white"] .erp-pulse-card {
     animation: none !important;
   }
 }
+
+
+.widget-admin-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+
+.widget-admin-toolbar > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: auto;
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .04em;
+}
+
+.widget-admin-toolbar button {
+  min-height: 27px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 9%, transparent);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.widget-admin-toolbar button:hover {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  transform: translateY(-2px);
+}
+
+.dashboard-page .widget-actions {
+  z-index: 5;
+  opacity: .55;
+  transition: opacity .22s var(--premium-ease), transform .22s var(--premium-ease);
+}
+
+.dashboard-page .widget-slot:hover .widget-actions,
+.dashboard-page .widget-actions:focus-within {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.dashboard-page .widget-actions button {
+  border: 0;
+  background: color-mix(in srgb, var(--surface) 88%, white);
+  box-shadow: 0 5px 13px color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.dashboard-page .widget-actions button:hover:not(:disabled) {
+  color: var(--primary);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--primary) 17%, transparent);
+}
