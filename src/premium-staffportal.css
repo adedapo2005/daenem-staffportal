@@ -96,9 +96,22 @@ button:active:not(:disabled) {
 }
 
 .signin-hero::before {
-  opacity: .9;
+  opacity: .96;
   filter: saturate(1.08) contrast(1.02);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(7,24,52,.18)),
+    var(--hero-image, none),
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 72%, transparent), color-mix(in srgb, var(--secondary) 48%, transparent) 55%, color-mix(in srgb, var(--accent) 48%, transparent));
+  background-position: center, left center, center;
+  background-size: cover, cover, cover;
+  background-repeat: no-repeat;
+  background-blend-mode: soft-light, normal, normal;
   transition: opacity .45s var(--premium-ease), filter .45s var(--premium-ease);
+}
+
+.signin-page.signin-center .signin-hero::before,
+.signin-page.signin-mesh .signin-hero::before {
+  background-position: center, center, center;
 }
 
 .signin-hero::after {
@@ -131,6 +144,50 @@ button:active:not(:disabled) {
 
 .hero-content {
   z-index: 2;
+}
+
+.signin-hero {
+  color: var(--text);
+}
+
+.signin-hero .brand-copy strong {
+  color: var(--text);
+}
+
+.signin-hero .brand-copy span,
+.signin-hero .hero-topline,
+.signin-hero .hero-footer,
+.signin-hero .hero-secure-label {
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+}
+
+.signin-hero .hero-theme-copy strong,
+.signin-hero .hero-theme-copy small,
+.signin-hero .hero-tiles span {
+  color: var(--text);
+}
+
+.signin-hero .hero-tiles span {
+  background: color-mix(in srgb, var(--surface-strong) 34%, transparent);
+}
+
+.signin-hero .hero-topline .status-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 18%, transparent);
+}
+
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero {
+  color: #fff;
+}
+
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .brand-copy strong,
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .hero-topline,
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .hero-footer,
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .hero-secure-label,
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .hero-theme-copy strong,
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .hero-theme-copy small,
+html[data-theme="digital-indigo"][data-mode="day"] .signin-hero .hero-tiles span {
+  color: rgba(255,255,255,.94);
 }
 
 .hero-tagline {
@@ -558,12 +615,15 @@ button:active:not(:disabled) {
 }
 
 .dashboard-page::before {
-  opacity: .2;
+  opacity: .17;
   background:
+    linear-gradient(180deg, color-mix(in srgb, var(--canvas) 88%, transparent), color-mix(in srgb, var(--canvas) 96%, transparent)),
+    var(--dashboard-image, none),
     radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 30rem),
     radial-gradient(circle at 30% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 32rem);
-  background-size: cover, auto, auto;
-  background-position: center top, center, center;
+  background-size: cover, min(1600px, 100%) auto, cover, auto;
+  background-position: center top, center top, center top, center;
+  background-repeat: no-repeat;
   mix-blend-mode: multiply;
   animation: dashboard-ambient 28s var(--premium-ease) infinite alternate;
 }

@@ -1,4 +1,4 @@
-const CACHE = 'daenem-workforce-shell-v7.0.0-premium-v2';
+const CACHE = 'daenem-workforce-shell-v7.0.0-approved-designs-v1';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

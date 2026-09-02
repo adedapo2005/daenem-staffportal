@@ -43,7 +43,7 @@ type SecurityEvent = {
 
 type CompanyChoice = { id: string | null; code: string; name: string; icon: React.ComponentType<{ size?: number }> };
 
-const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v7.0.0-premium-v2';
+const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v7.0.0-approved-designs-v1';
 
 function registerFreshServiceWorker() {
   if (!('serviceWorker' in navigator)) return () => undefined;
