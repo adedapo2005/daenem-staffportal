@@ -41,7 +41,6 @@ export interface ThemeConfig {
   signInLayout: LayoutVariant;
   dashboardLayout: LayoutVariant;
   motion: 'calm' | 'balanced' | 'expressive';
-  imageKey: string;
   day: ThemePalette;
   night: ThemePalette;
 }
@@ -78,7 +77,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'split',
     dashboardLayout: 'cards',
     motion: 'balanced',
-    imageKey: 'theme-01-lagos-sunrise',
     day: palette({
       canvas: '#fff8f0',
       surface: 'rgba(255,255,255,.84)',
@@ -106,7 +104,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'split',
     dashboardLayout: 'cards',
     motion: 'expressive',
-    imageKey: 'theme-02-print-neon-grid',
     day: palette({
       canvas: '#f2f8ff',
       surface: 'rgba(255,255,255,.9)',
@@ -135,7 +132,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'center',
     dashboardLayout: 'mesh',
     motion: 'balanced',
-    imageKey: 'theme-03-digital-indigo',
     day: palette({
       canvas: '#f3f5ff',
       surface: 'rgba(255,255,255,.84)',
@@ -164,7 +160,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'split',
     dashboardLayout: 'cards',
     motion: 'calm',
-    imageKey: 'theme-04-auto-showroom-night',
     day: palette({
       canvas: '#f2f7fb',
       surface: 'rgba(255,255,255,.84)',
@@ -208,7 +203,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'split',
     dashboardLayout: 'cards',
     motion: 'calm',
-    imageKey: 'theme-05-urban-property-skyline',
     day: palette({
       canvas: '#f3fbff',
       surface: 'rgba(255,255,255,.86)',
@@ -237,7 +231,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'split',
     dashboardLayout: 'mesh',
     motion: 'expressive',
-    imageKey: 'theme-06-cargo-flow',
     day: palette({
       canvas: '#eefaff',
       surface: 'rgba(255,255,255,.88)',
@@ -266,7 +259,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'split',
     dashboardLayout: 'cards',
     motion: 'calm',
-    imageKey: 'theme-07-executive-boardroom',
     day: palette({
       canvas: '#faf8f2',
       surface: 'rgba(255,255,255,.88)',
@@ -310,7 +302,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'cards',
     dashboardLayout: 'cards',
     motion: 'expressive',
-    imageKey: 'theme-08-job-market-pulse',
     day: palette({
       canvas: '#fff5f2',
       surface: 'rgba(255,255,255,.9)',
@@ -339,7 +330,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'mesh',
     dashboardLayout: 'mesh',
     motion: 'balanced',
-    imageKey: 'theme-09-global-operations-mesh',
     day: palette({
       canvas: '#f2f9ff',
       surface: 'rgba(255,255,255,.82)',
@@ -368,7 +358,6 @@ export const themeList: ThemeConfig[] = [
     signInLayout: 'minimal',
     dashboardLayout: 'minimal',
     motion: 'calm',
-    imageKey: 'theme-10-minimal-tech-white',
     day: palette({
       canvas: '#fbfdff',
       surface: 'rgba(255,255,255,.92)',
@@ -561,8 +550,6 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   root.style.setProperty('--shadow', selected.shadow);
   root.style.setProperty('--hero-overlay', selected.heroOverlay);
   root.style.setProperty('--glow-intensity', theme.motion === 'expressive' ? '1' : theme.motion === 'balanced' ? '.78' : '.58');
-  root.style.setProperty('--hero-image', `url(/reference-images/signin/${theme.imageKey}.png)`);
-  root.style.setProperty('--dashboard-image', `url(/reference-images/dashboard/${theme.imageKey}.png)`);
   root.style.setProperty('--font-heading', `"${theme.fontHeading}"`);
   root.style.setProperty('--font-body', `"${theme.fontBody}"`);
   return theme.id;
