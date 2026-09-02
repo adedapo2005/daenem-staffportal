@@ -5494,3 +5494,129 @@ html[data-theme="lagos-sunrise"] .hero-live-mini-clock-info span i {
     animation: none !important;
   }
 }
+
+
+/* Responsive Sunlit Meridian composition lock: preserve the approved board on every viewport. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-board {
+  width: min(60%, 768px);
+  height: auto;
+  aspect-ratio: 768 / 590;
+}
+
+@media (min-width: 981px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
+    background-position: 0 0 !important;
+    background-size: 768px 590px !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-board {
+    width: 768px;
+    height: 590px;
+  }
+}
+
+@media (max-width: 980px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
+    width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: 0 0 auto;
+    aspect-ratio: 768 / 590;
+    padding: 0 !important;
+    background-position: 0 0 !important;
+    background-size: 100% 100% !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-board {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 768 / 590;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-card {
+    top: 1.5%;
+    left: 38.2%;
+    width: 35.6%;
+    height: 68.6%;
+    padding: 13px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-weather-card {
+    top: 4.5%;
+    left: 78.2%;
+    width: 19%;
+    height: 26.5%;
+    padding: 10px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-insights {
+    top: 33.5%;
+    left: 78.2%;
+    width: 19%;
+    height: 35.5%;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-status-row {
+    top: 65.4%;
+    left: 29%;
+    width: 47.4%;
+    height: 9.7%;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-clock-rail {
+    top: 76%;
+    left: 10.7%;
+    width: 73.4%;
+    height: 20%;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-form-preview {
+    gap: 4px;
+    padding: 6px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-preview-field {
+    min-height: 27px;
+    padding: 4px 5px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-preview-submit {
+    min-height: 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
+    aspect-ratio: 768 / 590;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-card {
+    gap: 3px;
+    padding: 8px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-form-preview {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-preview-field {
+    min-height: 21px;
+    padding: 3px 4px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-preview-meta,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-card h3,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-card p,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-card-foot {
+    display: none;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-card button {
+    min-height: 22px;
+    margin-top: 0;
+  }
+}
