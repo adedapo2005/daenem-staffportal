@@ -6394,3 +6394,46 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel
     grid-column: auto;
   }
 }
+
+
+/* Release QA 31b: keep every required auth action visible above the live
+   status rail while preserving the approved single-board composition. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .forgot-link {
+  display: inline-flex !important;
+  align-self: flex-end !important;
+  width: auto !important;
+  min-height: 17px !important;
+  margin: -2px 0 0 !important;
+  padding: 0 !important;
+  color: #126bcb !important;
+  background: transparent !important;
+  font-size: clamp(6px, .52vw, 8px) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .panel-footer-actions {
+  margin-bottom: 38px !important;
+}
+
+@media (max-width: 720px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .forgot-link {
+    min-height: 15px !important;
+    font-size: 6px !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .panel-footer-actions {
+    margin-bottom: 25px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .forgot-link {
+    min-height: 13px !important;
+    font-size: 5px !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .panel-footer-actions {
+    margin-bottom: 21px !important;
+  }
+}
