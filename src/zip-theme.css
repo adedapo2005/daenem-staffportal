@@ -102,12 +102,11 @@ textarea:focus-visible {
   inset: 0;
   z-index: 0;
   background-image:
-    var(--hero-image, none),
     radial-gradient(circle at 18% 24%, color-mix(in srgb, #fff 18%, transparent), transparent 17rem),
     radial-gradient(circle at 76% 76%, color-mix(in srgb, #fff 12%, transparent), transparent 24rem),
     linear-gradient(145deg, color-mix(in srgb, var(--primary) 92%, #fff), color-mix(in srgb, var(--secondary) 78%, #fff) 55%, color-mix(in srgb, var(--accent) 82%, #fff));
   background-position: center, center, center, center;
-  background-size: cover, auto, auto, auto;
+  background-size: auto, auto, auto;
   background-repeat: no-repeat;
   opacity: .96;
 }
@@ -2522,14 +2521,7 @@ body {
   opacity: .82;
 }
 
-.signin-page .signin-hero > .hero-brand,
-.signin-page .signin-hero > .hero-topline,
-.signin-page .signin-hero > .hero-content,
-.signin-page .signin-hero > .hero-footer {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
+/* Hero copy is rendered by the premium Staff Portal layer. */
 
 .signin-panel-wrap {
   position: relative;
