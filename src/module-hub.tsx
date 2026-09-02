@@ -368,7 +368,7 @@ export const ERP_HIERARCHY_AUDIT: ErpHierarchyAudit = {
   erpCount: hierarchyTemplate.length,
 };
 
-if (ERP_HIERARCHY_AUDIT.errors.length && import.meta.env?.DEV) {
+if (ERP_HIERARCHY_AUDIT.errors.length) {
   console.error('Invalid Daenem ERP hierarchy', ERP_HIERARCHY_AUDIT.errors);
 }
 
