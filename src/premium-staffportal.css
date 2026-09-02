@@ -4517,3 +4517,29 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::before 
   filter: blur(1.5px) saturate(1.08) contrast(1.03) !important;
   transform: scale(1.018) !important;
 }
+
+
+/* Final approved sign-in artwork: Sunlit Meridian.
+   Keep the source artwork lossless and do not blur, scale, blend, or fade it. */
+html[data-theme="lagos-sunrise"] .signin-page .signin-hero,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
+  background-image: var(--hero-image) !important;
+  background-position: center top !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: normal !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page .signin-hero::before,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::before {
+  opacity: 0 !important;
+  filter: none !important;
+  transform: none !important;
+  background: none !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page .signin-hero::after,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::after {
+  opacity: 0 !important;
+  background: none !important;
+}

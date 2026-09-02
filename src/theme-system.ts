@@ -84,8 +84,8 @@ const sharedNight = (primary: string, secondary: string, accent: string): ThemeP
 export const themeList: ThemeConfig[] = [
   {
     id: 'lagos-sunrise',
-    name: 'Lagos Sunrise',
-    focus: 'Bakery + retail operations',
+    name: 'Sunlit Meridian',
+    focus: 'Daylight multi-business staff portal',
     mood: 'Warm, optimistic, naturally premium',
     fontHeading: 'Manrope',
     fontBody: 'Inter',
@@ -568,8 +568,9 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   root.style.setProperty('--font-heading', `"${theme.fontHeading}"`);
   root.style.setProperty('--font-body', `"${theme.fontBody}"`);
   const artworkKey = APPROVED_ARTWORK_BY_THEME[theme.id];
-  const heroArtworkKey = theme.id === 'lagos-sunrise' ? 'theme-01-lagos-sunrise-hero' : artworkKey;
-  root.style.setProperty('--hero-image', `url("/reference-images/signin/${heroArtworkKey}.png")`);
+  // Theme 01 uses the exact Library-approved Sunlit Meridian artwork.
+  const heroArtworkFile = theme.id === 'lagos-sunrise' ? 'approved-sunlit-meridian.webp' : `${artworkKey}.png`;
+  root.style.setProperty('--hero-image', `url("/reference-images/signin/${heroArtworkFile}")`);
   root.style.setProperty('--dashboard-image', `url("/reference-images/dashboard/${artworkKey}.png")`);
   return theme.id;
 }
