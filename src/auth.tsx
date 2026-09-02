@@ -4,7 +4,7 @@ import {
   KeyRound, LockKeyhole, Mail, ShieldCheck,
 } from 'lucide-react';
 import {
-  applyThemeToDocument, readModePreference, readThemeId, themeById, themePersonalityById, type ModePreference, type ThemeId,
+  applyThemeToDocument, readModePreference, readThemeId, themeById, themeList, themePersonalityById, type ModePreference, type ThemeId,
 } from './theme-system';
 
 export type AccessLevel = 'none' | 'view' | 'create' | 'edit' | 'approve' | 'manage';
