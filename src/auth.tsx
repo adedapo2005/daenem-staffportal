@@ -507,10 +507,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const theme = themeById(themeId);
   const personality = themePersonalityById(themeId);
-  const themeNumber = theme.imageKey.slice(6, 8) || '01';
-  const heroStyle = { '--hero-image': `url(/reference-images/signin/${theme.imageKey}.png)` } as React.CSSProperties;
+  const themeNumber = String(themeList.findIndex((item) => item.id === theme.id) + 1).padStart(2, '0');
 
-  return <main className={`signin-page signin-${theme.signInLayout}`} style={heroStyle}>
+  return <main className={`signin-page signin-${theme.signInLayout}`}>
     <div className="signin-surface">
       <section className="signin-hero">
         <div className="hero-brand"><div className="brand-lockup"><span className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></span><span className="brand-copy"><strong>Daenem</strong><span>Staff Portal</span></span></div></div>
