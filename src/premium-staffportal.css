@@ -2487,3 +2487,248 @@ html[data-motion="expressive"] .dashboard-page::after { animation-duration: 15s;
     animation: none !important;
   }
 }
+
+
+/* ERP pulse cards keep each business system visible without crossing boundaries. */
+.erp-pulse-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.erp-pulse-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.erp-pulse-header h2 {
+  margin: 5px 0 0;
+  color: var(--text);
+  font: 750 20px/1.14 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.045em;
+}
+
+.erp-pulse-header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.erp-pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.erp-pulse-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  min-width: 0;
+  min-height: 196px;
+  padding: 15px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 7%, transparent), transparent 58%),
+    rgba(255,255,255,.54);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border) 50%, transparent),
+    0 15px 34px color-mix(in srgb, var(--primary) 7%, transparent);
+  backdrop-filter: blur(16px) saturate(1.08);
+  transition: transform .35s var(--premium-ease-spring), box-shadow .35s var(--premium-ease), background .35s var(--premium-ease);
+}
+
+.erp-pulse-card::after {
+  content: "";
+  position: absolute;
+  right: -45px;
+  bottom: -55px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 68%);
+  pointer-events: none;
+}
+
+.erp-pulse-card:hover {
+  transform: translateY(-5px);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--secondary) 10%, transparent), transparent 58%),
+    rgba(255,255,255,.7);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--primary) 15%, transparent),
+    0 22px 42px color-mix(in srgb, var(--primary) 12%, transparent),
+    0 0 28px color-mix(in srgb, var(--secondary) 12%, transparent);
+}
+
+.erp-pulse-card > header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.erp-pulse-card > header > div {
+  min-width: 0;
+}
+
+.erp-pulse-card > header h3 {
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.erp-pulse-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 5%, transparent);
+}
+
+.erp-pulse-chart {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 37px;
+  padding: 0 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.erp-pulse-chart i {
+  width: 15%;
+  min-height: 10px;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, var(--secondary), color-mix(in srgb, var(--primary) 72%, var(--secondary)));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--secondary) 16%, transparent);
+  animation: pulse-bar 3.4s var(--premium-ease) infinite alternate;
+}
+
+.erp-pulse-chart i:nth-child(1) { height: 43%; animation-delay: -.4s; }
+.erp-pulse-chart i:nth-child(2) { height: 68%; animation-delay: -.9s; }
+.erp-pulse-chart i:nth-child(3) { height: 53%; animation-delay: -1.3s; }
+.erp-pulse-chart i:nth-child(4) { height: 84%; animation-delay: -1.7s; }
+.erp-pulse-chart i:nth-child(5) { height: 72%; animation-delay: -2.2s; }
+
+.erp-pulse-meta {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.erp-pulse-meta span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.erp-pulse-meta small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+.erp-pulse-meta strong {
+  color: var(--text);
+  font-size: 16px;
+  letter-spacing: -.04em;
+}
+
+.erp-pulse-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 5px;
+  margin-top: auto;
+}
+
+.erp-pulse-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.erp-pulse-actions button:first-child {
+  flex: 1;
+  color: white;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--secondary) 75%, var(--primary)));
+  box-shadow: 0 8px 17px color-mix(in srgb, var(--primary) 17%, transparent);
+}
+
+.erp-pulse-actions button:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes pulse-bar {
+  from { transform: scaleY(.94); opacity: .82; }
+  to { transform: scaleY(1.04); opacity: 1; }
+}
+
+html[data-theme="print-neon-grid"] .erp-pulse-card {
+  border-radius: 10px 18px 10px 18px;
+}
+
+html[data-theme="cargo-flow"] .erp-pulse-chart i {
+  border-radius: 2px;
+}
+
+html[data-theme="minimal-tech-white"] .erp-pulse-card {
+  box-shadow: inset 0 0 0 1px rgba(23,48,75,.07), 0 12px 26px rgba(29,76,121,.06);
+}
+
+@media (max-width: 1180px) {
+  .erp-pulse-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .erp-pulse-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .erp-pulse-header .secondary-button {
+    align-self: flex-start;
+  }
+
+  .erp-pulse-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erp-pulse-chart i {
+    animation: none !important;
+  }
+}
