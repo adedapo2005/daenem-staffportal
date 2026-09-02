@@ -6003,3 +6003,183 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-surface {
   width: min(100%, 121.6dvh) !important;
   margin-inline: auto !important;
 }
+
+
+/* Release QA 31: restore the complete live auth surface and remove the
+   legacy password-wrapper width constraint. The approved artwork remains the
+   only sign-in surface; these are real interactive controls mounted inside it. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .auth-field {
+  min-width: 0 !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .auth-field > .field-label-text {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .auth-field input:not([type="checkbox"]) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .password-field {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .password-field input {
+  width: 100% !important;
+  max-width: none !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .or-divider {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-height: 12px !important;
+  margin: 2px 0 0 !important;
+  color: #7b8fa1 !important;
+  font-size: clamp(6px, .52vw, 8px) !important;
+  line-height: 1 !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .or-divider span {
+  display: block !important;
+  flex: 1 1 auto !important;
+  height: 1px !important;
+  background: rgba(108,151,184,.25) !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .social-buttons {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  margin: 0 !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .social-buttons button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  min-height: 28px !important;
+  padding: 4px 3px !important;
+  border: 1px solid rgba(116,164,205,.28) !important;
+  border-radius: 7px !important;
+  color: #315673 !important;
+  background: rgba(255,255,255,.72) !important;
+  box-shadow: 0 4px 10px rgba(53,103,144,.08) !important;
+  font-size: clamp(6px, .58vw, 9px) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .social-buttons button:hover {
+  border-color: rgba(22,104,185,.48) !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: 0 6px 14px rgba(22,104,185,.16), 0 0 12px rgba(22,155,211,.12) !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .social-note {
+  display: block !important;
+  margin: 0 !important;
+  color: #72879a !important;
+  text-align: center !important;
+  font-size: clamp(6px, .48vw, 8px) !important;
+  line-height: 1.2 !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .legal-copy {
+  display: block !important;
+  margin: 0 !important;
+  color: #718598 !important;
+  text-align: center !important;
+  font-size: clamp(6px, .48vw, 8px) !important;
+  line-height: 1.25 !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .legal-copy a {
+  color: #126bcb !important;
+  font-weight: 800 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .panel-footer-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  margin-top: auto !important;
+  padding-top: 5px !important;
+  border-top: 1px solid rgba(116,164,205,.2) !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .operational-pill,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .install-button {
+  min-height: 20px !important;
+  padding: 2px 5px !important;
+  border-radius: 5px !important;
+  font-size: clamp(6px, .48vw, 8px) !important;
+  line-height: 1 !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .install-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  border: 1px solid rgba(18,107,203,.22) !important;
+  color: #126bcb !important;
+  background: rgba(255,255,255,.72) !important;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .install-button:hover {
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 0 12px rgba(18,107,203,.18) !important;
+}
+
+@media (max-width: 720px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .password-field,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .password-field input {
+    height: 27px !important;
+    min-height: 27px !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .social-buttons button {
+    min-height: 25px !important;
+    font-size: 6px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .password-field,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .password-field input {
+    height: 25px !important;
+    min-height: 25px !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .social-buttons button {
+    min-height: 23px !important;
+    padding-inline: 2px !important;
+    font-size: 5px !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .legal-copy,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-live-auth-panel .social-note {
+    font-size: 5px !important;
+  }
+}
