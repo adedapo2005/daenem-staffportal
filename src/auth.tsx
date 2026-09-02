@@ -4,7 +4,7 @@ import {
   KeyRound, LockKeyhole, Mail, ShieldCheck,
 } from 'lucide-react';
 import {
-  applyThemeToDocument, readModePreference, readThemeId, themeById, themeList, themePersonalityById, type ModePreference, type ThemeId,
+  applyThemeToDocument, readModePreference, readThemeId, themeById, type ModePreference, type ThemeId,
 } from './theme-system';
 
 export type AccessLevel = 'none' | 'view' | 'create' | 'edit' | 'approve' | 'manage';
@@ -506,8 +506,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       : { title: recoveryStep === 'reset' ? 'Create your password' : recoveryStep === 'verify' ? 'Verify your identity' : 'Recover your account', body: recoveryStep === 'reset' ? 'Choose your password, then return to sign in.' : recoveryStep === 'verify' ? 'Enter the one-time code sent to your email.' : 'Enter your username or email. This also activates approved first-time employee access.' };
 
   const theme = themeById(themeId);
-  const personality = themePersonalityById(themeId);
-  const themeNumber = String(themeList.findIndex((item) => item.id === theme.id) + 1).padStart(2, '0');
 
   return <main className={`signin-page signin-${theme.signInLayout}`}>
     <div className="signin-surface">
@@ -515,9 +513,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <div className="hero-brand"><div className="brand-lockup"><span className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></span><span className="brand-copy"><strong>Daenem</strong><span>Staff Portal</span></span></div></div>
         <div className="hero-topline"><span className="status-dot" /> Private workspace <span className="hero-secure-label"><ShieldCheck size={14} /> Secure employee access</span></div>
         <div className="hero-content">
+          <h2 className="hero-title">Staff Portal</h2>
           <p className="hero-tagline">Technology That Transforms Tomorrow</p>
-          <div className="hero-theme-copy"><strong>THEME {themeNumber} · {personality.identity}</strong><small>{personality.heroImagery}</small></div>
-          <div className="hero-tiles" aria-hidden="true"><span>Staff ERP</span><span>Bakery & Printing</span><span>Auto & Homes</span><span>Logistics & Jobs</span></div>
+          <p className="hero-supporting-copy">A secure gateway to the work, insight, and collaboration your role unlocks.</p>
           <section className="hero-widgets" aria-label="Staff portal inspiration and updates">
             <article className="hero-widget hero-widget-ai"><span>AI INSPIRATION</span><strong>Make the next task feel obvious.</strong><small>Role-aware guidance across your authorized ERPs.</small></article>
             <article className="hero-widget hero-widget-motivation"><span>EMPLOYEE MOTIVATION</span><strong>Progress compounds into momentum.</strong><small>See what matters, then move one useful thing forward.</small></article>
@@ -592,7 +590,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
           {mode !== 'forgot' && <><div className="or-divider"><span /> or <span /></div><div className="social-buttons"><button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="microsoft-mark"><i /><i /><i /><i /></span> {mode === 'signup' ? 'Create Account with Microsoft' : 'Sign In with Microsoft'}</button><button type="button" onClick={() => unavailableOAuth('Google')}><b className="google-mark">G</b> {mode === 'signup' ? 'Create Account with Google' : 'Sign In with Google'}</button></div><p className="social-note">Use your Microsoft or Google account to sign in or create an account.</p></>}
 
-          <div className="legal-copy">By continuing to log in, you agree to Daenem Farms’ <a href="#terms">Terms and Conditions</a>. <a href="#privacy">Privacy Policy</a>.</div>
+          <div className="legal-copy">By continuing to log in, you agree to Daenem’s <a href="#terms">Terms and Conditions</a>. <a href="#privacy">Privacy Policy</a>.</div>
           <div className="panel-footer-actions"><span className="operational-pill"><i /> Operational</span><button className="install-button" type="button" onClick={() => setMessage({ type: 'info', text: 'Install instructions are available from App & GPS after you sign in.' })}><Download size={16} /> Install Daenem ERP App</button></div>
         </section>
       </section>
