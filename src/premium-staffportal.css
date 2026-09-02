@@ -4307,3 +4307,19 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .cloc
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Final visual QA pass: restore full-bleed artwork and clear the clock rail. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::before {
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: 0 0, center;
+  background-size: auto, cover;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 45%, rgba(229,165,126,.16) 100%),
+    url("/theme-assets/theme-01-sunrise.svg");
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .signin-bottom-note {
+  display: none;
+}
