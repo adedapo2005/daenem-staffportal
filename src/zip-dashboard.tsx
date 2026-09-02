@@ -295,7 +295,7 @@ function Sidebar({
 
   function renderFunctionalItem(item: HierarchyItem, group: ErpId) {
     const active = item.view === activeView || item.moduleId === activeModuleId;
-    return <button key={`${item.kind}-${item.id}`} className={`sidebar-functional-item ${active ? 'active' : ''}`} type="button" title={item.detail} onClick={() => openItem(item, group)}>
+    return <button key={`${item.kind}-${item.id}`} className={`sidebar-functional-item ${active ? 'active' : ''}`} type="button" title={item.path || item.detail} aria-label={item.path || item.label} data-erp-path={item.path} onClick={() => openItem(item, group)}>
       <span className="sidebar-functional-icon"><HierarchyIcon iconKey={item.iconKey} /></span>
       <span className="sidebar-functional-copy"><strong>{item.label}</strong><small>{item.detail}</small></span>
     </button>;
@@ -343,11 +343,12 @@ function Sidebar({
 
   return <aside className={`sidebar ${sidebarOpen ? 'is-open open' : ''}`}>
     <div className="sidebar-head">
-      <div className="brand-mark"><span>D</span></div>
-      <div className="sidebar-copy"><strong>Daenem</strong><span>Business ERP</span></div>
+      <div className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></div>
+      <div className="sidebar-copy"><strong>Daenem</strong><span>Staff Portal</span></div>
       <button className="icon-button sidebar-close mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close navigation"><X size={18} /></button>
     </div>
     <div className="sidebar-label">Workspace</div>
+    <div className="sidebar-hierarchy-note" aria-label="Navigation hierarchy"><span>ERP</span><i /> <span>Sub-menu</span><i /> <span>Sub-sub-menu</span><i /> <span>Functional item</span></div>
     <nav className="sidebar-nav" aria-label="ERP workspace navigation">
       <section className="sidebar-section" aria-label="ERP workspaces">
         <div className="sidebar-section-heading"><span>ERP WORKSPACES</span><small>{availableModules.length} authorized modules</small></div>
@@ -622,7 +623,7 @@ export function ZipDashboard({
         onOpenAdmin={onOpenAdmin}
         onLogout={onLogout}
       />
-      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><span>D</span></div><span>{moduleLabel}</span></div>
+      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
       <div className="dashboard-main">
         {view === 'overview'
           ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} />
