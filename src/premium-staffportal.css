@@ -4548,3 +4548,26 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::after {
 html[data-theme="lagos-sunrise"] .signin-surface {
   background: transparent !important;
 }
+
+/* Approved Sunlit Meridian sign-in crop.
+   The crop is the approved sign-in composition; keep it crisp and do not
+   duplicate its embedded hero copy, widgets, or clocks with the live shell. */
+@media (min-width: 981px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
+    background-color: #faf6f0 !important;
+    background-image: var(--hero-image) !important;
+    background-position: left top !important;
+    background-size: min(60%, 768px) auto !important;
+    background-repeat: no-repeat !important;
+    background-blend-mode: normal !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero > .hero-brand,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero > .hero-topline,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero > .hero-content,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero > .hero-footer,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero .hero-widgets,
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks {
+    display: none !important;
+  }
+}
