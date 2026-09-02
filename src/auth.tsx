@@ -500,7 +500,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }
 
   const heading = mode === 'signin'
-    ? { title: 'Sign in to your workspace', body: 'One secure doorway for connected operations.' }
+    ? { title: 'Sign in', body: 'Access your account securely.' }
     : mode === 'signup'
       ? { title: signupStep === 'verify' ? 'Verify your email' : 'Sign up', body: signupStep === 'verify' ? 'Enter the one-time code sent to your email to finish creating your account.' : 'Create your employee login now. You can complete the rest of your work profile after sign-in.' }
       : { title: recoveryStep === 'reset' ? 'Create your password' : recoveryStep === 'verify' ? 'Verify your identity' : 'Recover your account', body: recoveryStep === 'reset' ? 'Choose your password, then return to sign in.' : recoveryStep === 'verify' ? 'Enter the one-time code sent to your email.' : 'Enter your username or email. This also activates approved first-time employee access.' };
