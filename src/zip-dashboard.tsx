@@ -120,35 +120,61 @@ function ZipTopBar({
   weather,
   enableLocation,
   onNavigate,
+  onOpenModule,
+  onOpenModuleHub,
   onOpenAdmin,
   onLogout,
   company,
   companyChoices,
   setCompany,
-}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'enableLocation' | 'onNavigate' | 'onOpenAdmin' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany'>) {
+  summary,
+  release,
+  setReleaseOpen,
+}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'enableLocation' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub' | 'onOpenAdmin' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany' | 'summary' | 'release' | 'setReleaseOpen'>) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const employeeInitials = initials(context.employee.displayName);
   const primaryRole = context.roles[0]?.name || (context.employee.status === 'provisional' ? 'Provisional Employee' : 'Employee');
+  const permissionCount = Object.values(context.permissions).filter((level) => level !== 'none').length;
   const canAsk = can(context, 'ai_guide.access');
+  const notificationItems = summary ? [
+    { title: summary.pendingApprovals ? `${summary.pendingApprovals} approval${summary.pendingApprovals === 1 ? '' : 's'} need attention` : 'Approval queue is clear', detail: 'Staff ERP · approvals', tone: summary.pendingApprovals ? 'amber' : 'green' },
+    { title: summary.securityAlerts ? `${summary.securityAlerts} security alert${summary.securityAlerts === 1 ? '' : 's'} to review` : 'Security center is clear', detail: 'Security, Access & Admin ERP', tone: summary.securityAlerts ? 'red' : 'green' },
+    { title: summary.maintenanceAlerts ? `${summary.maintenanceAlerts} maintenance item${summary.maintenanceAlerts === 1 ? '' : 's'} open` : 'No maintenance alerts', detail: 'Finance & Operations ERP', tone: summary.maintenanceAlerts ? 'blue' : 'green' },
+  ] : [{ title: 'Workspace sync in progress', detail: 'Scoped dashboard data', tone: 'blue' }];
 
   return <header className="top-bar">
     <div className="search-wrap">
       <Search size={17} aria-hidden="true" />
-      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask anything about your workspace" aria-label="Search workforce hub" />
+      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask anything about your workspace" aria-label="Search authorized ERP workspaces" />
       {query && <button className="icon-button subtle" onClick={() => setQuery('')} aria-label="Clear search"><X size={15} /></button>}
+      {!query && <span className="search-ghost">Try “attendance”, “print jobs”, or “my profile”</span>}
       <span className="search-shortcut">⌘ K</span>
+      {query && <div className="search-suggestions" role="listbox" aria-label="Search suggestions">
+        <button type="button" onClick={() => { setQuery(''); onOpenModuleHub(); }}><Search size={14} /><span>Search authorized modules for <b>“{query}”</b></span><ChevronRight size={14} /></button>
+        {canAsk && <button type="button" onClick={() => { setQuery(''); onNavigate('help'); }}><Sparkles size={14} /><span>Ask Daenem AI about <b>“{query}”</b></span><ChevronRight size={14} /></button>}
+      </div>}
     </div>
 
     <div className="top-actions">
       {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
+      <button className="top-action top-utility-button" onClick={onOpenModuleHub}><Plus size={16} /><span>Quick actions</span></button>
       <button className="top-action support-action" onClick={() => setSupportOpen((open) => !open)} aria-expanded={supportOpen}><ShieldCheck size={16} /><span>Help & Support</span></button>
-      <button className="icon-button notification-button" aria-label="Notifications"><Bell size={18} /><i className="alert-dot" /></button>
+      <div className="notification-wrap">
+        <button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className="alert-dot" /></button>
+        {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications">
+          <div className="popover-title"><b>Notifications</b><button className="icon-button subtle" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><X size={15} /></button></div>
+          <p>Live signals from your authorized ERP workspaces.</p>
+          <div className="notification-list">{notificationItems.map((item) => <div className="notification-row" key={item.title}><i className={`notification-dot ${item.tone}`} /><span><strong>{item.title}</strong><small>{item.detail}</small></span></div>)}</div>
+        </div>}
+      </div>
       <button className="weather-mini" onClick={enableLocation} title="Enable location and weather">
         <CloudSun size={19} />
-        <span><b>{weather.temperature !== undefined ? `${Math.round(weather.temperature)}°C` : 'WAT'}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span>
+        <span><b>{weather.temperature !== undefined ? `${Math.round(weather.temperature)}°F` : 'WAT'}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span>
       </button>
+      <button className="release-chip" onClick={() => setReleaseOpen(true)} title="View release notes"><span>v{release.version.replace(/^v/, '')}</span><small>Release notes</small></button>
       <div className="profile-wrap">
         <button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen}>
           <span className="avatar">{employeeInitials}</span>
@@ -156,20 +182,22 @@ function ZipTopBar({
           <ChevronDown size={16} />
         </button>
         {profileOpen && <div className="profile-menu">
-          <div className="profile-scope">
-            <small>Company scope</small>
+          <div className="profile-menu-head"><span className="avatar">{employeeInitials}</span><div className="profile-menu-head-copy"><strong>{context.employee.displayName}</strong><small>{context.employee.email || 'Employee account'}</small></div></div>
+          <div className="profile-menu-access"><span>{primaryRole}</span><span>{permissionCount} active permissions</span></div>
+          {companyChoices.length > 1 && <div className="profile-scope">
+            <small>Organization scope</small>
             <div>{companyChoices.map((item) => {
               const Icon = item.icon;
-              return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.code}</span></button>;
+              return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.name}</span></button>;
             })}</div>
-          </div>
+          </div>}
           <strong>Workspace appearance</strong>
           {themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}
           <div className="mode-picker">
-            <small>Display mode</small>
+            <small>Display mode · light is default</small>
             <div>
-              <button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Day</button>
-              <button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Night</button>
+              <button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Light</button>
+              <button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Dark</button>
               <button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button>
             </div>
           </div>
