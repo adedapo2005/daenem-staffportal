@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Bell, BriefcaseBusiness, CalendarCheck2, CheckCircle2,
-  ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CloudSun, Factory, Gauge, GripVertical, Home, LayoutDashboard, MapPin, Menu, Plus,
+  ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CloudSun, Download, Factory, Gauge, GripVertical, Home, LayoutDashboard, MapPin, Menu, Plus,
   Moon, PackageSearch, Palette, Radio, RefreshCw, Search, Settings2, ShieldCheck, Sparkles,
   Sun, Users, WalletCards, Wrench, X, Boxes, MessageSquareText, Star,
 } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { AccessLevel, WorkforceContext } from './auth';
 import { getErpNavigation, isModuleVisible, moduleDefinitions, type ErpId, type HierarchyItem, type ModuleDefinition } from './module-hub';
-import { hasWorkforcePermission, WorldClocks } from './auth';
+import { hasWorkforcePermission, readWorldClockPreferences, requestAppInstall, saveWorldClockPreferences, WORLD_CLOCKS, WorldClocks, type ClockStyle, type WorldClockPreferences } from './auth';
 import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
 import { themeList, themePersonalityById } from './theme-system';
 
@@ -36,6 +36,7 @@ export type ZipCompanyChoice = {
 
 type ViewName = 'overview' | 'people' | 'forms' | 'security' | 'broadcasts' | 'facilities' | 'help';
 type WidgetId = 'trend' | 'comparison' | 'category' | 'forecast' | 'queue' | 'status' | 'news' | 'motivation';
+type WidgetStyle = 'compact' | 'full' | 'card' | 'strip';
 
 type TemperatureUnit = 'F' | 'C';
 
@@ -166,10 +167,19 @@ function ZipTopBar({
   const [supportOpen, setSupportOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [installState, setInstallState] = useState<'idle' | 'working' | 'installed' | 'unavailable'>('idle');
   const employeeInitials = initials(context.employee.displayName);
   const primaryRole = context.roles[0]?.name || (context.employee.status === 'provisional' ? 'Provisional Employee' : 'Employee');
   const permissionCount = Object.values(context.permissions).filter((level) => level !== 'none').length;
   const canAsk = can(context, 'ai_guide.access');
+
+  async function handleInstallApp() {
+    if (installState === 'working') return;
+    setInstallState('working');
+    const outcome = await requestAppInstall();
+    setInstallState(outcome === 'accepted' ? 'installed' : outcome === 'dismissed' ? 'idle' : 'unavailable');
+  }
+
   const notificationItems = summary ? [
     { title: summary.pendingApprovals ? `${summary.pendingApprovals} approval${summary.pendingApprovals === 1 ? '' : 's'} need attention` : 'Approval queue is clear', detail: 'Staff ERP · approvals', tone: summary.pendingApprovals ? 'amber' : 'green' },
     { title: summary.securityAlerts ? `${summary.securityAlerts} security alert${summary.securityAlerts === 1 ? '' : 's'} to review` : 'Security center is clear', detail: 'Security, Access & Admin ERP', tone: summary.securityAlerts ? 'red' : 'green' },
@@ -192,6 +202,7 @@ function ZipTopBar({
     <div className="top-actions">
       {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
       <button className="top-action top-utility-button" onClick={onOpenModuleHub}><Plus size={16} /><span>Quick actions</span></button>
+      <button className="top-action install-action" onClick={() => void handleInstallApp()} title="Install the Daenem Staff Portal app"><Download size={16} /><span>{installState === 'working' ? 'Installing…' : installState === 'installed' ? 'App installed' : 'Install App'}</span></button>
       <button className="top-action support-action" onClick={() => setSupportOpen((open) => !open)} aria-expanded={supportOpen}><ShieldCheck size={16} /><span>Help & Support</span></button>
       <button className="top-action messages-action" onClick={() => onNavigate('help')} title="Open messages center"><MessageSquareText size={16} /><span>Messages</span></button>
       <button className="top-action favorites-action" onClick={onOpenModuleHub} title="Open saved and authorized modules"><Star size={16} /><span>Favorites</span></button>
@@ -699,9 +710,53 @@ function DashboardWidgets({
   release,
 }: Pick<ZipDashboardProps, 'summary' | 'company' | 'context' | 'online' | 'refreshSummary' | 'onNavigate' | 'onOpenModule' | 'release'> & { widgets: WidgetId[] }) {
   const [dragged, setDragged] = useState<WidgetId | null>(null);
-  const [order, setOrder] = useState(widgets);
+  const widgetStorageKey = `daenem-dashboard-widgets:${context.employee.id}:${company.id || 'group'}`;
+  const [order, setOrder] = useState<WidgetId[]>(() => {
+    if (typeof window === 'undefined') return widgets;
+    try {
+      const stored = JSON.parse(localStorage.getItem(widgetStorageKey) || 'null') as unknown;
+      const valid = Array.isArray(stored) ? stored.filter((item): item is WidgetId => Object.prototype.hasOwnProperty.call(widgetLabels, item)) : [];
+      return valid.length ? [...new Set(valid)] : widgets;
+    } catch {
+      return widgets;
+    }
+  });
+  const [widgetStyle, setWidgetStyle] = useState<WidgetStyle>(() => {
+    if (typeof window === 'undefined') return 'card';
+    const stored = localStorage.getItem(`${widgetStorageKey}:style`);
+    return stored === 'compact' || stored === 'full' || stored === 'strip' ? stored : 'card';
+  });
+  const [clockPreferences, setClockPreferences] = useState<WorldClockPreferences>(() => readWorldClockPreferences());
+  const [clockQuery, setClockQuery] = useState('');
   const canManageWidgets = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   const hiddenWidgets = (Object.keys(widgetLabels) as WidgetId[]).filter((widget) => !order.includes(widget));
+  const filteredClockLocations = WORLD_CLOCKS.filter((item) => `${item.name} ${item.region}`.toLowerCase().includes(clockQuery.trim().toLowerCase()));
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = JSON.parse(localStorage.getItem(widgetStorageKey) || 'null') as unknown;
+      const valid = Array.isArray(stored) ? stored.filter((item): item is WidgetId => Object.prototype.hasOwnProperty.call(widgetLabels, item)) : [];
+      setOrder(valid.length ? [...new Set(valid)] : widgets);
+      const savedStyle = localStorage.getItem(`${widgetStorageKey}:style`);
+      setWidgetStyle(savedStyle === 'compact' || savedStyle === 'full' || savedStyle === 'strip' ? savedStyle : 'card');
+    } catch {
+      setOrder(widgets);
+      setWidgetStyle('card');
+    }
+  }, [widgetStorageKey, widgets]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(widgetStorageKey, JSON.stringify(order));
+    localStorage.setItem(`${widgetStorageKey}:style`, widgetStyle);
+  }, [order, widgetStorageKey, widgetStyle]);
+
+  function updateClockPreferences(patch: Partial<WorldClockPreferences>) {
+    const next = { ...clockPreferences, ...patch };
+    setClockPreferences(next);
+    saveWorldClockPreferences(next);
+  }
 
   function moveWidget(target: WidgetId) {
     if (!dragged || dragged === target) return;
@@ -754,11 +809,24 @@ function DashboardWidgets({
   }
 
   return <>
-    {canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator widget controls"><span><Settings2 size={14} /> Admin widget controls</span>{hiddenWidgets.map((widget) => <button type="button" key={widget} onClick={() => addWidget(widget)}>+ {widgetLabels[widget]}</button>)}</div>}
+    {canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator widget controls">
+      <span><Settings2 size={14} /> Admin widget controls</span>
+      <label className="widget-style-control">Widget style<select value={widgetStyle} onChange={(event) => setWidgetStyle(event.target.value as WidgetStyle)} aria-label="Dashboard widget style"><option value="compact">Compact</option><option value="full">Full</option><option value="card">Card</option><option value="strip">Strip</option></select></label>
+      {hiddenWidgets.map((widget) => <button type="button" key={widget} onClick={() => addWidget(widget)}>+ {widgetLabels[widget]}</button>)}
+      <details className="widget-clock-config">
+        <summary>Global time settings</summary>
+        <div className="widget-clock-config-body">
+          <label>Clock style<select value={clockPreferences.style} onChange={(event) => updateClockPreferences({ style: event.target.value as ClockStyle })}><option value="minimal">Minimal</option><option value="detailed">Detailed</option><option value="neon">Neon accent</option><option value="classic">Classic</option></select></label>
+          <label>Find locations<input type="search" value={clockQuery} onChange={(event) => setClockQuery(event.target.value)} placeholder="Search city or country" /></label>
+          <div className="widget-clock-location-list">{filteredClockLocations.map((item) => { const checked = clockPreferences.visibleZones.includes(item.zone); return <label key={item.zone}><input type="checkbox" checked={checked} onChange={() => { const visibleZones = checked ? clockPreferences.visibleZones.filter((zone) => zone !== item.zone) : [...clockPreferences.visibleZones, item.zone]; if (visibleZones.length) updateClockPreferences({ visibleZones }); }} /><span><strong>{item.name}</strong><small>{item.region}</small></span></label>; })}</div>
+        </div>
+      </details>
+    </div>}
     <div className="dashboard-grid">
       {order.map((widget, index) => <div
         key={widget}
-        className={`widget-slot widget-${widget}`}
+        className={`widget-slot widget-${widget} widget-style-${widgetStyle}`}
+        data-widget-style={widgetStyle}
         draggable
         onDragStart={() => setDragged(widget)}
         onDragOver={(event) => event.preventDefault()}
