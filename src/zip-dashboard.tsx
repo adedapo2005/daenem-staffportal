@@ -176,8 +176,12 @@ function ZipTopBar({
   async function handleInstallApp() {
     if (installState === 'working') return;
     setInstallState('working');
-    const outcome = await requestAppInstall();
-    setInstallState(outcome === 'accepted' ? 'installed' : outcome === 'dismissed' ? 'idle' : 'unavailable');
+    try {
+      const outcome = await requestAppInstall();
+      setInstallState(outcome === 'accepted' ? 'installed' : outcome === 'dismissed' ? 'idle' : 'unavailable');
+    } catch {
+      setInstallState('unavailable');
+    }
   }
 
   const notificationItems = summary ? [
