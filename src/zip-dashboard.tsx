@@ -34,6 +34,8 @@ export type ZipCompanyChoice = {
 type ViewName = 'overview' | 'people' | 'forms' | 'security' | 'broadcasts' | 'facilities' | 'help';
 type WidgetId = 'trend' | 'comparison' | 'category' | 'forecast' | 'queue' | 'status' | 'news' | 'motivation';
 
+type TemperatureUnit = 'F' | 'C';
+
 type WeatherState = {
   label: string;
   temperature?: number;
@@ -75,6 +77,9 @@ type ZipDashboardProps = {
   themeName: string;
   clock: string;
   weather: WeatherState;
+  temperatureUnit: TemperatureUnit;
+  setTemperatureUnit: (unit: TemperatureUnit) => void;
+  canChangeWeatherUnit: boolean;
   enableLocation: () => void;
   online: boolean;
   sidebarOpen: boolean;
@@ -100,6 +105,12 @@ function numberValue(value: number | undefined, fallback = '—') {
   return value === undefined ? fallback : new Intl.NumberFormat('en-NG').format(value);
 }
 
+function formatWeatherTemperature(value: number | undefined, unit: TemperatureUnit) {
+  if (value === undefined) return 'WAT';
+  const converted = unit === 'F' ? (value * 9) / 5 + 32 : value;
+  return `${Math.round(converted)}°${unit}`;
+}
+
 function percentage(value: number) {
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
@@ -118,6 +129,9 @@ function ZipTopBar({
   themeName,
   clock,
   weather,
+  temperatureUnit,
+  setTemperatureUnit,
+  canChangeWeatherUnit,
   enableLocation,
   onNavigate,
   onOpenModule,
@@ -130,7 +144,7 @@ function ZipTopBar({
   summary,
   release,
   setReleaseOpen,
-}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'enableLocation' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub' | 'onOpenAdmin' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany' | 'summary' | 'release' | 'setReleaseOpen'>) {
+}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'temperatureUnit' | 'setTemperatureUnit' | 'canChangeWeatherUnit' | 'enableLocation' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub' | 'onOpenAdmin' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany' | 'summary' | 'release' | 'setReleaseOpen'>) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -172,7 +186,7 @@ function ZipTopBar({
       </div>
       <button className="weather-mini" onClick={enableLocation} title="Enable location and weather">
         <CloudSun size={19} />
-        <span><b>{weather.temperature !== undefined ? `${Math.round(weather.temperature)}°F` : 'WAT'}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span>
+        <span><b>{formatWeatherTemperature(weather.temperature, temperatureUnit)}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span>
       </button>
       <button className="release-chip" onClick={() => setReleaseOpen(true)} title="View release notes"><span>v{release.version.replace(/^v/, '')}</span><small>Release notes</small></button>
       <div className="profile-wrap">
@@ -199,6 +213,13 @@ function ZipTopBar({
               <button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Light</button>
               <button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Dark</button>
               <button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button>
+            </div>
+          </div>
+          {canChangeWeatherUnit && <div className="mode-picker temperature-picker">
+            <small>Weather units · admin control</small>
+            <div>
+              <button className={temperatureUnit === 'F' ? 'selected' : ''} onClick={() => setTemperatureUnit('F')}>°F</button>
+              <button className={temperatureUnit === 'C' ? 'selected' : ''} onClick={() => setTemperatureUnit('C')}>°C</button>
             </div>
           </div>
           <button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button>
@@ -758,6 +779,9 @@ export function ZipDashboard({
         themeName={themeName}
         clock={clock}
         weather={weather}
+        temperatureUnit={temperatureUnit}
+        setTemperatureUnit={setTemperatureUnit}
+        canChangeWeatherUnit={canChangeWeatherUnit}
         enableLocation={enableLocation}
         onNavigate={onNavigate}
         onOpenModuleHub={onOpenModuleHub}
@@ -773,7 +797,7 @@ export function ZipDashboard({
         {view === 'overview'
           ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} />
           : <div className="dashboard-heading module-page-heading"><div><span className="eyebrow">DAENEM BUSINESS ERP</span><h1>{moduleLabel}</h1><p>Open records and workflows assigned to your role and company scope.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Module Hub</button></div></div>}
-        <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}</button></div>
+        <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}{weather.temperature !== undefined ? ` · ${formatWeatherTemperature(weather.temperature, temperatureUnit)}` : ''}</button></div>
         <div className="company-switcher" role="list" aria-label="Company filter">{companyChoices.map((item) => {
           const Icon = item.icon;
           return <button key={item.code} onClick={() => setCompany(item)} className={company.code === item.code ? 'active' : ''}><Icon size={15} /><span>{item.code}</span></button>;
