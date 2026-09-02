@@ -605,13 +605,17 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }, [mode, signupStep, recoveryStep]);
 
   async function installApp() {
-    const outcome = await requestAppInstall();
-    if (outcome === 'accepted') {
-      setMessage({ type: 'success', text: 'Daenem Staff Portal was installed on this device.' });
-    } else if (outcome === 'dismissed') {
-      setMessage({ type: 'info', text: 'Installation was cancelled. You can install the portal later from your browser menu.' });
-    } else {
-      setMessage({ type: 'info', text: 'Use your browser menu or address-bar install icon to add the Staff Portal to this device.' });
+    try {
+      const outcome = await requestAppInstall();
+      if (outcome === 'accepted') {
+        setMessage({ type: 'success', text: 'Daenem Staff Portal was installed on this device.' });
+      } else if (outcome === 'dismissed') {
+        setMessage({ type: 'info', text: 'Installation was cancelled. You can install the portal later from your browser menu.' });
+      } else {
+        setMessage({ type: 'info', text: 'Use your browser menu or address-bar install icon to add the Staff Portal to this device.' });
+      }
+    } catch {
+      setMessage({ type: 'info', text: 'The browser could not open the install prompt. Use the browser menu to install the Staff Portal.' });
     }
   }
 
