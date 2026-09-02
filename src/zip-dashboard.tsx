@@ -8,7 +8,7 @@ import {
 import type { CSSProperties, ReactNode } from 'react';
 import type { AccessLevel, WorkforceContext } from './auth';
 import { getErpNavigation, isModuleVisible, moduleDefinitions, type ErpId, type HierarchyItem, type ModuleDefinition } from './module-hub';
-import { hasWorkforcePermission } from './auth';
+import { hasWorkforcePermission, WorldClocks } from './auth';
 import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
 import { themeList } from './theme-system';
 
@@ -473,6 +473,114 @@ function WidgetActions({ index, count, onMove }: { index: number; count: number;
     <button type="button" aria-label="Move card up" disabled={index === 0} onClick={() => onMove(index, -1)}><ArrowUp size={12} /></button>
     <button type="button" aria-label="Move card down" disabled={index === count - 1} onClick={() => onMove(index, 1)}><ArrowDown size={12} /></button>
   </span>;
+}
+
+
+function formatLastLogin(value?: string) {
+  if (!value) return 'Current session verified';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Current session verified' : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function WorkspaceOverviewStrip({
+  context,
+  company,
+  onNavigate,
+  onOpenModule,
+  onOpenModuleHub,
+}: Pick<ZipDashboardProps, 'context' | 'company' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub'>) {
+  const firstName = context.employee.displayName.split(' ')[0] || context.employee.displayName;
+  const roles = context.roles.length ? context.roles : [{ id: 'employee', code: 'employee', name: 'Employee', companyId: company.id || 'assigned' }];
+  const permissionCount = Object.values(context.permissions).filter((level) => level !== 'none').length;
+  const approvalCount = Object.values(context.permissions).filter((level) => level === 'approve' || level === 'manage').length;
+  const moduleCount = moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)).length;
+  const adminAccess = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) || Object.values(context.permissions).some((level) => level === 'manage');
+  const quickActions = [
+    { label: 'My Profile', detail: 'Keep your employee record current', icon: Users, action: () => onOpenModule('profile') },
+    { label: 'My Workspace', detail: 'Open staff self-service', icon: BriefcaseBusiness, action: () => onOpenModule('employee') },
+    { label: 'My Forms', detail: 'Review assigned submissions', icon: ClipboardCheck, action: () => onNavigate('forms') },
+    { label: 'Tasks & approvals', detail: 'Open authorized workspaces', icon: CheckCircle2, action: onOpenModuleHub },
+    { label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') },
+  ];
+  return <section className="workspace-overview-grid" aria-label="Personalized staff workspace overview">
+    <article className="profile-summary-card">
+      <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Welcome, {firstName}</h2></div><span className="live-chip"><i /> Personalized home</span></header>
+      <div className="profile-summary-body">
+        <div className="profile-summary-avatar">{initials(context.employee.displayName)}</div>
+        <div><strong>{context.employee.displayName}</strong><span>{context.employee.jobTitle || 'Employee'}{context.employee.department ? ' · ' : ''}{context.employee.department || ''}</span><small>{context.employee.team || 'Assigned team'} · {company.name}</small></div>
+      </div>
+      <div className="profile-summary-meta">
+        <span><small>Last login</small><strong>{formatLastLogin(context.employee.lastLoginAt)}</strong></span>
+        <span><small>Account status</small><strong>{context.employee.status === 'provisional' ? 'Provisional access' : 'Active employee'}</strong></span>
+      </div>
+      <div className="profile-summary-stats">
+        <div><small>Assigned roles</small><strong>{roles.length}</strong><span>{roles.slice(0, 2).map((role) => role.name).join(' · ')}{roles.length > 2 ? ' +' : ''}</span></div>
+        <div><small>Permissions</small><strong>{permissionCount}</strong><span>Role-scoped access</span></div>
+      </div>
+    </article>
+    <article className="access-summary-card">
+      <header className="overview-card-header"><div><span className="eyebrow">ACCESS & RESPONSIBILITIES</span><h2>Your operating perimeter</h2></div><ShieldCheck size={18} /></header>
+      <div className="access-summary-lines">
+        <div><span>Module access</span><strong>{moduleCount}</strong></div>
+        <div><span>Approval rights</span><strong>{approvalCount}</strong></div>
+        <div><span>Administrative privileges</span><strong>{adminAccess ? 'Enabled' : 'Role-scoped'}</strong></div>
+      </div>
+      <div className="access-role-stack">{roles.slice(0, 4).map((role) => <span className="access-role-pill" key={role.id}>{role.name}</span>)}</div>
+      <small className="access-summary-foot">Page access, role hierarchy, and approval actions remain enforced by server-side RBAC.</small>
+    </article>
+    <article className="self-service-card">
+      <header className="overview-card-header"><div><span className="eyebrow">SELF-SERVICE · STAFF ERP</span><h2>Commonly used actions</h2></div><Sparkles size={18} /></header>
+      <div className="self-service-list">{quickActions.map((item) => {
+        const Icon = item.icon;
+        return <button type="button" key={item.label} onClick={item.action}><span className="self-service-icon"><Icon size={15} /></span><span><strong>{item.label}</strong><small>{item.detail}</small></span><ChevronRight size={14} /></button>;
+      })}</div>
+    </article>
+  </section>;
+}
+
+function OwnerCommandCenter({
+  context,
+  summary,
+  online,
+  onOpenAdmin,
+  onOpenModuleHub,
+}: Pick<ZipDashboardProps, 'context' | 'summary' | 'onOpenAdmin' | 'onOpenModuleHub'> & { online: boolean }) {
+  const ownerAccess = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
+  if (!ownerAccess) return null;
+  const openFollowUps = (summary?.incompleteAttendance || 0) + (summary?.overdueRequirements || 0);
+  const tiles = [
+    { label: 'Business overview', value: numberValue(summary?.employees), detail: 'Total users in scope', icon: Users },
+    { label: 'Operations overview', value: numberValue(summary?.pendingApprovals), detail: 'Pending approvals', icon: ClipboardCheck },
+    { label: 'Platform health', value: online ? 'Operational' : 'Offline', detail: 'Portal connectivity', icon: Gauge },
+    { label: 'Security center', value: numberValue(summary?.securityAlerts), detail: 'Security alerts', icon: ShieldCheck },
+    { label: 'Activity center', value: numberValue(openFollowUps), detail: 'Open operational follow-ups', icon: Activity },
+    { label: 'Business metrics', value: '—', detail: 'Connect approved finance data', icon: CircleDollarSign },
+  ];
+  return <section className="owner-command-center" aria-label="Owner command center">
+    <header className="owner-command-header"><div><span className="eyebrow">OWNER DASHBOARD · SECURITY, ACCESS & ADMIN ERP</span><h2>Central command center</h2><p>Role-scoped business, operations, platform health, security, and activity signals.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
+    <div className="owner-command-grid">{tiles.map((tile) => {
+      const Icon = tile.icon;
+      return <article className="owner-command-tile" key={tile.label}><span className="owner-command-icon"><Icon size={17} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>;
+    })}</div>
+  </section>;
+}
+
+function SmartLoadingCard({ pending }: { pending: boolean }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!pending) {
+      setVisible(false);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setVisible(true), 2000);
+    return () => window.clearTimeout(timer);
+  }, [pending]);
+  if (!visible) return null;
+  return <section className="premium-skeleton-card" aria-live="polite" aria-label="Loading dashboard data">
+    <div className="premium-skeleton-lines"><span /><span /><span /></div>
+    <div><strong>Preparing scoped dashboard data</strong><small>Live records are taking longer than expected. Your workspace is still responsive.</small></div>
+    <span className="premium-loading-foot"><i /> Syncing securely</span>
+  </section>;
 }
 
 function DashboardWidgets({
