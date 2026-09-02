@@ -541,6 +541,35 @@ function WorkspaceOverviewStrip({
   </section>;
 }
 
+
+function ErpPulseGrid({
+  context,
+  company,
+  summary,
+  onOpenModule,
+  onOpenModuleHub,
+}: Pick<ZipDashboardProps, 'context' | 'company' | 'summary' | 'onOpenModule' | 'onOpenModuleHub'>) {
+  const availableModules = moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code));
+  const groups = getErpNavigation(availableModules);
+  if (!groups.length) return null;
+  return <section className="erp-pulse-section" aria-label="Authorized ERP pulse">
+    <header className="erp-pulse-header"><div><span className="eyebrow">MULTI-ERP COMMAND LAYER</span><h2>Every workspace, clearly separated</h2><p>Each ERP keeps its own hierarchy, functions, signal cards, and quick actions.</p></div><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open exact hierarchy</button></header>
+    <div className="erp-pulse-grid">{groups.map((group) => {
+      const modules = availableModules.filter((module) => module.erpId === group.id);
+      const firstModule = modules[0];
+      const isStaff = group.id === 'staff';
+      const signal = isStaff ? numberValue(summary?.present) : '—';
+      const signalLabel = isStaff ? 'Present today' : 'Live signal on open';
+      return <article className="erp-pulse-card" key={group.id}>
+        <header><span className="erp-pulse-icon"><HierarchyIcon iconKey={group.iconKey} size={16} /></span><div><span className="eyebrow">{group.label}</span><h3>{group.detail}</h3></div></header>
+        <div className="erp-pulse-chart" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+        <div className="erp-pulse-meta"><span><small>Authorized functions</small><strong>{modules.length}</strong></span><span><small>{signalLabel}</small><strong>{signal}</strong></span></div>
+        <div className="erp-pulse-actions"><button type="button" onClick={() => firstModule ? onOpenModule(firstModule.id) : onOpenModuleHub()}>{firstModule ? 'Open ERP' : 'Open directory'} <ArrowRight size={13} /></button><button type="button" onClick={onOpenModuleHub}>Functions <ChevronRight size={13} /></button></div>
+      </article>;
+    })}</div>
+  </section>;
+}
+
 function OwnerCommandCenter({
   context,
   summary,
@@ -751,6 +780,7 @@ export function ZipDashboard({
         })}</div>
         {view === 'overview' ? <>
           <WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />
+          <ErpPulseGrid context={context} company={company} summary={summary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />
           <SmartLoadingCard pending={!summary} />
           <KpiStrip summary={summary} company={company} />
           <div className="widget-toolbar"><span><GripVertical size={15} /> Drag cards to personalize your view</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div>
