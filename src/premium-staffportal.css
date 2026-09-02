@@ -3170,7 +3170,7 @@ html[data-theme="lagos-sunrise"] .signin-hero {
   color: #1b2a3d;
   background:
     linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,239,218,.16)),
-    url("/theme-assets/theme-01-sunrise.svg") center / cover no-repeat;
+    var(--hero-image, none) center / cover no-repeat;
   box-shadow: none;
 }
 
@@ -3178,7 +3178,7 @@ html[data-theme="lagos-sunrise"] .signin-hero::before {
   opacity: .98;
   background:
     linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 45%, rgba(229,165,126,.16) 100%),
-    url("/theme-assets/theme-01-sunrise.svg") center / cover no-repeat;
+    var(--hero-image, none) center / cover no-repeat;
   filter: saturate(1.05) contrast(1.01);
 }
 
@@ -3464,7 +3464,7 @@ html[data-theme="lagos-sunrise"] .dashboard-page::before {
   opacity: .14;
   background:
     linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,237,214,.18)),
-    url("/theme-assets/theme-01-sunrise.svg") center top / cover no-repeat;
+    var(--dashboard-image, none) center top / cover no-repeat;
   animation: dashboard-ambient 30s var(--premium-ease) infinite alternate;
 }
 
@@ -3638,7 +3638,7 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
   color: #1b2a3d;
   background:
     linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,239,218,.16)),
-    url("/theme-assets/theme-01-sunrise.svg") center / cover no-repeat;
+    var(--hero-image, none) center / cover no-repeat;
   box-shadow: none;
 }
 
@@ -4377,9 +4377,70 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::before 
   background-size: auto, cover;
   background-image:
     linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 45%, rgba(229,165,126,.16) 100%),
-    url("/theme-assets/theme-01-sunrise.svg");
+    var(--hero-image, none);
 }
 
 html[data-theme="lagos-sunrise"] .signin-page.signin-split > .signin-bottom-note {
   display: none;
+}
+
+
+/*
+ * Approved artwork lock:
+ * The ten canonical sign-in and dashboard boards are the only visual art source.
+ * Theme-specific layout and palette rules remain available, while legacy asset
+ * paths cannot win the artwork cascade.
+ */
+html[data-theme] .signin-hero {
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(7,24,52,.14)),
+    var(--hero-image, none) !important;
+  background-position: center, center !important;
+  background-size: cover, cover !important;
+  background-repeat: no-repeat !important;
+}
+
+html[data-theme] .signin-hero::before {
+  opacity: .98 !important;
+  filter: saturate(1.06) contrast(1.02) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(7,24,52,.16)),
+    var(--hero-image, none),
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 52%, transparent), color-mix(in srgb, var(--secondary) 30%, transparent) 55%, color-mix(in srgb, var(--accent) 28%, transparent)) !important;
+  background-position: center, center, center !important;
+  background-size: cover, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light, normal, normal !important;
+}
+
+html[data-theme] .signin-page.signin-split .signin-hero {
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(7,24,52,.14)),
+    var(--hero-image, none) !important;
+  background-position: center, center !important;
+  background-size: cover, cover !important;
+  background-repeat: no-repeat !important;
+}
+
+html[data-theme] .signin-page.signin-split .signin-hero::before {
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(7,24,52,.16)),
+    var(--hero-image, none),
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 52%, transparent), color-mix(in srgb, var(--secondary) 30%, transparent) 55%, color-mix(in srgb, var(--accent) 28%, transparent)) !important;
+  background-position: center, center, center !important;
+  background-size: cover, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light, normal, normal !important;
+}
+
+html[data-theme] .dashboard-page::before {
+  opacity: .17 !important;
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--canvas) 88%, transparent), color-mix(in srgb, var(--canvas) 96%, transparent)),
+    var(--dashboard-image, none),
+    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 30rem),
+    radial-gradient(circle at 30% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 32rem) !important;
+  background-size: cover, min(1600px, 100%) auto, cover, auto !important;
+  background-position: center top, center top, center top, center !important;
+  background-repeat: no-repeat !important;
 }
