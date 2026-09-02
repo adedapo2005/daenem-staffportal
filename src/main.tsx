@@ -16,6 +16,7 @@ import {
 } from './theme-system';
 import './zip-theme.css';
 import './zip-dashboard.css';
+import './premium-staffportal.css';
 import { ZipDashboard, type ZipDashboardSummary } from './zip-dashboard';
 
 const FormsCenter = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
@@ -152,10 +153,16 @@ function initials(name: string) {
 }
 
 function useCompanyChoices(context: WorkforceContext): CompanyChoice[] {
-  return useMemo(() => [
-    { id: null, code: 'GROUP', name: 'All Companies', icon: Building2 },
-    ...context.companies.map((company) => ({ id: company.id, code: company.code, name: company.name, icon: companyIcons[company.code] || Building2 })),
-  ], [context.companies]);
+  return useMemo(() => {
+    const canSelectScope = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
+    if (!canSelectScope) {
+      return [{ id: null, code: 'GROUP', name: 'Assigned workspace', icon: Building2 }];
+    }
+    return [
+      { id: null, code: 'GROUP', name: 'All Companies', icon: Building2 },
+      ...context.companies.map((company) => ({ id: company.id, code: company.code, name: company.name, icon: companyIcons[company.code] || Building2 })),
+    ];
+  }, [context.companies, context.roles]);
 }
 
 function LoadingScreen() {
