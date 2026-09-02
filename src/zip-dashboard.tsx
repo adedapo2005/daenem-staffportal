@@ -492,10 +492,25 @@ function MotivationWidget({ onNavigate, enabled }: { onNavigate: (view: ViewName
   return <article className="motivation-card"><span className="motivation-spark"><Sparkles size={17} /></span><span className="eyebrow">DAILY WORD</span><h3>Small improvements compound.</h3><p>Keep the next task clear, complete the record, and leave the workspace stronger for the next person.</p><div className="motivation-foot"><span>Human-approved communication</span>{enabled ? <button onClick={() => onNavigate('broadcasts')}>Open Broadcasts <ArrowRight size={13} /></button> : <span>Workspace guidance</span>}</div></article>;
 }
 
-function WidgetActions({ index, count, onMove }: { index: number; count: number; onMove: (index: number, direction: -1 | 1) => void }) {
+function WidgetActions({
+  index,
+  count,
+  onMove,
+  canManage,
+  onRemove,
+  onReplace,
+}: {
+  index: number;
+  count: number;
+  onMove: (index: number, direction: -1 | 1) => void;
+  canManage: boolean;
+  onRemove: () => void;
+  onReplace: () => void;
+}) {
   return <span className="widget-actions" onClick={(event) => event.stopPropagation()}>
     <button type="button" aria-label="Move card up" disabled={index === 0} onClick={() => onMove(index, -1)}><ArrowUp size={12} /></button>
     <button type="button" aria-label="Move card down" disabled={index === count - 1} onClick={() => onMove(index, 1)}><ArrowDown size={12} /></button>
+    {canManage && <><button type="button" aria-label="Replace widget" onClick={onReplace}><RefreshCw size={12} /></button><button type="button" aria-label="Remove widget" disabled={count <= 1} onClick={onRemove}><X size={12} /></button></>}
   </span>;
 }
 
@@ -636,6 +651,17 @@ function SmartLoadingCard({ pending }: { pending: boolean }) {
   </section>;
 }
 
+const widgetLabels: Record<WidgetId, string> = {
+  trend: 'Attendance trend',
+  comparison: 'Readiness comparison',
+  category: 'Workforce categories',
+  forecast: 'Workload forecast',
+  queue: 'Action queue',
+  status: 'Platform status',
+  news: 'Portal notes',
+  motivation: 'Daily motivation',
+};
+
 function DashboardWidgets({
   widgets,
   summary,
@@ -649,6 +675,8 @@ function DashboardWidgets({
 }: Pick<ZipDashboardProps, 'summary' | 'company' | 'context' | 'online' | 'refreshSummary' | 'onNavigate' | 'onOpenModule' | 'release'> & { widgets: WidgetId[] }) {
   const [dragged, setDragged] = useState<WidgetId | null>(null);
   const [order, setOrder] = useState(widgets);
+  const canManageWidgets = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
+  const hiddenWidgets = (Object.keys(widgetLabels) as WidgetId[]).filter((widget) => !order.includes(widget));
 
   function moveWidget(target: WidgetId) {
     if (!dragged || dragged === target) return;
@@ -673,6 +701,20 @@ function DashboardWidgets({
     });
   }
 
+  function removeWidget(widget: WidgetId) {
+    setOrder((current) => current.length <= 1 ? current : current.filter((item) => item !== widget));
+  }
+
+  function replaceWidget(index: number) {
+    const replacement = hiddenWidgets[0];
+    if (!replacement) return;
+    setOrder((current) => current.map((widget, currentIndex) => currentIndex === index ? replacement : widget));
+  }
+
+  function addWidget(widget: WidgetId) {
+    setOrder((current) => current.includes(widget) ? current : [...current, widget]);
+  }
+
   function renderWidget(widget: WidgetId) {
     switch (widget) {
       case 'trend': return <TrendWidget summary={summary} refreshSummary={refreshSummary} />;
@@ -686,19 +728,22 @@ function DashboardWidgets({
     }
   }
 
-  return <div className="dashboard-grid">
-    {order.map((widget, index) => <div
-      key={widget}
-      className={`widget-slot widget-${widget}`}
-      draggable
-      onDragStart={() => setDragged(widget)}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={() => moveWidget(widget)}
-    >
-      <WidgetActions index={index} count={order.length} onMove={moveByKeyboard} />
-      {renderWidget(widget)}
-    </div>)}
-  </div>;
+  return <>
+    {canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator widget controls"><span><Settings2 size={14} /> Admin widget controls</span>{hiddenWidgets.map((widget) => <button type="button" key={widget} onClick={() => addWidget(widget)}>+ {widgetLabels[widget]}</button>)}</div>}
+    <div className="dashboard-grid">
+      {order.map((widget, index) => <div
+        key={widget}
+        className={`widget-slot widget-${widget}`}
+        draggable
+        onDragStart={() => setDragged(widget)}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={() => moveWidget(widget)}
+      >
+        <WidgetActions index={index} count={order.length} onMove={moveByKeyboard} canManage={canManageWidgets} onRemove={() => removeWidget(widget)} onReplace={() => replaceWidget(index)} />
+        {renderWidget(widget)}
+      </div>)}
+    </div>
+  </>;
 }
 
 function ReleaseDialog({ release, onClose }: { release: ReleaseInfo; onClose: () => void }) {
