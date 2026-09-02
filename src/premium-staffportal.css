@@ -3462,8 +3462,7 @@ html[data-theme="lagos-sunrise"] .dashboard-page {
 html[data-theme="lagos-sunrise"] .dashboard-page::before {
   opacity: .14;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,237,214,.18)),
-    var(--dashboard-image, none) center top / cover no-repeat;
+    linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,237,214,.18));
   animation: dashboard-ambient 30s var(--premium-ease) infinite alternate;
 }
 
@@ -4436,11 +4435,10 @@ html[data-theme] .dashboard-page::before {
   opacity: .17 !important;
   background-image:
     linear-gradient(180deg, color-mix(in srgb, var(--canvas) 88%, transparent), color-mix(in srgb, var(--canvas) 96%, transparent)),
-    var(--dashboard-image, none),
     radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 30rem),
     radial-gradient(circle at 30% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 32rem) !important;
-  background-size: cover, min(1600px, 100%) auto, cover, auto !important;
-  background-position: center top, center top, center top, center !important;
+  background-size: cover, cover, cover !important;
+  background-position: center top, center top, center bottom !important;
   background-repeat: no-repeat !important;
 }
 
