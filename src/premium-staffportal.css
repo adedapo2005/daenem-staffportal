@@ -4161,3 +4161,149 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .cloc
     min-height: 76px;
   }
 }
+
+
+/* Final visual QA pass: keep the hero copy clear and give every clock its
+   complete readable information block. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-topline,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-footer {
+  display: none;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-title {
+  top: 35%;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-tagline {
+  top: calc(35% + 84px);
+  max-width: min(600px, calc(100% - 580px));
+  font-size: clamp(19px, 2vw, 26px);
+  white-space: nowrap;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-supporting-copy {
+  top: calc(35% + 132px);
+  max-width: min(330px, calc(100% - 600px));
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split {
+  padding-bottom: clamp(22px, 2.4vw, 34px);
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-surface {
+  height: clamp(680px, calc(100dvh - clamp(92px, 11vw, 150px)), 820px);
+  min-height: 680px;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-panel-wrap {
+  max-height: calc(100% - 164px);
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks {
+  bottom: 14px;
+  height: 132px;
+  min-height: 132px;
+  padding: 10px;
+  align-content: start;
+  overflow: visible;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .world-clocks-heading {
+  margin: 0 5px 8px;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .world-clock {
+  height: 94px;
+  min-height: 94px;
+  align-items: center;
+  padding: 8px 7px;
+  border-radius: 15px;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .world-clock .analog-clock {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-info {
+  align-content: center;
+  gap: 2px;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-location strong {
+  font-size: 11px;
+  line-height: 1.12;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-location span,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-date,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-timezone,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-day-state,
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-weather {
+  font-size: 9px;
+  line-height: 1.18;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-time {
+  font-size: 15px;
+  line-height: 1.05;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-weather {
+  display: inline-flex;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .clock-weather b {
+  font-size: 9px;
+}
+
+@media (max-width: 980px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-surface {
+    height: auto;
+    min-height: 0;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-panel-wrap {
+    max-height: none;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-tagline {
+    max-width: 46%;
+    white-space: normal;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks {
+    height: auto;
+    min-height: 0;
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .world-clock {
+    height: 94px;
+    min-height: 94px;
+  }
+}
+
+@media (max-width: 720px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks {
+    grid-template-columns: repeat(2, minmax(145px, 1fr));
+    overflow: visible;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks .world-clock {
+    height: 94px;
+  }
+}
+
+@media (max-width: 560px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .hero-tagline {
+    max-width: calc(100% - 40px);
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split > .world-clocks {
+    grid-template-columns: 1fr;
+  }
+}
