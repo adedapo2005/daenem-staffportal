@@ -10,7 +10,7 @@ import type { AccessLevel, WorkforceContext } from './auth';
 import { getErpNavigation, isModuleVisible, moduleDefinitions, type ErpId, type HierarchyItem, type ModuleDefinition } from './module-hub';
 import { hasWorkforcePermission, WorldClocks } from './auth';
 import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
-import { themeList } from './theme-system';
+import { themeList, themePersonalityById } from './theme-system';
 
 export type ZipDashboardSummary = {
   workDate: string;
@@ -364,13 +364,16 @@ function Sidebar({
   </aside>;
 }
 
-function DashboardHeading({ context, company, clock, onOpenModuleHub }: Pick<ZipDashboardProps, 'context' | 'company' | 'clock' | 'onOpenModuleHub'>) {
+function DashboardHeading({ context, company, clock, onOpenModuleHub, theme, themeName }: Pick<ZipDashboardProps, 'context' | 'company' | 'clock' | 'onOpenModuleHub' | 'theme' | 'themeName'>) {
   const firstName = context.employee.displayName.split(' ')[0] || context.employee.displayName;
+  const personality = themePersonalityById(theme);
+  const themeNumber = String(themeList.findIndex((item) => item.id === theme) + 1).padStart(2, '0');
   return <div className="dashboard-heading overview-heading">
     <div>
+      <span className="dashboard-design-label"><i /> Theme {themeNumber} · {personality.identity} · Dashboard</span>
       <span className="eyebrow">{clock}</span>
       <h1>Good day, {firstName} <span>✦</span></h1>
-      <p>Here is your connected operations pulse across {company.id ? company.name : 'the workspace'}.</p>
+      <p>{personality.dashboardPersonality}. Your {themeName} workspace brings the connected operations pulse into focus across {company.id ? company.name : 'the workspace'}.</p>
     </div>
     <div className="heading-actions">
       <button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Customize view</button>
@@ -728,13 +731,18 @@ export function ZipDashboard({
         weather={weather}
         enableLocation={enableLocation}
         onNavigate={onNavigate}
+        onOpenModuleHub={onOpenModuleHub}
+        onOpenModule={onOpenModule}
         onOpenAdmin={onOpenAdmin}
         onLogout={onLogout}
+        summary={summary}
+        release={release}
+        setReleaseOpen={setReleaseOpen}
       />
       <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
       <div className="dashboard-main">
         {view === 'overview'
-          ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} />
+          ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} />
           : <div className="dashboard-heading module-page-heading"><div><span className="eyebrow">DAENEM BUSINESS ERP</span><h1>{moduleLabel}</h1><p>Open records and workflows assigned to your role and company scope.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Module Hub</button></div></div>}
         <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}</button></div>
         <div className="company-switcher" role="list" aria-label="Company filter">{companyChoices.map((item) => {
