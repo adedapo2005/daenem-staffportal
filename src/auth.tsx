@@ -293,7 +293,47 @@ export const WORLD_CLOCKS = [
   { name: 'Beijing / Shanghai', region: 'China', zone: 'Asia/Shanghai', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
 ] as const;
 
+export type ClockStyle = 'minimal' | 'detailed' | 'neon' | 'classic';
+export type WorldClockPreferences = { style: ClockStyle; visibleZones: string[] };
+const WORLD_CLOCK_PREFS_KEY = 'daenem-world-clock-preferences';
+const DEFAULT_WORLD_CLOCK_PREFERENCES: WorldClockPreferences = {
+  style: 'detailed',
+  visibleZones: WORLD_CLOCKS.map((item) => item.zone),
+};
+
+function normalizeClockStyle(value: unknown): ClockStyle {
+  return value === 'minimal' || value === 'detailed' || value === 'neon' || value === 'classic' ? value : 'detailed';
+}
+
+export function readWorldClockPreferences(): WorldClockPreferences {
+  if (typeof window === 'undefined') return DEFAULT_WORLD_CLOCK_PREFERENCES;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WORLD_CLOCK_PREFS_KEY) || 'null') as Partial<WorldClockPreferences> | null;
+    const visibleZones = Array.isArray(parsed?.visibleZones)
+      ? parsed.visibleZones.filter((zone): zone is string => typeof zone === 'string' && WORLD_CLOCKS.some((item) => item.zone === zone))
+      : DEFAULT_WORLD_CLOCK_PREFERENCES.visibleZones;
+    return {
+      style: normalizeClockStyle(parsed?.style),
+      visibleZones: visibleZones.length ? [...new Set(visibleZones)] : DEFAULT_WORLD_CLOCK_PREFERENCES.visibleZones,
+    };
+  } catch {
+    return DEFAULT_WORLD_CLOCK_PREFERENCES;
+  }
+}
+
+export function saveWorldClockPreferences(preferences: WorldClockPreferences) {
+  if (typeof window === 'undefined') return;
+  const next: WorldClockPreferences = {
+    style: normalizeClockStyle(preferences.style),
+    visibleZones: preferences.visibleZones.filter((zone) => WORLD_CLOCKS.some((item) => item.zone === zone)),
+  };
+  if (!next.visibleZones.length) next.visibleZones = DEFAULT_WORLD_CLOCK_PREFERENCES.visibleZones;
+  localStorage.setItem(WORLD_CLOCK_PREFS_KEY, JSON.stringify(next));
+  window.dispatchEvent(new CustomEvent<WorldClockPreferences>('daenem:world-clock-preferences', { detail: next }));
+}
+
 export function WorldClocks() {
+  const [preferences, setPreferences] = useState<WorldClockPreferences>(() => readWorldClockPreferences());
   const [, setTick] = useState(0);
   useEffect(() => {
     let timer = 0;
@@ -305,13 +345,24 @@ export function WorldClocks() {
       timer = window.setInterval(() => setTick((value) => value + 1), 1000);
     };
     document.addEventListener('visibilitychange', start);
+    const onPreferences = (event: Event) => {
+      const detail = (event as CustomEvent<WorldClockPreferences>).detail;
+      if (detail) setPreferences(detail);
+    };
+    window.addEventListener('daenem:world-clock-preferences', onPreferences);
     start();
-    return () => { stop(); document.removeEventListener('visibilitychange', start); };
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', start);
+      window.removeEventListener('daenem:world-clock-preferences', onPreferences);
+    };
   }, []);
-  return <div className="world-clocks" aria-label="Daenem seven-city world clock">
-    <div className="world-clocks-heading"><span className="eyebrow">GLOBAL OPERATIONS CLOCK</span><strong>Seven locations · live local time</strong></div>
+  const visibleClocks = WORLD_CLOCKS.filter((item) => preferences.visibleZones.includes(item.zone));
+  const clocks = visibleClocks.length ? visibleClocks : WORLD_CLOCKS;
+  return <div className={`world-clocks clock-style-${preferences.style}`} aria-label="Daenem seven-city world clock">
+    <div className="world-clocks-heading"><span className="eyebrow">GLOBAL OPERATIONS CLOCK</span><strong>{clocks.length} locations · live local time</strong></div>
     <div className="world-clocks-grid">
-      {WORLD_CLOCKS.map((item) => <article className="world-clock" key={item.zone} tabIndex={0}>
+      {clocks.map((item) => <article className="world-clock" key={item.zone} tabIndex={0}>
         <div className="analog-clock" style={clockHands(item.zone)} aria-hidden="true">
           <span className="clock-hand clock-hand-hour" />
           <span className="clock-hand clock-hand-minute" />
