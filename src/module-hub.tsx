@@ -12,7 +12,8 @@ export type ErpId =
   | 'properties'
   | 'finance'
   | 'social'
-  | 'controls';
+  | 'controls'
+  | 'jobs';
 
 export type HierarchyViewId =
   | 'overview'
@@ -53,6 +54,8 @@ export type HierarchyItem = {
   view?: HierarchyViewId;
   moduleId?: string;
   utility?: 'module-hub';
+  /** Canonical ERP → submenu → sub-submenu → functional-item path. */
+  path?: string;
 };
 
 export type ErpSubSubmenu = {
@@ -112,13 +115,13 @@ const modules: ModuleDefinition[] = [
   { id: 'monitoring', label: 'Resource Monitoring', detail: 'Service health, sessions and diagnostics', group: 'Management', permissions: ['diagnostics.access'], erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'observability', functionalItem: 'Resource monitoring', load: () => import('./group-erp-admin-entry'), event: { name: 'daenem:open-group-erp', detail: { tab: 'monitoring' } } },
   { id: 'audit', label: 'Activity & Audit', detail: 'Business activity and audit explorer', group: 'Management', permissions: ['audit.explorer'], erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'observability', functionalItem: 'Activity and audit', load: () => import('./group-erp-admin-entry'), event: { name: 'daenem:open-group-erp', detail: { tab: 'audit' } } },
   { id: 'toolbox', label: 'Advanced Toolbox', detail: 'Database, sessions, payroll readiness and critical-error checks', group: 'Management', permissions: ['toolbox.access'], minimum: 'manage', erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'observability', functionalItem: 'Advanced toolbox', load: () => import('./group-erp-admin-entry'), event: { name: 'daenem:open-group-erp', detail: { tab: 'toolbox' } } },
-  { id: 'api-integrations', label: 'API & Integrations', detail: 'Cloudflare health, safe connection metadata, API catalogue, webhooks and request logs.', group: 'Management', permissions: ['integrations.access'], erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'integrations', functionalItem: 'API integrations', load: () => import('./platform-center-entry'), selector: '.integration-center-launcher' },
+  { id: 'api-integrations', label: 'API & Integrations', detail: 'Cloudflare health, safe connection metadata, API catalogue, webhooks and request logs.', group: 'Management', permissions: ['integrations.access'], erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'api-integrations', functionalItem: 'API integrations', load: () => import('./platform-center-entry'), selector: '.integration-center-launcher' },
 
   { id: 'social', label: 'Social Engine', detail: 'Content, publishing and campaign workspace', group: 'Social', prefixes: ['social.'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'campaigns', functionalItem: 'Social publishing', load: () => import('./social-entry'), selector: '.social-engine-launcher' },
   { id: 'social-controls', label: 'Social Controls', detail: 'Automation settings and approval controls', group: 'Social', prefixes: ['social.automation', 'social.settings'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'automation', functionalItem: 'Social automation', load: () => import('./social-automation-entry'), selector: '.sa-launcher' },
   { id: 'social-accounts', label: 'Social Accounts', detail: 'Official provider account connections', group: 'Social', permissions: ['social.connections'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'accounts', functionalItem: 'Social accounts', load: () => import('./social-connections-entry'), selector: '.scn-launcher' },
-  { id: 'social-sync', label: 'ERP Social Sync', detail: 'ERP and social conversion integrations', group: 'Social', permissions: ['social.integrations'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'integrations', functionalItem: 'ERP social sync', load: () => import('./social-integrations-entry'), selector: '.si-launcher' },
-  { id: 'marketing', label: 'Marketing Command', detail: 'Audience, funnel and campaign intelligence', group: 'Social', prefixes: ['social.analytics', 'social.ai', 'social.community', 'social.ads'], erpId: 'social', submenuId: 'digital-presence', subsubmenuId: 'campaigns', functionalItem: 'Marketing intelligence', load: () => import('./social-marketing-command-entry'), selector: '.smc-launcher' },
+  { id: 'social-sync', label: 'ERP Social Sync', detail: 'ERP and social conversion integrations', group: 'Social', permissions: ['social.integrations'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'social-integrations', functionalItem: 'ERP social sync', load: () => import('./social-integrations-entry'), selector: '.si-launcher' },
+  { id: 'marketing', label: 'Marketing Command', detail: 'Audience, funnel and campaign intelligence', group: 'Social', prefixes: ['social.analytics', 'social.ai', 'social.community', 'social.ads'], erpId: 'social', submenuId: 'digital-presence', subsubmenuId: 'digital-campaigns', functionalItem: 'Marketing intelligence', load: () => import('./social-marketing-command-entry'), selector: '.smc-launcher' },
   { id: 'community', label: 'Community Inbox', detail: 'Customer messages and response workflow', group: 'Social', permissions: ['social.community'], erpId: 'social', submenuId: 'social-operations', subsubmenuId: 'community', functionalItem: 'Community inbox', load: () => import('./social-community-entry'), selector: '.sci-launcher' },
   { id: 'website-admin', label: 'Website Administration', detail: 'Maintain business website setup, pages, images, revisions and approval-controlled publishing.', group: 'Social', permissions: ['website.access'], erpId: 'social', submenuId: 'digital-presence', subsubmenuId: 'websites', functionalItem: 'Website administration', load: () => import('./platform-center-entry'), selector: '.website-admin-launcher' },
 ];
@@ -138,11 +141,11 @@ const hierarchyTemplate: HierarchyTemplate[] = [
     submenus: [
       { id: 'people', label: 'People & HR', detail: 'Employee records and lifecycle workflows', submenus: [
         { id: 'employee-records', label: 'Employee records', detail: 'Profiles, requests and employee self-service', items: [
-          { id: 'overview', kind: 'view', label: 'Group Overview', detail: 'Permitted companies, alerts, tasks and performance', iconKey: 'gauge', view: 'overview' },
-          { id: 'people', kind: 'view', label: 'People & Payroll', detail: 'Approved employees, requests and payslip access', iconKey: 'users', view: 'people' },
+          { id: 'staff-overview', kind: 'view', label: 'Group Overview', detail: 'Permitted companies, alerts, tasks and performance', iconKey: 'gauge', view: 'overview' },
+          { id: 'staff-people', kind: 'view', label: 'People & Payroll', detail: 'Approved employees, requests and payslip access', iconKey: 'users', view: 'people' },
         ] },
         { id: 'employee-lifecycle', label: 'Employee lifecycle', detail: 'Forms, leave and performance workflows', items: [
-          { id: 'forms', kind: 'view', label: 'Forms Center', detail: 'Assigned forms and workflow submissions', iconKey: 'forms', view: 'forms' },
+          { id: 'staff-forms', kind: 'view', label: 'Forms Center', detail: 'Assigned forms and workflow submissions', iconKey: 'forms', view: 'forms' },
         ] },
       ] },
       { id: 'time-attendance', label: 'Time & Attendance', detail: 'Attendance records and location-aware work', submenus: [
@@ -220,7 +223,7 @@ const hierarchyTemplate: HierarchyTemplate[] = [
       ] },
       { id: 'facilities', label: 'Facilities', detail: 'Buildings, assets, readings and work orders', submenus: [
         { id: 'maintenance', label: 'Maintenance', detail: 'Facilities and maintenance workflows', items: [
-          { id: 'facilities', kind: 'view', label: 'Facilities & Maintenance', detail: 'Buildings, assets, readings and work orders', iconKey: 'wrench', view: 'facilities' },
+          { id: 'finance-facilities', kind: 'view', label: 'Facilities & Maintenance', detail: 'Buildings, assets, readings and work orders', iconKey: 'wrench', view: 'facilities' },
         ] },
       ] },
     ],
@@ -232,17 +235,17 @@ const hierarchyTemplate: HierarchyTemplate[] = [
     iconKey: 'sparkles',
     submenus: [
       { id: 'social-operations', label: 'Social operations', detail: 'Publishing, automation, accounts and community', submenus: [
-        { id: 'campaigns', label: 'Campaigns', detail: 'Social publishing and marketing intelligence' },
+        { id: 'social-campaigns', label: 'Campaigns', detail: 'Social publishing and marketing intelligence' },
         { id: 'automation', label: 'Automation', detail: 'Social automation and approvals' },
         { id: 'accounts', label: 'Accounts', detail: 'Official provider account connections' },
-        { id: 'integrations', label: 'ERP social sync', detail: 'ERP and social conversion integrations' },
+        { id: 'social-integrations', label: 'ERP social sync', detail: 'ERP and social conversion integrations' },
         { id: 'community', label: 'Community', detail: 'Customer messages and response workflow' },
         { id: 'communications', label: 'Communications', detail: 'Announcements and staff communication', items: [
-          { id: 'broadcasts', kind: 'view', label: 'Broadcast Center', detail: 'Announcements and approved staff communications', iconKey: 'radio', view: 'broadcasts' },
+          { id: 'social-broadcasts', kind: 'view', label: 'Broadcast Center', detail: 'Announcements and approved staff communications', iconKey: 'radio', view: 'broadcasts' },
         ] },
       ] },
       { id: 'digital-presence', label: 'Digital presence', detail: 'Websites, pages and campaigns', submenus: [
-        { id: 'campaigns', label: 'Campaigns', detail: 'Audience, funnel and campaign intelligence' },
+        { id: 'digital-campaigns', label: 'Campaigns', detail: 'Audience, funnel and campaign intelligence' },
         { id: 'websites', label: 'Websites', detail: 'Business website administration' },
       ] },
     ],
@@ -266,12 +269,12 @@ const hierarchyTemplate: HierarchyTemplate[] = [
       ] },
       { id: 'system-control', label: 'System control', detail: 'Monitoring, audit, integrations and help', submenus: [
         { id: 'observability', label: 'Observability', detail: 'Service health and activity audit' },
-        { id: 'integrations', label: 'Integrations', detail: 'API catalogue, webhooks and connection metadata' },
+        { id: 'api-integrations', label: 'Integrations', detail: 'API catalogue, webhooks and connection metadata' },
         { id: 'security', label: 'Security', detail: 'Sign-ins, devices and access events', items: [
-          { id: 'security', kind: 'view', label: 'Security Center', detail: 'Sign-ins, devices and access events', iconKey: 'shield', view: 'security' },
+          { id: 'controls-security', kind: 'view', label: 'Security Center', detail: 'Sign-ins, devices and access events', iconKey: 'shield', view: 'security' },
         ] },
         { id: 'help', label: 'Help', detail: 'Permission-aware portal guidance', items: [
-          { id: 'help', kind: 'view', label: 'AI Guide', detail: 'Permission-aware help for every workspace', iconKey: 'sparkles', view: 'help' },
+          { id: 'controls-help', kind: 'view', label: 'AI Guide', detail: 'Permission-aware help for every workspace', iconKey: 'sparkles', view: 'help' },
         ] },
         { id: 'module-directory', label: 'Module directory', detail: 'Search and launch authorized ERP workspaces', items: [
           { id: 'module-hub', kind: 'utility', label: 'Module Hub', detail: 'Search and launch authorized ERP workspaces', iconKey: 'grid', utility: 'module-hub' },
@@ -280,6 +283,79 @@ const hierarchyTemplate: HierarchyTemplate[] = [
     ],
   },
 ];
+
+
+export type ErpHierarchyAudit = {
+  valid: boolean;
+  errors: string[];
+  moduleCount: number;
+  erpCount: number;
+};
+
+export function validateErpCatalog(
+  definitions: ModuleDefinition[] = moduleDefinitions,
+  template: HierarchyTemplate[] = hierarchyTemplate,
+): string[] {
+  const errors: string[] = [];
+  const erpIds = new Set(template.map((group) => group.id));
+  const moduleIds = new Set<string>();
+  const functionalItems = new Set<string>();
+  const modulePaths = new Set<string>();
+
+  for (const module of definitions) {
+    if (moduleIds.has(module.id)) errors.push(`Duplicate module id: ${module.id}`);
+    moduleIds.add(module.id);
+    if (!erpIds.has(module.erpId)) errors.push(`Module ${module.id} references unknown ERP: ${module.erpId}`);
+
+    const group = template.find((item) => item.id === module.erpId);
+    const submenu = group?.submenus.find((item) => item.id === module.submenuId);
+    const subsubmenu = submenu?.submenus.find((item) => item.id === module.subsubmenuId);
+    if (!group || !submenu || !subsubmenu) {
+      errors.push(`Module ${module.id} has an invalid ERP path: ${module.erpId} / ${module.submenuId} / ${module.subsubmenuId}`);
+    }
+
+    if (functionalItems.has(module.functionalItem)) {
+      errors.push(`Duplicate functional item across ERP catalog: ${module.functionalItem}`);
+    }
+    functionalItems.add(module.functionalItem);
+
+    const path = [module.erpId, module.submenuId, module.subsubmenuId, module.functionalItem].join('/');
+    if (modulePaths.has(path)) errors.push(`Duplicate module path: ${path}`);
+    modulePaths.add(path);
+  }
+
+  const itemIds = new Map<string, string>();
+  const structurePaths = new Set<string>();
+  for (const group of template) {
+    for (const submenu of group.submenus) {
+      for (const subsubmenu of submenu.submenus) {
+        const structurePath = [group.id, submenu.id, subsubmenu.id].join('/');
+        if (structurePaths.has(structurePath)) errors.push(`Duplicate hierarchy path: ${structurePath}`);
+        structurePaths.add(structurePath);
+        for (const item of subsubmenu.items || []) {
+          const previous = itemIds.get(item.id);
+          if (previous) errors.push(`Duplicate hierarchy item id: ${item.id} (${previous} and ${structurePath})`);
+          itemIds.set(item.id, structurePath);
+          if (item.kind === 'view' && !item.view) errors.push(`View item ${item.id} is missing a view target`);
+          if (item.kind === 'utility' && !item.utility) errors.push(`Utility item ${item.id} is missing a utility target`);
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
+export const ERP_HIERARCHY_AUDIT: ErpHierarchyAudit = {
+  valid: validateErpCatalog().length === 0,
+  errors: validateErpCatalog(),
+  moduleCount: moduleDefinitions.length,
+  erpCount: hierarchyTemplate.length,
+};
+
+if (ERP_HIERARCHY_AUDIT.errors.length && import.meta.env?.DEV) {
+  console.error('Invalid Daenem ERP hierarchy', ERP_HIERARCHY_AUDIT.errors);
+}
 
 export function getErpNavigation(visibleModules: ModuleDefinition[], visibleViews: HierarchyViewId[] = []): ErpNavigationGroup[] {
   const visibleIds = new Set(visibleModules.map((module) => module.id));
@@ -295,9 +371,14 @@ export function getErpNavigation(visibleModules: ModuleDefinition[], visibleView
             detail: module.detail,
             iconKey: module.id,
             moduleId: module.id,
+            path: `${group.label} / ${submenu.label} / ${subsubmenu.label} / ${module.functionalItem}`,
           }));
-        const viewItems = (subsubmenu.items || []).filter((item) => item.view && visibleViews.includes(item.view));
-        const utilityItems = (subsubmenu.items || []).filter((item) => item.kind === 'utility');
+        const viewItems = (subsubmenu.items || [])
+          .filter((item) => item.view && visibleViews.includes(item.view))
+          .map((item) => ({ ...item, path: `${group.label} / ${submenu.label} / ${subsubmenu.label} / ${item.label}` }));
+        const utilityItems = (subsubmenu.items || [])
+          .filter((item) => item.kind === 'utility')
+          .map((item) => ({ ...item, path: `${group.label} / ${submenu.label} / ${subsubmenu.label} / ${item.label}` }));
         return { ...subsubmenu, items: [...moduleItems, ...viewItems, ...utilityItems].filter((item) => item.moduleId ? visibleIds.has(item.moduleId) : true) };
       }).filter((subsubmenu) => subsubmenu.items.length);
       return { ...submenu, submenus: subsubmenus };
