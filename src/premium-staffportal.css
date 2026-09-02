@@ -4554,7 +4554,7 @@ html[data-theme="lagos-sunrise"] .signin-surface {
     background-color: #faf6f0 !important;
     background-image: var(--hero-image) !important;
     background-position: left top !important;
-    background-size: min(60%, 768px) auto !important;
+    background-size: 768px 590px !important;
     background-repeat: no-repeat !important;
     background-blend-mode: normal !important;
   }
