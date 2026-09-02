@@ -345,7 +345,7 @@ function liveClockHands(zone: string, date: Date) {
   } as React.CSSProperties;
 }
 
-function LiveHeroSurface({ onFocusAccess }: { onFocusAccess: () => void }) {
+function LiveHeroSurface({ authPanel }: { authPanel: React.ReactNode }) {
   const [now, setNow] = useState(() => new Date());
   const [health, setHealth] = useState<LiveHealthState>({
     state: 'checking', latencyMs: null, version: '', checkedAt: null,
@@ -433,20 +433,10 @@ function LiveHeroSurface({ onFocusAccess }: { onFocusAccess: () => void }) {
       <div className="hero-live-light-sweep" aria-hidden="true" />
       <div className="hero-live-board-badge"><span className="hero-live-orb" /><span>LIVE WORKSPACE</span><b>{lagosTime}</b></div>
 
-      <section className="hero-live-auth-card" aria-label="Live employee sign-in preview">
+      <section className="hero-live-auth-card" aria-label="Live employee sign-in">
         <div className="hero-live-card-label"><span><LockKeyhole size={11} /> LIVE ACCESS</span><span className={'hero-live-card-state ' + health.state}><i />{health.state === 'operational' ? 'READY' : 'SYNCING'}</span></div>
         <div className="hero-live-auth-brand"><img src="/brand-assets/logo-mark.svg" alt="" /><span><strong>Daenem</strong><small>Employee Portal</small></span></div>
-        <div className="hero-live-form-preview" data-live-preview="sign-in" aria-hidden="true">
-          <div className="hero-live-preview-tabs"><span className="active">Employee Sign-In</span><span>Create Account</span></div>
-          <div className="hero-live-preview-field"><span>Email or Username</span><b>Required</b><strong>Enter employee identity</strong></div>
-          <div className="hero-live-preview-field"><span>Password</span><b>Protected</b><strong className="hero-live-preview-password">••••••••</strong></div>
-          <div className="hero-live-preview-meta"><span><i /> Remember Me</span><span>Encrypted</span></div>
-          <div className="hero-live-preview-submit"><span>Sign In</span><ArrowRight size={10} /></div>
-        </div>
-        <h3>Employee sign-in</h3>
-        <p>Production authentication is connected to the secure form.</p>
-        <button type="button" onClick={onFocusAccess}>Open live sign-in <ArrowRight size={12} /></button>
-        <span className="hero-live-card-foot"><ShieldCheck size={11} /> Session protected</span>
+        <div className="hero-live-auth-panel" data-live-auth="form">{authPanel}</div>
       </section>
 
       <section className="hero-live-weather-card" aria-label="Live Ibadan weather">
@@ -546,7 +536,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setMessage(null);
     try {
       await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ identifier: identity, password, ...deviceIdentity() }) });
-      const me = await api<{ authenticated: boolean; context: WorkforceContext }>('/api/auth/me');
+      const me = await api<{ authenticated: boolean; context?: WorkforceContext }>('/api/auth/me');
+      if (!me.authenticated || !me.context) {
+        throw new Error('Your sign-in session could not be established. Please try again.');
+      }
       onAuthenticated(me.context);
     } catch (error) {
       const authError = error as ApiError;
@@ -687,34 +680,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const theme = themeById(themeId);
 
-  function focusSigninPanel() {
-    const input = panelRef.current?.querySelector<HTMLInputElement>('input[aria-label="Email or Username"]');
-    input?.focus();
-    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  return <main className={`signin-page signin-${theme.signInLayout}`}>
-    <div className="signin-surface">
-      <section className="signin-hero">
-        <div className="hero-brand"><div className="brand-lockup"><span className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></span><span className="brand-copy"><strong>Daenem</strong><span>Staff Portal</span></span></div></div>
-        <div className="hero-topline"><span className="status-dot" /> Private workspace <span className="hero-secure-label"><ShieldCheck size={14} /> Secure employee access</span></div>
-        <div className="hero-content">
-          <h2 className="hero-title">Staff Portal</h2>
-          <p className="hero-tagline">Technology That Transforms Tomorrow</p>
-          <p className="hero-supporting-copy">A secure gateway to the work, insight, and collaboration your role unlocks.</p>
-          <section className="hero-widgets" aria-label="Staff portal inspiration and updates">
-            <article className="hero-widget hero-widget-ai"><span>AI INSPIRATION</span><strong>Make the next task feel obvious.</strong><small>Role-aware guidance across your authorized ERPs.</small></article>
-            <article className="hero-widget hero-widget-motivation"><span>EMPLOYEE MOTIVATION</span><strong>Progress compounds into momentum.</strong><small>See what matters, then move one useful thing forward.</small></article>
-            <article className="hero-widget hero-widget-news"><span>DAENEM NEWS</span><strong>One connected staff experience.</strong><small>People, production, properties, mobility, and operations in one secure portal.</small></article>
-          </section>
-        </div>
-        <div className="hero-footer"><ShieldCheck size={16} /> Secure enterprise access <span>•</span> Designed for web, tablet and mobile</div>
-        {theme.id === 'lagos-sunrise' && <LiveHeroSurface onFocusAccess={focusSigninPanel} />}
-      </section>
-
-      <section className="signin-panel-wrap">
-      <section ref={panelRef} className={`signin-panel signin-panel-${mode}`}>
-          <div className="panel-heading"><div><span className="eyebrow">Welcome back</span><h1>{heading.title}</h1><p>{heading.body}</p></div><div className="panel-security"><LockKeyhole size={15} /> MFA-ready</div></div>
+  const authPanel = (
+    <section ref={panelRef} aria-label="Employee authentication" className={`signin-panel signin-panel-${mode}`}>
+          {theme.id !== 'lagos-sunrise' && <div className="panel-heading"><div><h1>{heading.title}</h1><p>{heading.body}</p></div><div className="panel-security"><LockKeyhole size={15} /> MFA-ready</div></div>}
           <div className="signin-tabs" role="tablist" aria-label="Sign-in options">
             <button className={mode === 'signin' ? 'active' : ''} onClick={() => switchMode('signin')} role="tab" aria-selected={mode === 'signin'}>Employee Sign-In</button>
             <button className={mode === 'signup' ? 'active' : ''} onClick={() => switchMode('signup')} role="tab" aria-selected={mode === 'signup'}>Create Account</button>
@@ -779,10 +747,35 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
           <div className="legal-copy">By continuing to log in, you agree to Daenem’s <a href="#terms">Terms and Conditions</a>. <a href="#privacy">Privacy Policy</a>.</div>
           <div className="panel-footer-actions"><span className="operational-pill"><i /> Operational</span><button className="install-button" type="button" onClick={() => setMessage({ type: 'info', text: 'Install instructions are available from App & GPS after you sign in.' })}><Download size={16} /> Install Daenem ERP App</button></div>
-        </section>
+    </section>
+  );
+
+  return <main className={`signin-page signin-${theme.signInLayout}`}>
+    <div className="signin-surface">
+      <section className="signin-hero">
+        {theme.id !== 'lagos-sunrise' && <>
+        <div className="hero-brand"><div className="brand-lockup"><span className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></span><span className="brand-copy"><strong>Daenem</strong><span>Staff Portal</span></span></div></div>
+        <div className="hero-topline"><span className="status-dot" /> Private workspace <span className="hero-secure-label"><ShieldCheck size={14} /> Secure employee access</span></div>
+        <div className="hero-content">
+          <h2 className="hero-title">Staff Portal</h2>
+          <p className="hero-tagline">Technology That Transforms Tomorrow</p>
+          <p className="hero-supporting-copy">A secure gateway to the work, insight, and collaboration your role unlocks.</p>
+          <section className="hero-widgets" aria-label="Staff portal inspiration and updates">
+            <article className="hero-widget hero-widget-ai"><span>AI INSPIRATION</span><strong>Make the next task feel obvious.</strong><small>Role-aware guidance across your authorized ERPs.</small></article>
+            <article className="hero-widget hero-widget-motivation"><span>EMPLOYEE MOTIVATION</span><strong>Progress compounds into momentum.</strong><small>See what matters, then move one useful thing forward.</small></article>
+            <article className="hero-widget hero-widget-news"><span>DAENEM NEWS</span><strong>One connected staff experience.</strong><small>People, production, properties, mobility, and operations in one secure portal.</small></article>
+          </section>
+        </div>
+        <div className="hero-footer"><ShieldCheck size={16} /> Secure enterprise access <span>•</span> Designed for web, tablet and mobile</div>
+        </>}
+        {theme.id === 'lagos-sunrise' && <LiveHeroSurface authPanel={authPanel} />}
       </section>
+
+      {theme.id !== 'lagos-sunrise' && <section className="signin-panel-wrap">
+        {authPanel}
+      </section>}
     </div>
-    <div className="signin-bottom-note"><ShieldCheck size={14} /> Private workspace · MFA-ready · Employee-neutral by design</div>
-    <WorldClocks />
+    {theme.id !== 'lagos-sunrise' && <div className="signin-bottom-note"><ShieldCheck size={14} /> Private workspace · MFA-ready · Employee-neutral by design</div>}
+    {theme.id !== 'lagos-sunrise' && <WorldClocks />}
   </main>;
 }
