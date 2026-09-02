@@ -4543,3 +4543,8 @@ html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::after {
   opacity: 0 !important;
   background: none !important;
 }
+
+/* Let the approved Sunlit Meridian artwork remain fully visible. */
+html[data-theme="lagos-sunrise"] .signin-surface {
+  background: transparent !important;
+}
