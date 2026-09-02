@@ -106,7 +106,7 @@ function numberValue(value: number | undefined, fallback = '—') {
 }
 
 function formatWeatherTemperature(value: number | undefined, unit: TemperatureUnit) {
-  if (value === undefined) return 'WAT';
+  if (value === undefined) return `—°${unit}`;
   const converted = unit === 'F' ? (value * 9) / 5 + 32 : value;
   return `${Math.round(converted)}°${unit}`;
 }
