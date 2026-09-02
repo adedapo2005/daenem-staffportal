@@ -569,7 +569,7 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   root.style.setProperty('--font-body', `"${theme.fontBody}"`);
   const artworkKey = APPROVED_ARTWORK_BY_THEME[theme.id];
   // Theme 01 uses the exact Library-approved Sunlit Meridian artwork.
-  const heroArtworkFile = theme.id === 'lagos-sunrise' ? 'approved-sunlit-meridian-signin-crop.jpg' : `${artworkKey}.png`;
+  const heroArtworkFile = theme.id === 'lagos-sunrise' ? 'approved-sunlit-meridian-signin-crop-4k.jpg' : `${artworkKey}.png`;
   root.style.setProperty('--hero-image', `url("/reference-images/signin/${heroArtworkFile}")`);
   // Approved composite artwork stays on sign-in; the authenticated dashboard is live UI.
   root.style.setProperty('--dashboard-image', 'none');
