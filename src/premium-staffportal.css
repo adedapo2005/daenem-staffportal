@@ -4509,3 +4509,11 @@ html[data-theme] .signin-page.signin-split .signin-hero::before {
   background-repeat: no-repeat !important;
   background-blend-mode: soft-light, normal, normal !important;
 }
+
+
+/* Clean approved Theme 01 crop: sharper than the full design-sheet fallback. */
+html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::before {
+  opacity: .78 !important;
+  filter: blur(1.5px) saturate(1.08) contrast(1.03) !important;
+  transform: scale(1.018) !important;
+}
