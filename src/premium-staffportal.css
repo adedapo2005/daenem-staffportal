@@ -4444,3 +4444,18 @@ html[data-theme] .dashboard-page::before {
   background-position: center top, center top, center top, center !important;
   background-repeat: no-repeat !important;
 }
+
+
+/* Theme 01 desktop art framing: keep the approved Lagos scene while
+   cropping the design-board chrome out of the interactive composition. */
+@media (width > 980px) {
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero {
+    background-position: center, right top !important;
+    background-size: cover, auto 145% !important;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-page.signin-split .signin-hero::before {
+    background-position: center, right top, center !important;
+    background-size: cover, auto 145%, cover !important;
+  }
+}
