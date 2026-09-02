@@ -568,7 +568,8 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   root.style.setProperty('--font-heading', `"${theme.fontHeading}"`);
   root.style.setProperty('--font-body', `"${theme.fontBody}"`);
   const artworkKey = APPROVED_ARTWORK_BY_THEME[theme.id];
-  root.style.setProperty('--hero-image', `url("/reference-images/signin/${artworkKey}.png")`);
+  const heroArtworkKey = theme.id === 'lagos-sunrise' ? 'theme-01-lagos-sunrise-hero' : artworkKey;
+  root.style.setProperty('--hero-image', `url("/reference-images/signin/${heroArtworkKey}.png")`);
   root.style.setProperty('--dashboard-image', `url("/reference-images/dashboard/${artworkKey}.png")`);
   return theme.id;
 }
