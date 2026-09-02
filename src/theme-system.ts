@@ -389,6 +389,115 @@ export const themeList: ThemeConfig[] = [
   },
 ];
 
+
+export interface ThemePersonality {
+  identity: string;
+  layoutPhilosophy: string;
+  heroImagery: string;
+  widgetArrangement: string;
+  chartStyling: string;
+  animationBehavior: string;
+  dashboardPersonality: string;
+}
+
+/**
+ * The visual contract for each selectable direction. Components use this metadata
+ * to keep the ten responsive boards recognizably different while sharing behavior,
+ * accessibility, and the canonical ERP navigation.
+ */
+export const themePersonalities: Record<ThemeId, ThemePersonality> = {
+  'lagos-sunrise': {
+    identity: 'Warm sunrise operations',
+    layoutPhilosophy: 'Open split composition with generous editorial breathing room',
+    heroImagery: 'Golden Lagos light, bakery craft, and human-scale operations',
+    widgetArrangement: 'Warm KPI ribbon followed by approachable operational cards',
+    chartStyling: 'Rounded blue-teal lines with coral highlights and soft area fills',
+    animationBehavior: 'Confident floating drift with gentle sunrise shimmer',
+    dashboardPersonality: 'Optimistic, welcoming, and action-oriented',
+  },
+  'print-neon-grid': {
+    identity: 'Creative production grid',
+    layoutPhilosophy: 'Structured grid with deliberate alignment and high information density',
+    heroImagery: 'Neon print layers, precision registration, and luminous production marks',
+    widgetArrangement: 'Modular production tiles with a strong visual work queue',
+    chartStyling: 'Electric stepped lines, cyan bars, and magenta alert accents',
+    animationBehavior: 'Crisp hover lifts, scan-line shimmer, and expressive transitions',
+    dashboardPersonality: 'Inventive, precise, and kinetic',
+  },
+  'digital-indigo': {
+    identity: 'Intelligent digital network',
+    layoutPhilosophy: 'Mesh layout that lets connected signals guide the eye across workspaces',
+    heroImagery: 'Indigo interfaces, connected nodes, and deep technology gradients',
+    widgetArrangement: 'Interlocking insight panels with a dominant intelligence canvas',
+    chartStyling: 'Layered indigo and violet streams with signal-point emphasis',
+    animationBehavior: 'Soft node pulses and balanced, responsive state transitions',
+    dashboardPersonality: 'Analytical, connected, and quietly futuristic',
+  },
+  'auto-showroom-night': {
+    identity: 'Daylight luxury showroom',
+    layoutPhilosophy: 'Focused cards with strong product framing and calm executive spacing',
+    heroImagery: 'Reflective vehicle forms, showroom glass, and precision highlights',
+    widgetArrangement: 'Inventory and workshop cards arranged like a curated showroom',
+    chartStyling: 'Fine blue telemetry lines, metallic neutral bars, and coral exceptions',
+    animationBehavior: 'Measured reveal, polished hover sheen, and restrained motion',
+    dashboardPersonality: 'Confident, premium, and exact',
+  },
+  'urban-property-skyline': {
+    identity: 'Architectural city calm',
+    layoutPhilosophy: 'Layered cards that create an airy property portfolio overview',
+    heroImagery: 'Skyline silhouettes, daylight architecture, and quiet teal reflections',
+    widgetArrangement: 'Portfolio, occupancy, maintenance, and ROI grouped in spatial layers',
+    chartStyling: 'Architectural area charts with teal occupancy bands and coral markers',
+    animationBehavior: 'Slow parallax ambience with soft card elevation',
+    dashboardPersonality: 'Aspirational, composed, and trustworthy',
+  },
+  'cargo-flow': {
+    identity: 'Living logistics route',
+    layoutPhilosophy: 'Mesh-based flow that prioritizes movement, routes, and exceptions',
+    heroImagery: 'Cargo lanes, route lines, fleet lights, and kinetic horizon energy',
+    widgetArrangement: 'Dispatch queue and live status sit at the center of the workspace',
+    chartStyling: 'Directional route lines, cyan throughput bars, and orange delay signals',
+    animationBehavior: 'Expressive route sweeps, pulse markers, and momentum-aware movement',
+    dashboardPersonality: 'Kinetic, dependable, and operationally clear',
+  },
+  'executive-boardroom': {
+    identity: 'Warm executive command',
+    layoutPhilosophy: 'Quiet card hierarchy with strong decision points and restrained ornament',
+    heroImagery: 'Natural materials, boardroom light, and considered enterprise detail',
+    widgetArrangement: 'Executive KPIs above focused risk, people, and decision widgets',
+    chartStyling: 'Fine navy lines, brass comparison bars, and muted coral risk markers',
+    animationBehavior: 'Subtle fade-through, calm lift, and deliberate status emphasis',
+    dashboardPersonality: 'Authoritative, warm, and focused',
+  },
+  'job-market-pulse': {
+    identity: 'Human talent pulse',
+    layoutPhilosophy: 'Friendly cards and quick-glance clusters that keep people at the center',
+    heroImagery: 'Human connection, optimistic coral light, and inclusive work moments',
+    widgetArrangement: 'Candidate funnel, interviews, tasks, and announcements in lively clusters',
+    chartStyling: 'Rounded violet funnels, aqua progress bars, and coral pulse points',
+    animationBehavior: 'Noticeable but friendly pulse, shimmer, and celebratory completion states',
+    dashboardPersonality: 'Human, energetic, and encouraging',
+  },
+  'global-operations-mesh': {
+    identity: 'Connected enterprise command',
+    layoutPhilosophy: 'Responsive mesh that balances all ERPs without creating dead zones',
+    heroImagery: 'World-scale connections, atmospheric light, and global operating signals',
+    widgetArrangement: 'Cross-ERP command tiles around a central intelligence canvas',
+    chartStyling: 'Multi-series global lines, connected nodes, and forecast overlays',
+    animationBehavior: 'Balanced ambient orbit with clear data-state transitions',
+    dashboardPersonality: 'Expansive, intelligent, and unified',
+  },
+  'minimal-tech-white': {
+    identity: 'Quiet precision workspace',
+    layoutPhilosophy: 'Minimal canvas, exact spacing, and only the information needed in context',
+    heroImagery: 'Bright white technology surfaces with precise blue-teal accents',
+    widgetArrangement: 'Sparse but meaningful cards with disciplined quick actions',
+    chartStyling: 'Hairline blue charts, restrained teal fills, and exact annotation',
+    animationBehavior: 'Fast, light micro-interactions with almost no visual noise',
+    dashboardPersonality: 'Clear, efficient, and effortlessly modern',
+  },
+};
+
 export function normalizeThemeId(value: unknown): ThemeId {
   const id = String(value || '');
   if (themeList.some((theme) => theme.id === id)) return id as ThemeId;
@@ -402,6 +511,10 @@ export function isThemeId(value: unknown): value is ThemeId {
 export function themeById(value: unknown): ThemeConfig {
   const id = normalizeThemeId(value);
   return themeList.find((theme) => theme.id === id) || themeList[0];
+}
+
+export function themePersonalityById(value: unknown): ThemePersonality {
+  return themePersonalities[normalizeThemeId(value)];
 }
 
 export function resolveMode(preference: ModePreference, date = new Date()): ResolvedMode {
@@ -430,6 +543,9 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   const root = document.documentElement;
   root.dataset.theme = theme.id;
   root.dataset.mode = mode;
+  root.dataset.layout = theme.dashboardLayout;
+  root.dataset.signInLayout = theme.signInLayout;
+  root.dataset.motion = theme.motion;
   root.style.colorScheme = mode === 'night' ? 'dark' : 'light';
   root.style.setProperty('--canvas', selected.canvas);
   root.style.setProperty('--surface', selected.surface);
@@ -444,6 +560,7 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   root.style.setProperty('--border', selected.border);
   root.style.setProperty('--shadow', selected.shadow);
   root.style.setProperty('--hero-overlay', selected.heroOverlay);
+  root.style.setProperty('--glow-intensity', theme.motion === 'expressive' ? '1' : theme.motion === 'balanced' ? '.78' : '.58');
   root.style.setProperty('--hero-image', `url(/reference-images/signin/${theme.imageKey}.png)`);
   root.style.setProperty('--dashboard-image', `url(/reference-images/dashboard/${theme.imageKey}.png)`);
   root.style.setProperty('--font-heading', `"${theme.fontHeading}"`);
