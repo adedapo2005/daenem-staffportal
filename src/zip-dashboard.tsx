@@ -750,6 +750,8 @@ export function ZipDashboard({
           return <button key={item.code} onClick={() => setCompany(item)} className={company.code === item.code ? 'active' : ''}><Icon size={15} /><span>{item.code}</span></button>;
         })}</div>
         {view === 'overview' ? <>
+          <WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />
+          <SmartLoadingCard pending={!summary} />
           <KpiStrip summary={summary} company={company} />
           <div className="widget-toolbar"><span><GripVertical size={15} /> Drag cards to personalize your view</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div>
           <DashboardWidgets
@@ -763,7 +765,9 @@ export function ZipDashboard({
             onOpenModule={onOpenModule}
             release={release}
           />
+          <OwnerCommandCenter context={context} summary={summary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} />
           {liveIntelligence && <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section>}
+          <section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>
         </> : <div className="zip-module-content">{content}</div>}
         <footer className="dashboard-footer"><span>Daenem Business ERP · {themeName}</span><span>Live sync · <b>{online ? 'Operational' : 'Offline'}</b></span></footer>
       </div>
