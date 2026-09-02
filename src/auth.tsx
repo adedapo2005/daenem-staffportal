@@ -39,6 +39,38 @@ export function hasWorkforcePermission(
 }
 
 type ApiError = Error & { code?: string; status?: number; passwordErrors?: string[] };
+type AppInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' | string }>;
+};
+
+let deferredAppInstallPrompt: AppInstallPromptEvent | null = null;
+let appInstallListenersAttached = false;
+
+function ensureAppInstallListener() {
+  if (typeof window === 'undefined' || appInstallListenersAttached) return;
+  appInstallListenersAttached = true;
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredAppInstallPrompt = event as AppInstallPromptEvent;
+    window.dispatchEvent(new Event('daenem:pwa-install-ready'));
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredAppInstallPrompt = null;
+    window.dispatchEvent(new Event('daenem:pwa-installed'));
+  });
+}
+
+export async function requestAppInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
+  ensureAppInstallListener();
+  const prompt = deferredAppInstallPrompt;
+  if (!prompt) return 'unavailable';
+  deferredAppInstallPrompt = null;
+  await prompt.prompt();
+  const choice = await prompt.userChoice;
+  return choice.outcome === 'accepted' ? 'accepted' : 'dismissed';
+}
+
 type Message = { type: 'error' | 'success' | 'info'; text: string; details?: string[] };
 
 type PasswordCheck = { label: string; ok: boolean; required?: boolean };
@@ -508,6 +540,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const resetChecks = passwordChecks(newPassword);
 
   useEffect(() => {
+    ensureAppInstallListener();
+  }, []);
+
+  useEffect(() => {
     const theme = themeById(themeId);
     applyThemeToDocument(theme.id, modePreference);
     document.title = `${theme.name} · Daenem Staff Portal`;
@@ -516,6 +552,17 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   useEffect(() => {
     panelRef.current?.scrollTo({ top: 0, behavior: 'auto' });
   }, [mode, signupStep, recoveryStep]);
+
+  async function installApp() {
+    const outcome = await requestAppInstall();
+    if (outcome === 'accepted') {
+      setMessage({ type: 'success', text: 'Daenem Staff Portal was installed on this device.' });
+    } else if (outcome === 'dismissed') {
+      setMessage({ type: 'info', text: 'Installation was cancelled. You can install the portal later from your browser menu.' });
+    } else {
+      setMessage({ type: 'info', text: 'Use your browser menu or address-bar install icon to add the Staff Portal to this device.' });
+    }
+  }
 
   function unavailableOAuth(provider: 'Microsoft' | 'Google') {
     setMessage({ type: 'info', text: `${provider} access is not enabled for this Staff Portal deployment. Use your employee username or email and password, or ask your administrator to enable it.` });
@@ -745,8 +792,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
           {mode !== 'forgot' && <><div className="or-divider"><span /> or <span /></div><div className="social-buttons"><button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="microsoft-mark"><i /><i /><i /><i /></span> {mode === 'signup' ? 'Create Account with Microsoft' : 'Sign In with Microsoft'}</button><button type="button" onClick={() => unavailableOAuth('Google')}><b className="google-mark">G</b> {mode === 'signup' ? 'Create Account with Google' : 'Sign In with Google'}</button></div><p className="social-note">Use your Microsoft or Google account to sign in or create an account.</p></>}
 
-          <div className="legal-copy">By continuing to log in, you agree to Daenem’s <a href="#terms">Terms and Conditions</a>. <a href="#privacy">Privacy Policy</a>.</div>
-          <div className="panel-footer-actions"><span className="operational-pill"><i /> Operational</span><button className="install-button" type="button" onClick={() => setMessage({ type: 'info', text: 'Install instructions are available from App & GPS after you sign in.' })}><Download size={16} /> Install Daenem ERP App</button></div>
+          <div className="legal-copy">By continuing to log in, you agree to Daenem Farms’ <a href="#terms">Terms and Conditions</a>. <a href="#privacy">Privacy Policy</a>.</div>
+          <div className="panel-footer-actions"><span className="operational-pill"><i /> Operational</span><button className="install-button" data-pwa-install type="button" onClick={() => void installApp()}><Download size={16} /> Install App</button></div>
     </section>
   );
 
