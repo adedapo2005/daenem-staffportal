@@ -1,4 +1,5 @@
 import appHandler from './app-entry';
+import { routePasswordAuth } from './password-auth';
 import { getSessionContext } from './auth';
 import { getEnhancedSessionContext } from './auth-context-v2';
 import { routeDirectory } from './directory';
@@ -273,6 +274,14 @@ export default {
       }
 
       return secure(json({ error: 'API route not found.' }, 404));
+    }
+
+    // Keep the production entrypoint explicit for password sign-in. The app
+    // handler also supports this route, but this guard prevents a future
+    // middleware change from turning a valid login into a silent 404.
+    if (url.pathname === '/api/auth/login' && request.method === 'POST') {
+      const passwordAuthResponse = await routePasswordAuth(request, env);
+      if (passwordAuthResponse) return secure(passwordAuthResponse);
     }
 
     return appHandler.fetch(request, env, ctx);
