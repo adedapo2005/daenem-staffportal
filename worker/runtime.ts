@@ -70,6 +70,16 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // Legacy theme artwork was removed from the Staff Portal release. Block
+    // stale Workers Assets copies so an old theme can never be served again.
+    if (url.pathname === '/theme-assets' || url.pathname.startsWith('/theme-assets/')) {
+      return secure(new Response('Not found', {
+        status: 404,
+        headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' },
+      }));
+    }
+
+
     if (url.pathname.startsWith('/api/public/properties/hostel/') || url.pathname.startsWith('/properties/hostel/')) {
       const response = await routePropertiesHostelPublic(request, env);
       if (response) return secure(response);
