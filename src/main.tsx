@@ -28,6 +28,7 @@ const SupportInbox = lazy(() => import('./support-inbox'));
 
 type ViewName = HierarchyViewId;
 
+type TemperatureUnit = 'F' | 'C';
 type WeatherState = { label: string; temperature?: number; description?: string; loading?: boolean };
 type SignupRequest = {
   id: string; employeeId: string; displayName: string; email?: string; phone?: string;
@@ -259,6 +260,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [clock, setClock] = useState(watNow());
   const [weather, setWeather] = useState<WeatherState>({ label: 'Location not enabled' });
+  const [temperatureUnit, setTemperatureUnit] = useState<TemperatureUnit>(() => localStorage.getItem('daenem-weather-unit') === 'C' ? 'C' : 'F');
   const [online, setOnline] = useState(navigator.onLine);
   const [summary, setSummary] = useState<ZipDashboardSummary | null>(null);
 
@@ -324,6 +326,8 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   }
   const activeTheme = themeList.find((item) => item.id === theme) || themeList[0];
   const executive = can(context, 'dashboard.access', 'manage', company.id) || context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
+  const canChangeWeatherUnit = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
+  useEffect(() => { localStorage.setItem('daenem-weather-unit', temperatureUnit); }, [temperatureUnit]);
 
   function openAdmin() {
     openErpModule('admin');
@@ -363,6 +367,9 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       themeName={activeTheme.name}
       clock={clock}
       weather={weather}
+      temperatureUnit={temperatureUnit}
+      setTemperatureUnit={setTemperatureUnit}
+      canChangeWeatherUnit={canChangeWeatherUnit}
       enableLocation={enableLocation}
       online={online}
       sidebarOpen={sidebarOpen}
