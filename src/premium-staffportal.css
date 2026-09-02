@@ -3054,3 +3054,484 @@ html[data-theme="minimal-tech-white"] .signin-hero::before {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Approved Theme 01 composition: warm daylight, city light, compact authentication. */
+html[data-theme="lagos-sunrise"] body {
+  background: #faf6f0;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(18px, 2.6vw, 42px);
+  gap: 16px;
+  color: #1d293b;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(255,255,255,.95) 0 12rem, transparent 32rem),
+    radial-gradient(circle at 94% 20%, rgba(255,205,159,.28), transparent 30rem),
+    #faf6f0;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page::before {
+  opacity: .58;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255,197,134,.3) 0 2px, transparent 3px),
+    radial-gradient(circle at 76% 42%, rgba(42,137,178,.18) 0 2px, transparent 3px),
+    radial-gradient(circle at 45% 86%, rgba(244,114,87,.16) 0 1px, transparent 3px);
+  background-size: 190px 190px, 260px 260px, 130px 130px;
+}
+
+html[data-theme="lagos-sunrise"] .signin-page::after {
+  opacity: .22;
+  background:
+    linear-gradient(118deg, transparent 0 42%, rgba(231,154,103,.18) 48%, transparent 54%),
+    linear-gradient(24deg, transparent 0 54%, rgba(61,140,172,.12) 61%, transparent 67%);
+}
+
+html[data-theme="lagos-sunrise"] .signin-surface {
+  width: min(100%, 1440px);
+  min-height: clamp(650px, calc(100dvh - 168px), 790px);
+  grid-template-columns: minmax(0, 1.15fr) minmax(420px, .85fr);
+  gap: 0;
+  border: 1px solid rgba(120,99,77,.14);
+  border-radius: 30px;
+  overflow: hidden;
+  background: rgba(255,255,255,.62);
+  box-shadow:
+    0 30px 90px rgba(87,73,58,.14),
+    0 7px 22px rgba(87,73,58,.08),
+    inset 0 1px 0 rgba(255,255,255,.82);
+}
+
+html[data-theme="lagos-sunrise"] .signin-hero {
+  min-height: 650px;
+  border-radius: 0;
+  color: #1b2a3d;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,239,218,.16)),
+    url("/theme-assets/theme-01-sunrise.svg") center / cover no-repeat;
+  box-shadow: none;
+}
+
+html[data-theme="lagos-sunrise"] .signin-hero::before {
+  opacity: .98;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 45%, rgba(229,165,126,.16) 100%),
+    url("/theme-assets/theme-01-sunrise.svg") center / cover no-repeat;
+  filter: saturate(1.05) contrast(1.01);
+}
+
+html[data-theme="lagos-sunrise"] .signin-hero::after {
+  inset: auto 0 0;
+  height: 36%;
+  opacity: .36;
+  background:
+    linear-gradient(180deg, transparent, rgba(255,245,231,.74)),
+    radial-gradient(ellipse at 16% 92%, rgba(255,255,255,.78), transparent 34%),
+    radial-gradient(ellipse at 82% 100%, rgba(255,255,255,.48), transparent 38%);
+  mix-blend-mode: normal;
+}
+
+html[data-theme="lagos-sunrise"] .hero-brand {
+  position: relative;
+  z-index: 3;
+}
+
+html[data-theme="lagos-sunrise"] .signin-hero .brand-mark {
+  width: 66px;
+  height: 66px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="lagos-sunrise"] .signin-hero .brand-mark-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 22px rgba(35,91,157,.18));
+}
+
+html[data-theme="lagos-sunrise"] .signin-hero .brand-copy strong {
+  color: #15283e;
+  font-size: clamp(26px, 2.2vw, 36px);
+}
+
+html[data-theme="lagos-sunrise"] .signin-hero .brand-copy span {
+  color: #596879;
+  font-size: 13px;
+}
+
+html[data-theme="lagos-sunrise"] .hero-topline {
+  position: absolute;
+  top: clamp(28px, 3vw, 48px);
+  right: clamp(28px, 3.5vw, 56px);
+  left: auto;
+  z-index: 3;
+  color: #536577;
+  font-size: 10px;
+}
+
+html[data-theme="lagos-sunrise"] .hero-topline .status-dot {
+  background: #1b9d65;
+  box-shadow: 0 0 0 4px rgba(27,157,101,.14);
+}
+
+html[data-theme="lagos-sunrise"] .hero-secure-label {
+  color: #536577;
+}
+
+html[data-theme="lagos-sunrise"] .hero-content {
+  position: relative;
+  z-index: 3;
+  max-width: 440px;
+  margin: auto 0 210px;
+}
+
+html[data-theme="lagos-sunrise"] .hero-title {
+  margin: 0;
+  color: #18283b;
+  font: 700 clamp(40px, 5vw, 70px)/.98 "Manrope", sans-serif;
+  letter-spacing: -.065em;
+  text-wrap: balance;
+}
+
+html[data-theme="lagos-sunrise"] .hero-tagline {
+  max-width: 390px;
+  margin: 16px 0 9px;
+  color: #38495b;
+  font-size: clamp(20px, 2.1vw, 29px);
+  font-weight: 600;
+  line-height: 1.13;
+  letter-spacing: -.045em;
+  text-shadow: none;
+}
+
+html[data-theme="lagos-sunrise"] .hero-supporting-copy {
+  max-width: 310px;
+  margin: 0;
+  color: #5d6d7c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+html[data-theme="lagos-sunrise"] .hero-theme-copy,
+html[data-theme="lagos-sunrise"] .hero-tiles {
+  display: none !important;
+}
+
+html[data-theme="lagos-sunrise"] .hero-widgets {
+  right: clamp(28px, 4vw, 62px);
+  bottom: 76px;
+  left: clamp(28px, 4vw, 62px);
+  width: auto;
+  max-width: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+html[data-theme="lagos-sunrise"] .hero-widget {
+  min-height: 92px;
+  padding: 13px;
+  border: 0;
+  border-radius: 17px;
+  color: #34475a;
+  background: rgba(255,255,255,.58);
+  box-shadow:
+    0 12px 26px rgba(91,76,57,.1),
+    inset 0 1px 0 rgba(255,255,255,.76);
+  backdrop-filter: blur(14px) saturate(1.04);
+}
+
+html[data-theme="lagos-sunrise"] .hero-widget span {
+  color: #d76e55;
+  font-size: 8px;
+  letter-spacing: .14em;
+}
+
+html[data-theme="lagos-sunrise"] .hero-widget strong {
+  color: #24394c;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+html[data-theme="lagos-sunrise"] .hero-widget small {
+  color: #687989;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+html[data-theme="lagos-sunrise"] .hero-footer {
+  position: absolute;
+  right: auto;
+  bottom: 27px;
+  left: clamp(28px, 4vw, 62px);
+  z-index: 3;
+  color: #6b7a86;
+  font-size: 9px;
+}
+
+html[data-theme="lagos-sunrise"] .signin-panel-wrap {
+  min-height: 0;
+  align-content: center;
+  padding: clamp(28px, 4vw, 68px);
+  border-radius: 0;
+  background: rgba(255,255,255,.45);
+  box-shadow: inset 1px 0 0 rgba(126,103,78,.09);
+  backdrop-filter: blur(3px);
+}
+
+html[data-theme="lagos-sunrise"] .signin-panel {
+  width: min(100%, 470px);
+  max-height: none;
+  overflow: visible;
+  padding: clamp(26px, 3vw, 42px);
+  border: 1px solid rgba(124,104,81,.12);
+  border-radius: 24px;
+  background: rgba(255,255,255,.78);
+  box-shadow:
+    0 22px 58px rgba(81,70,57,.13),
+    inset 0 1px 0 rgba(255,255,255,.94);
+  backdrop-filter: blur(20px) saturate(1.06);
+}
+
+html[data-theme="lagos-sunrise"] .panel-heading h1 {
+  color: #1d293b;
+  font-size: clamp(28px, 3vw, 38px);
+  letter-spacing: -.055em;
+}
+
+html[data-theme="lagos-sunrise"] .panel-heading p {
+  color: #697788;
+}
+
+html[data-theme="lagos-sunrise"] .panel-security {
+  color: #728091;
+  background: rgba(248,247,244,.78);
+}
+
+html[data-theme="lagos-sunrise"] .signin-tabs {
+  background: rgba(241,239,234,.7);
+}
+
+html[data-theme="lagos-sunrise"] .signin-tabs button {
+  color: #6b7786;
+}
+
+html[data-theme="lagos-sunrise"] .signin-tabs button.active {
+  color: #ea6957;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 8px 18px rgba(95,78,62,.08);
+}
+
+html[data-theme="lagos-sunrise"] .field-shell {
+  background: rgba(255,255,255,.72);
+  border-color: rgba(121,105,86,.18);
+}
+
+html[data-theme="lagos-sunrise"] .field-shell:focus-within {
+  border-color: rgba(232,105,87,.66);
+  box-shadow: 0 0 0 4px rgba(232,105,87,.1), 0 12px 26px rgba(232,105,87,.08);
+}
+
+html[data-theme="lagos-sunrise"] .submit-button {
+  background: linear-gradient(100deg, #ff7a52 0%, #f86c68 52%, #ef6d58 100%);
+  box-shadow: 0 15px 30px rgba(239,109,88,.22);
+}
+
+html[data-theme="lagos-sunrise"] .social-buttons {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+html[data-theme="lagos-sunrise"] .social-buttons button {
+  min-height: 48px;
+  color: #304255;
+  background: rgba(255,255,255,.76);
+  border-color: rgba(121,105,86,.16);
+}
+
+html[data-theme="lagos-sunrise"] .panel-footer-actions {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(121,105,86,.1);
+}
+
+html[data-theme="lagos-sunrise"] .world-clocks {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: 12px;
+  border: 1px solid rgba(121,105,86,.12);
+  border-radius: 22px;
+  background: rgba(255,255,255,.72);
+  box-shadow:
+    0 18px 44px rgba(84,70,56,.1),
+    inset 0 1px 0 rgba(255,255,255,.84);
+  backdrop-filter: blur(15px) saturate(1.04);
+}
+
+html[data-theme="lagos-sunrise"] .world-clock {
+  background: rgba(255,255,255,.64);
+  box-shadow:
+    0 10px 22px rgba(84,70,56,.07),
+    inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+html[data-theme="lagos-sunrise"] .world-clock:hover {
+  background: rgba(255,255,255,.86);
+  box-shadow: 0 16px 28px rgba(84,70,56,.11), inset 0 1px 0 rgba(255,255,255,.86);
+}
+
+html[data-theme="lagos-sunrise"] .clock-location strong,
+html[data-theme="lagos-sunrise"] .clock-time,
+html[data-theme="lagos-sunrise"] .world-clocks-heading strong {
+  color: #21364b;
+}
+
+html[data-theme="lagos-sunrise"] .signin-bottom-note {
+  color: #73808c;
+}
+
+html[data-theme="lagos-sunrise"] .dashboard-page {
+  background:
+    radial-gradient(circle at 62% 8%, rgba(255,218,179,.34), transparent 34rem),
+    linear-gradient(135deg, #fbf8f2 0%, #f2eee6 100%);
+}
+
+html[data-theme="lagos-sunrise"] .dashboard-page::before {
+  opacity: .14;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,237,214,.18)),
+    url("/theme-assets/theme-01-sunrise.svg") center top / cover no-repeat;
+  animation: dashboard-ambient 30s var(--premium-ease) infinite alternate;
+}
+
+html[data-theme="lagos-sunrise"] .dashboard-page .sidebar {
+  background: rgba(255,255,255,.8);
+  border-color: rgba(112,93,72,.12);
+  box-shadow: 12px 0 32px rgba(85,70,53,.07);
+  backdrop-filter: blur(18px) saturate(1.04);
+}
+
+html[data-theme="lagos-sunrise"] .dashboard-page .top-bar,
+html[data-theme="lagos-sunrise"] .dashboard-page .kpi-card,
+html[data-theme="lagos-sunrise"] .dashboard-page .chart-card,
+html[data-theme="lagos-sunrise"] .dashboard-page .panel,
+html[data-theme="lagos-sunrise"] .dashboard-page .data-panel {
+  border-color: rgba(112,93,72,.12);
+  background: rgba(255,255,255,.76);
+  box-shadow: 0 15px 32px rgba(85,70,53,.07), inset 0 1px 0 rgba(255,255,255,.86);
+  backdrop-filter: blur(15px) saturate(1.04);
+}
+
+html[data-theme="lagos-sunrise"] .dashboard-page .primary-button {
+  background: linear-gradient(100deg, #ff7a52, #f36b6b);
+}
+
+@media (max-width: 980px) {
+  html[data-theme="lagos-sunrise"] .signin-surface {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-hero {
+    min-height: 610px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-panel-wrap {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 720px) {
+  html[data-theme="lagos-sunrise"] .signin-page {
+    padding: 10px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-surface {
+    min-height: auto;
+    border-radius: 22px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-hero {
+    min-height: 590px;
+    padding: 24px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-topline {
+    top: 24px;
+    right: 24px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-content {
+    margin-bottom: 205px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-title {
+    font-size: 42px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-tagline {
+    font-size: 22px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-widgets {
+    right: 24px;
+    bottom: 70px;
+    left: 24px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-widget {
+    min-height: 86px;
+    padding: 10px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-widget small {
+    font-size: 8px;
+  }
+
+  html[data-theme="lagos-sunrise"] .signin-panel {
+    width: 100%;
+    padding: 24px 18px;
+  }
+
+  html[data-theme="lagos-sunrise"] .social-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  html[data-theme="lagos-sunrise"] .signin-hero {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-topline {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-top: 14px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-content {
+    margin: 58px 0 20px;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-widgets {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin-top: 24px;
+    grid-template-columns: 1fr;
+  }
+
+  html[data-theme="lagos-sunrise"] .hero-footer {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin-top: 18px;
+  }
+}
