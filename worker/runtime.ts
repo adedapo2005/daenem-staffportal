@@ -79,6 +79,13 @@ export default {
       }));
     }
 
+    if (url.pathname === '/reference-images/signin/theme-01-lagos-sunrise-hero.png') {
+      return secure(new Response('Not found', {
+        status: 404,
+        headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' },
+      }));
+    }
+
 
     if (url.pathname.startsWith('/api/public/properties/hostel/') || url.pathname.startsWith('/properties/hostel/')) {
       const response = await routePropertiesHostelPublic(request, env);
