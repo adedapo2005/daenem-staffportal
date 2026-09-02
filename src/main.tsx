@@ -112,6 +112,8 @@ const PORTAL_RELEASE = {
   version: '7.0.0-alpha.15',
   date: '21 August 2026',
   changes: [
+    'Added ten distinct light-first premium visual themes with responsive sign-in and dashboard compositions.',
+    'Added the canonical ERP hierarchy audit, seven live city clocks, scoped Home Dashboard, ERP pulse cards and intentional loading states.',
     'Recovered and protected the exact production Staff Portal source.',
     'Added business-scoped permissions so access from one company cannot appear inside another.',
     'Added clear descriptions to authorized navigation and module functions.',
