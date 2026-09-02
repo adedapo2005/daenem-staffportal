@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, Check, CheckCircle2, Clock3, Download, Eye, EyeOff,
-  KeyRound, LockKeyhole, Mail, ShieldCheck,
+  Activity, ArrowRight, Check, CheckCircle2, Clock3, Download, Eye, EyeOff,
+  KeyRound, LockKeyhole, Mail, Radio, ShieldCheck, Sparkles, Sun,
 } from 'lucide-react';
 import {
   applyThemeToDocument, readModePreference, readThemeId, themeById, type ModePreference, type ThemeId,
@@ -299,6 +299,179 @@ export function WorldClocks() {
   </div>;
 }
 
+
+type LiveHealthState = {
+  state: 'checking' | 'operational' | 'attention';
+  latencyMs: number | null;
+  version: string;
+  checkedAt: Date | null;
+};
+
+type LiveWeatherState = {
+  state: 'loading' | 'ready' | 'unavailable';
+  temperatureF: number | null;
+  description: string;
+  location: string;
+  updatedAt: Date | null;
+};
+
+function liveTimeText(zone: string, date: Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
+  }).format(date);
+}
+
+function liveDateText(zone: string, date: Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, month: 'short', day: 'numeric', year: 'numeric',
+  }).format(date);
+}
+
+function liveTimeZoneText(zone: string, date: Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, timeZoneName: 'short',
+  }).formatToParts(date).find((part) => part.type === 'timeZoneName')?.value || zone;
+}
+
+function liveClockHands(zone: string, date: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value || 0) % 12;
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value || 0);
+  return {
+    '--hour-angle': (hour * 30 + minute * 0.5) + 'deg',
+    '--minute-angle': (minute * 6) + 'deg',
+  } as React.CSSProperties;
+}
+
+function LiveHeroSurface({ onFocusAccess }: { onFocusAccess: () => void }) {
+  const [now, setNow] = useState(() => new Date());
+  const [health, setHealth] = useState<LiveHealthState>({
+    state: 'checking', latencyMs: null, version: '', checkedAt: null,
+  });
+  const [weather, setWeather] = useState<LiveWeatherState>({
+    state: 'loading', temperatureF: null, description: 'Checking current conditions',
+    location: 'Ibadan, Nigeria', updatedAt: null,
+  });
+
+  useEffect(() => {
+    let timer = 0;
+    const stop = () => { if (timer) window.clearInterval(timer); timer = 0; };
+    const start = () => {
+      stop();
+      if (document.visibilityState !== 'visible') return;
+      setNow(new Date());
+      timer = window.setInterval(() => setNow(new Date()), 1000);
+    };
+    document.addEventListener('visibilitychange', start);
+    start();
+    return () => { stop(); document.removeEventListener('visibilitychange', start); };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function refreshHealth() {
+      const startedAt = Date.now();
+      try {
+        const result = await api<{ ok?: boolean; version?: string }>('/api/health');
+        if (!active) return;
+        setHealth({
+          state: result.ok === false ? 'attention' : 'operational',
+          latencyMs: Math.max(1, Date.now() - startedAt),
+          version: result.version || 'production',
+          checkedAt: new Date(),
+        });
+      } catch {
+        if (active) setHealth({ state: 'attention', latencyMs: null, version: '', checkedAt: new Date() });
+      }
+    }
+    refreshHealth();
+    const timer = window.setInterval(refreshHealth, 30_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function refreshWeather() {
+      try {
+        const result = await api<{ temperature?: number; description?: string }>('/api/context/weather?lat=7.3775&lon=3.9470');
+        if (!active) return;
+        const temperatureC = typeof result.temperature === 'number' ? result.temperature : null;
+        setWeather({
+          state: temperatureC === null ? 'unavailable' : 'ready',
+          temperatureF: temperatureC === null ? null : Math.round((temperatureC * 9) / 5 + 32),
+          description: result.description || 'Current conditions',
+          location: 'Ibadan, Nigeria',
+          updatedAt: new Date(),
+        });
+      } catch {
+        if (active) setWeather((current) => ({ ...current, state: 'unavailable', updatedAt: new Date() }));
+      }
+    }
+    refreshWeather();
+    const timer = window.setInterval(refreshWeather, 600_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+
+  const lagosTime = liveTimeText('Africa/Lagos', now);
+  const lagosDate = liveDateText('Africa/Lagos', now);
+  const healthLabel = health.state === 'operational' ? 'Operational' : health.state === 'attention' ? 'Attention' : 'Checking';
+  const healthDetail = health.state === 'operational'
+    ? (health.latencyMs || '—') + ' ms edge response'
+    : health.state === 'attention' ? 'Retrying edge status' : 'Connecting to edge status';
+  const weatherTemp = weather.temperatureF === null ? '—' : weather.temperatureF + '°F';
+  const weatherDetail = weather.state === 'loading'
+    ? 'Loading current conditions'
+    : weather.state === 'unavailable' ? 'Weather temporarily unavailable' : weather.description;
+  const updatedLabel = weather.updatedAt
+    ? 'Updated ' + liveTimeText('Africa/Lagos', weather.updatedAt)
+    : 'Waiting for live reading';
+
+  return <div className="hero-live-surface" data-testid="live-hero-surface" aria-label="Live Sunlit Meridian portal surface">
+    <div className="hero-live-board">
+      <div className="hero-live-light-sweep" aria-hidden="true" />
+      <div className="hero-live-board-badge"><span className="hero-live-orb" /><span>LIVE WORKSPACE</span><b>{lagosTime}</b></div>
+
+      <section className="hero-live-auth-card" aria-label="Live employee sign-in preview">
+        <div className="hero-live-card-label"><span><LockKeyhole size={11} /> LIVE ACCESS</span><span className={'hero-live-card-state ' + health.state}><i />{health.state === 'operational' ? 'READY' : 'SYNCING'}</span></div>
+        <div className="hero-live-auth-brand"><img src="/brand-assets/logo-mark.svg" alt="" /><span><strong>Daenem</strong><small>Employee Portal</small></span></div>
+        <h3>Employee sign-in</h3>
+        <p>Production authentication is connected to the secure form.</p>
+        <button type="button" onClick={onFocusAccess}>Open live sign-in <ArrowRight size={12} /></button>
+        <span className="hero-live-card-foot"><ShieldCheck size={11} /> Session protected</span>
+      </section>
+
+      <section className="hero-live-weather-card" aria-label="Live Ibadan weather">
+        <div className="hero-live-weather-icon" aria-hidden="true"><Sun size={23} /></div>
+        <div className="hero-live-card-label"><span>LIVE WEATHER</span><b>IBADAN</b></div>
+        <strong>{weatherTemp}</strong>
+        <span>{weatherDetail}</span>
+        <small>{updatedLabel}</small>
+      </section>
+
+      <section className="hero-live-insights" aria-label="Live portal widgets">
+        <article className="hero-live-insight hero-live-insight-ai"><span><Sparkles size={10} /> AI INSPIRATION</span><strong>Make the next task obvious.</strong><small>Guidance layer ready.</small></article>
+        <article className="hero-live-insight hero-live-insight-health"><span><Activity size={10} /> PORTAL STATUS</span><strong>{healthLabel}</strong><small>{healthDetail}</small></article>
+        <article className="hero-live-insight hero-live-insight-update"><span><Radio size={10} /> LIVE UPDATE</span><strong>Workspace refreshed</strong><small>{health.checkedAt ? 'Checked ' + liveTimeText('Africa/Lagos', health.checkedAt) : 'Checking edge…'}</small></article>
+      </section>
+
+      <section className="hero-live-status-row" aria-label="Live portal signals">
+        <span className="hero-live-status-item"><i className={'hero-live-status-dot ' + health.state} /><strong>{healthLabel}</strong><small>{healthDetail}</small></span>
+        <span className="hero-live-status-item"><Clock3 size={12} /><strong>{lagosTime}</strong><small>Ibadan · {lagosDate}</small></span>
+        <span className="hero-live-status-item"><LockKeyhole size={12} /><strong>Secure session</strong><small>Employee access protected</small></span>
+      </section>
+
+      <section className="hero-live-clock-rail" aria-label="Seven live world clocks">
+        {WORLD_CLOCKS.map((item) => <article className="hero-live-mini-clock-card" key={item.zone} tabIndex={0} aria-label={item.name + ' live time'}>
+          <div className="hero-live-mini-clock" style={liveClockHands(item.zone, now)} aria-hidden="true"><span className="hero-live-clock-hand hero-live-clock-hand-hour" /><span className="hero-live-clock-hand hero-live-clock-hand-minute" /><span className="hero-live-clock-center" /></div>
+          <div className="hero-live-mini-clock-info"><strong>{item.name}</strong><b>{liveTimeText(item.zone, now)}</b><small>{liveDateText(item.zone, now)} · {liveTimeZoneText(item.zone, now)}</small><span><i />{dayNightText(item.zone)}</span></div>
+        </article>)}
+      </section>
+    </div>
+  </div>;
+}
+
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: WorkforceContext) => void }) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
@@ -507,6 +680,12 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const theme = themeById(themeId);
 
+  function focusSigninPanel() {
+    const input = panelRef.current?.querySelector<HTMLInputElement>('input[aria-label="Email or Username"]');
+    input?.focus();
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   return <main className={`signin-page signin-${theme.signInLayout}`}>
     <div className="signin-surface">
       <section className="signin-hero">
@@ -523,6 +702,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
           </section>
         </div>
         <div className="hero-footer"><ShieldCheck size={16} /> Secure enterprise access <span>•</span> Designed for web, tablet and mobile</div>
+        {theme.id === 'lagos-sunrise' && <LiveHeroSurface onFocusAccess={focusSigninPanel} />}
       </section>
 
       <section className="signin-panel-wrap">
