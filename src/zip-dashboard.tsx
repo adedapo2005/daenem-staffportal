@@ -223,7 +223,7 @@ function ZipTopBar({
               <button className={temperatureUnit === 'F' ? 'selected' : ''} onClick={() => setTemperatureUnit('F')}>°F</button>
               <button className={temperatureUnit === 'C' ? 'selected' : ''} onClick={() => setTemperatureUnit('C')}>°C</button>
             </div>
-          </div>
+          </div>}
           <button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button>
           <button className="logout-menu" onClick={() => void onLogout()}><span>Sign out</span></button>
         </div>}
