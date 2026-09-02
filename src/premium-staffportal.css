@@ -2795,3 +2795,125 @@ html[data-theme="minimal-tech-white"] .erp-pulse-card {
   color: var(--primary);
   box-shadow: 0 0 16px color-mix(in srgb, var(--primary) 17%, transparent);
 }
+
+
+/* Ten directions have distinct composition rules in addition to their shared system. */
+html[data-theme="lagos-sunrise"] .dashboard-page .widget-trend { grid-column: span 7; order: 1; }
+html[data-theme="lagos-sunrise"] .dashboard-page .widget-motivation { grid-column: span 5; order: 2; }
+html[data-theme="lagos-sunrise"] .signin-hero { border-radius: 34px 18px 34px 18px; }
+
+html[data-theme="print-neon-grid"] .dashboard-page .widget-trend { grid-column: span 8; order: 1; }
+html[data-theme="print-neon-grid"] .dashboard-page .widget-queue { grid-column: span 4; order: 2; }
+html[data-theme="print-neon-grid"] .signin-hero { border-radius: 12px; }
+html[data-theme="print-neon-grid"] .dashboard-page .chart-card,
+html[data-theme="print-neon-grid"] .dashboard-page .erp-pulse-card { border-radius: 8px; }
+
+html[data-theme="digital-indigo"] .dashboard-page .widget-trend { grid-column: span 6; order: 1; }
+html[data-theme="digital-indigo"] .dashboard-page .widget-forecast { grid-column: span 6; order: 2; }
+html[data-theme="digital-indigo"] .signin-hero { border-radius: 26px; }
+
+html[data-theme="auto-showroom-night"] .dashboard-page .widget-category { grid-column: span 4; order: 1; }
+html[data-theme="auto-showroom-night"] .dashboard-page .widget-queue { grid-column: span 8; order: 2; }
+html[data-theme="auto-showroom-night"] .signin-hero { border-radius: 20px 20px 30px 30px; }
+
+html[data-theme="urban-property-skyline"] .dashboard-page .widget-trend { grid-column: span 8; order: 1; }
+html[data-theme="urban-property-skyline"] .dashboard-page .widget-status { grid-column: span 4; order: 2; }
+html[data-theme="urban-property-skyline"] .signin-hero { border-radius: 30px 30px 18px 18px; }
+
+html[data-theme="cargo-flow"] .dashboard-page .widget-queue { grid-column: span 8; order: 1; }
+html[data-theme="cargo-flow"] .dashboard-page .widget-status { grid-column: span 4; order: 2; }
+html[data-theme="cargo-flow"] .signin-hero { border-radius: 10px 30px 10px 30px; }
+html[data-theme="cargo-flow"] .dashboard-page .erp-pulse-chart i { transform-origin: bottom left; }
+
+html[data-theme="executive-boardroom"] .dashboard-page .widget-trend { grid-column: span 8; order: 1; }
+html[data-theme="executive-boardroom"] .dashboard-page .widget-comparison,
+html[data-theme="executive-boardroom"] .dashboard-page .widget-category { grid-column: span 4; order: 2; }
+html[data-theme="executive-boardroom"] .signin-hero { border-radius: 18px; }
+
+html[data-theme="job-market-pulse"] .dashboard-page .widget-queue { grid-column: span 8; order: 1; }
+html[data-theme="job-market-pulse"] .dashboard-page .widget-motivation { grid-column: span 4; order: 2; }
+html[data-theme="job-market-pulse"] .signin-hero { border-radius: 26px 26px 12px 12px; }
+
+html[data-theme="global-operations-mesh"] .dashboard-page .widget-trend { grid-column: span 9; order: 1; }
+html[data-theme="global-operations-mesh"] .dashboard-page .widget-comparison { grid-column: span 3; order: 2; }
+html[data-theme="global-operations-mesh"] .signin-hero { border-radius: 22px; }
+
+html[data-theme="minimal-tech-white"] .dashboard-page .widget-trend { grid-column: span 8; order: 1; }
+html[data-theme="minimal-tech-white"] .dashboard-page .widget-status { grid-column: span 4; order: 2; }
+html[data-theme="minimal-tech-white"] .dashboard-page .chart-card,
+html[data-theme="minimal-tech-white"] .dashboard-page .erp-pulse-card { border-radius: 12px; }
+
+html[data-theme="print-neon-grid"] .dashboard-page .zip-chart-canvas path {
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--secondary) 25%, transparent));
+}
+
+html[data-theme="digital-indigo"] .dashboard-page .zip-chart-canvas path.secondary-line {
+  stroke-dasharray: 2 8;
+  stroke-width: 2.5;
+}
+
+html[data-theme="cargo-flow"] .dashboard-page .zip-chart-canvas path {
+  stroke-linecap: square;
+}
+
+html[data-theme="executive-boardroom"] .dashboard-page .zip-chart-canvas path {
+  stroke-width: 2;
+}
+
+html[data-theme="job-market-pulse"] .dashboard-page .zip-chart-canvas path.secondary-line {
+  stroke-dasharray: 7 4;
+}
+
+html[data-theme="global-operations-mesh"] .dashboard-page .zip-chart-canvas path {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 18%, transparent));
+}
+
+html[data-theme="lagos-sunrise"] .dashboard-page .erp-pulse-chart i,
+html[data-theme="job-market-pulse"] .dashboard-page .erp-pulse-chart i {
+  animation-duration: 4.2s;
+}
+
+html[data-theme="print-neon-grid"] .dashboard-page .erp-pulse-chart i,
+html[data-theme="cargo-flow"] .dashboard-page .erp-pulse-chart i {
+  animation-duration: 1.8s;
+}
+
+html[data-theme="executive-boardroom"] .dashboard-page .erp-pulse-chart i,
+html[data-theme="minimal-tech-white"] .dashboard-page .erp-pulse-chart i {
+  animation-duration: 5.6s;
+}
+
+html[data-theme="digital-indigo"] .signin-hero::after,
+html[data-theme="global-operations-mesh"] .signin-hero::after {
+  animation: premium-gradient-drift 12s var(--premium-ease) infinite alternate;
+}
+
+html[data-theme="print-neon-grid"] .hero-widget,
+html[data-theme="cargo-flow"] .hero-widget {
+  animation-duration: .55s;
+}
+
+html[data-theme="executive-boardroom"] .hero-widget,
+html[data-theme="minimal-tech-white"] .hero-widget {
+  animation-duration: .9s;
+}
+
+@media (max-width: 700px) {
+  html[data-theme] .dashboard-page .widget-trend,
+  html[data-theme] .dashboard-page .widget-comparison,
+  html[data-theme] .dashboard-page .widget-category,
+  html[data-theme] .dashboard-page .widget-forecast,
+  html[data-theme] .dashboard-page .widget-queue,
+  html[data-theme] .dashboard-page .widget-status,
+  html[data-theme] .dashboard-page .widget-news,
+  html[data-theme] .dashboard-page .widget-motivation {
+    grid-column: auto;
+    order: initial;
+  }
+}
+
+.world-clocks::before {
+  display: none;
+}
