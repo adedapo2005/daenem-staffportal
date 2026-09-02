@@ -4459,3 +4459,53 @@ html[data-theme] .dashboard-page::before {
     background-size: cover, auto 145%, cover !important;
   }
 }
+
+
+/* Runtime composition: the approved boards provide the exact art direction,
+   while the interactive controls remain crisp and never duplicate board chrome. */
+html[data-theme] .signin-page .signin-hero {
+  background-image:
+    radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 42%),
+    radial-gradient(circle at 82% 86%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 40%),
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 58%, var(--canvas)), color-mix(in srgb, var(--secondary) 36%, var(--canvas)) 56%, color-mix(in srgb, var(--accent) 28%, var(--canvas))) !important;
+  background-position: center, center, center !important;
+  background-size: cover, cover, cover !important;
+  background-repeat: no-repeat !important;
+}
+
+html[data-theme] .signin-page .signin-hero::before {
+  opacity: .62 !important;
+  filter: blur(4px) saturate(1.08) contrast(1.02) !important;
+  transform: scale(1.035) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(7,24,52,.18)),
+    var(--hero-image, none),
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 26%, transparent), color-mix(in srgb, var(--secondary) 18%, transparent) 55%, color-mix(in srgb, var(--accent) 18%, transparent)) !important;
+  background-position: center, center, center !important;
+  background-size: cover, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light, normal, normal !important;
+}
+
+html[data-theme] .signin-page.signin-split .signin-hero {
+  background-image:
+    radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--secondary) 22%, transparent), transparent 42%),
+    radial-gradient(circle at 82% 86%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 40%),
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 58%, var(--canvas)), color-mix(in srgb, var(--secondary) 36%, var(--canvas)) 56%, color-mix(in srgb, var(--accent) 28%, var(--canvas))) !important;
+  background-position: center, center, center !important;
+  background-size: cover, cover, cover !important;
+}
+
+html[data-theme] .signin-page.signin-split .signin-hero::before {
+  opacity: .62 !important;
+  filter: blur(4px) saturate(1.08) contrast(1.02) !important;
+  transform: scale(1.035) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(7,24,52,.18)),
+    var(--hero-image, none),
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 26%, transparent), color-mix(in srgb, var(--secondary) 18%, transparent) 55%, color-mix(in srgb, var(--accent) 18%, transparent)) !important;
+  background-position: center, center, center !important;
+  background-size: cover, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: soft-light, normal, normal !important;
+}
