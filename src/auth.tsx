@@ -436,6 +436,13 @@ function LiveHeroSurface({ onFocusAccess }: { onFocusAccess: () => void }) {
       <section className="hero-live-auth-card" aria-label="Live employee sign-in preview">
         <div className="hero-live-card-label"><span><LockKeyhole size={11} /> LIVE ACCESS</span><span className={'hero-live-card-state ' + health.state}><i />{health.state === 'operational' ? 'READY' : 'SYNCING'}</span></div>
         <div className="hero-live-auth-brand"><img src="/brand-assets/logo-mark.svg" alt="" /><span><strong>Daenem</strong><small>Employee Portal</small></span></div>
+        <div className="hero-live-form-preview" data-live-preview="sign-in" aria-hidden="true">
+          <div className="hero-live-preview-tabs"><span className="active">Employee Sign-In</span><span>Create Account</span></div>
+          <div className="hero-live-preview-field"><span>Email or Username</span><b>Required</b><strong>Enter employee identity</strong></div>
+          <div className="hero-live-preview-field"><span>Password</span><b>Protected</b><strong className="hero-live-preview-password">••••••••</strong></div>
+          <div className="hero-live-preview-meta"><span><i /> Remember Me</span><span>Encrypted</span></div>
+          <div className="hero-live-preview-submit"><span>Sign In</span><ArrowRight size={10} /></div>
+        </div>
         <h3>Employee sign-in</h3>
         <p>Production authentication is connected to the secure form.</p>
         <button type="button" onClick={onFocusAccess}>Open live sign-in <ArrowRight size={12} /></button>
