@@ -569,7 +569,7 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   root.style.setProperty('--font-body', `"${theme.fontBody}"`);
   const artworkKey = APPROVED_ARTWORK_BY_THEME[theme.id];
   // Theme 01 uses the exact Library-approved Sunlit Meridian artwork.
-  const heroArtworkFile = theme.id === 'lagos-sunrise' ? 'approved-sunlit-meridian.webp' : `${artworkKey}.png`;
+  const heroArtworkFile = theme.id === 'lagos-sunrise' ? 'approved-sunlit-meridian.jpg' : `${artworkKey}.png`;
   root.style.setProperty('--hero-image', `url("/reference-images/signin/${heroArtworkFile}")`);
   root.style.setProperty('--dashboard-image', `url("/reference-images/dashboard/${artworkKey}.png")`);
   return theme.id;
