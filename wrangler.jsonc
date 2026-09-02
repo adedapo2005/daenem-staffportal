@@ -22,7 +22,7 @@
     {
       "binding": "DB",
       "database_name": "daenem-workforce-hub",
-      "database_id": "TO_BE_PROVISIONED",
+      "database_id": "bea49ff6-e47a-486a-8f65-c3ef9670e314",
       "migrations_dir": "migrations"
     }
   ],
@@ -35,7 +35,7 @@
   "kv_namespaces": [
     {
       "binding": "SOCIAL_CACHE",
-      "id": "TO_BE_PROVISIONED_SOCIAL_CACHE"
+      "id": "74cfc3efb9f54ac4b243a6c0fd2ffc26"
     }
   ],
   "queues": {
@@ -73,7 +73,7 @@
   "vars": {
     "APP_NAME": "Daenem Workforce Hub",
     "TIMEZONE": "Africa/Lagos",
-    "APP_STAGE": "bootstrap",
+    "APP_STAGE": "production",
     "WORKFORCE_EMAIL_FROM": "portal@daenem.com",
     "META_GRAPH_VERSION": "v24.0"
   }
