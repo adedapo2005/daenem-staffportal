@@ -174,6 +174,7 @@ function signInWidgetRow(instance: SignInWidgetInstance, index: number) {
   return '<div class="signin-admin-row" draggable="true" data-signin-widget="' + escapeHtml(instance.id) + '">' +
     '<label class="signin-widget-visible"><input type="checkbox" data-widget-visible="' + escapeHtml(instance.id) + '"' + (instance.visible ? ' checked' : '') + '><span>' + escapeHtml(instance.label) + '</span></label>' +
     '<select data-widget-zone="' + escapeHtml(instance.id) + '" aria-label="Move ' + escapeHtml(instance.label) + ' to zone">' + optionMarkup(['live-context', 'today', 'auxiliary'], instance.zone, { 'live-context': 'Live Context', today: 'Today', auxiliary: 'Auxiliary' }) + '</select>' +
+    '<select data-widget-kind="' + escapeHtml(instance.id) + '" aria-label="Replace ' + escapeHtml(instance.label) + '">' + optionMarkup(Object.keys(signInWidgetLabels), instance.kind, signInWidgetLabels) + '</select>' +
     '<select data-widget-variant="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' variant">' + optionMarkup(variants, instance.variant) + '</select>' +
     '<span class="signin-admin-order"><button type="button" data-widget-move="' + escapeHtml(instance.id) + '" data-direction="-1" ' + (index === 0 ? 'disabled' : '') + ' aria-label="Move ' + escapeHtml(instance.label) + ' up">↑</button><button type="button" data-widget-move="' + escapeHtml(instance.id) + '" data-direction="1" ' + (index === signInConfig.widgetInstances.length - 1 ? 'disabled' : '') + ' aria-label="Move ' + escapeHtml(instance.label) + ' down">↓</button></span>' +
     '<button type="button" class="signin-admin-remove" data-widget-remove="' + escapeHtml(instance.id) + '" aria-label="Remove ' + escapeHtml(instance.label) + '">×</button>' +
@@ -231,6 +232,7 @@ function renderSignInAdmin() {
       '</div><div class="signin-display-toggles">' + [['showAnalog','Analog clock'],['showDigital','Digital time'],['showDate','Date'],['showTimezone','Timezone'],['showDayNight','Day/night'],['showWeather','Weather']].map(([key,label]) => '<label class="signin-check"><input type="checkbox" data-signin-field="globalOperations.' + key + '"' + (signInConfig.globalOperations[key as keyof typeof signInConfig.globalOperations] ? ' checked' : '') + '> ' + label + '</label>').join('') + '</div><div class="signin-location-list">' + locationRows + '</div></section>' +
       '<section class="signin-admin-section"><h4>EFFECTS</h4><div class="signin-display-toggles">' + [['ambientGlow','Ambient glow'],['backgroundBreathing','Background breathing'],['cardFloat','Card float'],['logoMotion','Logo motion'],['statusPulse','Status pulse'],['widgetEntrance','Widget entrance'],['shimmer','Shimmer']].map(([key,label]) => '<label class="signin-check"><input type="checkbox" data-signin-field="effects.' + key + '"' + (signInConfig.effects[key as keyof typeof signInConfig.effects] ? ' checked' : '') + '> ' + label + '</label>').join('') + '</div><label>Glass intensity<input type="range" min="0" max="100" step="1" data-signin-field="effects.glassIntensity" value="' + signInConfig.effects.glassIntensity + '"></label></section>' +
       '<section class="signin-admin-section"><h4>AI CONTENT</h4>' + aiMarkup('inspiration') + aiMarkup('motivation') + '<p class="signin-admin-note">News remains source-bound to verified RSS headlines; AI cannot fabricate news.</p></section>' +
+      '<section class="signin-admin-section signin-admin-preview"><h4>PREVIEW</h4><p>Open the public sign-in surface in a separate tab to review the saved central configuration.</p><button type="button" data-signin-preview>Open sign-in preview</button></section>' +
       '<section class="signin-admin-section signin-admin-recovery"><h4>RESET / RECOVERY</h4><button type="button" data-signin-reset="complete">Reset complete sign-in layout</button><button type="button" data-signin-reset="widgets">Reset widgets</button><span>Changes are saved centrally and can be restored to safe defaults.</span></section>' +
     '</div>';
   const state = document.querySelector<HTMLElement>('.signin-theme-save-state');
@@ -281,10 +283,14 @@ function handleSignInAdminChange(event: Event) {
     const value = target instanceof HTMLInputElement && target.type === 'checkbox' ? target.checked : target.value;
     const next = cloneSignInConfig();
     setConfigPath(next, path, value);
+    const widgetLabelMatch = path.match(/^labels\.widgetLabels\.(weather|inspiration|motivation|news|status)$/);
+    if (widgetLabelMatch) {
+      next.widgetInstances = next.widgetInstances.map((item) => item.kind === widgetLabelMatch[1] ? { ...item, label: String(value) } : item);
+    }
     queueSignInConfigSave(next);
     return;
   }
-  const widgetId = target.dataset.widgetVisible || target.dataset.widgetZone || target.dataset.widgetVariant;
+  const widgetId = target.dataset.widgetVisible || target.dataset.widgetZone || target.dataset.widgetVariant || target.dataset.widgetKind;
   if (widgetId) {
     const next = cloneSignInConfig();
     const instance = next.widgetInstances.find((item) => item.id === widgetId);
@@ -292,6 +298,11 @@ function handleSignInAdminChange(event: Event) {
     if (target.dataset.widgetVisible) instance.visible = target instanceof HTMLInputElement && target.checked;
     if (target.dataset.widgetZone) instance.zone = target.value as SignInWidgetInstance['zone'];
     if (target.dataset.widgetVariant) instance.variant = target.value as SignInWidgetInstance['variant'];
+    if (target.dataset.widgetKind) {
+      instance.kind = target.value as SignInWidgetId;
+      instance.variant = SIGNIN_WIDGET_VARIANTS[instance.kind][0];
+      instance.label = next.labels.widgetLabels[instance.kind];
+    }
     queueSignInConfigSave(next);
     return;
   }
@@ -350,6 +361,7 @@ function handleSignInAdminClick(event: Event) {
   const reset = target?.closest<HTMLButtonElement>('[data-signin-reset]');
   const generate = target?.closest<HTMLButtonElement>('[data-ai-generate]');
   const option = target?.closest<HTMLButtonElement>('[data-ai-option-kind]');
+  const preview = target?.closest<HTMLButtonElement>('[data-signin-preview]');
   if (move) {
     const id = move.dataset.widgetMove;
     const index = signInConfig.widgetInstances.findIndex((item) => item.id === id);
@@ -389,6 +401,10 @@ function handleSignInAdminClick(event: Event) {
     const next = cloneSignInConfig();
     next.content[kind] = value;
     queueSignInConfigSave(next);
+    return;
+  }
+  if (preview) {
+    window.open('/', '_blank', 'noopener,noreferrer');
   }
 }
 async function loadSignInAdmin(canManage: boolean) {
