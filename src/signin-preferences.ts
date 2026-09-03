@@ -231,7 +231,7 @@ function candidateRecord(value: unknown) {
 }
 
 function cleanText(value: unknown, fallback: string, max: number) {
-  const text = typeof value === 'string' ? value.replace(/[\\u0000-\\u001f\\u007f]/g, '').trim() : '';
+  const text = typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim() : '';
   return (text || fallback).slice(0, max);
 }
 
@@ -242,7 +242,7 @@ function uniqueValues<T extends string>(values: unknown, allowed: readonly T[]):
 
 function validTime(value: unknown, fallback: string) {
   const text = String(value || '');
-  return /^([01]\\d|2[0-3]):[0-5]\\d$/.test(text) ? text : fallback;
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(text) ? text : fallback;
 }
 
 function normalizeLabels(value: unknown): SignInLabels {
