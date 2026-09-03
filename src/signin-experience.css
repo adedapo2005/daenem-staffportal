@@ -2771,6 +2771,30 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-weather-card p { font-size: 9px; }
 }
 
+@media (min-width: 821px) and (max-height: 959px) {
+  .usp-shell {
+    padding-block: clamp(10px, 1.5vh, 18px);
+    gap: clamp(10px, 1.5vh, 14px);
+  }
+  .usp-topbar { min-height: clamp(64px, 8vh, 76px); }
+  .usp-clock-dock { height: clamp(110px, 15vh, 150px); }
+}
+
+@media (min-width: 821px) and (max-height: 820px) {
+  .usp-clock-dock { height: 110px; }
+  .usp-panel-heading p,
+  .usp-social-note { display: none; }
+}
+
+@media (min-width: 821px) and (max-height: 739px) {
+  .usp-shell {
+    padding-block: 8px;
+    gap: 8px;
+  }
+  .usp-topbar { min-height: 60px; }
+  .usp-clock-dock { height: 90px; }
+}
+
 @media (min-width: 821px) and (max-height: 719px) {
   .usp-shell {
     padding: 8px;
