@@ -1,6 +1,6 @@
 import './theme-studio.css';
 import { applyThemeToDocument, normalizeThemeId, themeList } from './theme-system';
-import { fetchAdminSignInPreferences, normalizeSignInPreferences, readSignInPreferences, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
+import { fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
 
 type ThemeOption = {
   id: string;
@@ -173,7 +173,7 @@ function signInWidgetRow(instance: SignInWidgetInstance, index: number) {
   const variants = SIGNIN_WIDGET_VARIANTS[instance.kind];
   return '<div class="signin-admin-row" draggable="true" data-signin-widget="' + escapeHtml(instance.id) + '">' +
     '<label class="signin-widget-visible"><input type="checkbox" data-widget-visible="' + escapeHtml(instance.id) + '"' + (instance.visible ? ' checked' : '') + '><span>' + escapeHtml(instance.label) + '</span></label>' +
-    '<select data-widget-zone="' + escapeHtml(instance.id) + '" aria-label="Move ' + escapeHtml(instance.label) + ' to zone">' + optionMarkup(['live-context', 'today', 'auxiliary'], instance.zone, { 'live-context': 'Live Context', today: 'Today', auxiliary: 'Auxiliary' }) + '</select>' +
+    '<select data-widget-zone="' + escapeHtml(instance.id) + '" aria-label="Move ' + escapeHtml(instance.label) + ' to zone">' + optionMarkup(['workspace-spotlight', 'live-context', 'today', 'auxiliary'], instance.zone, { 'workspace-spotlight': 'Workspace Spotlight', 'live-context': 'Live Context', today: 'Today', auxiliary: 'Auxiliary' }) + '</select>' +
     '<select data-widget-kind="' + escapeHtml(instance.id) + '" aria-label="Replace ' + escapeHtml(instance.label) + '">' + optionMarkup(Object.keys(signInWidgetLabels), instance.kind, signInWidgetLabels) + '</select>' +
     '<select data-widget-variant="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' variant">' + optionMarkup(variants, instance.variant) + '</select>' +
     '<select data-widget-effect="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' effect">' + optionMarkup(['quiet', 'glass', 'accent', 'soft'], instance.effectPreset) + '</select>' +
@@ -224,7 +224,27 @@ function renderSignInAdmin() {
         labelInput('labels.workspaceDescription', 'Workspace description', labels.workspaceDescription, SIGNIN_LABEL_LIMITS.workspaceDescription, true) +
         labelInput('labels.liveContextHeading', 'Live Context heading', labels.liveContextHeading, SIGNIN_LABEL_LIMITS.sectionHeading) +
         labelInput('labels.todayHeading', 'Today heading', labels.todayHeading, SIGNIN_LABEL_LIMITS.sectionHeading) +
+        labelInput('labels.workspaceSpotlightHeading', 'Workspace Spotlight heading', labels.workspaceSpotlightHeading, SIGNIN_LABEL_LIMITS.sectionHeading) +
+        labelInput('labels.auxiliaryHeading', 'Auxiliary heading', labels.auxiliaryHeading, SIGNIN_LABEL_LIMITS.sectionHeading) +
         labelInput('labels.globalOperationsHeading', 'Global Operations heading', labels.globalOperationsHeading, SIGNIN_LABEL_LIMITS.sectionHeading) +
+        labelInput('labels.liveErpAccess', 'Live ERP access label', labels.liveErpAccess, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.installApp', 'Install App label', labels.installApp, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.ibadanTime', 'Ibadan time label', labels.ibadanTime, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.session', 'Session label', labels.session, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.protected', 'Protected label', labels.protected, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.encryptedSession', 'Encrypted session label', labels.encryptedSession, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.secureService', 'Secure service label', labels.secureService, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.weatherLoading', 'Weather loading label', labels.weatherLoading, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.weatherConnecting', 'Weather connecting label', labels.weatherConnecting, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.weatherUpdated', 'Weather updated label', labels.weatherUpdated, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.liveGuidanceNote', 'Guidance note', labels.liveGuidanceNote, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.dailyMomentumNote', 'Momentum note', labels.dailyMomentumNote, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.rotatingLiveFeed', 'Live feed note', labels.rotatingLiveFeed, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.statusOperational', 'Operational status label', labels.statusOperational, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.statusMaintenance', 'Maintenance status label', labels.statusMaintenance, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.statusChecking', 'Checking status label', labels.statusChecking, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.statusConnecting', 'Status connecting label', labels.statusConnecting, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.clockSummary', 'Clock summary label', labels.clockSummary, SIGNIN_LABEL_LIMITS.support) +
         Object.keys(labels.widgetLabels).map((kind) => labelInput('labels.widgetLabels.' + kind, signInWidgetLabels[kind as SignInWidgetId] + ' label', labels.widgetLabels[kind as SignInWidgetId], SIGNIN_LABEL_LIMITS.widget)).join('') +
       '</div></section>' +
       '<section class="signin-admin-section"><h4>WORLD CLOCKS</h4><p>Choose up to seven locations from the expanded catalogue.</p><div class="signin-admin-grid">' +
@@ -321,8 +341,7 @@ function handleSignInAdminChange(event: Event) {
     const kind = addKind as SignInWidgetId;
     if (!(kind in SIGNIN_WIDGET_VARIANTS)) return;
     const next = cloneSignInConfig();
-    const count = next.widgetInstances.filter((item) => item.kind === kind).length;
-    next.widgetInstances.push({ id: kind + '-' + (count + 1), kind, variant: SIGNIN_WIDGET_VARIANTS[kind][0], zone: kind === 'weather' || kind === 'status' ? 'live-context' : 'today', order: next.widgetInstances.length, visible: true, label: next.labels.widgetLabels[kind], effectPreset: 'glass' });
+    next.widgetInstances.push({ id: nextSignInWidgetId(kind, next.widgetInstances), kind, variant: SIGNIN_WIDGET_VARIANTS[kind][0], zone: kind === 'weather' || kind === 'status' ? 'live-context' : 'today', order: next.widgetInstances.length, visible: true, label: next.labels.widgetLabels[kind], effectPreset: 'glass' });
     queueSignInConfigSave(next);
   }
 }
