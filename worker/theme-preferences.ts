@@ -73,6 +73,25 @@ const DEFAULT_LABELS = {
   statusChecking: 'Checking',
   statusConnecting: 'Connecting securely',
   clockSummary: 'locations · 12-hour time · automatic updates',
+  inspirationSpark: 'SPARK', promptOfTheDay: 'PROMPT OF THE DAY', promptOfTheDayNote: 'A question to focus the next useful action.',
+  teamBoost: 'TEAM BOOST', recognition: 'RECOGNITION', focusGoal: 'FOCUS GOAL', recognitionNote: 'Notice one contribution worth recognizing today.',
+  priorityBriefing: 'PRIORITY BRIEFING', secureEdge: 'secure edge', serviceTeamNotified: 'Service team notified',
+  auth: {
+    secureErpAccess: 'SECURE ERP ACCESS', signInTitle: 'Employee sign-in',
+    signInDescription: 'Use your employee email or username to enter the live ERP workspace.',
+    createAccountTitle: 'Create account', createAccountDescription: 'Create your secure employee login. Your work access remains subject to administrator approval.',
+    verifyEmailTitle: 'Verify your email', verifyEmailDescription: 'Enter the one-time code sent to your email to finish creating your account.',
+    forgotPasswordTitle: 'Forgot password', forgotPasswordDescription: 'Enter your email or username to begin secure password recovery.',
+    verifyIdentityTitle: 'Verify your identity', verifyIdentityDescription: 'Enter the one-time code sent to the email on your approved account.',
+    newPasswordTitle: 'Create a new password', newPasswordDescription: 'Choose a secure password, then return to employee sign-in.',
+    employeeSignInTab: 'Employee Sign-In', createAccountTab: 'Create Account', emailOrUsername: 'Email or Username', password: 'Password',
+    forgotPassword: 'Forgot password?', rememberMe: 'Remember Me', trustedDevice: 'Use only on a trusted device', signIn: 'Sign In', signingIn: 'Signing in…', mfaReady: 'MFA-ready',
+    microsoftSignIn: 'Sign In with Microsoft', googleSignIn: 'Sign In with Google', microsoftCreateAccount: 'Create Account with Microsoft', googleCreateAccount: 'Create Account with Google',
+    backToSignIn: 'Back to sign-in', firstName: 'First Name', lastName: 'Last Name', personalEmail: 'Personal Email', phoneWhatsApp: 'Phone / WhatsApp', createUsername: 'Create Username',
+    usernameHelper: '4–32 characters: letters, numbers, dot, underscore or hyphen.', createPassword: 'Create Password', confirmPassword: 'Confirm Password', departmentWorkArea: 'Department / Work Area', jobTitle: 'Job Title', rolePosition: 'Role / Position Information',
+    preparingVerification: 'Preparing verification…', verificationCode: '6-digit verification code', verifyEmailFinish: 'Verify email & finish signup', changeSignupDetails: 'Change signup details', sendRecoveryCode: 'Send recovery code', preparingRecovery: 'Preparing recovery…', verifyIdentity: 'Verify identity', requestAnotherCode: 'Request another code', newPassword: 'New Password', confirmNewPassword: 'Confirm New Password', createNewPassword: 'Create password', securingAccount: 'Securing account…',
+    continue: 'Continue', back: 'Back', verifying: 'Verifying…', verificationSentTo: 'Verification code sent to', privateBootstrapCode: 'PRIVATE BOOTSTRAP CODE', bootstrapNote: 'Visible only in the local bootstrap stage.', verificationCodeSent: 'Enter the 6-digit code sent to your email.', recoveryIdentityNote: 'If the details match an approved account, we’ll send a one-time code to the email on file.', identityVerified: 'Identity verified', resetAccessNote: 'Create your password to finish securing your access.', socialNote: 'Use your Microsoft or Google account to sign in or create an account.', legalPrefix: 'By continuing to log in, you agree to Daenem Farms’', termsAndConditions: 'Terms and Conditions', privacyPolicy: 'Privacy Policy',
+  },
   widgetLabels: { weather: 'LIVE WEATHER', inspiration: 'AI INSPIRATION', motivation: 'EMPLOYEE MOTIVATION', news: 'LIVE NEWS', status: 'PORTAL STATUS' },
 };
 
@@ -139,6 +158,7 @@ function safeTime(value: unknown, fallback: string) {
 function normalizeLabels(value: unknown) {
   const source = record(value);
   const widgets = record(source.widgetLabels);
+  const auth = record(source.auth);
   return {
     brandEyebrow: cleanText(source.brandEyebrow, DEFAULT_LABELS.brandEyebrow, LABEL_LIMITS.brandEyebrow),
     brandTitle: cleanText(source.brandTitle, DEFAULT_LABELS.brandTitle, LABEL_LIMITS.brandTitle),
@@ -169,6 +189,17 @@ function normalizeLabels(value: unknown) {
     statusChecking: cleanText(source.statusChecking, DEFAULT_LABELS.statusChecking, LABEL_LIMITS.display),
     statusConnecting: cleanText(source.statusConnecting, DEFAULT_LABELS.statusConnecting, LABEL_LIMITS.support),
     clockSummary: cleanText(source.clockSummary, DEFAULT_LABELS.clockSummary, LABEL_LIMITS.support),
+    inspirationSpark: cleanText(source.inspirationSpark, DEFAULT_LABELS.inspirationSpark, LABEL_LIMITS.display),
+    promptOfTheDay: cleanText(source.promptOfTheDay, DEFAULT_LABELS.promptOfTheDay, LABEL_LIMITS.display),
+    promptOfTheDayNote: cleanText(source.promptOfTheDayNote, DEFAULT_LABELS.promptOfTheDayNote, LABEL_LIMITS.support),
+    teamBoost: cleanText(source.teamBoost, DEFAULT_LABELS.teamBoost, LABEL_LIMITS.display),
+    recognition: cleanText(source.recognition, DEFAULT_LABELS.recognition, LABEL_LIMITS.display),
+    focusGoal: cleanText(source.focusGoal, DEFAULT_LABELS.focusGoal, LABEL_LIMITS.display),
+    recognitionNote: cleanText(source.recognitionNote, DEFAULT_LABELS.recognitionNote, LABEL_LIMITS.support),
+    priorityBriefing: cleanText(source.priorityBriefing, DEFAULT_LABELS.priorityBriefing, LABEL_LIMITS.display),
+    secureEdge: cleanText(source.secureEdge, DEFAULT_LABELS.secureEdge, LABEL_LIMITS.display),
+    serviceTeamNotified: cleanText(source.serviceTeamNotified, DEFAULT_LABELS.serviceTeamNotified, LABEL_LIMITS.display),
+    auth: Object.fromEntries(Object.keys(DEFAULT_LABELS.auth).map((key) => [key, cleanText(auth[key], DEFAULT_LABELS.auth[key as keyof typeof DEFAULT_LABELS.auth], LABEL_LIMITS.support)])),
     widgetLabels: {
       weather: cleanText(widgets.weather, DEFAULT_LABELS.widgetLabels.weather, LABEL_LIMITS.widget),
       inspiration: cleanText(widgets.inspiration, DEFAULT_LABELS.widgetLabels.inspiration, LABEL_LIMITS.widget),
