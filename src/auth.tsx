@@ -356,6 +356,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [message, setMessage] = useState<Message | null>(null);
   const [themeId] = useState<ThemeId>(() => readThemeId());
   const [modePreference] = useState<ModePreference>(() => readModePreference());
+  const [secureServiceLabel, setSecureServiceLabel] = useState(() => readSignInPreferences().labels.secureService);
 
   const [signupStep, setSignupStep] = useState<'form' | 'verify'>('form');
   const [signupChallenge, setSignupChallenge] = useState('');
@@ -385,6 +386,15 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   useEffect(() => {
     ensureAppInstallListener();
+  }, []);
+
+  useEffect(() => {
+    const onSignInPreferences = (event: Event) => {
+      const config = (event as CustomEvent<{ labels?: { secureService?: string } }>).detail;
+      if (config?.labels?.secureService) setSecureServiceLabel(config.labels.secureService);
+    };
+    window.addEventListener('daenem:signin-preferences', onSignInPreferences);
+    return () => window.removeEventListener('daenem:signin-preferences', onSignInPreferences);
   }, []);
 
   useEffect(() => {
@@ -681,7 +691,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         By continuing to log in, you agree to Daenem Farms’ <a href="/terms-and-conditions.html" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>. <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
       </p>
       <div className="usp-panel-footer">
-        <span className="usp-operational-pill"><i /> {readSignInPreferences().labels.secureService}</span>
+        <span className="usp-operational-pill"><i /> {secureServiceLabel}</span>
       </div>
     </section>
   );
