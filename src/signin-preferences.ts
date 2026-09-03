@@ -53,6 +53,74 @@ export const WORLD_CLOCK_CATALOG: PortalLocation[] = [
 
 export type WorldClockPreferences = { style: ClockStyle; visibleZones: string[] };
 
+export type SignInAuthLabels = {
+  secureErpAccess: string;
+  signInTitle: string;
+  signInDescription: string;
+  createAccountTitle: string;
+  createAccountDescription: string;
+  verifyEmailTitle: string;
+  verifyEmailDescription: string;
+  forgotPasswordTitle: string;
+  forgotPasswordDescription: string;
+  verifyIdentityTitle: string;
+  verifyIdentityDescription: string;
+  newPasswordTitle: string;
+  newPasswordDescription: string;
+  employeeSignInTab: string;
+  createAccountTab: string;
+  emailOrUsername: string;
+  password: string;
+  forgotPassword: string;
+  rememberMe: string;
+  trustedDevice: string;
+  signIn: string;
+  signingIn: string;
+  mfaReady: string;
+  microsoftSignIn: string;
+  googleSignIn: string;
+  microsoftCreateAccount: string;
+  googleCreateAccount: string;
+  backToSignIn: string;
+  firstName: string;
+  lastName: string;
+  personalEmail: string;
+  phoneWhatsApp: string;
+  createUsername: string;
+  usernameHelper: string;
+  createPassword: string;
+  confirmPassword: string;
+  departmentWorkArea: string;
+  jobTitle: string;
+  rolePosition: string;
+  preparingVerification: string;
+  verificationCode: string;
+  verifyEmailFinish: string;
+  changeSignupDetails: string;
+  sendRecoveryCode: string;
+  preparingRecovery: string;
+  verifyIdentity: string;
+  requestAnotherCode: string;
+  newPassword: string;
+  confirmNewPassword: string;
+  createNewPassword: string;
+  securingAccount: string;
+  continue: string;
+  back: string;
+  verifying: string;
+  verificationSentTo: string;
+  privateBootstrapCode: string;
+  bootstrapNote: string;
+  verificationCodeSent: string;
+  recoveryIdentityNote: string;
+  identityVerified: string;
+  resetAccessNote: string;
+  socialNote: string;
+  legalPrefix: string;
+  termsAndConditions: string;
+  privacyPolicy: string;
+};
+
 export type SignInLabels = {
   brandEyebrow: string;
   brandTitle: string;
@@ -83,6 +151,17 @@ export type SignInLabels = {
   statusChecking: string;
   statusConnecting: string;
   clockSummary: string;
+  inspirationSpark: string;
+  promptOfTheDay: string;
+  promptOfTheDayNote: string;
+  teamBoost: string;
+  recognition: string;
+  focusGoal: string;
+  recognitionNote: string;
+  priorityBriefing: string;
+  secureEdge: string;
+  serviceTeamNotified: string;
+  auth: SignInAuthLabels;
   widgetLabels: Record<SignInWidgetId, string>;
 };
 
@@ -218,6 +297,83 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
   statusChecking: 'Checking',
   statusConnecting: 'Connecting securely',
   clockSummary: 'locations · 12-hour time · automatic updates',
+  inspirationSpark: 'SPARK',
+  promptOfTheDay: 'PROMPT OF THE DAY',
+  promptOfTheDayNote: 'A question to focus the next useful action.',
+  teamBoost: 'TEAM BOOST',
+  recognition: 'RECOGNITION',
+  focusGoal: 'FOCUS GOAL',
+  recognitionNote: 'Notice one contribution worth recognizing today.',
+  priorityBriefing: 'PRIORITY BRIEFING',
+  secureEdge: 'secure edge',
+  serviceTeamNotified: 'Service team notified',
+  auth: {
+    secureErpAccess: 'SECURE ERP ACCESS',
+    signInTitle: 'Employee sign-in',
+    signInDescription: 'Use your employee email or username to enter the live ERP workspace.',
+    createAccountTitle: 'Create account',
+    createAccountDescription: 'Create your secure employee login. Your work access remains subject to administrator approval.',
+    verifyEmailTitle: 'Verify your email',
+    verifyEmailDescription: 'Enter the one-time code sent to your email to finish creating your account.',
+    forgotPasswordTitle: 'Forgot password',
+    forgotPasswordDescription: 'Enter your email or username to begin secure password recovery.',
+    verifyIdentityTitle: 'Verify your identity',
+    verifyIdentityDescription: 'Enter the one-time code sent to the email on your approved account.',
+    newPasswordTitle: 'Create a new password',
+    newPasswordDescription: 'Choose a secure password, then return to employee sign-in.',
+    employeeSignInTab: 'Employee Sign-In',
+    createAccountTab: 'Create Account',
+    emailOrUsername: 'Email or Username',
+    password: 'Password',
+    forgotPassword: 'Forgot password?',
+    rememberMe: 'Remember Me',
+    trustedDevice: 'Use only on a trusted device',
+    signIn: 'Sign In',
+    signingIn: 'Signing in…',
+    mfaReady: 'MFA-ready',
+    microsoftSignIn: 'Sign In with Microsoft',
+    googleSignIn: 'Sign In with Google',
+    microsoftCreateAccount: 'Create Account with Microsoft',
+    googleCreateAccount: 'Create Account with Google',
+    backToSignIn: 'Back to sign-in',
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    personalEmail: 'Personal Email',
+    phoneWhatsApp: 'Phone / WhatsApp',
+    createUsername: 'Create Username',
+    usernameHelper: '4–32 characters: letters, numbers, dot, underscore or hyphen.',
+    createPassword: 'Create Password',
+    confirmPassword: 'Confirm Password',
+    departmentWorkArea: 'Department / Work Area',
+    jobTitle: 'Job Title',
+    rolePosition: 'Role / Position Information',
+    preparingVerification: 'Preparing verification…',
+    verificationCode: '6-digit verification code',
+    verifyEmailFinish: 'Verify email & finish signup',
+    changeSignupDetails: 'Change signup details',
+    sendRecoveryCode: 'Send recovery code',
+    preparingRecovery: 'Preparing recovery…',
+    verifyIdentity: 'Verify identity',
+    requestAnotherCode: 'Request another code',
+    newPassword: 'New Password',
+    confirmNewPassword: 'Confirm New Password',
+    createNewPassword: 'Create password',
+    securingAccount: 'Securing account…',
+    continue: 'Continue',
+    back: 'Back',
+    verifying: 'Verifying…',
+    verificationSentTo: 'Verification code sent to',
+    privateBootstrapCode: 'PRIVATE BOOTSTRAP CODE',
+    bootstrapNote: 'Visible only in the local bootstrap stage.',
+    verificationCodeSent: 'Enter the 6-digit code sent to your email.',
+    recoveryIdentityNote: 'If the details match an approved account, we’ll send a one-time code to the email on file.',
+    identityVerified: 'Identity verified',
+    resetAccessNote: 'Create your password to finish securing your access.',
+    socialNote: 'Use your Microsoft or Google account to sign in or create an account.',
+    legalPrefix: 'By continuing to log in, you agree to Daenem Farms’',
+    termsAndConditions: 'Terms and Conditions',
+    privacyPolicy: 'Privacy Policy',
+  },
   widgetLabels: {
     weather: 'LIVE WEATHER',
     inspiration: 'AI INSPIRATION',
@@ -318,6 +474,17 @@ function normalizeLabels(value: unknown): SignInLabels {
     statusChecking: cleanText(source.statusChecking, DEFAULT_SIGNIN_LABELS.statusChecking, SIGNIN_LABEL_LIMITS.display),
     statusConnecting: cleanText(source.statusConnecting, DEFAULT_SIGNIN_LABELS.statusConnecting, SIGNIN_LABEL_LIMITS.support),
     clockSummary: cleanText(source.clockSummary, DEFAULT_SIGNIN_LABELS.clockSummary, SIGNIN_LABEL_LIMITS.support),
+    inspirationSpark: cleanText(source.inspirationSpark, DEFAULT_SIGNIN_LABELS.inspirationSpark, SIGNIN_LABEL_LIMITS.display),
+    promptOfTheDay: cleanText(source.promptOfTheDay, DEFAULT_SIGNIN_LABELS.promptOfTheDay, SIGNIN_LABEL_LIMITS.display),
+    promptOfTheDayNote: cleanText(source.promptOfTheDayNote, DEFAULT_SIGNIN_LABELS.promptOfTheDayNote, SIGNIN_LABEL_LIMITS.support),
+    teamBoost: cleanText(source.teamBoost, DEFAULT_SIGNIN_LABELS.teamBoost, SIGNIN_LABEL_LIMITS.display),
+    recognition: cleanText(source.recognition, DEFAULT_SIGNIN_LABELS.recognition, SIGNIN_LABEL_LIMITS.display),
+    focusGoal: cleanText(source.focusGoal, DEFAULT_SIGNIN_LABELS.focusGoal, SIGNIN_LABEL_LIMITS.display),
+    recognitionNote: cleanText(source.recognitionNote, DEFAULT_SIGNIN_LABELS.recognitionNote, SIGNIN_LABEL_LIMITS.support),
+    priorityBriefing: cleanText(source.priorityBriefing, DEFAULT_SIGNIN_LABELS.priorityBriefing, SIGNIN_LABEL_LIMITS.display),
+    secureEdge: cleanText(source.secureEdge, DEFAULT_SIGNIN_LABELS.secureEdge, SIGNIN_LABEL_LIMITS.display),
+    serviceTeamNotified: cleanText(source.serviceTeamNotified, DEFAULT_SIGNIN_LABELS.serviceTeamNotified, SIGNIN_LABEL_LIMITS.display),
+    auth: Object.fromEntries(Object.keys(DEFAULT_SIGNIN_LABELS.auth).map((key) => [key, cleanText(candidateRecord(source.auth)[key], DEFAULT_SIGNIN_LABELS.auth[key as keyof SignInAuthLabels], SIGNIN_LABEL_LIMITS.support)])) as SignInAuthLabels,
     widgetLabels: {
       weather: cleanText(widgetSource.weather, DEFAULT_SIGNIN_LABELS.widgetLabels.weather, SIGNIN_LABEL_LIMITS.widget),
       inspiration: cleanText(widgetSource.inspiration, DEFAULT_SIGNIN_LABELS.widgetLabels.inspiration, SIGNIN_LABEL_LIMITS.widget),
