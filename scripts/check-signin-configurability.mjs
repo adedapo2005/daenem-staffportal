@@ -25,7 +25,7 @@ check('Manage Settings users can modify sign-in config', worker.includes("hasPer
 check('authentication handlers remain present', auth.includes("/api/auth/login") && auth.includes('requestAppInstall') && auth.includes('switchMode'));
 check('seven standard clocks remain available', ['Daenem Complex', 'Toronto', 'London', 'New York', 'Moscow', 'Tokyo', 'Beijing / Shanghai'].every((name) => prefs.includes(name)));
 check('widget variants normalize correctly', prefs.includes('SIGNIN_WIDGET_VARIANTS') && prefs.includes('normalizeWidgetVariant') && studio.includes('data-widget-variant'));
-check('reduced-motion compatibility remains active', css.includes('@media (prefers-reduced-motion: reduce)') && prefs && read('src/signin-experience.tsx').includes("prefers-reduced-motion"));
+check('reduced-motion compatibility remains active', css.includes('@media (prefers-reduced-motion: reduce)') && css.includes('animation-duration: .001ms'));
 check('news remains source-bound', workerIndex.includes('liveHeadlines') && workerIndex.includes('news.length ? news : fallbackNews') && worker.includes('Only inspiration and motivation can use AI options.'));
 check('desktop auth surface does not enable an internal scrollbar', css.includes('overflow-y: hidden') && css.includes('max-height: 100%') && css.includes('scrollbar-width: none'));
 check('TODAY and AUXILIARY map to distinct rendered regions', signin.includes("['today'], 'today'") && signin.includes("['auxiliary'], 'auxiliary'") && signin.includes('usp-widget-region-auxiliary'));
@@ -43,6 +43,11 @@ check('all responsive zones are independently rendered', ['workspace-spotlight',
 check('zone capacity is responsive instead of count-only paging', signin.includes('zoneCapacities') && signin.includes('viewport.height < 720') && signin.includes('instances.length > capacity'));
 check('desktop auth panel has no scrollbar and compact errors', css.includes('.usp-auth-panel {\n    overflow: visible;') && css.includes('.usp-auth-message {\n    margin-bottom: 8px;'));
 check('desktop typography floor is nine pixels with compact clock detail', css.includes('font-size: 9px;') && css.includes('.usp-clock-compact-detail') && css.includes('display: none;') && !/font-size:\s*[0-8](?:\.[0-9]+)?px/.test(css));
+check('desktop capacity reserves TODAY for the clock dock', signin.includes('viewport.height < 1000') && signin.includes("today: 2") && signin.includes("today: 3"));
+check('compact desktop auth styling applies through 959px', css.includes('@media (min-width: 821px) and (max-height: 959px)') && css.includes('min-height: 44px;') && css.includes('.usp-panel-footer'));
+check('compact desktop keeps legal and footer visible', !css.includes('@media (min-width: 821px) and (max-height: 959px) {\n  .usp-legal-copy { display: none') && !css.includes('@media (min-width: 821px) and (max-height: 959px) {\n  .usp-panel-footer { display: none'));
+check('legacy legal defaults migrate without changing custom labels', prefs.includes('LEGACY_LEGAL_PREFIXES') && prefs.includes('normalizeLegalPrefix') && worker.includes('LEGACY_LEGAL_PREFIXES') && worker.includes('normalizeLegalPrefix') && prefs.includes('By continuing to login, you agree to Daenem Group'));
+check('background pointer parallax is removed', !signin.includes('addEventListener(\'pointermove\'') && !signin.includes('--usp-parallax-x') && !signin.includes('--usp-parallax-y') && !css.includes('--usp-parallax-x') && !css.includes('--usp-parallax-y'));
 
 // Deterministic fit accounting for the compact desktop composition. These
 // values are derived from the final CSS control heights, gaps, panel padding,

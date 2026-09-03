@@ -34,6 +34,14 @@ const LABEL_LIMITS = {
   brandEyebrow: 40, brandTitle: 48, brandTagline: 90, workspaceLabel: 48,
   workspaceHeadline: 90, workspaceDescription: 180, sectionHeading: 40, widget: 42, display: 64, support: 110,
 };
+const DEFAULT_LEGAL_PREFIX = 'By continuing to login, you agree to Daenem Group';
+const LEGACY_LEGAL_PREFIXES = new Set([
+  'By continuing to log in, you agree to Daenem Farms’',
+  "By continuing to log in, you agree to Daenem Farms'",
+  'By continuing to login, you agree to Daenem Farms’',
+  "By continuing to login, you agree to Daenem Farms'",
+  'By continuing to login, you agree to Daenem Farms',
+]);
 
 const VARIANTS: Record<string, string[]> = {
   weather: ['standard'],
@@ -91,7 +99,7 @@ const DEFAULT_LABELS = {
     backToSignIn: 'Back to sign-in', firstName: 'First Name', lastName: 'Last Name', personalEmail: 'Personal Email', phoneWhatsApp: 'Phone / WhatsApp', createUsername: 'Create Username',
     usernameHelper: '4–32 characters: letters, numbers, dot, underscore or hyphen.', createPassword: 'Create Password', confirmPassword: 'Confirm Password', departmentWorkArea: 'Department / Work Area', jobTitle: 'Job Title', rolePosition: 'Role / Position Information',
     preparingVerification: 'Preparing verification…', verificationCode: '6-digit verification code', verifyEmailFinish: 'Verify email & finish signup', changeSignupDetails: 'Change signup details', sendRecoveryCode: 'Send recovery code', preparingRecovery: 'Preparing recovery…', verifyIdentity: 'Verify identity', requestAnotherCode: 'Request another code', newPassword: 'New Password', confirmNewPassword: 'Confirm New Password', createNewPassword: 'Create password', securingAccount: 'Securing account…',
-    continue: 'Continue', back: 'Back', verifying: 'Verifying…', verificationSentTo: 'Verification code sent to', privateBootstrapCode: 'PRIVATE BOOTSTRAP CODE', bootstrapNote: 'Visible only in the local bootstrap stage.', verificationCodeSent: 'Enter the 6-digit code sent to your email.', recoveryIdentityNote: 'If the details match an approved account, we’ll send a one-time code to the email on file.', identityVerified: 'Identity verified', resetAccessNote: 'Create your password to finish securing your access.', socialNote: 'Use your Microsoft or Google account to sign in or create an account.', legalPrefix: 'By continuing to log in, you agree to Daenem Farms’', termsAndConditions: 'Terms and Conditions', privacyPolicy: 'Privacy Policy', or: 'or', passwordStrength: 'Password strength', passwordNotSet: 'Not set', passwordWeak: 'Weak', passwordGood: 'Good', passwordStrong: 'Strong', passwordExcellent: 'Excellent', showPassword: 'Show password', hidePassword: 'Hide password',
+    continue: 'Continue', back: 'Back', verifying: 'Verifying…', verificationSentTo: 'Verification code sent to', privateBootstrapCode: 'PRIVATE BOOTSTRAP CODE', bootstrapNote: 'Visible only in the local bootstrap stage.', verificationCodeSent: 'Enter the 6-digit code sent to your email.', recoveryIdentityNote: 'If the details match an approved account, we’ll send a one-time code to the email on file.', identityVerified: 'Identity verified', resetAccessNote: 'Create your password to finish securing your access.', socialNote: 'Use your Microsoft or Google account to sign in or create an account.', legalPrefix: DEFAULT_LEGAL_PREFIX, termsAndConditions: 'Terms and Conditions', privacyPolicy: 'Privacy Policy', or: 'or', passwordStrength: 'Password strength', passwordNotSet: 'Not set', passwordWeak: 'Weak', passwordGood: 'Good', passwordStrong: 'Strong', passwordExcellent: 'Excellent', showPassword: 'Show password', hidePassword: 'Hide password',
   },
   widgetLabels: { weather: 'LIVE WEATHER', inspiration: 'AI INSPIRATION', motivation: 'EMPLOYEE MOTIVATION', news: 'LIVE NEWS', status: 'PORTAL STATUS' },
 };
@@ -147,6 +155,10 @@ function cleanText(value: unknown, fallback: string, max: number) {
   const text = typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim() : '';
   return (text || fallback).slice(0, max);
 }
+function normalizeLegalPrefix(value: unknown) {
+  const text = cleanText(value, DEFAULT_LEGAL_PREFIX, LABEL_LIMITS.support);
+  return LEGACY_LEGAL_PREFIXES.has(text) ? DEFAULT_LEGAL_PREFIX : text;
+}
 function list(value: unknown, allowed: readonly string[], fallback: readonly string[]) {
   if (!Array.isArray(value)) return [...fallback];
   const result = [...new Set(value.filter((item): item is string => typeof item === 'string' && allowed.includes(item)))];
@@ -201,7 +213,7 @@ function normalizeLabels(value: unknown) {
     priorityBriefing: cleanText(source.priorityBriefing, DEFAULT_LABELS.priorityBriefing, LABEL_LIMITS.display),
     secureEdge: cleanText(source.secureEdge, DEFAULT_LABELS.secureEdge, LABEL_LIMITS.display),
     serviceTeamNotified: cleanText(source.serviceTeamNotified, DEFAULT_LABELS.serviceTeamNotified, LABEL_LIMITS.display),
-    auth: Object.fromEntries(Object.keys(DEFAULT_LABELS.auth).map((key) => [key, cleanText(auth[key], DEFAULT_LABELS.auth[key as keyof typeof DEFAULT_LABELS.auth], LABEL_LIMITS.support)])),
+    auth: { ...Object.fromEntries(Object.keys(DEFAULT_LABELS.auth).map((key) => [key, cleanText(auth[key], DEFAULT_LABELS.auth[key as keyof typeof DEFAULT_LABELS.auth], LABEL_LIMITS.support)])), legalPrefix: normalizeLegalPrefix(auth.legalPrefix) },
     widgetLabels: {
       weather: cleanText(widgets.weather, DEFAULT_LABELS.widgetLabels.weather, LABEL_LIMITS.widget),
       inspiration: cleanText(widgets.inspiration, DEFAULT_LABELS.widgetLabels.inspiration, LABEL_LIMITS.widget),

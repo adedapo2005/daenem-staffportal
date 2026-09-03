@@ -263,6 +263,14 @@ const ALL_THEME_MODES: SignInThemeMode[] = ['day', 'night', 'auto'];
 const ALL_ZONES: SignInZone[] = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'];
 const ALL_EFFECT_PRESETS: EffectPreset[] = ['quiet', 'glass', 'accent', 'soft'];
 const MAX_LABEL_LENGTH = 120;
+const DEFAULT_LEGAL_PREFIX = 'By continuing to login, you agree to Daenem Group';
+const LEGACY_LEGAL_PREFIXES = new Set([
+  'By continuing to log in, you agree to Daenem Farms’',
+  "By continuing to log in, you agree to Daenem Farms'",
+  'By continuing to login, you agree to Daenem Farms’',
+  "By continuing to login, you agree to Daenem Farms'",
+  'By continuing to login, you agree to Daenem Farms',
+]);
 
 export const SIGNIN_WIDGET_VARIANTS: Record<SignInWidgetId, SignInWidgetVariant[]> = {
   weather: ['standard'],
@@ -381,7 +389,7 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
     identityVerified: 'Identity verified',
     resetAccessNote: 'Create your password to finish securing your access.',
     socialNote: 'Use your Microsoft or Google account to sign in or create an account.',
-    legalPrefix: 'By continuing to log in, you agree to Daenem Farms’',
+    legalPrefix: DEFAULT_LEGAL_PREFIX,
     termsAndConditions: 'Terms and Conditions',
     privacyPolicy: 'Privacy Policy',
     or: 'or',
@@ -451,6 +459,11 @@ function cleanText(value: unknown, fallback: string, max: number) {
   return (text || fallback).slice(0, max);
 }
 
+function normalizeLegalPrefix(value: unknown) {
+  const text = cleanText(value, DEFAULT_LEGAL_PREFIX, SIGNIN_LABEL_LIMITS.support);
+  return LEGACY_LEGAL_PREFIXES.has(text) ? DEFAULT_LEGAL_PREFIX : text;
+}
+
 function uniqueValues<T extends string>(values: unknown, allowed: readonly T[]): T[] {
   if (!Array.isArray(values)) return [];
   return [...new Set(values.filter((value): value is T => typeof value === 'string' && allowed.includes(value as T)))];
@@ -464,6 +477,8 @@ function validTime(value: unknown, fallback: string) {
 function normalizeLabels(value: unknown): SignInLabels {
   const source = candidateRecord(value);
   const widgetSource = candidateRecord(source.widgetLabels);
+  const authSource = candidateRecord(source.auth);
+  const auth = Object.fromEntries(Object.keys(DEFAULT_SIGNIN_LABELS.auth).map((key) => [key, cleanText(authSource[key], DEFAULT_SIGNIN_LABELS.auth[key as keyof SignInAuthLabels], SIGNIN_LABEL_LIMITS.support)]));
   return {
     brandEyebrow: cleanText(source.brandEyebrow, DEFAULT_SIGNIN_LABELS.brandEyebrow, SIGNIN_LABEL_LIMITS.brandEyebrow),
     brandTitle: cleanText(source.brandTitle, DEFAULT_SIGNIN_LABELS.brandTitle, SIGNIN_LABEL_LIMITS.brandTitle),
@@ -505,7 +520,7 @@ function normalizeLabels(value: unknown): SignInLabels {
     priorityBriefing: cleanText(source.priorityBriefing, DEFAULT_SIGNIN_LABELS.priorityBriefing, SIGNIN_LABEL_LIMITS.display),
     secureEdge: cleanText(source.secureEdge, DEFAULT_SIGNIN_LABELS.secureEdge, SIGNIN_LABEL_LIMITS.display),
     serviceTeamNotified: cleanText(source.serviceTeamNotified, DEFAULT_SIGNIN_LABELS.serviceTeamNotified, SIGNIN_LABEL_LIMITS.display),
-    auth: Object.fromEntries(Object.keys(DEFAULT_SIGNIN_LABELS.auth).map((key) => [key, cleanText(candidateRecord(source.auth)[key], DEFAULT_SIGNIN_LABELS.auth[key as keyof SignInAuthLabels], SIGNIN_LABEL_LIMITS.support)])) as SignInAuthLabels,
+    auth: { ...auth, legalPrefix: normalizeLegalPrefix(authSource.legalPrefix) } as SignInAuthLabels,
     widgetLabels: {
       weather: cleanText(widgetSource.weather, DEFAULT_SIGNIN_LABELS.widgetLabels.weather, SIGNIN_LABEL_LIMITS.widget),
       inspiration: cleanText(widgetSource.inspiration, DEFAULT_SIGNIN_LABELS.widgetLabels.inspiration, SIGNIN_LABEL_LIMITS.widget),

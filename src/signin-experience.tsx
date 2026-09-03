@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Activity, Cloud, CloudLightning, CloudRain, CloudSun, Download, LockKeyhole,
   Newspaper, Radio, ShieldCheck, Sparkles, Sun, Target, Wifi 
@@ -203,7 +203,6 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   modePreference: ModePreference;
   onInstall: () => void;
 }) {
-  const sceneRef = useRef<HTMLElement | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [preferences, setPreferences] = useState<SignInExperiencePreferences>(() => readSignInPreferences());
   const [context, setContext] = useState<PublicSignInContext>(() => ({ ...FALLBACK_CONTEXT, config: readSignInPreferences() }));
@@ -231,7 +230,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     ? { 'workspace-spotlight': 1, 'live-context': 1, today: 1, auxiliary: 1 }
     : viewport.width <= 1120 && viewport.height < 820
       ? { 'workspace-spotlight': 1, 'live-context': 1, today: 2, auxiliary: 1 }
-      : viewport.height < 900
+      : viewport.height < 1000
         ? { 'workspace-spotlight': 1, 'live-context': 2, today: 2, auxiliary: 1 }
         : { 'workspace-spotlight': 1, 'live-context': 2, today: 3, auxiliary: 2 };
 
@@ -342,26 +341,6 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     return () => window.clearInterval(timer);
   }, [modePreference, preferences.darkEnd, preferences.darkStart, preferences.themeMode, themeId]);
 
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    let frame = 0;
-    const move = (event: PointerEvent) => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        const x = (event.clientX / window.innerWidth - 0.5) * 12;
-        const y = (event.clientY / window.innerHeight - 0.5) * 8;
-        scene.style.setProperty('--usp-parallax-x', x.toFixed(2) + 'px');
-        scene.style.setProperty('--usp-parallax-y', y.toFixed(2) + 'px');
-      });
-    };
-    window.addEventListener('pointermove', move, { passive: true });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener('pointermove', move);
-    };
-  }, []);
-
   const ibadan = locationForZone('Africa/Lagos') || locations[0];
   const ibadanWeather = ibadan ? weather[ibadan.zone] : undefined;
   const activeNewsIndex = context.news.length ? Math.floor(now.getTime() / 12_000) % context.news.length : 0;
@@ -460,7 +439,6 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     preferences.effects.shimmer ? 'usp-shimmer' : '',
   ].filter(Boolean).join(' ');
   return <main
-    ref={sceneRef}
     className={'usp-page usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition + ' ' + effectClasses}
     style={{ '--usp-glass-intensity': String(preferences.effects.glassIntensity) } as CSSProperties}
     data-testid="unified-signin-page"
