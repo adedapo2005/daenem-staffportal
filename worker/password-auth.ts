@@ -16,9 +16,15 @@ export interface PasswordAuthEnv extends AuthEnv {
 }
 
 type LocationInput = { latitude?: number; longitude?: number; accuracy?: number };
+type PasswordCredentialRow = {
+  employeeId: string; username: string; passwordHash: string; passwordSalt: string; passwordIterations: number;
+  failedAttempts: number; lockedUntil?: string; email?: string; displayName: string; status: string;
+};
 
 const encoder = new TextEncoder();
 const OWNER_LOGIN_EMAIL = 'adedapo2005@gmail.com';
+const OWNER_SAFE_LOGIN_ITERATIONS = 20_000;
+const AUTH_RUNTIME_ERROR = 'Authentication service is temporarily unavailable. Please try again shortly.';
 
 function json(body: Record<string, unknown>, status = 200, headers?: HeadersInit) {
   const h = new Headers(headers);
@@ -133,6 +139,38 @@ async function logSecurity(
     options.accuracy ?? null, requestLocationLabel(request) || null, options.riskScore ?? null,
     options.details ? JSON.stringify(options.details) : null,
   ).run().catch(() => undefined);
+}
+
+function safeErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Unknown authentication error';
+  return message.replace(/[\\r\\n]+/g, ' ').slice(0, 160);
+}
+
+async function recordAuthFailure(env: PasswordAuthEnv, request: Request, phase: string, error: unknown) {
+  const requestReference = uid('auth-request');
+  const errorClass = error instanceof Error ? error.name : 'UnknownError';
+  const message = safeErrorMessage(error);
+  console.error('password_auth_exception', { phase, requestReference, errorClass, message });
+  try {
+    await logSecurity(env, request, 'password_auth_runtime_error', {
+      severity: 'critical', result: 'error', details: { phase, requestReference, errorClass },
+    });
+  } catch {
+    // Diagnostics must never mask the controlled authentication response.
+  }
+  return requestReference;
+}
+
+async function controlledAuthFailure(env: PasswordAuthEnv, request: Request, phase: string, error: unknown) {
+  await recordAuthFailure(env, request, phase, error);
+  return json({ error: AUTH_RUNTIME_ERROR, code: 'AUTH_SERVICE_UNAVAILABLE' }, 503);
+}
+
+async function requireProductionPepper(env: PasswordAuthEnv, request: Request, phase: string) {
+  if (env.APP_STAGE === 'production' && !env.AUTH_PEPPER) {
+    return controlledAuthFailure(env, request, phase, new Error('AUTH_PEPPER is not configured for production.'));
+  }
+  return null;
 }
 
 async function passwordHash(env: PasswordAuthEnv, password: string, salt: string, iterations: number) {
@@ -468,20 +506,25 @@ async function login(request: Request, env: PasswordAuthEnv) {
   const identifier = String(body.identifier || '').trim().toLowerCase();
   const password = String(body.password || '');
   if (!identifier || !password) return json({ error: 'Username/email and password are required.' }, 400);
+  const pepperFailure = await requireProductionPepper(env, request, 'configuration');
+  if (pepperFailure) return pepperFailure;
 
-  const row = await env.DB.prepare(`
-    SELECT c.employee_id AS employeeId, c.username, c.password_hash AS passwordHash,
-           c.password_salt AS passwordSalt, c.password_iterations AS passwordIterations,
-           c.failed_attempts AS failedAttempts, c.locked_until AS lockedUntil,
-           e.email, e.display_name AS displayName, e.employment_status AS status
-    FROM employee_credentials c
-    JOIN employees e ON e.id = c.employee_id
-    WHERE LOWER(c.username) = LOWER(?) OR LOWER(e.email) = LOWER(?)
-    LIMIT 1
-  `).bind(identifier, identifier).first<{
-    employeeId: string; username: string; passwordHash: string; passwordSalt: string; passwordIterations: number;
-    failedAttempts: number; lockedUntil?: string; email?: string; displayName: string; status: string;
-  }>();
+  let row: PasswordCredentialRow | null;
+  try {
+    row = await env.DB.prepare(`
+      SELECT c.employee_id AS employeeId, c.username, c.password_hash AS passwordHash,
+             c.password_salt AS passwordSalt, c.password_iterations AS passwordIterations,
+             c.failed_attempts AS failedAttempts, c.locked_until AS lockedUntil,
+             e.email, e.display_name AS displayName, e.employment_status AS status
+      FROM employee_credentials c
+      JOIN employees e ON e.id = c.employee_id
+      WHERE LOWER(c.username) = LOWER(?) OR LOWER(e.email) = LOWER(?)
+      LIMIT 1
+    `).bind(identifier, identifier).first<PasswordCredentialRow>();
+
+  } catch (error) {
+    return controlledAuthFailure(env, request, 'credential_lookup', error);
+  }
 
   const genericError = 'The username/email or password is incorrect.';
   if (!row || !['active', 'provisional'].includes(row.status)) {
@@ -494,7 +537,21 @@ async function login(request: Request, env: PasswordAuthEnv) {
     return json({ error: 'This login is temporarily locked after repeated failed attempts. Try again later or use Forgot password.' }, 423);
   }
 
-  const derived = await passwordHash(env, password, row.passwordSalt, Number(row.passwordIterations));
+  const ownerLogin = String(row.email || '').trim().toLowerCase() === OWNER_LOGIN_EMAIL;
+  const storedIterations = Number(row.passwordIterations);
+  if (ownerLogin && (!Number.isInteger(storedIterations) || storedIterations <= 0 || storedIterations > OWNER_SAFE_LOGIN_ITERATIONS)) {
+    await logSecurity(env, request, 'password_signin_recovery_required', {
+      employeeId: row.employeeId, severity: 'high', result: 'denied', details: { reason: 'owner_legacy_credential' },
+    });
+    return json({ error: 'Owner Access Requires Secure Password Recovery.', code: 'OWNER_RECOVERY_REQUIRED' }, 428);
+  }
+
+  let derived: string;
+  try {
+    derived = await passwordHash(env, password, row.passwordSalt, storedIterations);
+  } catch (error) {
+    return controlledAuthFailure(env, request, 'password_derivation', error);
+  }
   if (!constantTimeEqual(derived, row.passwordHash)) {
     const limit = Number(await setting(env, 'security.password_lock_attempts', '5')) || 5;
     const lockMinutes = Number(await setting(env, 'security.password_lock_minutes', '15')) || 15;
@@ -513,10 +570,14 @@ async function login(request: Request, env: PasswordAuthEnv) {
 
   // The Group Owner is a remote administrative role. Employee attendance geofences do not apply
   // after the Owner password has been verified. Password, lockout, session and audit controls remain active.
-  const ownerLogin = String(row.email || '').trim().toLowerCase() === OWNER_LOGIN_EMAIL;
-  const location = ownerLogin
-    ? { ok: true as const, result: 'owner_remote_exempt', companyId: undefined }
-    : await evaluateLocation(env, row.employeeId, body);
+  let location: { ok: boolean; result?: string; companyId?: string; code?: string; message?: string };
+  try {
+    location = ownerLogin
+      ? { ok: true, result: 'owner_remote_exempt', companyId: undefined }
+      : await evaluateLocation(env, row.employeeId, body);
+  } catch (error) {
+    return controlledAuthFailure(env, request, 'location_policy', error);
+  }
   if (!location.ok) {
     await logSecurity(env, request, 'signin_location_denied', {
       employeeId: row.employeeId, companyId: 'companyId' in location ? location.companyId : undefined,
@@ -529,38 +590,52 @@ async function login(request: Request, env: PasswordAuthEnv) {
   }
 
   const token = randomToken();
-  const tokenHash = await sessionHash(env, token);
+  let tokenHash: string;
+  try {
+    tokenHash = await sessionHash(env, token);
+  } catch (error) {
+    return controlledAuthFailure(env, request, 'session_creation', error);
+  }
   const sessionId = uid('session');
   const hours = Number(await setting(env, 'security.session_hours', '12')) || 12;
   const expiresAt = new Date(Date.now() + hours * 60 * 60_000).toISOString();
 
-  await env.DB.batch([
-    env.DB.prepare(`
-      INSERT INTO auth_sessions (
-        id, employee_id, token_hash, device_id, device_name, user_agent, ip_address,
-        login_latitude, login_longitude, login_accuracy_m, login_location_label,
-        login_geofence_result, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      sessionId, row.employeeId, tokenHash, body.deviceFingerprint || null, body.deviceName || null,
-      request.headers.get('user-agent'), requestIp(request) || null, body.latitude ?? null,
-      body.longitude ?? null, body.accuracy ?? null, requestLocationLabel(request) || null,
-      location.result, expiresAt,
-    ),
-    env.DB.prepare(`
-      UPDATE employee_credentials SET failed_attempts = 0, locked_until = NULL,
-        last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE employee_id = ?
-    `).bind(row.employeeId),
-  ]);
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO auth_sessions (
+          id, employee_id, token_hash, device_id, device_name, user_agent, ip_address,
+          login_latitude, login_longitude, login_accuracy_m, login_location_label,
+          login_geofence_result, expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        sessionId, row.employeeId, tokenHash, body.deviceFingerprint || null, body.deviceName || null,
+        request.headers.get('user-agent'), requestIp(request) || null, body.latitude ?? null,
+        body.longitude ?? null, body.accuracy ?? null, requestLocationLabel(request) || null,
+        location.result || 'unknown', expiresAt,
+      ),
+      env.DB.prepare(`
+        UPDATE employee_credentials SET failed_attempts = 0, locked_until = NULL,
+          last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE employee_id = ?
+      `).bind(row.employeeId),
+    ]);
+  
+    } catch (error) {
+    return controlledAuthFailure(env, request, 'session_creation', error);
+  }
 
   if (body.deviceFingerprint) {
-    await env.DB.prepare(`
+    try {
+      await env.DB.prepare(`
       INSERT INTO employee_devices (id, employee_id, device_fingerprint, device_name, platform, user_agent)
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(employee_id, device_fingerprint) DO UPDATE SET
         device_name = excluded.device_name, platform = excluded.platform,
         user_agent = excluded.user_agent, last_seen_at = CURRENT_TIMESTAMP
     `).bind(uid('device'), row.employeeId, body.deviceFingerprint, body.deviceName || null, body.platform || null, request.headers.get('user-agent')).run();
+    } catch (error) {
+      await recordAuthFailure(env, request, 'device_registration', error);
+    }
   }
 
   await logSecurity(env, request, 'password_signin_success', {
@@ -578,6 +653,8 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
   try { body = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
   const identifier = String(body.identifier || '').trim().toLowerCase();
   if (!identifier) return json({ error: 'Enter your username or email address.' }, 400);
+  const pepperFailure = await requireProductionPepper(env, request, 'configuration');
+  if (pepperFailure) return pepperFailure;
   if ((!env.EMAIL || typeof env.EMAIL.send !== 'function') && env.APP_STAGE !== 'bootstrap') {
     return json({ error: 'Password recovery email is temporarily unavailable. Please contact the system administrator.' }, 503);
   }
@@ -637,6 +714,8 @@ async function verifyReset(request: Request, env: PasswordAuthEnv) {
   const challengeId = String(body.challengeId || '');
   const code = String(body.code || '').replace(/\D/g, '').slice(0, 6);
   if (!challengeId || code.length !== 6) return json({ error: 'Enter the 6-digit verification code.' }, 400);
+  const pepperFailure = await requireProductionPepper(env, request, 'configuration');
+  if (pepperFailure) return pepperFailure;
 
   const row = await env.DB.prepare(`
     SELECT * FROM password_reset_challenges WHERE id = ? LIMIT 1
@@ -674,14 +753,17 @@ async function resetPassword(request: Request, env: PasswordAuthEnv) {
   const resetToken = String(body.resetToken || '');
   const newPassword = String(body.newPassword || '');
   if (!resetToken || !newPassword) return json({ error: 'Reset authorization and a new password are required.' }, 400);
+  const pepperFailure = await requireProductionPepper(env, request, 'configuration');
+  if (pepperFailure) return pepperFailure;
 
   const tokenHash = await resetTokenHash(env, resetToken);
   const row = await env.DB.prepare(`
-    SELECT pr.id, pr.employee_id AS employeeId, c.username,
+    SELECT pr.id, pr.employee_id AS employeeId, c.username, e.email,
            c.password_hash AS currentHash, c.password_salt AS currentSalt,
            c.password_iterations AS currentIterations
     FROM password_reset_challenges pr
     JOIN employee_credentials c ON c.employee_id = pr.employee_id
+    JOIN employees e ON e.id = pr.employee_id
     WHERE pr.reset_token_hash = ? AND pr.verified_at IS NOT NULL AND pr.consumed_at IS NULL
       AND datetime(pr.reset_token_expires_at) > datetime('now')
     LIMIT 1
@@ -690,15 +772,29 @@ async function resetPassword(request: Request, env: PasswordAuthEnv) {
   }>();
   if (!row) return json({ error: 'This password reset authorization is invalid or has expired. Start again.' }, 401);
 
+  const ownerRecovery = String(row.email || '').trim().toLowerCase() === OWNER_LOGIN_EMAIL;
   const errors = await validatePassword(env, newPassword, row.username);
   if (errors.length) return json({ error: 'New password does not meet the security requirements.', passwordErrors: errors }, 400);
 
-  const sameHash = await passwordHash(env, newPassword, row.currentSalt, Number(row.currentIterations));
-  if (constantTimeEqual(sameHash, row.currentHash)) return json({ error: 'Choose a new password that is different from your current password.' }, 400);
+  const currentIterations = Number(row.currentIterations);
+  if (!ownerRecovery || (Number.isInteger(currentIterations) && currentIterations > 0 && currentIterations <= OWNER_SAFE_LOGIN_ITERATIONS)) {
+    try {
+      const sameHash = await passwordHash(env, newPassword, row.currentSalt, currentIterations);
+      if (constantTimeEqual(sameHash, row.currentHash)) return json({ error: 'Choose a new password that is different from your current password.' }, 400);
+    } catch (error) {
+      return controlledAuthFailure(env, request, 'password_derivation', error);
+    }
+  }
 
-  const iterations = Number(await setting(env, 'security.password_pbkdf2_iterations', '310000')) || 310000;
+  const configuredIterations = Number(await setting(env, 'security.password_pbkdf2_iterations', '310000')) || 310000;
+  const iterations = ownerRecovery ? OWNER_SAFE_LOGIN_ITERATIONS : configuredIterations;
   const salt = bytesToHex(randomBytes(16));
-  const derived = await passwordHash(env, newPassword, salt, iterations);
+  let derived: string;
+  try {
+    derived = await passwordHash(env, newPassword, salt, iterations);
+  } catch (error) {
+    return controlledAuthFailure(env, request, 'password_derivation', error);
+  }
   const changedAt = new Date().toISOString();
 
   await env.DB.batch([

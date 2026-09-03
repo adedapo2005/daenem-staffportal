@@ -572,7 +572,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       onAuthenticated(me.context);
     } catch (error) {
       const authError = error as ApiError;
-      if (authError.status === 423 || authError.code === 'PASSWORD_TEMPORARILY_LOCKED') {
+      if (authError.status === 428 || authError.code === 'OWNER_RECOVERY_REQUIRED') {
+        setMessage({
+          type: 'error',
+          text: 'Owner Access Requires Secure Password Recovery.',
+          details: ['Use Forgot Password to restore access securely.'],
+          action: { label: authLabels.forgotPassword, onClick: () => switchMode('forgot') },
+        });
+      } else if (authError.status === 423 || authError.code === 'PASSWORD_TEMPORARILY_LOCKED') {
         setMessage({
           type: 'error',
           text: authLabels.lockoutTitle,

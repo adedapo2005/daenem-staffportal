@@ -148,6 +148,19 @@ idScenario.push({ id: nextId('news', idScenario) });
 check('widget IDs remain unique after delete and re-add', prefs.includes('nextSignInWidgetId') && new Set(idScenario.map((item) => item.id)).size === idScenario.length && idScenario.at(-1)?.id === 'news-2');
 check('add delete middle re-add uses collision-safe IDs', idScenario.length === 3 && new Set(idScenario.map((item) => item.id)).size === 3 && idScenario.at(-1)?.id === 'news-2');
 
+
+check('login protects missing production pepper', passwordAuth.includes("AUTH_PEPPER is not configured for production") && passwordAuth.includes("AUTH_SERVICE_UNAVAILABLE") && passwordAuth.includes("}, 503)"));
+check('owner high-iteration credential requests recovery', passwordAuth.includes('OWNER_SAFE_LOGIN_ITERATIONS') && passwordAuth.includes('OWNER_RECOVERY_REQUIRED') && passwordAuth.includes("password_signin_recovery_required"));
+check('login runtime failures return controlled phase diagnostics', ['credential_lookup', 'password_derivation', 'location_policy', 'session_creation', 'device_registration'].every((phase) => passwordAuth.includes(phase)) && passwordAuth.includes('password_auth_exception') && passwordAuth.includes('requestReference'));
+check('owner recovery rewrites with worker-safe iterations', passwordAuth.includes('ownerRecovery ? OWNER_SAFE_LOGIN_ITERATIONS : configuredIterations') && passwordAuth.includes('failed_attempts = 0, locked_until = NULL') && passwordAuth.includes('UPDATE auth_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE employee_id = ?'));
+check('owner recovery response has a prominent forgot-password action', auth.includes('OWNER_RECOVERY_REQUIRED') && auth.includes('Owner Access Requires Secure Password Recovery.') && auth.includes('authLabels.forgotPassword'));
+check('device registration is explicit best effort', passwordAuth.includes("recordAuthFailure(env, request, 'device_registration', error)") && passwordAuth.includes('password_signin_success'));
+check('wrong password remains a semantic 401', passwordAuth.includes('constantTimeEqual(derived, row.passwordHash)') && passwordAuth.includes('return json({ error: genericError }, 401)'));
+check('locked account remains a semantic 423', passwordAuth.includes('password_signin_locked') && passwordAuth.includes('}, 423)'));
+check('session creation failures remain controlled', passwordAuth.includes("controlledAuthFailure(env, request, 'session_creation', error)"));
+const diagnosticSection = passwordAuth.slice(passwordAuth.indexOf('async function recordAuthFailure'), passwordAuth.indexOf('async function controlledAuthFailure'));
+check('runtime diagnostics exclude credential secrets', !diagnosticSection.includes('passwordHash') && !diagnosticSection.includes('passwordSalt') && !diagnosticSection.includes('password:') && !diagnosticSection.includes('AUTH_PEPPER'));
+
 for (const result of assertions) console.log((result.ok ? '✓' : '✗') + ' ' + result.name);
 if (process.exitCode) console.error('\\n' + assertions.filter((item) => !item.ok).length + ' sign-in configurability assertion(s) failed.');
 else console.log('\\n' + assertions.length + ' sign-in configurability assertions passed.');
