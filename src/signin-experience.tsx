@@ -154,15 +154,23 @@ async function loadWeather(location: PortalLocation): Promise<WeatherReading> {
   }
 }
 
-function ClockCard({ location, now, weather, unit, display }: {
+function ClockCard({ location, now, weather, unit, display, loadingLabel }: {
   location: PortalLocation;
   now: Date;
   weather: WeatherReading | undefined;
   unit: TemperatureUnit;
   display: SignInGlobalOperations;
+  loadingLabel: string;
 }) {
-  const description = weather?.description || 'Loading live weather';
+  const description = weather?.description || loadingLabel;
   const state = dayNightText(location.zone, now);
+  const compactDetails = [
+    display.showDate ? fullDateText(location.zone, now) : '',
+    display.showTimezone ? timeZoneText(location.zone, now) : '',
+    display.showDayNight ? state : '',
+    display.showWeather ? formatTemperature(weather?.temperatureC ?? null, unit) + ' · ' + description : '',
+  ].filter(Boolean);
+  const compactDetail = compactDetails[Math.floor(now.getTime() / 8000) % Math.max(1, compactDetails.length)] || timeZoneText(location.zone, now);
   return <article className="usp-clock-card" tabIndex={0} aria-label={location.name + ' local time and weather'}>
     {display.showAnalog && <div className="usp-analog-clock" style={clockHands(location.zone, now)} aria-hidden="true">
       {Array.from({ length: 12 }, (_, tick) => <i key={tick} style={{ transform: 'rotate(' + tick * 30 + 'deg)' }} />)}
@@ -174,6 +182,7 @@ function ClockCard({ location, now, weather, unit, display }: {
     <div className={'usp-clock-copy' + (display.showAnalog ? '' : ' usp-clock-copy-wide')}>
       <div className="usp-clock-location"><strong>{location.name}</strong><small>{location.region}</small></div>
       {display.showDigital && <b>{timeText(location.zone, now, true)}</b>}
+      <span className="usp-clock-compact-detail" aria-live="polite">{compactDetail}</span>
       {display.showDate && <span>{fullDateText(location.zone, now)}</span>}
       {(display.showTimezone || display.showDayNight) && <div className="usp-clock-meta">
         {display.showTimezone && <small>{timeZoneText(location.zone, now)}</small>}
@@ -200,6 +209,12 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   const [context, setContext] = useState<PublicSignInContext>(() => ({ ...FALLBACK_CONTEXT, config: readSignInPreferences() }));
   const [weather, setWeather] = useState<Record<string, WeatherReading>>({});
   const [health, setHealth] = useState<HealthReading>({ state: 'checking', latencyMs: null, checkedAt: null });
+  const [zonePages, setZonePages] = useState<Record<SignInZone, number>>({
+    'workspace-spotlight': 0,
+    'live-context': 0,
+    today: 0,
+    auxiliary: 0,
+  });
 
   const locations = useMemo(() => {
     const values = preferences.clockZones.map(locationForZone).filter((item): item is PortalLocation => Boolean(item));
@@ -358,20 +373,20 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
       const copy = preferences.content.inspiration || context.inspiration;
       return <article className={'usp-live-card usp-copy-card usp-inspiration-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Sparkles size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
-        {instance.variant === 'innovation-spark' && <span className="usp-variant-kicker">SPARK</span>}
-        {instance.variant === 'daily-prompt' && <span className="usp-variant-kicker">PROMPT OF THE DAY</span>}
+        {instance.variant === 'innovation-spark' && <span className="usp-variant-kicker">{presentation.inspirationSpark}</span>}
+        {instance.variant === 'daily-prompt' && <span className="usp-variant-kicker">{presentation.promptOfTheDay}</span>}
         {instance.variant === 'executive-thought' ? <blockquote>{copy}</blockquote> : <strong>{copy}</strong>}
-        <small>{instance.variant === 'daily-prompt' ? 'A question to focus the next useful action.' : presentation.liveGuidanceNote}</small>
+        <small>{instance.variant === 'daily-prompt' ? presentation.promptOfTheDayNote : presentation.liveGuidanceNote}</small>
       </article>;
     }
     if (widget === 'motivation') {
       const copy = preferences.content.motivation || context.motivation;
       return <article className={'usp-live-card usp-copy-card usp-motivation-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Target size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
-        {instance.variant === 'team-boost' && <span className="usp-variant-kicker">TEAM BOOST</span>}
-        {instance.variant === 'recognition-prompt' && <span className="usp-variant-kicker">RECOGNITION</span>}
-        {instance.variant === 'focus-goal' ? <div className="usp-focus-goal"><b>FOCUS GOAL</b><strong>{copy}</strong></div> : <strong>{copy}</strong>}
-        <small>{instance.variant === 'recognition-prompt' ? 'Notice one contribution worth recognizing today.' : presentation.dailyMomentumNote}</small>
+        {instance.variant === 'team-boost' && <span className="usp-variant-kicker">{presentation.teamBoost}</span>}
+        {instance.variant === 'recognition-prompt' && <span className="usp-variant-kicker">{presentation.recognition}</span>}
+        {instance.variant === 'focus-goal' ? <div className="usp-focus-goal"><b>{presentation.focusGoal}</b><strong>{copy}</strong></div> : <strong>{copy}</strong>}
+        <small>{instance.variant === 'recognition-prompt' ? presentation.recognitionNote : presentation.dailyMomentumNote}</small>
       </article>;
     }
     if (widget === 'news') {
@@ -379,7 +394,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
       return <article className={'usp-live-card usp-copy-card usp-news-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Newspaper size={14} /> {instance.label}</span><b>{activeNews.category}</b></div>
         {instance.variant === 'headline-stack' && <ul className="usp-news-stack">{newsItems.slice(0, 3).map((item, index) => story(item, instance.id + '-stack-' + index))}</ul>}
-        {instance.variant === 'executive-briefing' && <div className="usp-news-briefing"><span className="usp-variant-kicker">PRIORITY BRIEFING</span>{activeNews.url ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a> : <strong>{activeNews.title}</strong>}<small>{activeNews.source} · {presentation.rotatingLiveFeed}</small></div>}
+        {instance.variant === 'executive-briefing' && <div className="usp-news-briefing"><span className="usp-variant-kicker">{presentation.priorityBriefing}</span>{activeNews.url ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a> : <strong>{activeNews.title}</strong>}<small>{activeNews.source} · {presentation.rotatingLiveFeed}</small></div>}
         {instance.variant === 'horizontal-ticker' && <div className="usp-news-ticker" aria-live="polite"><span className="usp-news-ticker-track">{activeNews.url ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a> : <strong>{activeNews.title}</strong>}<small>{activeNews.source}</small></span></div>}
         {instance.variant === 'top-stories-cards' && <div className="usp-news-top-stories">{newsItems.slice(0, 3).map((item, index) => <div key={instance.id + '-top-' + index}>{item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a> : <strong>{item.title}</strong>}<small>{item.source}</small></div>)}</div>}
         {instance.variant === 'headline-stack' && <small>{presentation.rotatingLiveFeed}</small>}
@@ -387,14 +402,31 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     }
     return <article className={'usp-live-card usp-status-card ' + effectClass + ' ' + health.state + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
       <div className="usp-widget-label"><span><Activity size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
-      <strong>{healthLabel}</strong><small>{healthDetail}</small>
+      <strong>{healthLabel}</strong><small>{health.state === 'operational' ? (health.latencyMs || '—') + ' ' + presentation.secureEdge : health.state === 'maintenance' ? presentation.serviceTeamNotified : healthDetail}</small>
     </article>;
   }
 
   function renderWidgetGroup(title: string, zones: SignInZone[], region: string) {
     const instances = preferences.widgetInstances.filter((instance) => instance.visible && zones.includes(instance.zone)).sort((a, b) => a.order - b.order);
     if (!instances.length) return null;
-    return <section className={'usp-widget-group usp-widget-zone-' + region} aria-label={title}><h3 className="usp-widget-group-title">{title}</h3>{instances.map(renderWidget)}</section>;
+    const zone = zones[0];
+    const page = Math.min(zonePages[zone] || 0, instances.length - 1);
+    const current = instances[page];
+    const rotate = instances.length > 1;
+    const changePage = (delta: number) => setZonePages((currentPages) => ({ ...currentPages, [zone]: (page + delta + instances.length) % instances.length }));
+    return <section className={'usp-widget-group usp-widget-zone-' + region} aria-label={title} data-zone={zone}>
+      <h3 className="usp-widget-group-title">{title}</h3>
+      {rotate
+        ? <div className="usp-widget-rotator" data-widget-count={instances.length}>
+            <div className="usp-widget-rotator-view" aria-live="polite">{renderWidget(current)}</div>
+            <div className="usp-widget-rotator-controls">
+              <button type="button" onClick={() => changePage(-1)} aria-label={'Previous ' + title + ' widget'}>Previous</button>
+              <span className="usp-widget-rotator-position" aria-label={'Widget ' + (page + 1) + ' of ' + instances.length}>{page + 1} / {instances.length}</span>
+              <button type="button" onClick={() => changePage(1)} aria-label={'Next ' + title + ' widget'}>Next</button>
+            </div>
+          </div>
+        : renderWidget(current)}
+    </section>;
   }
 
   const labels = preferences.labels;
@@ -436,7 +468,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
             <h2>{labels.workspaceHeadline}</h2>
             <p>{labels.workspaceDescription}</p>
           </div>
-          {renderWidgetGroup(labels.workspaceSpotlightHeading, ['workspace-spotlight'], 'workspace-spotlight')}
+          <div className="usp-widget-region usp-widget-region-workspace-spotlight">{renderWidgetGroup(labels.workspaceSpotlightHeading, ['workspace-spotlight'], 'workspace-spotlight')}</div>
           <div className="usp-signal-row">
             <span className="usp-signal"><span><Radio size={12} /> {labels.ibadanTime}</span><strong>{timeText('Africa/Lagos', now, true)}</strong><small>{fullDateText('Africa/Lagos', now)}</small></span>
             <span className="usp-signal"><span><LockKeyhole size={12} /> {labels.session}</span><strong>{labels.protected}</strong><small>{labels.encryptedSession}</small></span>
@@ -465,6 +497,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
             weather={weather[location.zone]}
             unit={preferences.temperatureUnit}
             display={preferences.globalOperations}
+            loadingLabel={presentation.weatherLoading}
           />)}
         </div>
       </section>}
