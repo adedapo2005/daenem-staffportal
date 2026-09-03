@@ -3166,9 +3166,9 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 
   .usp-password-toggle {
-    width: 42px;
-    height: 42px;
-    bottom: 2px;
+    width: 44px;
+    height: 44px;
+    bottom: 1px;
   }
 
   .usp-or-divider {
@@ -3312,7 +3312,7 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-field input,
   .usp-password-field input { height: 44px; padding-inline: 12px; font-size: 14px; }
   .usp-password-field input { padding-right: 48px; }
-  .usp-password-toggle { width: 42px; height: 42px; bottom: 1px; }
+  .usp-password-toggle { width: 44px; height: 44px; bottom: 0; }
   .usp-forgot-link { font-size: 10px; }
   .usp-remember-row { gap: 7px; font-size: 11px; }
   .usp-check-ui { width: 18px; height: 18px; }
