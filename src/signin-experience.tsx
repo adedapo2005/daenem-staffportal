@@ -353,13 +353,13 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     if (widget === 'inspiration') {
       return <article className={'usp-live-card usp-copy-card usp-inspiration-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Sparkles size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
-        <strong>{context.inspiration || preferences.content.inspiration}</strong><small>Live guidance · refreshed automatically</small>
+        <strong>{preferences.content.inspiration || context.inspiration}</strong><small>Live guidance · refreshed automatically</small>
       </article>;
     }
     if (widget === 'motivation') {
       return <article className={'usp-live-card usp-copy-card usp-motivation-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Target size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
-        <strong>{context.motivation || preferences.content.motivation}</strong><small>Daily momentum for every business unit</small>
+        <strong>{preferences.content.motivation || context.motivation}</strong><small>Daily momentum for every business unit</small>
       </article>;
     }
     if (widget === 'news') {
