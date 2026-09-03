@@ -119,6 +119,15 @@ export type SignInAuthLabels = {
   legalPrefix: string;
   termsAndConditions: string;
   privacyPolicy: string;
+  or: string;
+  passwordStrength: string;
+  passwordNotSet: string;
+  passwordWeak: string;
+  passwordGood: string;
+  passwordStrong: string;
+  passwordExcellent: string;
+  showPassword: string;
+  hidePassword: string;
 };
 
 export type SignInLabels = {
@@ -141,6 +150,7 @@ export type SignInLabels = {
   encryptedSession: string;
   secureService: string;
   weatherLoading: string;
+  weatherLocation: string;
   weatherConnecting: string;
   weatherUpdated: string;
   liveGuidanceNote: string;
@@ -287,6 +297,7 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
   encryptedSession: 'Encrypted employee access',
   secureService: 'Secure service',
   weatherLoading: 'Loading current conditions',
+  weatherLocation: 'IBADAN',
   weatherConnecting: 'Connecting to live weather',
   weatherUpdated: 'Updated',
   liveGuidanceNote: 'Live guidance · refreshed automatically',
@@ -373,6 +384,15 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
     legalPrefix: 'By continuing to log in, you agree to Daenem Farms’',
     termsAndConditions: 'Terms and Conditions',
     privacyPolicy: 'Privacy Policy',
+    or: 'or',
+    passwordStrength: 'Password strength',
+    passwordNotSet: 'Not set',
+    passwordWeak: 'Weak',
+    passwordGood: 'Good',
+    passwordStrong: 'Strong',
+    passwordExcellent: 'Excellent',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
   },
   widgetLabels: {
     weather: 'LIVE WEATHER',
@@ -464,6 +484,7 @@ function normalizeLabels(value: unknown): SignInLabels {
     encryptedSession: cleanText(source.encryptedSession, DEFAULT_SIGNIN_LABELS.encryptedSession, SIGNIN_LABEL_LIMITS.support),
     secureService: cleanText(source.secureService, DEFAULT_SIGNIN_LABELS.secureService, SIGNIN_LABEL_LIMITS.display),
     weatherLoading: cleanText(source.weatherLoading, DEFAULT_SIGNIN_LABELS.weatherLoading, SIGNIN_LABEL_LIMITS.support),
+    weatherLocation: cleanText(source.weatherLocation, DEFAULT_SIGNIN_LABELS.weatherLocation, SIGNIN_LABEL_LIMITS.display),
     weatherConnecting: cleanText(source.weatherConnecting, DEFAULT_SIGNIN_LABELS.weatherConnecting, SIGNIN_LABEL_LIMITS.support),
     weatherUpdated: cleanText(source.weatherUpdated, DEFAULT_SIGNIN_LABELS.weatherUpdated, SIGNIN_LABEL_LIMITS.display),
     liveGuidanceNote: cleanText(source.liveGuidanceNote, DEFAULT_SIGNIN_LABELS.liveGuidanceNote, SIGNIN_LABEL_LIMITS.support),
