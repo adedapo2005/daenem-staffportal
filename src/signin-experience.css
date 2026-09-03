@@ -2768,8 +2768,8 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-auth-panel {
     max-height: 100%;
     overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: thin;
+    overflow-y: hidden;
+    scrollbar-width: none;
   }
   .usp-live-stack {
     max-height: 100%;
@@ -2789,6 +2789,216 @@ html[data-mode="night"] .usp-social-buttons button {
     min-height: 0;
     height: 100%;
     overflow: hidden;
+  }
+}
+
+/* Correction pass: keep the four supported zones visually independent. */
+.usp-widget-region {
+  min-width: 0;
+}
+.usp-widget-region:empty {
+  display: none;
+}
+.usp-widget-region-auxiliary {
+  padding-top: 2px;
+  border-top: 1px solid rgba(255,255,255,.42);
+}
+.usp-widget-region-auxiliary .usp-widget-group-title {
+  color: #50728d;
+}
+
+/* The animation choice is a real presentation choice, with the page-level
+   logoMotion switch and reduced-motion media query still taking precedence. */
+.usp-logo-animation-none .usp-logo-ring,
+.usp-logo-animation-none .usp-logo-depth {
+  animation: none;
+}
+.usp-logo-animation-float .usp-logo-ring {
+  animation: none;
+}
+.usp-logo-animation-float .usp-logo-depth {
+  animation: usp-logo-float 5s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+.usp-logo-animation-orbit .usp-logo-ring-a {
+  animation: usp-logo-spin 8s linear infinite;
+}
+.usp-logo-animation-orbit .usp-logo-ring-b {
+  animation: usp-logo-spin 6s linear infinite reverse;
+}
+.usp-logo-animation-orbit .usp-logo-depth {
+  animation: none;
+}
+.usp-logo-animation-pulse .usp-logo-ring {
+  animation: none;
+}
+.usp-logo-animation-pulse .usp-logo-depth {
+  animation: usp-logo-pulse 3.2s ease-in-out infinite;
+}
+@keyframes usp-logo-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 12px 28px rgba(5, 49, 93, .24), 0 0 24px rgba(21, 126, 224, .2); }
+  50% { transform: scale(1.045); box-shadow: 0 15px 32px rgba(5, 49, 93, .22), 0 0 34px rgba(21, 126, 224, .34); }
+}
+
+/* Distinct, source-preserving widget compositions. */
+.usp-variant-kicker {
+  display: block;
+  margin-top: 8px;
+  color: #0873bd;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .15em;
+}
+.usp-inspiration-card blockquote {
+  margin: 9px 0 5px;
+  color: #173d60;
+  font-family: var(--font-heading, Manrope, sans-serif);
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.18;
+  letter-spacing: -.02em;
+}
+.usp-widget-variant-innovation-spark .usp-variant-kicker::before {
+  content: "✦ ";
+}
+.usp-widget-variant-daily-prompt {
+  background: linear-gradient(145deg, rgba(255,255,255,.9), rgba(222,245,255,.76));
+}
+.usp-widget-variant-daily-prompt > strong {
+  font-size: 13px;
+  line-height: 1.22;
+}
+.usp-widget-variant-executive-thought {
+  background: linear-gradient(145deg, rgba(250,253,255,.92), rgba(231,240,251,.82));
+}
+.usp-widget-variant-team-boost .usp-variant-kicker,
+.usp-widget-variant-recognition-prompt .usp-variant-kicker,
+.usp-widget-variant-focus-goal .usp-focus-goal b {
+  color: #168260;
+}
+.usp-widget-variant-team-boost > strong {
+  font-size: 14px;
+}
+.usp-widget-variant-recognition-prompt {
+  background: linear-gradient(145deg, rgba(255,255,255,.9), rgba(237,250,242,.78));
+}
+.usp-focus-goal {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: rgba(255,255,255,.56);
+  border: 1px solid rgba(31, 145, 103, .16);
+}
+.usp-focus-goal b {
+  font-size: 8px;
+  letter-spacing: .13em;
+}
+.usp-focus-goal strong {
+  color: #1a4d43;
+  font-size: 12px;
+  line-height: 1.24;
+}
+.usp-news-stack,
+.usp-news-top-stories {
+  position: relative;
+  z-index: 1;
+  margin: 8px 0 3px;
+  padding: 0;
+  list-style: none;
+}
+.usp-news-stack li {
+  display: grid;
+  gap: 2px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(89, 135, 169, .16);
+}
+.usp-news-stack li:last-child { border-bottom: 0; }
+.usp-news-stack a,
+.usp-news-top-stories a,
+.usp-news-briefing a,
+.usp-news-ticker a {
+  color: #183b5c;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.22;
+  text-decoration: none;
+}
+.usp-news-stack a:hover,
+.usp-news-top-stories a:hover,
+.usp-news-briefing a:hover,
+.usp-news-ticker a:hover { color: var(--usp-blue); }
+.usp-news-stack small,
+.usp-news-top-stories small,
+.usp-news-briefing small,
+.usp-news-ticker small {
+  color: #6f8497;
+  font-size: 7px;
+}
+.usp-news-briefing {
+  display: grid;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: rgba(239,248,255,.72);
+  border: 1px solid rgba(55, 139, 202, .16);
+}
+.usp-news-ticker {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 8px 0;
+  overflow: hidden;
+  border-block: 1px solid rgba(77, 135, 174, .16);
+}
+.usp-news-ticker-track {
+  display: grid;
+  gap: 3px;
+  width: max-content;
+  min-width: 100%;
+  animation: usp-news-ticker-rotate 12s ease-in-out infinite;
+}
+@keyframes usp-news-ticker-rotate {
+  0%, 15% { transform: translateX(0); opacity: .76; }
+  42%, 58% { transform: translateX(-8%); opacity: 1; }
+  85%, 100% { transform: translateX(0); opacity: .76; }
+}
+.usp-news-top-stories {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+.usp-news-top-stories > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px;
+  border-radius: 9px;
+  background: rgba(235,247,255,.72);
+  border: 1px solid rgba(90, 147, 184, .14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usp-logo-animation-float .usp-logo-depth,
+  .usp-logo-animation-orbit .usp-logo-ring-a,
+  .usp-logo-animation-orbit .usp-logo-ring-b,
+  .usp-logo-animation-pulse .usp-logo-depth,
+  .usp-news-ticker-track { animation: none; }
+}
+
+@media (max-width: 820px) {
+  .usp-auth-panel {
+    max-height: none;
+    overflow: visible;
+  }
+  .usp-widget-region-auxiliary {
+    margin-top: 3px;
+  }
+  .usp-news-top-stories {
+    grid-template-columns: 1fr;
   }
 }
 
