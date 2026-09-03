@@ -235,6 +235,7 @@ function renderSignInAdmin() {
         labelInput('labels.encryptedSession', 'Encrypted session label', labels.encryptedSession, SIGNIN_LABEL_LIMITS.support) +
         labelInput('labels.secureService', 'Secure service label', labels.secureService, SIGNIN_LABEL_LIMITS.display) +
         labelInput('labels.weatherLoading', 'Weather loading label', labels.weatherLoading, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.weatherLocation', 'Weather location label', labels.weatherLocation, SIGNIN_LABEL_LIMITS.display) +
         labelInput('labels.weatherConnecting', 'Weather connecting label', labels.weatherConnecting, SIGNIN_LABEL_LIMITS.support) +
         labelInput('labels.weatherUpdated', 'Weather updated label', labels.weatherUpdated, SIGNIN_LABEL_LIMITS.display) +
         labelInput('labels.liveGuidanceNote', 'Guidance note', labels.liveGuidanceNote, SIGNIN_LABEL_LIMITS.support) +
