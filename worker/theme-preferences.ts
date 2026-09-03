@@ -175,7 +175,7 @@ export function cleanSignInConfig(value: unknown) {
   const zones = list(candidate.clockZones, CLOCK_ZONES, STANDARD_CLOCK_ZONES).slice(0, maxClocks);
   const logo = record(candidate.logo);
   const position = ['left', 'center', 'right'].includes(String(logo.position || candidate.logoPosition)) ? String(logo.position || candidate.logoPosition) : 'left';
-  const safeInstances = Array.isArray(candidate.widgetInstances) ? instances : instances.length ? instances : defaultSignInConfig.widgetInstances;
+  const safeInstances: Array<Record<string, unknown>> = Array.isArray(candidate.widgetInstances) ? instances : instances.length ? instances : defaultSignInConfig.widgetInstances as Array<Record<string, unknown>>;
   const widgetOrder = [...new Set(safeInstances.map((item) => String(item.kind) as string))];
   return {
     schemaVersion: 3,
