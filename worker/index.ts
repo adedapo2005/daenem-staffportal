@@ -64,6 +64,143 @@ async function weather(request: Request) {
   });
 }
 
+
+const defaultSignInConfig = {
+  widgetOrder: ['weather', 'inspiration', 'motivation', 'news', 'status'],
+  hiddenWidgets: [],
+  clockStyle: 'detailed',
+  clockZones: ['Africa/Lagos', 'America/Toronto', 'Europe/London', 'America/New_York', 'Europe/Moscow', 'Asia/Tokyo', 'Asia/Shanghai'],
+  temperatureUnit: 'F',
+  logoPosition: 'left',
+  effectLevel: 'balanced',
+  themeMode: 'auto',
+  darkStart: '19:00',
+  darkEnd: '07:00',
+};
+
+const signInWidgets = ['weather', 'inspiration', 'motivation', 'news', 'status'];
+const signInZones = ['Africa/Lagos', 'America/Toronto', 'Europe/London', 'America/New_York', 'Europe/Moscow', 'Asia/Tokyo', 'Asia/Shanghai', 'Africa/Johannesburg', 'Asia/Dubai', 'Asia/Singapore', 'Australia/Sydney'];
+
+function cleanStringList(value: unknown, allowed: string[], fallback: string[]) {
+  if (!Array.isArray(value)) return [...fallback];
+  const values = [...new Set(value.filter((item): item is string => typeof item === 'string' && allowed.includes(item)))];
+  return values.length ? values : [...fallback];
+}
+
+function cleanSignInConfig(value: unknown) {
+  const candidate = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  const widgetOrder = cleanStringList(candidate.widgetOrder, signInWidgets, defaultSignInConfig.widgetOrder);
+  const hiddenWidgets = Array.isArray(candidate.hiddenWidgets)
+    ? [...new Set(candidate.hiddenWidgets.filter((item): item is string => typeof item === 'string' && signInWidgets.includes(item)))]
+    : [];
+  const validTime = (time: unknown, fallback: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(time || '')) ? String(time) : fallback;
+  return {
+    widgetOrder: [...widgetOrder, ...signInWidgets.filter((item) => !widgetOrder.includes(item))],
+    hiddenWidgets,
+    clockStyle: ['minimal', 'detailed', 'neon', 'classic'].includes(String(candidate.clockStyle)) ? String(candidate.clockStyle) : defaultSignInConfig.clockStyle,
+    clockZones: cleanStringList(candidate.clockZones, signInZones, defaultSignInConfig.clockZones).slice(0, 7),
+    temperatureUnit: candidate.temperatureUnit === 'C' ? 'C' : 'F',
+    logoPosition: ['left', 'center', 'right'].includes(String(candidate.logoPosition)) ? String(candidate.logoPosition) : defaultSignInConfig.logoPosition,
+    effectLevel: ['calm', 'balanced', 'vivid'].includes(String(candidate.effectLevel)) ? String(candidate.effectLevel) : defaultSignInConfig.effectLevel,
+    themeMode: ['day', 'night', 'auto'].includes(String(candidate.themeMode)) ? String(candidate.themeMode) : defaultSignInConfig.themeMode,
+    darkStart: validTime(candidate.darkStart, defaultSignInConfig.darkStart),
+    darkEnd: validTime(candidate.darkEnd, defaultSignInConfig.darkEnd),
+  };
+}
+
+async function readPublicSignInConfig(env: Env) {
+  const row = await env.DB.prepare("SELECT setting_value FROM app_settings WHERE setting_key='ui.signin_config_v2'").first<{ setting_value?: string }>();
+  if (!row?.setting_value) return cleanSignInConfig(defaultSignInConfig);
+  try {
+    return cleanSignInConfig(JSON.parse(row.setting_value));
+  } catch {
+    return cleanSignInConfig(defaultSignInConfig);
+  }
+}
+
+function decodeFeedText(value: string) {
+  return value
+    .replace(/^<!\[CDATA\[|\]\]>$/g, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function feedTag(item: string, tag: string) {
+  const match = item.match(new RegExp('<' + tag + '(?:\\s[^>]*)?>([\\s\\S]*?)<\\/' + tag + '>', 'i'));
+  return match ? decodeFeedText(match[1]) : '';
+}
+
+async function liveHeadlines(feedUrl: string, category: string) {
+  try {
+    const response = await fetch(feedUrl, {
+      headers: { accept: 'application/rss+xml, application/xml;q=0.9' },
+      cf: { cacheTtl: 900, cacheEverything: true },
+    });
+    if (!response.ok) return [] as Array<{ title: string; url?: string; category: string; source: string }>;
+    const xml = await response.text();
+    return [...xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)].slice(0, 3).map((match) => {
+      const title = feedTag(match[0], 'title').slice(0, 180);
+      const link = feedTag(match[0], 'link');
+      const source = feedTag(match[0], 'source') || (feedUrl.includes('bbc') ? 'BBC News' : 'Google News');
+      return {
+        title,
+        url: /^https?:\/\//i.test(link) ? link : undefined,
+        category,
+        source: source.slice(0, 60),
+      };
+    }).filter((item) => item.title);
+  } catch {
+    return [] as Array<{ title: string; url?: string; category: string; source: string }>;
+  }
+}
+
+async function publicSignInContext(env: Env) {
+  const config = await readPublicSignInConfig(env);
+  const hourIndex = Math.floor(Date.now() / 3_600_000);
+  const inspirations = [
+    'Make the next useful action unmistakably clear.',
+    'Good systems turn careful work into repeatable progress.',
+    'Let today’s best decision create tomorrow’s momentum.',
+    'Precision, service, and follow-through transform daily work.',
+    'Connect the right information to the right action.',
+  ];
+  const motivations = [
+    'Finish one meaningful task well, then build from there.',
+    'Your consistent effort keeps the whole operation moving.',
+    'Clear ownership today creates stronger results tomorrow.',
+    'Small improvements become powerful when the team repeats them.',
+    'Recognize progress, resolve the blocker, and move forward.',
+  ];
+
+  const sectorQuery = encodeURIComponent('(bakery OR printing OR automotive OR logistics OR property OR technology) Nigeria business');
+  const nigeriaQuery = encodeURIComponent('Nigeria business economy technology');
+  const [world, nigeria, sectors] = await Promise.all([
+    liveHeadlines('https://feeds.bbci.co.uk/news/world/rss.xml', 'World'),
+    liveHeadlines('https://news.google.com/rss/search?q=' + nigeriaQuery + '&hl=en-NG&gl=NG&ceid=NG:en', 'Nigeria'),
+    liveHeadlines('https://news.google.com/rss/search?q=' + sectorQuery + '&hl=en-NG&gl=NG&ceid=NG:en', 'Industry'),
+  ]);
+  const news = [...world.slice(0, 2), ...nigeria.slice(0, 2), ...sectors.slice(0, 3)];
+  const fallbackNews = [
+    { title: 'Daenem secure services are live and ready.', category: 'Portal', source: 'Daenem' },
+    { title: 'Global time and local weather are updating automatically.', category: 'Operations', source: 'Daenem' },
+  ];
+
+  return json({
+    config,
+    inspiration: inspirations[hourIndex % inspirations.length],
+    motivation: motivations[Math.floor(hourIndex / 6) % motivations.length],
+    news: news.length ? news : fallbackNews,
+    generatedAt: new Date().toISOString(),
+    source: news.length ? 'live' : 'fallback',
+  });
+}
+
 function allowedModules(context: SessionContext) {
   return Object.entries(context.permissions)
     .filter(([, level]) => level !== 'none')
@@ -288,6 +425,8 @@ export default {
         },
       });
     }
+
+    if (url.pathname === '/api/context/signin' && request.method === 'GET') return securityHeaders(await publicSignInContext(env));
 
     const authResponse = await routeAuth(request, env);
     if (authResponse) return securityHeaders(authResponse);
