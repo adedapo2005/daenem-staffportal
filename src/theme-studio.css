@@ -695,7 +695,7 @@
 }
 .signin-admin-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(110px, 140px) minmax(130px, 160px) auto auto;
+  grid-template-columns: minmax(150px, 1fr) minmax(110px, 140px) minmax(110px, 140px) minmax(130px, 160px) auto auto;
   align-items: center;
   gap: 7px;
   padding: 8px;
