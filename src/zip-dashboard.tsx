@@ -398,7 +398,7 @@ function Sidebar({
 
   return <aside className={`sidebar ${sidebarOpen ? 'is-open open' : ''}`}>
     <div className="sidebar-head">
-      <div className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></div>
+      <div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div>
       <div className="sidebar-copy"><strong>Daenem</strong><span>Staff Portal</span></div>
       <button className="icon-button sidebar-close mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close navigation"><X size={18} /></button>
     </div>
@@ -946,7 +946,7 @@ export function ZipDashboard({
         release={release}
         setReleaseOpen={setReleaseOpen}
       />
-      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
+      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
       <div className="dashboard-main">
         {view === 'overview'
           ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} />
