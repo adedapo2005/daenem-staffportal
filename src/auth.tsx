@@ -80,9 +80,22 @@ export async function requestAppInstall(): Promise<'accepted' | 'dismissed' | 'u
   return choice.outcome === 'accepted' ? 'accepted' : 'dismissed';
 }
 
-type Message = { type: 'error' | 'success' | 'info'; text: string; details?: string[] };
+type Message = { type: 'error' | 'success' | 'info'; text: string; details?: string[]; action?: { label: string; onClick: () => void } };
 
 type PasswordCheck = { label: string; ok: boolean; required?: boolean };
+type PasswordPolicy = {
+  minimumLength: number;
+  maximumLength: number;
+  requiresUppercase: boolean;
+  requiresLowercase: boolean;
+  requiresNumber: boolean;
+  requiresSymbol: boolean;
+};
+
+const FALLBACK_PASSWORD_POLICY: PasswordPolicy = {
+  minimumLength: 10, maximumLength: 128, requiresUppercase: true, requiresLowercase: true,
+  requiresNumber: true, requiresSymbol: true,
+};
 
 type AuthMeResult = { authenticated: boolean; context?: WorkforceContext };
 const AUTH_ME_CACHE_MS = 15_000;
@@ -175,14 +188,26 @@ function deviceIdentity() {
   };
 }
 
-function passwordChecks(password: string): PasswordCheck[] {
+function passwordChecks(password: string, policy: PasswordPolicy, labels: SignInAuthLabels): PasswordCheck[] {
   return [
-    { label: '6+ characters', ok: password.length >= 6, required: true },
-    { label: 'Uppercase', ok: /[A-Z]/.test(password) },
-    { label: 'Lowercase', ok: /[a-z]/.test(password) },
-    { label: 'Number', ok: /[0-9]/.test(password) },
-    { label: 'Symbol', ok: /[^A-Za-z0-9]/.test(password) },
+    { label: labels.passwordMinimumLength.replace('{min}', String(policy.minimumLength)), ok: password.length >= policy.minimumLength, required: true },
+    { label: labels.passwordUppercase, ok: !policy.requiresUppercase || /[A-Z]/.test(password), required: policy.requiresUppercase },
+    { label: labels.passwordLowercase, ok: !policy.requiresLowercase || /[a-z]/.test(password), required: policy.requiresLowercase },
+    { label: labels.passwordNumber, ok: !policy.requiresNumber || /[0-9]/.test(password), required: policy.requiresNumber },
+    { label: labels.passwordSymbol, ok: !policy.requiresSymbol || /[^A-Za-z0-9]/.test(password), required: policy.requiresSymbol },
   ];
+}
+
+function passwordPolicySatisfied(checks: PasswordCheck[]) {
+  return checks.every((check) => !check.required || check.ok);
+}
+
+function identifierState(value: string): 'empty' | 'email' | 'username' | 'invalid' {
+  const identifier = value.trim();
+  if (!identifier) return 'empty';
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) return 'email';
+  if (/^[a-z0-9][a-z0-9._-]{2,30}[a-z0-9]$/i.test(identifier)) return 'username';
+  return 'invalid';
 }
 
 function fieldPlaceholder(label: string, required = false) {
@@ -190,10 +215,10 @@ function fieldPlaceholder(label: string, required = false) {
 }
 
 function TextField({
-  label, value, onChange, required = false, type = 'text', autoComplete, helper,
+  label, value, onChange, required = false, type = 'text', autoComplete, helper, statusText, statusTone, onBlur,
 }: {
   label: string; value: string; onChange: (value: string) => void; required?: boolean;
-  type?: string; autoComplete?: string; helper?: string;
+  type?: string; autoComplete?: string; helper?: string; statusText?: string; statusTone?: 'valid' | 'invalid'; onBlur?: () => void;
 }) {
   return <label className="usp-field">
     <span className="usp-field-label">{label}{required ? ' *' : ''}</span>
@@ -201,12 +226,14 @@ function TextField({
       type={type}
       value={value}
       onChange={(event) => onChange(event.target.value)}
+      onBlur={onBlur}
       autoComplete={autoComplete}
       placeholder={fieldPlaceholder(label, required)}
       aria-label={label}
       required={required}
     />
     {helper && <small className="usp-field-help">{helper}</small>}
+    {statusText && <small className={`usp-identifier-status ${statusTone || 'neutral'}`} aria-live="polite"><i aria-hidden="true">{statusTone === 'valid' ? '✓' : '×'}</i>{statusText}</small>}
   </label>;
 }
 
@@ -235,13 +262,21 @@ function PasswordField({
   </label>;
 }
 
-function PasswordStatus({ checks, label }: { checks: PasswordCheck[]; label: string }) {
-  return <div className="usp-password-status" aria-label={label}>
-    {checks.map((check) => <span key={check.label} className={check.ok ? 'pass' : 'wait'}>
-      <i aria-hidden="true">{check.ok ? '✓' : '×'}</i>
-      <b>{check.label}</b>
-    </span>)}
+function PasswordStatus({ checks, password, label }: { checks: PasswordCheck[]; password: string; label: string }) {
+  return <div className="usp-password-requirements" aria-label={label}>
+    <strong>{label}</strong>
+    <div className="usp-password-status">
+      {checks.map((check) => <span key={check.label} className={!password ? 'neutral' : check.ok ? 'pass' : 'fail'}>
+        <i aria-hidden="true">{!password ? '○' : check.ok ? '✓' : '×'}</i>
+        <b>{check.label}</b>
+      </span>)}
+    </div>
   </div>;
+}
+
+function ConfirmPasswordStatus({ value, matches, labels }: { value: string; matches: boolean; labels: SignInAuthLabels }) {
+  if (!value) return <small className="usp-confirm-status neutral" aria-live="polite"><i aria-hidden="true">○</i>{labels.confirmPassword}</small>;
+  return <small className={`usp-confirm-status ${matches ? 'valid' : 'invalid'}`} aria-live="polite"><i aria-hidden="true">{matches ? '✓' : '×'}</i>{matches ? labels.passwordsMatch : labels.passwordsDoNotMatch}</small>;
 }
 
 function PasswordStrengthMeter({ checks, password, labels }: { checks: PasswordCheck[]; password: string; labels: SignInAuthLabels }) {
@@ -358,7 +393,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [modePreference] = useState<ModePreference>(() => readModePreference());
   const [secureServiceLabel, setSecureServiceLabel] = useState(() => readSignInPreferences().labels.secureService);
   const [authLabels, setAuthLabels] = useState(() => readSignInPreferences().labels.auth);
+  const [passwordPolicy, setPasswordPolicy] = useState<PasswordPolicy>(FALLBACK_PASSWORD_POLICY);
   const [compactDesktop, setCompactDesktop] = useState(false);
+  const [identityTouched, setIdentityTouched] = useState(false);
+  const compactAuthRef = useRef(false);
 
   const [signupStep, setSignupStep] = useState<'identity' | 'account' | 'work' | 'verify'>('identity');
   const [signupChallenge, setSignupChallenge] = useState('');
@@ -383,11 +421,29 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showNewConfirm, setShowNewConfirm] = useState(false);
 
-  const signupChecks = passwordChecks(signup.password);
-  const resetChecks = passwordChecks(newPassword);
+  const signupChecks = passwordChecks(signup.password, passwordPolicy, authLabels);
+  const resetChecks = passwordChecks(newPassword, passwordPolicy, authLabels);
+  const identityStatus = identifierState(identity);
+  const showIdentityStatus = identity.trim().length >= 3 || identityTouched;
 
   useEffect(() => {
     ensureAppInstallListener();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api<PasswordPolicy>('/api/auth/password-policy').then((value) => {
+      if (!active || !value || typeof value.minimumLength !== 'number') return;
+      setPasswordPolicy({
+        minimumLength: Math.max(8, Math.min(128, Math.round(value.minimumLength))),
+        maximumLength: Math.max(32, Math.min(256, Math.round(value.maximumLength || 128))),
+        requiresUppercase: value.requiresUppercase !== false,
+        requiresLowercase: value.requiresLowercase !== false,
+        requiresNumber: value.requiresNumber !== false,
+        requiresSymbol: value.requiresSymbol !== false,
+      });
+    }).catch(() => undefined);
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -401,12 +457,36 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }, []);
 
   useEffect(() => {
-    const query = window.matchMedia('(min-width: 821px) and (max-height: 959px)');
-    const sync = () => setCompactDesktop(query.matches);
+    const panel = panelRef.current;
+    const column = panel?.closest<HTMLElement>('.usp-form-column');
+    if (!panel || !column) return;
+    let frame = 0;
+    const sync = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const query = window.matchMedia('(min-width: 821px) and (max-height: 959px)');
+        const measuredOverflow = window.innerWidth >= 821 && panel.scrollHeight > column.clientHeight + 1;
+        if (measuredOverflow) compactAuthRef.current = true;
+        if (mode !== 'signup' && !query.matches) compactAuthRef.current = false;
+        setCompactDesktop((current) => {
+          const next = query.matches || measuredOverflow || compactAuthRef.current;
+          return current === next ? current : next;
+        });
+      });
+    };
+    const observer = new ResizeObserver(sync);
+    observer.observe(panel);
+    observer.observe(column);
+    window.addEventListener('resize', sync, { passive: true });
+    window.visualViewport?.addEventListener('resize', sync, { passive: true });
     sync();
-    query.addEventListener('change', sync);
-    return () => query.removeEventListener('change', sync);
-  }, []);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', sync);
+      window.visualViewport?.removeEventListener('resize', sync);
+    };
+  }, [mode, signupStep, recoveryStep, message, passwordPolicy, authLabels]);
 
   useEffect(() => {
     const theme = themeById(themeId);
@@ -438,9 +518,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
+    compactAuthRef.current = false;
     setMode(next);
     setMessage(null);
-    if (next === 'signup') { setSignupStep('identity'); setSignupCode(''); }
+    setPassword('');
+    setShowPassword(false);
+    setRemember(false);
+    setSignup((current) => ({ ...current, password: '', confirmPassword: '' }));
+    if (next === 'signup') { setIdentity(''); setIdentityTouched(false); setSignupStep('identity'); setSignupCode(''); }
     if (next === 'forgot') {
       setRecoveryStep('identity'); setRecoveryCode(''); setResetToken(''); setRecoveryIdentity(identity);
     }
@@ -455,12 +540,12 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   function continueSignupAccount(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
-    if (signup.password !== signup.confirmPassword) {
-      setMessage({ type: 'error', text: 'The two passwords do not match.' });
+    if (!passwordPolicySatisfied(signupChecks)) {
+      setMessage({ type: 'error', text: authLabels.passwordRequirements, details: signupChecks.filter((check) => check.required && !check.ok).map((check) => check.label) });
       return;
     }
-    if (signup.password.length < 6) {
-      setMessage({ type: 'error', text: 'Your password must contain at least 6 characters.' });
+    if (signup.password !== signup.confirmPassword) {
+      setMessage({ type: 'error', text: authLabels.passwordsDoNotMatch });
       return;
     }
     setSignupStep('work');
@@ -481,10 +566,20 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       if (!me.authenticated || !me.context) {
         throw new Error('Your sign-in session could not be established. Please try again.');
       }
+      setPassword('');
+      setShowPassword(false);
+      setRemember(false);
       onAuthenticated(me.context);
     } catch (error) {
       const authError = error as ApiError;
-      if (authError.code === 'LOCATION_REQUIRED' || authError.code === 'OUTSIDE_LOGIN_GEOFENCE') {
+      if (authError.status === 423 || authError.code === 'PASSWORD_TEMPORARILY_LOCKED') {
+        setMessage({
+          type: 'error',
+          text: authLabels.lockoutTitle,
+          details: [authLabels.lockoutSummary, authLabels.lockoutRecovery],
+          action: { label: authLabels.forgotPassword, onClick: () => switchMode('forgot') },
+        });
+      } else if (authError.code === 'LOCATION_REQUIRED' || authError.code === 'OUTSIDE_LOGIN_GEOFENCE') {
         setMessage({ type: 'error', text: 'Your sign-in could not be completed. Please contact your administrator if this continues.' });
       } else {
         setMessage({ type: 'error', text: authError.message });
@@ -497,12 +592,12 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   async function startSignup(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
-    if (signup.password !== signup.confirmPassword) {
-      setMessage({ type: 'error', text: 'The two passwords do not match.' });
+    if (!passwordPolicySatisfied(signupChecks)) {
+      setMessage({ type: 'error', text: authLabels.passwordRequirements, details: signupChecks.filter((check) => check.required && !check.ok).map((check) => check.label) });
       return;
     }
-    if (signup.password.length < 6) {
-      setMessage({ type: 'error', text: 'Your password must contain at least 6 characters.' });
+    if (signup.password !== signup.confirmPassword) {
+      setMessage({ type: 'error', text: authLabels.passwordsDoNotMatch });
       return;
     }
     setBusy(true);
@@ -532,8 +627,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       const result = await api<{ username: string; message: string }>('/api/auth/signup/verify', {
         method: 'POST', body: JSON.stringify({ challengeId: signupChallenge, code: signupCode }),
       });
-      setIdentity(result.username || signup.email);
+      setIdentity('');
       setPassword('');
+      setSignup((current) => ({ ...current, password: '', confirmPassword: '' }));
       setMode('signin');
       setSignupStep('identity');
       setMessage({ type: 'success', text: result.message });
@@ -585,12 +681,12 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   async function resetPassword(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
-    if (newPassword !== confirmNewPassword) {
-      setMessage({ type: 'error', text: 'The two new passwords do not match.' });
+    if (!passwordPolicySatisfied(resetChecks)) {
+      setMessage({ type: 'error', text: authLabels.passwordRequirements, details: resetChecks.filter((check) => check.required && !check.ok).map((check) => check.label) });
       return;
     }
-    if (newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'Your new password must contain at least 6 characters.' });
+    if (newPassword !== confirmNewPassword) {
+      setMessage({ type: 'error', text: authLabels.passwordsDoNotMatch });
       return;
     }
     setBusy(true);
@@ -598,7 +694,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       const result = await api<{ username?: string; message: string }>('/api/auth/password/reset', {
         method: 'POST', body: JSON.stringify({ resetToken, newPassword }),
       });
-      setIdentity(result.username || recoveryIdentity);
+      setIdentity('');
       setPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
@@ -632,7 +728,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         };
 
   const authPanel = (
-    <section ref={panelRef} aria-label="Employee authentication" className={`usp-auth-panel usp-auth-panel-${mode}`}>
+    <section ref={panelRef} aria-label="Employee authentication" data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
       <div className="usp-panel-heading">
         <div>
           <span className="usp-panel-eyebrow"><LockKeyhole size={14} /> {authLabels.secureErpAccess}</span>
@@ -644,7 +740,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
           : <span className="usp-mfa-chip"><ShieldCheck size={14} /> {authLabels.mfaReady}</span>}
       </div>
 
-      {mode !== 'forgot' && <div className="usp-tabs" role="tablist" aria-label="Authentication options">
+      {mode !== 'forgot' && <div className={`usp-tabs usp-tabs-${mode}`} role="tablist" aria-label="Authentication options">
         <button type="button" className={mode === 'signin' ? 'active' : ''} onClick={() => switchMode('signin')} role="tab" aria-selected={mode === 'signin'}>{authLabels.employeeSignInTab}</button>
         <button type="button" className={mode === 'signup' ? 'active' : ''} onClick={() => switchMode('signup')} role="tab" aria-selected={mode === 'signup'}>{authLabels.createAccountTab}</button>
       </div>}
@@ -652,12 +748,26 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {message && <div className={`usp-auth-message ${message.type}`} role="alert">
         <span>{message.text}</span>
         {message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}
+        {message.action && <button type="button" className="usp-auth-message-action" onClick={message.action.onClick}>{message.action.label}</button>}
       </div>}
 
-      {mode === 'signin' && <form className="usp-auth-form" onSubmit={signIn}>
-        <TextField label={authLabels.emailOrUsername} value={identity} onChange={setIdentity} required autoComplete="username" />
+      {mode === 'signin' && <form className="usp-auth-form" autoComplete="off" onSubmit={signIn}>
+        <TextField
+          label={authLabels.emailOrUsername}
+          value={identity}
+          onChange={setIdentity}
+          onBlur={() => setIdentityTouched(true)}
+          required
+          autoComplete="off"
+          statusText={showIdentityStatus && identityStatus !== 'empty'
+            ? identityStatus === 'email' ? authLabels.identifierEmailValid
+              : identityStatus === 'username' ? authLabels.identifierUsernameValid
+                : authLabels.identifierInvalid
+            : undefined}
+          statusTone={identityStatus === 'invalid' ? 'invalid' : 'valid'}
+        />
         <div className="usp-password-block">
-          <PasswordField label={authLabels.password} value={password} onChange={setPassword} autoComplete="current-password" show={showPassword} setShow={setShowPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
+          <PasswordField label={authLabels.password} value={password} onChange={setPassword} autoComplete="off" show={showPassword} setShow={setShowPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
           <button type="button" className="usp-forgot-link" onClick={() => switchMode('forgot')}>{authLabels.forgotPassword}</button>
         </div>
         <label className="usp-remember-row">
@@ -670,41 +780,43 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         </button>
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" onSubmit={continueSignupIdentity}>
+      {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={continueSignupIdentity}>
         <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
         <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
         <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
         <button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button>
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" onSubmit={continueSignupAccount}>
-        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper={authLabels.usernameHelper} />
+      {mode === 'signup' && compactDesktop && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={continueSignupAccount}>
+        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="off" helper={authLabels.usernameHelper} />
         <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
         <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
-        <PasswordStatus checks={signupChecks} label={authLabels.passwordStrength} />
-        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button></div>
+        <PasswordStatus checks={signupChecks} password={signup.password} label={authLabels.passwordRequirements} />
+        <ConfirmPasswordStatus value={signup.confirmPassword} matches={signup.password === signup.confirmPassword} labels={authLabels} />
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit" disabled={!passwordPolicySatisfied(signupChecks) || signup.password !== signup.confirmPassword}>{authLabels.continue}<ArrowRight size={17} /></button></div>
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" onSubmit={startSignup}>
+      {mode === 'signup' && compactDesktop && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={startSignup}>
         <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
         <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
         <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('account')}>{authLabels.back}</button><button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button></div>
       </form>}
 
-      {mode === 'signup' && !compactDesktop && signupStep !== 'verify' && <form className="usp-auth-form usp-signup-form" onSubmit={startSignup}>
+      {mode === 'signup' && !compactDesktop && signupStep !== 'verify' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={startSignup}>
         <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
         <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
         <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
-        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper={authLabels.usernameHelper} />
+        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="off" helper={authLabels.usernameHelper} />
         <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
         <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
-        <PasswordStatus checks={signupChecks} label={authLabels.passwordStrength} />
+        <PasswordStatus checks={signupChecks} password={signup.password} label={authLabels.passwordRequirements} />
+        <ConfirmPasswordStatus value={signup.confirmPassword} matches={signup.password === signup.confirmPassword} labels={authLabels} />
         <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
         <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
         <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button>
       </form>}
 
-      {mode === 'signup' && signupStep === 'verify' && <form className="usp-auth-form" onSubmit={verifySignup}>
+      {mode === 'signup' && signupStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifySignup}>
         <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationSentTo} <b>{signupDestination}</b></span></div>
         {signupBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{signupBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
         <TextField label={authLabels.verificationCode} value={signupCode} onChange={(value) => setSignupCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
@@ -712,13 +824,13 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button type="button" className="usp-secondary-button" onClick={() => { setSignupStep('identity'); setSignupCode(''); setMessage(null); }}>{authLabels.changeSignupDetails}</button>
       </form>}
 
-      {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" onSubmit={startRecovery}>
-        <TextField label={authLabels.emailOrUsername} value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="username" />
+      {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" autoComplete="off" onSubmit={startRecovery}>
+        <TextField label={authLabels.emailOrUsername} value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="off" />
         <div className="usp-positive-note"><Mail size={16} /><span>{authLabels.recoveryIdentityNote}</span></div>
         <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
       </form>}
 
-      {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" onSubmit={verifyRecovery}>
+      {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifyRecovery}>
         <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationCodeSent}</span></div>
         {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{recoveryBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
         <TextField label={authLabels.verificationCode} value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
@@ -726,13 +838,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button type="button" className="usp-secondary-button" onClick={() => { setRecoveryStep('identity'); setRecoveryCode(''); setMessage(null); }}>{authLabels.requestAnotherCode}</button>
       </form>}
 
-      {mode === 'forgot' && recoveryStep === 'reset' && <form className="usp-auth-form" onSubmit={resetPassword}>
+      {mode === 'forgot' && recoveryStep === 'reset' && <form className="usp-auth-form" autoComplete="off" onSubmit={resetPassword}>
         <div className="usp-reset-unlocked"><CheckCircle2 size={20} /><div><strong>{authLabels.identityVerified}</strong><span>{authLabels.resetAccessNote}</span></div></div>
         <PasswordField label={authLabels.newPassword} value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
         <PasswordField label={authLabels.confirmNewPassword} value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
         <PasswordStrengthMeter checks={resetChecks} password={newPassword} labels={authLabels} />
-        <PasswordStatus checks={resetChecks} label={authLabels.passwordStrength} />
-        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
+        <PasswordStatus checks={resetChecks} password={newPassword} label={authLabels.passwordRequirements} />
+        <ConfirmPasswordStatus value={confirmNewPassword} matches={newPassword === confirmNewPassword} labels={authLabels} />
+        <button className="usp-primary-button" disabled={busy || !passwordPolicySatisfied(resetChecks) || newPassword !== confirmNewPassword} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
       </form>}
 
       {mode !== 'forgot' && <>

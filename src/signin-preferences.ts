@@ -128,6 +128,21 @@ export type SignInAuthLabels = {
   passwordExcellent: string;
   showPassword: string;
   hidePassword: string;
+  lockoutTitle: string;
+  lockoutSummary: string;
+  lockoutRecovery: string;
+  identifierEmailValid: string;
+  identifierUsernameValid: string;
+  identifierReady: string;
+  identifierInvalid: string;
+  passwordRequirements: string;
+  passwordMinimumLength: string;
+  passwordUppercase: string;
+  passwordLowercase: string;
+  passwordNumber: string;
+  passwordSymbol: string;
+  passwordsMatch: string;
+  passwordsDoNotMatch: string;
 };
 
 export type SignInLabels = {
@@ -336,33 +351,33 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
   serviceTeamNotified: 'Service team notified',
   auth: {
     secureErpAccess: 'SECURE ERP ACCESS',
-    signInTitle: 'Employee sign-in',
+    signInTitle: 'Employee Sign-In',
     signInDescription: 'Use your employee email or username to enter the live ERP workspace.',
-    createAccountTitle: 'Create account',
+    createAccountTitle: 'Create Account',
     createAccountDescription: 'Create your secure employee login. Your work access remains subject to administrator approval.',
-    verifyEmailTitle: 'Verify your email',
+    verifyEmailTitle: 'Verify Your Email',
     verifyEmailDescription: 'Enter the one-time code sent to your email to finish creating your account.',
-    forgotPasswordTitle: 'Forgot password',
+    forgotPasswordTitle: 'Forgot Password',
     forgotPasswordDescription: 'Enter your email or username to begin secure password recovery.',
-    verifyIdentityTitle: 'Verify your identity',
+    verifyIdentityTitle: 'Verify Your Identity',
     verifyIdentityDescription: 'Enter the one-time code sent to the email on your approved account.',
-    newPasswordTitle: 'Create a new password',
+    newPasswordTitle: 'Create A New Password',
     newPasswordDescription: 'Choose a secure password, then return to employee sign-in.',
     employeeSignInTab: 'Employee Sign-In',
     createAccountTab: 'Create Account',
     emailOrUsername: 'Email or Username',
     password: 'Password',
-    forgotPassword: 'Forgot password?',
+    forgotPassword: 'Forgot Password',
     rememberMe: 'Remember Me',
     trustedDevice: 'Use only on a trusted device',
     signIn: 'Sign In',
-    signingIn: 'Signing in…',
-    mfaReady: 'MFA-ready',
+    signingIn: 'Signing In…',
+    mfaReady: 'MFA-Ready',
     microsoftSignIn: 'Sign In with Microsoft',
     googleSignIn: 'Sign In with Google',
     microsoftCreateAccount: 'Create Account with Microsoft',
     googleCreateAccount: 'Create Account with Google',
-    backToSignIn: 'Back to sign-in',
+    backToSignIn: 'Back To Sign-In',
     firstName: 'First Name',
     lastName: 'Last Name',
     personalEmail: 'Personal Email',
@@ -374,22 +389,22 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
     departmentWorkArea: 'Department / Work Area',
     jobTitle: 'Job Title',
     rolePosition: 'Role / Position Information',
-    preparingVerification: 'Preparing verification…',
-    verificationCode: '6-digit verification code',
-    verifyEmailFinish: 'Verify email & finish signup',
-    changeSignupDetails: 'Change signup details',
-    sendRecoveryCode: 'Send recovery code',
-    preparingRecovery: 'Preparing recovery…',
-    verifyIdentity: 'Verify identity',
-    requestAnotherCode: 'Request another code',
+    preparingVerification: 'Preparing Verification…',
+    verificationCode: '6-Digit Verification Code',
+    verifyEmailFinish: 'Verify Email & Finish Signup',
+    changeSignupDetails: 'Change Signup Details',
+    sendRecoveryCode: 'Send Recovery Code',
+    preparingRecovery: 'Preparing Recovery…',
+    verifyIdentity: 'Verify Identity',
+    requestAnotherCode: 'Request Another Code',
     newPassword: 'New Password',
     confirmNewPassword: 'Confirm New Password',
-    createNewPassword: 'Create password',
-    securingAccount: 'Securing account…',
+    createNewPassword: 'Create Password',
+    securingAccount: 'Securing Account…',
     continue: 'Continue',
     back: 'Back',
     verifying: 'Verifying…',
-    verificationSentTo: 'Verification code sent to',
+    verificationSentTo: 'Verification Code Sent To',
     privateBootstrapCode: 'PRIVATE BOOTSTRAP CODE',
     bootstrapNote: 'Visible only in the local bootstrap stage.',
     verificationCodeSent: 'Enter the 6-digit code sent to your email.',
@@ -398,17 +413,32 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
     resetAccessNote: 'Create your password to finish securing your access.',
     socialNote: 'Use your Microsoft or Google account to sign in or create an account.',
     legalPrefix: DEFAULT_LEGAL_PREFIX,
-    termsAndConditions: 'Terms and Conditions',
+    termsAndConditions: 'Terms And Conditions',
     privacyPolicy: 'Privacy Policy',
-    or: 'or',
-    passwordStrength: 'Password strength',
-    passwordNotSet: 'Not set',
+    or: 'Or',
+    passwordStrength: 'Password Strength',
+    passwordNotSet: 'Not Set',
     passwordWeak: 'Weak',
     passwordGood: 'Good',
     passwordStrong: 'Strong',
     passwordExcellent: 'Excellent',
-    showPassword: 'Show password',
-    hidePassword: 'Hide password',
+    showPassword: 'Show Password',
+    hidePassword: 'Hide Password',
+    lockoutTitle: 'Sign-In Temporarily Locked',
+    lockoutSummary: 'Too Many Unsuccessful Attempts Were Detected.',
+    lockoutRecovery: 'Wait For The Security Lock To Expire Or Use Forgot Password To Restore Access.',
+    identifierEmailValid: 'Email Format Recognized',
+    identifierUsernameValid: 'Username Format Recognized',
+    identifierReady: 'Sign-In Identifier Ready',
+    identifierInvalid: 'Enter A Valid Email Or Username',
+    passwordRequirements: 'Password Requirements',
+    passwordMinimumLength: 'Minimum {min} Characters',
+    passwordUppercase: 'One Uppercase Letter',
+    passwordLowercase: 'One Lowercase Letter',
+    passwordNumber: 'One Number',
+    passwordSymbol: 'One Symbol',
+    passwordsMatch: 'Passwords Match',
+    passwordsDoNotMatch: 'Passwords Do Not Match',
   },
   widgetLabels: {
     weather: 'LIVE WEATHER',
