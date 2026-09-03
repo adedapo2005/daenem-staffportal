@@ -8,7 +8,7 @@ import {
 import { SignInExperience } from './signin-experience';
 import {
   WORLD_CLOCKS, WORLD_CLOCK_CATALOG, readSignInPreferences, readWorldClockPreferences,
-  type PortalLocation, type WorldClockPreferences,
+  type PortalLocation, type SignInAuthLabels, type WorldClockPreferences,
 } from './signin-preferences';
 export {
   WORLD_CLOCKS, WORLD_CLOCK_CATALOG, fetchAdminSignInPreferences, readSignInPreferences,
@@ -211,10 +211,10 @@ function TextField({
 }
 
 function PasswordField({
-  label, value, onChange, autoComplete, show, setShow, required = true,
+  label, value, onChange, autoComplete, show, setShow, showLabel, hideLabel, required = true,
 }: {
   label: string; value: string; onChange: (value: string) => void; autoComplete: string;
-  show: boolean; setShow: (value: boolean) => void; required?: boolean;
+  show: boolean; setShow: (value: boolean) => void; showLabel: string; hideLabel: string; required?: boolean;
 }) {
   return <label className="usp-field">
     <span className="usp-field-label">{label}{required ? ' *' : ''}</span>
@@ -228,15 +228,15 @@ function PasswordField({
         aria-label={label}
         required={required}
       />
-      <button type="button" className="usp-password-toggle" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)}>
+      <button type="button" className="usp-password-toggle" aria-label={show ? hideLabel : showLabel} onClick={() => setShow(!show)}>
         {show ? <EyeOff size={17} /> : <Eye size={17} />}
       </button>
     </div>
   </label>;
 }
 
-function PasswordStatus({ checks }: { checks: PasswordCheck[] }) {
-  return <div className="usp-password-status" aria-label="Password strength">
+function PasswordStatus({ checks, label }: { checks: PasswordCheck[]; label: string }) {
+  return <div className="usp-password-status" aria-label={label}>
     {checks.map((check) => <span key={check.label} className={check.ok ? 'pass' : 'wait'}>
       <i aria-hidden="true">{check.ok ? '✓' : '×'}</i>
       <b>{check.label}</b>
@@ -244,13 +244,13 @@ function PasswordStatus({ checks }: { checks: PasswordCheck[] }) {
   </div>;
 }
 
-function PasswordStrengthMeter({ checks, password }: { checks: PasswordCheck[]; password: string }) {
+function PasswordStrengthMeter({ checks, password, labels }: { checks: PasswordCheck[]; password: string; labels: SignInAuthLabels }) {
   const passed = checks.filter((check) => check.ok).length;
   const percent = Math.round((passed / checks.length) * 100);
-  const label = !password ? 'Not set' : passed <= 1 ? 'Weak' : passed <= 3 ? 'Good' : passed < checks.length ? 'Strong' : 'Excellent';
+  const label = !password ? labels.passwordNotSet : passed <= 1 ? labels.passwordWeak : passed <= 3 ? labels.passwordGood : passed < checks.length ? labels.passwordStrong : labels.passwordExcellent;
   const state = !password ? 'empty' : passed <= 1 ? 'weak' : passed <= 3 ? 'good' : passed < checks.length ? 'strong' : 'excellent';
-  return <div className={`usp-password-meter ${state}`} aria-label={`Password strength: ${label}`} aria-live="polite">
-    <div className="usp-password-meter-meta"><span>Password strength</span><strong>{label}</strong></div>
+  return <div className={`usp-password-meter ${state}`} aria-label={`${labels.passwordStrength}: ${label}`} aria-live="polite">
+    <div className="usp-password-meter-meta"><span>{labels.passwordStrength}</span><strong>{label}</strong></div>
     <div className="usp-password-meter-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={label}><span className="usp-password-meter-fill" style={{ width: `${percent}%` }} /></div>
   </div>;
 }
@@ -657,7 +657,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {mode === 'signin' && <form className="usp-auth-form" onSubmit={signIn}>
         <TextField label={authLabels.emailOrUsername} value={identity} onChange={setIdentity} required autoComplete="username" />
         <div className="usp-password-block">
-          <PasswordField label={authLabels.password} value={password} onChange={setPassword} autoComplete="current-password" show={showPassword} setShow={setShowPassword} />
+          <PasswordField label={authLabels.password} value={password} onChange={setPassword} autoComplete="current-password" show={showPassword} setShow={setShowPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
           <button type="button" className="usp-forgot-link" onClick={() => switchMode('forgot')}>{authLabels.forgotPassword}</button>
         </div>
         <label className="usp-remember-row">
@@ -679,9 +679,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
       {mode === 'signup' && compactDesktop && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" onSubmit={continueSignupAccount}>
         <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper={authLabels.usernameHelper} />
-        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} /></div>
-        <PasswordStrengthMeter checks={signupChecks} password={signup.password} />
-        <PasswordStatus checks={signupChecks} />
+        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
+        <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
+        <PasswordStatus checks={signupChecks} label={authLabels.passwordStrength} />
         <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button></div>
       </form>}
 
@@ -696,17 +696,17 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
         <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
         <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper={authLabels.usernameHelper} />
-        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} /></div>
-        <PasswordStrengthMeter checks={signupChecks} password={signup.password} />
-        <PasswordStatus checks={signupChecks} />
+        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
+        <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
+        <PasswordStatus checks={signupChecks} label={authLabels.passwordStrength} />
         <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
         <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
         <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button>
       </form>}
 
       {mode === 'signup' && signupStep === 'verify' && <form className="usp-auth-form" onSubmit={verifySignup}>
-        <div className="usp-auth-destination"><Mail size={18} /><span>Verification code sent to <b>{signupDestination}</b></span></div>
-        {signupBootstrapCode && <div className="usp-bootstrap-code"><span>PRIVATE BOOTSTRAP CODE</span><strong>{signupBootstrapCode}</strong><small>Visible only in the local bootstrap stage.</small></div>}
+        <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationSentTo} <b>{signupDestination}</b></span></div>
+        {signupBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{signupBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
         <TextField label={authLabels.verificationCode} value={signupCode} onChange={(value) => setSignupCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
         <button className="usp-primary-button" disabled={busy || signupCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyEmailFinish}<CheckCircle2 size={17} /></button>
         <button type="button" className="usp-secondary-button" onClick={() => { setSignupStep('identity'); setSignupCode(''); setMessage(null); }}>{authLabels.changeSignupDetails}</button>
@@ -714,29 +714,29 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
       {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" onSubmit={startRecovery}>
         <TextField label={authLabels.emailOrUsername} value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="username" />
-        <div className="usp-positive-note"><Mail size={16} /><span>If the details match an approved account, we’ll send a one-time code to the email on file.</span></div>
+        <div className="usp-positive-note"><Mail size={16} /><span>{authLabels.recoveryIdentityNote}</span></div>
         <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
       </form>}
 
       {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" onSubmit={verifyRecovery}>
-        <div className="usp-auth-destination"><Mail size={18} /><span>Enter the 6-digit code sent to your email.</span></div>
-        {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>PRIVATE BOOTSTRAP CODE</span><strong>{recoveryBootstrapCode}</strong><small>Visible only in the local bootstrap stage.</small></div>}
-        <TextField label="6-digit verification code" value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+        <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationCodeSent}</span></div>
+        {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{recoveryBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
+        <TextField label={authLabels.verificationCode} value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
         <button className="usp-primary-button" disabled={busy || recoveryCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyIdentity}<CheckCircle2 size={17} /></button>
         <button type="button" className="usp-secondary-button" onClick={() => { setRecoveryStep('identity'); setRecoveryCode(''); setMessage(null); }}>{authLabels.requestAnotherCode}</button>
       </form>}
 
       {mode === 'forgot' && recoveryStep === 'reset' && <form className="usp-auth-form" onSubmit={resetPassword}>
-        <div className="usp-reset-unlocked"><CheckCircle2 size={20} /><div><strong>Identity verified</strong><span>Create your password to finish securing your access.</span></div></div>
-        <PasswordField label={authLabels.newPassword} value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} />
-        <PasswordField label={authLabels.confirmNewPassword} value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} />
-        <PasswordStrengthMeter checks={resetChecks} password={newPassword} />
-        <PasswordStatus checks={resetChecks} />
+        <div className="usp-reset-unlocked"><CheckCircle2 size={20} /><div><strong>{authLabels.identityVerified}</strong><span>{authLabels.resetAccessNote}</span></div></div>
+        <PasswordField label={authLabels.newPassword} value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
+        <PasswordField label={authLabels.confirmNewPassword} value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
+        <PasswordStrengthMeter checks={resetChecks} password={newPassword} labels={authLabels} />
+        <PasswordStatus checks={resetChecks} label={authLabels.passwordStrength} />
         <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
       </form>}
 
       {mode !== 'forgot' && <>
-        <div className="usp-or-divider"><span />or<span /></div>
+        <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
           <button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>
           <button type="button" onClick={() => unavailableOAuth('Google')}><b className="usp-google-mark">G</b>{mode === 'signup' ? authLabels.googleCreateAccount : authLabels.googleSignIn}</button>
