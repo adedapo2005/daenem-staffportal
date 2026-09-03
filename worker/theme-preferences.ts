@@ -21,7 +21,7 @@ const aliases: Record<string, string> = {
 };
 
 const SIGNIN_WIDGET_KINDS = ['weather', 'inspiration', 'motivation', 'news', 'status'] as const;
-const SIGNIN_ZONES = ['live-context', 'today', 'auxiliary'] as const;
+const SIGNIN_ZONES = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'] as const;
 const CLOCK_ZONES = [
   'Africa/Lagos', 'America/Toronto', 'Europe/London', 'America/New_York', 'Europe/Moscow',
   'Asia/Tokyo', 'Asia/Shanghai', 'Africa/Johannesburg', 'Asia/Dubai', 'Asia/Singapore', 'Australia/Sydney',
@@ -32,7 +32,7 @@ const EFFECT_LEVELS = ['calm', 'balanced', 'vivid'] as const;
 const EFFECT_PRESETS = ['quiet', 'glass', 'accent', 'soft'] as const;
 const LABEL_LIMITS = {
   brandEyebrow: 40, brandTitle: 48, brandTagline: 90, workspaceLabel: 48,
-  workspaceHeadline: 90, workspaceDescription: 180, sectionHeading: 40, widget: 42,
+  workspaceHeadline: 90, workspaceDescription: 180, sectionHeading: 40, widget: 42, display: 64, support: 110,
 };
 
 const VARIANTS: Record<string, string[]> = {
@@ -52,7 +52,27 @@ const DEFAULT_LABELS = {
   workspaceDescription: 'Real-time access, global context, and role-protected ERP tools—connected through one premium employee portal.',
   liveContextHeading: 'LIVE CONTEXT',
   todayHeading: 'TODAY',
+  workspaceSpotlightHeading: 'WORKSPACE SPOTLIGHT',
+  auxiliaryHeading: 'AUXILIARY',
   globalOperationsHeading: 'GLOBAL OPERATIONS · LIVE TIME & WEATHER',
+  liveErpAccess: 'LIVE ERP ACCESS',
+  installApp: 'Install App',
+  ibadanTime: 'IBADAN TIME',
+  session: 'SESSION',
+  protected: 'Protected',
+  encryptedSession: 'Encrypted employee access',
+  secureService: 'Secure service',
+  weatherLoading: 'Loading current conditions',
+  weatherConnecting: 'Connecting to live weather',
+  weatherUpdated: 'Updated',
+  liveGuidanceNote: 'Live guidance · refreshed automatically',
+  dailyMomentumNote: 'Daily momentum for every business unit',
+  rotatingLiveFeed: 'rotating live feed',
+  statusOperational: 'Operational',
+  statusMaintenance: 'Maintenance',
+  statusChecking: 'Checking',
+  statusConnecting: 'Connecting securely',
+  clockSummary: 'locations · 12-hour time · automatic updates',
   widgetLabels: { weather: 'LIVE WEATHER', inspiration: 'AI INSPIRATION', motivation: 'EMPLOYEE MOTIVATION', news: 'LIVE NEWS', status: 'PORTAL STATUS' },
 };
 
@@ -104,7 +124,7 @@ function record(value: unknown) {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
 }
 function cleanText(value: unknown, fallback: string, max: number) {
-  const text = typeof value === 'string' ? value.replace(/[\\u0000-\\u001f\\u007f]/g, '').trim() : '';
+  const text = typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim() : '';
   return (text || fallback).slice(0, max);
 }
 function list(value: unknown, allowed: readonly string[], fallback: readonly string[]) {
@@ -128,7 +148,27 @@ function normalizeLabels(value: unknown) {
     workspaceDescription: cleanText(source.workspaceDescription, DEFAULT_LABELS.workspaceDescription, LABEL_LIMITS.workspaceDescription),
     liveContextHeading: cleanText(source.liveContextHeading, DEFAULT_LABELS.liveContextHeading, LABEL_LIMITS.sectionHeading),
     todayHeading: cleanText(source.todayHeading, DEFAULT_LABELS.todayHeading, LABEL_LIMITS.sectionHeading),
+    workspaceSpotlightHeading: cleanText(source.workspaceSpotlightHeading, DEFAULT_LABELS.workspaceSpotlightHeading, LABEL_LIMITS.sectionHeading),
+    auxiliaryHeading: cleanText(source.auxiliaryHeading, DEFAULT_LABELS.auxiliaryHeading, LABEL_LIMITS.sectionHeading),
     globalOperationsHeading: cleanText(source.globalOperationsHeading, DEFAULT_LABELS.globalOperationsHeading, LABEL_LIMITS.sectionHeading),
+    liveErpAccess: cleanText(source.liveErpAccess, DEFAULT_LABELS.liveErpAccess, LABEL_LIMITS.display),
+    installApp: cleanText(source.installApp, DEFAULT_LABELS.installApp, LABEL_LIMITS.display),
+    ibadanTime: cleanText(source.ibadanTime, DEFAULT_LABELS.ibadanTime, LABEL_LIMITS.display),
+    session: cleanText(source.session, DEFAULT_LABELS.session, LABEL_LIMITS.display),
+    protected: cleanText(source.protected, DEFAULT_LABELS.protected, LABEL_LIMITS.display),
+    encryptedSession: cleanText(source.encryptedSession, DEFAULT_LABELS.encryptedSession, LABEL_LIMITS.support),
+    secureService: cleanText(source.secureService, DEFAULT_LABELS.secureService, LABEL_LIMITS.display),
+    weatherLoading: cleanText(source.weatherLoading, DEFAULT_LABELS.weatherLoading, LABEL_LIMITS.support),
+    weatherConnecting: cleanText(source.weatherConnecting, DEFAULT_LABELS.weatherConnecting, LABEL_LIMITS.support),
+    weatherUpdated: cleanText(source.weatherUpdated, DEFAULT_LABELS.weatherUpdated, LABEL_LIMITS.display),
+    liveGuidanceNote: cleanText(source.liveGuidanceNote, DEFAULT_LABELS.liveGuidanceNote, LABEL_LIMITS.support),
+    dailyMomentumNote: cleanText(source.dailyMomentumNote, DEFAULT_LABELS.dailyMomentumNote, LABEL_LIMITS.support),
+    rotatingLiveFeed: cleanText(source.rotatingLiveFeed, DEFAULT_LABELS.rotatingLiveFeed, LABEL_LIMITS.display),
+    statusOperational: cleanText(source.statusOperational, DEFAULT_LABELS.statusOperational, LABEL_LIMITS.display),
+    statusMaintenance: cleanText(source.statusMaintenance, DEFAULT_LABELS.statusMaintenance, LABEL_LIMITS.display),
+    statusChecking: cleanText(source.statusChecking, DEFAULT_LABELS.statusChecking, LABEL_LIMITS.display),
+    statusConnecting: cleanText(source.statusConnecting, DEFAULT_LABELS.statusConnecting, LABEL_LIMITS.support),
+    clockSummary: cleanText(source.clockSummary, DEFAULT_LABELS.clockSummary, LABEL_LIMITS.support),
     widgetLabels: {
       weather: cleanText(widgets.weather, DEFAULT_LABELS.widgetLabels.weather, LABEL_LIMITS.widget),
       inspiration: cleanText(widgets.inspiration, DEFAULT_LABELS.widgetLabels.inspiration, LABEL_LIMITS.widget),
@@ -151,7 +191,12 @@ function cleanInstances(value: unknown, hidden: string[], labels: ReturnType<typ
       ? String(raw.kind || item) : '';
     if (!kind) return;
     const baseId = String(raw.id || kind).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48) || kind;
-    const id = result.some((entry) => entry.id === baseId) ? kind + '-' + (index + 1) : baseId;
+    let id = baseId;
+    let suffix = 2;
+    while (result.some((entry) => entry.id === id)) {
+      id = kind + '-' + suffix;
+      suffix += 1;
+    }
     const defaultZone = kind === 'weather' || kind === 'status' ? 'live-context' : 'today';
     const zone = SIGNIN_ZONES.includes(raw.zone as typeof SIGNIN_ZONES[number]) ? String(raw.zone) : defaultZone;
     const label = cleanText(raw.label, labels.widgetLabels[kind as keyof typeof labels.widgetLabels], LABEL_LIMITS.widget);
