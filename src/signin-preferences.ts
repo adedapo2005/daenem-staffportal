@@ -16,7 +16,7 @@ export type SignInWidgetVariant =
   | 'executive-briefing'
   | 'horizontal-ticker'
   | 'top-stories-cards';
-export type SignInZone = 'live-context' | 'today' | 'auxiliary';
+export type SignInZone = 'workspace-spotlight' | 'live-context' | 'today' | 'auxiliary';
 export type LogoPosition = 'left' | 'center' | 'right';
 export type LogoSizePreset = 'compact' | 'standard' | 'prominent';
 export type LogoAlignment = 'start' | 'center' | 'end';
@@ -62,7 +62,27 @@ export type SignInLabels = {
   workspaceDescription: string;
   liveContextHeading: string;
   todayHeading: string;
+  workspaceSpotlightHeading: string;
+  auxiliaryHeading: string;
   globalOperationsHeading: string;
+  liveErpAccess: string;
+  installApp: string;
+  ibadanTime: string;
+  session: string;
+  protected: string;
+  encryptedSession: string;
+  secureService: string;
+  weatherLoading: string;
+  weatherConnecting: string;
+  weatherUpdated: string;
+  liveGuidanceNote: string;
+  dailyMomentumNote: string;
+  rotatingLiveFeed: string;
+  statusOperational: string;
+  statusMaintenance: string;
+  statusChecking: string;
+  statusConnecting: string;
+  clockSummary: string;
   widgetLabels: Record<SignInWidgetId, string>;
 };
 
@@ -151,7 +171,7 @@ const ALL_LOGO_ALIGNMENTS: LogoAlignment[] = ['start', 'center', 'end'];
 const ALL_LOGO_ANIMATIONS: LogoAnimation[] = ['none', 'float', 'orbit', 'pulse'];
 const ALL_EFFECT_LEVELS: EffectLevel[] = ['calm', 'balanced', 'vivid'];
 const ALL_THEME_MODES: SignInThemeMode[] = ['day', 'night', 'auto'];
-const ALL_ZONES: SignInZone[] = ['live-context', 'today', 'auxiliary'];
+const ALL_ZONES: SignInZone[] = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'];
 const ALL_EFFECT_PRESETS: EffectPreset[] = ['quiet', 'glass', 'accent', 'soft'];
 const MAX_LABEL_LENGTH = 120;
 
@@ -165,7 +185,7 @@ export const SIGNIN_WIDGET_VARIANTS: Record<SignInWidgetId, SignInWidgetVariant[
 
 export const SIGNIN_LABEL_LIMITS = {
   brandEyebrow: 40, brandTitle: 48, brandTagline: 90, workspaceLabel: 48,
-  workspaceHeadline: 90, workspaceDescription: 180, sectionHeading: 40, widget: 42,
+  workspaceHeadline: 90, workspaceDescription: 180, sectionHeading: 40, widget: 42, display: 64, support: 110,
 } as const;
 
 export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
@@ -177,7 +197,27 @@ export const DEFAULT_SIGNIN_LABELS: SignInLabels = {
   workspaceDescription: 'Real-time access, global context, and role-protected ERP tools—connected through one premium employee portal.',
   liveContextHeading: 'LIVE CONTEXT',
   todayHeading: 'TODAY',
+  workspaceSpotlightHeading: 'WORKSPACE SPOTLIGHT',
+  auxiliaryHeading: 'AUXILIARY',
   globalOperationsHeading: 'GLOBAL OPERATIONS · LIVE TIME & WEATHER',
+  liveErpAccess: 'LIVE ERP ACCESS',
+  installApp: 'Install App',
+  ibadanTime: 'IBADAN TIME',
+  session: 'SESSION',
+  protected: 'Protected',
+  encryptedSession: 'Encrypted employee access',
+  secureService: 'Secure service',
+  weatherLoading: 'Loading current conditions',
+  weatherConnecting: 'Connecting to live weather',
+  weatherUpdated: 'Updated',
+  liveGuidanceNote: 'Live guidance · refreshed automatically',
+  dailyMomentumNote: 'Daily momentum for every business unit',
+  rotatingLiveFeed: 'rotating live feed',
+  statusOperational: 'Operational',
+  statusMaintenance: 'Maintenance',
+  statusChecking: 'Checking',
+  statusConnecting: 'Connecting securely',
+  clockSummary: 'locations · 12-hour time · automatic updates',
   widgetLabels: {
     weather: 'LIVE WEATHER',
     inspiration: 'AI INSPIRATION',
@@ -257,7 +297,27 @@ function normalizeLabels(value: unknown): SignInLabels {
     workspaceDescription: cleanText(source.workspaceDescription, DEFAULT_SIGNIN_LABELS.workspaceDescription, SIGNIN_LABEL_LIMITS.workspaceDescription),
     liveContextHeading: cleanText(source.liveContextHeading, DEFAULT_SIGNIN_LABELS.liveContextHeading, SIGNIN_LABEL_LIMITS.sectionHeading),
     todayHeading: cleanText(source.todayHeading, DEFAULT_SIGNIN_LABELS.todayHeading, SIGNIN_LABEL_LIMITS.sectionHeading),
+    workspaceSpotlightHeading: cleanText(source.workspaceSpotlightHeading, DEFAULT_SIGNIN_LABELS.workspaceSpotlightHeading, SIGNIN_LABEL_LIMITS.sectionHeading),
+    auxiliaryHeading: cleanText(source.auxiliaryHeading, DEFAULT_SIGNIN_LABELS.auxiliaryHeading, SIGNIN_LABEL_LIMITS.sectionHeading),
     globalOperationsHeading: cleanText(source.globalOperationsHeading, DEFAULT_SIGNIN_LABELS.globalOperationsHeading, SIGNIN_LABEL_LIMITS.sectionHeading),
+    liveErpAccess: cleanText(source.liveErpAccess, DEFAULT_SIGNIN_LABELS.liveErpAccess, SIGNIN_LABEL_LIMITS.display),
+    installApp: cleanText(source.installApp, DEFAULT_SIGNIN_LABELS.installApp, SIGNIN_LABEL_LIMITS.display),
+    ibadanTime: cleanText(source.ibadanTime, DEFAULT_SIGNIN_LABELS.ibadanTime, SIGNIN_LABEL_LIMITS.display),
+    session: cleanText(source.session, DEFAULT_SIGNIN_LABELS.session, SIGNIN_LABEL_LIMITS.display),
+    protected: cleanText(source.protected, DEFAULT_SIGNIN_LABELS.protected, SIGNIN_LABEL_LIMITS.display),
+    encryptedSession: cleanText(source.encryptedSession, DEFAULT_SIGNIN_LABELS.encryptedSession, SIGNIN_LABEL_LIMITS.support),
+    secureService: cleanText(source.secureService, DEFAULT_SIGNIN_LABELS.secureService, SIGNIN_LABEL_LIMITS.display),
+    weatherLoading: cleanText(source.weatherLoading, DEFAULT_SIGNIN_LABELS.weatherLoading, SIGNIN_LABEL_LIMITS.support),
+    weatherConnecting: cleanText(source.weatherConnecting, DEFAULT_SIGNIN_LABELS.weatherConnecting, SIGNIN_LABEL_LIMITS.support),
+    weatherUpdated: cleanText(source.weatherUpdated, DEFAULT_SIGNIN_LABELS.weatherUpdated, SIGNIN_LABEL_LIMITS.display),
+    liveGuidanceNote: cleanText(source.liveGuidanceNote, DEFAULT_SIGNIN_LABELS.liveGuidanceNote, SIGNIN_LABEL_LIMITS.support),
+    dailyMomentumNote: cleanText(source.dailyMomentumNote, DEFAULT_SIGNIN_LABELS.dailyMomentumNote, SIGNIN_LABEL_LIMITS.support),
+    rotatingLiveFeed: cleanText(source.rotatingLiveFeed, DEFAULT_SIGNIN_LABELS.rotatingLiveFeed, SIGNIN_LABEL_LIMITS.display),
+    statusOperational: cleanText(source.statusOperational, DEFAULT_SIGNIN_LABELS.statusOperational, SIGNIN_LABEL_LIMITS.display),
+    statusMaintenance: cleanText(source.statusMaintenance, DEFAULT_SIGNIN_LABELS.statusMaintenance, SIGNIN_LABEL_LIMITS.display),
+    statusChecking: cleanText(source.statusChecking, DEFAULT_SIGNIN_LABELS.statusChecking, SIGNIN_LABEL_LIMITS.display),
+    statusConnecting: cleanText(source.statusConnecting, DEFAULT_SIGNIN_LABELS.statusConnecting, SIGNIN_LABEL_LIMITS.support),
+    clockSummary: cleanText(source.clockSummary, DEFAULT_SIGNIN_LABELS.clockSummary, SIGNIN_LABEL_LIMITS.support),
     widgetLabels: {
       weather: cleanText(widgetSource.weather, DEFAULT_SIGNIN_LABELS.widgetLabels.weather, SIGNIN_LABEL_LIMITS.widget),
       inspiration: cleanText(widgetSource.inspiration, DEFAULT_SIGNIN_LABELS.widgetLabels.inspiration, SIGNIN_LABEL_LIMITS.widget),
@@ -277,12 +337,19 @@ function normalizeInstances(value: unknown, hiddenWidgets: SignInWidgetId[], lab
   const supplied = Array.isArray(value);
   const source = supplied ? value as Array<unknown> : legacyOrder.map((kind) => ({ kind }));
   const instances: SignInWidgetInstance[] = [];
+  const usedIds = new Set<string>();
   source.forEach((item, index) => {
     const raw = candidateRecord(item);
     const kind = (ALL_WIDGETS.includes(raw.kind as SignInWidgetId) ? raw.kind : typeof item === 'string' ? item : '') as SignInWidgetId;
     if (!ALL_WIDGETS.includes(kind)) return;
-    const duplicate = instances.some((instance) => instance.id === String(raw.id || kind));
-    const id = duplicate ? kind + '-' + (index + 1) : String(raw.id || kind).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48) || kind;
+    const baseId = String(raw.id || kind).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48) || kind;
+    let id = baseId;
+    let suffix = 2;
+    while (usedIds.has(id)) {
+      id = kind + '-' + suffix;
+      suffix += 1;
+    }
+    usedIds.add(id);
     const defaultZone: SignInZone = kind === 'weather' || kind === 'status' ? 'live-context' : 'today';
     const zone = ALL_ZONES.includes(raw.zone as SignInZone) ? raw.zone as SignInZone : defaultZone;
     const visible = typeof raw.visible === 'boolean' ? raw.visible : !hiddenWidgets.includes(kind);
@@ -295,6 +362,14 @@ function normalizeInstances(value: unknown, hiddenWidgets: SignInWidgetId[], lab
     });
   });
   return instances.sort((a, b) => a.order - b.order).map((item, index) => ({ ...item, order: index }));
+}
+
+export function nextSignInWidgetId(kind: SignInWidgetId, instances: Pick<SignInWidgetInstance, 'id'>[]) {
+  const used = new Set(instances.map((item) => item.id));
+  if (!used.has(kind)) return kind;
+  let suffix = 2;
+  while (used.has(kind + '-' + suffix)) suffix += 1;
+  return kind + '-' + suffix;
 }
 
 function normalizeEffects(value: unknown): SignInEffects {
