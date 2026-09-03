@@ -567,11 +567,10 @@ export function applyThemeToDocument(value: unknown, preference: ModePreference 
   root.style.setProperty('--glow-intensity', theme.motion === 'expressive' ? '1' : theme.motion === 'balanced' ? '.78' : '.58');
   root.style.setProperty('--font-heading', `"${theme.fontHeading}"`);
   root.style.setProperty('--font-body', `"${theme.fontBody}"`);
-  const artworkKey = APPROVED_ARTWORK_BY_THEME[theme.id];
-  // Theme 01 uses the exact Library-approved Sunlit Meridian artwork.
-  const heroArtworkFile = theme.id === 'lagos-sunrise' ? 'approved-sunlit-meridian-signin-crop-4k.jpg' : `${artworkKey}.png`;
-  root.style.setProperty('--hero-image', `url("/reference-images/signin/${heroArtworkFile}")`);
-  // Approved composite artwork stays on sign-in; the authenticated dashboard is live UI.
+  // All sign-in themes use the new native 4K campus background; palette and blend
+  // variables create the approved daylight/night variants without baked-in UI.
+  root.style.setProperty('--hero-image', 'url("/reference-images/signin/daenem-unified-daylight-4k.webp")');
+  // The authenticated dashboard remains live UI and never receives composite artwork.
   root.style.setProperty('--dashboard-image', 'none');
   return theme.id;
 }
