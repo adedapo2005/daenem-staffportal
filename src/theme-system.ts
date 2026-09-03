@@ -14,21 +14,6 @@ export type ModePreference = 'day' | 'night' | 'auto';
 export type ResolvedMode = 'day' | 'night';
 export type LayoutVariant = 'split' | 'center' | 'cards' | 'mesh' | 'minimal';
 
-/** Canonical approved artwork paired one-to-one with the ten Staff Portal directions. */
-const APPROVED_ARTWORK_BY_THEME: Record<ThemeId, string> = {
-  'lagos-sunrise': 'theme-01-lagos-sunrise',
-  'print-neon-grid': 'theme-02-print-neon-grid',
-  'digital-indigo': 'theme-03-digital-indigo',
-  'auto-showroom-night': 'theme-04-auto-showroom-night',
-  'urban-property-skyline': 'theme-05-urban-property-skyline',
-  'cargo-flow': 'theme-06-cargo-flow',
-  'executive-boardroom': 'theme-07-executive-boardroom',
-  'job-market-pulse': 'theme-08-job-market-pulse',
-  'global-operations-mesh': 'theme-09-global-operations-mesh',
-  'minimal-tech-white': 'theme-10-minimal-tech-white',
-};
-
-
 export interface ThemePalette {
   canvas: string;
   surface: string;
