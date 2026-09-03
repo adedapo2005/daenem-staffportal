@@ -374,7 +374,7 @@
 
 .usp-signal small {
   color: #6a7f93;
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .usp-form-column {
@@ -696,7 +696,7 @@
 
 .usp-remember-row small {
   color: #8190a1;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 600;
 }
 
@@ -789,7 +789,7 @@
   border-radius: 999px;
   color: #7a8795;
   background: rgba(220, 229, 238, .58);
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .usp-password-status span.pass {
@@ -840,7 +840,7 @@
 
 .usp-bootstrap-code span,
 .usp-bootstrap-code small {
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .usp-bootstrap-code strong {
@@ -1011,7 +1011,7 @@
   justify-content: space-between;
   gap: 7px;
   color: #0868bd;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 950;
   letter-spacing: .1em;
 }
@@ -1024,7 +1024,7 @@
 
 .usp-widget-label b {
   color: #667e94;
-  font-size: 7px;
+  font-size: 9px;
 }
 
 .usp-live-pulse {
@@ -1059,7 +1059,7 @@
 
 .usp-live-card small {
   color: #71869a;
-  font-size: 8px;
+  font-size: 9px;
   line-height: 1.35;
 }
 
@@ -1129,14 +1129,14 @@
   align-items: center;
   gap: 6px;
   color: #0b65b8;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 950;
   letter-spacing: .12em;
 }
 
 .usp-clock-heading small {
   color: #6a8095;
-  font-size: 8px}
+  font-size: 9px}
   
 .usp-clock-grid {
   display: grid;
@@ -1251,7 +1251,7 @@
 .usp-clock-location strong {
   overflow: hidden;
   color: #204b70;
-  font-size: 8px;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1271,7 +1271,7 @@
 .usp-clock-copy > span {
   overflow: hidden;
   color: #6b7f91;
-  font-size: 6.5px;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1285,7 +1285,7 @@
 
 .usp-clock-meta > small {
   color: #7790a5;
-  font-size: 6px;
+  font-size: 10px;
 }
 
 .usp-day-state {
@@ -1317,14 +1317,14 @@
 }
 
 .usp-clock-weather > span {
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 900;
 }
 
 .usp-clock-weather > small {
   overflow: hidden;
   color: #74899a;
-  font-size: 6px;
+  font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2999,6 +2999,147 @@ html[data-mode="night"] .usp-social-buttons button {
   }
   .usp-news-top-stories {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Owner acceptance correction: desktop panels fit by state; they never hide
+   form content behind an internal scroll container. Compact signup steps are
+   selected by AuthScreen for the same height tier. */
+.usp-step-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.usp-widget-rotator {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.usp-widget-rotator-view {
+  min-width: 0;
+}
+
+.usp-widget-rotator-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.usp-widget-rotator-controls button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 5px 8px;
+  border: 1px solid rgba(92, 137, 176, .24);
+  border-radius: 10px;
+  color: #25557e;
+  background: rgba(255,255,255,.72);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.usp-widget-rotator-controls button:last-child {
+  justify-self: end;
+}
+
+.usp-widget-rotator-controls button:hover,
+.usp-widget-rotator-controls button:focus-visible {
+  color: var(--usp-blue);
+  border-color: rgba(7, 101, 206, .4);
+  box-shadow: 0 0 0 3px rgba(7, 101, 206, .1);
+}
+
+.usp-widget-rotator-position {
+  color: #4e6d88;
+  font-size: 9px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+@media (min-width: 821px) {
+  .usp-auth-panel {
+    overflow: visible;
+  }
+
+  /* Keep desktop tertiary copy readable even when historical responsive
+     rules target the old no-scroll composition. */
+  .usp-brand-copy small,
+  .usp-brand-copy span,
+  .usp-scene-title span,
+  .usp-widget-group-title,
+  .usp-widget-label,
+  .usp-widget-label b,
+  .usp-live-card small,
+  .usp-clock-heading span,
+  .usp-clock-heading small,
+  .usp-clock-location small,
+  .usp-clock-copy > span,
+  .usp-clock-meta > small,
+  .usp-clock-weather > span,
+  .usp-clock-weather > small,
+  .usp-variant-kicker,
+  .usp-focus-goal b,
+  .usp-news-stack small,
+  .usp-news-top-stories small,
+  .usp-news-briefing small,
+  .usp-news-ticker small,
+  .usp-social-note,
+  .usp-legal-copy,
+  .usp-remember-row small,
+  .usp-mfa-chip,
+  .usp-operational-pill {
+    font-size: 9px;
+  }
+
+  .usp-clock-location strong,
+  .usp-clock-copy > b {
+    font-size: 10px;
+  }
+
+  .usp-auth-message {
+    margin-bottom: 8px;
+    padding: 7px 9px;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .usp-auth-message ul {
+    margin-top: 3px;
+  }
+
+  .usp-clock-compact-detail {
+    display: none;
+  }
+}
+
+@media (min-width: 821px) and (max-height: 959px) {
+  .usp-signup-form .usp-step-actions button {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 821px) and (max-height: 719px) {
+  .usp-clock-copy > span,
+  .usp-clock-meta,
+  .usp-clock-weather,
+  .usp-clock-location small {
+    display: none;
+  }
+
+  .usp-clock-compact-detail {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: #4d6f8b;
+    font-size: 9px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
