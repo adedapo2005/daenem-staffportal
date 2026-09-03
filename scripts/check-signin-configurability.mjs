@@ -7,6 +7,7 @@ const studio = read('src/theme-studio-entry.ts');
 const worker = read('worker/theme-preferences.ts');
 const workerIndex = read('worker/index.ts');
 const auth = read('src/auth.tsx');
+const signin = read('src/signin-experience.tsx');
 const assertions = [];
 function check(name, condition) {
   assertions.push({ name, ok: Boolean(condition) });
@@ -26,6 +27,22 @@ check('seven standard clocks remain available', ['Daenem Complex', 'Toronto', 'L
 check('widget variants normalize correctly', prefs.includes('SIGNIN_WIDGET_VARIANTS') && prefs.includes('normalizeWidgetVariant') && studio.includes('data-widget-variant'));
 check('reduced-motion compatibility remains active', css.includes('@media (prefers-reduced-motion: reduce)') && prefs && read('src/signin-experience.tsx').includes("prefers-reduced-motion"));
 check('news remains source-bound', workerIndex.includes('liveHeadlines') && workerIndex.includes('news.length ? news : fallbackNews') && worker.includes('Only inspiration and motivation can use AI options.'));
+check('desktop auth surface does not enable an internal scrollbar', css.includes('overflow-y: hidden') && css.includes('max-height: 100%') && css.includes('scrollbar-width: none'));
+check('TODAY and AUXILIARY map to distinct rendered regions', signin.includes("['today'], 'today'") && signin.includes("['auxiliary'], 'auxiliary'") && signin.includes('usp-widget-region-auxiliary'));
+check('logo animation selections have concrete behavior', signin.includes('usp-logo-animation-') && ['none', 'float', 'orbit', 'pulse'].every((name) => css.includes('.usp-logo-animation-' + name)));
+check('news variants have distinct rendered compositions', ['usp-news-stack', 'usp-news-briefing', 'usp-news-ticker', 'usp-news-top-stories'].every((name) => signin.includes(name)) && css.includes('usp-news-ticker-rotate'));
+check('safe display labels are normalized centrally', prefs.includes('liveErpAccess') && prefs.includes('installApp') && prefs.includes('clockSummary') && worker.includes('cleanText(source.installApp') && worker.includes('cleanText(source.clockSummary'));
+function nextId(kind, instances) {
+  const used = new Set(instances.map((item) => item.id));
+  if (!used.has(kind)) return kind;
+  let suffix = 2;
+  while (used.has(kind + '-' + suffix)) suffix += 1;
+  return kind + '-' + suffix;
+}
+const idScenario = [{ id: 'news' }, { id: 'news-2' }, { id: 'news-3' }];
+idScenario.splice(1, 1);
+idScenario.push({ id: nextId('news', idScenario) });
+check('widget IDs remain unique after delete and re-add', prefs.includes('nextSignInWidgetId') && new Set(idScenario.map((item) => item.id)).size === idScenario.length && idScenario.at(-1)?.id === 'news-2');
 
 for (const result of assertions) console.log((result.ok ? '✓' : '✗') + ' ' + result.name);
 if (process.exitCode) console.error('\\n' + assertions.filter((item) => !item.ok).length + ' sign-in configurability assertion(s) failed.');
