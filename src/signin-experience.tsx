@@ -402,7 +402,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
             <p>Real-time access, global context, and role-protected ERP tools—connected through one premium employee portal.</p>
           </div>
           <div className="usp-signal-row">
-            <span className="usp-signal"><span><Activity size={12} /> SERVICE</span><strong>{health}</strong><small>{healthDetail}</small></span>
+            <span className="usp-signal"><span><Activity size={12} /> SERVICE</span><strong>{healthLabel}</strong><small>{healthDetail}</small></span>
             <span className="usp-signal"><span><Radio size={12} /> IBADAN TIME</span><strong>{timeText('Africa/Lagos', now, true)}</strong><small>{fullDateText('Africa/Lagos', now)}</small></span>
             <span className="usp-signal"><span><LockKeyhole size={12} /> SESSION</span><strong>Protected</strong><small>Encrypted employee access</small></span>
           </div>
