@@ -225,7 +225,7 @@ function handleSignInAdminChange(event: Event) {
   if (!target) return;
   const field = target.dataset.signinField as keyof SignInExperiencePreferences | undefined;
   if (field) {
-    queueSignInConfigSave({ ...signInConfig, [field]: target.value });
+    queueSignInConfigSave(normalizeSignInPreferences({ ...signInConfig, [field]: target.value }));
     return;
   }
   const widget = target.dataset.widgetVisible as SignInWidgetId | undefined;
