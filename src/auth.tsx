@@ -1,11 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Activity, ArrowRight, Check, CheckCircle2, Clock3, Download, Eye, EyeOff,
-  KeyRound, LockKeyhole, Mail, Radio, ShieldCheck, Sparkles, Sun,
+  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck,
 } from 'lucide-react';
 import {
   applyThemeToDocument, readModePreference, readThemeId, themeById, type ModePreference, type ThemeId,
 } from './theme-system';
+import { SignInExperience } from './signin-experience';
+import {
+  WORLD_CLOCKS, WORLD_CLOCK_CATALOG, readWorldClockPreferences,
+  type PortalLocation, type WorldClockPreferences,
+} from './signin-preferences';
+export {
+  WORLD_CLOCKS, WORLD_CLOCK_CATALOG, fetchAdminSignInPreferences, readSignInPreferences,
+  readWorldClockPreferences, saveSignInPreferences, saveWorldClockPreferences,
+  type ClockStyle, type SignInExperiencePreferences, type WorldClockPreferences,
+} from './signin-preferences';
 
 export type AccessLevel = 'none' | 'view' | 'create' | 'edit' | 'approve' | 'manage';
 export type WorkforceContext = {
@@ -186,8 +195,8 @@ function TextField({
   label: string; value: string; onChange: (value: string) => void; required?: boolean;
   type?: string; autoComplete?: string; helper?: string;
 }) {
-  return <label className="auth-field">
-    <span className="field-label-text">{label}{required ? ' *' : ''}</span>
+  return <label className="usp-field">
+    <span className="usp-field-label">{label}{required ? ' *' : ''}</span>
     <input
       type={type}
       value={value}
@@ -197,7 +206,7 @@ function TextField({
       aria-label={label}
       required={required}
     />
-    {helper && <small className="field-help">{helper}</small>}
+    {helper && <small className="usp-field-help">{helper}</small>}
   </label>;
 }
 
@@ -207,9 +216,9 @@ function PasswordField({
   label: string; value: string; onChange: (value: string) => void; autoComplete: string;
   show: boolean; setShow: (value: boolean) => void; required?: boolean;
 }) {
-  return <label className="auth-field">
-    <span className="field-label-text">{label}{required ? ' *' : ''}</span>
-    <div className="password-field">
+  return <label className="usp-field">
+    <span className="usp-field-label">{label}{required ? ' *' : ''}</span>
+    <div className="usp-password-field">
       <input
         type={show ? 'text' : 'password'}
         value={value}
@@ -219,7 +228,7 @@ function PasswordField({
         aria-label={label}
         required={required}
       />
-      <button type="button" className="password-toggle" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)}>
+      <button type="button" className="usp-password-toggle" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)}>
         {show ? <EyeOff size={17} /> : <Eye size={17} />}
       </button>
     </div>
@@ -227,7 +236,7 @@ function PasswordField({
 }
 
 function PasswordStatus({ checks }: { checks: PasswordCheck[] }) {
-  return <div className="password-status" aria-label="Password strength">
+  return <div className="usp-password-status" aria-label="Password strength">
     {checks.map((check) => <span key={check.label} className={check.ok ? 'pass' : 'wait'}>
       <i aria-hidden="true">{check.ok ? '✓' : '×'}</i>
       <b>{check.label}</b>
@@ -240,11 +249,12 @@ function PasswordStrengthMeter({ checks, password }: { checks: PasswordCheck[]; 
   const percent = Math.round((passed / checks.length) * 100);
   const label = !password ? 'Not set' : passed <= 1 ? 'Weak' : passed <= 3 ? 'Good' : passed < checks.length ? 'Strong' : 'Excellent';
   const state = !password ? 'empty' : passed <= 1 ? 'weak' : passed <= 3 ? 'good' : passed < checks.length ? 'strong' : 'excellent';
-  return <div className={`password-meter ${state}`} aria-label={`Password strength: ${label}`} aria-live="polite">
-    <div className="password-meter-meta"><span>Password strength</span><strong>{label}</strong></div>
-    <div className="password-meter-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={label}><span className="password-meter-fill" style={{ width: `${percent}%` }} /></div>
+  return <div className={`usp-password-meter ${state}`} aria-label={`Password strength: ${label}`} aria-live="polite">
+    <div className="usp-password-meter-meta"><span>Password strength</span><strong>{label}</strong></div>
+    <div className="usp-password-meter-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={label}><span className="usp-password-meter-fill" style={{ width: `${percent}%` }} /></div>
   </div>;
 }
+
 
 function timeText(zone: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -283,55 +293,6 @@ function clockHands(zone: string) {
   } as React.CSSProperties;
 }
 
-export const WORLD_CLOCKS = [
-  { name: 'Daenem Complex', region: 'Ibadan, Nigeria', zone: 'Africa/Lagos', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
-  { name: 'Toronto', region: 'Canada', zone: 'America/Toronto', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
-  { name: 'London', region: 'United Kingdom', zone: 'Europe/London', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
-  { name: 'New York', region: 'United States', zone: 'America/New_York', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
-  { name: 'Moscow', region: 'Russia', zone: 'Europe/Moscow', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
-  { name: 'Tokyo', region: 'Japan', zone: 'Asia/Tokyo', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
-  { name: 'Beijing / Shanghai', region: 'China', zone: 'Asia/Shanghai', weather: 'Local snapshot', temperature: '—', weatherIcon: '✦' },
-] as const;
-
-export type ClockStyle = 'minimal' | 'detailed' | 'neon' | 'classic';
-export type WorldClockPreferences = { style: ClockStyle; visibleZones: string[] };
-const WORLD_CLOCK_PREFS_KEY = 'daenem-world-clock-preferences';
-const DEFAULT_WORLD_CLOCK_PREFERENCES: WorldClockPreferences = {
-  style: 'detailed',
-  visibleZones: WORLD_CLOCKS.map((item) => item.zone),
-};
-
-function normalizeClockStyle(value: unknown): ClockStyle {
-  return value === 'minimal' || value === 'detailed' || value === 'neon' || value === 'classic' ? value : 'detailed';
-}
-
-export function readWorldClockPreferences(): WorldClockPreferences {
-  if (typeof window === 'undefined') return DEFAULT_WORLD_CLOCK_PREFERENCES;
-  try {
-    const parsed = JSON.parse(localStorage.getItem(WORLD_CLOCK_PREFS_KEY) || 'null') as Partial<WorldClockPreferences> | null;
-    const visibleZones = Array.isArray(parsed?.visibleZones)
-      ? parsed.visibleZones.filter((zone): zone is string => typeof zone === 'string' && WORLD_CLOCKS.some((item) => item.zone === zone))
-      : DEFAULT_WORLD_CLOCK_PREFERENCES.visibleZones;
-    return {
-      style: normalizeClockStyle(parsed?.style),
-      visibleZones: visibleZones.length ? [...new Set(visibleZones)] : DEFAULT_WORLD_CLOCK_PREFERENCES.visibleZones,
-    };
-  } catch {
-    return DEFAULT_WORLD_CLOCK_PREFERENCES;
-  }
-}
-
-export function saveWorldClockPreferences(preferences: WorldClockPreferences) {
-  if (typeof window === 'undefined') return;
-  const next: WorldClockPreferences = {
-    style: normalizeClockStyle(preferences.style),
-    visibleZones: preferences.visibleZones.filter((zone) => WORLD_CLOCKS.some((item) => item.zone === zone)),
-  };
-  if (!next.visibleZones.length) next.visibleZones = DEFAULT_WORLD_CLOCK_PREFERENCES.visibleZones;
-  localStorage.setItem(WORLD_CLOCK_PREFS_KEY, JSON.stringify(next));
-  window.dispatchEvent(new CustomEvent<WorldClockPreferences>('daenem:world-clock-preferences', { detail: next }));
-}
-
 export function WorldClocks() {
   const [preferences, setPreferences] = useState<WorldClockPreferences>(() => readWorldClockPreferences());
   const [, setTick] = useState(0);
@@ -357,12 +318,14 @@ export function WorldClocks() {
       window.removeEventListener('daenem:world-clock-preferences', onPreferences);
     };
   }, []);
-  const visibleClocks = WORLD_CLOCKS.filter((item) => preferences.visibleZones.includes(item.zone));
-  const clocks = visibleClocks.length ? visibleClocks : WORLD_CLOCKS;
-  return <div className={`world-clocks clock-style-${preferences.style}`} aria-label="Daenem seven-city world clock">
+  const selected = preferences.visibleZones
+    .map((zone) => WORLD_CLOCK_CATALOG.find((item) => item.zone === zone))
+    .filter((item): item is PortalLocation => Boolean(item));
+  const clocks = selected.length ? selected : WORLD_CLOCKS;
+  return <div className={`world-clocks clock-style-${preferences.style}`} aria-label="Daenem global operations clock">
     <div className="world-clocks-heading"><span className="eyebrow">GLOBAL OPERATIONS CLOCK</span><strong>{clocks.length} locations · live local time</strong></div>
     <div className="world-clocks-grid">
-      {clocks.map((item) => <article className="world-clock" key={item.zone} tabIndex={0}>
+      {clocks.map((item) => <article className="world-clock" key={item.name + item.zone} tabIndex={0}>
         <div className="analog-clock" style={clockHands(item.zone)} aria-hidden="true">
           <span className="clock-hand clock-hand-hour" />
           <span className="clock-hand clock-hand-minute" />
@@ -375,179 +338,9 @@ export function WorldClocks() {
           <small className="clock-date">{dateText(item.zone)}</small>
           <small className="clock-timezone">{timeZoneText(item.zone)}</small>
           <span className={`clock-day-state ${dayNightText(item.zone).toLowerCase()}`}><i />{dayNightText(item.zone)}</span>
-          <span className="clock-weather"><span aria-hidden="true">{item.weatherIcon}</span>{item.weather} · {item.temperature}</span>
+          <span className="clock-weather"><span aria-hidden="true">✦</span>Live weather on sign-in</span>
         </div>
       </article>)}
-    </div>
-  </div>;
-}
-
-
-type LiveHealthState = {
-  state: 'checking' | 'operational' | 'attention';
-  latencyMs: number | null;
-  version: string;
-  checkedAt: Date | null;
-};
-
-type LiveWeatherState = {
-  state: 'loading' | 'ready' | 'unavailable';
-  temperatureF: number | null;
-  description: string;
-  location: string;
-  updatedAt: Date | null;
-};
-
-function liveTimeText(zone: string, date: Date) {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: zone, hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
-  }).format(date);
-}
-
-function liveDateText(zone: string, date: Date) {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: zone, month: 'short', day: 'numeric', year: 'numeric',
-  }).format(date);
-}
-
-function liveTimeZoneText(zone: string, date: Date) {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: zone, timeZoneName: 'short',
-  }).formatToParts(date).find((part) => part.type === 'timeZoneName')?.value || zone;
-}
-
-function liveClockHands(zone: string, date: Date) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: zone, hour: '2-digit', minute: '2-digit', hour12: false,
-  }).formatToParts(date);
-  const hour = Number(parts.find((part) => part.type === 'hour')?.value || 0) % 12;
-  const minute = Number(parts.find((part) => part.type === 'minute')?.value || 0);
-  return {
-    '--hour-angle': (hour * 30 + minute * 0.5) + 'deg',
-    '--minute-angle': (minute * 6) + 'deg',
-  } as React.CSSProperties;
-}
-
-function LiveHeroSurface({ authPanel }: { authPanel: React.ReactNode }) {
-  const [now, setNow] = useState(() => new Date());
-  const [health, setHealth] = useState<LiveHealthState>({
-    state: 'checking', latencyMs: null, version: '', checkedAt: null,
-  });
-  const [weather, setWeather] = useState<LiveWeatherState>({
-    state: 'loading', temperatureF: null, description: 'Checking current conditions',
-    location: 'Ibadan, Nigeria', updatedAt: null,
-  });
-
-  useEffect(() => {
-    let timer = 0;
-    const stop = () => { if (timer) window.clearInterval(timer); timer = 0; };
-    const start = () => {
-      stop();
-      if (document.visibilityState !== 'visible') return;
-      setNow(new Date());
-      timer = window.setInterval(() => setNow(new Date()), 1000);
-    };
-    document.addEventListener('visibilitychange', start);
-    start();
-    return () => { stop(); document.removeEventListener('visibilitychange', start); };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    async function refreshHealth() {
-      const startedAt = Date.now();
-      try {
-        const result = await api<{ ok?: boolean; version?: string }>('/api/health');
-        if (!active) return;
-        setHealth({
-          state: result.ok === false ? 'attention' : 'operational',
-          latencyMs: Math.max(1, Date.now() - startedAt),
-          version: result.version || 'production',
-          checkedAt: new Date(),
-        });
-      } catch {
-        if (active) setHealth({ state: 'attention', latencyMs: null, version: '', checkedAt: new Date() });
-      }
-    }
-    refreshHealth();
-    const timer = window.setInterval(refreshHealth, 30_000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    async function refreshWeather() {
-      try {
-        const result = await api<{ temperature?: number; description?: string }>('/api/context/weather?lat=7.3775&lon=3.9470');
-        if (!active) return;
-        const temperatureC = typeof result.temperature === 'number' ? result.temperature : null;
-        setWeather({
-          state: temperatureC === null ? 'unavailable' : 'ready',
-          temperatureF: temperatureC === null ? null : Math.round((temperatureC * 9) / 5 + 32),
-          description: result.description || 'Current conditions',
-          location: 'Ibadan, Nigeria',
-          updatedAt: new Date(),
-        });
-      } catch {
-        if (active) setWeather((current) => ({ ...current, state: 'unavailable', updatedAt: new Date() }));
-      }
-    }
-    refreshWeather();
-    const timer = window.setInterval(refreshWeather, 600_000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, []);
-
-  const lagosTime = liveTimeText('Africa/Lagos', now);
-  const lagosDate = liveDateText('Africa/Lagos', now);
-  const healthLabel = health.state === 'operational' ? 'Operational' : health.state === 'attention' ? 'Attention' : 'Checking';
-  const healthDetail = health.state === 'operational'
-    ? (health.latencyMs || '—') + ' ms edge response'
-    : health.state === 'attention' ? 'Retrying edge status' : 'Connecting to edge status';
-  const weatherTemp = weather.temperatureF === null ? '—' : weather.temperatureF + '°F';
-  const weatherDetail = weather.state === 'loading'
-    ? 'Loading current conditions'
-    : weather.state === 'unavailable' ? 'Weather temporarily unavailable' : weather.description;
-  const updatedLabel = weather.updatedAt
-    ? 'Updated ' + liveTimeText('Africa/Lagos', weather.updatedAt)
-    : 'Waiting for live reading';
-
-  return <div className="hero-live-surface" data-testid="live-hero-surface" aria-label="Live Sunlit Meridian portal surface">
-    <div className="hero-live-board">
-      <div className="hero-live-light-sweep" aria-hidden="true" />
-      <div className="hero-live-board-badge"><span className="hero-live-orb" /><span>LIVE WORKSPACE</span><b>{lagosTime}</b></div>
-
-      <section className="hero-live-auth-card" aria-label="Live employee sign-in">
-        <div className="hero-live-card-label"><span><LockKeyhole size={11} /> LIVE ACCESS</span><span className={'hero-live-card-state ' + health.state}><i />{health.state === 'operational' ? 'READY' : 'SYNCING'}</span></div>
-        <div className="hero-live-auth-brand"><img src="/brand-assets/logo-mark.svg" alt="" /><span><strong>Daenem</strong><small>Employee Portal</small></span></div>
-        <div className="hero-live-auth-panel" data-live-auth="form">{authPanel}</div>
-      </section>
-
-      <section className="hero-live-weather-card" aria-label="Live Ibadan weather">
-        <div className="hero-live-weather-icon" aria-hidden="true"><Sun size={23} /></div>
-        <div className="hero-live-card-label"><span>LIVE WEATHER</span><b>IBADAN</b></div>
-        <strong>{weatherTemp}</strong>
-        <span>{weatherDetail}</span>
-        <small>{updatedLabel}</small>
-      </section>
-
-      <section className="hero-live-insights" aria-label="Live portal widgets">
-        <article className="hero-live-insight hero-live-insight-ai"><span><Sparkles size={10} /> AI INSPIRATION</span><strong>Make the next task obvious.</strong><small>Guidance layer ready.</small></article>
-        <article className="hero-live-insight hero-live-insight-health"><span><Activity size={10} /> PORTAL STATUS</span><strong>{healthLabel}</strong><small>{healthDetail}</small></article>
-        <article className="hero-live-insight hero-live-insight-update"><span><Radio size={10} /> LIVE UPDATE</span><strong>Workspace refreshed</strong><small>{health.checkedAt ? 'Checked ' + liveTimeText('Africa/Lagos', health.checkedAt) : 'Checking edge…'}</small></article>
-      </section>
-
-      <section className="hero-live-status-row" aria-label="Live portal signals">
-        <span className="hero-live-status-item"><i className={'hero-live-status-dot ' + health.state} /><strong>{healthLabel}</strong><small>{healthDetail}</small></span>
-        <span className="hero-live-status-item"><Clock3 size={12} /><strong>{lagosTime}</strong><small>Ibadan · {lagosDate}</small></span>
-        <span className="hero-live-status-item"><LockKeyhole size={12} /><strong>Secure session</strong><small>Employee access protected</small></span>
-      </section>
-
-      <section className="hero-live-clock-rail" aria-label="Seven live world clocks">
-        {WORLD_CLOCKS.map((item) => <article className="hero-live-mini-clock-card" key={item.zone} tabIndex={0} aria-label={item.name + ' live time'}>
-          <div className="hero-live-mini-clock" style={liveClockHands(item.zone, now)} aria-hidden="true"><span className="hero-live-clock-hand hero-live-clock-hand-hour" /><span className="hero-live-clock-hand hero-live-clock-hand-minute" /><span className="hero-live-clock-center" /></div>
-          <div className="hero-live-mini-clock-info"><strong>{item.name}</strong><b>{liveTimeText(item.zone, now)}</b><small>{liveDateText(item.zone, now)} · {liveTimeZoneText(item.zone, now)}</small><span><i />{dayNightText(item.zone)}</span></div>
-        </article>)}
-      </section>
     </div>
   </div>;
 }
@@ -597,7 +390,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   useEffect(() => {
     const theme = themeById(themeId);
     applyThemeToDocument(theme.id, modePreference);
-    document.title = `${theme.name} · Daenem Staff Portal`;
+    document.title = `Daenem Unified ERP Portal · ${theme.name}`;
   }, [modePreference, themeId]);
 
   useEffect(() => {
@@ -775,109 +568,124 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }
 
   const heading = mode === 'signin'
-    ? { title: 'Sign in', body: 'Access your account securely.' }
+    ? { title: 'Employee sign-in', body: 'Use your employee email or username to enter the live ERP workspace.' }
     : mode === 'signup'
-      ? { title: signupStep === 'verify' ? 'Verify your email' : 'Sign up', body: signupStep === 'verify' ? 'Enter the one-time code sent to your email to finish creating your account.' : 'Create your employee login now. You can complete the rest of your work profile after sign-in.' }
-      : { title: recoveryStep === 'reset' ? 'Create your password' : recoveryStep === 'verify' ? 'Verify your identity' : 'Recover your account', body: recoveryStep === 'reset' ? 'Choose your password, then return to sign in.' : recoveryStep === 'verify' ? 'Enter the one-time code sent to your email.' : 'Enter your username or email. This also activates approved first-time employee access.' };
-
-  const theme = themeById(themeId);
+      ? {
+          title: signupStep === 'verify' ? 'Verify your email' : 'Create account',
+          body: signupStep === 'verify'
+            ? 'Enter the one-time code sent to your email to finish creating your account.'
+            : 'Create your secure employee login. Your work access remains subject to administrator approval.',
+        }
+      : {
+          title: recoveryStep === 'reset' ? 'Create a new password' : recoveryStep === 'verify' ? 'Verify your identity' : 'Forgot password',
+          body: recoveryStep === 'reset'
+            ? 'Choose a secure password, then return to employee sign-in.'
+            : recoveryStep === 'verify'
+              ? 'Enter the one-time code sent to the email on your approved account.'
+              : 'Enter your email or username to begin secure password recovery.',
+        };
 
   const authPanel = (
-    <section ref={panelRef} aria-label="Employee authentication" className={`signin-panel signin-panel-${mode}`}>
-          {theme.id !== 'lagos-sunrise' && <div className="panel-heading"><div><h1>{heading.title}</h1><p>{heading.body}</p></div><div className="panel-security"><LockKeyhole size={15} /> MFA-ready</div></div>}
-          <div className="signin-tabs" role="tablist" aria-label="Sign-in options">
-            <button className={mode === 'signin' ? 'active' : ''} onClick={() => switchMode('signin')} role="tab" aria-selected={mode === 'signin'}>Employee Sign-In</button>
-            <button className={mode === 'signup' ? 'active' : ''} onClick={() => switchMode('signup')} role="tab" aria-selected={mode === 'signup'}>Create Account</button>
-            <button className={mode === 'forgot' ? 'active' : ''} onClick={() => switchMode('forgot')} role="tab" aria-selected={mode === 'forgot'}>Forgot Password</button>
-          </div>
+    <section ref={panelRef} aria-label="Employee authentication" className={`usp-auth-panel usp-auth-panel-${mode}`}>
+      <div className="usp-panel-heading">
+        <div>
+          <span className="usp-panel-eyebrow"><LockKeyhole size={14} /> SECURE ERP ACCESS</span>
+          <h1>{heading.title}</h1>
+          <p>{heading.body}</p>
+        </div>
+        {mode === 'forgot'
+          ? <button type="button" className="usp-back-link" onClick={() => switchMode('signin')}>Back to sign-in</button>
+          : <span className="usp-mfa-chip"><ShieldCheck size={14} /> MFA-ready</span>}
+      </div>
 
-          {message && <div className={`auth-message ${message.type}`} role="alert"><span>{message.text}</span>{message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}</div>}
+      {mode !== 'forgot' && <div className="usp-tabs" role="tablist" aria-label="Authentication options">
+        <button type="button" className={mode === 'signin' ? 'active' : ''} onClick={() => switchMode('signin')} role="tab" aria-selected={mode === 'signin'}>Employee Sign-In</button>
+        <button type="button" className={mode === 'signup' ? 'active' : ''} onClick={() => switchMode('signup')} role="tab" aria-selected={mode === 'signup'}>Create Account</button>
+      </div>}
 
-          {mode === 'signin' && <form className="signin-form" onSubmit={signIn}>
-            <TextField label="Email or Username" value={identity} onChange={setIdentity} required autoComplete="username" helper="Use the employee identity assigned to your account." />
-            <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" show={showPassword} setShow={setShowPassword} />
-            <label className="remember-row"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span className="check-ui"><Check size={12} /></span>Remember Me <small>Use only on a trusted device</small></label>
-            <button type="button" className="auth-link forgot-link" onClick={() => switchMode('forgot')}>Forgot password?</button>
-            <button className="primary-button submit-button" disabled={busy} type="submit">{busy ? 'Signing in…' : 'Sign In'}<ArrowRight size={17} /></button>
-          </form>}
+      {message && <div className={`usp-auth-message ${message.type}`} role="alert">
+        <span>{message.text}</span>
+        {message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}
+      </div>}
 
-          {mode === 'signup' && signupStep === 'form' && <form className="signin-form auth-signup-form" onSubmit={startSignup}>
-            <div className="auth-two"><TextField label="First Name" value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label="Last Name" value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
-            <TextField label="Personal Email" type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
-            <TextField label="Phone / WhatsApp" value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
-            <TextField label="Create Username" value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper="4–32 characters. Letters, numbers, dot, underscore or hyphen." />
-            <div className="auth-two password-pair"><PasswordField label="Create Password" value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} /><PasswordField label="Confirm Password" value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} /></div>
-            <PasswordStrengthMeter checks={signupChecks} password={signup.password} />
-            <PasswordStatus checks={signupChecks} />
-            <div className="auth-two"><TextField label="Department / Work Area" value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label="Job Title" value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
-            <TextField label="Role / Position Information" value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
-            <button className="primary-button submit-button" disabled={busy} type="submit">{busy ? 'Preparing verification…' : 'Create account'}<ArrowRight size={17} /></button>
-          </form>}
+      {mode === 'signin' && <form className="usp-auth-form" onSubmit={signIn}>
+        <TextField label="Email or Username" value={identity} onChange={setIdentity} required autoComplete="username" />
+        <div className="usp-password-block">
+          <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" show={showPassword} setShow={setShowPassword} />
+          <button type="button" className="usp-forgot-link" onClick={() => switchMode('forgot')}>Forgot password?</button>
+        </div>
+        <label className="usp-remember-row">
+          <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
+          <span className="usp-check-ui"><Check size={12} /></span>
+          <span>Remember Me<small>Use only on a trusted device</small></span>
+        </label>
+        <button className="usp-primary-button" disabled={busy} type="submit">
+          {busy ? 'Signing in…' : 'Sign In'}<ArrowRight size={17} />
+        </button>
+      </form>}
 
-          {mode === 'signup' && signupStep === 'verify' && <form className="signin-form" onSubmit={verifySignup}>
-            <div className="auth-destination"><Mail size={18} /><span>Verification code sent to <b>{signupDestination}</b></span></div>
-            {signupBootstrapCode && <div className="bootstrap-code"><span>PRIVATE BOOTSTRAP CODE</span><strong>{signupBootstrapCode}</strong><small>Visible only in the local bootstrap stage.</small></div>}
-            <TextField label="6-digit verification code" value={signupCode} onChange={(value) => setSignupCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
-            <button className="primary-button submit-button" disabled={busy || signupCode.length !== 6} type="submit">{busy ? 'Verifying…' : 'Verify email & finish signup'}<CheckCircle2 size={17} /></button>
-            <button type="button" className="secondary-button" onClick={() => { setSignupStep('form'); setSignupCode(''); setMessage(null); }}>Change signup details</button>
-          </form>}
+      {mode === 'signup' && signupStep === 'form' && <form className="usp-auth-form usp-signup-form" onSubmit={startSignup}>
+        <div className="usp-two"><TextField label="First Name" value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label="Last Name" value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
+        <TextField label="Personal Email" type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
+        <TextField label="Phone / WhatsApp" value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
+        <TextField label="Create Username" value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper="4–32 characters: letters, numbers, dot, underscore or hyphen." />
+        <div className="usp-two usp-password-pair"><PasswordField label="Create Password" value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} /><PasswordField label="Confirm Password" value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} /></div>
+        <PasswordStrengthMeter checks={signupChecks} password={signup.password} />
+        <PasswordStatus checks={signupChecks} />
+        <div className="usp-two"><TextField label="Department / Work Area" value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label="Job Title" value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
+        <TextField label="Role / Position Information" value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
+        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? 'Preparing verification…' : 'Create Account'}<ArrowRight size={17} /></button>
+      </form>}
 
-          {mode === 'forgot' && recoveryStep === 'identity' && <form className="signin-form" onSubmit={startRecovery}>
-            <TextField label="Email or Username" value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="username" />
-            <div className="positive-note"><Mail size={16} /><span>If the details match an approved account, we’ll send a one-time code to the email on file.</span></div>
-            <button className="primary-button submit-button" disabled={busy} type="submit">{busy ? 'Preparing recovery…' : 'Send recovery link'}<ArrowRight size={17} /></button>
-          </form>}
+      {mode === 'signup' && signupStep === 'verify' && <form className="usp-auth-form" onSubmit={verifySignup}>
+        <div className="usp-auth-destination"><Mail size={18} /><span>Verification code sent to <b>{signupDestination}</b></span></div>
+        {signupBootstrapCode && <div className="usp-bootstrap-code"><span>PRIVATE BOOTSTRAP CODE</span><strong>{signupBootstrapCode}</strong><small>Visible only in the local bootstrap stage.</small></div>}
+        <TextField label="6-digit verification code" value={signupCode} onChange={(value) => setSignupCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+        <button className="usp-primary-button" disabled={busy || signupCode.length !== 6} type="submit">{busy ? 'Verifying…' : 'Verify email & finish signup'}<CheckCircle2 size={17} /></button>
+        <button type="button" className="usp-secondary-button" onClick={() => { setSignupStep('form'); setSignupCode(''); setMessage(null); }}>Change signup details</button>
+      </form>}
 
-          {mode === 'forgot' && recoveryStep === 'verify' && <form className="signin-form" onSubmit={verifyRecovery}>
-            <div className="auth-destination"><Mail size={18} /><span>Enter the 6-digit code sent to your email.</span></div>
-            {recoveryBootstrapCode && <div className="bootstrap-code"><span>PRIVATE BOOTSTRAP CODE</span><strong>{recoveryBootstrapCode}</strong><small>Visible only in the local bootstrap stage.</small></div>}
-            <TextField label="6-digit verification code" value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
-            <button className="primary-button submit-button" disabled={busy || recoveryCode.length !== 6} type="submit">{busy ? 'Verifying…' : 'Verify identity'}<CheckCircle2 size={17} /></button>
-            <button type="button" className="secondary-button" onClick={() => { setRecoveryStep('identity'); setRecoveryCode(''); setMessage(null); }}>Request another code</button>
-          </form>}
+      {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" onSubmit={startRecovery}>
+        <TextField label="Email or Username" value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="username" />
+        <div className="usp-positive-note"><Mail size={16} /><span>If the details match an approved account, we’ll send a one-time code to the email on file.</span></div>
+        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? 'Preparing recovery…' : 'Send recovery code'}<ArrowRight size={17} /></button>
+      </form>}
 
-          {mode === 'forgot' && recoveryStep === 'reset' && <form className="signin-form" onSubmit={resetPassword}>
-            <div className="reset-unlocked"><CheckCircle2 size={20} /><div><strong>Identity verified</strong><span>Create your password to finish securing your access.</span></div></div>
-            <PasswordField label="New Password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} />
-            <PasswordField label="Confirm New Password" value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} />
-            <PasswordStrengthMeter checks={resetChecks} password={newPassword} />
-            <PasswordStatus checks={resetChecks} />
-            <button className="primary-button submit-button" disabled={busy} type="submit">{busy ? 'Securing account…' : 'Create password'}<KeyRound size={17} /></button>
-          </form>}
+      {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" onSubmit={verifyRecovery}>
+        <div className="usp-auth-destination"><Mail size={18} /><span>Enter the 6-digit code sent to your email.</span></div>
+        {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>PRIVATE BOOTSTRAP CODE</span><strong>{recoveryBootstrapCode}</strong><small>Visible only in the local bootstrap stage.</small></div>}
+        <TextField label="6-digit verification code" value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+        <button className="usp-primary-button" disabled={busy || recoveryCode.length !== 6} type="submit">{busy ? 'Verifying…' : 'Verify identity'}<CheckCircle2 size={17} /></button>
+        <button type="button" className="usp-secondary-button" onClick={() => { setRecoveryStep('identity'); setRecoveryCode(''); setMessage(null); }}>Request another code</button>
+      </form>}
 
-          {mode !== 'forgot' && <><div className="or-divider"><span /> or <span /></div><div className="social-buttons"><button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="microsoft-mark"><i /><i /><i /><i /></span> {mode === 'signup' ? 'Create Account with Microsoft' : 'Sign In with Microsoft'}</button><button type="button" onClick={() => unavailableOAuth('Google')}><b className="google-mark">G</b> {mode === 'signup' ? 'Create Account with Google' : 'Sign In with Google'}</button></div><p className="social-note">Use your Microsoft or Google account to sign in or create an account.</p></>}
+      {mode === 'forgot' && recoveryStep === 'reset' && <form className="usp-auth-form" onSubmit={resetPassword}>
+        <div className="usp-reset-unlocked"><CheckCircle2 size={20} /><div><strong>Identity verified</strong><span>Create your password to finish securing your access.</span></div></div>
+        <PasswordField label="New Password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} />
+        <PasswordField label="Confirm New Password" value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} />
+        <PasswordStrengthMeter checks={resetChecks} password={newPassword} />
+        <PasswordStatus checks={resetChecks} />
+        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? 'Securing account…' : 'Create password'}<KeyRound size={17} /></button>
+      </form>}
 
-          <div className="legal-copy">By continuing to log in, you agree to Daenem Farms’ <a href="#terms">Terms and Conditions</a>. <a href="#privacy">Privacy Policy</a>.</div>
-          <div className="panel-footer-actions"><span className="operational-pill"><i /> Operational</span><button className="install-button" data-pwa-install type="button" onClick={() => void installApp()}><Download size={16} /> Install App</button></div>
+      {mode !== 'forgot' && <>
+        <div className="usp-or-divider"><span />or<span /></div>
+        <div className="usp-social-buttons">
+          <button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? 'Create Account with Microsoft' : 'Sign In with Microsoft'}</button>
+          <button type="button" onClick={() => unavailableOAuth('Google')}><b className="usp-google-mark">G</b>{mode === 'signup' ? 'Create Account with Google' : 'Sign In with Google'}</button>
+        </div>
+        <p className="usp-social-note">Use your Microsoft or Google account to sign in or create an account.</p>
+      </>}
+
+      <p className="usp-legal-copy">
+        By continuing to log in, you agree to Daenem Farms’ <a href="/terms-and-conditions.html" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>. <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+      </p>
+      <div className="usp-panel-footer">
+        <span className="usp-operational-pill"><i /> Secure service</span>
+        <button className="usp-install-button" data-pwa-install type="button" onClick={() => void installApp()}><Download size={15} /> Install App</button>
+      </div>
     </section>
   );
 
-  return <main className={`signin-page signin-${theme.signInLayout}`}>
-    <div className="signin-surface">
-      <section className="signin-hero">
-        {theme.id !== 'lagos-sunrise' && <>
-        <div className="hero-brand"><div className="brand-lockup"><span className="brand-mark"><img className="brand-mark-image" src="/brand-assets/logo-mark.svg" alt="" /></span><span className="brand-copy"><strong>Daenem</strong><span>Staff Portal</span></span></div></div>
-        <div className="hero-topline"><span className="status-dot" /> Private workspace <span className="hero-secure-label"><ShieldCheck size={14} /> Secure employee access</span></div>
-        <div className="hero-content">
-          <h2 className="hero-title">Staff Portal</h2>
-          <p className="hero-tagline">Technology That Transforms Tomorrow</p>
-          <p className="hero-supporting-copy">A secure gateway to the work, insight, and collaboration your role unlocks.</p>
-          <section className="hero-widgets" aria-label="Staff portal inspiration and updates">
-            <article className="hero-widget hero-widget-ai"><span>AI INSPIRATION</span><strong>Make the next task feel obvious.</strong><small>Role-aware guidance across your authorized ERPs.</small></article>
-            <article className="hero-widget hero-widget-motivation"><span>EMPLOYEE MOTIVATION</span><strong>Progress compounds into momentum.</strong><small>See what matters, then move one useful thing forward.</small></article>
-            <article className="hero-widget hero-widget-news"><span>DAENEM NEWS</span><strong>One connected staff experience.</strong><small>People, production, properties, mobility, and operations in one secure portal.</small></article>
-          </section>
-        </div>
-        <div className="hero-footer"><ShieldCheck size={16} /> Secure enterprise access <span>•</span> Designed for web, tablet and mobile</div>
-        </>}
-        {theme.id === 'lagos-sunrise' && <LiveHeroSurface authPanel={authPanel} />}
-      </section>
-
-      {theme.id !== 'lagos-sunrise' && <section className="signin-panel-wrap">
-        {authPanel}
-      </section>}
-    </div>
-    {theme.id !== 'lagos-sunrise' && <div className="signin-bottom-note"><ShieldCheck size={14} /> Private workspace · MFA-ready · Employee-neutral by design</div>}
-    {theme.id !== 'lagos-sunrise' && <WorldClocks />}
-  </main>;
+  return <SignInExperience authPanel={authPanel} themeId={themeId} modePreference={modePreference} onInstall={() => void installApp()} />;
 }
