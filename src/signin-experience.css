@@ -2629,3 +2629,273 @@ html[data-mode="night"] .usp-social-buttons button {
     padding-top: 10px;
   }
 }
+
+
+/* V3 configurable presentation and height-aware desktop composition. */
+.usp-brand-glass {
+  padding: 9px 13px 10px 8px;
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,.78), rgba(227,245,255,.58));
+  box-shadow: 0 16px 34px rgba(12,65,105,.15), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter: blur(12px) saturate(1.12);
+}
+.usp-brand-copy {
+  color: #102642;
+}
+.usp-brand-copy small {
+  color: #075fae;
+  text-shadow: none;
+}
+.usp-brand-copy strong {
+  color: #102642;
+  text-shadow: 0 1px 0 rgba(255,255,255,.9);
+}
+.usp-brand-copy span {
+  color: #35536d;
+  font-weight: 700;
+  text-shadow: none;
+}
+.usp-logo-size-compact .usp-logo-orbit { width: 60px; height: 60px; }
+.usp-logo-size-compact .usp-logo-depth { width: 44px; height: 44px; }
+.usp-logo-size-compact .usp-logo-depth img { width: 31px; height: 31px; }
+.usp-logo-size-prominent .usp-logo-orbit { width: 86px; height: 86px; }
+.usp-logo-size-prominent .usp-logo-depth { width: 62px; height: 62px; }
+.usp-logo-size-prominent .usp-logo-depth img { width: 45px; height: 45px; }
+.usp-logo-align-center { align-items: center; }
+.usp-logo-align-end { align-items: flex-end; }
+.usp-widget-variant-horizontal-ticker {
+  overflow: hidden;
+}
+.usp-widget-variant-horizontal-ticker > a,
+.usp-widget-variant-horizontal-ticker > strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.usp-widget-variant-innovation-spark,
+.usp-widget-variant-executive-thought {
+  border-left: 3px solid rgba(21,127,206,.65);
+}
+.usp-widget-variant-team-boost,
+.usp-widget-variant-recognition-prompt,
+.usp-widget-variant-focus-goal {
+  border-left: 3px solid rgba(43,170,126,.62);
+}
+.usp-clock-copy-wide { grid-column: 1 / -1; }
+
+@media (min-width: 821px) {
+  html:has(.usp-page),
+  body:has(.usp-page) {
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+  }
+  .usp-page {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+  .usp-shell {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .usp-stage {
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .usp-form-column,
+  .usp-live-stack {
+    min-height: 0;
+  }
+  .usp-auth-panel {
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .usp-live-stack {
+    max-height: 100%;
+    overflow: hidden;
+  }
+  .usp-clock-dock {
+    height: clamp(110px, 18dvh, 194px);
+    min-height: 0;
+    overflow: hidden;
+  }
+  .usp-clock-grid {
+    min-height: 0;
+    height: calc(100% - 28px);
+    overflow: hidden;
+  }
+  .usp-clock-card {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 821px) and (max-height: 899px) {
+  .usp-shell {
+    padding-block: clamp(9px, 1.5vh, 18px);
+    gap: clamp(8px, 1.25vh, 14px);
+  }
+  .usp-topbar { min-height: clamp(60px, 8vh, 76px); }
+  .usp-auth-panel { padding: clamp(18px, 2vh, 28px) clamp(20px, 2vw, 32px); }
+  .usp-panel-heading { margin-bottom: 13px; gap: 11px; }
+  .usp-panel-heading h1 { font-size: clamp(28px, 2.2vw, 36px); }
+  .usp-panel-heading p { font-size: 13px; line-height: 1.35; }
+  .usp-tabs { margin-bottom: 13px; }
+  .usp-tabs button { min-height: 46px; }
+  .usp-auth-form { gap: 11px; }
+  .usp-field input,
+  .usp-password-field input { height: 48px; }
+  .usp-primary-button,
+  .usp-secondary-button,
+  .usp-social-buttons button { min-height: 48px; }
+  .usp-scene-title p { font-size: 12px; }
+  .usp-live-stack { gap: 8px; }
+  .usp-widget-group { gap: 7px; }
+  .usp-live-card { padding: 11px 13px; }
+  .usp-copy-card > strong,
+  .usp-copy-card > a { margin-top: 6px; font-size: 12px; line-height: 1.28; }
+  .usp-live-card small,
+  .usp-weather-card p { font-size: 9px; }
+}
+
+@media (min-width: 821px) and (max-height: 719px) {
+  .usp-shell {
+    padding: 8px;
+    gap: 8px;
+    grid-template-rows: 52px minmax(0, 1fr) 88px;
+  }
+  .usp-topbar { min-height: 52px; }
+  .usp-brand-lockup { gap: 8px; }
+  .usp-brand-glass { padding: 4px 8px 5px 5px; border-radius: 15px; }
+  .usp-logo-orbit,
+  .usp-logo-size-prominent .usp-logo-orbit { width: 50px; height: 50px; }
+  .usp-logo-depth,
+  .usp-logo-size-prominent .usp-logo-depth { width: 36px; height: 36px; border-radius: 11px; }
+  .usp-logo-depth img,
+  .usp-logo-size-prominent .usp-logo-depth img { width: 26px; height: 26px; }
+  .usp-brand-copy { gap: 1px; }
+  .usp-brand-copy small { font-size: 8px; }
+  .usp-brand-copy strong { font-size: 18px; }
+  .usp-brand-copy span { font-size: 9px; }
+  .usp-stage { overflow: hidden; }
+  .usp-form-column { align-self: center; }
+  .usp-auth-panel { padding: 12px 16px; border-radius: 18px; }
+  .usp-panel-heading { margin-bottom: 8px; gap: 7px; }
+  .usp-panel-heading h1 { margin-top: 5px; font-size: 25px; }
+  .usp-panel-heading p,
+  .usp-social-note { display: none; }
+  .usp-panel-eyebrow { font-size: 9px; }
+  .usp-mfa-chip { min-height: 28px; font-size: 8px; }
+  .usp-tabs { margin-bottom: 8px; }
+  .usp-tabs button { min-height: 44px; font-size: 11px; }
+  .usp-auth-form { gap: 8px; }
+  .usp-field { gap: 4px; font-size: 11px; }
+  .usp-field-label { min-height: 15px; }
+  .usp-field input,
+  .usp-password-field input { height: 44px; padding-inline: 12px; font-size: 14px; }
+  .usp-password-field input { padding-right: 48px; }
+  .usp-password-toggle { width: 34px; height: 34px; bottom: 5px; }
+  .usp-forgot-link { font-size: 10px; }
+  .usp-remember-row { gap: 7px; font-size: 11px; }
+  .usp-check-ui { width: 18px; height: 18px; }
+  .usp-remember-row small { font-size: 8px; }
+  .usp-primary-button,
+  .usp-secondary-button,
+  .usp-social-buttons button { min-height: 44px; font-size: 11px; }
+  .usp-or-divider { margin: 6px 0 5px; }
+  .usp-social-buttons { gap: 7px; }
+  .usp-legal-copy { margin-top: 5px; font-size: 8px; line-height: 1.2; }
+  .usp-panel-footer { margin-top: 7px; padding-top: 7px; }
+  .usp-operational-pill { font-size: 8px; }
+  .usp-scene-caption {
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    bottom: 0;
+    width: min(300px, 40%);
+    padding: 0;
+  }
+  .usp-scene-title { padding: 9px 12px; border-radius: 15px; }
+  .usp-scene-title span { font-size: 8px; }
+  .usp-scene-title h2 { margin-top: 4px; font-size: 22px; line-height: 1.05; }
+  .usp-scene-title p,
+  .usp-signal-row { display: none; }
+  .usp-live-stack { gap: 6px; }
+  .usp-widget-group { gap: 5px; }
+  .usp-widget-group + .usp-widget-group { padding-top: 6px; }
+  .usp-widget-group-title { font-size: 8px; }
+  .usp-live-card { padding: 8px 10px; border-radius: 12px; }
+  .usp-widget-label { font-size: 8px; }
+  .usp-weather-main { margin-top: 2px; }
+  .usp-weather-main strong { font-size: 22px; }
+  .usp-weather-card p,
+  .usp-live-card small,
+  .usp-copy-card > strong,
+  .usp-copy-card > a { font-size: 9px; line-height: 1.18; }
+  .usp-copy-card > strong,
+  .usp-copy-card > a { margin-top: 3px; }
+  .usp-clock-dock { height: 88px; padding: 6px; border-radius: 15px; }
+  .usp-clock-heading { min-height: 16px; padding: 0 3px 3px; }
+  .usp-clock-heading span,
+  .usp-clock-heading small { font-size: 7px; }
+  .usp-clock-grid { height: calc(100% - 17px); gap: 5px; }
+  .usp-clock-card { min-height: 0; height: 100%; padding: 5px; grid-template-columns: 32px minmax(0, 1fr); gap: 5px; border-radius: 10px; }
+  .usp-analog-clock { width: 32px; height: 32px; }
+  .usp-analog-clock > i { transform-origin: 50% 14px; }
+  .usp-clock-location strong { font-size: 8px; }
+  .usp-clock-location small { font-size: 6px; }
+  .usp-clock-copy > b { font-size: 10px; }
+  .usp-clock-copy > span,
+  .usp-clock-meta > small,
+  .usp-clock-weather > span { font-size: 6.5px; }
+  .usp-clock-weather > small { font-size: 5.5px; }
+}
+
+@media (max-width: 820px) {
+  html:has(.usp-page),
+  body:has(.usp-page) {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+  }
+  .usp-page {
+    position: relative;
+    inset: auto;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .usp-shell {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+  .usp-stage,
+  .usp-live-stack {
+    overflow: visible;
+  }
+  .usp-clock-dock {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .usp-clock-grid {
+    height: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+}
