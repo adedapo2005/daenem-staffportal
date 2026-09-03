@@ -5,6 +5,7 @@ const css = read('src/signin-experience.css');
 const prefs = read('src/signin-preferences.ts');
 const studio = read('src/theme-studio-entry.ts');
 const worker = read('worker/theme-preferences.ts');
+const workerIndex = read('worker/index.ts');
 const auth = read('src/auth.tsx');
 const assertions = [];
 function check(name, condition) {
@@ -24,7 +25,7 @@ check('authentication handlers remain present', auth.includes("/api/auth/login")
 check('seven standard clocks remain available', ['Daenem Complex', 'Toronto', 'London', 'New York', 'Moscow', 'Tokyo', 'Beijing / Shanghai'].every((name) => prefs.includes(name)));
 check('widget variants normalize correctly', prefs.includes('SIGNIN_WIDGET_VARIANTS') && prefs.includes('normalizeWidgetVariant') && studio.includes('data-widget-variant'));
 check('reduced-motion compatibility remains active', css.includes('@media (prefers-reduced-motion: reduce)') && prefs && read('src/signin-experience.tsx').includes("prefers-reduced-motion"));
-check('news remains source-bound', worker.includes('liveHeadlines') && worker.includes('news.length ? news : fallbackNews') && worker.includes('Only inspiration and motivation can use AI options.'));
+check('news remains source-bound', workerIndex.includes('liveHeadlines') && workerIndex.includes('news.length ? news : fallbackNews') && worker.includes('Only inspiration and motivation can use AI options.'));
 
 for (const result of assertions) console.log((result.ok ? '✓' : '✗') + ' ' + result.name);
 if (process.exitCode) console.error('\\n' + assertions.filter((item) => !item.ok).length + ' sign-in configurability assertion(s) failed.');
