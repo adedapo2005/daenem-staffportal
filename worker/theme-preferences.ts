@@ -255,7 +255,7 @@ const validTheme = (value: unknown, allowBlank = false) => {
   return (allowBlank && id === '') || themes.includes(id);
 };
 function candidateOptions(kind: 'inspiration' | 'motivation', text: string | undefined) {
-  const values = (text || '').split(/\r?\n|\\d+[\.)]\\s+/).map((item) => item.replace(/^[-*]\\s+/, '').trim()).filter((item) => item.length >= 12 && item.length <= 180);
+  const values = (text || '').split(/\r?\n|\d+[\.)]\s+/).map((item) => item.replace(/^[-*]\s+/, '').trim()).filter((item) => item.length >= 12 && item.length <= 180);
   return [...new Set(values)].slice(0, 3);
 }
 async function generateAiOptions(env: Env, kind: 'inspiration' | 'motivation') {
@@ -302,7 +302,7 @@ export async function routeThemePreferences(request: Request, env: Env, context:
     let body: { config?: unknown };
     try { body = await request.json(); } catch { return json({ error: 'Invalid sign-in configuration request.' }, 400); }
     const config = cleanSignInConfig(body.config);
-    await env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\\'ui.signin_config_v3\\',?,\\'json\\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP')
+    await env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.signin_config_v3\',?,\'json\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP')
       .bind(JSON.stringify(config), context.employee.id).run();
     return json({ ok: true, config });
   }
@@ -320,9 +320,9 @@ export async function routeThemePreferences(request: Request, env: Env, context:
     if (body.defaultTheme !== undefined && !validTheme(body.defaultTheme)) return json({ error: 'Invalid default theme.' }, 400);
     if (body.forcedTheme !== undefined && !validTheme(body.forcedTheme, true)) return json({ error: 'Invalid forced theme.' }, 400);
     const statements: D1PreparedStatement[] = [];
-    if (body.defaultTheme !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\\'ui.default_theme\\',?,\\'string\\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(normalize(body.defaultTheme), context.employee.id));
-    if (body.forcedTheme !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\\'ui.forced_theme\\',?,\\'string\\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(normalize(body.forcedTheme, true), context.employee.id));
-    if (body.allowEmployeeChoice !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\\'ui.allow_employee_theme_choice\\',?,\\'boolean\\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(body.allowEmployeeChoice ? 'true' : 'false', context.employee.id));
+    if (body.defaultTheme !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.default_theme\',?,\'string\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(normalize(body.defaultTheme), context.employee.id));
+    if (body.forcedTheme !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.forced_theme\',?,\'string\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(normalize(body.forcedTheme, true), context.employee.id));
+    if (body.allowEmployeeChoice !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.allow_employee_theme_choice\',?,\'boolean\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(body.allowEmployeeChoice ? 'true' : 'false', context.employee.id));
     if (!statements.length) return json({ error: 'No theme policy changes supplied.' }, 400);
     await env.DB.batch(statements);
     return json({ ok: true, ...await policy(env, context) });
