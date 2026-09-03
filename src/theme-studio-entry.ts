@@ -176,6 +176,7 @@ function signInWidgetRow(instance: SignInWidgetInstance, index: number) {
     '<select data-widget-zone="' + escapeHtml(instance.id) + '" aria-label="Move ' + escapeHtml(instance.label) + ' to zone">' + optionMarkup(['live-context', 'today', 'auxiliary'], instance.zone, { 'live-context': 'Live Context', today: 'Today', auxiliary: 'Auxiliary' }) + '</select>' +
     '<select data-widget-kind="' + escapeHtml(instance.id) + '" aria-label="Replace ' + escapeHtml(instance.label) + '">' + optionMarkup(Object.keys(signInWidgetLabels), instance.kind, signInWidgetLabels) + '</select>' +
     '<select data-widget-variant="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' variant">' + optionMarkup(variants, instance.variant) + '</select>' +
+    '<select data-widget-effect="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' effect">' + optionMarkup(['quiet', 'glass', 'accent', 'soft'], instance.effectPreset) + '</select>' +
     '<span class="signin-admin-order"><button type="button" data-widget-move="' + escapeHtml(instance.id) + '" data-direction="-1" ' + (index === 0 ? 'disabled' : '') + ' aria-label="Move ' + escapeHtml(instance.label) + ' up">↑</button><button type="button" data-widget-move="' + escapeHtml(instance.id) + '" data-direction="1" ' + (index === signInConfig.widgetInstances.length - 1 ? 'disabled' : '') + ' aria-label="Move ' + escapeHtml(instance.label) + ' down">↓</button></span>' +
     '<button type="button" class="signin-admin-remove" data-widget-remove="' + escapeHtml(instance.id) + '" aria-label="Remove ' + escapeHtml(instance.label) + '">×</button>' +
   '</div>';
@@ -189,7 +190,9 @@ function renderSignInAdmin() {
   const locationRows = WORLD_CLOCK_CATALOG.map((location) => {
     const checked = signInConfig.clockZones.includes(location.zone);
     const disabled = !checked && signInConfig.clockZones.length >= signInConfig.globalOperations.maxClocks;
-    return '<label class="signin-location-row"><input type="checkbox" data-clock-zone="' + location.zone + '"' + (checked ? ' checked' : '') + (disabled ? ' disabled' : '') + '><span><strong>' + escapeHtml(location.name) + '</strong><small>' + escapeHtml(location.region) + (disabled ? ' · remove one first' : '') + '</small></span></label>';
+    const clockIndex = signInConfig.clockZones.indexOf(location.zone);
+    const order = checked ? '<span class="signin-clock-order"><button type="button" data-clock-move="' + location.zone + '" data-direction="-1"' + (clockIndex <= 0 ? ' disabled' : '') + ' aria-label="Move ' + escapeHtml(location.name) + ' up">↑</button><button type="button" data-clock-move="' + location.zone + '" data-direction="1"' + (clockIndex === signInConfig.clockZones.length - 1 ? ' disabled' : '') + ' aria-label="Move ' + escapeHtml(location.name) + ' down">↓</button></span>' : '';
+    return '<div class="signin-location-row"><label class="signin-location-main"><input type="checkbox" data-clock-zone="' + location.zone + '"' + (checked ? ' checked' : '') + (disabled ? ' disabled' : '') + '><span><strong>' + escapeHtml(location.name) + '</strong><small>' + escapeHtml(location.region) + (disabled ? ' · remove one first' : '') + '</small></span></label>' + order + '</div>';
   }).join('');
   const aiMarkup = (kind: 'inspiration' | 'motivation') => {
     const options = aiOptions[kind] || [];
@@ -290,7 +293,7 @@ function handleSignInAdminChange(event: Event) {
     queueSignInConfigSave(next);
     return;
   }
-  const widgetId = target.dataset.widgetVisible || target.dataset.widgetZone || target.dataset.widgetVariant || target.dataset.widgetKind;
+  const widgetId = target.dataset.widgetVisible || target.dataset.widgetZone || target.dataset.widgetVariant || target.dataset.widgetKind || target.dataset.widgetEffect;
   if (widgetId) {
     const next = cloneSignInConfig();
     const instance = next.widgetInstances.find((item) => item.id === widgetId);
@@ -298,6 +301,7 @@ function handleSignInAdminChange(event: Event) {
     if (target.dataset.widgetVisible) instance.visible = target instanceof HTMLInputElement && target.checked;
     if (target.dataset.widgetZone) instance.zone = target.value as SignInWidgetInstance['zone'];
     if (target.dataset.widgetVariant) instance.variant = target.value as SignInWidgetInstance['variant'];
+    if (target.dataset.widgetEffect) instance.effectPreset = target.value as SignInWidgetInstance['effectPreset'];
     if (target.dataset.widgetKind) {
       instance.kind = target.value as SignInWidgetId;
       instance.variant = SIGNIN_WIDGET_VARIANTS[instance.kind][0];
@@ -362,6 +366,7 @@ function handleSignInAdminClick(event: Event) {
   const generate = target?.closest<HTMLButtonElement>('[data-ai-generate]');
   const option = target?.closest<HTMLButtonElement>('[data-ai-option-kind]');
   const preview = target?.closest<HTMLButtonElement>('[data-signin-preview]');
+  const clockMove = target?.closest<HTMLButtonElement>('[data-clock-move]');
   if (move) {
     const id = move.dataset.widgetMove;
     const index = signInConfig.widgetInstances.findIndex((item) => item.id === id);
@@ -378,6 +383,17 @@ function handleSignInAdminClick(event: Event) {
     const next = cloneSignInConfig();
     next.widgetInstances = next.widgetInstances.filter((item) => item.id !== remove.dataset.widgetRemove);
     queueSignInConfigSave(next);
+    return;
+  }
+  if (clockMove) {
+    const zone = clockMove.dataset.clockMove;
+    const index = zone ? signInConfig.clockZones.indexOf(zone) : -1;
+    const destination = index + Number(clockMove.dataset.direction || 0);
+    if (index >= 0 && destination >= 0 && destination < signInConfig.clockZones.length) {
+      const next = cloneSignInConfig();
+      [next.clockZones[index], next.clockZones[destination]] = [next.clockZones[destination], next.clockZones[index]];
+      queueSignInConfigSave(next);
+    }
     return;
   }
   if (reset?.dataset.signinReset === 'complete') {
