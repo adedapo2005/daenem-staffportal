@@ -343,7 +343,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     const variantClass = 'usp-widget-variant-' + instance.variant;
     if (widget === 'weather') {
       const description = ibadanWeather?.description || 'Loading current conditions';
-      return <article className={'usp-live-card usp-weather-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      return <article className={'usp-live-card usp-weather-card usp-effect-preset-' + instance.effectPreset + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><CloudSun size={15} /> {instance.label}</span><b>IBADAN</b></div>
         <div className="usp-weather-main"><WeatherIcon description={description} size={34} /><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong></div>
         <p>{description}</p>
@@ -351,25 +351,25 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
       </article>;
     }
     if (widget === 'inspiration') {
-      return <article className={'usp-live-card usp-copy-card usp-inspiration-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      return <article className={'usp-live-card usp-copy-card usp-inspiration-card usp-effect-preset-' + instance.effectPreset + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Sparkles size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
         <strong>{preferences.content.inspiration || context.inspiration}</strong><small>Live guidance · refreshed automatically</small>
       </article>;
     }
     if (widget === 'motivation') {
-      return <article className={'usp-live-card usp-copy-card usp-motivation-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      return <article className={'usp-live-card usp-copy-card usp-motivation-card usp-effect-preset-' + instance.effectPreset + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Target size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
         <strong>{preferences.content.motivation || context.motivation}</strong><small>Daily momentum for every business unit</small>
       </article>;
     }
     if (widget === 'news') {
-      return <article className={'usp-live-card usp-copy-card usp-news-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      return <article className={'usp-live-card usp-copy-card usp-news-card usp-effect-preset-' + instance.effectPreset + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><Newspaper size={14} /> {instance.label}</span><b>{activeNews.category}</b></div>
         {activeNews.url ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a> : <strong>{activeNews.title}</strong>}
         <small>{activeNews.source} · rotating live feed</small>
       </article>;
     }
-    return <article className={'usp-live-card usp-status-card ' + health.state + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+    return <article className={'usp-live-card usp-status-card usp-effect-preset-' + instance.effectPreset + ' ' + health.state + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
       <div className="usp-widget-label"><span><Activity size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
       <strong>{healthLabel}</strong><small>{healthDetail}</small>
     </article>;
@@ -382,9 +382,19 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   }
 
   const labels = preferences.labels;
+  const effectClasses = [
+    preferences.effects.ambientGlow ? '' : 'usp-no-ambient',
+    preferences.effects.backgroundBreathing ? '' : 'usp-no-background-breathing',
+    preferences.effects.cardFloat ? 'usp-card-float' : 'usp-no-card-float',
+    preferences.effects.logoMotion ? '' : 'usp-no-logo-motion',
+    preferences.effects.statusPulse ? '' : 'usp-no-status-pulse',
+    preferences.effects.widgetEntrance ? 'usp-widget-entrance' : 'usp-no-widget-entrance',
+    preferences.effects.shimmer ? 'usp-shimmer' : '',
+  ].filter(Boolean).join(' ');
   return <main
     ref={sceneRef}
-    className={'usp-page usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition}
+    className={'usp-page usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition + ' ' + effectClasses}
+    style={{ '--usp-glass-intensity': String(preferences.effects.glassIntensity) } as CSSProperties}
     data-testid="unified-signin-page"
   >
     <div className="usp-background" aria-hidden="true" />
