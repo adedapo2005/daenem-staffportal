@@ -7,7 +7,7 @@ import {
 } from './theme-system';
 import { SignInExperience } from './signin-experience';
 import {
-  WORLD_CLOCKS, WORLD_CLOCK_CATALOG, readWorldClockPreferences,
+  WORLD_CLOCKS, WORLD_CLOCK_CATALOG, readSignInPreferences, readWorldClockPreferences,
   type PortalLocation, type WorldClockPreferences,
 } from './signin-preferences';
 export {
@@ -681,7 +681,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         By continuing to log in, you agree to Daenem Farms’ <a href="/terms-and-conditions.html" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>. <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
       </p>
       <div className="usp-panel-footer">
-        <span className="usp-operational-pill"><i /> Secure service</span>
+        <span className="usp-operational-pill"><i /> {readSignInPreferences().labels.secureService}</span>
       </div>
     </section>
   );
