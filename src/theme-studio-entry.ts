@@ -171,7 +171,7 @@ function optionMarkup(values: string[], selected: string, labels: Record<string,
 }
 function signInWidgetRow(instance: SignInWidgetInstance, index: number) {
   const variants = SIGNIN_WIDGET_VARIANTS[instance.kind];
-  return '<div class="signin-admin-row" data-signin-widget="' + escapeHtml(instance.id) + '">' +
+  return '<div class="signin-admin-row" draggable="true" data-signin-widget="' + escapeHtml(instance.id) + '">' +
     '<label class="signin-widget-visible"><input type="checkbox" data-widget-visible="' + escapeHtml(instance.id) + '"' + (instance.visible ? ' checked' : '') + '><span>' + escapeHtml(instance.label) + '</span></label>' +
     '<select data-widget-zone="' + escapeHtml(instance.id) + '" aria-label="Move ' + escapeHtml(instance.label) + ' to zone">' + optionMarkup(['live-context', 'today', 'auxiliary'], instance.zone, { 'live-context': 'Live Context', today: 'Today', auxiliary: 'Auxiliary' }) + '</select>' +
     '<select data-widget-variant="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' variant">' + optionMarkup(variants, instance.variant) + '</select>' +
