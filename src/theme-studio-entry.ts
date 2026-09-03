@@ -245,6 +245,17 @@ function renderSignInAdmin() {
         labelInput('labels.statusChecking', 'Checking status label', labels.statusChecking, SIGNIN_LABEL_LIMITS.display) +
         labelInput('labels.statusConnecting', 'Status connecting label', labels.statusConnecting, SIGNIN_LABEL_LIMITS.support) +
         labelInput('labels.clockSummary', 'Clock summary label', labels.clockSummary, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.inspirationSpark', 'Inspiration spark label', labels.inspirationSpark, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.promptOfTheDay', 'Prompt of the day label', labels.promptOfTheDay, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.promptOfTheDayNote', 'Prompt note', labels.promptOfTheDayNote, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.teamBoost', 'Team boost label', labels.teamBoost, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.recognition', 'Recognition label', labels.recognition, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.focusGoal', 'Focus goal label', labels.focusGoal, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.recognitionNote', 'Recognition note', labels.recognitionNote, SIGNIN_LABEL_LIMITS.support) +
+        labelInput('labels.priorityBriefing', 'Priority briefing label', labels.priorityBriefing, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.secureEdge', 'Secure edge label', labels.secureEdge, SIGNIN_LABEL_LIMITS.display) +
+        labelInput('labels.serviceTeamNotified', 'Service notification label', labels.serviceTeamNotified, SIGNIN_LABEL_LIMITS.display) +
+        Object.keys(labels.auth).map((key) => labelInput('labels.auth.' + key, 'Auth · ' + key.replace(/([A-Z])/g, ' $1'), labels.auth[key as keyof typeof labels.auth], SIGNIN_LABEL_LIMITS.support)).join('') +
         Object.keys(labels.widgetLabels).map((kind) => labelInput('labels.widgetLabels.' + kind, signInWidgetLabels[kind as SignInWidgetId] + ' label', labels.widgetLabels[kind as SignInWidgetId], SIGNIN_LABEL_LIMITS.widget)).join('') +
       '</div></section>' +
       '<section class="signin-admin-section"><h4>WORLD CLOCKS</h4><p>Choose up to seven locations from the expanded catalogue.</p><div class="signin-admin-grid">' +
