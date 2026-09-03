@@ -922,7 +922,7 @@
   max-width: 48ch;
   color: #718195;
   text-align: center;
-  font-size: 8.5px;
+  font-size: 9px;
   line-height: 1.5;
 }
 
@@ -1518,7 +1518,7 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 
   .usp-brand-copy small {
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .usp-brand-copy strong {
@@ -1527,7 +1527,7 @@ html[data-mode="night"] .usp-social-buttons button {
 
   .usp-brand-copy span {
     max-width: 190px;
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .usp-logo-center .usp-topbar {
@@ -1621,7 +1621,7 @@ html[data-mode="night"] .usp-social-buttons button {
     display: inline;
     overflow: hidden;
     color: #768b9e;
-    font-size: 7px;
+    font-size: 9px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -2131,7 +2131,7 @@ html[data-mode="night"] .usp-social-buttons button {
 }
 
 .usp-clock-weather > small {
-  font-size: 8px;
+  font-size: 9px;
 }
 
 @media (max-height: 820px) and (min-width: 821px) {
@@ -2190,7 +2190,7 @@ html[data-mode="night"] .usp-social-buttons button {
 
   .usp-live-card small,
   .usp-weather-card p {
-    font-size: 8.5px;
+    font-size: 9px;
   }
 
   .usp-weather-main {
@@ -2212,7 +2212,7 @@ html[data-mode="night"] .usp-social-buttons button {
 
   .usp-clock-heading span,
   .usp-clock-heading small {
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .usp-clock-card {
@@ -2236,7 +2236,7 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 
   .usp-clock-location small {
-    font-size: 7px;
+    font-size: 9px;
   }
 
   .usp-clock-copy > b {
@@ -2244,16 +2244,16 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 
   .usp-clock-copy > span {
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .usp-clock-meta > small,
   .usp-clock-weather > span {
-    font-size: 7px;
+    font-size: 9px;
   }
 
   .usp-clock-weather > small {
-    font-size: 6.5px;
+    font-size: 9px;
   }
 }
 
@@ -2510,7 +2510,7 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 
   .usp-clock-location small {
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .usp-clock-copy > b {
@@ -2522,7 +2522,7 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 
   .usp-clock-meta > small {
-    font-size: 8px;
+    font-size: 9px;
   }
 }
 
@@ -2844,7 +2844,7 @@ html[data-mode="night"] .usp-social-buttons button {
   display: block;
   margin-top: 8px;
   color: #0873bd;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 950;
   letter-spacing: .15em;
 }
@@ -2891,7 +2891,7 @@ html[data-mode="night"] .usp-social-buttons button {
   border: 1px solid rgba(31, 145, 103, .16);
 }
 .usp-focus-goal b {
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: .13em;
 }
 .usp-focus-goal strong {
@@ -2933,7 +2933,7 @@ html[data-mode="night"] .usp-social-buttons button {
 .usp-news-briefing small,
 .usp-news-ticker small {
   color: #6f8497;
-  font-size: 7px;
+  font-size: 9px;
 }
 .usp-news-briefing {
   display: grid;
@@ -3218,7 +3218,7 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-logo-depth img,
   .usp-logo-size-prominent .usp-logo-depth img { width: 26px; height: 26px; }
   .usp-brand-copy { gap: 1px; }
-  .usp-brand-copy small { font-size: 8px; }
+  .usp-brand-copy small { font-size: 9px; }
   .usp-brand-copy strong { font-size: 18px; }
   .usp-brand-copy span { font-size: 9px; }
   .usp-stage { overflow: hidden; }
@@ -3229,7 +3229,7 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-panel-heading p,
   .usp-social-note { display: none; }
   .usp-panel-eyebrow { font-size: 9px; }
-  .usp-mfa-chip { min-height: 28px; font-size: 8px; }
+  .usp-mfa-chip { min-height: 28px; font-size: 9px; }
   .usp-tabs { margin-bottom: 8px; }
   .usp-tabs button { min-height: 44px; font-size: 11px; }
   .usp-auth-form { gap: 8px; }
@@ -3242,15 +3242,15 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-forgot-link { font-size: 10px; }
   .usp-remember-row { gap: 7px; font-size: 11px; }
   .usp-check-ui { width: 18px; height: 18px; }
-  .usp-remember-row small { font-size: 8px; }
+  .usp-remember-row small { font-size: 9px; }
   .usp-primary-button,
   .usp-secondary-button,
   .usp-social-buttons button { min-height: 44px; font-size: 11px; }
   .usp-or-divider { margin: 6px 0 5px; }
   .usp-social-buttons { gap: 7px; }
-  .usp-legal-copy { margin-top: 5px; font-size: 8px; line-height: 1.2; }
+  .usp-legal-copy { margin-top: 5px; font-size: 9px; line-height: 1.2; }
   .usp-panel-footer { margin-top: 7px; padding-top: 7px; }
-  .usp-operational-pill { font-size: 8px; }
+  .usp-operational-pill { font-size: 9px; }
   .usp-scene-caption {
     position: absolute;
     z-index: 2;
@@ -3260,16 +3260,16 @@ html[data-mode="night"] .usp-social-buttons button {
     padding: 0;
   }
   .usp-scene-title { padding: 9px 12px; border-radius: 15px; }
-  .usp-scene-title span { font-size: 8px; }
+  .usp-scene-title span { font-size: 9px; }
   .usp-scene-title h2 { margin-top: 4px; font-size: 22px; line-height: 1.05; }
   .usp-scene-title p,
   .usp-signal-row { display: none; }
   .usp-live-stack { gap: 6px; }
   .usp-widget-group { gap: 5px; }
   .usp-widget-group + .usp-widget-group { padding-top: 6px; }
-  .usp-widget-group-title { font-size: 8px; }
+  .usp-widget-group-title { font-size: 9px; }
   .usp-live-card { padding: 8px 10px; border-radius: 12px; }
-  .usp-widget-label { font-size: 8px; }
+  .usp-widget-label { font-size: 9px; }
   .usp-weather-main { margin-top: 2px; }
   .usp-weather-main strong { font-size: 22px; }
   .usp-weather-card p,
@@ -3281,18 +3281,18 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-clock-dock { height: 70px; padding: 5px; border-radius: 15px; }
   .usp-clock-heading { min-height: 16px; padding: 0 3px 3px; }
   .usp-clock-heading span,
-  .usp-clock-heading small { font-size: 7px; }
+  .usp-clock-heading small { font-size: 9px; }
   .usp-clock-grid { height: calc(100% - 17px); gap: 5px; }
   .usp-clock-card { min-height: 0; height: 100%; padding: 5px; grid-template-columns: 32px minmax(0, 1fr); gap: 5px; border-radius: 10px; }
   .usp-analog-clock { width: 32px; height: 32px; }
   .usp-analog-clock > i { transform-origin: 50% 14px; }
-  .usp-clock-location strong { font-size: 8px; }
-  .usp-clock-location small { font-size: 6px; }
+  .usp-clock-location strong { font-size: 10px; }
+  .usp-clock-location small { font-size: 9px; }
   .usp-clock-copy > b { font-size: 10px; }
   .usp-clock-copy > span,
   .usp-clock-meta > small,
-  .usp-clock-weather > span { font-size: 6.5px; }
-  .usp-clock-weather > small { font-size: 5.5px; }
+  .usp-clock-weather > span { font-size: 9px; }
+  .usp-clock-weather > small { font-size: 9px; }
 }
 
 @media (max-width: 820px) {
