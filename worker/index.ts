@@ -1,4 +1,5 @@
 import { getSessionContext, hasPermission, routeAuth, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
+import { readSignInConfig } from './theme-preferences';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -65,57 +66,8 @@ async function weather(request: Request) {
 }
 
 
-const defaultSignInConfig = {
-  widgetOrder: ['weather', 'inspiration', 'motivation', 'news', 'status'],
-  hiddenWidgets: [],
-  clockStyle: 'detailed',
-  clockZones: ['Africa/Lagos', 'America/Toronto', 'Europe/London', 'America/New_York', 'Europe/Moscow', 'Asia/Tokyo', 'Asia/Shanghai'],
-  temperatureUnit: 'F',
-  logoPosition: 'left',
-  effectLevel: 'balanced',
-  themeMode: 'auto',
-  darkStart: '19:00',
-  darkEnd: '07:00',
-};
-
-const signInWidgets = ['weather', 'inspiration', 'motivation', 'news', 'status'];
-const signInZones = ['Africa/Lagos', 'America/Toronto', 'Europe/London', 'America/New_York', 'Europe/Moscow', 'Asia/Tokyo', 'Asia/Shanghai', 'Africa/Johannesburg', 'Asia/Dubai', 'Asia/Singapore', 'Australia/Sydney'];
-
-function cleanStringList(value: unknown, allowed: string[], fallback: string[]) {
-  if (!Array.isArray(value)) return [...fallback];
-  const values = [...new Set(value.filter((item): item is string => typeof item === 'string' && allowed.includes(item)))];
-  return values.length ? values : [...fallback];
-}
-
-function cleanSignInConfig(value: unknown) {
-  const candidate = value && typeof value === 'object' ? value as Record<string, unknown> : {};
-  const widgetOrder = cleanStringList(candidate.widgetOrder, signInWidgets, defaultSignInConfig.widgetOrder);
-  const hiddenWidgets = Array.isArray(candidate.hiddenWidgets)
-    ? [...new Set(candidate.hiddenWidgets.filter((item): item is string => typeof item === 'string' && signInWidgets.includes(item)))]
-    : [];
-  const validTime = (time: unknown, fallback: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(time || '')) ? String(time) : fallback;
-  return {
-    widgetOrder: [...widgetOrder, ...signInWidgets.filter((item) => !widgetOrder.includes(item))],
-    hiddenWidgets,
-    clockStyle: ['minimal', 'detailed', 'neon', 'classic'].includes(String(candidate.clockStyle)) ? String(candidate.clockStyle) : defaultSignInConfig.clockStyle,
-    clockZones: cleanStringList(candidate.clockZones, signInZones, defaultSignInConfig.clockZones).slice(0, 7),
-    temperatureUnit: candidate.temperatureUnit === 'C' ? 'C' : 'F',
-    logoPosition: ['left', 'center', 'right'].includes(String(candidate.logoPosition)) ? String(candidate.logoPosition) : defaultSignInConfig.logoPosition,
-    effectLevel: ['calm', 'balanced', 'vivid'].includes(String(candidate.effectLevel)) ? String(candidate.effectLevel) : defaultSignInConfig.effectLevel,
-    themeMode: ['day', 'night', 'auto'].includes(String(candidate.themeMode)) ? String(candidate.themeMode) : defaultSignInConfig.themeMode,
-    darkStart: validTime(candidate.darkStart, defaultSignInConfig.darkStart),
-    darkEnd: validTime(candidate.darkEnd, defaultSignInConfig.darkEnd),
-  };
-}
-
 async function readPublicSignInConfig(env: Env) {
-  const row = await env.DB.prepare("SELECT setting_value FROM app_settings WHERE setting_key='ui.signin_config_v2'").first<{ setting_value?: string }>();
-  if (!row?.setting_value) return cleanSignInConfig(defaultSignInConfig);
-  try {
-    return cleanSignInConfig(JSON.parse(row.setting_value));
-  } catch {
-    return cleanSignInConfig(defaultSignInConfig);
-  }
+  return readSignInConfig(env);
 }
 
 function decodeFeedText(value: string) {
@@ -193,8 +145,8 @@ async function publicSignInContext(env: Env) {
 
   return json({
     config,
-    inspiration: inspirations[hourIndex % inspirations.length],
-    motivation: motivations[Math.floor(hourIndex / 6) % motivations.length],
+    inspiration: config.content?.inspiration || inspirations[hourIndex % inspirations.length],
+    motivation: config.content?.motivation || motivations[Math.floor(hourIndex / 6) % motivations.length],
     news: news.length ? news : fallbackNews,
     generatedAt: new Date().toISOString(),
     source: news.length ? 'live' : 'fallback',
