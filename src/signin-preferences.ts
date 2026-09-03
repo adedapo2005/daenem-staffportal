@@ -206,6 +206,14 @@ export type SignInGlobalOperations = {
   visible: boolean;
   maxClocks: number;
   showWeather: boolean;
+  weatherStyle: 'detailed' | 'compact' | 'visual';
+  weatherAnimation: 'none' | 'subtle' | 'expressive';
+  showFeelsLike: boolean;
+  showHumidity: boolean;
+  showWind: boolean;
+  showPrecipitation: boolean;
+  showHighLow: boolean;
+  showSunriseSunset: boolean;
   showAnalog: boolean;
   showDigital: boolean;
   showDate: boolean;
@@ -443,7 +451,7 @@ export const DEFAULT_SIGNIN_PREFERENCES: SignInExperiencePreferences = {
   darkEnd: '07:00',
   labels: DEFAULT_SIGNIN_LABELS,
   content: DEFAULT_CONTENT,
-  globalOperations: { visible: true, maxClocks: 7, showWeather: true, showAnalog: true, showDigital: true, showDate: true, showTimezone: true, showDayNight: true },
+  globalOperations: { visible: true, maxClocks: 7, showWeather: true, weatherStyle: 'detailed', weatherAnimation: 'subtle', showFeelsLike: true, showHumidity: true, showWind: true, showPrecipitation: true, showHighLow: true, showSunriseSunset: true, showAnalog: true, showDigital: true, showDate: true, showTimezone: true, showDayNight: true },
 };
 
 function cloneDefault() {
@@ -638,6 +646,14 @@ export function normalizeSignInPreferences(value: unknown): SignInExperiencePref
       visible: globalSource.visible !== false,
       maxClocks,
       showWeather: globalSource.showWeather !== false,
+      weatherStyle: ['detailed', 'compact', 'visual'].includes(String(globalSource.weatherStyle)) ? String(globalSource.weatherStyle) as SignInGlobalOperations['weatherStyle'] : 'detailed',
+      weatherAnimation: ['none', 'subtle', 'expressive'].includes(String(globalSource.weatherAnimation)) ? String(globalSource.weatherAnimation) as SignInGlobalOperations['weatherAnimation'] : 'subtle',
+      showFeelsLike: globalSource.showFeelsLike !== false,
+      showHumidity: globalSource.showHumidity !== false,
+      showWind: globalSource.showWind !== false,
+      showPrecipitation: globalSource.showPrecipitation !== false,
+      showHighLow: globalSource.showHighLow !== false,
+      showSunriseSunset: globalSource.showSunriseSunset !== false,
       showAnalog: globalSource.showAnalog !== false,
       showDigital: globalSource.showDigital !== false,
       showDate: globalSource.showDate !== false,

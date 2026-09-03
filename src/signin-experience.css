@@ -3000,6 +3000,79 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 }
 
+/* Live measured desktop refinement: the governor changes density before a
+   column can paint into the reserved clock dock. */
+@media (min-width: 821px) {
+  .usp-page.usp-density-compact .usp-auth-panel {
+    padding-block: 14px;
+  }
+
+  .usp-page.usp-density-compact .usp-panel-heading { margin-bottom: 10px; }
+  .usp-page.usp-density-compact .usp-panel-heading p { line-height: 1.25; }
+  .usp-page.usp-density-compact .usp-tabs { margin-bottom: 9px; }
+  .usp-page.usp-density-compact .usp-auth-form { gap: 8px; }
+  .usp-page.usp-density-compact .usp-or-divider { margin-block: 6px 5px; }
+  .usp-page.usp-density-compact .usp-legal-copy { margin-top: 6px; line-height: 1.2; }
+  .usp-page.usp-density-compact .usp-panel-footer { margin-top: 6px; padding-top: 6px; }
+  .usp-page.usp-density-tight .usp-auth-panel { padding-block: 10px; }
+  .usp-page.usp-density-tight .usp-panel-heading { margin-bottom: 8px; }
+  .usp-page.usp-density-tight .usp-panel-heading p,
+  .usp-page.usp-density-tight .usp-social-note { display: none; }
+  .usp-page.usp-density-tight .usp-tabs { margin-bottom: 7px; }
+  .usp-page.usp-density-tight .usp-auth-form { gap: 7px; }
+  .usp-page.usp-density-tight .usp-or-divider { margin-block: 5px 4px; }
+  .usp-page.usp-density-tight .usp-legal-copy { margin-top: 5px; line-height: 1.15; }
+  .usp-page.usp-density-tight .usp-panel-footer { margin-top: 5px; padding-top: 5px; }
+
+  .usp-clock-heading span { font-size: 12px; }
+  .usp-clock-heading small { font-size: 10px; }
+  .usp-clock-location strong { font-size: 12px; }
+  .usp-clock-location small { font-size: 10px; }
+  .usp-clock-copy > b { font-size: 14px; }
+  .usp-clock-copy > span,
+  .usp-clock-meta > small,
+  .usp-clock-weather > span,
+  .usp-clock-weather > small,
+  .usp-clock-weather-detail > span { font-size: 10px; }
+  .usp-clock-card { min-height: 122px; }
+  .usp-clock-heading-tools { display: inline-flex; align-items: center; gap: 10px; }
+  .usp-clock-pager { display: inline-flex; align-items: center; gap: 5px; }
+  .usp-clock-pager button,
+  .usp-widget-rotator-controls button { min-height: 44px; padding: 5px 9px; border: 1px solid rgba(50, 125, 181, .24); border-radius: 9px; color: #0a68b9; background: rgba(255,255,255,.64); font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
+  .usp-clock-pager b { min-width: 38px; color: #496b85; text-align: center; font-size: 10px; }
+  .usp-clock-grid[data-clock-count="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); overflow: hidden; }
+  .usp-clock-grid[data-clock-count="7"] { grid-template-columns: repeat(7, minmax(150px, 1fr)); overflow: hidden; }
+  .usp-clock-weather-detail { display: flex; flex-wrap: wrap; gap: 2px 8px; margin-top: 3px; color: #60778c; }
+  .usp-weather-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 8px; margin-top: 6px; color: #4c6a82; font-size: 10px; line-height: 1.2; }
+  .usp-weather-style-compact .usp-weather-details span:nth-child(n+4),
+  .usp-weather-style-visual .usp-weather-details span:nth-child(n+3) { display: none; }
+  .usp-weather-style-visual .usp-weather-details { display: none; }
+}
+
+.usp-weather-glyph { will-change: auto; }
+.usp-weather-animation-none { animation: none !important; }
+.usp-weather-sun.usp-weather-animation-subtle { animation: usp-weather-spin 16s linear infinite; }
+.usp-weather-sun.usp-weather-animation-expressive { animation: usp-weather-spin 10s linear infinite; }
+.usp-weather-cloud.usp-weather-animation-subtle,
+.usp-weather-cloud.usp-weather-animation-expressive { animation: usp-weather-cloud-drift 8s ease-in-out infinite; }
+.usp-weather-rain.usp-weather-animation-subtle { animation: usp-weather-rain-fall 3s ease-in-out infinite; }
+.usp-weather-rain.usp-weather-animation-expressive { animation: usp-weather-rain-fall 2s ease-in-out infinite; }
+.usp-weather-snow.usp-weather-animation-subtle,
+.usp-weather-snow.usp-weather-animation-expressive { animation: usp-weather-snow-drift 4s ease-in-out infinite; }
+.usp-weather-fog.usp-weather-animation-subtle,
+.usp-weather-fog.usp-weather-animation-expressive { animation: usp-weather-fog-drift 7s ease-in-out infinite; }
+.usp-weather-night { color: #4f78a7; filter: drop-shadow(0 4px 8px rgba(34, 91, 151, .28)); }
+
+@keyframes usp-weather-cloud-drift { 0%, 100% { transform: translateX(-1px); } 50% { transform: translateX(2px); } }
+@keyframes usp-weather-rain-fall { 0%, 100% { transform: translateY(-1px); } 50% { transform: translateY(2px); } }
+@keyframes usp-weather-snow-drift { 0%, 100% { transform: translate(0, -1px); } 50% { transform: translate(2px, 2px); } }
+@keyframes usp-weather-fog-drift { 0%, 100% { opacity: .72; transform: translateX(-1px); } 50% { opacity: 1; transform: translateX(2px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .usp-weather-glyph,
+  .usp-weather-glyph[class*="usp-weather-animation-"] { animation: none !important; transform: none !important; }
+}
+
 /* Owner acceptance correction: desktop panels fit by state; they never hide
    form content behind an internal scroll container. Compact signup steps are
    selected by AuthScreen for the same height tier. */
@@ -3119,82 +3192,6 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-signup-form .usp-step-actions button {
     min-height: 44px;
   }
-
-  .usp-auth-panel {
-    padding: 14px clamp(20px, 2vw, 30px);
-  }
-
-  .usp-panel-heading {
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
-  .usp-panel-heading h1 {
-    margin-top: 5px;
-    font-size: clamp(28px, 2.1vw, 36px);
-  }
-
-  .usp-panel-heading p {
-    font-size: 12px;
-    line-height: 1.3;
-  }
-
-  .usp-tabs {
-    margin-bottom: 10px;
-  }
-
-  .usp-tabs button,
-  .usp-primary-button,
-  .usp-secondary-button,
-  .usp-social-buttons button {
-    min-height: 44px;
-  }
-
-  .usp-auth-form {
-    gap: 8px;
-  }
-
-  .usp-field {
-    gap: 4px;
-    font-size: 12px;
-  }
-
-  .usp-field input,
-  .usp-password-field input {
-    height: 46px;
-    font-size: 14px;
-  }
-
-  .usp-password-toggle {
-    width: 44px;
-    height: 44px;
-    bottom: 1px;
-  }
-
-  .usp-or-divider {
-    margin: 7px 0 5px;
-  }
-
-  .usp-social-buttons {
-    gap: 7px;
-  }
-
-  .usp-social-note {
-    margin-top: 5px;
-    font-size: 9px;
-    line-height: 1.2;
-  }
-
-  .usp-legal-copy {
-    margin-top: 6px;
-    font-size: 9px;
-    line-height: 1.2;
-  }
-
-  .usp-panel-footer {
-    margin-top: 6px;
-    padding-top: 6px;
-  }
 }
 
 @media (min-width: 821px) and (max-height: 719px) {
@@ -3252,6 +3249,67 @@ html[data-mode="night"] .usp-social-buttons button {
   }
   .usp-topbar { min-height: clamp(64px, 8vh, 76px); }
   .usp-clock-dock { height: clamp(110px, 15vh, 150px); }
+  .usp-auth-panel {
+    padding: 14px clamp(20px, 2vw, 30px);
+  }
+  .usp-panel-heading {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .usp-panel-heading h1 {
+    margin-top: 5px;
+    font-size: clamp(28px, 2.1vw, 36px);
+  }
+  .usp-panel-heading p {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .usp-tabs {
+    margin-bottom: 10px;
+  }
+  .usp-tabs button,
+  .usp-primary-button,
+  .usp-secondary-button,
+  .usp-social-buttons button {
+    min-height: 44px;
+  }
+  .usp-auth-form {
+    gap: 8px;
+  }
+  .usp-field {
+    gap: 4px;
+    font-size: 12px;
+  }
+  .usp-field input,
+  .usp-password-field input {
+    height: 46px;
+    font-size: 14px;
+  }
+  .usp-password-toggle {
+    width: 44px;
+    height: 44px;
+    bottom: 1px;
+  }
+  .usp-or-divider {
+    margin: 7px 0 5px;
+  }
+  .usp-social-buttons {
+    gap: 7px;
+  }
+  .usp-social-note {
+    margin-top: 5px;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  .usp-legal-copy {
+    margin-top: 6px;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  .usp-panel-footer {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
 }
 
 @media (min-width: 821px) and (max-height: 820px) {

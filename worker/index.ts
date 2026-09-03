@@ -49,18 +49,54 @@ async function weather(request: Request) {
   const api = new URL('https://api.open-meteo.com/v1/forecast');
   api.searchParams.set('latitude', String(lat));
   api.searchParams.set('longitude', String(lon));
-  api.searchParams.set('current', 'temperature_2m,weather_code');
+  api.searchParams.set('current', 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,precipitation,rain,showers,snowfall,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m');
+  api.searchParams.set('hourly', 'temperature_2m,precipitation_probability,weather_code,wind_speed_10m');
+  api.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset');
   api.searchParams.set('timezone', 'auto');
 
   const result = await fetch(api.toString(), { cf: { cacheTtl: 300, cacheEverything: true } });
   if (!result.ok) return json({ error: 'Weather service is temporarily unavailable.' }, 502);
-  const data = await result.json() as { current?: { temperature_2m?: number; weather_code?: number } };
+  const data = await result.json() as {
+    current?: Record<string, unknown>;
+    hourly?: Record<string, unknown[]>;
+    daily?: Record<string, unknown[]>;
+  };
   const cf = (request as Request & { cf?: IncomingRequestCfProperties }).cf;
-  const code = data.current?.weather_code;
+  const current = data.current || {};
+  const first = (key: string) => Array.isArray(data.hourly?.[key]) ? data.hourly?.[key]?.[0] : undefined;
+  const daily = (key: string) => Array.isArray(data.daily?.[key]) ? data.daily?.[key]?.[0] : undefined;
+  const numberValue = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null;
+  const code = numberValue(current.weather_code);
 
   return json({
     location: cf?.city ? `${cf.city}${cf.region ? `, ${cf.region}` : ''}` : 'Current work location',
-    temperature: data.current?.temperature_2m,
+    temperature: numberValue(current.temperature_2m),
+    apparentTemperature: numberValue(current.apparent_temperature),
+    humidity: numberValue(current.relative_humidity_2m),
+    weatherCode: code,
+    isDay: current.is_day === 1 ? true : current.is_day === 0 ? false : null,
+    precipitation: numberValue(current.precipitation),
+    rain: numberValue(current.rain),
+    showers: numberValue(current.showers),
+    snowfall: numberValue(current.snowfall),
+    cloudCover: numberValue(current.cloud_cover),
+    pressure: numberValue(current.surface_pressure ?? current.pressure_msl),
+    windSpeed: numberValue(current.wind_speed_10m),
+    windDirection: numberValue(current.wind_direction_10m),
+    windGust: numberValue(current.wind_gusts_10m),
+    nextHour: {
+      temperature: numberValue(first('temperature_2m')),
+      precipitationProbability: numberValue(first('precipitation_probability')),
+      weatherCode: numberValue(first('weather_code')),
+      windSpeed: numberValue(first('wind_speed_10m')),
+    },
+    today: {
+      high: numberValue(daily('temperature_2m_max')),
+      low: numberValue(daily('temperature_2m_min')),
+      precipitationProbability: numberValue(daily('precipitation_probability_max')),
+      sunrise: typeof daily('sunrise') === 'string' ? daily('sunrise') : null,
+      sunset: typeof daily('sunset') === 'string' ? daily('sunset') : null,
+    },
     description: typeof code === 'number' ? (weatherDescriptions[code] || 'Current conditions') : 'Current conditions',
   });
 }

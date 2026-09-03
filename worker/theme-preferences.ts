@@ -132,7 +132,7 @@ const defaultSignInConfig = {
   darkEnd: '07:00',
   labels: DEFAULT_LABELS,
   content: DEFAULT_CONTENT,
-  globalOperations: { visible: true, maxClocks: 7, showWeather: true, showAnalog: true, showDigital: true, showDate: true, showTimezone: true, showDayNight: true },
+  globalOperations: { visible: true, maxClocks: 7, showWeather: true, weatherStyle: 'detailed', weatherAnimation: 'subtle', showFeelsLike: true, showHumidity: true, showWind: true, showPrecipitation: true, showHighLow: true, showSunriseSunset: true, showAnalog: true, showDigital: true, showDate: true, showTimezone: true, showDayNight: true },
 };
 
 const fallbackAiOptions: Record<string, string[]> = {
@@ -306,6 +306,14 @@ export function cleanSignInConfig(value: unknown) {
       visible: global.visible !== false,
       maxClocks,
       showWeather: global.showWeather !== false,
+      weatherStyle: ['detailed', 'compact', 'visual'].includes(String(global.weatherStyle)) ? String(global.weatherStyle) : 'detailed',
+      weatherAnimation: ['none', 'subtle', 'expressive'].includes(String(global.weatherAnimation)) ? String(global.weatherAnimation) : 'subtle',
+      showFeelsLike: global.showFeelsLike !== false,
+      showHumidity: global.showHumidity !== false,
+      showWind: global.showWind !== false,
+      showPrecipitation: global.showPrecipitation !== false,
+      showHighLow: global.showHighLow !== false,
+      showSunriseSunset: global.showSunriseSunset !== false,
       showAnalog: global.showAnalog !== false,
       showDigital: global.showDigital !== false,
       showDate: global.showDate !== false,

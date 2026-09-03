@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Activity, Cloud, CloudLightning, CloudRain, CloudSun, Download, LockKeyhole,
   Newspaper, Radio, ShieldCheck, Sparkles, Sun, Target, Wifi 
@@ -24,6 +24,18 @@ import {
 type WeatherReading = {
   state: 'loading' | 'ready' | 'unavailable';
   temperatureC: number | null;
+  apparentTemperatureC: number | null;
+  humidity: number | null;
+  precipitationMm: number | null;
+  windSpeedKmh: number | null;
+  windDirection: number | null;
+  windGustKmh: number | null;
+  isDay: boolean | null;
+  todayHighC: number | null;
+  todayLowC: number | null;
+  precipitationProbability: number | null;
+  sunrise: string | null;
+  sunset: string | null;
   description: string;
   updatedAt: Date | null;
 };
@@ -32,6 +44,18 @@ type HealthReading = {
   state: 'checking' | 'operational' | 'maintenance';
   latencyMs: number | null;
   checkedAt: Date | null;
+};
+
+type LayoutDensity = 'comfortable' | 'compact' | 'tight';
+type LayoutMetrics = {
+  stageHeight: number;
+  stageBottom: number;
+  dockTop: number;
+  authAvailable: number;
+  authRequired: number;
+  liveAvailable: number;
+  liveRequired: number;
+  dockWidth: number;
 };
 
 const FALLBACK_CONTEXT: PublicSignInContext = {
@@ -94,18 +118,42 @@ function formatTemperature(value: number | null, unit: TemperatureUnit) {
   return Math.round(converted) + '°' + unit;
 }
 
+function compassDirection(value: number | null) {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(value / 45) % 8];
+}
+
+function shortWeatherTime(value: string | null) {
+  if (!value) return '—';
+  const time = value.split('T')[1] || value;
+  return time.slice(0, 5);
+}
+
+function densityHint(viewport: { width: number; height: number }): LayoutDensity {
+  if (viewport.height < 720) return 'tight';
+  if (viewport.height < 960 || (viewport.width <= 1120 && viewport.height < 820)) return 'compact';
+  return 'comfortable';
+}
+
+function densityRank(value: LayoutDensity) {
+  return value === 'comfortable' ? 0 : value === 'compact' ? 1 : 2;
+}
+
 function weatherKind(description: string) {
   const value = description.toLowerCase();
   if (value.includes('thunder') || value.includes('hail')) return 'storm';
   if (value.includes('rain') || value.includes('drizzle') || value.includes('shower')) return 'rain';
-  if (value.includes('cloud') || value.includes('overcast') || value.includes('fog')) return 'cloud';
+  if (value.includes('snow')) return 'snow';
+  if (value.includes('fog') || value.includes('mist')) return 'fog';
+  if (value.includes('cloud') || value.includes('overcast')) return 'cloud';
   return 'sun';
 }
 
-function WeatherIcon({ description, size = 20 }: { description: string; size?: number }) {
+function WeatherIcon({ description, size = 20, isDay = true, animation = 'subtle' }: { description: string; size?: number; isDay?: boolean | null; animation?: SignInGlobalOperations['weatherAnimation'] }) {
   const kind = weatherKind(description);
-  const Icon = kind === 'storm' ? CloudLightning : kind === 'rain' ? CloudRain : kind === 'cloud' ? Cloud : Sun;
-  return <span className={'usp-weather-glyph usp-weather-' + kind} aria-hidden="true"><Icon size={size} /></span>;
+  const Icon = kind === 'storm' ? CloudLightning : kind === 'rain' ? CloudRain : kind === 'cloud' || kind === 'fog' ? Cloud : Sun;
+  const nightClass = isDay === false ? ' usp-weather-night' : '';
+  return <span className={'usp-weather-glyph usp-weather-' + kind + ' usp-weather-animation-' + animation + nightClass} aria-hidden="true"><Icon size={size} /></span>;
 }
 
 function AnimatedBrand({ preferences }: { preferences: SignInExperiencePreferences }) {
@@ -136,11 +184,28 @@ async function loadWeather(location: PortalLocation): Promise<WeatherReading> {
     const response = await fetch('/api/context/weather?lat=' + encodeURIComponent(location.latitude) + '&lon=' + encodeURIComponent(location.longitude), {
       credentials: 'include', cache: 'no-store',
     });
-    const result = await response.json().catch(() => ({})) as { temperature?: number; description?: string };
+    const result = await response.json().catch(() => ({})) as {
+      temperature?: number | null; apparentTemperature?: number | null; humidity?: number | null;
+      precipitation?: number | null; windSpeed?: number | null; windDirection?: number | null; windGust?: number | null;
+      isDay?: boolean | null; precipitationProbability?: number | null; description?: string;
+      today?: { high?: number | null; low?: number | null; precipitationProbability?: number | null; sunrise?: string | null; sunset?: string | null };
+    };
     if (!response.ok || typeof result.temperature !== 'number') throw new Error('Weather unavailable');
     return {
       state: 'ready',
       temperatureC: result.temperature,
+      apparentTemperatureC: typeof result.apparentTemperature === 'number' ? result.apparentTemperature : null,
+      humidity: typeof result.humidity === 'number' ? result.humidity : null,
+      precipitationMm: typeof result.precipitation === 'number' ? result.precipitation : null,
+      windSpeedKmh: typeof result.windSpeed === 'number' ? result.windSpeed : null,
+      windDirection: typeof result.windDirection === 'number' ? result.windDirection : null,
+      windGustKmh: typeof result.windGust === 'number' ? result.windGust : null,
+      isDay: typeof result.isDay === 'boolean' ? result.isDay : null,
+      todayHighC: typeof result.today?.high === 'number' ? result.today.high : null,
+      todayLowC: typeof result.today?.low === 'number' ? result.today.low : null,
+      precipitationProbability: typeof result.precipitationProbability === 'number' ? result.precipitationProbability : (typeof result.today?.precipitationProbability === 'number' ? result.today.precipitationProbability : null),
+      sunrise: typeof result.today?.sunrise === 'string' ? result.today.sunrise : null,
+      sunset: typeof result.today?.sunset === 'string' ? result.today.sunset : null,
       description: result.description || 'Current conditions',
       updatedAt: new Date(),
     };
@@ -148,6 +213,9 @@ async function loadWeather(location: PortalLocation): Promise<WeatherReading> {
     return {
       state: 'unavailable',
       temperatureC: null,
+      apparentTemperatureC: null, humidity: null, precipitationMm: null, windSpeedKmh: null,
+      windDirection: null, windGustKmh: null, isDay: null, todayHighC: null, todayLowC: null,
+      precipitationProbability: null, sunrise: null, sunset: null,
       description: 'Weather temporarily unavailable',
       updatedAt: new Date(),
     };
@@ -189,9 +257,14 @@ function ClockCard({ location, now, weather, unit, display, loadingLabel }: {
         {display.showDayNight && <small className={'usp-day-state ' + state.toLowerCase()}><i />{state}</small>}
       </div>}
       {display.showWeather && <div className={'usp-clock-weather ' + weatherKind(description)}>
-        <WeatherIcon description={description} size={15} />
+        <WeatherIcon description={description} size={15} isDay={weather?.isDay} animation={display.weatherAnimation} />
         <span>{weather?.state === 'ready' ? formatTemperature(weather.temperatureC, unit) : '—°' + unit}</span>
         <small>{description}</small>
+      </div>}
+      {display.showWeather && display.weatherStyle === 'detailed' && weather?.state === 'ready' && <div className="usp-clock-weather-detail">
+        {display.showFeelsLike && <span>Feels {formatTemperature(weather.apparentTemperatureC, unit)}</span>}
+        {display.showHumidity && <span>Hum {weather.humidity === null ? '—' : Math.round(weather.humidity) + '%'}</span>}
+        {display.showWind && <span>Wind {weather.windSpeedKmh === null ? '—' : Math.round(weather.windSpeedKmh) + ' km/h ' + compassDirection(weather.windDirection)}</span>}
       </div>}
     </div>
   </article>;
@@ -218,6 +291,16 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     today: 0,
     auxiliary: 0,
   });
+  const [density, setDensity] = useState<LayoutDensity>(() => densityHint({
+    width: typeof window === 'undefined' ? 1920 : window.innerWidth,
+    height: typeof window === 'undefined' ? 1080 : window.innerHeight,
+  }));
+  const [layoutMetrics, setLayoutMetrics] = useState<LayoutMetrics>({ stageHeight: 0, stageBottom: 0, dockTop: 0, authAvailable: 0, authRequired: 0, liveAvailable: 0, liveRequired: 0, dockWidth: 0 });
+  const [clockPage, setClockPage] = useState(0);
+  const pageRef = useRef<HTMLElement | null>(null);
+  const stageRef = useRef<HTMLElement | null>(null);
+  const liveStackRef = useRef<HTMLElement | null>(null);
+  const clockDockRef = useRef<HTMLElement | null>(null);
 
   const locations = useMemo(() => {
     const values = preferences.clockZones.map(locationForZone).filter((item): item is PortalLocation => Boolean(item));
@@ -226,19 +309,72 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   }, [preferences.clockZones, preferences.globalOperations.maxClocks]);
 
   const presentation = preferences.labels;
-  const zoneCapacities: Record<SignInZone, number> = viewport.height < 720
-    ? { 'workspace-spotlight': 1, 'live-context': 1, today: 1, auxiliary: 1 }
-    : viewport.width <= 1120 && viewport.height < 820
-      ? { 'workspace-spotlight': 1, 'live-context': 1, today: 2, auxiliary: 1 }
-      : viewport.height < 1000
-        ? { 'workspace-spotlight': 1, 'live-context': 2, today: 2, auxiliary: 1 }
-        : { 'workspace-spotlight': 1, 'live-context': 2, today: 3, auxiliary: 2 };
+  const zoneCapacities: Record<SignInZone, number> = density === 'tight'
+    ? { 'workspace-spotlight': 1, 'live-context': viewport.width > 1500 ? 2 : 1, today: viewport.width > 1500 ? 2 : 1, auxiliary: 1 }
+    : density === 'compact'
+      ? { 'workspace-spotlight': 1, 'live-context': 2, today: 2, auxiliary: 1 }
+      : { 'workspace-spotlight': 1, 'live-context': 2, today: 3, auxiliary: 2 };
 
   useEffect(() => {
     const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', onResize, { passive: true });
-    return () => window.removeEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('resize', onResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
+    };
   }, []);
+
+  useEffect(() => {
+    setDensity(densityHint(viewport));
+  }, [viewport.width, viewport.height]);
+
+  useEffect(() => {
+    if (viewport.width < 821) return;
+    const page = pageRef.current;
+    const stage = stageRef.current;
+    const liveStack = liveStackRef.current;
+    const dock = clockDockRef.current;
+    if (!page || !stage || !liveStack) return;
+    let frame = 0;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const authPanel = page.querySelector<HTMLElement>('.usp-auth-panel');
+        const stageRect = stage.getBoundingClientRect();
+        const dockRect = dock?.getBoundingClientRect();
+        const authColumn = page.querySelector<HTMLElement>('.usp-form-column');
+        const metrics: LayoutMetrics = {
+          stageHeight: stage.clientHeight,
+          stageBottom: stageRect.bottom,
+          dockTop: dockRect?.top || window.innerHeight,
+          authAvailable: authColumn?.clientHeight || 0,
+          authRequired: authPanel?.scrollHeight || 0,
+          liveAvailable: liveStack.clientHeight,
+          liveRequired: liveStack.scrollHeight,
+          dockWidth: dock?.clientWidth || 0,
+        };
+        setLayoutMetrics(metrics);
+        const authOverflow = metrics.authRequired > metrics.authAvailable + 1;
+        const railOverflow = metrics.liveRequired > metrics.liveAvailable + 1;
+        if (authOverflow || railOverflow) {
+          setDensity((current) => densityRank(current) >= 2 ? current : densityRank(current) === 1 ? 'tight' : 'compact');
+        }
+      });
+    };
+    const observer = new ResizeObserver(measure);
+    [page, stage, liveStack, dock, page.querySelector<HTMLElement>('.usp-form-column'), page.querySelector<HTMLElement>('.usp-auth-panel')]
+      .filter((item): item is HTMLElement => Boolean(item)).forEach((item) => observer.observe(item));
+    window.addEventListener('resize', measure, { passive: true });
+    window.visualViewport?.addEventListener('resize', measure, { passive: true });
+    measure();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
+  }, [density, viewport.width, viewport.height, preferences.widgetInstances.length, preferences.globalOperations.visible]);
 
   useEffect(() => {
     let timer = 0;
@@ -292,10 +428,15 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     let timer = 0;
     async function refreshWeather() {
       const entries = await Promise.all(locations.map(async (location) => [location.zone, await loadWeather(location)] as const));
-      if (active) setWeather(Object.fromEntries(entries));
+      if (active) setWeather((current) => Object.fromEntries(entries.map(([zone, reading]) => {
+        const previous = current[zone];
+        return [zone, reading.state === 'unavailable' && previous?.state === 'ready'
+          ? { ...previous, state: 'unavailable' as const }
+          : reading];
+      })));
     }
     refreshWeather();
-    timer = window.setInterval(refreshWeather, 600_000);
+    timer = window.setInterval(refreshWeather, 300_000);
     return () => {
       active = false;
       window.clearInterval(timer);
@@ -350,6 +491,11 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   const healthDetail = health.state === 'operational'
     ? (health.latencyMs || '—') + ' ms secure edge'
     : health.state === 'maintenance' ? 'Service team notified' : presentation.statusConnecting;
+  const clockCapacity = locations.length <= 4 || (layoutMetrics.dockWidth > 0 && layoutMetrics.dockWidth / locations.length < 175) || density === 'tight' ? 4 : 7;
+  const clockPageCount = Math.max(1, Math.ceil(locations.length / clockCapacity));
+  const safeClockPage = Math.min(clockPage, clockPageCount - 1);
+  const visibleLocations = locations.slice(safeClockPage * clockCapacity, safeClockPage * clockCapacity + clockCapacity);
+  const changeClockPage = (delta: number) => setClockPage((page) => (page + delta + clockPageCount) % clockPageCount);
 
   function renderWidget(instance: SignInWidgetInstance) {
     if (!instance.visible) return null;
@@ -358,10 +504,19 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     const effectClass = 'usp-effect-preset-' + instance.effectPreset;
     if (widget === 'weather') {
       const description = ibadanWeather?.description || presentation.weatherLoading;
-      return <article className={'usp-live-card usp-weather-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      const weatherDisplay = preferences.globalOperations;
+      return <article className={'usp-live-card usp-weather-card usp-weather-style-' + weatherDisplay.weatherStyle + ' ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
         <div className="usp-widget-label"><span><CloudSun size={15} /> {instance.label}</span><b>{presentation.weatherLocation}</b></div>
-        <div className="usp-weather-main"><WeatherIcon description={description} size={34} /><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong></div>
+        <div className="usp-weather-main"><WeatherIcon description={description} size={34} isDay={ibadanWeather?.isDay} animation={weatherDisplay.weatherAnimation} /><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong></div>
         <p>{description}</p>
+        {ibadanWeather?.state === 'ready' && <div className="usp-weather-details">
+          {weatherDisplay.showFeelsLike && <span>Feels {formatTemperature(ibadanWeather.apparentTemperatureC, preferences.temperatureUnit)}</span>}
+          {weatherDisplay.showHighLow && <span>H {formatTemperature(ibadanWeather.todayHighC, preferences.temperatureUnit)} · L {formatTemperature(ibadanWeather.todayLowC, preferences.temperatureUnit)}</span>}
+          {weatherDisplay.showHumidity && <span>Humidity {ibadanWeather.humidity === null ? '—' : Math.round(ibadanWeather.humidity) + '%'}</span>}
+          {weatherDisplay.showWind && <span>Wind {ibadanWeather.windSpeedKmh === null ? '—' : Math.round(ibadanWeather.windSpeedKmh) + ' km/h ' + compassDirection(ibadanWeather.windDirection)}{ibadanWeather.windGustKmh === null ? '' : ' · gust ' + Math.round(ibadanWeather.windGustKmh)}</span>}
+          {weatherDisplay.showPrecipitation && <span>Rain {ibadanWeather.precipitationProbability === null ? '—' : Math.round(ibadanWeather.precipitationProbability) + '%'}{ibadanWeather.precipitationMm === null ? '' : ' · ' + ibadanWeather.precipitationMm.toFixed(1) + ' mm'}</span>}
+          {weatherDisplay.showSunriseSunset && <span>Sun {shortWeatherTime(ibadanWeather.sunrise)} / {shortWeatherTime(ibadanWeather.sunset)}</span>}
+        </div>}
         <small>{ibadanWeather?.updatedAt ? presentation.weatherUpdated + ' ' + timeText('Africa/Lagos', ibadanWeather.updatedAt) : presentation.weatherConnecting}</small>
       </article>;
     }
@@ -439,9 +594,15 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     preferences.effects.shimmer ? 'usp-shimmer' : '',
   ].filter(Boolean).join(' ');
   return <main
-    className={'usp-page usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition + ' ' + effectClasses}
+    ref={pageRef}
+    className={'usp-page usp-density-' + density + ' usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition + ' ' + effectClasses}
     style={{ '--usp-glass-intensity': String(preferences.effects.glassIntensity) } as CSSProperties}
     data-testid="unified-signin-page"
+    data-layout-density={density}
+    data-auth-required-height={layoutMetrics.authRequired || undefined}
+    data-auth-available-height={layoutMetrics.authAvailable || undefined}
+    data-live-required-height={layoutMetrics.liveRequired || undefined}
+    data-live-available-height={layoutMetrics.liveAvailable || undefined}
   >
     <div className="usp-background" aria-hidden="true" />
     <div className="usp-background-shade" aria-hidden="true" />
@@ -459,7 +620,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
         </div>
       </header>
 
-      <section className="usp-stage" aria-label={labels.workspaceLabel}>
+      <section ref={stageRef} className="usp-stage" aria-label={labels.workspaceLabel}>
         <div className="usp-scene-caption">
           <div className="usp-scene-title">
             <span><Radio size={13} /> {labels.workspaceLabel}</span>
@@ -475,20 +636,20 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
 
         <div className="usp-form-column">{authPanel}</div>
 
-        <aside className="usp-live-stack" aria-label="Live portal widgets">
+        <aside ref={liveStackRef} className="usp-live-stack" aria-label="Live portal widgets">
           <div className="usp-widget-region usp-widget-region-live-context">{renderWidgetGroup(labels.liveContextHeading, ['live-context'], 'live-context')}</div>
           <div className="usp-widget-region usp-widget-region-today">{renderWidgetGroup(labels.todayHeading, ['today'], 'today')}</div>
           <div className="usp-widget-region usp-widget-region-auxiliary">{renderWidgetGroup(labels.auxiliaryHeading, ['auxiliary'], 'auxiliary')}</div>
         </aside>
       </section>
 
-      {preferences.globalOperations.visible && <section className={'usp-clock-dock clock-style-' + preferences.clockStyle} aria-label="Global time and weather">
+      {preferences.globalOperations.visible && <section ref={clockDockRef} className={'usp-clock-dock clock-style-' + preferences.clockStyle} aria-label="Global time and weather">
         <header className="usp-clock-heading">
           <span><Wifi size={12} /> {labels.globalOperationsHeading}</span>
-          <small>{locations.length} {labels.clockSummary}</small>
+          <div className="usp-clock-heading-tools"><small>{locations.length} {labels.clockSummary}</small>{clockPageCount > 1 && <span className="usp-clock-pager" aria-label="Global Operations pages"><button type="button" onClick={() => changeClockPage(-1)} aria-label="Previous locations">Previous</button><b>{safeClockPage + 1} / {clockPageCount}</b><button type="button" onClick={() => changeClockPage(1)} aria-label="Next locations">Next</button></span>}</div>
         </header>
-        <div className="usp-clock-grid">
-          {locations.map((location) => <ClockCard
+        <div className="usp-clock-grid" data-clock-page={safeClockPage + 1} data-clock-count={visibleLocations.length} style={{ gridTemplateColumns: 'repeat(' + visibleLocations.length + ', minmax(0, 1fr))' }}>
+          {visibleLocations.map((location) => <ClockCard
             key={location.name + location.zone}
             location={location}
             now={now}
