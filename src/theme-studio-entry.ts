@@ -26,6 +26,7 @@ let signInConfig: SignInExperiencePreferences = readSignInPreferences();
 let signInSaveState: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
 let signInSaveQueue: Promise<void> = Promise.resolve();
 let aiOptions: Record<string, string[]> = {};
+let draggedWidgetId: string | null = null;
 
 const signInWidgetLabels: Record<SignInWidgetId, string> = {
   weather: 'Live Weather',
@@ -153,6 +154,9 @@ function ensureModal() {
   modal.querySelector('[data-theme-admin="clear"]')?.addEventListener('click', () => void updateGroupPolicy('clear'));
   modal.querySelector('.signin-theme-admin')?.addEventListener('change', handleSignInAdminChange);
   modal.querySelector('.signin-theme-admin')?.addEventListener('click', handleSignInAdminClick);
+  modal.querySelector('.signin-theme-admin')?.addEventListener('dragstart', handleSignInDragStart);
+  modal.querySelector('.signin-theme-admin')?.addEventListener('dragover', (event) => { if ((event.target as Element | null)?.closest('[data-signin-widget]')) event.preventDefault(); });
+  modal.querySelector('.signin-theme-admin')?.addEventListener('drop', handleSignInDrop);
   document.body.appendChild(modal);
   refreshSelectedState();
   return modal;
@@ -306,6 +310,28 @@ function handleSignInAdminChange(event: Event) {
     next.widgetInstances.push({ id: kind + '-' + (count + 1), kind, variant: SIGNIN_WIDGET_VARIANTS[kind][0], zone: kind === 'weather' || kind === 'status' ? 'live-context' : 'today', order: next.widgetInstances.length, visible: true, label: next.labels.widgetLabels[kind], effectPreset: 'glass' });
     queueSignInConfigSave(next);
   }
+}
+function handleSignInDragStart(event: Event) {
+  const row = (event.target as Element | null)?.closest<HTMLElement>('[data-signin-widget]');
+  if (!row) return;
+  draggedWidgetId = row.dataset.signinWidget || null;
+  const dragEvent = event as DragEvent;
+  if (draggedWidgetId && dragEvent.dataTransfer) dragEvent.dataTransfer.setData('text/plain', draggedWidgetId);
+}
+function handleSignInDrop(event: Event) {
+  event.preventDefault();
+  const row = (event.target as Element | null)?.closest<HTMLElement>('[data-signin-widget]');
+  const destinationId = row?.dataset.signinWidget;
+  const sourceId = draggedWidgetId || (event as DragEvent).dataTransfer?.getData('text/plain');
+  draggedWidgetId = null;
+  if (!sourceId || !destinationId || sourceId === destinationId) return;
+  const from = signInConfig.widgetInstances.findIndex((item) => item.id === sourceId);
+  const to = signInConfig.widgetInstances.findIndex((item) => item.id === destinationId);
+  if (from < 0 || to < 0) return;
+  const next = cloneSignInConfig();
+  const [instance] = next.widgetInstances.splice(from, 1);
+  next.widgetInstances.splice(to, 0, instance);
+  queueSignInConfigSave(next);
 }
 async function generateAi(kind: 'inspiration' | 'motivation') {
   try {
