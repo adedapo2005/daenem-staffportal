@@ -3063,11 +3063,11 @@ html[data-mode="night"] .usp-social-buttons button {
 
 @media (min-width: 821px) and (max-height: 719px) {
   .usp-shell {
-    padding: 8px;
-    gap: 8px;
-    grid-template-rows: 52px minmax(0, 1fr) 88px;
+    padding: 6px;
+    gap: 6px;
+    grid-template-rows: 48px minmax(0, 1fr) 70px;
   }
-  .usp-topbar { min-height: 52px; }
+  .usp-topbar { min-height: 48px; }
   .usp-brand-lockup { gap: 8px; }
   .usp-brand-glass { padding: 4px 8px 5px 5px; border-radius: 15px; }
   .usp-logo-orbit,
@@ -3082,7 +3082,7 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-brand-copy span { font-size: 9px; }
   .usp-stage { overflow: hidden; }
   .usp-form-column { align-self: center; }
-  .usp-auth-panel { padding: 12px 16px; border-radius: 18px; }
+  .usp-auth-panel { padding: 8px 16px; border-radius: 18px; }
   .usp-panel-heading { margin-bottom: 8px; gap: 7px; }
   .usp-panel-heading h1 { margin-top: 5px; font-size: 25px; }
   .usp-panel-heading p,
@@ -3137,7 +3137,7 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-copy-card > a { font-size: 9px; line-height: 1.18; }
   .usp-copy-card > strong,
   .usp-copy-card > a { margin-top: 3px; }
-  .usp-clock-dock { height: 88px; padding: 6px; border-radius: 15px; }
+  .usp-clock-dock { height: 70px; padding: 5px; border-radius: 15px; }
   .usp-clock-heading { min-height: 16px; padding: 0 3px 3px; }
   .usp-clock-heading span,
   .usp-clock-heading small { font-size: 7px; }
