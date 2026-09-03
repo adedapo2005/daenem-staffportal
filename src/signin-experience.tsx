@@ -14,7 +14,9 @@ import {
   type PortalLocation,
   type PublicSignInContext,
   type SignInExperiencePreferences,
+  type SignInGlobalOperations,
   type SignInWidgetId,
+  type SignInWidgetInstance,
   type TemperatureUnit,
 } from './signin-preferences';
 
@@ -105,17 +107,21 @@ function WeatherIcon({ description, size = 20 }: { description: string; size?: n
   return <span className={'usp-weather-glyph usp-weather-' + kind} aria-hidden="true"><Icon size={size} /></span>;
 }
 
-function AnimatedBrand() {
-  return <div className="usp-brand-lockup" aria-label="Daenem Unified ERP Portal — Technology That Transforms Tomorrow">
+function AnimatedBrand({ preferences }: { preferences: SignInExperiencePreferences }) {
+  const labels = preferences.labels;
+  const logo = preferences.logo;
+  return <div className={'usp-brand-lockup usp-logo-size-' + logo.size + ' usp-logo-align-' + logo.alignment + (logo.glass ? ' usp-brand-glass' : '')}
+    style={{ '--usp-glass-intensity': String(preferences.effects.glassIntensity) } as CSSProperties}
+    aria-label={labels.brandEyebrow + ' · ' + labels.brandTitle + ' · ' + labels.brandTagline}>
     <span className="usp-logo-orbit" aria-hidden="true">
       <i className="usp-logo-ring usp-logo-ring-a" />
       <i className="usp-logo-ring usp-logo-ring-b" />
       <span className="usp-logo-depth"><img src="/brand-assets/logo-mark.svg" alt="" /></span>
     </span>
     <span className="usp-brand-copy">
-      <small>DAENEM UNIFIED ERP</small>
-      <strong>Employee Portal</strong>
-      <span>Technology That Transforms Tomorrow.</span>
+      <small>{labels.brandEyebrow}</small>
+      <strong>{labels.brandTitle}</strong>
+      <span>{labels.brandTagline}</span>
     </span>
   </div>;
 }
@@ -147,35 +153,36 @@ async function loadWeather(location: PortalLocation): Promise<WeatherReading> {
   }
 }
 
-function ClockCard({ location, now, weather, unit }: {
+function ClockCard({ location, now, weather, unit, display }: {
   location: PortalLocation;
   now: Date;
   weather: WeatherReading | undefined;
   unit: TemperatureUnit;
+  display: SignInGlobalOperations;
 }) {
   const description = weather?.description || 'Loading live weather';
   const state = dayNightText(location.zone, now);
   return <article className="usp-clock-card" tabIndex={0} aria-label={location.name + ' local time and weather'}>
-    <div className="usp-analog-clock" style={clockHands(location.zone, now)} aria-hidden="true">
+    {display.showAnalog && <div className="usp-analog-clock" style={clockHands(location.zone, now)} aria-hidden="true">
       {Array.from({ length: 12 }, (_, tick) => <i key={tick} style={{ transform: 'rotate(' + tick * 30 + 'deg)' }} />)}
       <span className="usp-clock-hand usp-clock-hour" />
       <span className="usp-clock-hand usp-clock-minute" />
       <span className="usp-clock-hand usp-clock-second" />
       <span className="usp-clock-pin" />
-    </div>
-    <div className="usp-clock-copy">
+    </div>}
+    <div className={'usp-clock-copy' + (display.showAnalog ? '' : ' usp-clock-copy-wide')}>
       <div className="usp-clock-location"><strong>{location.name}</strong><small>{location.region}</small></div>
-      <b>{timeText(location.zone, now, true)}</b>
-      <span>{fullDateText(location.zone, now)}</span>
-      <div className="usp-clock-meta">
-        <small>{timeZoneText(location.zone, now)}</small>
-        <small className={'usp-day-state ' + state.toLowerCase()}><i />{state}</small>
-      </div>
-      <div className={'usp-clock-weather ' + weatherKind(description)}>
+      {display.showDigital && <b>{timeText(location.zone, now, true)}</b>}
+      {display.showDate && <span>{fullDateText(location.zone, now)}</span>}
+      {(display.showTimezone || display.showDayNight) && <div className="usp-clock-meta">
+        {display.showTimezone && <small>{timeZoneText(location.zone, now)}</small>}
+        {display.showDayNight && <small className={'usp-day-state ' + state.toLowerCase()}><i />{state}</small>}
+      </div>}
+      {display.showWeather && <div className={'usp-clock-weather ' + weatherKind(description)}>
         <WeatherIcon description={description} size={15} />
         <span>{weather?.state === 'ready' ? formatTemperature(weather.temperatureC, unit) : '—°' + unit}</span>
         <small>{description}</small>
-      </div>
+      </div>}
     </div>
   </article>;
 }
@@ -195,8 +202,9 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
 
   const locations = useMemo(() => {
     const values = preferences.clockZones.map(locationForZone).filter((item): item is PortalLocation => Boolean(item));
-    return values.length ? values.slice(0, 7) : WORLD_CLOCK_CATALOG.slice(0, 7);
-  }, [preferences.clockZones]);
+    const fallback = values.length ? values : WORLD_CLOCK_CATALOG.slice(0, 7);
+    return fallback.slice(0, preferences.globalOperations.maxClocks);
+  }, [preferences.clockZones, preferences.globalOperations.maxClocks]);
 
   useEffect(() => {
     let timer = 0;
@@ -329,50 +337,51 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     ? (health.latencyMs || '—') + ' ms secure edge'
     : health.state === 'maintenance' ? 'Service team notified' : 'Connecting securely';
 
-  function renderWidget(widget: SignInWidgetId) {
-    if (preferences.hiddenWidgets.includes(widget)) return null;
+  function renderWidget(instance: SignInWidgetInstance) {
+    if (!instance.visible) return null;
+    const widget = instance.kind;
+    const variantClass = 'usp-widget-variant-' + instance.variant;
     if (widget === 'weather') {
       const description = ibadanWeather?.description || 'Loading current conditions';
-      return <article className="usp-live-card usp-weather-card" key={widget} data-widget="weather">
-        <div className="usp-widget-label"><span><CloudSun size={15} /> LIVE WEATHER</span><b>IBADAN</b></div>
-        <div className="usp-weather-main">
-          <WeatherIcon description={description} size={34} />
-          <strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong>
-        </div>
+      return <article className={'usp-live-card usp-weather-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+        <div className="usp-widget-label"><span><CloudSun size={15} /> {instance.label}</span><b>IBADAN</b></div>
+        <div className="usp-weather-main"><WeatherIcon description={description} size={34} /><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong></div>
         <p>{description}</p>
         <small>{ibadanWeather?.updatedAt ? 'Updated ' + timeText('Africa/Lagos', ibadanWeather.updatedAt) : 'Connecting to live weather'}</small>
       </article>;
     }
     if (widget === 'inspiration') {
-      return <article className="usp-live-card usp-copy-card usp-inspiration-card" key={widget} data-widget="inspiration">
-        <div className="usp-widget-label"><span><Sparkles size={14} /> AI INSPIRATION</span><i className="usp-live-pulse" /></div>
-        <strong>{context.inspiration}</strong>
-        <small>Live guidance · refreshed automatically</small>
+      return <article className={'usp-live-card usp-copy-card usp-inspiration-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+        <div className="usp-widget-label"><span><Sparkles size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
+        <strong>{context.inspiration || preferences.content.inspiration}</strong><small>Live guidance · refreshed automatically</small>
       </article>;
     }
     if (widget === 'motivation') {
-      return <article className="usp-live-card usp-copy-card usp-motivation-card" key={widget} data-widget="motivation">
-        <div className="usp-widget-label"><span><Target size={14} /> EMPLOYEE MOTIVATION</span><i className="usp-live-pulse" /></div>
-        <strong>{context.motivation}</strong>
-        <small>Daily momentum for every business unit</small>
+      return <article className={'usp-live-card usp-copy-card usp-motivation-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+        <div className="usp-widget-label"><span><Target size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
+        <strong>{context.motivation || preferences.content.motivation}</strong><small>Daily momentum for every business unit</small>
       </article>;
     }
     if (widget === 'news') {
-      return <article className="usp-live-card usp-copy-card usp-news-card" key={widget} data-widget="news">
-        <div className="usp-widget-label"><span><Newspaper size={14} /> LIVE NEWS</span><b>{activeNews.category}</b></div>
-        {activeNews.url
-          ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a>
-          : <strong>{activeNews.title}</strong>}
+      return <article className={'usp-live-card usp-copy-card usp-news-card ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+        <div className="usp-widget-label"><span><Newspaper size={14} /> {instance.label}</span><b>{activeNews.category}</b></div>
+        {activeNews.url ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a> : <strong>{activeNews.title}</strong>}
         <small>{activeNews.source} · rotating live feed</small>
       </article>;
     }
-    return <article className={'usp-live-card usp-status-card ' + health.state} key={widget} data-widget="status">
-      <div className="usp-widget-label"><span><Activity size={14} /> PORTAL STATUS</span><i className="usp-live-pulse" /></div>
-      <strong>{healthLabel}</strong>
-      <small>{healthDetail}</small>
+    return <article className={'usp-live-card usp-status-card ' + health.state + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      <div className="usp-widget-label"><span><Activity size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
+      <strong>{healthLabel}</strong><small>{healthDetail}</small>
     </article>;
   }
 
+  function renderWidgetGroup(title: string, zones: string[]) {
+    const instances = preferences.widgetInstances.filter((instance) => instance.visible && zones.includes(instance.zone)).sort((a, b) => a.order - b.order);
+    if (!instances.length) return null;
+    return <section className="usp-widget-group" aria-label={title}><h3 className="usp-widget-group-title">{title}</h3>{instances.map(renderWidget)}</section>;
+  }
+
+  const labels = preferences.labels;
   return <main
     ref={sceneRef}
     className={'usp-page usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition}
@@ -385,7 +394,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
 
     <div className="usp-shell">
       <header className="usp-topbar">
-        <AnimatedBrand />
+        <AnimatedBrand preferences={preferences} />
         <div className="usp-top-actions">
           <span className="usp-top-chip"><i /> LIVE ERP ACCESS</span>
           <button className="usp-top-install" type="button" data-pwa-install onClick={onInstall} aria-label="Install Daenem ERP app">
@@ -394,12 +403,12 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
         </div>
       </header>
 
-      <section className="usp-stage" aria-label="Daenem secure employee access">
+      <section className="usp-stage" aria-label={labels.workspaceLabel}>
         <div className="usp-scene-caption">
           <div className="usp-scene-title">
-            <span><Radio size={13} /> DAENEM LIVE WORKSPACE</span>
-            <h2>One secure workspace. Live on every device.</h2>
-            <p>Real-time access, global context, and role-protected ERP tools—connected through one premium employee portal.</p>
+            <span><Radio size={13} /> {labels.workspaceLabel}</span>
+            <h2>{labels.workspaceHeadline}</h2>
+            <p>{labels.workspaceDescription}</p>
           </div>
           <div className="usp-signal-row">
             <span className="usp-signal"><span><Radio size={12} /> IBADAN TIME</span><strong>{timeText('Africa/Lagos', now, true)}</strong><small>{fullDateText('Africa/Lagos', now)}</small></span>
@@ -410,24 +419,14 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
         <div className="usp-form-column">{authPanel}</div>
 
         <aside className="usp-live-stack" aria-label="Live portal widgets">
-          <section className="usp-widget-group" aria-labelledby="usp-live-context-heading">
-            <h3 id="usp-live-context-heading" className="usp-widget-group-title">LIVE CONTEXT</h3>
-            {preferences.widgetOrder
-              .filter((widget) => widget === 'weather' || widget === 'status')
-              .map(renderWidget)}
-          </section>
-          <section className="usp-widget-group" aria-labelledby="usp-today-heading">
-            <h3 id="usp-today-heading" className="usp-widget-group-title">TODAY</h3>
-            {preferences.widgetOrder
-              .filter((widget) => widget === 'inspiration' || widget === 'motivation' || widget === 'news')
-              .map(renderWidget)}
-          </section>
+          {renderWidgetGroup(labels.liveContextHeading, ['live-context'])}
+          {renderWidgetGroup(labels.todayHeading, ['today', 'auxiliary'])}
         </aside>
       </section>
 
-      <section className={'usp-clock-dock clock-style-' + preferences.clockStyle} aria-label="Global time and weather">
+      {preferences.globalOperations.visible && <section className={'usp-clock-dock clock-style-' + preferences.clockStyle} aria-label="Global time and weather">
         <header className="usp-clock-heading">
-          <span><Wifi size={12} /> GLOBAL OPERATIONS · LIVE TIME & WEATHER</span>
+          <span><Wifi size={12} /> {labels.globalOperationsHeading}</span>
           <small>{locations.length} locations · 12-hour time · automatic updates</small>
         </header>
         <div className="usp-clock-grid">
@@ -437,9 +436,10 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
             now={now}
             weather={weather[location.zone]}
             unit={preferences.temperatureUnit}
+            display={preferences.globalOperations}
           />)}
         </div>
-      </section>
+      </section>}
     </div>
   </main>;
 }
