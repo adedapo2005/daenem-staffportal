@@ -607,3 +607,256 @@
     flex-direction: column;
   }
 }
+
+
+/* Sign-in configuration V3 controls. */
+.signin-theme-admin-body {
+  min-width: 0;
+}
+.signin-admin-sections {
+  display: grid;
+  gap: 14px;
+  max-height: min(70vh, 760px);
+  overflow: auto;
+  padding-right: 4px;
+}
+.signin-admin-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 92%, white);
+}
+.signin-admin-section h4 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.signin-admin-section p,
+.signin-admin-section > span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.signin-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.signin-admin-grid > label,
+.signin-add-widget,
+.signin-admin-section > label {
+  display: grid;
+  gap: 5px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+.signin-admin-section input:not([type="checkbox"]):not([type="range"]),
+.signin-admin-section textarea,
+.signin-admin-section select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 7px 9px;
+  color: var(--text);
+  background: var(--surface-strong);
+  font: inherit;
+}
+.signin-admin-section textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+.signin-admin-section input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+.signin-check {
+  display: inline-flex !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: center;
+  gap: 7px !important;
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.signin-check input {
+  accent-color: var(--primary);
+}
+.signin-widget-list {
+  display: grid;
+  gap: 7px;
+}
+.signin-admin-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(110px, 140px) minmax(130px, 160px) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-strong);
+}
+.signin-admin-row[draggable="true"] {
+  cursor: grab;
+}
+.signin-admin-row:active {
+  cursor: grabbing;
+}
+.signin-widget-visible {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+.signin-widget-visible span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.signin-widget-visible input {
+  accent-color: var(--primary);
+}
+.signin-admin-order {
+  display: inline-flex;
+  gap: 4px;
+}
+.signin-admin-row button,
+.signin-admin-recovery button,
+.signin-ai-block > button,
+.signin-ai-options button {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 9px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+.signin-admin-row button:hover,
+.signin-admin-row button:focus-visible,
+.signin-admin-recovery button:hover,
+.signin-admin-recovery button:focus-visible,
+.signin-ai-block button:hover,
+.signin-ai-block button:focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  outline-offset: 1px;
+}
+.signin-admin-remove {
+  color: #a32929 !important;
+}
+.signin-add-widget {
+  max-width: 260px;
+  margin-top: 3px;
+}
+.signin-label-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.signin-display-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.signin-location-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding-right: 3px;
+}
+.signin-location-row {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 7px !important;
+  min-height: 40px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.signin-location-row input {
+  accent-color: var(--primary);
+}
+.signin-location-row span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.signin-location-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+.signin-location-row small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.signin-ai-block {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.signin-ai-block > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+.signin-ai-block small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.signin-ai-options {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 5px;
+}
+.signin-ai-options button {
+  text-align: left;
+}
+.signin-admin-note {
+  color: var(--muted);
+}
+.signin-admin-recovery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.signin-admin-recovery h4 {
+  flex-basis: 100%;
+}
+.signin-admin-recovery span {
+  flex: 1 1 220px;
+}
+@media (max-width: 760px) {
+  .signin-admin-sections {
+    max-height: none;
+  }
+  .signin-admin-grid,
+  .signin-label-grid,
+  .signin-location-list {
+    grid-template-columns: 1fr;
+  }
+  .signin-admin-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .signin-widget-visible {
+    grid-column: 1 / -1;
+  }
+}
