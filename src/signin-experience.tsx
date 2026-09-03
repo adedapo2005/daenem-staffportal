@@ -209,6 +209,10 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   const [context, setContext] = useState<PublicSignInContext>(() => ({ ...FALLBACK_CONTEXT, config: readSignInPreferences() }));
   const [weather, setWeather] = useState<Record<string, WeatherReading>>({});
   const [health, setHealth] = useState<HealthReading>({ state: 'checking', latencyMs: null, checkedAt: null });
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window === 'undefined' ? 1920 : window.innerWidth,
+    height: typeof window === 'undefined' ? 1080 : window.innerHeight,
+  }));
   const [zonePages, setZonePages] = useState<Record<SignInZone, number>>({
     'workspace-spotlight': 0,
     'live-context': 0,
@@ -223,6 +227,19 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   }, [preferences.clockZones, preferences.globalOperations.maxClocks]);
 
   const presentation = preferences.labels;
+  const zoneCapacities: Record<SignInZone, number> = viewport.height < 720
+    ? { 'workspace-spotlight': 1, 'live-context': 1, today: 1, auxiliary: 1 }
+    : viewport.width <= 1120 && viewport.height < 820
+      ? { 'workspace-spotlight': 1, 'live-context': 1, today: 2, auxiliary: 1 }
+      : viewport.height < 900
+        ? { 'workspace-spotlight': 1, 'live-context': 2, today: 2, auxiliary: 1 }
+        : { 'workspace-spotlight': 1, 'live-context': 2, today: 3, auxiliary: 2 };
+
+  useEffect(() => {
+    const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     let timer = 0;
@@ -363,7 +380,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     if (widget === 'weather') {
       const description = ibadanWeather?.description || presentation.weatherLoading;
       return <article className={'usp-live-card usp-weather-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
-        <div className="usp-widget-label"><span><CloudSun size={15} /> {instance.label}</span><b>IBADAN</b></div>
+        <div className="usp-widget-label"><span><CloudSun size={15} /> {instance.label}</span><b>{presentation.weatherLocation}</b></div>
         <div className="usp-weather-main"><WeatherIcon description={description} size={34} /><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong></div>
         <p>{description}</p>
         <small>{ibadanWeather?.updatedAt ? presentation.weatherUpdated + ' ' + timeText('Africa/Lagos', ibadanWeather.updatedAt) : presentation.weatherConnecting}</small>
@@ -410,22 +427,25 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     const instances = preferences.widgetInstances.filter((instance) => instance.visible && zones.includes(instance.zone)).sort((a, b) => a.order - b.order);
     if (!instances.length) return null;
     const zone = zones[0];
-    const page = Math.min(zonePages[zone] || 0, instances.length - 1);
-    const current = instances[page];
-    const rotate = instances.length > 1;
-    const changePage = (delta: number) => setZonePages((currentPages) => ({ ...currentPages, [zone]: (page + delta + instances.length) % instances.length }));
+    const capacity = zoneCapacities[zone] || 1;
+    const rotate = instances.length > capacity;
+    const pageCount = Math.max(1, Math.ceil(instances.length / capacity));
+    const page = Math.min(zonePages[zone] || 0, pageCount - 1);
+    const start = page * capacity;
+    const visibleInstances = rotate ? instances.slice(start, start + capacity) : instances;
+    const changePage = (delta: number) => setZonePages((currentPages) => ({ ...currentPages, [zone]: (page + delta + pageCount) % pageCount }));
     return <section className={'usp-widget-group usp-widget-zone-' + region} aria-label={title} data-zone={zone}>
       <h3 className="usp-widget-group-title">{title}</h3>
       {rotate
-        ? <div className="usp-widget-rotator" data-widget-count={instances.length}>
-            <div className="usp-widget-rotator-view" aria-live="polite">{renderWidget(current)}</div>
+        ? <div className="usp-widget-rotator" data-widget-count={instances.length} data-widget-capacity={capacity}>
+            <div className="usp-widget-rotator-view" aria-live="polite">{visibleInstances.map(renderWidget)}</div>
             <div className="usp-widget-rotator-controls">
               <button type="button" onClick={() => changePage(-1)} aria-label={'Previous ' + title + ' widget'}>Previous</button>
-              <span className="usp-widget-rotator-position" aria-label={'Widget ' + (page + 1) + ' of ' + instances.length}>{page + 1} / {instances.length}</span>
+              <span className="usp-widget-rotator-position" aria-label={'Widgets ' + (start + 1) + ' to ' + Math.min(start + capacity, instances.length) + ' of ' + instances.length}>{start + 1}–{Math.min(start + capacity, instances.length)} / {instances.length}</span>
               <button type="button" onClick={() => changePage(1)} aria-label={'Next ' + title + ' widget'}>Next</button>
             </div>
           </div>
-        : renderWidget(current)}
+        : visibleInstances.map(renderWidget)}
     </section>;
   }
 
