@@ -2781,9 +2781,13 @@ html[data-mode="night"] .usp-social-buttons button {
 }
 
 @media (min-width: 821px) and (max-height: 820px) {
+  .usp-auth-panel { padding-block: 14px; }
   .usp-clock-dock { height: 110px; }
   .usp-panel-heading p,
   .usp-social-note { display: none; }
+  .usp-or-divider { margin: 6px 0 5px; }
+  .usp-legal-copy { margin-top: 5px; line-height: 1.25; }
+  .usp-panel-footer { margin-top: 7px; padding-top: 7px; }
 }
 
 @media (min-width: 821px) and (max-height: 739px) {
@@ -2793,6 +2797,9 @@ html[data-mode="night"] .usp-social-buttons button {
   }
   .usp-topbar { min-height: 60px; }
   .usp-clock-dock { height: 90px; }
+  .usp-auth-panel { padding-block: 11px; }
+  .usp-panel-heading,
+  .usp-tabs { margin-bottom: 8px; }
 }
 
 @media (min-width: 821px) and (max-height: 719px) {
