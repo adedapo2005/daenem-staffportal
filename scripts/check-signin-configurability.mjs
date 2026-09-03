@@ -33,11 +33,16 @@ check('logo animation selections have concrete behavior', signin.includes('usp-l
 check('news variants have distinct rendered compositions', ['usp-news-stack', 'usp-news-briefing', 'usp-news-ticker', 'usp-news-top-stories'].every((name) => signin.includes(name)) && css.includes('usp-news-ticker-rotate'));
 check('safe display labels are normalized centrally', prefs.includes('liveErpAccess') && prefs.includes('installApp') && prefs.includes('clockSummary') && worker.includes('cleanText(source.installApp') && worker.includes('cleanText(source.clockSummary'));
 check('safe authentication presentation labels are centrally normalized', prefs.includes('SignInAuthLabels') && prefs.includes('socialNote') && prefs.includes('legalPrefix') && auth.includes('authLabels.socialNote') && studio.includes('labels.auth.') && worker.includes('DEFAULT_LABELS.auth'));
+check('weather location badge is sourced from V3 preferences', signin.includes('{presentation.weatherLocation}') && !signin.includes('<b>IBADAN</b>'));
+check('signup verification copy uses auth labels', auth.includes('authLabels.verificationSentTo') && auth.includes('authLabels.privateBootstrapCode') && auth.includes('authLabels.bootstrapNote'));
+check('recovery verification copy uses auth labels', auth.includes('authLabels.verificationCodeSent') && auth.includes('label={authLabels.verificationCode}') && auth.includes('authLabels.recoveryIdentityNote'));
+check('password reset identity/support copy uses auth labels', auth.includes('authLabels.identityVerified') && auth.includes('authLabels.resetAccessNote'));
 check('compact desktop signup preserves all three client-side steps', auth.includes("signupStep === 'identity'") && auth.includes("signupStep === 'account'") && auth.includes("signupStep === 'work'") && auth.includes("setSignupStep('verify')"));
 check('zone capacity governor renders a reachable pager', signin.includes('usp-widget-rotator') && signin.includes('data-widget-count') && signin.includes('setZonePages') && css.includes('.usp-widget-rotator-controls'));
 check('all responsive zones are independently rendered', ['workspace-spotlight', 'live-context', 'today', 'auxiliary'].every((zone) => signin.includes("'" + zone + "'") && signin.includes('usp-widget-region-' + zone)));
+check('zone capacity is responsive instead of count-only paging', signin.includes('zoneCapacities') && signin.includes('viewport.height < 720') && signin.includes('instances.length > capacity'));
 check('desktop auth panel has no scrollbar and compact errors', css.includes('.usp-auth-panel {\n    overflow: visible;') && css.includes('.usp-auth-message {\n    margin-bottom: 8px;'));
-check('desktop typography floor is nine pixels with compact clock detail', css.includes('font-size: 9px;') && css.includes('.usp-clock-compact-detail') && css.includes('display: none;'));
+check('desktop typography floor is nine pixels with compact clock detail', css.includes('font-size: 9px;') && css.includes('.usp-clock-compact-detail') && css.includes('display: none;') && !/font-size:\s*[0-8](?:\.[0-9]+)?px/.test(css));
 
 // Deterministic fit accounting for the compact desktop composition. These
 // values are derived from the final CSS control heights, gaps, panel padding,
@@ -85,6 +90,14 @@ const stressCases = [
   Array.from({ length: 5 }, (_, index) => ({ id: 'spotlight-' + index, zone: 'workspace-spotlight', visible: true })),
 ];
 check('layout governor stress cases stay reachable', stressCases.every(normalizeStressInstances) && css.includes('.usp-widget-rotator-controls button') && css.includes('min-height: 44px'));
+const comfortableCapacity = { 'workspace-spotlight': 1, 'live-context': 2, today: 3, auxiliary: 2 };
+const tightCapacity = { 'workspace-spotlight': 1, 'live-context': 1, today: 1, auxiliary: 1 };
+const defaultCounts = { 'workspace-spotlight': 0, 'live-context': 2, today: 3, auxiliary: 0 };
+check('default large desktop shows live weather and status together', defaultCounts['live-context'] <= comfortableCapacity['live-context']);
+check('default large desktop shows inspiration motivation and news together', defaultCounts.today <= comfortableCapacity.today);
+check('default large desktop does not page', Object.keys(defaultCounts).every((zone) => defaultCounts[zone] <= comfortableCapacity[zone]));
+check('ten-widget configuration pages only capacity overflow', stressCases[1].every((item) => item.visible) && Object.keys(tightCapacity).every((zone) => tightCapacity[zone] >= 1) && stressCases[1].length === 10);
+check('tight 1024x600 uses safe one-per-zone capacity', signin.includes("viewport.height < 720") && Object.values(tightCapacity).every((capacity) => capacity === 1) && css.includes('height: 100dvh') && css.includes('overflow: hidden'));
 function nextId(kind, instances) {
   const used = new Set(instances.map((item) => item.id));
   if (!used.has(kind)) return kind;
