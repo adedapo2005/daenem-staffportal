@@ -402,7 +402,6 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
             <p>Real-time access, global context, and role-protected ERP tools—connected through one premium employee portal.</p>
           </div>
           <div className="usp-signal-row">
-            <span className="usp-signal"><span><Activity size={12} /> SERVICE</span><strong>{healthLabel}</strong><small>{healthDetail}</small></span>
             <span className="usp-signal"><span><Radio size={12} /> IBADAN TIME</span><strong>{timeText('Africa/Lagos', now, true)}</strong><small>{fullDateText('Africa/Lagos', now)}</small></span>
             <span className="usp-signal"><span><LockKeyhole size={12} /> SESSION</span><strong>Protected</strong><small>Encrypted employee access</small></span>
           </div>
@@ -411,7 +410,18 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
         <div className="usp-form-column">{authPanel}</div>
 
         <aside className="usp-live-stack" aria-label="Live portal widgets">
-          {preferences.widgetOrder.map(renderWidget)}
+          <section className="usp-widget-group" aria-labelledby="usp-live-context-heading">
+            <h3 id="usp-live-context-heading" className="usp-widget-group-title">LIVE CONTEXT</h3>
+            {preferences.widgetOrder
+              .filter((widget) => widget === 'weather' || widget === 'status')
+              .map(renderWidget)}
+          </section>
+          <section className="usp-widget-group" aria-labelledby="usp-today-heading">
+            <h3 id="usp-today-heading" className="usp-widget-group-title">TODAY</h3>
+            {preferences.widgetOrder
+              .filter((widget) => widget === 'inspiration' || widget === 'motivation' || widget === 'news')
+              .map(renderWidget)}
+          </section>
         </aside>
       </section>
 

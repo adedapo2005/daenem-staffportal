@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck,
+  ArrowRight, Check, CheckCircle2, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck,
 } from 'lucide-react';
 import {
   applyThemeToDocument, readModePreference, readThemeId, themeById, type ModePreference, type ThemeId,
@@ -682,7 +682,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       </p>
       <div className="usp-panel-footer">
         <span className="usp-operational-pill"><i /> Secure service</span>
-        <button className="usp-install-button" data-pwa-install type="button" onClick={() => void installApp()}><Download size={15} /> Install App</button>
       </div>
     </section>
   );
