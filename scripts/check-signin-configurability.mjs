@@ -58,7 +58,7 @@ check('weather retains cached data on refresh failure', signin.includes("reading
 check('weather administration exposes safe detail and animation controls', studio.includes("['showFeelsLike','Feels like']") && studio.includes("['showSunriseSunset','Sunrise / sunset']") && studio.includes('globalOperations.weatherStyle') && studio.includes('globalOperations.weatherAnimation') && prefs.includes('weatherAnimation'));
 check('seven clock cards have independent weather readings and paging', signin.includes('weather={weather[location.zone]}') && signin.includes('visibleLocations') && signin.includes('Previous locations') && signin.includes('clockCapacity'));
 check('clock typography stays readable on desktop', css.includes('.usp-clock-location strong { font-size: 12px; }') && css.includes('.usp-clock-copy > b { font-size: 14px; }') && css.includes('.usp-clock-weather > small,') && !/font-size:\s*[0-8](?:\.[0-9]+)?px/.test(css));
-check('weather reduced motion is static and pointer independent', css.includes('.usp-weather-animation-none') && css.includes('usp-weather-animation-') && !signin.includes('pointermove') && !signin.includes('mousemove'));
+check('weather reduced motion is static and pointer independent', css.includes('.usp-weather-animation-none') && css.includes('usp-weather-animation-') && signin.includes('CloudSnow') && signin.includes('Moon') && !signin.includes('pointermove') && !signin.includes('mousemove'));
 const weatherFixtures = [
   { current: { temperature_2m: 28, apparent_temperature: 31, relative_humidity_2m: 74, weather_code: 2, wind_speed_10m: 12, wind_direction_10m: 180 }, daily: { temperature_2m_max: [32], temperature_2m_min: [24], sunrise: ['06:00'], sunset: ['18:30'] } },
   { current: { temperature_2m: 28 }, daily: {} },

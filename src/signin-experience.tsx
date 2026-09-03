@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
-  Activity, Cloud, CloudLightning, CloudRain, CloudSun, Download, LockKeyhole,
-  Newspaper, Radio, ShieldCheck, Sparkles, Sun, Target, Wifi 
+  Activity, Cloud, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, LockKeyhole,
+  Moon, Newspaper, Radio, ShieldCheck, Sparkles, Sun, Target, Wifi 
 } from 'lucide-react';
 import { applyThemeToDocument, type ModePreference, type ThemeId } from './theme-system';
 import {
@@ -151,7 +151,7 @@ function weatherKind(description: string) {
 
 function WeatherIcon({ description, size = 20, isDay = true, animation = 'subtle' }: { description: string; size?: number; isDay?: boolean | null; animation?: SignInGlobalOperations['weatherAnimation'] }) {
   const kind = weatherKind(description);
-  const Icon = kind === 'storm' ? CloudLightning : kind === 'rain' ? CloudRain : kind === 'cloud' || kind === 'fog' ? Cloud : Sun;
+  const Icon = kind === 'storm' ? CloudLightning : kind === 'rain' ? CloudRain : kind === 'snow' ? CloudSnow : kind === 'cloud' || kind === 'fog' ? Cloud : isDay === false ? Moon : Sun;
   const nightClass = isDay === false ? ' usp-weather-night' : '';
   return <span className={'usp-weather-glyph usp-weather-' + kind + ' usp-weather-animation-' + animation + nightClass} aria-hidden="true"><Icon size={size} /></span>;
 }
