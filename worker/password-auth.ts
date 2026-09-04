@@ -573,7 +573,7 @@ async function login(request: Request, env: PasswordAuthEnv) {
   let location: { ok: boolean; result?: string; companyId?: string; code?: string; message?: string };
   try {
     location = ownerLogin
-      ? { ok: true, result: 'owner_remote_exempt', companyId: undefined }
+      ? { ok: true, result: 'not_required', companyId: undefined }
       : await evaluateLocation(env, row.employeeId, body);
   } catch (error) {
     return controlledAuthFailure(env, request, 'location_policy', error);

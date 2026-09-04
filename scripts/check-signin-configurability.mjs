@@ -158,6 +158,12 @@ check('device registration is explicit best effort', passwordAuth.includes("reco
 check('wrong password remains a semantic 401', passwordAuth.includes('constantTimeEqual(derived, row.passwordHash)') && passwordAuth.includes('return json({ error: genericError }, 401)'));
 check('locked account remains a semantic 423', passwordAuth.includes('password_signin_locked') && passwordAuth.includes('}, 423)'));
 check('session creation failures remain controlled', passwordAuth.includes("controlledAuthFailure(env, request, 'session_creation', error)"));
+check('owner bypass persists a schema-safe geofence result', passwordAuth.includes("location = ownerLogin") && passwordAuth.includes("result: 'not_required'") && !passwordAuth.includes("owner_remote_exempt"));
+const ownerVerificationIndex = passwordAuth.indexOf("if (!constantTimeEqual(derived, row.passwordHash))");
+const ownerBypassIndex = passwordAuth.indexOf("location = ownerLogin");
+check('owner geofence bypass occurs only after password verification', ownerVerificationIndex >= 0 && ownerBypassIndex > ownerVerificationIndex && passwordAuth.includes("await evaluateLocation(env, row.employeeId, body)"));
+check('auth session geofence results remain schema-valid', ["'not_required'", "'inside'", "'outside'", "'unknown'"].every((value) => passwordAuth.includes(value)) && !passwordAuth.includes("owner_remote_exempt"));
+
 const diagnosticSection = passwordAuth.slice(passwordAuth.indexOf('async function recordAuthFailure'), passwordAuth.indexOf('async function controlledAuthFailure'));
 check('runtime diagnostics exclude credential secrets', !diagnosticSection.includes('passwordHash') && !diagnosticSection.includes('passwordSalt') && !diagnosticSection.includes('password:') && !diagnosticSection.includes('AUTH_PEPPER'));
 
