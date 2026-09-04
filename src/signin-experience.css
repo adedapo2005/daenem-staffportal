@@ -5061,3 +5061,44 @@ html[data-mode="night"] .usp-social-buttons button {
     animation: none;
   }
 }
+
+
+/* Keep the approved tall-screen dock proportions while allowing the
+   fit governor to use natural height on genuinely short canvases. */
+@media (min-width: 821px) and (min-height: 821px) and (max-width: 2399px) and (max-height: 959px) {
+  .usp-clock-dock {
+    height: clamp(110px, 15vh, 150px);
+  }
+
+  .usp-clock-grid {
+    height: calc(100% - 28px);
+  }
+}
+
+@media (min-width: 821px) and (min-height: 960px) and (max-width: 2399px) {
+  .usp-clock-dock {
+    height: clamp(110px, 18dvh, 194px);
+  }
+
+  .usp-clock-grid {
+    height: calc(100% - 28px);
+  }
+}
+
+@media (min-width: 2400px) and (min-height: 1200px) {
+  .usp-clock-dock {
+    height: clamp(178px, 15vh, 244px);
+  }
+
+  .usp-clock-grid {
+    height: calc(100% - 48px);
+  }
+}
+
+@media (min-width: 821px) {
+  .usp-page.usp-density-compact .usp-clock-compact-detail,
+  .usp-page.usp-density-tight .usp-clock-compact-detail {
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
