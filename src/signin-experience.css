@@ -4938,20 +4938,25 @@ html[data-mode="night"] .usp-social-buttons button {
 }
 
 
-/* Smart rendered-fit governor: required clock content stays measurable and
-   visible. Density and per-page capacity are selected by the React governor
-   after measuring the live dock, grid, cards, and copy. */
+/* Smart rendered-fit governor: actual clock content is measured before the
+   dock is accepted. The final boxes contain the required visible content. */
 @media (min-width: 821px) {
   .usp-clock-dock {
     height: auto;
-    min-height: 0;
-    overflow: visible;
+    min-height: max(var(--usp-clock-required-height, 0px), 0px);
+    overflow: clip;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .usp-clock-heading {
+    flex: 0 0 auto;
   }
 
   .usp-clock-grid {
     height: auto;
     min-height: 0;
-    overflow: visible;
+    overflow: clip;
     grid-auto-rows: max-content;
     align-items: stretch;
   }
@@ -4959,13 +4964,14 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-clock-card {
     height: auto;
     min-height: 0;
-    overflow: visible;
+    overflow: clip;
     align-items: start;
   }
 
   .usp-clock-copy {
+    height: auto;
     min-height: 0;
-    overflow: visible;
+    overflow: clip;
   }
 
   .usp-clock-copy > span,
@@ -4973,7 +4979,7 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-clock-weather,
   .usp-clock-weather-detail,
   .usp-clock-weather > small {
-    overflow: visible;
+    overflow: clip;
   }
 
   .usp-clock-copy > span:not(.usp-clock-compact-detail),
@@ -5002,6 +5008,7 @@ html[data-mode="night"] .usp-social-buttons button {
     line-height: 1.2;
     white-space: normal;
     overflow-wrap: anywhere;
+    overflow: clip;
   }
 
   .usp-page.usp-density-compact .usp-clock-card {
@@ -5014,36 +5021,189 @@ html[data-mode="night"] .usp-social-buttons button {
 
   .usp-page.usp-density-tight .usp-clock-pager button,
   .usp-page.usp-density-tight .usp-widget-rotator-controls button {
-    min-height: 32px;
-    padding-block: 4px;
+    min-height: 28px;
+    padding-block: 3px;
   }
 
   .usp-page.usp-density-tight .usp-clock-pager b {
-    min-height: 32px;
+    min-height: 28px;
     display: inline-grid;
     place-items: center;
   }
 
   .usp-page.usp-density-compact .usp-clock-pager button,
   .usp-page.usp-density-compact .usp-widget-rotator-controls button {
-    min-height: 36px;
-    padding-block: 4px;
+    min-height: 32px;
+    padding-block: 3px;
   }
 
   .usp-page.usp-density-compact .usp-clock-pager b {
-    min-height: 36px;
+    min-height: 32px;
     display: inline-grid;
     place-items: center;
   }
 }
 
+/* Tall-screen allocation is a lower bound, not a forced content box. The
+   measured required height can expand the dock when details need more room. */
+@media (min-width: 821px) and (min-height: 821px) {
+  .usp-clock-dock {
+    min-height: max(var(--usp-clock-required-height, 0px), clamp(110px, 18dvh, 194px));
+  }
+}
+
+@media (min-width: 2400px) and (min-height: 821px) {
+  .usp-clock-dock {
+    min-height: max(var(--usp-clock-required-height, 0px), clamp(178px, 15vh, 244px));
+  }
+}
+
+/* Short desktop allocation stays compact; the measured content remains the
+   final authority and the dock cannot cover the authentication panel. */
 @media (min-width: 821px) and (max-height: 820px) {
+  .usp-clock-dock {
+    min-height: max(var(--usp-clock-required-height, 0px), 96px);
+  }
+
+  .usp-clock-heading {
+    padding-bottom: 4px;
+  }
+
+  .usp-clock-grid {
+    gap: 6px;
+  }
+}
+
+@media (min-width: 821px) and (max-width: 1120px) and (max-height: 719px) {
+  .usp-clock-dock {
+    min-height: max(var(--usp-clock-required-height, 0px), 104px);
+  }
+}
+
+/* Narrow desktop columns keep the workspace spotlight in its own safe area
+   instead of placing it beneath or across the authentication column. */
+@media (min-width: 821px) and (max-width: 1120px) and (min-height: 720px) {
   .usp-stage {
+    grid-template-columns: minmax(132px, 160px) minmax(0, 1fr) minmax(285px, 330px);
+    grid-template-areas: "scene auth rail";
+    gap: clamp(8px, 1vw, 14px);
     align-items: start;
   }
 
-  .usp-form-column {
+  .usp-scene-caption {
+    position: static;
+    left: auto;
+    bottom: auto;
+    grid-area: scene;
     align-self: start;
+    width: min(160px, 100%);
+    max-width: 160px;
+    padding: 0;
+  }
+
+  .usp-scene-title {
+    max-width: 160px;
+    padding: 9px 10px;
+    border-radius: 14px;
+  }
+
+  .usp-scene-title span {
+    font-size: 10px;
+  }
+
+  .usp-scene-title h2 {
+    margin-top: 4px;
+    font-size: clamp(16px, 2vw, 22px);
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .usp-scene-title p,
+  .usp-signal-row {
+    display: none;
+  }
+
+  .usp-form-column {
+    grid-area: auth;
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+    align-self: start;
+  }
+
+  .usp-live-stack {
+    grid-area: rail;
+    align-self: start;
+  }
+}
+
+/* Measured spatial recovery applies only when the outer geometry is invalid.
+   Authentication controls retain their established readable minimum sizes. */
+@media (min-width: 821px) {
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin {
+    padding-block: 8px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading {
+    gap: 4px;
+    margin-bottom: 5px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading h1 {
+    margin-top: 3px;
+    font-size: clamp(30px, 2.1vw, 34px);
+    line-height: 1.05;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading p,
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-social-note {
+    display: none;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-tabs {
+    margin-bottom: 5px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-auth-form {
+    gap: 6px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-field {
+    gap: 3px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-field input,
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-password-field input {
+    height: 44px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-or-divider {
+    margin-block: 4px 3px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-social-buttons {
+    gap: 4px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-social-buttons button,
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-primary-button {
+    min-height: 44px;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-legal-copy {
+    margin-top: 4px;
+    line-height: 1.15;
+  }
+
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-footer {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+}
+
+@media (min-width: 821px) and (max-width: 1120px) and (max-height: 719px) {
+  .usp-page[data-spatial-fit="false"] .usp-auth-panel.usp-auth-panel-signin {
+    padding-block: 2px;
   }
 }
 
@@ -5059,46 +5219,5 @@ html[data-mode="night"] .usp-social-buttons button {
 @media (prefers-reduced-motion: reduce) {
   .usp-widget-rotator-view {
     animation: none;
-  }
-}
-
-
-/* Keep the approved tall-screen dock proportions while allowing the
-   fit governor to use natural height on genuinely short canvases. */
-@media (min-width: 821px) and (min-height: 821px) and (max-width: 2399px) and (max-height: 959px) {
-  .usp-clock-dock {
-    height: clamp(110px, 15vh, 150px);
-  }
-
-  .usp-clock-grid {
-    height: calc(100% - 28px);
-  }
-}
-
-@media (min-width: 821px) and (min-height: 960px) and (max-width: 2399px) {
-  .usp-clock-dock {
-    height: clamp(110px, 18dvh, 194px);
-  }
-
-  .usp-clock-grid {
-    height: calc(100% - 28px);
-  }
-}
-
-@media (min-width: 2400px) and (min-height: 1200px) {
-  .usp-clock-dock {
-    height: clamp(178px, 15vh, 244px);
-  }
-
-  .usp-clock-grid {
-    height: calc(100% - 48px);
-  }
-}
-
-@media (min-width: 821px) {
-  .usp-page.usp-density-compact .usp-clock-compact-detail,
-  .usp-page.usp-density-tight .usp-clock-compact-detail {
-    overflow: visible;
-    text-overflow: clip;
   }
 }

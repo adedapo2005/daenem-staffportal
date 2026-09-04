@@ -3,7 +3,7 @@ import {
   ArrowRight, Check, CheckCircle2, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck,
 } from 'lucide-react';
 import {
-  applyThemeToDocument, readModePreference, readThemeId, themeById, type ModePreference, type ThemeId,
+  readThemeId, themeById, type ThemeId,
 } from './theme-system';
 import { SignInExperience } from './signin-experience';
 import {
@@ -390,7 +390,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [themeId] = useState<ThemeId>(() => readThemeId());
-  const [modePreference] = useState<ModePreference>(() => readModePreference());
   const [secureServiceLabel, setSecureServiceLabel] = useState(() => readSignInPreferences().labels.secureService);
   const [authLabels, setAuthLabels] = useState(() => readSignInPreferences().labels.auth);
   const [passwordPolicy, setPasswordPolicy] = useState<PasswordPolicy>(FALLBACK_PASSWORD_POLICY);
@@ -490,9 +489,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   useEffect(() => {
     const theme = themeById(themeId);
-    applyThemeToDocument(theme.id, modePreference);
     document.title = `Daenem Unified ERP Portal · ${theme.name}`;
-  }, [modePreference, themeId]);
+  }, [themeId]);
 
   useEffect(() => {
     panelRef.current?.scrollTo({ top: 0, behavior: 'auto' });
@@ -873,5 +871,5 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     </section>
   );
 
-  return <SignInExperience authPanel={authPanel} themeId={themeId} modePreference={modePreference} onInstall={() => void installApp()} />;
+  return <SignInExperience authPanel={authPanel} themeId={themeId} onInstall={() => void installApp()} />;
 }
