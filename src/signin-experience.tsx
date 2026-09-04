@@ -164,7 +164,7 @@ const EMPTY_LAYOUT_METRICS: LayoutMetrics = {
 const CLOCK_FIT_TOLERANCE = 2;
 const CLOCK_CAPACITY_STEPS = [7, 4, 3, 2, 1] as const;
 const WIDGET_ROTATION_INTERVAL_MS = 9000;
-const SAFE_LAYOUT_GAP = 8;
+const SAFE_LAYOUT_GAP = 12;
 const SAFE_VIEWPORT_MARGIN = 4;
 
 const FALLBACK_CONTEXT: PublicSignInContext = {
@@ -484,7 +484,6 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
   const stageRef = useRef<HTMLElement | null>(null);
   const liveStackRef = useRef<HTMLElement | null>(null);
   const clockDockRef = useRef<HTMLElement | null>(null);
-  const outerRecoveryRef = useRef(false);
   const [spatialRecovery, setSpatialRecovery] = useState(false);
   const recoveryViewportKeyRef = useRef('');
 
@@ -534,7 +533,6 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
     const key = viewport.width + 'x' + viewport.height + ':' + density + ':' + baseClockCapacity + ':' + locations.length;
     if (recoveryViewportKeyRef.current === key) return;
     recoveryViewportKeyRef.current = key;
-    outerRecoveryRef.current = false;
     setSpatialRecovery(false);
   }, [baseClockCapacity, density, locations.length, viewport.height, viewport.width]);
 
@@ -547,6 +545,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
     if (viewport.width < 821) {
       setLayoutMetrics((current) => current.outerFitMeasured ? EMPTY_LAYOUT_METRICS : current);
       setSpatialRecovery(false);
+      pageRef.current?.style.setProperty('--usp-clock-recovery-height', '0px');
       return;
     }
     const page = pageRef.current;
@@ -574,12 +573,18 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
         const liveRequired = liveStack.scrollHeight;
         const requiredDockHeight = clockFit.requiredDockHeight || dock?.scrollHeight || dockRect?.height || 0;
         const requiredWorkspaceHeight = workspace?.scrollHeight || workspaceRect?.height || 0;
-        const authDockGap = authRect && dockRect ? round(dockRect.top - authRect.bottom) : 0;
+        const authDockGapValue = authRect && dockRect ? dockRect.top - authRect.bottom : 0;
+        const authDockGap = authRect && dockRect ? round(authDockGapValue) : 0;
         const liveDockGap = dockRect ? round(dockRect.top - liveRect.bottom) : 0;
         const workspaceDockGap = workspaceRect && dockRect ? round(dockRect.top - workspaceRect.bottom) : 0;
-        const availableDockGap = dockRect
-          ? round(dockRect.top - Math.max(authRect?.bottom || stageRect.top, liveRect.bottom, workspaceRect?.bottom || stageRect.top))
+        const availableDockGapValue = dockRect
+          ? dockRect.top - Math.max(authRect?.bottom || stageRect.top, liveRect.bottom, workspaceRect?.bottom || stageRect.top)
           : 0;
+        const availableDockGap = dockRect ? round(availableDockGapValue) : 0;
+        const recoveryDockHeight = dockRect
+          ? Math.max(0, dockRect.height - Math.max(0, SAFE_LAYOUT_GAP - availableDockGapValue))
+          : 0;
+        page.style.setProperty('--usp-clock-recovery-height', recoveryDockHeight + 'px');
         const workspaceAuthCollision = Boolean(authRect && workspaceRect && rectsIntersect(workspaceRect, authRect));
         const brandAuthCollision = Boolean(brandRect && authRect && rectsIntersect(brandRect, authRect));
         const authDockFit = !authRect || !dockRect || authRect.bottom + SAFE_LAYOUT_GAP <= dockRect.top;
@@ -625,25 +630,13 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
         };
         setLayoutMetrics((current) => JSON.stringify(current) === JSON.stringify(metrics) ? current : metrics);
 
-        const tightRecoveryNeeded = density === 'tight' && (
-          authDockGap < SAFE_LAYOUT_GAP ||
-          brandAuthCollision ||
-          !spatialFit
-        );
-        if (!outerFit) {
+        const spatialRecoveryNeeded = !spatialFit || availableDockGap < SAFE_LAYOUT_GAP;
+        // Outer page fit owns spatial recovery. Clock capacity is reduced only by
+        // the inner clock-fit governor when rendered clock content does not fit.
+        if (!outerFit && !innerClockFit) {
           setDensity((current) => densityRank(current) >= 2 ? current : densityRank(current) === 1 ? 'tight' : 'compact');
-          if (tightRecoveryNeeded && !spatialRecovery) setSpatialRecovery(true);
-          if (!outerRecoveryRef.current) {
-            outerRecoveryRef.current = true;
-            setClockCapacityOverride((current) => {
-              const currentCapacity = current ?? baseClockCapacity;
-              const nextCapacity = CLOCK_CAPACITY_STEPS.find((step) => step < currentCapacity) || 1;
-              return Math.min(baseClockCapacity, nextCapacity);
-            });
-          }
-        } else if (tightRecoveryNeeded && !spatialRecovery) {
-          setSpatialRecovery(true);
         }
+        if (spatialRecoveryNeeded && !spatialRecovery) setSpatialRecovery(true);
       });
     };
     const observer = new ResizeObserver(measure);
@@ -788,6 +781,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
     density,
     preferences.globalOperations,
     safeClockPage,
+    spatialRecovery,
     viewport.height,
     viewport.width,
   ]);
@@ -1004,6 +998,9 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
     data-live-required-height={layoutMetrics.liveRequired || undefined}
     data-live-available-height={layoutMetrics.liveAvailable || undefined}
     data-clock-capacity={clockCapacity}
+    data-clock-page-count={clockPageCount}
+    data-clock-capacity-source="inner-fit"
+    data-safe-layout-gap={SAFE_LAYOUT_GAP}
     data-clock-fit={clockFit.fits ? 'true' : 'false'}
     data-clock-dock-client-height={clockFit.dockClientHeight || undefined}
     data-clock-dock-scroll-height={clockFit.dockScrollHeight || undefined}

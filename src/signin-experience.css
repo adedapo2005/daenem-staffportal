@@ -5222,6 +5222,79 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 }
 
+/* General measured outer recovery. It compacts safe overhead on any desktop
+   that fails the measured spatial budget; primary auth controls retain their
+   established minimum heights, and clock content remains fit-measured. */
+@media (min-width: 821px) {
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin {
+    padding-block: 4px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading {
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading h1 {
+    margin-top: 1px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-tabs {
+    margin-bottom: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-auth-form {
+    gap: 4px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-field {
+    gap: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-or-divider {
+    margin-block: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-social-buttons {
+    gap: 3px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-legal-copy {
+    margin-top: 2px;
+    line-height: 1.1;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-footer {
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-dock {
+    height: auto;
+    min-height: max(var(--usp-clock-required-height, 0px), var(--usp-clock-recovery-height, 0px));
+    padding: 4px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-heading {
+    min-height: 18px;
+    padding: 0 3px 1px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-pager {
+    gap: 3px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-pager button,
+  .usp-page[data-spatial-recovery="true"] .usp-clock-pager b {
+    min-height: 26px;
+    padding-block: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-grid {
+    gap: 4px;
+  }
+}
+
 /* Final measured tight recovery: the top brand and dock share the remaining
    short-desktop budget without shrinking required authentication controls. */
 @media (min-width: 821px) and (max-width: 1120px) and (max-height: 719px) {
