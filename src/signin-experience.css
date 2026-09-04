@@ -4671,3 +4671,164 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-background-shade,
   .usp-live-card { transition: none; }
 }
+
+/* Evidence-backed large-desktop tier: compose the sign-in surface for true 4K canvases. */
+@media (min-width: 2400px) {
+  .usp-shell {
+    width: min(3600px, 100%);
+    padding: clamp(32px, 1.5vw, 64px);
+    gap: clamp(24px, 1.2vw, 44px);
+  }
+
+  .usp-topbar { min-height: clamp(92px, 5vw, 124px); }
+  .usp-brand-lockup { gap: 24px; }
+  .usp-logo-orbit { width: 104px; height: 104px; }
+  .usp-logo-depth { width: 74px; height: 74px; border-radius: 23px; }
+  .usp-logo-depth img { width: 54px; height: 54px; }
+  .usp-brand-copy { min-width: 300px; gap: 5px; }
+  .usp-brand-copy small { font-size: 15px; }
+  .usp-brand-copy strong { font-size: clamp(32px, 2vw, 48px); }
+  .usp-brand-copy span { font-size: clamp(14px, .9vw, 19px); }
+
+  .usp-top-actions { gap: 16px; }
+  .usp-top-chip,
+  .usp-top-install { min-height: 52px; font-size: 15px; }
+  .usp-top-chip { padding-inline: 20px; }
+  .usp-top-install { padding-inline: 20px; }
+
+  .usp-stage {
+    grid-template-columns: minmax(0, 1fr) minmax(620px, 760px) minmax(400px, 520px);
+    gap: clamp(24px, 1.5vw, 52px);
+  }
+
+  .usp-scene-caption { width: min(760px, 100%); gap: 18px; padding-bottom: 24px; }
+  .usp-scene-title { max-width: 760px; padding: 30px 34px; border-radius: 30px; }
+  .usp-scene-title span { font-size: 15px; }
+  .usp-scene-title h2 { margin-top: 13px; font-size: clamp(42px, 2.6vw, 64px); }
+  .usp-scene-title p { font-size: 18px; }
+  .usp-signal-row { gap: 16px; }
+  .usp-signal { padding: 18px 20px; border-radius: 20px; }
+  .usp-signal span { font-size: 12px; }
+  .usp-signal strong { font-size: 15px; }
+  .usp-signal small { font-size: 12px; }
+
+  .usp-auth-panel {
+    padding: clamp(40px, 2vw, 60px);
+    border-radius: 36px;
+  }
+  .usp-panel-heading { gap: 24px; margin-bottom: 28px; }
+  .usp-panel-eyebrow { font-size: 14px; }
+  .usp-panel-heading h1 { margin-top: 12px; font-size: clamp(40px, 2.5vw, 58px); }
+  .usp-panel-heading p { font-size: 17px; }
+  .usp-tabs { margin-bottom: 26px; }
+  .usp-tabs button { min-height: 58px; font-size: 16px; }
+  .usp-auth-form { gap: 22px; }
+  .usp-field { gap: 9px; font-size: 15px; }
+  .usp-field input,
+  .usp-password-field input { height: 62px; padding-inline: 19px; font-size: 18px; }
+  .usp-password-field input { padding-right: 66px; }
+  .usp-password-toggle { right: 10px; bottom: 8px; width: 46px; height: 46px; }
+  .usp-forgot-link { font-size: 14px; }
+  .usp-remember-row { gap: 13px; font-size: 16px; }
+  .usp-check-ui { width: 24px; height: 24px; }
+  .usp-remember-row small { font-size: 12px; }
+  .usp-primary-button,
+  .usp-secondary-button { min-height: 62px; font-size: 17px; }
+  .usp-or-divider { margin: 20px 0 15px; font-size: 12px; }
+  .usp-social-buttons { gap: 14px; }
+  .usp-social-buttons button { min-height: 60px; font-size: 15px; }
+  .usp-social-note,
+  .usp-legal-copy { margin-top: 14px; font-size: 12px; }
+  .usp-panel-footer { margin-top: 20px; padding-top: 18px; }
+  .usp-operational-pill { font-size: 12px; }
+
+  .usp-live-stack { gap: 18px; }
+  .usp-widget-group { gap: 14px; }
+  .usp-widget-group + .usp-widget-group { padding-top: 16px; }
+  .usp-widget-group-title { font-size: 13px; }
+  .usp-live-card { padding: 20px 22px; border-radius: 26px; }
+  .usp-widget-label { font-size: 12px; }
+  .usp-widget-label b { font-size: 11px; }
+  .usp-weather-main { margin-top: 14px; }
+  .usp-weather-hero-icon { width: 70px; height: 70px; border-radius: 20px; }
+  .usp-weather-main strong { font-size: 48px; }
+  .usp-weather-condition { font-size: 15px; }
+  .usp-weather-details { margin-top: 12px; gap: 7px 14px; font-size: 14px; }
+  .usp-weather-card > small,
+  .usp-live-card small { margin-top: 11px; font-size: 12px; }
+  .usp-copy-card > strong,
+  .usp-copy-card > a { margin-top: 12px; font-size: 19px; }
+  .usp-status-card > strong { margin-top: 12px; font-size: 20px; }
+
+  .usp-clock-dock { height: clamp(178px, 15vh, 244px); padding: 20px; border-radius: 30px; }
+  .usp-clock-heading { min-height: 36px; padding: 0 8px 12px; }
+  .usp-clock-heading span { font-size: 14px; }
+  .usp-clock-heading small { font-size: 12px; }
+  .usp-clock-grid { height: calc(100% - 48px); gap: 14px; }
+  .usp-clock-card { min-height: 0; height: 100%; padding: 16px; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; border-radius: 20px; }
+  .usp-analog-clock { width: 60px; height: 60px; }
+  .usp-analog-clock > i { transform-origin: 50% 27px; }
+  .usp-clock-location strong { font-size: 15px; }
+  .usp-clock-location small { font-size: 12px; }
+  .usp-clock-copy > b { font-size: 19px; }
+  .usp-clock-copy > span,
+  .usp-clock-meta > small,
+  .usp-clock-weather > span,
+  .usp-clock-weather > small { font-size: 12px; }
+}
+
+/* Evidence-backed tight-desktop correction: keep workspace context out of auth and
+   give the paged clock cards enough height to remain fully readable. */
+@media (min-width: 821px) and (max-width: 1120px) and (max-height: 719px) {
+  .usp-shell { grid-template-rows: 48px minmax(0, 1fr) 112px; }
+  .usp-stage { grid-template-rows: auto auto; overflow: hidden; }
+  .usp-form-column { z-index: 2; }
+  .usp-scene-caption {
+    position: static;
+    left: auto;
+    bottom: auto;
+    z-index: 0;
+    grid-area: scene;
+    align-self: start;
+    width: min(285px, 100%);
+    padding: 0;
+  }
+  .usp-scene-title { padding: 7px 10px; border-radius: 14px; }
+  .usp-scene-title span { font-size: 8px; }
+  .usp-scene-title h2 { margin-top: 3px; font-size: 18px; line-height: 1.05; }
+  .usp-scene-title p,
+  .usp-signal-row { display: none; }
+
+  .usp-clock-dock { height: 112px; padding: 7px; border-radius: 17px; }
+  .usp-clock-heading { min-height: 22px; padding: 0 3px 4px; }
+  .usp-clock-grid { height: calc(100% - 26px); gap: 6px; }
+  .usp-clock-card {
+    min-height: 0;
+    height: 100%;
+    padding: 7px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 6px;
+    border-radius: 11px;
+  }
+  .usp-analog-clock { width: 36px; height: 36px; }
+  .usp-analog-clock > i { transform-origin: 50% 16px; }
+  .usp-clock-location strong { font-size: 10px; }
+  .usp-clock-copy > b { font-size: 11px; }
+}
+
+/* Evidence-backed short-desktop correction: retain complete clock-card detail
+   at 1366x768 without changing the comfortable 1920x1080 composition. */
+@media (min-width: 1121px) and (max-height: 820px) {
+  .usp-clock-dock { height: 154px; padding: 11px; }
+  .usp-clock-heading { min-height: 30px; padding: 0 5px 8px; }
+  .usp-clock-grid { height: calc(100% - 38px); gap: 9px; }
+  .usp-clock-card {
+    min-height: 0;
+    height: 100%;
+    padding: 10px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .usp-analog-clock { width: 42px; height: 42px; }
+  .usp-analog-clock > i { transform-origin: 50% 19px; }
+}
