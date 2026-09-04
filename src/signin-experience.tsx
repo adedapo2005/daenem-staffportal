@@ -9,7 +9,6 @@ import {
   WORLD_CLOCK_CATALOG,
   SIGNIN_BACKGROUND_OPTIONS,
   fetchPublicSignInContext,
-  isWithinDarkWindow,
   normalizeSignInPreferences,
   readSignInPreferences,
   type PortalLocation,
@@ -58,6 +57,46 @@ type LayoutMetrics = {
   liveRequired: number;
   dockWidth: number;
 };
+
+type ClockFitMetrics = {
+  dockClientHeight: number;
+  dockScrollHeight: number;
+  gridClientHeight: number;
+  gridScrollHeight: number;
+  cardClientHeight: number;
+  cardScrollHeight: number;
+  copyClientHeight: number;
+  copyScrollHeight: number;
+  gridWithinDock: boolean;
+  cardsWithinGrid: boolean;
+  dockOverflow: boolean;
+  gridOverflow: boolean;
+  cardOverflow: boolean;
+  copyOverflow: boolean;
+  fits: boolean;
+};
+
+const EMPTY_CLOCK_FIT: ClockFitMetrics = {
+  dockClientHeight: 0,
+  dockScrollHeight: 0,
+  gridClientHeight: 0,
+  gridScrollHeight: 0,
+  cardClientHeight: 0,
+  cardScrollHeight: 0,
+  copyClientHeight: 0,
+  copyScrollHeight: 0,
+  gridWithinDock: true,
+  cardsWithinGrid: true,
+  dockOverflow: false,
+  gridOverflow: false,
+  cardOverflow: false,
+  copyOverflow: false,
+  fits: false,
+};
+
+const CLOCK_FIT_TOLERANCE = 2;
+const CLOCK_CAPACITY_STEPS = [7, 4, 3, 2, 1] as const;
+const WIDGET_ROTATION_INTERVAL_MS = 9000;
 
 const FALLBACK_CONTEXT: PublicSignInContext = {
   config: DEFAULT_SIGNIN_PREFERENCES,
@@ -240,7 +279,7 @@ function ClockCard({ location, now, weather, unit, display, loadingLabel }: {
     display.showWeather ? formatTemperature(weather?.temperatureC ?? null, unit) + ' · ' + description : '',
   ].filter(Boolean);
   const compactDetail = compactDetails[Math.floor(now.getTime() / 8000) % Math.max(1, compactDetails.length)] || timeZoneText(location.zone, now);
-  return <article className="usp-clock-card" tabIndex={0} aria-label={location.name + ' local time and weather'} data-weather-condition={weatherKind(description)}>
+  return <article className="usp-clock-card" tabIndex={0} aria-label={location.name + ' local time and weather'} data-clock-location={location.zone} data-weather-condition={weatherKind(description)}>
     {display.showAnalog && <div className="usp-analog-clock" style={clockHands(location.zone, now)} aria-hidden="true">
       {Array.from({ length: 12 }, (_, tick) => <i key={tick} style={{ transform: 'rotate(' + tick * 30 + 'deg)' }} />)}
       <span className="usp-clock-hand usp-clock-hour" />
@@ -248,7 +287,7 @@ function ClockCard({ location, now, weather, unit, display, loadingLabel }: {
       <span className="usp-clock-hand usp-clock-second" />
       <span className="usp-clock-pin" />
     </div>}
-    <div className={'usp-clock-copy' + (display.showAnalog ? '' : ' usp-clock-copy-wide')}>
+    <div className={'usp-clock-copy' + (display.showAnalog ? '' : ' usp-clock-copy-wide')} data-clock-copy="true">
       <div className="usp-clock-location"><strong>{location.name}</strong><small>{location.region}</small></div>
       {display.showDigital && <b>{timeText(location.zone, now, true)}</b>}
       <span className="usp-clock-compact-detail" aria-live="polite">{compactDetail}</span>
@@ -271,7 +310,75 @@ function ClockCard({ location, now, weather, unit, display, loadingLabel }: {
   </article>;
 }
 
-export function SignInExperience({ authPanel, themeId, modePreference, onInstall }: {
+
+function WidgetRotator({ title, zone, instances, capacity, renderWidget }: {
+  title: string;
+  zone: SignInZone;
+  instances: SignInWidgetInstance[];
+  capacity: number;
+  renderWidget: (instance: SignInWidgetInstance) => ReactNode;
+}) {
+  const pageCount = Math.max(1, Math.ceil(instances.length / Math.max(1, capacity)));
+  const [page, setPage] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(() => typeof document === 'undefined' || document.visibilityState === 'visible');
+  const safePage = Math.min(page, pageCount - 1);
+
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => setDocumentVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    if (pageCount <= 1 || hovered || focused || !documentVisible) return;
+    const timer = window.setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        setPage((current) => (current + 1) % pageCount);
+      }
+    }, WIDGET_ROTATION_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [documentVisible, focused, hovered, page, pageCount]);
+
+  const changePage = (delta: number) => {
+    setPage((current) => (current + delta + pageCount) % pageCount);
+  };
+  const start = safePage * capacity;
+  const visibleInstances = instances.slice(start, start + capacity);
+  const interacting = hovered || focused;
+
+  return <div
+    className="usp-widget-rotator"
+    data-widget-zone={zone}
+    data-widget-count={instances.length}
+    data-widget-capacity={capacity}
+    data-widget-page={safePage + 1}
+    data-widget-page-count={pageCount}
+    data-widget-auto-rotation={pageCount > 1 ? 'true' : 'false'}
+    data-widget-rotation-interval={WIDGET_ROTATION_INTERVAL_MS}
+    data-widget-interacting={interacting ? 'true' : 'false'}
+    onMouseEnter={() => setHovered(true)}
+    onMouseLeave={() => setHovered(false)}
+    onFocusCapture={() => setFocused(true)}
+    onBlurCapture={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
+    }}
+  >
+    <div key={safePage} className="usp-widget-rotator-view" aria-live="polite">{visibleInstances.map(renderWidget)}</div>
+    <div className="usp-widget-rotator-controls">
+      <button type="button" onClick={() => changePage(-1)} aria-label={'Previous ' + title + ' widget'}>Previous</button>
+      <span className="usp-widget-rotator-position" aria-label={'Widgets ' + (start + 1) + ' to ' + Math.min(start + capacity, instances.length) + ' of ' + instances.length}>{start + 1}–{Math.min(start + capacity, instances.length)} / {instances.length}</span>
+      <button type="button" onClick={() => changePage(1)} aria-label={'Next ' + title + ' widget'}>Next</button>
+    </div>
+  </div>;
+}
+
+export function SignInExperience({ authPanel, themeId, onInstall }: {
   authPanel: ReactNode;
   themeId: ThemeId;
   modePreference: ModePreference;
@@ -286,18 +393,14 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     width: typeof window === 'undefined' ? 1920 : window.innerWidth,
     height: typeof window === 'undefined' ? 1080 : window.innerHeight,
   }));
-  const [zonePages, setZonePages] = useState<Record<SignInZone, number>>({
-    'workspace-spotlight': 0,
-    'live-context': 0,
-    today: 0,
-    auxiliary: 0,
-  });
   const [density, setDensity] = useState<LayoutDensity>(() => densityHint({
     width: typeof window === 'undefined' ? 1920 : window.innerWidth,
     height: typeof window === 'undefined' ? 1080 : window.innerHeight,
   }));
   const [layoutMetrics, setLayoutMetrics] = useState<LayoutMetrics>({ stageHeight: 0, stageBottom: 0, dockTop: 0, authAvailable: 0, authRequired: 0, liveAvailable: 0, liveRequired: 0, dockWidth: 0 });
   const [clockPage, setClockPage] = useState(0);
+  const [clockCapacityOverride, setClockCapacityOverride] = useState<number | null>(null);
+  const [clockFit, setClockFit] = useState<ClockFitMetrics>(EMPTY_CLOCK_FIT);
   const pageRef = useRef<HTMLElement | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
   const liveStackRef = useRef<HTMLElement | null>(null);
@@ -316,6 +419,21 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
       ? { 'workspace-spotlight': 1, 'live-context': 2, today: 2, auxiliary: 1 }
       : { 'workspace-spotlight': 1, 'live-context': 2, today: 3, auxiliary: 2 };
 
+  const shortDesktop = viewport.width >= 821 && viewport.height <= 820;
+  const baseClockCapacity = locations.length <= 4
+    ? locations.length
+    : density === 'tight' || shortDesktop || (layoutMetrics.dockWidth > 0 && layoutMetrics.dockWidth / locations.length < 175)
+      ? 4
+      : 7;
+  const clockCapacity = Math.max(1, Math.min(
+    locations.length,
+    Math.min(baseClockCapacity, clockCapacityOverride ?? baseClockCapacity),
+  ));
+  const clockPageCount = Math.max(1, Math.ceil(locations.length / clockCapacity));
+  const safeClockPage = Math.min(clockPage, clockPageCount - 1);
+  const visibleLocations = locations.slice(safeClockPage * clockCapacity, safeClockPage * clockCapacity + clockCapacity);
+  const changeClockPage = (delta: number) => setClockPage((page) => (page + delta + clockPageCount) % clockPageCount);
+
   useEffect(() => {
     const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', onResize, { passive: true });
@@ -331,6 +449,11 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   }, [viewport.width, viewport.height]);
 
   useEffect(() => {
+    setClockCapacityOverride(baseClockCapacity);
+    setClockPage(0);
+  }, [baseClockCapacity, locations.length]);
+
+  useEffect(() => {
     if (viewport.width < 821) return;
     const page = pageRef.current;
     const stage = stageRef.current;
@@ -344,6 +467,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
         const authPanel = page.querySelector<HTMLElement>('.usp-auth-panel');
         const stageRect = stage.getBoundingClientRect();
         const dockRect = dock?.getBoundingClientRect();
+        const authRect = authPanel?.getBoundingClientRect();
         const authColumn = page.querySelector<HTMLElement>('.usp-form-column');
         const metrics: LayoutMetrics = {
           stageHeight: stage.clientHeight,
@@ -358,7 +482,8 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
         setLayoutMetrics(metrics);
         const authOverflow = metrics.authRequired > metrics.authAvailable + 1;
         const railOverflow = metrics.liveRequired > metrics.liveAvailable + 1;
-        if (authOverflow || railOverflow) {
+        const authDockOverlap = Boolean(authRect && dockRect && authRect.bottom > dockRect.top + 1);
+        if (authOverflow || railOverflow || authDockOverlap) {
           setDensity((current) => densityRank(current) >= 2 ? current : densityRank(current) === 1 ? 'tight' : 'compact');
         }
       });
@@ -376,6 +501,92 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
       window.visualViewport?.removeEventListener('resize', measure);
     };
   }, [density, viewport.width, viewport.height, preferences.widgetInstances.length, preferences.globalOperations.visible]);
+
+
+  useEffect(() => {
+    if (!preferences.globalOperations.visible || viewport.width < 821) {
+      setClockFit(EMPTY_CLOCK_FIT);
+      return;
+    }
+    let frame = 0;
+    const measureClockFit = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const dock = clockDockRef.current;
+        const grid = dock?.querySelector<HTMLElement>('.usp-clock-grid');
+        const cards = grid ? Array.from(grid.querySelectorAll<HTMLElement>('.usp-clock-card')) : [];
+        const copies = cards.map((card) => card.querySelector<HTMLElement>('.usp-clock-copy')).filter((copy): copy is HTMLElement => Boolean(copy));
+        if (!dock || !grid || !cards.length) return;
+
+        const dockRect = dock.getBoundingClientRect();
+        const gridRect = grid.getBoundingClientRect();
+        const cardRects = cards.map((card) => card.getBoundingClientRect());
+        const dockOverflow = dock.scrollHeight > dock.clientHeight + CLOCK_FIT_TOLERANCE;
+        const gridOverflow = grid.scrollHeight > grid.clientHeight + CLOCK_FIT_TOLERANCE || grid.scrollWidth > grid.clientWidth + CLOCK_FIT_TOLERANCE;
+        const cardOverflow = cards.some((card) => card.scrollHeight > card.clientHeight + CLOCK_FIT_TOLERANCE || card.scrollWidth > card.clientWidth + CLOCK_FIT_TOLERANCE);
+        const copyOverflow = copies.some((copy) => copy.scrollHeight > copy.clientHeight + CLOCK_FIT_TOLERANCE || copy.scrollWidth > copy.clientWidth + CLOCK_FIT_TOLERANCE);
+        const gridWithinDock = gridRect.top >= dockRect.top - CLOCK_FIT_TOLERANCE
+          && gridRect.left >= dockRect.left - CLOCK_FIT_TOLERANCE
+          && gridRect.bottom <= dockRect.bottom + CLOCK_FIT_TOLERANCE
+          && gridRect.right <= dockRect.right + CLOCK_FIT_TOLERANCE;
+        const cardsWithinGrid = cardRects.every((rect) => rect.top >= gridRect.top - CLOCK_FIT_TOLERANCE
+          && rect.left >= gridRect.left - CLOCK_FIT_TOLERANCE
+          && rect.bottom <= gridRect.bottom + CLOCK_FIT_TOLERANCE
+          && rect.right <= gridRect.right + CLOCK_FIT_TOLERANCE);
+        const next: ClockFitMetrics = {
+          dockClientHeight: dock.clientHeight,
+          dockScrollHeight: dock.scrollHeight,
+          gridClientHeight: grid.clientHeight,
+          gridScrollHeight: grid.scrollHeight,
+          cardClientHeight: cards.length ? Math.min(...cards.map((card) => card.clientHeight)) : 0,
+          cardScrollHeight: cards.length ? Math.max(...cards.map((card) => card.scrollHeight)) : 0,
+          copyClientHeight: copies.length ? Math.min(...copies.map((copy) => copy.clientHeight)) : 0,
+          copyScrollHeight: copies.length ? Math.max(...copies.map((copy) => copy.scrollHeight)) : 0,
+          gridWithinDock,
+          cardsWithinGrid,
+          dockOverflow,
+          gridOverflow,
+          cardOverflow,
+          copyOverflow,
+          fits: gridWithinDock && cardsWithinGrid && !dockOverflow && !gridOverflow && !cardOverflow && !copyOverflow,
+        };
+        setClockFit((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
+
+        if (!next.fits) {
+          setDensity((current) => densityRank(current) === 0 ? 'compact' : 'tight');
+          setClockCapacityOverride((current) => {
+            const currentCapacity = current ?? baseClockCapacity;
+            const nextCapacity = CLOCK_CAPACITY_STEPS.find((step) => step < currentCapacity) || 1;
+            return Math.min(baseClockCapacity, nextCapacity);
+          });
+        }
+      });
+    };
+
+    const dock = clockDockRef.current;
+    const grid = dock?.querySelector<HTMLElement>('.usp-clock-grid');
+    const cards = grid ? Array.from(grid.querySelectorAll<HTMLElement>('.usp-clock-card')) : [];
+    const copies = cards.map((card) => card.querySelector<HTMLElement>('.usp-clock-copy')).filter((copy): copy is HTMLElement => Boolean(copy));
+    const observer = new ResizeObserver(measureClockFit);
+    [dock, grid, ...cards, ...copies].filter((item): item is HTMLElement => Boolean(item)).forEach((item) => observer.observe(item));
+    window.addEventListener('resize', measureClockFit, { passive: true });
+    window.visualViewport?.addEventListener('resize', measureClockFit, { passive: true });
+    measureClockFit();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', measureClockFit);
+      window.visualViewport?.removeEventListener('resize', measureClockFit);
+    };
+  }, [
+    baseClockCapacity,
+    clockCapacity,
+    density,
+    preferences.globalOperations,
+    safeClockPage,
+    viewport.height,
+    viewport.width,
+  ]);
 
   useEffect(() => {
     let timer = 0;
@@ -471,17 +682,9 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   }, []);
 
   useEffect(() => {
-    let timer = 0;
-    const apply = () => {
-      const selectedMode = preferences.themeMode === 'auto'
-        ? (isWithinDarkWindow(new Date(), preferences.darkStart, preferences.darkEnd) ? 'night' : 'day')
-        : preferences.themeMode;
-      applyThemeToDocument(themeId, selectedMode || modePreference);
-    };
-    apply();
-    timer = window.setInterval(apply, 60_000);
-    return () => window.clearInterval(timer);
-  }, [modePreference, preferences.darkEnd, preferences.darkStart, preferences.themeMode, themeId]);
+    const selectedMode = preferences.themeMode === 'night' ? 'night' : 'day';
+    applyThemeToDocument(themeId, selectedMode);
+  }, [preferences.themeMode, themeId]);
 
   const ibadan = locationForZone('Africa/Lagos') || locations[0];
   const ibadanWeather = ibadan ? weather[ibadan.zone] : undefined;
@@ -492,13 +695,6 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   const healthDetail = health.state === 'operational'
     ? (health.latencyMs || '—') + ' ms secure edge'
     : health.state === 'maintenance' ? 'Service team notified' : presentation.statusConnecting;
-  const shortDesktop = viewport.width >= 821 && viewport.height <= 820;
-  const clockCapacity = locations.length <= 4 || shortDesktop || (layoutMetrics.dockWidth > 0 && layoutMetrics.dockWidth / locations.length < 175) || density === 'tight' ? 4 : 7;
-  const clockPageCount = Math.max(1, Math.ceil(locations.length / clockCapacity));
-  const safeClockPage = Math.min(clockPage, clockPageCount - 1);
-  const visibleLocations = locations.slice(safeClockPage * clockCapacity, safeClockPage * clockCapacity + clockCapacity);
-  const changeClockPage = (delta: number) => setClockPage((page) => (page + delta + clockPageCount) % clockPageCount);
-
   function renderWidget(instance: SignInWidgetInstance) {
     if (!instance.visible) return null;
     const widget = instance.kind;
@@ -564,23 +760,11 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     const zone = zones[0];
     const capacity = zoneCapacities[zone] || 1;
     const rotate = instances.length > capacity;
-    const pageCount = Math.max(1, Math.ceil(instances.length / capacity));
-    const page = Math.min(zonePages[zone] || 0, pageCount - 1);
-    const start = page * capacity;
-    const visibleInstances = rotate ? instances.slice(start, start + capacity) : instances;
-    const changePage = (delta: number) => setZonePages((currentPages) => ({ ...currentPages, [zone]: (page + delta + pageCount) % pageCount }));
     return <section className={'usp-widget-group usp-widget-zone-' + region} aria-label={title} data-zone={zone}>
       <h3 className="usp-widget-group-title">{title}</h3>
       {rotate
-        ? <div className="usp-widget-rotator" data-widget-count={instances.length} data-widget-capacity={capacity}>
-            <div className="usp-widget-rotator-view" aria-live="polite">{visibleInstances.map(renderWidget)}</div>
-            <div className="usp-widget-rotator-controls">
-              <button type="button" onClick={() => changePage(-1)} aria-label={'Previous ' + title + ' widget'}>Previous</button>
-              <span className="usp-widget-rotator-position" aria-label={'Widgets ' + (start + 1) + ' to ' + Math.min(start + capacity, instances.length) + ' of ' + instances.length}>{start + 1}–{Math.min(start + capacity, instances.length)} / {instances.length}</span>
-              <button type="button" onClick={() => changePage(1)} aria-label={'Next ' + title + ' widget'}>Next</button>
-            </div>
-          </div>
-        : visibleInstances.map(renderWidget)}
+        ? <WidgetRotator title={title} zone={zone} instances={instances} capacity={capacity} renderWidget={renderWidget} />
+        : instances.map(renderWidget)}
     </section>;
   }
 
@@ -614,6 +798,16 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     data-auth-available-height={layoutMetrics.authAvailable || undefined}
     data-live-required-height={layoutMetrics.liveRequired || undefined}
     data-live-available-height={layoutMetrics.liveAvailable || undefined}
+    data-clock-capacity={clockCapacity}
+    data-clock-fit={clockFit.fits ? 'true' : 'false'}
+    data-clock-dock-client-height={clockFit.dockClientHeight || undefined}
+    data-clock-dock-scroll-height={clockFit.dockScrollHeight || undefined}
+    data-clock-grid-client-height={clockFit.gridClientHeight || undefined}
+    data-clock-grid-scroll-height={clockFit.gridScrollHeight || undefined}
+    data-clock-card-client-height={clockFit.cardClientHeight || undefined}
+    data-clock-card-scroll-height={clockFit.cardScrollHeight || undefined}
+    data-clock-copy-client-height={clockFit.copyClientHeight || undefined}
+    data-clock-copy-scroll-height={clockFit.copyScrollHeight || undefined}
   >
     <div className="usp-background" aria-hidden="true" />
     <div className="usp-background-shade" aria-hidden="true" />
@@ -654,12 +848,12 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
         </aside>
       </section>
 
-      {preferences.globalOperations.visible && <section ref={clockDockRef} className={'usp-clock-dock clock-style-' + preferences.clockStyle} aria-label="Global time and weather">
+      {preferences.globalOperations.visible && <section ref={clockDockRef} className={'usp-clock-dock clock-style-' + preferences.clockStyle} aria-label="Global time and weather" data-clock-density={density} data-clock-capacity={clockCapacity} data-clock-fit={clockFit.fits ? 'true' : 'false'}>
         <header className="usp-clock-heading">
           <span><Wifi size={12} /> {labels.globalOperationsHeading}</span>
           <div className="usp-clock-heading-tools"><small>{locations.length} {labels.clockSummary}</small>{clockPageCount > 1 && <span className="usp-clock-pager" aria-label="Global Operations pages"><button type="button" onClick={() => changeClockPage(-1)} aria-label="Previous locations">Previous</button><b>{safeClockPage + 1} / {clockPageCount}</b><button type="button" onClick={() => changeClockPage(1)} aria-label="Next locations">Next</button></span>}</div>
         </header>
-        <div className="usp-clock-grid" data-clock-page={safeClockPage + 1} data-clock-count={visibleLocations.length} style={{ gridTemplateColumns: 'repeat(' + visibleLocations.length + ', minmax(0, 1fr))' }}>
+        <div className="usp-clock-grid" data-clock-page={safeClockPage + 1} data-clock-count={visibleLocations.length} data-clock-capacity={clockCapacity} style={{ gridTemplateColumns: 'repeat(' + visibleLocations.length + ', minmax(0, 1fr))' }}>
           {visibleLocations.map((location) => <ClockCard
             key={location.name + location.zone}
             location={location}

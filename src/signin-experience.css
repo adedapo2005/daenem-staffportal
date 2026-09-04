@@ -4936,3 +4936,128 @@ html[data-mode="night"] .usp-social-buttons button {
     white-space: nowrap;
   }
 }
+
+
+/* Smart rendered-fit governor: required clock content stays measurable and
+   visible. Density and per-page capacity are selected by the React governor
+   after measuring the live dock, grid, cards, and copy. */
+@media (min-width: 821px) {
+  .usp-clock-dock {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .usp-clock-grid {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    grid-auto-rows: max-content;
+    align-items: stretch;
+  }
+
+  .usp-clock-card {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    align-items: start;
+  }
+
+  .usp-clock-copy {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .usp-clock-copy > span,
+  .usp-clock-meta,
+  .usp-clock-weather,
+  .usp-clock-weather-detail,
+  .usp-clock-weather > small {
+    overflow: visible;
+  }
+
+  .usp-clock-copy > span:not(.usp-clock-compact-detail),
+  .usp-clock-weather > small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+  }
+
+  .usp-page.usp-density-compact .usp-clock-copy > span:not(.usp-clock-compact-detail),
+  .usp-page.usp-density-compact .usp-clock-meta,
+  .usp-page.usp-density-compact .usp-clock-weather-detail,
+  .usp-page.usp-density-tight .usp-clock-copy > span:not(.usp-clock-compact-detail),
+  .usp-page.usp-density-tight .usp-clock-meta,
+  .usp-page.usp-density-tight .usp-clock-weather,
+  .usp-page.usp-density-tight .usp-clock-weather-detail {
+    display: none;
+  }
+
+  .usp-page.usp-density-compact .usp-clock-compact-detail,
+  .usp-page.usp-density-tight .usp-clock-compact-detail {
+    display: block;
+    min-width: 0;
+    color: #b2cce0;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .usp-page.usp-density-compact .usp-clock-card {
+    padding: 8px;
+  }
+
+  .usp-page.usp-density-tight .usp-clock-card {
+    padding: 6px;
+  }
+
+  .usp-page.usp-density-tight .usp-clock-pager button,
+  .usp-page.usp-density-tight .usp-widget-rotator-controls button {
+    min-height: 32px;
+    padding-block: 4px;
+  }
+
+  .usp-page.usp-density-tight .usp-clock-pager b {
+    min-height: 32px;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .usp-page.usp-density-compact .usp-clock-pager button,
+  .usp-page.usp-density-compact .usp-widget-rotator-controls button {
+    min-height: 36px;
+    padding-block: 4px;
+  }
+
+  .usp-page.usp-density-compact .usp-clock-pager b {
+    min-height: 36px;
+    display: inline-grid;
+    place-items: center;
+  }
+}
+
+@media (min-width: 821px) and (max-height: 820px) {
+  .usp-stage {
+    align-items: start;
+  }
+
+  .usp-form-column {
+    align-self: start;
+  }
+}
+
+.usp-widget-rotator-view {
+  animation: usp-widget-rotation-in .3s ease both;
+}
+
+@keyframes usp-widget-rotation-in {
+  from { opacity: .72; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usp-widget-rotator-view {
+    animation: none;
+  }
+}

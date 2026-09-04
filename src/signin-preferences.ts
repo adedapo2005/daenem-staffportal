@@ -306,7 +306,7 @@ const ALL_LOGO_SIZES: LogoSizePreset[] = ['compact', 'standard', 'prominent'];
 const ALL_LOGO_ALIGNMENTS: LogoAlignment[] = ['start', 'center', 'end'];
 const ALL_LOGO_ANIMATIONS: LogoAnimation[] = ['none', 'float', 'orbit', 'pulse'];
 const ALL_EFFECT_LEVELS: EffectLevel[] = ['calm', 'balanced', 'vivid'];
-const ALL_THEME_MODES: SignInThemeMode[] = ['day', 'night', 'auto'];
+const ALL_THEME_MODES: SignInThemeMode[] = ['day', 'night'];
 const ALL_ZONES: SignInZone[] = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'];
 const ALL_BACKGROUND_IDS = SIGNIN_BACKGROUND_OPTIONS.map((item) => item.id);
 const ALL_EFFECT_PRESETS: EffectPreset[] = ['quiet', 'glass', 'accent', 'soft'];
@@ -501,7 +501,7 @@ export const DEFAULT_SIGNIN_PREFERENCES: SignInExperiencePreferences = {
   logo: { position: 'left', size: 'prominent', alignment: 'start', glass: true, animation: 'float' },
   effectLevel: 'balanced',
   effects: { ambientGlow: true, glassIntensity: 72, backgroundBreathing: true, cardFloat: true, logoMotion: true, statusPulse: true, widgetEntrance: true, shimmer: false },
-  themeMode: 'auto',
+  themeMode: 'day',
   backgroundId: 'unified-daylight',
   darkStart: '19:00',
   darkEnd: '07:00',
@@ -691,7 +691,7 @@ export function normalizeSignInPreferences(value: unknown): SignInExperiencePref
     },
     effectLevel: ALL_EFFECT_LEVELS.includes(candidate.effectLevel as EffectLevel) ? candidate.effectLevel as EffectLevel : DEFAULT_SIGNIN_PREFERENCES.effectLevel,
     effects: normalizeEffects(candidate.effects),
-    themeMode: ALL_THEME_MODES.includes(candidate.themeMode as SignInThemeMode) ? candidate.themeMode as SignInThemeMode : DEFAULT_SIGNIN_PREFERENCES.themeMode,
+    themeMode: candidate.themeMode === 'night' ? 'night' : 'day',
     backgroundId,
     darkStart: validTime(candidate.darkStart, DEFAULT_SIGNIN_PREFERENCES.darkStart),
     darkEnd: validTime(candidate.darkEnd, DEFAULT_SIGNIN_PREFERENCES.darkEnd),

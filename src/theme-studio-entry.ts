@@ -140,7 +140,7 @@ function ensureModal() {
         <div class="theme-owner-actions"><button type="button" data-theme-admin="default">Set as Group default</button><button type="button" data-theme-admin="force">Force selected theme</button><button type="button" data-theme-admin="clear">Clear forced theme</button></div>
       </div>
       <section class="signin-theme-admin" hidden>
-        <div class="signin-theme-admin-head"><div><strong>Live sign-in controls</strong><span>Manage the public sign-in widgets, clocks, scheduled dark mode, logo placement, and effects.</span></div><span class="signin-theme-save-state" data-state="idle">Central settings</span></div>
+        <div class="signin-theme-admin-head"><div><strong>Live sign-in controls</strong><span>Manage the public sign-in widgets, clocks, daylight/night mode, logo placement, and effects.</span></div><span class="signin-theme-save-state" data-state="idle">Central settings</span></div>
         <div class="signin-theme-admin-body"></div>
       </section>
       <div class="theme-choice-grid"></div>
@@ -211,9 +211,7 @@ function renderSignInAdmin() {
     '<div class="signin-admin-sections">' +
       '<section class="signin-admin-section"><h4>LAYOUT</h4><p>Responsive zones keep the authentication region protected while widgets can move safely.</p><div class="signin-admin-grid">' +
         '<label>Motion level<select data-signin-field="effectLevel">' + optionMarkup(['calm', 'balanced', 'vivid'], signInConfig.effectLevel) + '</select></label>' +
-        '<label>Theme behavior<select data-signin-field="themeMode">' + optionMarkup(['auto', 'day', 'night'], signInConfig.themeMode, { auto: 'Automatic schedule', day: 'Always daylight', night: 'Always dark' }) + '</select></label>' +
-        '<label>Dark mode starts<input type="time" data-signin-field="darkStart" value="' + signInConfig.darkStart + '"' + (signInConfig.themeMode !== 'auto' ? ' disabled' : '') + '></label>' +
-        '<label>Day mode returns<input type="time" data-signin-field="darkEnd" value="' + signInConfig.darkEnd + '"' + (signInConfig.themeMode !== 'auto' ? ' disabled' : '') + '></label>' +
+        '<label>Theme behavior<select data-signin-field="themeMode">' + optionMarkup(['day', 'night'], signInConfig.themeMode === 'night' ? 'night' : 'day', { day: 'Daylight — default', night: 'Night — manual' }) + '</select></label>' +
       '</div></section>' +
       '<section class="signin-admin-section"><h4>BRANDING</h4><div class="signin-admin-grid">' +
         '<label>Position<select data-signin-field="logo.position">' + optionMarkup(['left', 'center', 'right'], signInConfig.logo.position) + '</select></label>' +
