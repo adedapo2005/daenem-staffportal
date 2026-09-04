@@ -768,7 +768,7 @@ async function resetPassword(request: Request, env: PasswordAuthEnv) {
       AND datetime(pr.reset_token_expires_at) > datetime('now')
     LIMIT 1
   `).bind(tokenHash).first<{
-    id: string; employeeId: string; username: string; currentHash: string; currentSalt: string; currentIterations: number;
+    id: string; employeeId: string; username: string; email?: string; currentHash: string; currentSalt: string; currentIterations: number;
   }>();
   if (!row) return json({ error: 'This password reset authorization is invalid or has expired. Start again.' }, 401);
 
