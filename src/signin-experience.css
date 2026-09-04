@@ -4830,20 +4830,43 @@ html[data-mode="night"] .usp-social-buttons button {
     padding: 4px 10px;
     border-radius: 16px;
   }
-  .usp-auth-panel.usp-auth-panel-signin { padding: 4px 10px; }
-  .usp-panel-heading { gap: 4px; margin-bottom: 4px; }
-  .usp-panel-heading h1 { margin-top: 2px; font-size: 23px; line-height: 1.05; }
-  .usp-panel-eyebrow { font-size: 9px; }
-  .usp-mfa-chip { min-height: 22px; padding-inline: 8px; font-size: 9px; }
-  .usp-tabs { margin-bottom: 4px; }
-  .usp-tabs button { min-height: 44px; }
-  .usp-auth-form { gap: 4px; }
-  .usp-field { gap: 3px; }
-  .usp-field-label { min-height: 14px; }
-  .usp-or-divider { margin: 3px 0; }
-  .usp-social-buttons { gap: 4px; }
-  .usp-legal-copy { margin-top: 3px; line-height: 1.1; }
-  .usp-panel-footer { margin-top: 3px; padding-top: 3px; }
+  .usp-auth-panel.usp-auth-panel-signin {
+    padding: 4px 10px;
+  }
+  .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading {
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading h1 {
+    margin-top: 2px;
+    font-size: 23px;
+    line-height: 1.05;
+  }
+  .usp-auth-panel.usp-auth-panel-signin .usp-panel-eyebrow { font-size: 9px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-mfa-chip {
+    min-height: 20px;
+    padding-inline: 8px;
+    font-size: 9px;
+  }
+  .usp-auth-panel.usp-auth-panel-signin .usp-tabs { margin-bottom: 3px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-tabs button { min-height: 40px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-auth-form { gap: 4px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-field { gap: 3px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-field-label { min-height: 14px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-password-block { gap: 3px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-or-divider { margin: 3px 0; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-social-buttons { gap: 4px; }
+  .usp-auth-panel.usp-auth-panel-signin .usp-legal-copy {
+    max-width: none;
+    margin-top: 2px;
+    line-height: 1.1;
+    white-space: nowrap;
+    letter-spacing: -.015em;
+  }
+  .usp-auth-panel.usp-auth-panel-signin .usp-panel-footer {
+    margin-top: 2px;
+    padding-top: 2px;
+  }
 
   .usp-live-stack { grid-area: rail; min-width: 0; gap: 6px; }
   .usp-clock-dock { height: 112px; padding: 7px; border-radius: 17px; }
@@ -4861,8 +4884,8 @@ html[data-mode="night"] .usp-social-buttons button {
   }
   .usp-analog-clock { width: 34px; height: 34px; }
   .usp-analog-clock > i { transform-origin: 50% 15px; }
-  .usp-clock-location strong { font-size: 12px; }
-  .usp-clock-copy > b { font-size: 14px; }
+  .usp-clock-location strong { font-size: 12px; line-height: 1.05; }
+  .usp-clock-copy > b { font-size: 14px; line-height: 1.05; }
   .usp-clock-copy > span:not(.usp-clock-compact-detail),
   .usp-clock-meta,
   .usp-clock-weather,
@@ -4873,7 +4896,7 @@ html[data-mode="night"] .usp-social-buttons button {
     overflow: hidden;
     color: #4d6f8b;
     font-size: 10px;
-    line-height: 1.15;
+    line-height: 1.1;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -4890,14 +4913,14 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-clock-card {
     min-height: 0;
     height: 100%;
-    padding: 8px;
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: 7px;
+    padding: 5px;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 6px;
   }
-  .usp-analog-clock { width: 38px; height: 38px; }
-  .usp-analog-clock > i { transform-origin: 50% 17px; }
-  .usp-clock-location strong { font-size: 12px; }
-  .usp-clock-copy > b { font-size: 14px; }
+  .usp-analog-clock { width: 36px; height: 36px; }
+  .usp-analog-clock > i { transform-origin: 50% 16px; }
+  .usp-clock-location strong { font-size: 12px; line-height: 1.05; }
+  .usp-clock-copy > b { font-size: 14px; line-height: 1.05; }
   .usp-clock-copy > span:not(.usp-clock-compact-detail),
   .usp-clock-meta,
   .usp-clock-weather,
@@ -4908,7 +4931,7 @@ html[data-mode="night"] .usp-social-buttons button {
     overflow: hidden;
     color: #4d6f8b;
     font-size: 10px;
-    line-height: 1.15;
+    line-height: 1.1;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
