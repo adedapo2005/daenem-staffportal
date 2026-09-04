@@ -184,7 +184,7 @@ function signInWidgetRow(instance: SignInWidgetInstance, index: number) {
 function signInBackgroundCard(option: typeof SIGNIN_BACKGROUND_OPTIONS[number], activeId: string) {
   const active = option.id === activeId;
   return '<button type="button" class="signin-background-option' + (active ? ' is-active' : '') + '" data-signin-background="' + escapeHtml(option.id) + '" aria-pressed="' + String(active) + '" aria-label="Select ' + escapeHtml(option.name) + ' background">' +
-    '<img src="' + escapeHtml(option.src) + '" alt="" loading="lazy" decoding="async">' +
+    '<img src="' + escapeHtml(option.previewSrc || option.src) + '" alt="" loading="lazy" decoding="async">' +
     '<span class="signin-background-option-copy"><strong>' + escapeHtml(option.name) + '</strong><small>' + escapeHtml(option.description) + '</small></span>' +
     '<span class="signin-background-active">' + (active ? 'Active' : 'Select') + '</span></button>';
 }

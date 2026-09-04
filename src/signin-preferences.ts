@@ -28,6 +28,7 @@ export type SignInBackgroundOption = {
   name: string;
   description: string;
   src: string;
+  previewSrc?: string;
   surface: string;
   line: string;
   accent: string;
@@ -283,6 +284,10 @@ export const SIGNIN_BACKGROUND_OPTIONS: SignInBackgroundOption[] = [
   { id: 'job-market-pulse', name: 'Job Market Pulse', description: 'Bright connected operations', src: '/reference-images/signin/theme-08-job-market-pulse.png', surface: 'rgba(9, 42, 71, .84)', line: 'rgba(99, 229, 220, .34)', accent: '#69e6d8', glow: 'rgba(75, 213, 199, .2)', shade: 'linear-gradient(90deg, rgba(229, 255, 251, .04), rgba(4, 27, 52, .3))' },
   { id: 'global-operations', name: 'Global Operations', description: 'World-scale command atmosphere', src: '/reference-images/signin/theme-09-global-operations-mesh.png', surface: 'rgba(7, 38, 72, .86)', line: 'rgba(112, 201, 255, .38)', accent: '#70cfff', glow: 'rgba(60, 177, 255, .22)', shade: 'linear-gradient(90deg, rgba(219, 246, 255, .03), rgba(4, 20, 48, .36))' },
   { id: 'minimal-tech-white', name: 'Minimal Tech White', description: 'Neutral high-clarity technology', src: '/reference-images/signin/theme-10-minimal-tech-white.png', surface: 'rgba(11, 45, 78, .8)', line: 'rgba(118, 218, 255, .32)', accent: '#79dcff', glow: 'rgba(98, 205, 255, .18)', shade: 'linear-gradient(90deg, rgba(255, 255, 255, .12), rgba(5, 27, 58, .22))' },
+  { id: 'global-executive-atrium', name: 'Global Executive Atrium', description: 'Luminous glass architecture and calm depth', src: '/reference-images/signin/global-executive-atrium.webp', previewSrc: '/reference-images/signin/global-executive-atrium-thumb.webp', surface: 'rgba(8, 43, 74, .78)', line: 'rgba(175, 235, 255, .42)', accent: '#70ddff', glow: 'rgba(116, 224, 255, .22)', shade: 'linear-gradient(90deg, rgba(255, 255, 255, .12), rgba(4, 28, 53, .24))' },
+  { id: 'future-technology-campus', name: 'Future Technology Campus', description: 'Bright connected campus perspective', src: '/reference-images/signin/future-technology-campus.webp', previewSrc: '/reference-images/signin/future-technology-campus-thumb.webp', surface: 'rgba(7, 47, 83, .78)', line: 'rgba(139, 224, 255, .4)', accent: '#6fceff', glow: 'rgba(75, 200, 255, .22)', shade: 'linear-gradient(90deg, rgba(229, 249, 255, .1), rgba(3, 26, 58, .3))' },
+  { id: 'daylight-glass-skyline', name: 'Daylight Glass Skyline', description: 'International skyline through clear glass', src: '/reference-images/signin/daylight-glass-skyline.webp', previewSrc: '/reference-images/signin/daylight-glass-skyline-thumb.webp', surface: 'rgba(8, 44, 77, .78)', line: 'rgba(133, 221, 255, .4)', accent: '#77d8ff', glow: 'rgba(63, 192, 255, .2)', shade: 'linear-gradient(90deg, rgba(255, 255, 255, .1), rgba(4, 25, 54, .26))' },
+  { id: 'premium-connected-workspace', name: 'Premium Connected Workspace', description: 'Warm daylight workspace with soft technology cues', src: '/reference-images/signin/premium-connected-workspace.webp', previewSrc: '/reference-images/signin/premium-connected-workspace-thumb.webp', surface: 'rgba(13, 48, 72, .78)', line: 'rgba(173, 230, 225, .38)', accent: '#73e1d0', glow: 'rgba(85, 215, 190, .2)', shade: 'linear-gradient(90deg, rgba(255, 243, 220, .1), rgba(5, 31, 48, .24))' },
 ];
 
 export type LiveHeadline = { title: string; url?: string; category: string; source: string };
