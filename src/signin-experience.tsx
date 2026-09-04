@@ -486,6 +486,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
   const clockDockRef = useRef<HTMLElement | null>(null);
   const [spatialRecovery, setSpatialRecovery] = useState(false);
   const recoveryViewportKeyRef = useRef('');
+  const capacityViewportKeyRef = useRef('');
 
   const locations = useMemo(() => {
     const values = preferences.clockZones.map(locationForZone).filter((item): item is PortalLocation => Boolean(item));
@@ -537,9 +538,13 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
   }, [baseClockCapacity, density, locations.length, viewport.height, viewport.width]);
 
   useEffect(() => {
+    const capacityKey = viewport.width + 'x' + viewport.height + ':' + density + ':' + baseClockCapacity + ':' + locations.length + ':' + (spatialRecovery ? 'recovery' : 'normal');
+    if (capacityViewportKeyRef.current === capacityKey) return;
+    capacityViewportKeyRef.current = capacityKey;
+    // Retry the highest safe candidate whenever the measured layout regime changes.
     setClockCapacityOverride(baseClockCapacity);
     setClockPage(0);
-  }, [baseClockCapacity, locations.length]);
+  }, [baseClockCapacity, density, locations.length, spatialRecovery, viewport.height, viewport.width]);
 
   useEffect(() => {
     if (viewport.width < 821) {
