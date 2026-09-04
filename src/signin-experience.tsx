@@ -492,7 +492,8 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   const healthDetail = health.state === 'operational'
     ? (health.latencyMs || '—') + ' ms secure edge'
     : health.state === 'maintenance' ? 'Service team notified' : presentation.statusConnecting;
-  const clockCapacity = locations.length <= 4 || (layoutMetrics.dockWidth > 0 && layoutMetrics.dockWidth / locations.length < 175) || density === 'tight' ? 4 : 7;
+  const shortDesktop = viewport.width >= 821 && viewport.height <= 820;
+  const clockCapacity = locations.length <= 4 || shortDesktop || (layoutMetrics.dockWidth > 0 && layoutMetrics.dockWidth / locations.length < 175) || density === 'tight' ? 4 : 7;
   const clockPageCount = Math.max(1, Math.ceil(locations.length / clockCapacity));
   const safeClockPage = Math.min(clockPage, clockPageCount - 1);
   const visibleLocations = locations.slice(safeClockPage * clockCapacity, safeClockPage * clockCapacity + clockCapacity);

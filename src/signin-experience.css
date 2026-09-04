@@ -4777,30 +4777,79 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-clock-weather > small { font-size: 12px; }
 }
 
-/* Evidence-backed tight-desktop correction: keep workspace context out of auth and
-   give the paged clock cards enough height to remain fully readable. */
+/* Evidence-backed short-desktop correction: keep the workspace context clear of the
+   auth panel and reserve enough height for fully readable paged clocks. */
 @media (min-width: 821px) and (max-width: 1120px) and (max-height: 719px) {
   .usp-shell { grid-template-rows: 48px minmax(0, 1fr) 112px; }
-  .usp-stage { grid-template-rows: auto auto; overflow: hidden; }
-  .usp-form-column { z-index: 2; }
+  .usp-stage {
+    grid-template-columns: 140px minmax(0, 1fr) minmax(300px, 330px);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "scene form rail";
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+  }
   .usp-scene-caption {
     position: static;
     left: auto;
     bottom: auto;
     z-index: 0;
     grid-area: scene;
-    align-self: start;
-    width: min(285px, 100%);
+    align-self: end;
+    width: 140px;
+    max-width: 140px;
     padding: 0;
   }
-  .usp-scene-title { padding: 7px 10px; border-radius: 14px; }
+  .usp-scene-title {
+    max-width: 140px;
+    padding: 7px 8px;
+    border-radius: 13px;
+    overflow: hidden;
+  }
   .usp-scene-title span { font-size: 10px; }
-  .usp-scene-title h2 { margin-top: 3px; font-size: 18px; line-height: 1.05; }
+  .usp-scene-title h2 {
+    margin-top: 3px;
+    font-size: 15px;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
   .usp-scene-title p,
   .usp-signal-row { display: none; }
 
+  .usp-form-column {
+    grid-area: form;
+    z-index: 2;
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+    align-self: center;
+  }
+  .usp-auth-panel {
+    max-height: 100%;
+    overflow: hidden;
+    padding: 4px 10px;
+    border-radius: 16px;
+  }
+  .usp-auth-panel.usp-auth-panel-signin { padding: 4px 10px; }
+  .usp-panel-heading { gap: 4px; margin-bottom: 4px; }
+  .usp-panel-heading h1 { margin-top: 2px; font-size: 23px; line-height: 1.05; }
+  .usp-panel-eyebrow { font-size: 9px; }
+  .usp-mfa-chip { min-height: 22px; padding-inline: 8px; font-size: 9px; }
+  .usp-tabs { margin-bottom: 4px; }
+  .usp-tabs button { min-height: 44px; }
+  .usp-auth-form { gap: 4px; }
+  .usp-field { gap: 3px; }
+  .usp-field-label { min-height: 14px; }
+  .usp-or-divider { margin: 3px 0; }
+  .usp-social-buttons { gap: 4px; }
+  .usp-legal-copy { margin-top: 3px; line-height: 1.1; }
+  .usp-panel-footer { margin-top: 3px; padding-top: 3px; }
+
+  .usp-live-stack { grid-area: rail; min-width: 0; gap: 6px; }
   .usp-clock-dock { height: 112px; padding: 7px; border-radius: 17px; }
   .usp-clock-heading { min-height: 22px; padding: 0 3px 4px; }
+  .usp-clock-pager button { min-width: 30px; min-height: 30px; padding: 4px 6px; }
+  .usp-clock-pager b { min-height: 30px; display: inline-grid; place-items: center; }
   .usp-clock-grid { height: calc(100% - 26px); gap: 6px; }
   .usp-clock-card {
     min-height: 0;
@@ -4814,22 +4863,53 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-analog-clock > i { transform-origin: 50% 15px; }
   .usp-clock-location strong { font-size: 12px; }
   .usp-clock-copy > b { font-size: 14px; }
-  .usp-clock-compact-detail { font-size: 10px; }
+  .usp-clock-copy > span:not(.usp-clock-compact-detail),
+  .usp-clock-meta,
+  .usp-clock-weather,
+  .usp-clock-location small { display: none; }
+  .usp-clock-copy > .usp-clock-compact-detail {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: #4d6f8b;
+    font-size: 10px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
-/* Evidence-backed short-desktop correction: retain complete clock-card detail
-   at 1366x768 without changing the comfortable 1920x1080 composition. */
+/* Evidence-backed short-desktop correction: compact the paged dock without
+   changing the approved 1920x1080 or large-desktop composition. */
 @media (min-width: 1121px) and (max-height: 820px) {
-  .usp-clock-dock { height: 154px; padding: 11px; }
-  .usp-clock-heading { min-height: 30px; padding: 0 5px 8px; }
-  .usp-clock-grid { height: calc(100% - 38px); gap: 9px; }
+  .usp-clock-dock { height: 104px; padding: 7px; border-radius: 17px; }
+  .usp-clock-heading { min-height: 24px; padding: 0 4px 4px; }
+  .usp-clock-pager button { min-width: 30px; min-height: 30px; padding: 4px 6px; }
+  .usp-clock-pager b { min-height: 30px; display: inline-grid; place-items: center; }
+  .usp-clock-grid { height: calc(100% - 28px); gap: 8px; }
   .usp-clock-card {
     min-height: 0;
     height: 100%;
-    padding: 10px;
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 8px;
+    padding: 8px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 7px;
   }
-  .usp-analog-clock { width: 42px; height: 42px; }
-  .usp-analog-clock > i { transform-origin: 50% 19px; }
+  .usp-analog-clock { width: 38px; height: 38px; }
+  .usp-analog-clock > i { transform-origin: 50% 17px; }
+  .usp-clock-location strong { font-size: 12px; }
+  .usp-clock-copy > b { font-size: 14px; }
+  .usp-clock-copy > span:not(.usp-clock-compact-detail),
+  .usp-clock-meta,
+  .usp-clock-weather,
+  .usp-clock-location small { display: none; }
+  .usp-clock-copy > .usp-clock-compact-detail {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: #4d6f8b;
+    font-size: 10px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

@@ -22,7 +22,7 @@ const aliases: Record<string, string> = {
 
 const SIGNIN_WIDGET_KINDS = ['weather', 'inspiration', 'motivation', 'news', 'status'] as const;
 const SIGNIN_ZONES = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'] as const;
-const SIGNIN_BACKGROUND_IDS = ['unified-daylight', 'lagos-sunrise', 'urban-skyline', 'cargo-flow', 'executive-boardroom', 'job-market-pulse', 'global-operations', 'minimal-tech-white', 'global-executive-atrium', 'future-technology-campus', 'daylight-glass-skyline', 'premium-connected-workspace'] as const;
+const SIGNIN_BACKGROUND_IDS = ['unified-daylight', 'lagos-sunrise', 'urban-skyline', 'executive-boardroom', 'job-market-pulse', 'global-executive-atrium', 'future-technology-campus', 'daylight-glass-skyline', 'premium-connected-workspace'] as const;
 const CLOCK_ZONES = [
   'Africa/Lagos', 'America/Toronto', 'Europe/London', 'America/New_York', 'Europe/Moscow',
   'Asia/Tokyo', 'Asia/Shanghai', 'Africa/Johannesburg', 'Asia/Dubai', 'Asia/Singapore', 'Australia/Sydney',
