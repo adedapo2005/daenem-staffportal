@@ -4794,7 +4794,7 @@ html[data-mode="night"] .usp-social-buttons button {
     padding: 0;
   }
   .usp-scene-title { padding: 7px 10px; border-radius: 14px; }
-  .usp-scene-title span { font-size: 8px; }
+  .usp-scene-title span { font-size: 10px; }
   .usp-scene-title h2 { margin-top: 3px; font-size: 18px; line-height: 1.05; }
   .usp-scene-title p,
   .usp-signal-row { display: none; }
@@ -4805,15 +4805,16 @@ html[data-mode="night"] .usp-social-buttons button {
   .usp-clock-card {
     min-height: 0;
     height: 100%;
-    padding: 7px;
-    grid-template-columns: 38px minmax(0, 1fr);
-    gap: 6px;
+    padding: 6px;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 5px;
     border-radius: 11px;
   }
-  .usp-analog-clock { width: 36px; height: 36px; }
-  .usp-analog-clock > i { transform-origin: 50% 16px; }
-  .usp-clock-location strong { font-size: 10px; }
-  .usp-clock-copy > b { font-size: 11px; }
+  .usp-analog-clock { width: 34px; height: 34px; }
+  .usp-analog-clock > i { transform-origin: 50% 15px; }
+  .usp-clock-location strong { font-size: 12px; }
+  .usp-clock-copy > b { font-size: 14px; }
+  .usp-clock-compact-detail { font-size: 10px; }
 }
 
 /* Evidence-backed short-desktop correction: retain complete clock-card detail
