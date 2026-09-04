@@ -239,7 +239,7 @@ function ClockCard({ location, now, weather, unit, display, loadingLabel }: {
     display.showWeather ? formatTemperature(weather?.temperatureC ?? null, unit) + ' · ' + description : '',
   ].filter(Boolean);
   const compactDetail = compactDetails[Math.floor(now.getTime() / 8000) % Math.max(1, compactDetails.length)] || timeZoneText(location.zone, now);
-  return <article className="usp-clock-card" tabIndex={0} aria-label={location.name + ' local time and weather'}>
+  return <article className="usp-clock-card" tabIndex={0} aria-label={location.name + ' local time and weather'} data-weather-condition={weatherKind(description)}>
     {display.showAnalog && <div className="usp-analog-clock" style={clockHands(location.zone, now)} aria-hidden="true">
       {Array.from({ length: 12 }, (_, tick) => <i key={tick} style={{ transform: 'rotate(' + tick * 30 + 'deg)' }} />)}
       <span className="usp-clock-hand usp-clock-hour" />
@@ -505,10 +505,9 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
     if (widget === 'weather') {
       const description = ibadanWeather?.description || presentation.weatherLoading;
       const weatherDisplay = preferences.globalOperations;
-      return <article className={'usp-live-card usp-weather-card usp-weather-style-' + weatherDisplay.weatherStyle + ' ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      return <article className={'usp-live-card usp-weather-card usp-weather-style-' + weatherDisplay.weatherStyle + ' ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id} data-weather-condition={weatherKind(description)}>
         <div className="usp-widget-label"><span><CloudSun size={15} /> {instance.label}</span><b>{presentation.weatherLocation}</b></div>
-        <div className="usp-weather-main"><WeatherIcon description={description} size={34} isDay={ibadanWeather?.isDay} animation={weatherDisplay.weatherAnimation} /><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong></div>
-        <p>{description}</p>
+        <div className="usp-weather-main"><span className="usp-weather-hero-icon"><WeatherIcon description={description} size={34} isDay={ibadanWeather?.isDay} animation={weatherDisplay.weatherAnimation} /></span><div className="usp-weather-reading"><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong><span className="usp-weather-condition">{description}</span></div></div>
         {ibadanWeather?.state === 'ready' && <div className="usp-weather-details">
           {weatherDisplay.showFeelsLike && <span>Feels {formatTemperature(ibadanWeather.apparentTemperatureC, preferences.temperatureUnit)}</span>}
           {weatherDisplay.showHighLow && <span>H {formatTemperature(ibadanWeather.todayHighC, preferences.temperatureUnit)} · L {formatTemperature(ibadanWeather.todayLowC, preferences.temperatureUnit)}</span>}
