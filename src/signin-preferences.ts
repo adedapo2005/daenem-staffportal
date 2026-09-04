@@ -23,6 +23,17 @@ export type LogoAlignment = 'start' | 'center' | 'end';
 export type LogoAnimation = 'none' | 'float' | 'orbit' | 'pulse';
 export type EffectLevel = 'calm' | 'balanced' | 'vivid';
 export type SignInThemeMode = 'day' | 'night' | 'auto';
+export type SignInBackgroundOption = {
+  id: string;
+  name: string;
+  description: string;
+  src: string;
+  surface: string;
+  line: string;
+  accent: string;
+  glow: string;
+  shade: string;
+};
 export type EffectPreset = 'quiet' | 'glass' | 'accent' | 'soft';
 
 export type PortalLocation = {
@@ -255,12 +266,24 @@ export type SignInExperiencePreferences = {
   effectLevel: EffectLevel;
   effects: SignInEffects;
   themeMode: SignInThemeMode;
+  backgroundId: string;
   darkStart: string;
   darkEnd: string;
   labels: SignInLabels;
   content: SignInContent;
   globalOperations: SignInGlobalOperations;
 };
+
+export const SIGNIN_BACKGROUND_OPTIONS: SignInBackgroundOption[] = [
+  { id: 'unified-daylight', name: 'Unified Daylight', description: 'Approved campus daylight composition', src: '/reference-images/signin/daenem-unified-daylight-4k.webp', surface: 'rgba(8, 35, 67, .84)', line: 'rgba(137, 211, 255, .34)', accent: '#71d7ff', glow: 'rgba(65, 210, 255, .2)', shade: 'linear-gradient(90deg, rgba(4, 20, 43, .08), rgba(7, 30, 58, .04) 44%, rgba(3, 19, 39, .32))' },
+  { id: 'lagos-sunrise', name: 'Lagos Sunrise', description: 'Warm global workspace light', src: '/reference-images/signin/theme-01-lagos-sunrise.png', surface: 'rgba(13, 46, 78, .82)', line: 'rgba(146, 222, 255, .36)', accent: '#78d9ff', glow: 'rgba(255, 190, 116, .2)', shade: 'linear-gradient(90deg, rgba(255, 239, 218, .04), rgba(9, 38, 70, .25))' },
+  { id: 'urban-skyline', name: 'Urban Skyline', description: 'Bright modern city depth', src: '/reference-images/signin/theme-05-urban-property-skyline.png', surface: 'rgba(9, 40, 73, .84)', line: 'rgba(116, 214, 255, .36)', accent: '#6ed5ff', glow: 'rgba(89, 194, 255, .2)', shade: 'linear-gradient(90deg, rgba(226, 244, 255, .04), rgba(4, 24, 51, .32))' },
+  { id: 'cargo-flow', name: 'Cargo Flow', description: 'Confident logistics energy', src: '/reference-images/signin/theme-06-cargo-flow.png', surface: 'rgba(8, 42, 66, .84)', line: 'rgba(105, 229, 213, .34)', accent: '#67e6d0', glow: 'rgba(49, 224, 190, .2)', shade: 'linear-gradient(90deg, rgba(216, 255, 249, .04), rgba(2, 30, 40, .34))' },
+  { id: 'executive-boardroom', name: 'Executive Boardroom', description: 'Calm premium leadership space', src: '/reference-images/signin/theme-07-executive-boardroom.png', surface: 'rgba(14, 39, 65, .84)', line: 'rgba(191, 221, 244, .34)', accent: '#b9dbf4', glow: 'rgba(153, 200, 238, .18)', shade: 'linear-gradient(90deg, rgba(255, 248, 237, .06), rgba(5, 22, 45, .3))' },
+  { id: 'job-market-pulse', name: 'Job Market Pulse', description: 'Bright connected operations', src: '/reference-images/signin/theme-08-job-market-pulse.png', surface: 'rgba(9, 42, 71, .84)', line: 'rgba(99, 229, 220, .34)', accent: '#69e6d8', glow: 'rgba(75, 213, 199, .2)', shade: 'linear-gradient(90deg, rgba(229, 255, 251, .04), rgba(4, 27, 52, .3))' },
+  { id: 'global-operations', name: 'Global Operations', description: 'World-scale command atmosphere', src: '/reference-images/signin/theme-09-global-operations-mesh.png', surface: 'rgba(7, 38, 72, .86)', line: 'rgba(112, 201, 255, .38)', accent: '#70cfff', glow: 'rgba(60, 177, 255, .22)', shade: 'linear-gradient(90deg, rgba(219, 246, 255, .03), rgba(4, 20, 48, .36))' },
+  { id: 'minimal-tech-white', name: 'Minimal Tech White', description: 'Neutral high-clarity technology', src: '/reference-images/signin/theme-10-minimal-tech-white.png', surface: 'rgba(11, 45, 78, .8)', line: 'rgba(118, 218, 255, .32)', accent: '#79dcff', glow: 'rgba(98, 205, 255, .18)', shade: 'linear-gradient(90deg, rgba(255, 255, 255, .12), rgba(5, 27, 58, .22))' },
+];
 
 export type LiveHeadline = { title: string; url?: string; category: string; source: string };
 
@@ -284,6 +307,7 @@ const ALL_LOGO_ANIMATIONS: LogoAnimation[] = ['none', 'float', 'orbit', 'pulse']
 const ALL_EFFECT_LEVELS: EffectLevel[] = ['calm', 'balanced', 'vivid'];
 const ALL_THEME_MODES: SignInThemeMode[] = ['day', 'night', 'auto'];
 const ALL_ZONES: SignInZone[] = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'];
+const ALL_BACKGROUND_IDS = SIGNIN_BACKGROUND_OPTIONS.map((item) => item.id);
 const ALL_EFFECT_PRESETS: EffectPreset[] = ['quiet', 'glass', 'accent', 'soft'];
 const MAX_LABEL_LENGTH = 120;
 const DEFAULT_LEGAL_PREFIX = 'By continuing to login, you agree to Daenem Group';
@@ -477,6 +501,7 @@ export const DEFAULT_SIGNIN_PREFERENCES: SignInExperiencePreferences = {
   effectLevel: 'balanced',
   effects: { ambientGlow: true, glassIntensity: 72, backgroundBreathing: true, cardFloat: true, logoMotion: true, statusPulse: true, widgetEntrance: true, shimmer: false },
   themeMode: 'auto',
+  backgroundId: 'unified-daylight',
   darkStart: '19:00',
   darkEnd: '07:00',
   labels: DEFAULT_SIGNIN_LABELS,
@@ -645,6 +670,7 @@ export function normalizeSignInPreferences(value: unknown): SignInExperiencePref
   const globalSource = candidateRecord(candidate.globalOperations);
   const contentSource = candidateRecord(candidate.content);
   const normalizedInstances = safeInstances.map((item, index) => ({ ...item, order: index }));
+  const backgroundId = ALL_BACKGROUND_IDS.includes(String(candidate.backgroundId)) ? String(candidate.backgroundId) : DEFAULT_SIGNIN_PREFERENCES.backgroundId;
   const widgetOrder = [...new Set(normalizedInstances.map((item) => item.kind))];
   return {
     schemaVersion: 3,
@@ -665,6 +691,7 @@ export function normalizeSignInPreferences(value: unknown): SignInExperiencePref
     effectLevel: ALL_EFFECT_LEVELS.includes(candidate.effectLevel as EffectLevel) ? candidate.effectLevel as EffectLevel : DEFAULT_SIGNIN_PREFERENCES.effectLevel,
     effects: normalizeEffects(candidate.effects),
     themeMode: ALL_THEME_MODES.includes(candidate.themeMode as SignInThemeMode) ? candidate.themeMode as SignInThemeMode : DEFAULT_SIGNIN_PREFERENCES.themeMode,
+    backgroundId,
     darkStart: validTime(candidate.darkStart, DEFAULT_SIGNIN_PREFERENCES.darkStart),
     darkEnd: validTime(candidate.darkEnd, DEFAULT_SIGNIN_PREFERENCES.darkEnd),
     labels,

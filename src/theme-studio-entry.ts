@@ -1,6 +1,6 @@
 import './theme-studio.css';
 import { applyThemeToDocument, normalizeThemeId, themeList } from './theme-system';
-import { fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
+import { fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
 
 type ThemeOption = {
   id: string;
@@ -181,10 +181,18 @@ function signInWidgetRow(instance: SignInWidgetInstance, index: number) {
     '<button type="button" class="signin-admin-remove" data-widget-remove="' + escapeHtml(instance.id) + '" aria-label="Remove ' + escapeHtml(instance.label) + '">×</button>' +
   '</div>';
 }
+function signInBackgroundCard(option: typeof SIGNIN_BACKGROUND_OPTIONS[number], activeId: string) {
+  const active = option.id === activeId;
+  return '<button type="button" class="signin-background-option' + (active ? ' is-active' : '') + '" data-signin-background="' + escapeHtml(option.id) + '" aria-pressed="' + String(active) + '" aria-label="Select ' + escapeHtml(option.name) + ' background">' +
+    '<img src="' + escapeHtml(option.src) + '" alt="" loading="lazy" decoding="async">' +
+    '<span class="signin-background-option-copy"><strong>' + escapeHtml(option.name) + '</strong><small>' + escapeHtml(option.description) + '</small></span>' +
+    '<span class="signin-background-active">' + (active ? 'Active' : 'Select') + '</span></button>';
+}
 function renderSignInAdmin() {
   const root = document.querySelector<HTMLElement>('.signin-theme-admin-body');
   if (!root) return;
   const labels = signInConfig.labels;
+  const activeBackground = SIGNIN_BACKGROUND_OPTIONS.find((item) => item.id === signInConfig.backgroundId) || SIGNIN_BACKGROUND_OPTIONS[0];
   const labelInput = (path: string, label: string, value: string, max: number, multiline = false) =>
     '<label>' + label + (multiline ? '<textarea data-signin-field="' + path + '" maxlength="' + max + '">' + escapeHtml(value) + '</textarea>' : '<input data-signin-field="' + path + '" maxlength="' + max + '" value="' + escapeHtml(value) + '">') + '</label>';
   const locationRows = WORLD_CLOCK_CATALOG.map((location) => {
@@ -214,6 +222,7 @@ function renderSignInAdmin() {
         '<label>Animation<select data-signin-field="logo.animation">' + optionMarkup(['none', 'float', 'orbit', 'pulse'], signInConfig.logo.animation) + '</select></label>' +
         '<label class="signin-check"><input type="checkbox" data-signin-field="logo.glass"' + (signInConfig.logo.glass ? ' checked' : '') + '> Glass backing</label>' +
       '</div></section>' +
+      '<section class="signin-admin-section signin-background-section"><h4>Sign-In Background Image</h4><p>Choose a curated daylight image. The selected background previews immediately and saves to central V3 settings.</p><div class="signin-background-preview" data-signin-background-preview style="--signin-preview-image:url(\'' + escapeHtml(activeBackground.src) + '\')"><strong>' + escapeHtml(activeBackground.name) + '</strong><span>' + escapeHtml(activeBackground.description) + '</span></div><div class="signin-background-grid">' + SIGNIN_BACKGROUND_OPTIONS.map((option) => signInBackgroundCard(option, signInConfig.backgroundId)).join('') + '</div><button type="button" class="signin-background-reset" data-signin-background-reset>Restore Default Background</button></section>' +
       '<section class="signin-admin-section"><h4>WIDGETS</h4><p>Add, remove, show, hide, reorder, move between responsive zones, and choose a presentation variant.</p><div class="signin-widget-list">' + signInConfig.widgetInstances.map(signInWidgetRow).join('') + '</div><label class="signin-add-widget">Add widget<select data-widget-add><option value="">Choose a widget…</option>' + optionMarkup(['weather', 'status', 'inspiration', 'motivation', 'news'], '', signInWidgetLabels) + '</select></label></section>' +
       '<section class="signin-admin-section"><h4>LABELS</h4><div class="signin-admin-grid signin-label-grid">' +
         labelInput('labels.brandEyebrow', 'Brand eyebrow', labels.brandEyebrow, SIGNIN_LABEL_LIMITS.brandEyebrow) +
@@ -397,7 +406,24 @@ function handleSignInAdminClick(event: Event) {
   const generate = target?.closest<HTMLButtonElement>('[data-ai-generate]');
   const option = target?.closest<HTMLButtonElement>('[data-ai-option-kind]');
   const preview = target?.closest<HTMLButtonElement>('[data-signin-preview]');
+  const background = target?.closest<HTMLButtonElement>('[data-signin-background]');
+  const backgroundReset = target?.closest<HTMLButtonElement>('[data-signin-background-reset]');
   const clockMove = target?.closest<HTMLButtonElement>('[data-clock-move]');
+  if (background) {
+    const id = background.dataset.signinBackground;
+    if (id && SIGNIN_BACKGROUND_OPTIONS.some((candidate) => candidate.id === id)) {
+      const next = cloneSignInConfig();
+      next.backgroundId = id;
+      queueSignInConfigSave(next);
+    }
+    return;
+  }
+  if (backgroundReset) {
+    const next = cloneSignInConfig();
+    next.backgroundId = DEFAULT_SIGNIN_PREFERENCES.backgroundId;
+    queueSignInConfigSave(next);
+    return;
+  }
   if (move) {
     const id = move.dataset.widgetMove;
     const index = signInConfig.widgetInstances.findIndex((item) => item.id === id);

@@ -62,6 +62,9 @@ check('desktop capacity reserves TODAY for the clock dock', signin.includes("vie
 check('compact desktop auth styling applies through 959px', css.includes('@media (min-width: 821px) and (max-height: 959px)') && css.includes('min-height: 44px;') && css.includes('.usp-panel-footer'));
 check('compact desktop keeps legal and footer visible', !css.includes('@media (min-width: 821px) and (max-height: 959px) {\n  .usp-legal-copy { display: none') && !css.includes('@media (min-width: 821px) and (max-height: 959px) {\n  .usp-panel-footer { display: none'));
 check('legacy legal defaults migrate without changing custom labels', prefs.includes('LEGACY_LEGAL_PREFIXES') && prefs.includes('normalizeLegalPrefix') && worker.includes('LEGACY_LEGAL_PREFIXES') && worker.includes('normalizeLegalPrefix') && prefs.includes('By continuing to login, you agree to Daenem Group'));
+check('curated sign-in background picker is wired to V3', prefs.includes('SIGNIN_BACKGROUND_OPTIONS') && prefs.includes('backgroundId') && studio.includes('signin-background-grid') && studio.includes('data-signin-background') && studio.includes('Restore Default Background') && worker.includes('SIGNIN_BACKGROUND_IDS'));
+check('active background is applied without pointer movement', signin.includes('SIGNIN_BACKGROUND_OPTIONS.find') && signin.includes('--usp-hero-image') && css.includes('var(--usp-hero-image') && !signin.includes('pointermove') && !signin.includes('mousemove'));
+check('background blend tokens remain metadata driven', prefs.includes('surface:') && prefs.includes('accent:') && prefs.includes('glow:') && signin.includes('--usp-bg-surface') && css.includes('--usp-widget-surface'));
 check('background pointer parallax is removed', !signin.includes('addEventListener(\'pointermove\'') && !signin.includes('--usp-parallax-x') && !signin.includes('--usp-parallax-y') && !css.includes('--usp-parallax-x') && !css.includes('--usp-parallax-y'));
 check('live layout governor measures actual columns without polling', signin.includes('ResizeObserver') && signin.includes('authPanel?.scrollHeight') && signin.includes('liveStack.scrollHeight') && signin.includes('dockRect') && signin.includes('visualViewport') && !signin.includes('setInterval(measure'));
 check('layout governor exposes measured fit diagnostics', signin.includes('data-auth-required-height') && signin.includes('data-auth-available-height') && signin.includes('data-live-required-height') && signin.includes('data-live-available-height'));
@@ -148,7 +151,6 @@ idScenario.push({ id: nextId('news', idScenario) });
 check('widget IDs remain unique after delete and re-add', prefs.includes('nextSignInWidgetId') && new Set(idScenario.map((item) => item.id)).size === idScenario.length && idScenario.at(-1)?.id === 'news-2');
 check('add delete middle re-add uses collision-safe IDs', idScenario.length === 3 && new Set(idScenario.map((item) => item.id)).size === 3 && idScenario.at(-1)?.id === 'news-2');
 
-
 check('login protects missing production pepper', passwordAuth.includes("AUTH_PEPPER is not configured for production") && passwordAuth.includes("AUTH_SERVICE_UNAVAILABLE") && passwordAuth.includes("}, 503)"));
 check('owner high-iteration credential requests recovery', passwordAuth.includes('OWNER_SAFE_LOGIN_ITERATIONS') && passwordAuth.includes('OWNER_RECOVERY_REQUIRED') && passwordAuth.includes("password_signin_recovery_required"));
 check('login runtime failures return controlled phase diagnostics', ['credential_lookup', 'password_derivation', 'location_policy', 'session_creation', 'device_registration'].every((phase) => passwordAuth.includes(phase)) && passwordAuth.includes('password_auth_exception') && passwordAuth.includes('requestReference'));
@@ -163,7 +165,6 @@ const ownerVerificationIndex = passwordAuth.indexOf("if (!constantTimeEqual(deri
 const ownerBypassIndex = passwordAuth.indexOf("location = ownerLogin");
 check('owner geofence bypass occurs only after password verification', ownerVerificationIndex >= 0 && ownerBypassIndex > ownerVerificationIndex && passwordAuth.includes("await evaluateLocation(env, row.employeeId, body)"));
 check('auth session geofence results remain schema-valid', ["'not_required'", "'inside'", "'outside'", "'unknown'"].every((value) => passwordAuth.includes(value)) && !passwordAuth.includes("owner_remote_exempt"));
-
 const diagnosticSection = passwordAuth.slice(passwordAuth.indexOf('async function recordAuthFailure'), passwordAuth.indexOf('async function controlledAuthFailure'));
 check('runtime diagnostics exclude credential secrets', !diagnosticSection.includes('passwordHash') && !diagnosticSection.includes('passwordSalt') && !diagnosticSection.includes('password:') && !diagnosticSection.includes('AUTH_PEPPER'));
 

@@ -22,6 +22,7 @@ const aliases: Record<string, string> = {
 
 const SIGNIN_WIDGET_KINDS = ['weather', 'inspiration', 'motivation', 'news', 'status'] as const;
 const SIGNIN_ZONES = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'] as const;
+const SIGNIN_BACKGROUND_IDS = ['unified-daylight', 'lagos-sunrise', 'urban-skyline', 'cargo-flow', 'executive-boardroom', 'job-market-pulse', 'global-operations', 'minimal-tech-white'] as const;
 const CLOCK_ZONES = [
   'Africa/Lagos', 'America/Toronto', 'Europe/London', 'America/New_York', 'Europe/Moscow',
   'Asia/Tokyo', 'Asia/Shanghai', 'Africa/Johannesburg', 'Asia/Dubai', 'Asia/Singapore', 'Australia/Sydney',
@@ -128,6 +129,7 @@ const defaultSignInConfig = {
   effectLevel: 'balanced',
   effects: { ambientGlow: true, glassIntensity: 72, backgroundBreathing: true, cardFloat: true, logoMotion: true, statusPulse: true, widgetEntrance: true, shimmer: false },
   themeMode: 'auto',
+  backgroundId: 'unified-daylight',
   darkStart: '19:00',
   darkEnd: '07:00',
   labels: DEFAULT_LABELS,
@@ -265,6 +267,7 @@ export function cleanSignInConfig(value: unknown) {
   const zones = list(candidate.clockZones, CLOCK_ZONES, STANDARD_CLOCK_ZONES).slice(0, maxClocks);
   const logo = record(candidate.logo);
   const position = ['left', 'center', 'right'].includes(String(logo.position || candidate.logoPosition)) ? String(logo.position || candidate.logoPosition) : 'left';
+  const backgroundId = SIGNIN_BACKGROUND_IDS.includes(String(candidate.backgroundId) as typeof SIGNIN_BACKGROUND_IDS[number]) ? String(candidate.backgroundId) : defaultSignInConfig.backgroundId;
   const safeInstances: Array<Record<string, unknown>> = Array.isArray(candidate.widgetInstances) ? instances : instances.length ? instances : defaultSignInConfig.widgetInstances as Array<Record<string, unknown>>;
   const widgetOrder = [...new Set(safeInstances.map((item) => String(item.kind) as string))];
   return {
@@ -295,6 +298,7 @@ export function cleanSignInConfig(value: unknown) {
       shimmer: record(candidate.effects).shimmer === true,
     },
     themeMode: ['day', 'night', 'auto'].includes(String(candidate.themeMode)) ? String(candidate.themeMode) : 'auto',
+    backgroundId,
     darkStart: safeTime(candidate.darkStart, '19:00'),
     darkEnd: safeTime(candidate.darkEnd, '07:00'),
     labels,

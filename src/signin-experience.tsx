@@ -7,6 +7,7 @@ import { applyThemeToDocument, type ModePreference, type ThemeId } from './theme
 import {
   DEFAULT_SIGNIN_PREFERENCES,
   WORLD_CLOCK_CATALOG,
+  SIGNIN_BACKGROUND_OPTIONS,
   fetchPublicSignInContext,
   isWithinDarkWindow,
   normalizeSignInPreferences,
@@ -583,6 +584,7 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   }
 
   const labels = preferences.labels;
+  const background = SIGNIN_BACKGROUND_OPTIONS.find((item) => item.id === preferences.backgroundId) || SIGNIN_BACKGROUND_OPTIONS[0];
   const effectClasses = [
     preferences.effects.ambientGlow ? '' : 'usp-no-ambient',
     preferences.effects.backgroundBreathing ? '' : 'usp-no-background-breathing',
@@ -595,9 +597,18 @@ export function SignInExperience({ authPanel, themeId, modePreference, onInstall
   return <main
     ref={pageRef}
     className={'usp-page usp-density-' + density + ' usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition + ' ' + effectClasses}
-    style={{ '--usp-glass-intensity': String(preferences.effects.glassIntensity) } as CSSProperties}
+    style={{
+      '--usp-glass-intensity': String(preferences.effects.glassIntensity),
+      '--usp-hero-image': 'url("' + background.src + '")',
+      '--usp-bg-surface': background.surface,
+      '--usp-bg-line': background.line,
+      '--usp-bg-accent': background.accent,
+      '--usp-bg-glow': background.glow,
+      '--usp-bg-shade': background.shade,
+    } as CSSProperties}
     data-testid="unified-signin-page"
     data-layout-density={density}
+    data-background-id={background.id}
     data-auth-required-height={layoutMetrics.authRequired || undefined}
     data-auth-available-height={layoutMetrics.authAvailable || undefined}
     data-live-required-height={layoutMetrics.liveRequired || undefined}
