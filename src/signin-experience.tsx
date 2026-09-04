@@ -51,6 +51,10 @@ type LayoutMetrics = {
   stageTop: number;
   stageHeight: number;
   stageBottom: number;
+  brandTop: number;
+  brandBottom: number;
+  brandLeft: number;
+  brandRight: number;
   authTop: number;
   authBottom: number;
   workspaceTop: number;
@@ -75,12 +79,14 @@ type LayoutMetrics = {
   spatialFit: boolean;
   outerFit: boolean;
   workspaceAuthCollision: boolean;
+  brandAuthCollision: boolean;
 };
 
 type ClockFitMetrics = {
   measured: boolean;
   dockClientHeight: number;
   dockScrollHeight: number;
+  requiredDockHeight: number;
   gridClientHeight: number;
   gridScrollHeight: number;
   cardClientHeight: number;
@@ -102,6 +108,7 @@ const EMPTY_CLOCK_FIT: ClockFitMetrics = {
   measured: false,
   dockClientHeight: 0,
   dockScrollHeight: 0,
+  requiredDockHeight: 0,
   gridClientHeight: 0,
   gridScrollHeight: 0,
   cardClientHeight: 0,
@@ -123,6 +130,10 @@ const EMPTY_LAYOUT_METRICS: LayoutMetrics = {
   stageTop: 0,
   stageHeight: 0,
   stageBottom: 0,
+  brandTop: 0,
+  brandBottom: 0,
+  brandLeft: 0,
+  brandRight: 0,
   authTop: 0,
   authBottom: 0,
   workspaceTop: 0,
@@ -147,6 +158,7 @@ const EMPTY_LAYOUT_METRICS: LayoutMetrics = {
   spatialFit: true,
   outerFit: true,
   workspaceAuthCollision: false,
+  brandAuthCollision: false,
 };
 
 const CLOCK_FIT_TOLERANCE = 2;
@@ -473,6 +485,8 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
   const liveStackRef = useRef<HTMLElement | null>(null);
   const clockDockRef = useRef<HTMLElement | null>(null);
   const outerRecoveryRef = useRef(false);
+  const [spatialRecovery, setSpatialRecovery] = useState(false);
+  const recoveryViewportKeyRef = useRef('');
 
   const locations = useMemo(() => {
     const values = preferences.clockZones.map(locationForZone).filter((item): item is PortalLocation => Boolean(item));
@@ -517,6 +531,14 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
   }, [viewport.width, viewport.height]);
 
   useEffect(() => {
+    const key = viewport.width + 'x' + viewport.height + ':' + density + ':' + baseClockCapacity + ':' + locations.length;
+    if (recoveryViewportKeyRef.current === key) return;
+    recoveryViewportKeyRef.current = key;
+    outerRecoveryRef.current = false;
+    setSpatialRecovery(false);
+  }, [baseClockCapacity, density, locations.length, viewport.height, viewport.width]);
+
+  useEffect(() => {
     setClockCapacityOverride(baseClockCapacity);
     setClockPage(0);
   }, [baseClockCapacity, locations.length]);
@@ -524,6 +546,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
   useEffect(() => {
     if (viewport.width < 821) {
       setLayoutMetrics((current) => current.outerFitMeasured ? EMPTY_LAYOUT_METRICS : current);
+      setSpatialRecovery(false);
       return;
     }
     const page = pageRef.current;
@@ -538,8 +561,10 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
       frame = requestAnimationFrame(() => {
         const authPanel = page.querySelector<HTMLElement>('.usp-auth-panel');
         const workspace = page.querySelector<HTMLElement>('.usp-scene-caption');
+        const brand = page.querySelector<HTMLElement>('.usp-brand-lockup');
         const authColumn = page.querySelector<HTMLElement>('.usp-form-column');
         const stageRect = stage.getBoundingClientRect();
+        const brandRect = brand?.getBoundingClientRect();
         const authRect = authPanel?.getBoundingClientRect();
         const workspaceRect = workspace?.getBoundingClientRect();
         const liveRect = liveStack.getBoundingClientRect();
@@ -547,7 +572,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
 
         const authRequired = authPanel?.scrollHeight || 0;
         const liveRequired = liveStack.scrollHeight;
-        const requiredDockHeight = dock?.scrollHeight || dockRect?.height || 0;
+        const requiredDockHeight = clockFit.requiredDockHeight || dock?.scrollHeight || dockRect?.height || 0;
         const requiredWorkspaceHeight = workspace?.scrollHeight || workspaceRect?.height || 0;
         const authDockGap = authRect && dockRect ? round(dockRect.top - authRect.bottom) : 0;
         const liveDockGap = dockRect ? round(dockRect.top - liveRect.bottom) : 0;
@@ -556,17 +581,22 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
           ? round(dockRect.top - Math.max(authRect?.bottom || stageRect.top, liveRect.bottom, workspaceRect?.bottom || stageRect.top))
           : 0;
         const workspaceAuthCollision = Boolean(authRect && workspaceRect && rectsIntersect(workspaceRect, authRect));
+        const brandAuthCollision = Boolean(brandRect && authRect && rectsIntersect(brandRect, authRect));
         const authDockFit = !authRect || !dockRect || authRect.bottom + SAFE_LAYOUT_GAP <= dockRect.top;
         const liveDockFit = !dockRect || liveRect.bottom + SAFE_LAYOUT_GAP <= dockRect.top;
         const workspaceDockFit = !workspaceRect || !dockRect || workspaceRect.bottom + SAFE_LAYOUT_GAP <= dockRect.top;
         const dockViewportFit = !dockRect || dockRect.bottom <= window.innerHeight - SAFE_VIEWPORT_MARGIN;
         const innerClockFit = !preferences.globalOperations.visible || !clockFit.measured || clockFit.fits;
-        const spatialFit = authDockFit && liveDockFit && workspaceDockFit && dockViewportFit && !workspaceAuthCollision;
+        const spatialFit = authDockFit && liveDockFit && workspaceDockFit && dockViewportFit && !workspaceAuthCollision && !brandAuthCollision;
         const outerFit = spatialFit && innerClockFit;
         const metrics: LayoutMetrics = {
           stageTop: round(stageRect.top),
           stageHeight: round(stage.clientHeight),
           stageBottom: round(stageRect.bottom),
+          brandTop: round(brandRect?.top || 0),
+          brandBottom: round(brandRect?.bottom || 0),
+          brandLeft: round(brandRect?.left || 0),
+          brandRight: round(brandRect?.right || 0),
           authTop: round(authRect?.top || 0),
           authBottom: round(authRect?.bottom || 0),
           workspaceTop: round(workspaceRect?.top || 0),
@@ -591,11 +621,18 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
           spatialFit,
           outerFit,
           workspaceAuthCollision,
+          brandAuthCollision,
         };
         setLayoutMetrics((current) => JSON.stringify(current) === JSON.stringify(metrics) ? current : metrics);
 
+        const tightRecoveryNeeded = density === 'tight' && (
+          authDockGap < SAFE_LAYOUT_GAP ||
+          brandAuthCollision ||
+          !spatialFit
+        );
         if (!outerFit) {
           setDensity((current) => densityRank(current) >= 2 ? current : densityRank(current) === 1 ? 'tight' : 'compact');
+          if (tightRecoveryNeeded && !spatialRecovery) setSpatialRecovery(true);
           if (!outerRecoveryRef.current) {
             outerRecoveryRef.current = true;
             setClockCapacityOverride((current) => {
@@ -604,8 +641,8 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
               return Math.min(baseClockCapacity, nextCapacity);
             });
           }
-        } else {
-          outerRecoveryRef.current = false;
+        } else if (tightRecoveryNeeded && !spatialRecovery) {
+          setSpatialRecovery(true);
         }
       });
     };
@@ -618,6 +655,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
       page.querySelector<HTMLElement>('.usp-form-column'),
       page.querySelector<HTMLElement>('.usp-auth-panel'),
       page.querySelector<HTMLElement>('.usp-scene-caption'),
+      page.querySelector<HTMLElement>('.usp-brand-lockup'),
     ].filter((item): item is HTMLElement => Boolean(item)).forEach((item) => observer.observe(item));
     window.addEventListener('resize', measure, { passive: true });
     window.visualViewport?.addEventListener('resize', measure, { passive: true });
@@ -634,8 +672,10 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
     clockFit.measured,
     clockFit.dockClientHeight,
     clockFit.dockScrollHeight,
+    clockFit.requiredDockHeight,
     density,
     preferences.globalOperations.visible,
+    spatialRecovery,
     viewport.width,
     viewport.height,
   ]);
@@ -654,6 +694,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
       frame = requestAnimationFrame(() => {
         const dock = clockDockRef.current;
         const grid = dock?.querySelector<HTMLElement>('.usp-clock-grid');
+        const heading = dock?.querySelector<HTMLElement>('.usp-clock-heading');
         const cards = grid ? Array.from(grid.querySelectorAll<HTMLElement>('.usp-clock-card')) : [];
         const copies = cards.map((card) => card.querySelector<HTMLElement>('.usp-clock-copy')).filter((copy): copy is HTMLElement => Boolean(copy));
         if (!dock || !grid || !cards.length) return;
@@ -662,6 +703,20 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
         const gridRect = grid.getBoundingClientRect();
         const cardRects = cards.map((card) => card.getBoundingClientRect());
         const copyRects = copies.map((copy) => copy.getBoundingClientRect());
+        const dockStyles = getComputedStyle(dock);
+        const headingStyles = heading ? getComputedStyle(heading) : null;
+        const numeric = (value: string | undefined) => Number.parseFloat(value || '0') || 0;
+        const dockFrameHeight = numeric(dockStyles.paddingTop) + numeric(dockStyles.paddingBottom)
+          + numeric(dockStyles.borderTopWidth) + numeric(dockStyles.borderBottomWidth);
+        const headingOuterHeight = heading
+          ? heading.getBoundingClientRect().height + numeric(headingStyles?.marginTop) + numeric(headingStyles?.marginBottom)
+          : 0;
+        const dockGap = numeric(dockStyles.rowGap || dockStyles.gap);
+        const gridContentHeight = Math.max(
+          grid.scrollHeight,
+          cards.length ? Math.max(...cards.map((card) => card.scrollHeight)) : 0,
+        );
+        const requiredDockHeight = Math.ceil(dockFrameHeight + headingOuterHeight + dockGap + gridContentHeight);
         const dockOverflow = dock.scrollHeight > dock.clientHeight + CLOCK_FIT_TOLERANCE;
         const gridOverflow = grid.scrollHeight > grid.clientHeight + CLOCK_FIT_TOLERANCE || grid.scrollWidth > grid.clientWidth + CLOCK_FIT_TOLERANCE;
         const cardOverflow = cards.some((card) => card.scrollHeight > card.clientHeight + CLOCK_FIT_TOLERANCE || card.scrollWidth > card.clientWidth + CLOCK_FIT_TOLERANCE);
@@ -679,6 +734,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
           measured: true,
           dockClientHeight: dock.clientHeight,
           dockScrollHeight: dock.scrollHeight,
+          requiredDockHeight,
           gridClientHeight: grid.clientHeight,
           gridScrollHeight: grid.scrollHeight,
           cardClientHeight: cards.length ? Math.min(...cards.map((card) => card.clientHeight)) : 0,
@@ -695,7 +751,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
           copyOverflow,
           fits: gridWithinDock && cardsWithinGrid && copyWithinCards && requiredContentWithinCards && !dockOverflow && !gridOverflow && !cardOverflow && !copyOverflow,
         };
-        page?.style.setProperty('--usp-clock-required-height', Math.ceil(Math.max(next.dockScrollHeight, next.gridScrollHeight)) + 'px');
+        page?.style.setProperty('--usp-clock-required-height', requiredDockHeight + 'px');
         setClockFit((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
 
         if (!next.fits) {
@@ -938,7 +994,7 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
       '--usp-bg-accent': background.accent,
       '--usp-bg-glow': background.glow,
       '--usp-bg-shade': background.shade,
-      '--usp-clock-required-height': (clockFit.dockScrollHeight ? Math.ceil(clockFit.dockScrollHeight) : 0) + 'px',
+      '--usp-clock-required-height': (clockFit.requiredDockHeight ? Math.ceil(clockFit.requiredDockHeight) : 0) + 'px',
     } as CSSProperties}
     data-testid="unified-signin-page"
     data-layout-density={density}
@@ -981,6 +1037,12 @@ export function SignInExperience({ authPanel, themeId, onInstall }: {
     data-required-auth-height={layoutMetrics.requiredAuthHeight || undefined}
     data-required-workspace-height={layoutMetrics.requiredWorkspaceHeight || undefined}
     data-workspace-auth-collision={layoutMetrics.workspaceAuthCollision ? 'true' : 'false'}
+    data-brand-top={layoutMetrics.brandTop || undefined}
+    data-brand-bottom={layoutMetrics.brandBottom || undefined}
+    data-brand-left={layoutMetrics.brandLeft || undefined}
+    data-brand-right={layoutMetrics.brandRight || undefined}
+    data-brand-auth-collision={layoutMetrics.brandAuthCollision ? 'true' : 'false'}
+    data-spatial-recovery={spatialRecovery ? 'true' : 'false'}
   >
     <div className="usp-background" aria-hidden="true" />
     <div className="usp-background-shade" aria-hidden="true" />

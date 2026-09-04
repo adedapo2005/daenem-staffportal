@@ -5221,3 +5221,151 @@ html[data-mode="night"] .usp-social-buttons button {
     animation: none;
   }
 }
+
+/* Final measured tight recovery: the top brand and dock share the remaining
+   short-desktop budget without shrinking required authentication controls. */
+@media (min-width: 821px) and (max-width: 1120px) and (max-height: 719px) {
+  .usp-topbar {
+    min-height: 48px;
+    height: 48px;
+    align-items: flex-start;
+  }
+
+  .usp-brand-lockup {
+    align-self: flex-start;
+    height: 42px;
+    max-height: 42px;
+    gap: 5px;
+  }
+
+  .usp-brand-glass {
+    padding: 1px 6px 1px 3px;
+    border-radius: 12px;
+  }
+
+  .usp-logo-orbit,
+  .usp-logo-size-prominent .usp-logo-orbit {
+    width: 38px;
+    height: 38px;
+  }
+
+  .usp-logo-depth,
+  .usp-logo-size-prominent .usp-logo-depth {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+  }
+
+  .usp-logo-depth img,
+  .usp-logo-size-prominent .usp-logo-depth img {
+    width: 21px;
+    height: 21px;
+  }
+
+  .usp-brand-copy {
+    gap: 0;
+    line-height: 1;
+  }
+
+  .usp-brand-copy small,
+  .usp-brand-copy strong,
+  .usp-brand-copy span {
+    line-height: 1;
+  }
+
+  .usp-brand-copy small { font-size: 9px; }
+  .usp-brand-copy strong { font-size: 15px; }
+  .usp-brand-copy span {
+    max-width: 180px;
+    font-size: 9px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-shell {
+    grid-template-rows: 48px minmax(0, 1fr) minmax(96px, max(96px, var(--usp-clock-required-height, 96px)));
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin {
+    padding-block: 0;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading {
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-heading h1 {
+    margin-top: 1px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-tabs {
+    margin-bottom: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-auth-form {
+    gap: 4px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-field {
+    gap: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-or-divider {
+    margin-block: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-social-buttons {
+    gap: 3px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-legal-copy {
+    margin-top: 2px;
+    line-height: 1.1;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-auth-panel.usp-auth-panel-signin .usp-panel-footer {
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-dock {
+    min-height: max(96px, var(--usp-clock-required-height, 96px));
+    padding: 5px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-heading {
+    min-height: 18px;
+    padding: 0 3px 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-pager {
+    gap: 3px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-pager button,
+  .usp-page[data-spatial-recovery="true"] .usp-clock-pager b {
+    min-height: 26px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-pager button {
+    padding-block: 2px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-grid {
+    gap: 4px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-clock-card {
+    padding: 5px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-analog-clock {
+    width: 32px;
+    height: 32px;
+  }
+
+  .usp-page[data-spatial-recovery="true"] .usp-analog-clock > i {
+    transform-origin: 50% 14px;
+  }
+}
