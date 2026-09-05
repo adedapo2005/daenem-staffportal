@@ -8,8 +8,8 @@ import {
   Sun, Monitor,
 } from 'lucide-react';
 import { api, AuthScreen, hasWorkforcePermission, useAuth, type AccessLevel, type WorkforceContext } from './auth';
-import { ModuleHub, moduleDefinitions } from './module-hub';
-import type { ErpId, HierarchyViewId } from './module-hub';
+import { isModuleVisible, ModuleHub, moduleDefinitions } from './module-hub';
+import type { ErpId, HierarchyViewId, PostAuthModuleExperience } from './module-hub';
 import {
   applyThemeToDocument, normalizeThemeId, readModePreference, readThemeId,
   themeList, type ModePreference, type ThemeId,
@@ -275,7 +275,10 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   const [modePreference, setModePreference] = useState<ModePreference>(() => readModePreference());
   const [layoutPreference, setLayoutPreference] = useState<LayoutPreference>(() => readLocalLayoutPreference(context.employee.id) || { layoutId: DEFAULT_LAYOUT_ID, density: 'standard', motion: 'balanced' });
   const [layoutPreviewPreference, setLayoutPreviewPreference] = useState<LayoutPreference | null>(null);
+  const [layoutPreviewApplying, setLayoutPreviewApplying] = useState(false);
+  const [layoutPreviewMessage, setLayoutPreviewMessage] = useState('');
   const [layoutAccess, setLayoutAccess] = useState({ canChoose: true, canManage: false, canAccess: false });
+  const experienceCache = useRef(new Map<string, { experience: PostAuthModuleExperience; updatedAt: number }>());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
@@ -302,6 +305,27 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
     document.addEventListener('daenem:theme-change', onThemeChange);
     return () => document.removeEventListener('daenem:theme-change', onThemeChange);
   }, []);
+  async function resolveExperienceForErp(erpId: ErpId, companyId: string | null, companyCode: string): Promise<PostAuthModuleExperience> {
+    const cacheKey = [companyCode, companyId || 'group', erpId].join(':');
+    const cached = experienceCache.current.get(cacheKey);
+    if (cached && Date.now() - cached.updatedAt < 15_000) return cached.experience;
+    const query = companyId
+      ? '?erpId=' + encodeURIComponent(erpId) + '&companyId=' + encodeURIComponent(companyId)
+      : '?erpId=' + encodeURIComponent(erpId);
+    const result = await api<{ preference: LayoutPreference }>('/api/experience/layout' + query);
+    const preference = normalizeLayoutPreference(result.preference);
+    const profile = getLayoutProfile(preference.layoutId);
+    const resolved: PostAuthModuleExperience = {
+      erpId,
+      layoutId: profile.id,
+      shellMode: profile.shellMode,
+      density: preference.density,
+      motion: preference.motion,
+    };
+    experienceCache.current.set(cacheKey, { experience: resolved, updatedAt: Date.now() });
+    return resolved;
+  }
+
   useEffect(() => {
     let active = true;
     const query = company.id ? '?erpId=' + encodeURIComponent(activeErpId) + '&companyId=' + encodeURIComponent(company.id) : '?erpId=' + encodeURIComponent(activeErpId);
@@ -322,10 +346,13 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       if (!detail?.layoutId) return;
       const next = normalizeLayoutPreference(detail);
       if ((event.type as string) === 'daenem:layout-preview') {
+        setLayoutPreviewMessage('');
         setLayoutPreviewPreference(next);
       } else {
+        setLayoutPreviewMessage('');
         setLayoutPreviewPreference(null);
         setLayoutPreference(next);
+        experienceCache.current.clear();
         writeLocalLayoutPreference(context.employee.id, next);
       }
     };
@@ -420,6 +447,22 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       canonicalPath: module ? module.erpId + '/' + module.submenuId + '/' + module.subsubmenuId + '/' + module.functionalItem : undefined,
     } }));
   }
+
+  useEffect(() => {
+    const onCanonicalNavigation = (event: Event) => {
+      const target = (event as CustomEvent<{ target?: string }>).detail?.target;
+      if (!target) return;
+      const targetView = nav.find((item) => item.id === target);
+      if (targetView && visibleNav.some((item) => item.id === targetView.id)) {
+        navigate(targetView.id);
+        return;
+      }
+      const targetModule = moduleDefinitions.find((module) => module.id === target);
+      if (targetModule && isModuleVisible(context, targetModule, company.id, company.code)) openErpModule(targetModule.id);
+    };
+    window.addEventListener('daenem:canonical-navigation', onCanonicalNavigation);
+    return () => window.removeEventListener('daenem:canonical-navigation', onCanonicalNavigation);
+  }, [company.code, company.id, context, visibleNav]);
   const activeTheme = themeList.find((item) => item.id === theme) || themeList[0];
   const effectiveLayoutPreference = layoutPreviewPreference || layoutPreference;
   const activeLayoutProfile = getLayoutProfile(effectiveLayoutPreference.layoutId);
@@ -433,6 +476,29 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   }
   function openLayoutStudio() {
     openErpModule('layout-studio');
+  }
+
+  async function applyLayoutPreview() {
+    if (!layoutPreviewPreference || !layoutAccess.canChoose || layoutPreviewApplying) return;
+    const next = normalizeLayoutPreference(layoutPreviewPreference);
+    setLayoutPreviewApplying(true);
+    setLayoutPreviewMessage('');
+    try {
+      const result = await api<{ ok?: boolean; preference?: LayoutPreference }>('/api/experience/layout/preference', {
+        method: 'POST',
+        body: JSON.stringify(next),
+      });
+      if (result.ok === false) throw new Error('This layout could not be applied.');
+      const saved = normalizeLayoutPreference(result.preference || next);
+      setLayoutPreference(saved);
+      writeLocalLayoutPreference(context.employee.id, saved);
+      experienceCache.current.clear();
+      setLayoutPreviewPreference(null);
+    } catch (error) {
+      setLayoutPreviewMessage(error instanceof Error ? error.message : 'This layout could not be applied.');
+    } finally {
+      setLayoutPreviewApplying(false);
+    }
   }
 
   let content: React.ReactNode;
@@ -490,9 +556,19 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       canUseLayoutStudio={canUseLayoutStudio}
       onOpenLayoutStudio={openLayoutStudio}
       layoutPreview={Boolean(layoutPreviewPreference)}
-      onExitLayoutPreview={() => window.dispatchEvent(new Event('daenem:layout-preview-exit'))}
+      layoutPreviewCanApply={layoutAccess.canChoose}
+      layoutPreviewApplying={layoutPreviewApplying}
+      layoutPreviewMessage={layoutPreviewMessage}
+      onApplyLayoutPreview={applyLayoutPreview}
+      onExitLayoutPreview={() => { setLayoutPreviewMessage(''); window.dispatchEvent(new Event('daenem:layout-preview-exit')); }}
     />
-    <ModuleHub context={context} companyId={company.id} companyCode={company.code} experience={{ layoutId: activeLayoutProfile.id, shellMode: activeLayoutProfile.shellMode, density: effectiveLayoutPreference.density, motion: effectiveLayoutPreference.motion, erpId: activeErpId }} />
+    <ModuleHub
+      context={context}
+      companyId={company.id}
+      companyCode={company.code}
+      resolveExperience={resolveExperienceForErp}
+      experience={{ layoutId: activeLayoutProfile.id, shellMode: activeLayoutProfile.shellMode, density: effectiveLayoutPreference.density, motion: effectiveLayoutPreference.motion, erpId: activeErpId }}
+    />
     <Suspense fallback={null}><SupportInbox context={context} /></Suspense>
   </div>;
 }

@@ -107,6 +107,10 @@ type ZipDashboardProps = {
   canUseLayoutStudio: boolean;
   onOpenLayoutStudio: () => void;
   layoutPreview?: boolean;
+  layoutPreviewCanApply?: boolean;
+  layoutPreviewApplying?: boolean;
+  layoutPreviewMessage?: string;
+  onApplyLayoutPreview?: () => void | Promise<void>;
   onExitLayoutPreview?: () => void;
 };
 
@@ -147,9 +151,25 @@ function percentage(value: number) {
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
+function finiteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 function attendanceRate(summary: ZipDashboardSummary | null) {
-  if (!summary || summary.employees <= 0) return 0;
+  if (!summary || !finiteNumber(summary.employees) || summary.employees <= 0 || !finiteNumber(summary.present)) return 0;
   return (summary.present / summary.employees) * 100;
+}
+
+function attendancePresentation(summary: ZipDashboardSummary | null, context: WorkforceContext, companyId: string | null) {
+  const canSeePresent = canSeeDashboardField(context, 'present', companyId);
+  const canSeeDenominator = canSeeDashboardField(context, 'employees', companyId);
+  const present = finiteNumber(summary?.present) ? summary.present : undefined;
+  const employees = finiteNumber(summary?.employees) ? summary.employees : undefined;
+  if (!canSeePresent || present === undefined) return { value: '—', detail: 'Attendance data unavailable for this scope' };
+  if (canSeeDenominator && employees !== undefined && employees > 0) {
+    return { value: percentage((present / employees) * 100), detail: 'Present today in authorized scope' };
+  }
+  return { value: numberValue(present), detail: 'Present today in authorized scope' };
 }
 
 function CommandPalette({
@@ -277,7 +297,7 @@ function KpiStrip({ summary, company, context }: Pick<ZipDashboardProps, 'summar
   ];
   const visible = cards.filter((card) => canSeeDashboardField(context, card.field, company.id));
   if (!visible.length) return null;
-  return <div className="kpi-grid">{visible.map(({ label, value, detail, icon: Icon, tone }) => <article className={`kpi-card tone-${tone}`} key={label}><span className="kpi-icon"><Icon size={16} /></span><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</div>;
+  return <div className="kpi-grid" data-primary-kpi-grid="true">{visible.map(({ label, value, detail, icon: Icon, tone }) => <article className={`kpi-card tone-${tone}`} key={label}><span className="kpi-icon"><Icon size={16} /></span><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</div>;
 }
 
 function ChartHeader({ eyebrow, title, icon }: { eyebrow: string; title: string; icon: React.ComponentType<{ size?: number }> }) {
@@ -498,11 +518,12 @@ function ManagerCommandCenter({
 }: Pick<ZipDashboardProps, 'context' | 'company' | 'summary' | 'onNavigate' | 'onOpenModuleHub'>) {
   const managerAccess = context.roles.some((role) => ['manager', 'company_admin', 'group_admin', 'owner'].includes(role.code));
   if (!managerAccess) return null;
+  const attendance = attendancePresentation(summary, context, company.id);
   const managerTiles: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
     { field: 'employees', label: 'Team workload', value: numberValue(summary?.employees), detail: 'People in your authorized scope', icon: Users },
     { field: 'pendingApprovals', label: 'Approvals', value: numberValue(summary?.pendingApprovals), detail: 'Requests awaiting action', icon: ClipboardCheck },
     { field: 'overdueRequirements', label: 'Overdue work', value: numberValue(summary?.overdueRequirements), detail: 'Requirements to follow through', icon: AlertTriangle },
-    { field: 'present', label: 'Attendance', value: summary ? percentage(attendanceRate(summary)) : '—', detail: 'Present today in scope', icon: CalendarCheck2 },
+    { field: 'present', label: 'Attendance', value: attendance.value, detail: attendance.detail, icon: CalendarCheck2 },
   ];
   const tiles = managerTiles.filter((tile) => canSeeDashboardField(context, tile.field, company.id));
   const actions = [
@@ -787,6 +808,10 @@ export function ZipDashboard({
   canUseLayoutStudio,
   onOpenLayoutStudio,
   layoutPreview = false,
+  layoutPreviewCanApply = false,
+  layoutPreviewApplying = false,
+  layoutPreviewMessage = '',
+  onApplyLayoutPreview,
   onExitLayoutPreview,
 }: ZipDashboardProps) {
   useEffect(() => {
@@ -827,7 +852,14 @@ export function ZipDashboard({
     {sidebarOpen && <button className="mobile-backdrop" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
 
     <section className="dashboard-content">
-      {layoutPreview && <div className="layout-preview-banner" data-layout-preview-banner="true"><span><strong>Previewing {layoutProfile.name}</strong><small>Your saved experience is unchanged until you apply this layout.</small></span><button type="button" className="secondary-button" onClick={onExitLayoutPreview}>Exit Preview</button></div>}
+      {layoutPreview && <div className="layout-preview-banner" data-layout-preview-banner="true">
+        <span><strong>Previewing {layoutProfile.name}</strong><small>Your saved experience is unchanged until you apply this layout.</small></span>
+        <div className="layout-preview-actions">
+          {layoutPreviewCanApply && <button type="button" className="primary-button" disabled={layoutPreviewApplying} onClick={() => void onApplyLayoutPreview?.()}>{layoutPreviewApplying ? 'Applying…' : 'Apply to Me'}</button>}
+          <button type="button" className="secondary-button" onClick={onExitLayoutPreview}>Exit Preview</button>
+        </div>
+        {layoutPreviewMessage && <small className="layout-preview-message" role="status">{layoutPreviewMessage}</small>}
+      </div>
       <ZipTopBar
         context={context}
         company={company}

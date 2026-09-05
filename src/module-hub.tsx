@@ -453,9 +453,10 @@ async function clickWhenReady(selector: string) {
   return false;
 }
 
-export type PostAuthModuleExperience = { layoutId: string; shellMode: string; density: string; motion: string; erpId: ErpId; };
+export type PostAuthModuleExperience = { moduleId?: string; canonicalPath?: string; layoutId: string; shellMode: string; density: string; motion: string; erpId: ErpId; };
+type ModuleExperienceResolver = (erpId: ErpId, companyId: string | null, companyCode: string) => Promise<PostAuthModuleExperience>;
 
-export function ModuleHub({ context, companyId, companyCode, showLauncher = false, experience }: { context: WorkforceContext; companyId: string | null; companyCode: string; showLauncher?: boolean; experience?: PostAuthModuleExperience }) {
+export function ModuleHub({ context, companyId, companyCode, showLauncher = false, experience, resolveExperience }: { context: WorkforceContext; companyId: string | null; companyCode: string; showLauncher?: boolean; experience?: PostAuthModuleExperience; resolveExperience?: ModuleExperienceResolver }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState('');
@@ -485,28 +486,30 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
       window.removeEventListener('daenem:launch-module', launchRequested as EventListener);
       window.removeEventListener('daenem:open-module-hub', openRequested);
     };
-  }, [available, loading]);
+  }, [available, loading, experience, resolveExperience]);
 
   async function launch(module: ModuleDefinition) {
     if (loading) return;
     setLoading(module.id);
     setMessage('');
-    const moduleExperience = {
-      moduleId: module.id,
-      erpId: module.erpId,
-      canonicalPath: module.erpId + '/' + module.submenuId + '/' + module.subsubmenuId + '/' + module.functionalItem,
-      layoutId: experience?.layoutId || 'executive-command',
-      shellMode: experience?.shellMode || 'command-rail',
-      density: experience?.density || 'standard',
-      motion: experience?.motion || 'balanced',
-    };
-    const publishExperience = () => {
-      (window as Window & { __DAENEM_MODULE_EXPERIENCE__?: typeof moduleExperience }).__DAENEM_MODULE_EXPERIENCE__ = moduleExperience;
-      window.dispatchEvent(new CustomEvent('daenem:module-experience', { detail: moduleExperience }));
-    };
     try {
-      // Publish before the lazy entry initializes so its first render consumes
-      // the active authenticated layout rather than a generic fallback.
+      const resolved = resolveExperience
+        ? await resolveExperience(module.erpId, companyId, companyCode)
+        : experience?.erpId === module.erpId
+          ? experience
+          : { layoutId: 'executive-command', shellMode: 'command-rail', density: 'standard', motion: 'balanced', erpId: module.erpId };
+      const moduleExperience: PostAuthModuleExperience = {
+        ...resolved,
+        moduleId: module.id,
+        erpId: module.erpId,
+        canonicalPath: module.erpId + '/' + module.submenuId + '/' + module.subsubmenuId + '/' + module.functionalItem,
+      };
+      const publishExperience = () => {
+        (window as Window & { __DAENEM_MODULE_EXPERIENCE__?: typeof moduleExperience }).__DAENEM_MODULE_EXPERIENCE__ = moduleExperience;
+        window.dispatchEvent(new CustomEvent('daenem:module-experience', { detail: moduleExperience }));
+      };
+      // Resolved ERP context is published before the lazy entry initializes;
+      // the first visible surface cannot use stale context.
       publishExperience();
       await module.load();
       await nextFrame();

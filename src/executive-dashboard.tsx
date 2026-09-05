@@ -39,12 +39,7 @@ const companyMeta=[
 
 function openWorkspace(action?:string){
   if(!action)return;
-  if(action==='security'){
-    const button=[...document.querySelectorAll<HTMLButtonElement>('.sidebar-functional-item')].find((item)=>(item.textContent||'').includes('Security Center'));
-    button?.click();
-    return;
-  }
-  window.dispatchEvent(new CustomEvent('daenem:launch-module',{detail:{id:action}}));
+  window.dispatchEvent(new CustomEvent('daenem:canonical-navigation',{detail:{target:action}}));
 }
 
 function Kpi({label,value,detail,tone='blue',action}:{label:string;value:string;detail:string;tone?:string;action?:string}){
@@ -88,7 +83,7 @@ export function GroupExecutiveDashboard({companyId}:{companyId:string|null}){
       <div className="xed-lower">
         <button onClick={()=>openWorkspace('construction')}><Building2/><span><small>CONSTRUCTION & PROJECTS</small><b>{moneyFull(data.construction.spentKobo)} recorded spend</b><em>{moneyFull(data.construction.budgetKobo)} budget · {data.construction.overdueMilestones} overdue milestone(s)</em></span><ArrowRight/></button>
         <button onClick={()=>openWorkspace('finance')}><CircleDollarSign/><span><small>FINANCE CONTROL</small><b>{moneyFull(data.finance.outstandingReceivablesKobo)} receivable balance</b><em>{moneyFull(data.finance.operatingExpenseKobo)} approved/paid expenses in period</em></span><ArrowRight/></button>
-        <button onClick={()=>document.querySelector<HTMLButtonElement>('.owner-intelligence-launcher')?.click()}><Gauge/><span><small>DAENEM AI INTELLIGENCE</small><b>Open full Owner Intelligence</b><em>Compare companies and ask questions using recorded ERP data</em></span><ArrowRight/></button>
+        <button onClick={()=>openWorkspace('owner-intelligence')}><Gauge/><span><small>DAENEM AI INTELLIGENCE</small><b>Open full Owner Intelligence</b><em>Compare companies and ask questions using recorded ERP data</em></span><ArrowRight/></button>
       </div>
       <footer className="xed-foot"><PackageSearch size={14}/><span>Last refreshed {new Date(data.generatedAt).toLocaleString('en-NG')} · {data.period.label} ({data.period.start} to {data.period.end})</span></footer>
     </>}
