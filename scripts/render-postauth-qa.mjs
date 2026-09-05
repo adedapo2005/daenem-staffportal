@@ -297,7 +297,7 @@ async function captureLayoutStudioPreview(browser) {
 async function main() {
   const browser = await chromium.launch({ headless: true });
   try {
-    const profileLayouts = ['executive-command', 'workspace-canvas', 'operational-cockpit', 'master-detail', 'horizon-wide', 'board-pulse'];
+    const profileLayouts = layouts;
     for (const layoutId of profileLayouts) await capture(browser, 'owner', layoutId, 1920, 1080, 'owner-' + layoutId + '-1920x1080');
     await capture(browser, 'owner', 'executive-command', 3840, 2160, 'owner-executive-command-3840x2160');
     await capture(browser, 'owner', 'executive-command', 1440, 900, 'owner-executive-command-1440x900');
@@ -315,22 +315,37 @@ async function main() {
     await browser.close();
   }
 
+  const profileResults = results.filter((item) => item.role === 'owner'
+    && item.viewport?.width === 1920 && item.viewport?.height === 1080
+    && !item.pageKind && !item.previewModal);
+  const renderedProfileIds = new Set(profileResults.map((item) => item.renderedLayout).filter(Boolean));
+  const ownerHomePass = results.some((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind && !item.previewModal);
+  const employeeHomePass = results.some((item) => item.role === 'employee' && item.renderedLayout === 'focus-flow');
+  const featureFramePass = results.some((item) => item.featureFramePresent);
+  const galleryPass = results.some((item) => item.layoutStudioPresent && item.pageKind === 'Layout Studio gallery');
+  const previewPass = results.some((item) => item.previewModal === true);
+  const reducedMotionPass = results.some((item) => item.reducedMotion === true);
+  if (renderedProfileIds.size < layouts.length || !ownerHomePass || !employeeHomePass || !featureFramePass || !galleryPass || !previewPass || !reducedMotionPass) {
+    hardFailure = true;
+    runtimeErrors.push('Required authenticated rendered coverage was incomplete.');
+  }
   const summaryLines = [
-    'POSTAUTH_RENDERED_QA=PASS',
+    'POSTAUTH_RENDERED_QA=' + (hardFailure ? 'FAIL' : 'PASS'),
     'QA_MODE=NON_PRODUCTION_PLAYWRIGHT_API_FIXTURE',
     'STATIC_PREVIEW=PASS',
     'CHROMIUM=PASS',
     'APPLICATION_SOURCE_MODIFIED_BY_QA=NO',
     'AUTHENTICATED_CONTEXT=OWNER_AND_EMPLOYEE_FIXTURES',
-    'OWNER_HOME=PASS',
-    'EMPLOYEE_HOME=PASS',
-    'FEATURE_PAGE_FRAME=PASS',
-    'LAYOUT_STUDIO_GALLERY=PASS',
-    'LAYOUT_STUDIO_NON_DESTRUCTIVE_PREVIEW=PASS',
-    'LAYOUT_PROFILES_RENDERED=' + layouts.length,
+    'OWNER_HOME=' + (ownerHomePass ? 'PASS' : 'FAIL'),
+    'EMPLOYEE_HOME=' + (employeeHomePass ? 'PASS' : 'FAIL'),
+    'FEATURE_PAGE_FRAME=' + (featureFramePass ? 'PASS' : 'FAIL'),
+    'LAYOUT_STUDIO_GALLERY=' + (galleryPass ? 'PASS' : 'FAIL'),
+    'LAYOUT_STUDIO_NON_DESTRUCTIVE_PREVIEW=' + (previewPass ? 'PASS' : 'FAIL'),
+    'LAYOUT_PROFILES_DECLARED=' + layouts.length,
+    'LAYOUT_PROFILES_RENDERED=' + renderedProfileIds.size,
     'DESKTOP_VIEWPORTS_RENDERED=1920x1080,3840x2160,1440x900,1366x768,1024x768',
     'MOBILE_VIEWPORT_RENDERED=390x844',
-    'REDUCED_MOTION=PASS',
+    'REDUCED_MOTION=' + (reducedMotionPass ? 'PASS' : 'FAIL'),
     'SCREENSHOT_COUNT=' + results.length,
     'RUNTIME_PAGE_ERRORS=' + runtimeErrors.length,
     'HARD_RENDER_FAILURE=' + (hardFailure ? 'true' : 'false'),
