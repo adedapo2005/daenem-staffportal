@@ -56,6 +56,28 @@ function runWrangler(args, options = {}) {
   });
 }
 
+async function stopProcess(child) {
+  if (child.exitCode !== null) return;
+  try {
+    if (process.platform === 'win32') child.kill('SIGTERM');
+    else if (child.pid) process.kill(-child.pid, 'SIGTERM');
+    else child.kill('SIGTERM');
+  } catch {
+    try { child.kill('SIGTERM'); } catch {}
+  }
+  await Promise.race([
+    new Promise((resolve) => child.once('close', resolve)),
+    sleep(2_000),
+  ]);
+  if (child.exitCode === null) {
+    try {
+      if (process.platform === 'win32') child.kill('SIGKILL');
+      else if (child.pid) process.kill(-child.pid, 'SIGKILL');
+      else child.kill('SIGKILL');
+    } catch {}
+  }
+}
+
 async function freePort() {
   const listener = net.createServer();
   await new Promise((resolve, reject) => {
@@ -214,6 +236,7 @@ async function main() {
       cwd: root,
       env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: process.platform !== 'win32',
     });
     let runtimeOutput = '';
     runtime.stdout.on('data', (chunk) => { runtimeOutput += chunk; });
@@ -355,8 +378,7 @@ async function main() {
     }, null, 2));
   } finally {
     if (runtime) {
-      runtime.kill('SIGTERM');
-      await sleep(500);
+      await stopProcess(runtime);
     }
     await fs.rm(testConfig, { force: true });
     if (persistDir) await fs.rm(persistDir, { recursive: true, force: true });
