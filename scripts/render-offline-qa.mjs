@@ -133,7 +133,7 @@ function ownerOverview() {
 }
 
 function makeServerState() {
-  return { syncMode: 'success', sessionMode: 'valid', syncDelay: 0, syncRequests: 0, businessEffects: 0, receipts: new Map(), lostKeys: new Set(), capturedKeys: [] };
+  return { syncMode: 'success', sessionMode: 'valid', syncDelay: 0, syncRequests: 0, bootstrapRequests: 0, bootstrapModes: [], businessEffects: 0, receipts: new Map(), lostKeys: new Set(), capturedKeys: [] };
 }
 
 async function installApiRoutes(page, role, server = makeServerState(), employeeId) {
@@ -187,6 +187,8 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
     if (url.pathname === '/api/forms/mine' && method === 'GET') return send({ assignments: [assignment] });
     if (url.pathname.startsWith('/api/directory/')) return send({ employees: [], roles: [] });
     if (url.pathname === '/api/offline/bootstrap' && method === 'GET') {
+      server.bootstrapRequests += 1;
+      server.bootstrapModes.push(server.sessionMode);
       if (server.sessionMode !== 'valid') return send({ error: 'Sign in to continue syncing.', state: 'authentication-required' }, 401);
       return send({
       ok: true, serverTime: '2026-09-05T10:36:04.000Z', businessTimezone: 'Africa/Lagos', maxOfflineAgeMinutes: 720,
@@ -448,6 +450,8 @@ async function main() {
       await status(blocked.page, 'offline');
       blocked.server.sessionMode = sessionMode;
       await blocked.context.setOffline(false);
+      await sleep(1000);
+      console.log('QA_SESSION_GATE_DEBUG', JSON.stringify({ sessionMode, status: await blocked.page.locator('[data-offline-sync-indicator]').getAttribute('data-sync-status'), syncRequests: blocked.server.syncRequests, bootstrapRequests: blocked.server.bootstrapRequests, bootstrapModes: blocked.server.bootstrapModes }));
       await status(blocked.page, 'authentication-required');
       assert(blocked.server.syncRequests === 0, `${sessionMode} session allowed a queued mutation flush`);
     await blocked.context.close();
