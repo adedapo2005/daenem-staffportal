@@ -293,7 +293,7 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     entityId?: string;
     capturedAt?: string;
     clientTimezone?: string;
-    payload?: { assignmentId?: string; responses?: Record<string, unknown>; latitude?: number; longitude?: number; accuracy?: number };
+    payload?: { assignmentId?: string; responses?: Record<string, unknown>; latitude?: number; longitude?: number; accuracy?: number; baseUpdatedAt?: string };
   };
   try { body = await request.json(); } catch { return json({ error: 'Invalid offline operation.' }, 400); }
   const operationId = safeText(body.operationId, 160);
@@ -372,6 +372,7 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     body: JSON.stringify({
       assignmentId: safeText(payload.assignmentId || body.entityId, 160),
       responses: payload.responses && typeof payload.responses === 'object' ? payload.responses : {},
+      baseUpdatedAt: safeText(payload.baseUpdatedAt, 80) || undefined,
       latitude: parseFinite(payload.latitude),
       longitude: parseFinite(payload.longitude),
       accuracy: parseFinite(payload.accuracy),
@@ -416,6 +417,10 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
 async function activity(request: Request, env: OfflineEnv, context: SessionContext) {
   const companyId = safeText(new URL(request.url).searchParams.get('companyId'), 120);
   if (companyId && !companyInScope(context, companyId)) return json({ error: 'Company access is not assigned.' }, 403);
+  const formsVisible = companyId
+    ? hasPermission(context, 'forms.access', 'view', companyId)
+    : context.companies.some((company) => hasPermission(context, 'forms.access', 'view', company.id));
+  if (!formsVisible) return json({ error: 'Forms access is not assigned.' }, 403);
   const rows = await env.DB.prepare(`
     SELECT id,operation_id AS operationId,operation_kind AS operationKind,
       entity_type AS entityType,entity_id AS entityId,state,attempt_count AS attemptCount,
