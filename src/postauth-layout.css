@@ -1724,3 +1724,41 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Mobile composition safety: named desktop adapter areas collapse into a
+   deterministic document flow on phones so rails cannot share a grid cell with
+   the personal workspace cards. */
+@media (max-width: 760px) {
+  .dashboard-page.postauth-layout .postauth-dashboard-composition {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .dashboard-page.postauth-layout .postauth-dashboard-composition > * {
+    grid-area: auto !important;
+    width: 100%;
+    max-width: none;
+  }
+  .dashboard-page.postauth-layout .postauth-composition-clocks {
+    order: 99;
+  }
+  .dashboard-page.postauth-layout .workspace-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-page.postauth-layout .workspace-overview-grid .profile-summary-card {
+    grid-column: auto !important;
+  }
+  .dashboard-page.postauth-layout .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 430px) {
+  .dashboard-page.postauth.layout .kpi-grid,
+  .dashboard-page.postauth-layout .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-page.postauth-layout .metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
