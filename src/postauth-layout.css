@@ -1778,3 +1778,60 @@
 .zip-live-intelligence{position:relative}.zip-live-intelligence .zip-section-heading h2{font-size:clamp(20px,2vw,30px)}
 @media(min-width:1200px){.dashboard-page.postauth-layout .postauth-navigation strong,.dashboard-page.postauth-layout .postauth-nav-item,.dashboard-page.postauth-layout .erp-pulse-card h3,.dashboard-page.postauth-layout .manager-command-actions button{font-size:12px}.dashboard-page.postauth-layout .postauth-nav-item small,.dashboard-page.postauth-layout .erp-pulse-card small{font-size:11px}}
 @media(max-width:760px){.layout-preview-banner{width:min(100% - 20px,1800px);margin-top:10px;align-items:flex-start}.layout-preview-banner .secondary-button{padding:9px 11px}.smart-context-panel{padding:15px}.employee-task-first .self-service-card{order:-1}}
+
+/* Foundation correction: keep desktop labels readable in every shell adapter,
+   including compact master-detail and bento navigation. */
+@media (min-width: 861px) {
+  .dashboard-page.postauth-layout .postauth-nav-item,
+  .dashboard-page.postauth-layout .postauth-nav-item-copy strong,
+  .dashboard-page.postauth-layout .postauth-navigation strong,
+  .dashboard-page.postauth.layout .postauth-master-nav-groups > button,
+  .dashboard-page.postauth-layout .postauth-master-nav-groups > button,
+  .dashboard-page.postauth.layout .postauth-master-nav-groups > button strong,
+  .dashboard-page.postauth-layout .postauth-master-nav-groups > button strong,
+  .dashboard-page.postauth.layout .postauth-bento-nav-groups header strong,
+  .dashboard-page.postauth-layout .postauth-bento-nav-groups header strong,
+  .dashboard-page.postauth-layout .postauth-operations-navigation .postauth-operation-group-button strong,
+  .dashboard-page.postauth-layout .manager-command-actions button {
+    font-size: 11px !important;
+  }
+  .dashboard-page.postauth.layout .postauth-navigation small,
+  .dashboard-page.postauth-layout .postauth-navigation small,
+  .dashboard-page.postauth.layout .postauth-bento-nav-groups header small,
+  .dashboard-page.postauth-layout .postauth-bento-nav-groups header small,
+  .dashboard-page.postauth.layout .postauth-operation-group-button small,
+  .dashboard-page.postauth-layout .postauth-operation-group-button small {
+    font-size: 10px !important;
+  }
+}
+@media (min-width: 1101px) {
+  .dashboard-page.postauth-layout .postauth-composition-master-pane {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .dashboard-page.postauth-layout .postauth-composition-master-pane .workspace-overview-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+  .dashboard-page.postauth-layout .postauth-composition-master-pane .workspace-overview-grid > *,
+  .dashboard-page.postauth-layout .postauth-composition-master-pane .erp-pulse-grid > *,
+  .dashboard-page.postauth-layout .postauth-composition-master-pane .workspace-overview-strip > * {
+    grid-column: auto !important;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .dashboard-page.postauth-layout .postauth-composition-master-pane .profile-summary-meta,
+  .dashboard-page.postauth-layout .postauth-composition-master-pane .profile-summary-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-page.postauth-layout .postauth-composition-adaptive-bento .postauth-composition-bento-rail > *,
+  .dashboard-page.postauth-layout .postauth-composition-adaptive-bento .postauth-composition-bento-work > *,
+  .dashboard-page.postauth-layout .postauth-composition-adaptive-bento .postauth-composition-bento-pulse > *,
+  .dashboard-page.postauth-layout .postauth-composition-adaptive-bento .postauth-composition-bento-widgets > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

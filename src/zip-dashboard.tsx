@@ -12,7 +12,7 @@ import { hasWorkforcePermission, readWorldClockPreferences, requestAppInstall, s
 import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
 import { themeList } from './theme-system';
 import { getMotionTokens, type LayoutDensity, type LayoutId, type LayoutProfile, type MotionPreset } from './layout-system';
-import { DASHBOARD_SUMMARY_FIELDS, canSeeDashboardField, type DashboardAggregateField } from './dashboard-capabilities';
+import { canSeeDashboardField, type DashboardAggregateField } from './dashboard-capabilities';
 import { getSmartContext } from './smart-context';
 import { PostAuthFeatureFrame, PostAuthHomeBanner, PostAuthOverviewComposition } from './post-auth-experience';
 import { PostAuthNavigation } from './postauth-navigation';
@@ -116,10 +116,6 @@ const initialWidgets: WidgetId[] = [
 
 function can(context: WorkforceContext, permission: string, minimum: AccessLevel = 'view', companyId?: string | null) {
   return hasWorkforcePermission(context, permission, minimum, companyId);
-}
-
-function canSeeAggregateDashboard(context: WorkforceContext, companyId: string | null) {
-  return DASHBOARD_SUMMARY_FIELDS.some((field) => canSeeDashboardField(context, field, companyId));
 }
 
 function initials(name: string) {
@@ -480,9 +476,9 @@ function ErpPulseGrid({
       const modules = availableModules.filter((module) => module.erpId === group.id);
       const firstModule = modules[0];
       const isStaff = group.id === 'staff';
-      const aggregateAllowed = canSeeAggregateDashboard(context, company.id);
-      const signal = isStaff && aggregateAllowed ? numberValue(summary?.present) : 'Available on open';
-      const signalLabel = isStaff && aggregateAllowed ? 'Present today' : 'Authorized functions';
+      const attendanceAllowed = canSeeDashboardField(context, 'present', company.id);
+      const signal = isStaff && attendanceAllowed ? numberValue(summary?.present) : 'Available on open';
+      const signalLabel = isStaff && attendanceAllowed ? 'Present today' : 'Authorized functions';
       return <article className="erp-pulse-card" key={group.id}>
         <header><span className="erp-pulse-icon"><HierarchyIcon iconKey={group.iconKey} size={16} /></span><div><span className="eyebrow">{group.label}</span><h3>{group.detail}</h3></div></header>
         <div className="erp-pulse-chart" aria-hidden="true"><i /><i /><i /><i /><i /></div>

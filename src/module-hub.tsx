@@ -488,21 +488,27 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
     if (loading) return;
     setLoading(module.id);
     setMessage('');
+    const moduleExperience = {
+      moduleId: module.id,
+      erpId: module.erpId,
+      canonicalPath: module.erpId + '/' + module.submenuId + '/' + module.subsubmenuId + '/' + module.functionalItem,
+      layoutId: experience?.layoutId || 'executive-command',
+      shellMode: experience?.shellMode || 'command-rail',
+      density: experience?.density || 'standard',
+      motion: experience?.motion || 'balanced',
+    };
+    const publishExperience = () => {
+      (window as Window & { __DAENEM_MODULE_EXPERIENCE__?: typeof moduleExperience }).__DAENEM_MODULE_EXPERIENCE__ = moduleExperience;
+      window.dispatchEvent(new CustomEvent('daenem:module-experience', { detail: moduleExperience }));
+    };
     try {
+      // Publish before the lazy entry initializes so its first render consumes
+      // the active authenticated layout rather than a generic fallback.
+      publishExperience();
       await module.load();
       await nextFrame();
       await nextFrame();
-      const moduleExperience = {
-        moduleId: module.id,
-        erpId: module.erpId,
-        canonicalPath: module.erpId + '/' + module.submenuId + '/' + module.subsubmenuId + '/' + module.functionalItem,
-        layoutId: experience?.layoutId || 'executive-command',
-        shellMode: experience?.shellMode || 'command-rail',
-        density: experience?.density || 'standard',
-        motion: experience?.motion || 'balanced',
-      };
-      (window as Window & { __DAENEM_MODULE_EXPERIENCE__?: typeof moduleExperience }).__DAENEM_MODULE_EXPERIENCE__ = moduleExperience;
-      window.dispatchEvent(new CustomEvent('daenem:module-experience', { detail: moduleExperience }));
+      publishExperience();
       window.dispatchEvent(new CustomEvent('daenem:active-company-changed', { detail: { companyId, companyCode } }));
       if (module.event) window.dispatchEvent(new CustomEvent(module.event.name, { detail: { ...module.event.detail, companyId: companyId || '', companyCode, experience: moduleExperience } }));
       const opened = module.selector ? await clickWhenReady(module.selector) : true;

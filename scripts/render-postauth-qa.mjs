@@ -266,6 +266,10 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       smartContext: Boolean(document.querySelector('[data-smart-context="true"]')),
       layoutExplanation: /WORKSPACE GUIDE|LAYOUT ADAPTER|Workspace composition|shellMode/.test(bodyText),
       ownerBusinessIntelligence: Boolean(document.querySelector('[data-owner-business-intelligence="true"]')),
+      ownerBusinessIntelligenceFirstView: (() => {
+        const node = document.querySelector('[data-owner-business-intelligence="true"]');
+        return Boolean(node && node.getBoundingClientRect().top < window.innerHeight);
+      })(),
       ...input.extra,
     };
   }, { role, layoutId, extra });
@@ -329,6 +333,7 @@ async function capture(browser, role, layoutId, width, height, name, options = {
     await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
     const metric = await pageMetrics(page, role, layoutId, screenshot, viewport, {
       pageErrors,
+      pageKind: options.pageKind || options.metric?.pageKind,
       navigatedTo: options.navigateText || null,
       backendSummaryKeys: backendSummary ? Object.keys(backendSummary) : null,
       forbiddenKeys: options.forbiddenKeys || [],
@@ -523,6 +528,8 @@ async function captureErpSurfaces(browser) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
     await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+    // ModuleHub installs its event listener after the authenticated shell mounts.
+    await page.waitForTimeout(900);
     for (const [moduleId, erpId] of surfaces) {
       await page.evaluate((id) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } })), moduleId);
       const marker = page.locator('[data-module-experience="true"][data-module-erp="' + erpId + '"]').last();
@@ -562,7 +569,7 @@ async function captureMotionPresets(browser) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const reduced = await page.evaluate(() => getComputedStyle(document.querySelector('.dashboard-page')).getPropertyValue('--postauth-motion-duration').trim());
     const uniqueValues = new Set(Object.values(values).map((item) => item.duration + '|' + item.distance + '|' + item.easing));
-    const pass = uniqueValues.size === 4 && reduced === '0ms';
+    const pass = uniqueValues.size === 4 && (reduced === '0ms' || reduced === '0s');
     results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: 'executive-command', viewport: { width: 1440, height: 900 }, pageKind: 'motion presets', motionValues: values, reducedMotionDuration: reduced, motionPass: pass, screenshot: null });
     if (!pass) {
       hardFailure = true;
@@ -609,7 +616,7 @@ async function main() {
 
   const profileResults = results.filter((item) => item.role === 'owner' && item.viewport?.width === 1920 && item.viewport?.height === 1080 && !item.pageKind && !item.realPreview);
   const renderedProfileIds = new Set(profileResults.map((item) => item.renderedLayout).filter(Boolean));
-  const ownerHomePass = results.some((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind && item.primaryHeroCount === 1 && item.h1Count === 1 && item.ownerBusinessIntelligence);
+  const ownerHomePass = results.some((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind && item.primaryHeroCount === 1 && item.h1Count === 1 && item.ownerBusinessIntelligence && item.ownerBusinessIntelligenceFirstView);
   const employeeResults = results.filter((item) => item.role === 'employee' && item.pageKind !== 'field-level permission matrix');
   const employeeHomePass = employeeResults.length > 0 && employeeResults.every((item) => item.employeeAggregateDisclosure === false && item.employeeKpiCount === 0 && item.primaryHeroCount === 1 && item.h1Count === 1);
   const employeePermissionPass = results.filter((item) => item.pageKind === 'field-level permission matrix').length === 4 && results.filter((item) => item.pageKind === 'field-level permission matrix').every((item) => !item.forbiddenApiDisclosure && !item.forbiddenDomDisclosure);
@@ -628,10 +635,11 @@ async function main() {
   const motionMetric = results.find((item) => item.pageKind === 'motion presets');
   const motionPass = Boolean(motionMetric?.motionPass);
   const reducedMotionMetric = results.find((item) => item.pageKind === 'reduced-motion smoke');
-  const reducedMotionPass = Boolean(motionMetric?.reducedMotionDuration === '0ms' && reducedMotionMetric?.reducedMotion === true);
+  const reducedMotionPass = Boolean((motionMetric?.reducedMotionDuration === '0ms' || motionMetric?.reducedMotionDuration === '0s') && motionMetric?.reducedMotion === true);
   const smartContextPass = results.filter((item) => item.dashboardPresent).every((item) => item.smartContext === true || item.pageKind?.startsWith('ERP surface ') || item.pageKind === 'ERP default resolution');
   const typographyPass = results.filter((item) => item.dashboardPresent && item.viewport?.width >= 861).every((item) => item.keyTypographyMin >= 11);
-  const noLayoutExplanationPass = results.filter((item) => item.pageKind && !item.pageKind.includes('Layout Studio') && !item.pageKind.startsWith('ERP surface ')).every((item) => item.layoutExplanation === false);
+  const businessPageResults = results.filter((item) => item.dashboardPresent && item.pageKind && !item.pageKind.includes('Layout Studio') && !item.pageKind.startsWith('ERP surface '));
+  const noLayoutExplanationPass = businessPageResults.length > 0 && businessPageResults.every((item) => item.layoutExplanation === false);
 
   if (renderedProfileIds.size < layouts.length || !ownerHomePass || !employeeHomePass || !employeePermissionPass || !managerPass || !navigationPass || !featureFramePass || !galleryPass || !previewPass || !commandPass || !customizePass || !erpPass || !erpSurfacePass || !motionPass || !smartContextPass || !typographyPass || !noLayoutExplanationPass) {
     hardFailure = true;
@@ -677,8 +685,11 @@ async function main() {
     'HORIZONTAL_OVERFLOW=HARD_GATE',
     'QA_FIXTURE_DATA=NOT_APPLICATION_DATA',
   ];
-  fs.writeFileSync(path.join(evidenceDir, 'layout-metrics.json'), JSON.stringify({ generatedAt: new Date().toISOString(), results, runtimeErrors }, null, 2) + '\n');
-  fs.writeFileSync(path.join(evidenceDir, 'validation-summary.txt'), summaryLines.join('\n') + '\n');
+  fs.writeFileSync(path.join(evidenceDir, 'layout-metrics.json'), JSON.stringify({ generatedAt: new Date().toISOString(), results, runtimeErrors }, null, 2) + '
+');
+  fs.writeFileSync(path.join(evidenceDir, 'validation-summary.txt'), summaryLines.join('
+') + '
+');
   if (hardFailure) process.exitCode = 1;
 }
 
