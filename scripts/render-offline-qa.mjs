@@ -56,6 +56,26 @@ const summary = {
   pendingApprovals: 0, securityAlerts: 0, overdueRequirements: 0, maintenanceAlerts: 0,
 };
 
+function ownerIntelligence() {
+  const shared = { inventory: { valueKobo: 362000000, lowStock: 2 }, workforce: { employees: 24, present: 21, incomplete: 1 }, payroll: { runs: 1, grossKobo: 42000000, netKobo: 38000000 }, maintenance: { open: 2, urgent: 1, costKobo: 800000 } };
+  return {
+    generatedAt: summary.refreshedAt, workDate: summary.workDate,
+    period: { key: 'current_month', label: 'Current month', start: '2026-09-01', end: summary.workDate, comparisonLabel: 'previous month' },
+    scope: { companyId: null, companyName: 'Daenem Group', companyIds: companies.map((company) => company.id) },
+    group: { revenueKobo: 1485000000, previousRevenueKobo: 1320000000, payrollNetKobo: 286000000, operatingExpenseKobo: 198000000, outstandingReceivablesKobo: 174000000, inventoryValueKobo: 362000000, employees: 128, present: 116, incompleteAttendance: 4, lowStock: 6, highRiskSecurity: 0, overdueRequirements: 2, pendingForms: 1 },
+    finance: { operatingExpenseKobo: 198000000, outstandingReceivablesKobo: 174000000, overdueReceivables: 3, postedJournals: 14 },
+    construction: { activeProjects: 1, budgetKobo: 90000000, spentKobo: 32000000, remainingKobo: 58000000, overdueMilestones: 0 },
+    companies: {
+      printing: { ...shared, current: { orders: 42, revenueKobo: 420000000, collectedKobo: 318000000 }, previous: { revenueKobo: 390000000 } },
+      bakery: { ...shared, current: { orders: 1280, revenueKobo: 310000000, collectedKobo: 298000000 }, previous: { revenueKobo: 286000000 }, wasteCostKobo: 1200000, wastePctOfSales: 1.8 },
+      autos: { ...shared, salesCount: 7, revenueKobo: 520000000, collectedKobo: 450000000, previousRevenueKobo: 470000000, grossProfitKobo: 72000000, stockCount: 18, stockValueKobo: 240000000, followupsDue: 4 },
+      logistics: { ...shared, trips: 64, revenueKobo: 180000000, previousRevenueKobo: 165000000, expenseKobo: 110000000, grossProfitKobo: 70000000, activeShipments: 12, expiringDocs: 1 },
+      properties: { ...shared, rentCollectedKobo: 95000000, previousRentCollectedKobo: 88000000, rentReceipts: 31, arrearsKobo: 17000000, overdueCharges: 2 },
+    },
+    alerts: [],
+  };
+}
+
 function layoutPayload(erpId = 'staff') {
   const layouts = { staff: 'focus-flow', printing: 'operational-cockpit', bakery: 'executive-command', autos: 'executive-command', logistics: 'executive-command', properties: 'master-detail', finance: 'horizon-wide', controls: 'enterprise-studio' };
   return { preference: { layoutId: layouts[erpId] || 'focus-flow', density: 'standard', motion: 'balanced' }, canChoose: true, canManage: false, canAccess: false };
@@ -95,7 +115,7 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
     if (url.pathname === '/api/experience/layout') return send(layoutPayload(url.searchParams.get('erpId') || 'staff'));
     if (url.pathname.startsWith('/api/experience/layout/')) return send({ ok: true, preference: layoutPayload('staff').preference });
     if (url.pathname === '/api/dashboard/summary') return send({ ...summary, scope: role === 'owner' ? 'aggregate' : 'personal' });
-    if (url.pathname === '/api/owner/intelligence') return send({ generatedAt: summary.refreshedAt, workDate: summary.workDate, scope: { companyId: null, companyName: 'Daenem Group', companyIds: companies.map((company) => company.id) }, group: { employees: 128, present: 116, incompleteAttendance: 4, revenueKobo: 1485000000, payrollNetKobo: 286000000, operatingExpenseKobo: 198000000, outstandingReceivablesKobo: 174000000, inventoryValueKobo: 362000000 }, companies: {}, alerts: [] });
+    if (url.pathname === '/api/owner/intelligence') return send(ownerIntelligence());
     if (url.pathname === '/api/support/mine') return send({ commands: [], assistanceRequests: [] });
     if (url.pathname === '/api/forms' && method === 'GET') return send({ forms: [{ id: 'qa-form', companyName: 'Printing & Technology', title: assignment.title, formType: assignment.formType, schemaJson: assignment.schemaJson, assignmentCount: 1 }] });
     if (url.pathname === '/api/forms/mine' && method === 'GET') return send({ assignments: [assignment] });
