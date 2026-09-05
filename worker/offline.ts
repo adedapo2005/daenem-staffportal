@@ -124,6 +124,10 @@ async function writeAudit(
   reason?: string,
 ) {
   const safeDetails = {
+    employeeId: context.employee.id,
+    companyId: companyId || safeText(details.companyId, 120) || undefined,
+    sessionId: context.sessionId,
+    deviceId: safeText(details.deviceId, 160) || undefined,
     operationId: safeText(details.operationId, 160) || undefined,
     idempotencyKey: safeText(details.idempotencyKey, 200) || undefined,
     operationKind: safeText(details.operationKind, 80) || undefined,
@@ -135,6 +139,8 @@ async function writeAudit(
     sizeBytes: typeof details.sizeBytes === 'number' ? details.sizeBytes : undefined,
     sha256: safeText(details.sha256, 80) || undefined,
     requestId: requestId(request),
+    ipAddress: requestIp(request) || undefined,
+    networkLocation: requestLocationLabel(request) || undefined,
     clientTimezone: safeText(details.clientTimezone, 80) || undefined,
     capturedAt: parseIso(details.capturedAt),
     serverReceivedAt: new Date().toISOString(),
