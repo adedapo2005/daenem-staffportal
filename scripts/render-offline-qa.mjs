@@ -327,7 +327,7 @@ async function main() {
     });
     assert(badAttachment === 415, 'invalid attachment MIME was not rejected');
     const oversizedAttachment = await page.evaluate(async () => {
-      const response = await fetch('/api/offline/attachments/qa-oversized', { method: 'PUT', headers: { 'content-type': 'image/png', 'content-length': String(10 * 1024 * 1024 + 1), 'x-offline-operation-id': 'qa-op', 'x-offline-company-id': 'company-printing' }, body: 'x' });
+      const response = await fetch('/api/offline/attachments/qa-oversized', { method: 'PUT', headers: { 'content-type': 'image/png', 'x-offline-operation-id': 'qa-op', 'x-offline-company-id': 'company-printing' }, body: new Uint8Array(10 * 1024 * 1024 + 1) });
       return response.status;
     });
     assert(oversizedAttachment === 413, 'oversized attachment was not rejected');
