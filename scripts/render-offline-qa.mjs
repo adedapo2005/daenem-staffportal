@@ -51,7 +51,7 @@ function contextFor(role, employeeId = 'qa-offline-employee') {
     employee: {
       id: employeeId, employeeNo: owner ? 'QA-OWNER' : manager ? 'QA-MANAGER' : 'QA-OFFLINE', displayName: owner ? 'Amina Daenem' : manager ? 'Musa Manager' : 'Tolu Offline',
       email: `${employeeId}@example.invalid`, jobTitle: owner ? 'Group Owner' : manager ? 'Operations Manager' : 'Portal Employee', department: 'Operations',
-      status: 'active', preferredTheme: 'unified-daylight', team: owner ? 'Leadership' : manager ? 'Operations' : 'Printing', lastLoginAt: '2026-09-05T08:00:00.000Z',
+      status: 'active', preferredTheme: 'unified-daylight', timezone: owner ? 'America/New_York' : 'Africa/Lagos', team: owner ? 'Leadership' : manager ? 'Operations' : 'Printing', lastLoginAt: '2026-09-05T08:00:00.000Z',
     },
     companies: assignedCompanies,
     roles: [{ id: `qa-role-${role}-${employeeId}`, code: roleCode, name: roleName, companyId: 'company-printing' }],
@@ -137,8 +137,30 @@ function ownerOverview() {
   };
 }
 
+
+function ownerDetail() {
+  return {
+    serverTime: '2026-09-05T14:48:04.000Z',
+    businessTimezone: 'Africa/Lagos',
+    employee: { id: 'qa-offline-employee', employeeNo: 'QA-OFFLINE', displayName: 'Tolu Offline', email: 'qa-offline-employee@example.invalid', jobTitle: 'Portal Employee', department: 'Printing', status: 'active', timezone: 'Africa/Lagos' },
+    memberships: [{ companyId: 'company-printing', companyCode: 'PRINT', companyName: 'Printing & Technology', locationId: 'qa-location', locationName: 'Lagos Print Studio', isPrimary: 1 }],
+    roles: [{ id: 'qa-role-employee', code: 'employee', name: 'Portal Employee', companyId: 'company-printing' }],
+    sessions: [{ id: 'qa-session-owner', sessionId: 'qa-session-owner', employeeId: 'qa-offline-employee', employeeName: 'Tolu Offline', deviceId: 'qa-device-1', deviceName: 'QA Browser · Mobile', userAgent: 'Chromium QA', platform: 'Linux', appVersion: 'offline-qa', clientTimezone: 'Africa/Lagos', companyId: 'company-printing', ipAddress: '203.0.113.10', networkLocation: 'Lagos, NG', createdAt: '2026-09-05T08:00:00.000Z', lastSeenAt: '2026-09-05T14:47:00.000Z', expiresAt: '2030-09-05T08:00:00.000Z' }],
+    telemetry: [{ employeeId: 'qa-offline-employee', employeeName: 'Tolu Offline', companyId: 'company-printing', deviceId: 'qa-device-1', deviceName: 'QA Browser · Mobile', platform: 'Linux', appVersion: 'offline-qa', clientTimezone: 'Africa/Lagos', pendingCount: 0, syncStatus: 'synced', lastSuccessfulSyncAt: '2026-09-05T14:48:04.000Z', lastReportedAt: '2026-09-05T14:48:04.000Z', ipAddress: '203.0.113.10', networkLocation: 'Lagos, NG' }],
+    receipts: [{ id: 'qa-receipt-1', operationId: 'qa-op-1', idempotencyKey: 'qa-key-1', employeeId: 'qa-offline-employee', companyId: 'company-printing', sessionId: 'qa-session-owner', operationKind: 'forms.submit', entityType: 'workflow_form_assignment', entityId: 'qa-form-assignment', state: 'completed', attemptCount: 2, lastErrorCategory: '', startedAt: '2026-09-05T14:47:00.000Z', serverReceivedAt: '2026-09-05T14:48:00.000Z', completedAt: '2026-09-05T14:48:04.000Z', updatedAt: '2026-09-05T14:48:04.000Z', outcome: 'accepted', submissionId: 'qa-submission-1', resultStatus: 'submitted' }],
+    attachments: [{ id: 'qa-attachment-1', companyId: 'company-printing', operationId: 'qa-op-1', originalName: 'handover.pdf', mimeType: 'application/pdf', sizeBytes: 2048, sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', status: 'uploaded', createdAt: '2026-09-05T14:47:30.000Z', uploadedAt: '2026-09-05T14:48:02.000Z' }],
+    audit: [{ id: 'qa-audit-1', occurredAt: '2026-09-05T14:48:01.000Z', action: 'sync_started', companyId: 'company-printing', entityType: 'offline_sync_receipt', entityId: 'qa-receipt-1', requestId: 'qa-request-1', details: { employeeId: 'qa-offline-employee', companyId: 'company-printing', sessionId: 'qa-session-owner', deviceId: 'qa-device-1', operationId: 'qa-op-1', idempotencyKey: 'qa-key-1', operationKind: 'forms.submit', clientTimezone: 'Africa/Lagos', capturedAt: '2026-09-05T14:01:00.000Z', serverReceivedAt: '2026-09-05T14:48:00.000Z', applicationVersion: 'offline-qa' } }],
+    timeline: [
+      { id: 'qa-timeline-start', at: '2026-09-05T14:48:01.000Z', category: 'audit', title: 'Sync attempt started', action: 'sync_started', entityType: 'offline_sync_receipt', entityId: 'qa-receipt-1', requestId: 'qa-request-1', details: { operationId: 'qa-op-1', operationKind: 'forms.submit', capturedAt: '2026-09-05T14:01:00.000Z', clientTimezone: 'Africa/Lagos' } },
+      { id: 'qa-timeline-attachment', at: '2026-09-05T14:48:02.000Z', category: 'attachment', title: 'Attachment upload acknowledged', action: 'attachment_accepted', entityType: 'offline_attachment', entityId: 'qa-attachment-1', details: { attachmentId: 'qa-attachment-1', mimeType: 'application/pdf', sizeBytes: 2048, sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } },
+      { id: 'qa-timeline-accepted', at: '2026-09-05T14:48:04.000Z', category: 'audit', title: 'Operation accepted', action: 'operation_accepted', entityType: 'offline_sync_receipt', entityId: 'qa-receipt-1', requestId: 'qa-request-1', details: { operationId: 'qa-op-1', operationKind: 'forms.submit', outcome: 'accepted', attemptCount: 2 } },
+    ],
+  };
+}
+
+
 function makeServerState() {
-  return { syncMode: 'success', sessionMode: 'valid', syncDelay: 0, syncRequests: 0, bootstrapRequests: 0, bootstrapModes: [], businessEffects: 0, receipts: new Map(), lostKeys: new Set(), capturedKeys: [] };
+  return { syncMode: 'success', sessionMode: 'valid', authMeMode: 'valid', syncDelay: 0, syncRequests: 0, bootstrapRequests: 0, bootstrapModes: [], businessEffects: 0, receipts: new Map(), lostKeys: new Set(), capturedKeys: [] };
 }
 
 async function installApiRoutes(page, role, server = makeServerState(), employeeId) {
@@ -149,7 +171,12 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
     const url = new URL(request.url());
     const method = request.method();
     const send = (value, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
-    if (url.pathname === '/api/auth/me') return send({ authenticated: true, context });
+    if (url.pathname === '/api/auth/me') {
+      if (server.authMeMode === 'network') return route.abort('failed');
+      if (server.authMeMode === '401') return send({ authenticated: false }, 401);
+      if (server.authMeMode === '403') return send({ error: 'Access denied.' }, 403);
+      return send({ authenticated: true, context });
+    }
     if (url.pathname === '/api/auth/logout') return send({ ok: true });
     if (url.pathname === '/api/experience/layout') return send(layoutPayload(url.searchParams.get('erpId') || 'staff'));
     if (url.pathname.startsWith('/api/experience/layout/')) return send({ ok: true, preference: layoutPayload('staff').preference });
@@ -230,6 +257,7 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
       return send({ ok: true, state: 'synced', receipt, result: { submissionId: 'qa-submission-' + key.slice(-8), status: 'submitted' } });
     }
     if (url.pathname === '/api/offline/owner/overview' && method === 'GET') return role === 'owner' ? send(ownerOverview()) : send({ error: 'Owner access is required.' }, 403);
+    if (url.pathname === '/api/offline/owner/detail' && method === 'GET') return role === 'owner' ? send(ownerDetail()) : send({ error: 'Owner access is required.' }, 403);
     if (url.pathname === '/api/offline/owner/policy') return role === 'owner' ? send({ policy: ownerOverview().policy, businessTimezone: 'Africa/Lagos' }) : send({ error: 'Owner access is required.' }, 403);
     if (url.pathname === '/api/offline/owner/revoke' && method === 'POST') return role === 'owner' ? send({ ok: true, message: 'Session revoked.' }) : send({ error: 'Owner access is required.' }, 403);
     if (url.pathname.startsWith('/api/offline/owner/')) return role === 'owner' ? send({}) : send({ error: 'Owner access is required.' }, 403);
@@ -249,7 +277,9 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
 }
 
 async function openContext(browser, role, viewport, employeeId) {
-  const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
+  const contextOptions = { viewport, reducedMotion: 'reduce' };
+  if (role === 'owner') contextOptions.timezoneId = 'America/New_York';
+  const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   const server = await installApiRoutes(page, role, makeServerState(), employeeId);
   const pageErrors = [];
@@ -305,6 +335,56 @@ async function status(page, expected, timeout = 15000) {
   }
 }
 
+async function mutateCachedAuthSnapshot(page, mode) {
+  await page.evaluate((snapshotMode) => new Promise((resolve, reject) => {
+    const request = indexedDB.open('daenem-staff-offline-v1');
+    request.onerror = () => reject(request.error || new Error('Could not open offline database.'));
+    request.onsuccess = () => {
+      const database = request.result;
+      const transaction = database.transaction('meta', 'readwrite');
+      const store = transaction.objectStore('meta');
+      const all = store.getAll();
+      all.onerror = () => reject(all.error || new Error('Could not read cached auth snapshot.'));
+      all.onsuccess = () => {
+        if (snapshotMode === 'expired') {
+          for (const row of all.result || []) {
+            if (row.kind === 'auth-snapshot') {
+              row.sessionExpiresAt = '2000-01-01T00:00:00.000Z';
+              store.put(row);
+            }
+          }
+        }
+        if (snapshotMode === 'wrong-employee') localStorage.setItem('daenem-offline-active-employee', 'qa-not-the-signed-in-employee');
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error('Could not update cached auth snapshot.'));
+    };
+  }), mode);
+}
+
+async function runAuthTransportCase(browser, mode, expectedContinuation) {
+  const item = await openContext(browser, 'employee', { width: 390, height: 844 }, 'qa-auth-' + mode);
+  try {
+    await item.page.waitForTimeout(700);
+    assert(await item.page.evaluate(() => navigator.onLine === true), mode + ': test did not run with navigator.onLine=true');
+    if (mode === 'expired' || mode === 'wrong-employee') await mutateCachedAuthSnapshot(item.page, mode);
+    item.server.authMeMode = mode === 'network' ? 'network' : mode;
+    await item.page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+    await item.page.waitForTimeout(1000);
+    const observed = await item.page.evaluate(() => ({
+      online: navigator.onLine,
+      hasSyncIndicator: Boolean(document.querySelector('[data-offline-sync-indicator]')),
+    }));
+    assert(observed.online === true, mode + ': navigator.onLine changed unexpectedly');
+    assert(observed.hasSyncIndicator === expectedContinuation, mode + ': cached context continuation expectation failed');
+    if (expectedContinuation) await snapshot(item.page, 'employee-mobile-weak-network-cached-390x844.png');
+  } finally {
+    await item.context.close();
+  }
+}
+
+
+
 async function snapshot(page, name) {
   await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
   const evidence = await page.evaluate(() => ({
@@ -338,6 +418,12 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   let gpsCalls = 0;
   try {
+    await runAuthTransportCase(browser, 'network', true);
+    await runAuthTransportCase(browser, '401', false);
+    await runAuthTransportCase(browser, '403', false);
+    await runAuthTransportCase(browser, 'expired', false);
+    await runAuthTransportCase(browser, 'wrong-employee', false);
+
     const employee = await openContext(browser, 'employee', { width: 390, height: 844 }, 'qa-offline-employee');
     const { page, context, server } = employee;
     await status(page, 'online');
@@ -585,6 +671,25 @@ async function main() {
     await snapshot(owner.page, 'owner-large-sync-sessions-2560x1440.png');
     await owner.page.setViewportSize({ width: 390, height: 844 });
     await snapshot(owner.page, 'owner-mobile-sync-sessions-390x844.png');
+
+    await owner.page.getByRole('button', { name: 'Inspect' }).first().click();
+    await owner.page.waitForSelector('.offline-detail-body', { timeout: 15000 });
+    const detailText = await owner.page.locator('.offline-detail-body').innerText();
+    assert(detailText.includes('Detailed evidence') && detailText.includes('Operational timeline'), 'Owner detailed drill-down is incomplete');
+    assert(detailText.includes('Network location') && detailText.includes('not GPS') && detailText.includes('Server-observed IP'), 'Owner detail network evidence is incomplete or mislabelled');
+    assert(detailText.includes('EDT') && detailText.includes('UTC') && detailText.includes('WAT'), 'Owner detail did not represent viewer, UTC and Daenem business time');
+    assert(detailText.includes('Device time differs from the server timeline by 47 minutes'), 'Owner detail did not surface the captured/server clock discrepancy');
+    assert(!/response_json|password|oauth|access[_-]?token|mfa secret/i.test(detailText), 'Owner detail exposed raw payload or authentication material');
+    await owner.page.locator('.offline-detail-toolbar select').selectOption('utc');
+    assert((await owner.page.locator('.offline-detail-body').innerText()).includes('UTC'), 'UTC timestamp mode is not usable');
+    await owner.page.locator('.offline-detail-toolbar select').selectOption('both');
+    await owner.page.locator('input[placeholder="e.g. sync_started"]').fill('sync_started');
+    await owner.page.getByRole('button', { name: 'Apply filters' }).click();
+    await owner.page.waitForSelector('.offline-detail-timeline');
+    await snapshot(owner.page, 'owner-mobile-sync-detail-390x844.png');
+    await owner.page.setViewportSize({ width: 1920, height: 1080 });
+    await snapshot(owner.page, 'owner-desktop-sync-detail-1920x1080.png');
+
     const apiCacheEntries = await owner.page.evaluate(async () => {
       const keys = [];
       for (const name of await caches.keys()) for (const request of await (await caches.open(name)).keys()) if (request.url.includes('/api/')) keys.push(request.url);
@@ -607,6 +712,9 @@ async function main() {
       apiCacheEntries: 0,
       gpsCalls,
       reducedMotionContext: true,
+      weakNetworkAuthFallback: true,
+      httpAuthDenialsDoNotUseCache: true,
+      ownerDetailTimezoneEvidence: true,
     },
   };
   fs.writeFileSync(path.join(evidenceDir, 'offline-qa-summary.json'), JSON.stringify(report, null, 2));

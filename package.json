@@ -30,7 +30,8 @@
     "qa:postauth": "node scripts/render-postauth-qa.mjs",
     "check:dashboard-permissions": "node scripts/check-dashboard-permissions.mjs",
     "check:offline-sync": "node scripts/check-offline-sync.mjs",
-    "qa:offline-sync": "node scripts/render-offline-qa.mjs"
+    "qa:offline-sync": "node scripts/render-offline-qa.mjs",
+    "test:offline-worker-runtime": "node scripts/test-offline-worker-runtime.mjs"
   },
   "dependencies": {
     "lucide-react": "1.28.0",

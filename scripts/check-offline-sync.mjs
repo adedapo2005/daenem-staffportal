@@ -12,6 +12,11 @@ const platform = read('src/offline-platform.ts');
 const ui = read('src/offline-sync.tsx');
 const owner = read('src/offline-sync-center-entry.tsx');
 const server = read('worker/offline.ts');
+const runtime = read('worker/runtime.ts');
+const auth = read('src/auth.tsx');
+const authWorker = read('worker/auth.ts');
+const runtimeTest = read('scripts/test-offline-worker-runtime.mjs');
+const renderQa = read('scripts/render-offline-qa.mjs');
 const forms = read('worker/forms.ts');
 const migration = read('migrations/0054_offline_sync_audit.sql');
 const serviceWorker = read('public/sw.js');
@@ -29,6 +34,16 @@ must(platform.includes('navigator.locks') && platform.includes('sync-lease:') &&
 must(platform.includes('idempotency-key') && platform.includes('retryDelay') && platform.includes('MAX_RETRY_ATTEMPTS') && platform.includes('uploadOfflineAttachments'), 'idempotent retry behavior or attachment reconnect handling is missing');
 must(!platform.includes('geolocation'), 'offline platform must never silently collect GPS');
 must(server.includes("kind !== 'forms.submit'") && server.includes("hasPermission(context, 'forms.access'") && server.includes('sessionRecord') && server.includes("state: 'needs-review'") && server.includes("'conflict'"), 'server allowlist, live authorization and conflict handling are missing');
+
+must(runtime.includes("import { routeOffline }") && runtime.includes("url.pathname.startsWith('/api/offline/')") && runtime.includes('await routeOffline(request, env, context)'), 'the production Worker runtime does not dispatch authenticated offline requests');
+must(auth.includes('isNetworkTransportFailure') && auth.includes('NETWORK_TRANSPORT') && auth.includes('status = 0'), 'network transport failures are not classified independently from HTTP denial responses');
+must(authWorker.includes('ep.timezone AS timezone') && authWorker.includes('timezone: base.timezone'), 'viewer profile timezone is not carried through authenticated context');
+must(server.includes('existingForKey') && server.includes('mismatchDimensions') && server.includes('String(existingForKey.companyId)') && server.includes('String(existingForKey.operationKind)'), 'idempotency receipt identity binding is incomplete');
+must(server.includes('ownerDetailAllowedKeys') && server.includes('safeOwnerDetails') && server.includes('ownerTimelineTitle') && server.includes('canonicalOwnerTime'), 'Owner detail audit evidence is not safely shaped with canonical timestamps');
+must(owner.includes('/api/offline/owner/detail') && owner.includes('Detailed evidence') && owner.includes('Operational timeline') && owner.includes('Show Both') && owner.includes('Network location') && owner.includes('UTC'), 'Owner detailed sync evidence and time display are incomplete');
+must(runtimeTest.includes('worker/runtime.ts') && runtimeTest.includes('REAL_WORKER_RUNTIME_OFFLINE_ROUTING=PASS') && runtimeTest.includes('cross-company') && runtimeTest.includes('response-loss'), 'the actual Worker routing/idempotency integration test is missing or too weak');
+must(renderQa.includes('runAuthTransportCase') && renderQa.includes("authMeMode === 'network'") && renderQa.includes('owner-mobile-sync-detail-390x844.png') && renderQa.includes('timezoneId'), 'rendered weak-network and Owner detail QA is incomplete');
+
 must(server.includes('const formsVisible') && server.includes("if (!formsVisible)") && server.includes('baseUpdatedAt: safeText(payload.baseUpdatedAt'), 'employee sync activity is not protected by the current Forms permission or the server-side version check is not forwarded');
 must(server.includes('ON CONFLICT(idempotency_key) DO NOTHING') && server.includes('operationAlreadyApplied') && server.includes('completed-after-response-loss'), 'server receipt deduplication is incomplete');
 must(server.includes('requestIp(request)') && server.includes('requestLocationLabel(request)') && server.includes('ipAddress: requestIp(request)') && server.includes('networkLocation: requestLocationLabel(request)') && server.includes('sessionId: context.sessionId') && server.includes('offline_policy_updated') && server.includes('claimedSha'), 'trusted telemetry, policy audit, or attachment integrity is missing');

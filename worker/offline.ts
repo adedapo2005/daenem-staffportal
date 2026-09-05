@@ -308,9 +308,44 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
   const employeeId = safeText(body.employeeId, 120);
   const companyId = safeText(body.companyId, 120);
   const capturedAt = parseIso(body.capturedAt);
-  if (!validId(operationId) || !validId(idempotencyKey, 200) || kind !== 'forms.submit' || !employeeId || !companyId || !capturedAt) {
+  if (!validId(operationId) || !validId(idempotencyKey, 200) || !employeeId || !companyId || !capturedAt) {
     await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId || undefined, { operationId, idempotencyKey, operationKind: kind, outcome: 'invalid-metadata', clientTimezone: body.clientTimezone, capturedAt }, companyId || undefined);
     return json({ error: 'The offline operation metadata is invalid.', state: 'needs-review', errorCategory: 'validation' }, 400);
+  }
+  const existingForKey = await receiptByKey(env, idempotencyKey);
+  if (existingForKey && (
+    String(existingForKey.employeeId) !== context.employee.id
+    || String(existingForKey.companyId) !== companyId
+    || String(existingForKey.operationId) !== operationId
+    || String(existingForKey.operationKind) !== kind
+    || String(existingForKey.idempotencyKey) !== idempotencyKey
+  )) {
+    const mismatchDimensions = [
+      String(existingForKey.employeeId) !== context.employee.id ? 'employee' : '',
+      String(existingForKey.companyId) !== companyId ? 'company' : '',
+      String(existingForKey.operationId) !== operationId ? 'operation' : '',
+      String(existingForKey.operationKind) !== kind ? 'operation-kind' : '',
+      String(existingForKey.idempotencyKey) !== idempotencyKey ? 'idempotency-key' : '',
+    ].filter(Boolean).join(',');
+    const auditCompanyId = companyInScope(context, companyId) ? companyId : undefined;
+    await writeAudit(env, request, context, 'operation_rejected', 'offline_sync_receipt', String(existingForKey.id), {
+      operationId,
+      idempotencyKey,
+      operationKind: kind,
+      outcome: 'idempotency-scope-mismatch',
+      errorCategory: 'idempotency-mismatch',
+      mismatchDimensions,
+      clientTimezone: body.clientTimezone,
+      capturedAt,
+    }, auditCompanyId);
+    await logSecurity(env, request, 'offline_idempotency_scope_mismatch', {
+      employeeId: context.employee.id,
+      companyId: auditCompanyId,
+      sessionId: context.sessionId,
+      result: 'rejected',
+      details: { operationId, operationKind: kind, mismatchDimensions },
+    });
+    return json({ error: 'This idempotency key is already assigned to a different employee, company or operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
   }
   if (employeeId !== context.employee.id || !companyInScope(context, companyId)) {
     await writeAudit(env, request, context, 'permission_denied', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'identity-or-scope-mismatch', clientTimezone: body.clientTimezone, capturedAt }, companyId);
@@ -336,7 +371,7 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'offline-age-exceeded', clientTimezone: body.clientTimezone, capturedAt }, companyId);
     return json({ error: 'This work is outside the permitted offline continuation window.', state: 'needs-review', errorCategory: 'offline-age' }, 409);
   }
-  const existing = await receiptByKey(env, idempotencyKey);
+  const existing = existingForKey || await receiptByKey(env, idempotencyKey);
   if (existing) {
     const mismatches = [
       String(existing.employeeId) !== context.employee.id ? 'employee' : '',
@@ -388,6 +423,18 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
       ) VALUES(?,?,?,?,?,?,?, ?,?,'processing',1)
       ON CONFLICT(idempotency_key) DO NOTHING
     `).bind(id, operationId, idempotencyKey, context.employee.id, companyId, context.sessionId, kind, safeText(body.entityType, 120) || 'workflow_form_assignment', safeText(body.entityId, 160) || safeText(body.payload?.assignmentId, 160) || null).run();
+  }
+  if (kind !== 'forms.submit') {
+    await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, {
+      operationId,
+      idempotencyKey,
+      operationKind: kind,
+      outcome: 'unsupported-operation-kind',
+      errorCategory: 'validation',
+      clientTimezone: body.clientTimezone,
+      capturedAt,
+    }, companyId);
+    return json({ error: 'This offline operation kind is not supported.', state: 'needs-review', errorCategory: 'validation' }, 400);
   }
   const receipt = await receiptByKey(env, idempotencyKey);
   if (!receipt) return json({ error: 'The sync receipt could not be created safely.', state: 'failed-retryable', errorCategory: 'receipt' }, 503);
