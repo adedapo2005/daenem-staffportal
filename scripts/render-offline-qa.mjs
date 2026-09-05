@@ -175,7 +175,17 @@ async function goForms(page) {
 }
 
 async function status(page, expected, timeout = 15000) {
-  await page.waitForFunction((value) => document.querySelector('[data-offline-sync-indicator]')?.getAttribute('data-sync-status') === value, expected, { timeout });
+  try {
+    await page.waitForFunction((value) => document.querySelector('[data-offline-sync-indicator]')?.getAttribute('data-sync-status') === value, expected, { timeout });
+  } catch (error) {
+    const observed = await page.evaluate(() => ({
+      online: navigator.onLine,
+      status: document.querySelector('[data-offline-sync-indicator]')?.getAttribute('data-sync-status') || null,
+      label: document.querySelector('[data-offline-sync-indicator]')?.getAttribute('aria-label') || null,
+      body: document.body.innerText.slice(0, 1200),
+    }));
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nSYNC_STATUS_DEBUG=${JSON.stringify(observed)}`);
+  }
 }
 
 async function snapshot(page, name) {
