@@ -436,6 +436,7 @@ async function main() {
       await goForms(blocked.page);
       await blocked.page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill(`${sessionMode} before reconnect.`);
       await blocked.context.setOffline(true);
+      await blocked.page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
       await blocked.page.locator('[data-offline-form-submit="supported"]').click();
       blocked.server.sessionMode = sessionMode;
       await blocked.context.setOffline(false);
