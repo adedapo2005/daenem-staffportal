@@ -255,6 +255,12 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
     const employeeAggregateDisclosure = input.role === 'employee' && aggregateWidgets.length > 0;
     const primaryHeroCount = document.querySelectorAll('[data-postauth-primary-hero="true"]').length;
     const h1Count = document.querySelectorAll('.dashboard-page h1').length;
+    const primaryKpiGrids = Array.from(document.querySelectorAll('[data-primary-kpi-grid="true"]')).filter((node) => {
+      const rect = node.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+    const primaryKpiLabels = primaryKpiGrids.flatMap((grid) => Array.from(grid.querySelectorAll('.kpi-card > span:not(.kpi-icon)')).map((node) => node.textContent?.trim() || ''));
+    const managerAttendanceText = document.querySelector('.manager-command-center')?.textContent || '';
     const typographyDetails = Array.from(document.querySelectorAll('.postauth-nav-item,.postauth-navigation strong,.erp-pulse-card h3,.manager-command-actions button,.kpi-card strong')).map((node) => {
       const rect = node.getBoundingClientRect();
       return { tag: node.tagName, className: node.className, text: node.textContent?.trim().slice(0, 100) || '', fontSize: Number.parseFloat(getComputedStyle(node).fontSize) || 99, visible: rect.width > 0 && rect.height > 0 };
@@ -270,6 +276,11 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       primaryHeroCount,
       h1Count,
       featureFrameH1Count: document.querySelectorAll('.postauth-feature-frame h1').length,
+      primaryKpiGridCount: primaryKpiGrids.length,
+      primaryKpiLabelCount: primaryKpiLabels.length,
+      primaryKpiLabels,
+      ownerKpiPass: input.role !== 'owner' || (primaryKpiGrids.length === 1 && new Set(primaryKpiLabels).size === primaryKpiLabels.length),
+      attendanceManagerDirectCount: input.role !== 'attendance-manager' || (/\b116\b/.test(managerAttendanceText) && !/%/.test(managerAttendanceText) && !/NaN|Infinity/.test(managerAttendanceText)),
       dashboardPresent: Boolean(root),
       featureFramePresent: Boolean(document.querySelector('.postauth-feature-frame')),
       layoutStudioPresent: Boolean(document.querySelector('.layout-studio-panel')),
@@ -367,6 +378,11 @@ async function capture(browser, role, layoutId, width, height, name, options = {
       ...options.metric,
     });
     metric.forbiddenApiDisclosure = (options.forbiddenKeys || []).some((key) => (metric.backendSummaryKeys || []).includes(key));
+    metric.apiKeyMismatch = Array.isArray(options.allowedApiKeys)
+      && JSON.stringify([...(metric.backendSummaryKeys || [])].sort()) !== JSON.stringify([...options.allowedApiKeys].sort());
+    const ownerDefaultCapture = role === 'owner' && layoutId === 'executive-command' && !options.navigateText && !options.openLayoutStudio && !options.pageKind;
+    metric.ownerKpiPass = !ownerDefaultCapture || (metric.primaryKpiGridCount === 1 && new Set(metric.primaryKpiLabels || []).size === (metric.primaryKpiLabels || []).length);
+    metric.attendanceSemanticsPass = role !== 'attendance-manager' || (metric.attendanceManagerDirectCount === true && !metric.forbiddenApiDisclosure && !metric.forbiddenDomDisclosure);
     results.push(metric);
     const desktop = width >= 861;
     const homeCapture = !options.navigateText && !options.openLayoutStudio && !options.pageKind;
@@ -382,7 +398,10 @@ async function capture(browser, role, layoutId, width, height, name, options = {
       || metric.employeeAggregateDisclosure
       || metric.employeeKpiCount > 0
       || metric.forbiddenApiDisclosure
+      || metric.apiKeyMismatch
       || metric.forbiddenDomDisclosure
+      || !metric.ownerKpiPass
+      || !metric.attendanceSemanticsPass
       || (metric.keyTypographyMin < 11 && desktop)
       || (metric.smartContext !== true)
       || ((!options.openLayoutStudio && (homeCapture || options.navigateText)) && metric.layoutExplanation)
@@ -474,82 +493,182 @@ async function captureErpResolution(browser) {
 }
 
 async function captureLayoutStudioPreview(browser) {
-  const fixture = await createPage(browser, 'owner', 'executive-command');
-  const page = fixture.page;
-  const postRequests = [];
-  page.on('request', (request) => { if (request.method() === 'POST') postRequests.push(request.url()); });
+  const previewFixture = await createPage(browser, 'owner', 'executive-command');
+  const previewPage = previewFixture.page;
+  const previewPostRequests = [];
+  previewPage.on('request', (request) => { if (request.method() === 'POST') previewPostRequests.push(request.url()); });
   let previewPass = false;
   let exitPass = false;
   let applyPass = false;
+  let targetLayout = null;
   try {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
-    const originalLayout = await page.locator('.dashboard-page').getAttribute('data-layout-profile');
-    const beforeStorage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'layout-studio' } })));
-    await page.waitForSelector('.layout-studio-panel', { state: 'visible', timeout: 20000 });
-    const card = page.locator('.layout-gallery-card:not(.current)').first();
-    const targetLayout = await card.getAttribute('data-layout-id');
-    if (!targetLayout) throw new Error('No non-current layout card available for real preview.');
-    await card.getByRole('button', { name: 'Preview' }).click();
-    await page.waitForSelector('[data-layout-preview-banner="true"]', { state: 'visible', timeout: 10000 });
-    await page.waitForTimeout(300);
-    const previewLayout = await page.locator('.dashboard-page').getAttribute('data-layout-profile');
-    const previewStorage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
-    const previewPostRequests = postRequests.filter((url) => /\/api\/experience\/layout\/(preference|policy|rollback)/.test(url));
+    await previewPage.setViewportSize({ width: 1440, height: 900 });
+    await previewPage.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+    await previewPage.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+    const originalLayout = await previewPage.locator('.dashboard-page').getAttribute('data-layout-profile');
+    const beforeStorage = await previewPage.evaluate(() => JSON.stringify({ ...localStorage }));
+    await previewPage.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'layout-studio' } })));
+    await previewPage.waitForSelector('.layout-studio-panel', { state: 'visible', timeout: 20000 });
+    const card = previewPage.locator('.layout-gallery-card[data-layout-id="focus-flow"]');
+    targetLayout = await card.getAttribute('data-layout-id');
+    if (!targetLayout) throw new Error('Focus & Flow preview card is unavailable.');
+    await card.getByRole('button', { name: 'Preview', exact: true }).click();
+    await previewPage.waitForSelector('[data-layout-preview-banner="true"]', { state: 'visible', timeout: 10000 });
+    await previewPage.waitForTimeout(300);
+    const previewLayout = await previewPage.locator('.dashboard-page').getAttribute('data-layout-profile');
+    const previewStorage = await previewPage.evaluate(() => JSON.stringify({ ...localStorage }));
+    const applyButtonVisible = await previewPage.getByRole('button', { name: 'Apply to Me', exact: true }).isVisible();
+    const previewPreferencePosts = previewPostRequests.filter((url) => //api/experience/layout/preference$/.test(url));
     previewPass = previewLayout === targetLayout
       && previewStorage === beforeStorage
-      && previewPostRequests.length === 0
-      && await page.locator('.dashboard-main').count() > 0
-      && await page.locator('[data-layout-preview-banner="true"]').count() === 1;
+      && previewPreferencePosts.length === 0
+      && applyButtonVisible
+      && await previewPage.locator('.dashboard-main').count() > 0
+      && await previewPage.locator('[data-layout-preview-banner="true"]').count() === 1;
     const previewScreenshot = 'screenshots/postauth-layout-studio-real-preview-1440x900.png';
-    await page.screenshot({ path: path.join(evidenceDir, previewScreenshot), animations: 'disabled' });
-    results.push(await pageMetrics(page, 'owner', targetLayout, previewScreenshot, { width: 1440, height: 900 }, { pageKind: 'real layout preview', realPreview: previewPass, previewLayout, targetLayout, previewPostRequests: previewPostRequests.length }));
-    await page.getByRole('button', { name: 'Exit Preview' }).click();
-    await page.waitForFunction(() => !document.querySelector('[data-layout-preview-banner="true"]'));
-    exitPass = (await page.locator('.dashboard-page').getAttribute('data-layout-profile')) === originalLayout
-      && (await page.locator('[data-layout-preview-banner="true"]').count()) === 0
-      && await page.evaluate((before) => JSON.stringify({ ...localStorage }) === before, beforeStorage);
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'layout-studio' } })));
-    await page.waitForSelector('.layout-studio-panel', { state: 'visible', timeout: 10000 });
-    const applyCard = page.locator('.layout-gallery-card[data-layout-id="' + targetLayout + '"]');
-    await applyCard.getByRole('button', { name: 'Apply to me' }).click();
-    await page.waitForTimeout(350);
-    const applyPosts = postRequests.filter((url) => /\/api\/experience\/layout\/preference$/.test(url));
-    applyPass = applyPosts.length > 0 && (await page.locator('.dashboard-page').getAttribute('data-layout-profile')) === targetLayout;
-    results.push({ role: 'owner', requestedLayout: targetLayout, renderedLayout: targetLayout, viewport: { width: 1440, height: 900 }, pageKind: 'real layout preview lifecycle', realPreview: previewPass, previewExit: exitPass, explicitApply: applyPass, preferencePostCount: applyPosts.length, screenshot: null });
-    if (!previewPass || !exitPass || !applyPass) {
-      hardFailure = true;
-      runtimeErrors.push('Real layout preview lifecycle failed.');
-    }
+    await previewPage.screenshot({ path: path.join(evidenceDir, previewScreenshot), animations: 'disabled' });
+    results.push(await pageMetrics(previewPage, 'owner', targetLayout, previewScreenshot, { width: 1440, height: 900 }, {
+      pageKind: 'real layout preview',
+      realPreview: previewPass,
+      previewLayout,
+      targetLayout,
+      previewPreferencePostCount: previewPreferencePosts.length,
+      previewApplyButtonVisible: applyButtonVisible,
+    }));
+
+    await previewPage.getByRole('button', { name: 'Exit Preview', exact: true }).click();
+    await previewPage.waitForFunction(() => !document.querySelector('[data-layout-preview-banner="true"]'));
+    exitPass = (await previewPage.locator('.dashboard-page').getAttribute('data-layout-profile')) === originalLayout
+      && (await previewPage.locator('[data-layout-preview-banner="true"]').count()) === 0
+      && await previewPage.evaluate((before) => JSON.stringify({ ...localStorage }) === before, beforeStorage)
+      && previewPostRequests.filter((url) => //api/experience/layout/preference$/.test(url)).length === 0;
   } catch (error) {
     hardFailure = true;
-    runtimeErrors.push('Layout Studio real preview: ' + (error instanceof Error ? error.message : String(error)));
+    runtimeErrors.push('Layout Studio preview/exit: ' + (error instanceof Error ? error.message : String(error)));
   } finally {
-    await fixture.context.close();
+    await previewFixture.context.close();
+  }
+
+  const applyFixture = await createPage(browser, 'owner', 'executive-command');
+  const applyPage = applyFixture.page;
+  const applyPostRequests = [];
+  applyPage.on('request', (request) => { if (request.method() === 'POST') applyPostRequests.push(request.url()); });
+  try {
+    await applyPage.setViewportSize({ width: 1440, height: 900 });
+    await applyPage.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+    await applyPage.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+    const applyBeforeStorage = await applyPage.evaluate(() => JSON.stringify({ ...localStorage }));
+    await applyPage.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'layout-studio' } })));
+    await applyPage.waitForSelector('.layout-studio-panel', { state: 'visible', timeout: 20000 });
+    const applyCard = applyPage.locator('.layout-gallery-card[data-layout-id="focus-flow"]');
+    await applyCard.getByRole('button', { name: 'Preview', exact: true }).click();
+    await applyPage.waitForSelector('[data-layout-preview-banner="true"]', { state: 'visible', timeout: 10000 });
+    const duringPreviewStorage = await applyPage.evaluate(() => JSON.stringify({ ...localStorage }));
+    const duringPreviewLayout = await applyPage.locator('.dashboard-page').getAttribute('data-layout-profile');
+    const applyButton = applyPage.getByRole('button', { name: 'Apply to Me', exact: true });
+    const applyVisible = await applyButton.isVisible();
+    await applyButton.click();
+    await applyPage.waitForFunction(() => !document.querySelector('[data-layout-preview-banner="true"]'));
+    await applyPage.waitForTimeout(250);
+    const applyLayout = await applyPage.locator('.dashboard-page').getAttribute('data-layout-profile');
+    const applyAfterStorage = await applyPage.evaluate(() => JSON.stringify({ ...localStorage }));
+    const savedPreference = await applyPage.evaluate(() => {
+      const value = localStorage.getItem('daenem-experience-layout-v1:qa-owner');
+      try { return value ? JSON.parse(value) : null; } catch { return null; }
+    });
+    const preferencePosts = applyPostRequests.filter((url) => //api/experience/layout/preference$/.test(url));
+    applyPass = applyVisible
+      && duringPreviewLayout === targetLayout
+      && duringPreviewStorage === applyBeforeStorage
+      && preferencePosts.length === 1
+      && applyLayout === targetLayout
+      && applyAfterStorage !== applyBeforeStorage
+      && savedPreference?.layoutId === targetLayout;
+    results.push({
+      role: 'owner',
+      requestedLayout: targetLayout,
+      renderedLayout: applyLayout,
+      viewport: { width: 1440, height: 900 },
+      pageKind: 'real layout preview lifecycle',
+      realPreview: previewPass,
+      previewExit: exitPass,
+      explicitApply: applyPass,
+      previewApplyButtonVisible: applyVisible,
+      preferencePostCount: preferencePosts.length,
+      storageChangedOnlyAfterApply: duringPreviewStorage === applyBeforeStorage && applyAfterStorage !== applyBeforeStorage,
+      screenshot: null,
+    });
+  } catch (error) {
+    hardFailure = true;
+    runtimeErrors.push('Layout Studio direct apply: ' + (error instanceof Error ? error.message : String(error)));
+  } finally {
+    await applyFixture.context.close();
+  }
+  if (!previewPass || !exitPass || !applyPass) {
+    hardFailure = true;
+    runtimeErrors.push('Real layout preview lifecycle failed.');
   }
 }
 
 async function capturePermissionMatrix(browser) {
+  const commonKeys = ['refreshedAt', 'workDate', 'companyId', 'scope', 'attendanceRule'];
+  const allAggregateKeys = [...commonKeys, 'employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'];
   const cases = [
-    { role: 'employee', layout: 'focus-flow', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Needs review', 'Security health', 'Attendance categories', 'Security alerts', 'Team workload', 'Approvals'] },
-    { role: 'attendance-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Security health', 'Pending approvals', 'Security alerts', 'Overdue requirements', 'Control signals'] },
-    { role: 'approval-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'securityAlerts', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Security health', 'Security alerts', 'Attendance'] },
-    { role: 'security-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Approvals', 'Overdue requirements', 'Needs review'] },
+    { role: 'employee', layout: 'focus-flow', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Needs review', 'Security health', 'Attendance categories', 'Security alerts', 'Team workload', 'Approvals'], allowedApiKeys: commonKeys },
+    { role: 'attendance-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Security health', 'Pending approvals', 'Security alerts', 'Overdue requirements', 'Control signals'], allowedApiKeys: [...commonKeys, 'present', 'incompleteAttendance'] },
+    { role: 'approval-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'securityAlerts', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Security health', 'Security alerts', 'Attendance'], allowedApiKeys: [...commonKeys, 'pendingApprovals'] },
+    { role: 'security-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Approvals', 'Overdue requirements', 'Needs review'], allowedApiKeys: [...commonKeys, 'securityAlerts'] },
+    { role: 'owner', layout: 'executive-command', forbiddenKeys: [], forbiddenLabels: [], allowedApiKeys: allAggregateKeys },
   ];
   for (const item of cases) {
-    await capture(browser, item.role, item.layout, 1440, 900, 'permission-' + item.role + '-1440x900', { pageKind: 'field-level permission matrix', forbiddenKeys: item.forbiddenKeys, forbiddenLabels: item.forbiddenLabels });
+    await capture(browser, item.role, item.layout, 1440, 900, 'permission-' + item.role + '-1440x900', {
+      pageKind: 'field-level permission matrix',
+      forbiddenKeys: item.forbiddenKeys,
+      forbiddenLabels: item.forbiddenLabels,
+      allowedApiKeys: item.allowedApiKeys,
+    });
+  }
+}
+
+async function captureOwnerCanonicalNavigation(browser) {
+  const layoutCases = ['executive-command', 'workspace-canvas', 'operational-cockpit', 'insight-magazine', 'focus-flow'];
+  const outcomes = [];
+  for (const layoutId of layoutCases) {
+    const fixture = await createPage(browser, 'owner', layoutId);
+    const page = fixture.page;
+    const pageErrors = [];
+    const consoleErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+    try {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+      await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+      await page.waitForTimeout(900);
+      const action = page.locator('.xed-alert-list button').filter({ hasText: /security/i }).first();
+      if (!(await action.count())) throw new Error('Owner security action missing for ' + layoutId);
+      await action.click();
+      await page.waitForSelector('.dashboard-view-security .postauth-feature-frame', { state: 'visible', timeout: 10000 });
+      const opened = await page.locator('.dashboard-view-security .postauth-feature-frame h1').filter({ hasText: 'Security Center' }).count() === 1;
+      outcomes.push({ layoutId, opened, pageErrors, consoleErrors });
+      if (!opened || pageErrors.length || consoleErrors.length) throw new Error('Security canonical navigation failed for ' + layoutId);
+    } catch (error) {
+      outcomes.push({ layoutId, opened: false, pageErrors, consoleErrors, error: error instanceof Error ? error.message : String(error) });
+      hardFailure = true;
+      runtimeErrors.push('Owner canonical navigation: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      await fixture.context.close();
+    }
+  }
+  const pass = outcomes.length === layoutCases.length && outcomes.every((item) => item.opened && !item.pageErrors.length && !item.consoleErrors.length);
+  results.push({ role: 'owner', requestedLayout: 'multiple', renderedLayout: null, viewport: { width: 1440, height: 900 }, pageKind: 'owner canonical navigation', ownerCanonicalNavigation: outcomes, ownerCanonicalNavigationPass: pass, screenshot: null });
+  if (!pass) {
+    hardFailure = true;
+    runtimeErrors.push('Owner canonical navigation matrix failed.');
   }
 }
 
 async function captureErpSurfaces(browser) {
-  const fixture = await createPage(browser, 'owner', 'executive-command');
-  const page = fixture.page;
-  const pageErrors = [];
-  const consoleErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   const surfaces = [
     ['printing', 'printing', '.printing-backdrop', '.printing-header-actions button:last-child'],
     ['bakery', 'bakery', '.bakery-backdrop', '.bakery-header-actions button:last-child'],
@@ -566,46 +685,118 @@ async function captureErpSurfaces(browser) {
     properties: 'Property CRM & Management',
     finance: 'Finance Command Center',
   };
-  try {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
-    // ModuleHub installs its event listener after the authenticated shell mounts.
-    await page.waitForTimeout(900);
-    for (const [moduleId, erpId, surfaceSelector, closeSelector] of surfaces) {
+  const contrastProfiles = {
+    printing: 'operational-cockpit',
+    bakery: 'adaptive-bento',
+    autos: 'master-detail',
+    logistics: 'operational-cockpit',
+    properties: 'master-detail',
+    finance: 'horizon-wide',
+  };
+  async function inspect(moduleId, erpId, surfaceSelector, closeSelector, layoutId, screenshotName) {
+    const fixture = await createPage(browser, 'owner', layoutId);
+    const page = fixture.page;
+    const pageErrors = [];
+    const consoleErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+    try {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+      await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+      await page.waitForTimeout(900);
+      await page.evaluate(() => {
+        window.__qaExperienceEvents = [];
+        window.addEventListener('daenem:module-experience', (event) => {
+          const detail = event.detail || {};
+          window.__qaExperienceEvents.push({ ...detail });
+        });
+      });
       await page.evaluate((id) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } })), moduleId);
       const surface = page.locator(surfaceSelector);
       await surface.waitFor({ state: 'visible', timeout: 20000 });
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(300);
       const heading = surface.locator('h2').filter({ hasText: expectedHeadings[moduleId] }).first();
       const surfaceContentVisible = await heading.isVisible().catch(() => false);
       if (!surfaceContentVisible) throw new Error('ERP surface content not visible: ' + moduleId + ' (' + expectedHeadings[moduleId] + ')');
-      const surfaceHeading = await heading.textContent();
-      const screenshot = 'screenshots/erp-' + moduleId + '-1440x900.png';
-      const surfaceScreenshot = 'screenshots/erp-' + moduleId + '-surface-1440x900.png';
-      await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
-      await surface.screenshot({ path: path.join(evidenceDir, surfaceScreenshot), animations: 'disabled' });
       const envelope = page.locator('[data-module-experience="true"][data-module-erp="' + erpId + '"]').last();
-      results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: await envelope.getAttribute('data-module-layout'), viewport: { width: 1440, height: 900 }, pageKind: 'ERP surface ' + moduleId, erpSurface: moduleId, surfaceContentVisible, surfaceHeading, moduleExperience: { erpId: await envelope.getAttribute('data-module-erp'), shell: await envelope.getAttribute('data-module-shell'), path: await envelope.getAttribute('data-module-path'), layout: await envelope.getAttribute('data-module-layout') }, screenshot, surfaceScreenshot });
-      const close = page.locator(closeSelector).last();
-      if (!(await close.count())) throw new Error('ERP surface close control missing: ' + moduleId);
-      await close.evaluate((button) => button.click());
+      if (!(await envelope.count())) throw new Error('Module experience envelope missing: ' + moduleId);
+      const moduleExperience = await envelope.evaluate((node) => {
+        const read = (name) => node.getAttribute(name);
+        return { erpId: read('data-module-erp'), layout: read('data-module-layout'), shell: read('data-module-shell'), path: read('data-module-path') };
+      });
+      const presentation = await envelope.evaluate((node) => {
+        const style = getComputedStyle(node);
+        const content = node.querySelector('.printing-body,.bakery-content,.autos-content,.log-content,.prop-content,.fin-content');
+        const contentStyle = content ? getComputedStyle(content) : null;
+        return {
+          widthToken: style.getPropertyValue('--module-experience-surface-width').trim(),
+          paddingToken: style.getPropertyValue('--module-experience-surface-padding').trim(),
+          gapToken: style.getPropertyValue('--module-experience-surface-gap').trim(),
+          shellWidth: node.firstElementChild ? getComputedStyle(node.firstElementChild).width : '',
+          contentPadding: contentStyle?.padding || '',
+          contentGap: contentStyle?.gap || '',
+        };
+      });
+      const experienceEvents = await page.evaluate(() => window.__qaExperienceEvents || []);
+      const firstMatchingExperience = experienceEvents.find((item) => item.erpId === erpId);
+      const resolvedBeforeSurface = Boolean(firstMatchingExperience && firstMatchingExperience.layoutId === layoutId && firstMatchingExperience.shellMode);
+      let screenshot = null;
+      if (screenshotName) {
+        screenshot = 'screenshots/' + screenshotName + '.png';
+        await surface.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
+      }
+      const result = { moduleId, layoutId, moduleExperience, presentation, resolvedBeforeSurface, surfaceContentVisible, surfaceHeading: await heading.textContent(), pageErrors, consoleErrors, screenshot };
+      await page.locator(closeSelector).last().evaluate((button) => button.click());
       await surface.waitFor({ state: 'hidden', timeout: 10000 });
+      return result;
+    } finally {
+      await fixture.context.close();
+    }
+  }
+  try {
+    for (const [moduleId, erpId, surfaceSelector, closeSelector] of surfaces) {
+      const primary = await inspect(moduleId, erpId, surfaceSelector, closeSelector, 'executive-command',
+        ['printing', 'finance', 'properties'].includes(moduleId) ? 'erp-' + moduleId + '-executive-command-1440x900' : null);
+      const contrast = await inspect(moduleId, erpId, surfaceSelector, closeSelector, contrastProfiles[moduleId],
+        ['printing', 'finance', 'properties'].includes(moduleId) ? 'erp-' + moduleId + '-' + contrastProfiles[moduleId] + '-1440x900' : null);
+      const presentationChanged = JSON.stringify(primary.presentation) !== JSON.stringify(contrast.presentation);
+      const pass = primary.moduleExperience.erpId === erpId
+        && contrast.moduleExperience.erpId === erpId
+        && primary.moduleExperience.layout === 'executive-command'
+        && contrast.moduleExperience.layout === contrastProfiles[moduleId]
+        && primary.resolvedBeforeSurface
+        && contrast.resolvedBeforeSurface
+        && primary.surfaceContentVisible
+        && contrast.surfaceContentVisible
+        && presentationChanged
+        && !primary.pageErrors.length && !contrast.pageErrors.length
+        && !primary.consoleErrors.length && !contrast.consoleErrors.length;
+      results.push({
+        role: 'owner',
+        requestedLayout: 'executive-command vs ' + contrastProfiles[moduleId],
+        renderedLayout: contrastProfiles[moduleId],
+        viewport: { width: 1440, height: 900 },
+        pageKind: 'ERP surface ' + moduleId,
+        erpSurface: moduleId,
+        surfaceContentVisible: primary.surfaceContentVisible && contrast.surfaceContentVisible,
+        moduleExperience: contrast.moduleExperience,
+        erpSurfaceValidation: { primary, contrast, presentationChanged, pass },
+        screenshot: primary.screenshot || contrast.screenshot,
+        screenshots: [primary.screenshot, contrast.screenshot].filter(Boolean),
+      });
+      if (!pass) {
+        hardFailure = true;
+        runtimeErrors.push('ERP surface context failed: ' + moduleId);
+      }
     }
   } catch (error) {
     hardFailure = true;
-    const diagnostics = await page.evaluate(() => ({
-      moduleExperience: window.__DAENEM_MODULE_EXPERIENCE__ || null,
-      moduleHosts: Array.from(document.querySelectorAll('[id$="-launcher"]')).map((node) => ({ id: node.id, text: node.textContent?.trim().slice(0, 120) || '', html: node.innerHTML.slice(0, 160) })),
-      envelopes: Array.from(document.querySelectorAll('[data-module-envelope], [data-module-experience]')).map((node) => ({ erp: node.getAttribute('data-module-erp'), layout: node.getAttribute('data-module-layout'), ready: node.getAttribute('data-module-context-ready') })),
-    }));
-    runtimeErrors.push('ERP surfaces: ' + (error instanceof Error ? error.message : String(error)) + '; diagnostics=' + JSON.stringify({ pageErrors, consoleErrors, diagnostics }));
-  } finally {
-    await fixture.context.close();
+    runtimeErrors.push('ERP surfaces: ' + (error instanceof Error ? error.message : String(error)));
   }
 }
 
-async function captureMotionPresets(browser) {
+async function captureMotionPresets(browser) {async function captureMotionPresets(browser) {
   const fixture = await createPage(browser, 'owner', 'executive-command');
   const page = fixture.page;
   try {
@@ -662,6 +853,7 @@ async function main() {
     await captureLayoutStudioPreview(browser);
 
     await capturePermissionMatrix(browser);
+    await captureOwnerCanonicalNavigation(browser);
     await captureErpSurfaces(browser);
     await captureMotionPresets(browser);
     await captureCommandPalette(browser);
@@ -674,10 +866,12 @@ async function main() {
 
   const profileResults = results.filter((item) => item.role === 'owner' && item.viewport?.width === 1920 && item.viewport?.height === 1080 && !item.pageKind && !item.realPreview);
   const renderedProfileIds = new Set(profileResults.map((item) => item.renderedLayout).filter(Boolean));
-  const ownerHomePass = results.some((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind && item.primaryHeroCount === 1 && item.h1Count === 1 && item.ownerBusinessIntelligence && item.ownerBusinessIntelligenceFirstView);
+  const ownerHomePass = results.some((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind && item.primaryHeroCount === 1 && item.h1Count === 1 && item.primaryKpiGridCount === 1 && item.ownerBusinessIntelligence && item.ownerBusinessIntelligenceFirstView);
+  const ownerKpiPass = results.filter((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind).every((item) => item.ownerKpiPass);
   const employeeResults = results.filter((item) => item.role === 'employee' && item.pageKind !== 'field-level permission matrix');
   const employeeHomePass = employeeResults.length > 0 && employeeResults.every((item) => item.employeeAggregateDisclosure === false && item.employeeKpiCount === 0 && item.primaryHeroCount === 1 && item.h1Count === 1);
-  const employeePermissionPass = results.filter((item) => item.pageKind === 'field-level permission matrix').length === 4 && results.filter((item) => item.pageKind === 'field-level permission matrix').every((item) => !item.forbiddenApiDisclosure && !item.forbiddenDomDisclosure);
+  const permissionMatrixResults = results.filter((item) => item.pageKind === 'field-level permission matrix');
+  const employeePermissionPass = permissionMatrixResults.length === 5 && permissionMatrixResults.every((item) => !item.forbiddenApiDisclosure && !item.apiKeyMismatch && !item.forbiddenDomDisclosure && item.attendanceSemanticsPass);
   const managerPass = results.filter((item) => item.role === 'manager' && item.managerHome).length === 3 && results.filter((item) => item.role === 'manager').every((item) => item.managerHome);
   const navigationPass = profileResults.length === layouts.length && profileResults.every((item) => item.navigationAdapter === expectedAdapters[item.requestedLayout]);
   const featureFramePass = results.filter((item) => item.navigatedTo).length >= 2 && results.filter((item) => item.navigatedTo).every((item) => item.featureFramePresent && item.featureFrameH1Count === 1);
@@ -689,7 +883,9 @@ async function main() {
   const erpMetric = results.find((item) => item.pageKind === 'ERP default resolution');
   const erpPass = Boolean(erpMetric && erpMetric.erpResolution?.printing === 'operational-cockpit' && erpMetric.erpResolution?.finance === 'horizon-wide' && erpMetric.erpResolution?.staff === 'executive-command');
   const erpSurfaceResults = results.filter((item) => item.pageKind?.startsWith('ERP surface '));
-  const erpSurfacePass = erpSurfaceResults.length === 6 && erpSurfaceResults.every((item) => item.moduleExperience?.erpId && item.moduleExperience?.shell && item.moduleExperience?.path);
+  const erpSurfacePass = erpSurfaceResults.length === 6 && erpSurfaceResults.every((item) => item.moduleExperience?.erpId && item.moduleExperience?.shell && item.moduleExperience?.path && item.erpSurfaceValidation?.pass);
+  const ownerNavigationMetric = results.find((item) => item.pageKind === 'owner canonical navigation');
+  const ownerCanonicalNavigationPass = Boolean(ownerNavigationMetric?.ownerCanonicalNavigationPass);
   const motionMetric = results.find((item) => item.pageKind === 'motion presets');
   const motionPass = Boolean(motionMetric?.motionPass);
   const reducedMotionMetric = results.find((item) => item.pageKind === 'reduced-motion smoke');
@@ -699,7 +895,7 @@ async function main() {
   const businessPageResults = results.filter((item) => item.dashboardPresent && item.pageKind && !item.pageKind.includes('Layout Studio') && !item.pageKind.startsWith('ERP surface '));
   const noLayoutExplanationPass = businessPageResults.length > 0 && businessPageResults.every((item) => item.layoutExplanation === false);
 
-  if (renderedProfileIds.size < layouts.length || !ownerHomePass || !employeeHomePass || !employeePermissionPass || !managerPass || !navigationPass || !featureFramePass || !galleryPass || !previewPass || !commandPass || !customizePass || !erpPass || !erpSurfacePass || !motionPass || !smartContextPass || !typographyPass || !noLayoutExplanationPass) {
+  if (renderedProfileIds.size < layouts.length || !ownerHomePass || !ownerKpiPass || !employeeHomePass || !employeePermissionPass || !managerPass || !navigationPass || !ownerCanonicalNavigationPass || !featureFramePass || !galleryPass || !previewPass || !commandPass || !customizePass || !erpPass || !erpSurfacePass || !motionPass || !smartContextPass || !typographyPass || !noLayoutExplanationPass) {
     hardFailure = true;
     runtimeErrors.push('Required authenticated behavior/rendered coverage was incomplete.');
   }
@@ -712,6 +908,9 @@ async function main() {
     'APPLICATION_SOURCE_MODIFIED_BY_QA=NO',
     'AUTHENTICATED_CONTEXT=OWNER_MANAGER_EMPLOYEE_AND_RESTRICTED_MANAGER_FIXTURES',
     'OWNER_HOME=' + (ownerHomePass ? 'PASS' : 'FAIL'),
+    'OWNER_KPI_STRIP=' + (ownerKpiPass ? 'PASS' : 'FAIL'),
+    'OWNER_CANONICAL_NAVIGATION=' + (ownerCanonicalNavigationPass ? 'PASS' : 'FAIL'),
+    'ATTENDANCE_MANAGER_SEMANTICS=' + (permissionMatrixResults.find((item) => item.role === 'attendance-manager')?.attendanceSemanticsPass ? 'PASS' : 'FAIL'),
     'EMPLOYEE_HOME=' + (employeeHomePass ? 'PASS' : 'FAIL'),
     'FIELD_LEVEL_PERMISSION_MATRIX=' + (employeePermissionPass ? 'PASS' : 'FAIL'),
     'EMPLOYEE_BACKEND_DATA_MINIMIZATION=' + (employeePermissionPass ? 'PASS' : 'FAIL'),
@@ -725,6 +924,7 @@ async function main() {
     'DASHBOARD_CUSTOMIZATION_MODE=' + (customizePass ? 'PASS' : 'FAIL'),
     'ERP_DEFAULT_RESOLUTION=' + (erpPass ? 'PASS' : 'FAIL'),
     'ERP_SURFACES=' + (erpSurfacePass ? 'PASS' : 'FAIL'),
+    'ERP_LAYOUT_CONTEXT_CONSUMPTION=' + (erpSurfacePass ? 'PASS' : 'FAIL'),
     'LAYOUT_SHELL_ADAPTERS=' + (navigationPass ? 'PASS' : 'FAIL'),
     'MOTION_PRESETS=' + (motionPass ? 'PASS' : 'FAIL'),
     'SMART_CONTEXT=' + (smartContextPass ? 'PASS' : 'FAIL'),
