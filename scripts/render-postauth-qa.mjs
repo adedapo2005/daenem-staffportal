@@ -546,7 +546,7 @@ async function captureErpSurfaces(browser) {
   } catch (error) {
     hardFailure = true;
     const diagnostics = await page.evaluate(() => ({
-      moduleExperience: (window as unknown as { __DAENEM_MODULE_EXPERIENCE__?: unknown }).__DAENEM_MODULE_EXPERIENCE__ || null,
+      moduleExperience: window.__DAENEM_MODULE_EXPERIENCE__ || null,
       moduleHosts: Array.from(document.querySelectorAll('[id$="-launcher"]')).map((node) => ({ id: node.id, text: node.textContent?.trim().slice(0, 120) || '', html: node.innerHTML.slice(0, 160) })),
       envelopes: Array.from(document.querySelectorAll('[data-module-envelope], [data-module-experience]')).map((node) => ({ erp: node.getAttribute('data-module-erp'), layout: node.getAttribute('data-module-layout'), ready: node.getAttribute('data-module-context-ready') })),
     }));
