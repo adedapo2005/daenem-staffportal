@@ -386,8 +386,8 @@ async function runAuthTransportCase(browser, mode, expectedContinuation) {
 
 
 
-async function snapshot(page, name) {
-  await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
+async function snapshot(page, name, options = {}) {
+  await page.screenshot({ path: path.join(screenshotDir, name), fullPage: options.fullPage ?? true });
   const evidence = await page.evaluate(() => ({
     viewport: { width: window.innerWidth, height: window.innerHeight },
     overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -689,7 +689,13 @@ async function main() {
     await owner.page.waitForSelector('.offline-detail-timeline');
     await snapshot(owner.page, 'owner-mobile-sync-detail-390x844.png');
     await owner.page.setViewportSize({ width: 1920, height: 1080 });
-    await snapshot(owner.page, 'owner-desktop-sync-detail-1920x1080.png');
+    await owner.page.evaluate(() => {
+      window.scrollTo(0, 0);
+      const shell = document.querySelector('.offline-center-shell');
+      if (shell) shell.scrollTop = 0;
+    });
+    await owner.page.waitForTimeout(250);
+    await snapshot(owner.page, 'owner-desktop-sync-detail-1920x1080.png', { fullPage: false });
 
     const apiCacheEntries = await owner.page.evaluate(async () => {
       const keys = [];
