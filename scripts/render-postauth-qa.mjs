@@ -520,6 +520,10 @@ async function capturePermissionMatrix(browser) {
 async function captureErpSurfaces(browser) {
   const fixture = await createPage(browser, 'owner', 'executive-command');
   const page = fixture.page;
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   const surfaces = [
     ['printing', 'printing'], ['bakery', 'bakery'], ['autos', 'autos'],
     ['logistics', 'logistics'], ['properties', 'properties'], ['finance', 'finance'],
@@ -541,7 +545,12 @@ async function captureErpSurfaces(browser) {
     }
   } catch (error) {
     hardFailure = true;
-    runtimeErrors.push('ERP surfaces: ' + (error instanceof Error ? error.message : String(error)));
+    const diagnostics = await page.evaluate(() => ({
+      moduleExperience: (window as unknown as { __DAENEM_MODULE_EXPERIENCE__?: unknown }).__DAENEM_MODULE_EXPERIENCE__ || null,
+      moduleHosts: Array.from(document.querySelectorAll('[id$="-launcher"]')).map((node) => ({ id: node.id, text: node.textContent?.trim().slice(0, 120) || '', html: node.innerHTML.slice(0, 160) })),
+      envelopes: Array.from(document.querySelectorAll('[data-module-envelope], [data-module-experience]')).map((node) => ({ erp: node.getAttribute('data-module-erp'), layout: node.getAttribute('data-module-layout'), ready: node.getAttribute('data-module-context-ready') })),
+    }));
+    runtimeErrors.push('ERP surfaces: ' + (error instanceof Error ? error.message : String(error)) + '; diagnostics=' + JSON.stringify({ pageErrors, consoleErrors, diagnostics }));
   } finally {
     await fixture.context.close();
   }

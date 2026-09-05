@@ -1835,3 +1835,14 @@
     max-width: 100%;
   }
 }
+
+
+/* Foundation correction: the navigation control itself must remain readable
+   at compact desktop widths; metadata may be smaller, but primary labels may
+   not fall below the authenticated desktop floor. */
+@media (min-width: 861px) {
+  html body .dashboard-page.postauth-layout button.postauth-nav-item,
+  html body .dashboard-page.postauth-layout .postauth-navigation strong {
+    font-size: 11px !important;
+  }
+}

@@ -442,10 +442,13 @@ function nextFrame() {
 }
 
 async function clickWhenReady(selector: string) {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  // Lazy ERP entries can finish their authenticated context handshake after the
+  // import resolves; keep the bounded readiness window generous enough for a
+  // cold chunk without turning module launch into an unbounded wait.
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     const button = document.querySelector<HTMLButtonElement>(selector);
     if (button) { button.click(); return true; }
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 100));
   }
   return false;
 }
