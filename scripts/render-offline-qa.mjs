@@ -313,6 +313,8 @@ async function runOutcome(browser, mode, expected) {
   await page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill('Outcome test');
   await context.setOffline(true);
   await page.locator('[data-offline-form-submit="supported"]').click();
+  await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
+  await status(page, 'offline');
   server.syncMode = mode;
   await context.setOffline(false);
   await status(page, expected);
@@ -368,6 +370,8 @@ async function main() {
     await page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill('Response lost retry test.');
     await context.setOffline(true);
     await page.locator('[data-offline-form-submit="supported"]').click();
+    await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
+    await status(page, 'offline');
     const effectsBeforeLost = server.businessEffects;
     server.syncDelay = 0;
     server.syncMode = 'response-lost';
@@ -386,6 +390,8 @@ async function main() {
     await page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill('Conflict must remain visible.');
     await context.setOffline(true);
     await page.locator('[data-offline-form-submit="supported"]').click();
+    await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
+    await status(page, 'offline');
     server.syncMode = 'conflict';
     await context.setOffline(false);
     await status(page, 'needs-attention');
@@ -502,6 +508,8 @@ async function main() {
     await multi.page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill('One effect across two tabs.');
     await multi.context.setOffline(true);
     await multi.page.locator('[data-offline-form-submit="supported"]').click();
+    await multi.page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
+    await status(multi.page, 'offline');
     const tabTwo = await multi.context.newPage();
     await installApiRoutes(tabTwo, 'employee', multi.server, 'qa-multi-tab');
     await tabTwo.goto(baseUrl, { waitUntil: 'domcontentloaded' });
