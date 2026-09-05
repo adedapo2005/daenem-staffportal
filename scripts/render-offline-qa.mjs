@@ -462,6 +462,9 @@ async function main() {
       await status(blocked.page, 'offline');
       blocked.server.sessionMode = sessionMode;
       await blocked.context.setOffline(false);
+      // Keep the reconnect test event-driven while making the foreground
+      // reconnect trigger deterministic across Chromium versions.
+      await blocked.page.evaluate(() => window.dispatchEvent(new Event('online')));
       await sleep(1000);
       await status(blocked.page, 'authentication-required');
       assert(blocked.server.syncRequests === 0, `${sessionMode} session allowed a queued mutation flush`);
