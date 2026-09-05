@@ -682,7 +682,8 @@ async function main() {
     assert(detailText.includes('Device time differs from the server timeline by 47 minutes'), 'Owner detail did not surface the captured/server clock discrepancy');
     assert(!/response_json|password|oauth|access[_-]?token|mfa secret/i.test(detailText), 'Owner detail exposed raw payload or authentication material');
     await owner.page.locator('.offline-detail-toolbar select').selectOption('utc');
-    assert((await owner.page.locator('.offline-detail-body').innerText()).includes('UTC'), 'UTC timestamp mode is not usable');
+    const utcDetailText = await owner.page.locator('.offline-detail-body').innerText();
+    assert(/UTC canonical[\s\S]*\bUTC\b/.test(utcDetailText) && !utcDetailText.includes('PMZ'), 'UTC timestamp mode is not rendering an unambiguous UTC value');
     await owner.page.locator('.offline-detail-toolbar select').selectOption('both');
     await owner.page.locator('input[placeholder="e.g. sync_started"]').fill('sync_started');
     await owner.page.getByRole('button', { name: 'Apply filters' }).click();

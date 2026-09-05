@@ -183,7 +183,7 @@ function formatAt(value: string | undefined, businessZone: string, mode: TimeMod
   }).format(parsed);
   const business = format(businessZone);
   const viewer = format(viewerZone);
-  const utc = format('UTC').replace(/ UTC$/, 'Z');
+  const utc = format('UTC');
   if (mode === 'business') return business;
   if (mode === 'viewer') return viewer;
   if (mode === 'utc') return utc;
