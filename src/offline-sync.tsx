@@ -210,6 +210,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
           await registerOfflineBackgroundSync();
           const result = await syncQueuedOperations(identity, { ignoreBackoff });
           syncedCount += result.synced;
+          if (result.authRequired > 0) authenticationRequired = true;
         } catch (error) {
           if ((error as { status?: number }).status === 401) authenticationRequired = true;
         }
