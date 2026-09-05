@@ -451,12 +451,13 @@ async function captureLayoutStudioPreview(browser) {
       results.push(await pageMetrics(page, 'owner', 'executive-command', screenshot, { width: 1440, height: 900 }, {
         previewModal: true,
         previewPostRequests: postRequests.length - previewStartPostRequests,
+        previewPostUrls: postRequests.slice(previewStartPostRequests),
         previewStorageUnchanged: beforeStorage === afterStorage,
         previewNavigation: await page.locator('.layout-preview-modal .layout-preview-large[data-preview-navigation]').getAttribute('data-preview-navigation'),
       }));
       if (postRequests.length > previewStartPostRequests || beforeStorage !== afterStorage) {
         hardFailure = true;
-        runtimeErrors.push('Layout Studio Preview persisted state or posted a preference.');
+        runtimeErrors.push('Layout Studio Preview persisted state or posted a preference: ' + postRequests.slice(previewStartPostRequests).join(', '));
       }
     } else {
       hardFailure = true;
