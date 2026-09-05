@@ -150,7 +150,7 @@ async function main() {
     "INSERT OR IGNORE INTO company_locations(id,company_id,name,timezone) VALUES ('qa-runtime-print-location','company-printing','QA Printing Location','Africa/Lagos');",
     "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,location_id,is_primary,active) VALUES ('qa-runtime-manager-print','qa-runtime-manager','company-printing','qa-runtime-print-location',1,1);",
     "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,is_primary,active) VALUES ('qa-runtime-manager-bakery','qa-runtime-manager','company-bakery',0,1);",
-    "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,is_primary,active) VALUES ('qa-runtime-employee-print','qa-runtime-employee','company-printing',NULL,1,1);",
+    "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,is_primary,active) VALUES ('qa-runtime-employee-print','qa-runtime-employee','company-printing',1,1);",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-runtime-manager-print-role','qa-runtime-manager','company-printing','role-print-manager');",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-runtime-manager-bakery-role','qa-runtime-manager','company-bakery','role-bakery-manager');",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-runtime-employee-role','qa-runtime-employee','company-printing','role-print-designer');",
