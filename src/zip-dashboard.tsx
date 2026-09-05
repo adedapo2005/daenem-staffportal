@@ -16,6 +16,7 @@ import { canSeeDashboardField, type DashboardAggregateField } from './dashboard-
 import { getSmartContext } from './smart-context';
 import { PostAuthFeatureFrame, PostAuthHomeBanner, PostAuthOverviewComposition } from './post-auth-experience';
 import { PostAuthNavigation } from './postauth-navigation';
+import { OfflineSyncIndicator } from './offline-sync';
 
 export type ZipDashboardSummary = {
   workDate: string;
@@ -255,6 +256,7 @@ function ZipTopBar({
   return <header className="top-bar" data-command-bar="true">
     <div className="search-wrap"><button ref={commandTriggerRef} type="button" className="top-command-trigger" onClick={() => setCommandOpen(true)} aria-label="Open command palette"><Search size={17} aria-hidden="true" /><span>Search authorized workspaces</span><span className="search-shortcut">⌘ / Ctrl K</span></button></div>
     <div className="top-actions">
+      <OfflineSyncIndicator />
       {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
       <div className="notification-wrap"><button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className="alert-dot" /></button>
         {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications"><div className="popover-title"><b>Notifications</b><button className="icon-button subtle" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><X size={15} /></button></div><p>Signals from your authorized workspaces.</p><div className="notification-list">{notificationItems.map((item) => <div className="notification-row" key={item.title}><i className={'notification-dot ' + item.tone} /><span><strong>{item.title}</strong><small>{item.detail}</small></span></div>)}</div></div>}

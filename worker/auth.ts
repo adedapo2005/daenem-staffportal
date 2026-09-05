@@ -96,11 +96,11 @@ function maskDestination(value: string, channel: string) {
   return digits.length > 4 ? `***${digits.slice(-4)}` : 'phone on file';
 }
 
-function requestIp(request: Request) {
+export function requestIp(request: Request) {
   return request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
 }
 
-function requestLocationLabel(request: Request) {
+export function requestLocationLabel(request: Request) {
   const cf = (request as Request & { cf?: IncomingRequestCfProperties }).cf;
   return cf?.city ? `${cf.city}${cf.region ? `, ${cf.region}` : ''}${cf.country ? `, ${cf.country}` : ''}` : undefined;
 }
@@ -136,7 +136,7 @@ async function hashSession(env: AuthEnv, token: string) {
   return sha256(`${token}:${secret}`);
 }
 
-async function logSecurity(
+export async function logSecurity(
   env: AuthEnv,
   request: Request,
   eventType: string,

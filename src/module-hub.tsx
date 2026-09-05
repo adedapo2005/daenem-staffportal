@@ -38,6 +38,7 @@ export type ModuleDefinition = {
   prefixes?: string[];
   companyCodes?: string[];
   ownerOnly?: boolean;
+  strictOwnerOnly?: boolean;
   load: () => Promise<unknown>;
   selector?: string;
   event?: { name: string; detail?: Record<string, string> };
@@ -107,6 +108,7 @@ const modules: ModuleDefinition[] = [
   { id: 'inventory', label: 'Inventory', detail: 'Stock, movement and item controls', group: 'Operations', permissions: ['inventory.access'], erpId: 'finance', submenuId: 'supply-control', subsubmenuId: 'inventory', functionalItem: 'Inventory control', load: () => import('./inventory-entry'), selector: '.inventory-launcher' },
   { id: 'construction', label: 'Construction & Projects', detail: 'Projects, sites, budgets and progress', group: 'Operations', permissions: ['construction.access'], erpId: 'finance', submenuId: 'project-control', subsubmenuId: 'construction', functionalItem: 'Construction projects', load: () => import('./construction-entry'), selector: '.construction-launcher' },
 
+  { id: 'sync-sessions', label: 'Sync & Sessions', detail: 'Owner-only offline, sync and session health', group: 'Management', strictOwnerOnly: true, erpId: 'controls', submenuId: 'system-control', subsubmenuId: 'observability', functionalItem: 'Sync & Sessions', load: () => import('./offline-sync-center-entry'), selector: '.offline-sync-center-launcher' },
   { id: 'owner-intelligence', label: 'Owner Intelligence', detail: 'Group-level operational intelligence', group: 'Management', ownerOnly: true, erpId: 'controls', submenuId: 'executive-control', subsubmenuId: 'intelligence', functionalItem: 'Owner intelligence', load: () => import('./owner-intelligence-entry'), selector: '.owner-intelligence-launcher' },
   { id: 'admin', label: 'Admin Setup', detail: 'Settings, security and tracking configuration', group: 'Management', permissions: ['settings.access', 'tracking.access', 'security.access'], erpId: 'controls', submenuId: 'access-control', subsubmenuId: 'administration', functionalItem: 'Administration', load: () => Promise.all([import('./admin-entry'), import('./temporary-password-admin-entry')]), event: { name: 'daenem:open-admin' } },
   { id: 'temporary-passwords', label: 'Temporary Password Recovery', detail: 'Issue or revoke one-time employee recovery passwords', group: 'Management', permissions: ['users.access'], minimum: 'manage', erpId: 'controls', submenuId: 'access-control', subsubmenuId: 'administration', functionalItem: 'Temporary password recovery', load: () => import('./temporary-password-admin-entry'), event: { name: 'daenem:open-temporary-password' } },
@@ -422,6 +424,7 @@ export function isModuleVisible(context: WorkforceContext, module: ModuleDefinit
     if (companyId && !module.companyCodes.includes(companyCode)) return false;
     if (!companyId && !context.companies.some((company) => module.companyCodes?.includes(company.code))) return false;
   }
+  if (module.strictOwnerOnly && !context.roles.some((role) => role.code === 'owner')) return false;
   if (owner(context)) return true;
   if (module.ownerOnly) return false;
   if (!module.permissions?.length && !module.prefixes?.length) return true;

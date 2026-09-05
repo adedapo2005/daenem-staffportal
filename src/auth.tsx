@@ -6,6 +6,7 @@ import {
   readThemeId, themeById, type ThemeId,
 } from './theme-system';
 import { SignInExperience } from './signin-experience';
+import { clearOfflineActiveEmployee, readCachedAuthContext, setOfflineActiveEmployee } from './offline-platform';
 import {
   WORLD_CLOCKS, WORLD_CLOCK_CATALOG, readSignInPreferences, readWorldClockPreferences,
   type PortalLocation, type SignInAuthLabels, type WorldClockPreferences,
@@ -145,19 +146,32 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 export function useAuth() {
   const [context, setContext] = useState<WorkforceContext | null>(null);
   const [loading, setLoading] = useState(true);
+  const setAuthenticatedContext = (next: WorkforceContext | null) => {
+    setContext(next);
+    if (next) setOfflineActiveEmployee(next.employee.id);
+    else clearOfflineActiveEmployee();
+  };
   async function refresh() {
     try {
       const result = await api<{ authenticated: boolean; context?: WorkforceContext }>('/api/auth/me');
-      setContext(result.context || null);
-    } catch {
-      setContext(null);
+      setAuthenticatedContext(result.context || null);
+    } catch (error) {
+      const offline = typeof navigator !== 'undefined' && (!navigator.onLine || (error as ApiError).status === 0);
+      if (offline) {
+        const cached = await readCachedAuthContext();
+        if (cached && typeof cached === 'object') {
+          setAuthenticatedContext(cached as WorkforceContext);
+          return;
+        }
+      }
+      setAuthenticatedContext(null);
     } finally {
       setLoading(false);
     }
   }
   useEffect(() => { refresh(); }, []);
   async function logout() {
-    setContext(null);
+    setAuthenticatedContext(null);
     clearPortalAuthCache();
     window.dispatchEvent(new Event('daenem-auth-changed'));
 
@@ -172,9 +186,8 @@ export function useAuth() {
       window.location.replace('/');
     }
   }
-  return { context, loading, refresh, logout, setContext };
+  return { context, loading, refresh, logout, setContext: setAuthenticatedContext };
 }
-
 function deviceIdentity() {
   let id = localStorage.getItem('daenem-workforce-device-id');
   if (!id) {

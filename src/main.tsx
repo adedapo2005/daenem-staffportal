@@ -22,6 +22,7 @@ import './postauth-layout.css';
 import { DEFAULT_LAYOUT_ID, getLayoutProfile, normalizeLayoutPreference, readLocalLayoutPreference, writeLocalLayoutPreference, type LayoutPreference } from './layout-system';
 import './theme-studio-entry';
 import { ZipDashboard, type LiveDataStatus, type ZipDashboardSummary } from './zip-dashboard';
+import { OfflinePlatformProvider } from './offline-sync';
 
 const FormsCenter = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
 const FacilitiesCenter = lazy(() => import('./centers').then((module) => ({ default: module.FacilitiesCenter })));
@@ -47,7 +48,7 @@ type SecurityEvent = {
 
 type CompanyChoice = { id: string | null; code: string; name: string; icon: React.ComponentType<{ size?: number }> };
 
-const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v7.0.0-approved-designs-v1';
+const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v8-offline-foundation-v1';
 
 function registerFreshServiceWorker() {
   if (!('serviceWorker' in navigator)) return () => undefined;
@@ -581,7 +582,7 @@ function Root() {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
   }} />;
-  return <Workspace context={auth.context} onLogout={auth.logout} />;
+  return <OfflinePlatformProvider context={auth.context}><Workspace context={auth.context} onLogout={auth.logout} /></OfflinePlatformProvider>;
 }
 
 createRoot(document.getElementById('root')!).render(<React.StrictMode><Root /></React.StrictMode>);

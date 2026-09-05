@@ -1,5 +1,14 @@
-const CACHE = 'daenem-workforce-shell-v7.0.0-approved-designs-v1';
+const CACHE = 'daenem-workforce-shell-v8-offline-foundation-v1';
 const SHELL = ['/', '/manifest.webmanifest'];
+
+function isCacheableShellAsset(request, url) {
+  if (url.origin !== self.location.origin) return false;
+  if (url.pathname.startsWith('/api/')) return false;
+  if (request.mode === 'navigate') return true;
+  return url.pathname === '/manifest.webmanifest'
+    || url.pathname.startsWith('/assets/')
+    || /\.(?:css|js|mjs|png|jpg|jpeg|webp|svg|woff2?)$/i.test(url.pathname);
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -19,16 +28,15 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  if (url.pathname.startsWith('/api/')) return;
-
+  if (request.method !== 'GET' || !isCacheableShellAsset(request, url)) return;
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response.ok && url.origin === self.location.origin) {
+        if (response.ok) {
           const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          const cacheKey = request.mode === 'navigate' ? new Request('/') : request;
+          caches.open(CACHE).then((cache) => cache.put(cacheKey, copy));
         }
         return response;
       })
@@ -38,4 +46,11 @@ self.addEventListener('fetch', (event) => {
         return caches.match('/');
       }),
   );
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag !== 'daenem-offline-sync') return;
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) =>
+    Promise.all(clients.map((client) => client.postMessage({ type: 'daenem-offline-sync' })))
+  ));
 });
