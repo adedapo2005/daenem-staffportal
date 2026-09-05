@@ -284,6 +284,7 @@ async function main() {
     await page.getByRole('button', { name: /Open My Sync Activity/ }).click();
     await page.getByRole('button', { name: 'Retry Now' }).click();
     await status(page, 'synced');
+    await page.getByRole('button', { name: 'Close My Sync Activity' }).click();
     assert(server.businessEffects === effectsBeforeLost + 1, 'response-lost retry produced more than one business effect');
     assert(server.syncRequests >= 3, 'response-lost retry did not reach the server twice');
 
