@@ -154,7 +154,11 @@ async function openContext(browser, role, viewport, employeeId) {
   const page = await context.newPage();
   const server = await installApiRoutes(page, role, makeServerState(), employeeId);
   const pageErrors = [];
-  page.on('pageerror', (error) => { pageErrors.push(error.message); runtimeErrors.push(`${role}: ${error.message}`); });
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+    runtimeErrors.push(`${role}: ${error.message}`);
+    console.error(`QA_PAGE_ERROR ${role}: ${error.stack || error.message}`);
+  });
   page.on('console', (message) => { if (message.type() === 'error') runtimeErrors.push(`${role} console: ${message.text()}`); });
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
@@ -185,6 +189,10 @@ async function status(page, expected, timeout = 15000) {
       status: document.querySelector('[data-offline-sync-indicator]')?.getAttribute('data-sync-status') || null,
       label: document.querySelector('[data-offline-sync-indicator]')?.getAttribute('aria-label') || null,
       rootChildren: document.getElementById('root')?.childElementCount || 0,
+      controller: navigator.serviceWorker?.controller?.scriptURL || null,
+      cacheNames: typeof caches === 'undefined' ? [] : await caches.keys(),
+      cacheKeys: typeof caches === 'undefined' ? [] : await Promise.all((await caches.keys()).map(async (name) => ({ name, keys: (await (await caches.open(name)).keys()).map((request) => new URL(request.url).pathname) }))),
+      resources: performance.getEntriesByType('resource').map((entry) => entry.name).filter((name) => name.includes('/assets/')).slice(-20),
       html: document.documentElement.outerHTML.slice(0, 4000),
       body: document.body.innerText.slice(0, 1200),
     }));
