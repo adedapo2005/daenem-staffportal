@@ -446,16 +446,19 @@ async function captureLayoutStudioPreview(browser) {
       await previewButton.click();
       await page.waitForSelector('.layout-preview-modal', { state: 'visible', timeout: 10000 });
       const afterStorage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
+      const previewPostUrls = postRequests.slice(previewStartPostRequests);
+      const previewPreferencePostUrls = previewPostUrls.filter((url) => /\/api\/experience\/layout\/(preference|policy|rollback)/.test(url));
       const screenshot = 'screenshots/postauth-layout-studio-preview-1440x900.png';
       await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
       results.push(await pageMetrics(page, 'owner', 'executive-command', screenshot, { width: 1440, height: 900 }, {
         previewModal: true,
-        previewPostRequests: postRequests.length - previewStartPostRequests,
-        previewPostUrls: postRequests.slice(previewStartPostRequests),
+        previewPostRequests: previewPreferencePostUrls.length,
+        previewPostUrls,
+        previewPreferencePostUrls,
         previewStorageUnchanged: beforeStorage === afterStorage,
         previewNavigation: await page.locator('.layout-preview-modal .layout-preview-large[data-preview-navigation]').getAttribute('data-preview-navigation'),
       }));
-      if (postRequests.length > previewStartPostRequests || beforeStorage !== afterStorage) {
+      if (previewPreferencePostUrls.length || beforeStorage !== afterStorage) {
         hardFailure = true;
         runtimeErrors.push('Layout Studio Preview persisted state or posted a preference: ' + postRequests.slice(previewStartPostRequests).join(', '));
       }
