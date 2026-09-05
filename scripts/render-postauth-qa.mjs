@@ -213,6 +213,27 @@ async function installApiRoutes(page, role, layoutId) {
     }
     if (url.pathname.startsWith('/api/experience/layout/')) return json({ ok: true });
     if (url.pathname === '/api/dashboard/summary') return json(summaryForRole(role));
+    // Read-only production-shaped fixtures keep lazy ERP entry surfaces renderable
+    // without fabricating mutations or bypassing their normal API contracts.
+    if (url.pathname === '/api/printing/dashboard') return json({ date: '2026-08-21', month: 'August 2026', metrics: { openJobs: 4, overdueJobs: 1, readyJobs: 2, customers: 18, lowStockItems: 1, revenueKobo: 480000000, costKobo: 210000000, grossProfitKobo: 270000000, marginBasisPoints: 5625 }, pipeline: [], recentJobs: [] });
+    if (url.pathname === '/api/printing/services') return json({ services: [] });
+    if (url.pathname === '/api/printing/customers') return json({ customers: [] });
+    if (url.pathname === '/api/printing/jobs') return json({ jobs: [] });
+    if (url.pathname === '/api/bakery/dashboard') return json({ date: '2026-08-21', metrics: { orders: 24, revenueKobo: 226000000, paidKobo: 208000000, activeBatches: 3, unitsProduced: 312, batchWaste: 8, wasteCostKobo: 8100000, lowStockItems: 1 }, bestSellers: [] });
+    if (url.pathname === '/api/bakery/catalog') return json({ products: [], recipes: [] });
+    if (url.pathname === '/api/bakery/batches') return json({ batches: [] });
+    if (url.pathname === '/api/logistics/dashboard') return json({ metrics: { fleet: 12, vehiclesAvailable: 8, vehiclesUnavailable: 4, activeShipments: 18, shipmentsMoving: 9, deliveredToday: 14, activeTrips: 6, monthlyRevenueKobo: 248000000, monthlyGrossProfitKobo: 78000000, expiringDocuments: 2 } });
+    if (url.pathname === '/api/logistics/fleet') return json({ vehicles: [], drivers: [] });
+    if (url.pathname === '/api/logistics/shipments') return json({ shipments: [] });
+    if (url.pathname === '/api/logistics/trips') return json({ trips: [] });
+    if (url.pathname === '/api/properties/dashboard') return json({ metrics: { properties: 24, available: 8, occupied: 14, underOffer: 2, portfolioValueKobo: 900000000, openLeads: 7, inspectionsScheduled: 3, negotiations: 2, followupsDue: 4, outstandingKobo: 21000000, arrearsKobo: 9000000, overdueCharges: 2, activeLeases: 14, expiringSoon: 3, openMaintenance: 5, urgentMaintenance: 1, maintenanceCostKobo: 2400000 } });
+    if (url.pathname === '/api/properties/catalog') return json({ properties: [] });
+    if (url.pathname === '/api/properties/leads') return json({ leads: [] });
+    if (url.pathname === '/api/properties/inspections') return json({ inspections: [] });
+    if (url.pathname === '/api/properties/leases') return json({ leases: [] });
+    if (url.pathname === '/api/properties/receivables') return json({ receivables: [] });
+    if (url.pathname === '/api/properties/maintenance') return json({ maintenance: [] });
+    if (url.pathname === '/api/finance/summary') return json({ month: 'August 2026', receivables: { openKobo: 174000000, overdueKobo: 21000000, openCount: 3 }, approvedBudgetKobo: 620000000, netFundingKobo: 133000000, draftJournals: 2, balances: {} });
     if (url.pathname === '/api/admin/roles') return json({ roles: [{ id: 'qa-role-owner', code: 'owner', name: 'Owner' }, { id: 'qa-role-manager', code: 'manager', name: 'Manager' }, { id: 'qa-role-custom', code: 'regional_lead', name: 'Regional Lead' }] });
     if (url.pathname === '/api/owner/intelligence') return json(intelligence());
     if (url.pathname === '/api/support/mine') return json({ commands: [], assistanceRequests: [] });
@@ -234,6 +255,10 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
     const employeeAggregateDisclosure = input.role === 'employee' && aggregateWidgets.length > 0;
     const primaryHeroCount = document.querySelectorAll('[data-postauth-primary-hero="true"]').length;
     const h1Count = document.querySelectorAll('.dashboard-page h1').length;
+    const typographyDetails = Array.from(document.querySelectorAll('.postauth-nav-item,.postauth-navigation strong,.erp-pulse-card h3,.manager-command-actions button,.kpi-card strong')).map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { tag: node.tagName, className: node.className, text: node.textContent?.trim().slice(0, 100) || '', fontSize: Number.parseFloat(getComputedStyle(node).fontSize) || 99, visible: rect.width > 0 && rect.height > 0 };
+    });
     return {
       role: input.role,
       requestedLayout: input.layoutId,
@@ -261,7 +286,8 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       employeeAggregateDisclosure,
       employeeKpiCount: input.role === 'employee' ? document.querySelectorAll('.kpi-grid article').length : 0,
       managerHome: Boolean(document.querySelector('.manager-command-center')),
-      keyTypographyMin: Math.min(99, ...Array.from(document.querySelectorAll('.postauth-nav-item,.postauth-navigation strong,.erp-pulse-card h3,.manager-command-actions button,.kpi-card strong')).map((node) => Number.parseFloat(getComputedStyle(node).fontSize) || 99)),
+      keyTypographyMin: Math.min(99, ...typographyDetails.map((item) => item.fontSize)),
+      keyTypographyDetails: typographyDetails,
       forbiddenDomDisclosure: (input.extra.forbiddenLabels || []).some((label) => bodyText.includes(label)),
       smartContext: Boolean(document.querySelector('[data-smart-context="true"]')),
       layoutExplanation: /WORKSPACE GUIDE|LAYOUT ADAPTER|Workspace composition|shellMode/.test(bodyText),
