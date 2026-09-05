@@ -558,6 +558,14 @@ async function captureErpSurfaces(browser) {
     ['properties', 'properties', '.prop-backdrop', '.prop-header aside button:last-child'],
     ['finance', 'finance', '.fin-backdrop', '.fin-head aside button:last-child'],
   ];
+  const expectedHeadings = {
+    printing: 'Print Operations ERP',
+    bakery: 'Bakery Operations',
+    autos: 'Dealership & Workshop DMS',
+    logistics: 'Fleet & Dispatch Center',
+    properties: 'Property CRM & Management',
+    finance: 'Finance Command Center',
+  };
   try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
@@ -569,12 +577,16 @@ async function captureErpSurfaces(browser) {
       const surface = page.locator(surfaceSelector);
       await surface.waitFor({ state: 'visible', timeout: 20000 });
       await page.waitForTimeout(500);
+      const heading = surface.locator('h2').filter({ hasText: expectedHeadings[moduleId] }).first();
+      const surfaceContentVisible = await heading.isVisible().catch(() => false);
+      if (!surfaceContentVisible) throw new Error('ERP surface content not visible: ' + moduleId + ' (' + expectedHeadings[moduleId] + ')');
+      const surfaceHeading = await heading.textContent();
       const screenshot = 'screenshots/erp-' + moduleId + '-1440x900.png';
       const surfaceScreenshot = 'screenshots/erp-' + moduleId + '-surface-1440x900.png';
       await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
       await surface.screenshot({ path: path.join(evidenceDir, surfaceScreenshot), animations: 'disabled' });
       const envelope = page.locator('[data-module-experience="true"][data-module-erp="' + erpId + '"]').last();
-      results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: await envelope.getAttribute('data-module-layout'), viewport: { width: 1440, height: 900 }, pageKind: 'ERP surface ' + moduleId, erpSurface: moduleId, moduleExperience: { erpId: await envelope.getAttribute('data-module-erp'), shell: await envelope.getAttribute('data-module-shell'), path: await envelope.getAttribute('data-module-path'), layout: await envelope.getAttribute('data-module-layout') }, screenshot, surfaceScreenshot });
+      results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: await envelope.getAttribute('data-module-layout'), viewport: { width: 1440, height: 900 }, pageKind: 'ERP surface ' + moduleId, erpSurface: moduleId, surfaceContentVisible, surfaceHeading, moduleExperience: { erpId: await envelope.getAttribute('data-module-erp'), shell: await envelope.getAttribute('data-module-shell'), path: await envelope.getAttribute('data-module-path'), layout: await envelope.getAttribute('data-module-layout') }, screenshot, surfaceScreenshot });
       const close = page.locator(closeSelector).last();
       if (!(await close.count())) throw new Error('ERP surface close control missing: ' + moduleId);
       await close.evaluate((button) => button.click());
