@@ -340,6 +340,8 @@ async function main() {
   try {
     const employee = await openContext(browser, 'employee', { width: 390, height: 844 }, 'qa-offline-employee');
     const { page, context, server } = employee;
+    await status(page, 'online');
+    await snapshot(page, 'employee-mobile-online-390x844.png');
     assert((await page.locator('body').innerText()).includes('Customize Dashboard'), 'accepted dashboard customization mode is absent');
     assert((await page.locator('[data-offline-sync-indicator]').getAttribute('aria-label')).includes('My Sync Activity'), 'sync indicator is not screen-reader labelled');
     assert(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), 'reduced-motion preference was not respected by the browser surface');
