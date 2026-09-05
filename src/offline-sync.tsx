@@ -140,7 +140,8 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
   const onlineRef = useRef(online);
   const lastSuccessfulRef = useRef(lastSuccessfulSync);
   const bootstrapByCompany = useRef(new Map<string, OfflineBootstrap>());
-  const manualRetryQueued = useRef(false);
+  const syncRequested = useRef(false);
+  const syncRequestedIgnoreBackoff = useRef(false);
   useEffect(() => { onlineRef.current = online; }, [online]);
   useEffect(() => { lastSuccessfulRef.current = lastSuccessfulSync; }, [lastSuccessfulSync]);
 
@@ -188,7 +189,8 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
 
   const syncNow = useCallback(async (ignoreBackoff = false) => {
     if (syncInFlight.current) {
-      if (ignoreBackoff) manualRetryQueued.current = true;
+      syncRequested.current = true;
+      syncRequestedIgnoreBackoff.current = syncRequestedIgnoreBackoff.current || ignoreBackoff;
       return;
     }
     if (!navigator.onLine) {
@@ -238,9 +240,12 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       }
     } finally {
       syncInFlight.current = false;
-      if (manualRetryQueued.current && navigator.onLine) {
-        manualRetryQueued.current = false;
-        window.setTimeout(() => void syncNow(true), 0);
+      const followUp = syncRequested.current && navigator.onLine;
+      const followUpIgnoreBackoff = syncRequestedIgnoreBackoff.current;
+      syncRequested.current = false;
+      syncRequestedIgnoreBackoff.current = false;
+      if (followUp) {
+        window.setTimeout(() => void syncNow(followUpIgnoreBackoff), 0);
       }
     }
   }, [context, identities, refreshOperations, sendTelemetry]);
