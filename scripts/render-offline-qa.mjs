@@ -236,6 +236,7 @@ async function main() {
     await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), { timeout: 15000 });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
+    await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
     await status(page, 'offline');
     await snapshot(page, 'employee-mobile-offline-reload-390x844.png');
 

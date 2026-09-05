@@ -240,7 +240,16 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     mounted.current = true;
     initOfflinePlatform();
     void refreshOperations().then(() => {
-      if (navigator.onLine) void syncNow();
+      // A reload can briefly rehydrate the authenticated shell while the
+      // browser is still disconnected. Reassert the offline state after the
+      // durable queue has been read so a stale online/syncing label cannot
+      // appear during offline continuation.
+      if (!navigator.onLine) {
+        setOnline(false);
+        setStatus('offline');
+        return;
+      }
+      void syncNow();
     });
     const onOnline = () => {
       setOnline(true);
