@@ -806,7 +806,7 @@ async function captureErpSurfaces(browser) {
   }
 }
 
-async function captureMotionPresets(browser) {async function captureMotionPresets(browser) {
+async function captureMotionPresets(browser) {
   const fixture = await createPage(browser, 'owner', 'executive-command');
   const page = fixture.page;
   try {
