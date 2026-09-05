@@ -32,17 +32,20 @@ const ownerPermissions = {
 
 function contextFor(role, employeeId = 'qa-offline-employee') {
   const owner = role === 'owner';
+  const manager = role === 'manager';
   const permissions = owner ? ownerPermissions : formPermissions;
   const assignedCompanies = owner ? companies : [companies[0]];
+  const roleCode = owner ? 'owner' : manager ? 'manager' : 'employee';
+  const roleName = owner ? 'Owner' : manager ? 'Manager' : 'Employee';
   return {
     sessionId: `qa-offline-session-${employeeId}`,
     employee: {
-      id: employeeId, employeeNo: owner ? 'QA-OWNER' : 'QA-OFFLINE', displayName: owner ? 'Amina Daenem' : 'Tolu Offline',
-      email: `${employeeId}@example.invalid`, jobTitle: owner ? 'Group Owner' : 'Portal Employee', department: 'Operations',
-      status: 'active', preferredTheme: 'unified-daylight', team: owner ? 'Leadership' : 'Printing', lastLoginAt: '2026-09-05T08:00:00.000Z',
+      id: employeeId, employeeNo: owner ? 'QA-OWNER' : manager ? 'QA-MANAGER' : 'QA-OFFLINE', displayName: owner ? 'Amina Daenem' : manager ? 'Musa Manager' : 'Tolu Offline',
+      email: `${employeeId}@example.invalid`, jobTitle: owner ? 'Group Owner' : manager ? 'Operations Manager' : 'Portal Employee', department: 'Operations',
+      status: 'active', preferredTheme: 'unified-daylight', team: owner ? 'Leadership' : manager ? 'Operations' : 'Printing', lastLoginAt: '2026-09-05T08:00:00.000Z',
     },
     companies: assignedCompanies,
-    roles: [{ id: `qa-role-${role}-${employeeId}`, code: owner ? 'owner' : 'employee', name: owner ? 'Owner' : 'Employee', companyId: 'company-printing' }],
+    roles: [{ id: `qa-role-${role}-${employeeId}`, code: roleCode, name: roleName, companyId: 'company-printing' }],
     permissions,
     companyPermissions: Object.fromEntries(assignedCompanies.map((company) => [company.id, permissions])),
   };
@@ -77,7 +80,7 @@ function ownerOverview() {
 }
 
 function makeServerState() {
-  return { syncMode: 'success', syncDelay: 0, syncRequests: 0, businessEffects: 0, receipts: new Map(), lostKeys: new Set(), capturedKeys: [] };
+  return { syncMode: 'success', sessionMode: 'valid', syncDelay: 0, syncRequests: 0, businessEffects: 0, receipts: new Map(), lostKeys: new Set(), capturedKeys: [] };
 }
 
 async function installApiRoutes(page, role, server = makeServerState(), employeeId) {
@@ -97,13 +100,16 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
     if (url.pathname === '/api/forms' && method === 'GET') return send({ forms: [{ id: 'qa-form', companyName: 'Printing & Technology', title: assignment.title, formType: assignment.formType, schemaJson: assignment.schemaJson, assignmentCount: 1 }] });
     if (url.pathname === '/api/forms/mine' && method === 'GET') return send({ assignments: [assignment] });
     if (url.pathname.startsWith('/api/directory/')) return send({ employees: [], roles: [] });
-    if (url.pathname === '/api/offline/bootstrap' && method === 'GET') return send({
+    if (url.pathname === '/api/offline/bootstrap' && method === 'GET') {
+      if (server.sessionMode !== 'valid') return send({ error: 'Sign in to continue syncing.', state: 'authentication-required' }, 401);
+      return send({
       ok: true, serverTime: '2026-09-05T10:36:04.000Z', businessTimezone: 'Africa/Lagos', maxOfflineAgeMinutes: 720,
       session: { id: context.sessionId, expiresAt: '2030-09-05T08:00:00.000Z', lastVerifiedAt: '2026-09-05T10:36:04.000Z' },
       employee: { id: context.employee.id }, scope: { companyId: url.searchParams.get('companyId') || 'company-printing', companyIds: context.companies.map((company) => company.id) },
       policy: { enabled: true, maxQueueCount: 50, attachmentMaxBytes: 10485760, automaticSync: true, manualRetry: true, retentionDays: 30, allowedOperations: ['forms.submit'] },
       operations: [{ kind: 'forms.submit', mode: 'draft-and-submit', permission: 'forms.access' }],
-    });
+      });
+    }
     if (url.pathname === '/api/offline/telemetry' && method === 'POST') return send({ ok: true, serverReceivedAt: '2026-09-05T10:36:04.000Z', networkLocation: 'Lagos, NG' });
     if (url.pathname === '/api/offline/activity') return send({ operations: [], telemetry: [], lastSuccessfulSync: null, businessTimezone: 'Africa/Lagos', serverTime: '2026-09-05T10:36:04.000Z' });
     if (url.pathname === '/api/offline/sync' && method === 'POST') {
@@ -260,7 +266,8 @@ async function main() {
     await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
     await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
     await status(page, 'offline');
-    await snapshot(page, 'employee-mobile-offline-reload-390x844.png');
+    const offlineReloadEvidence = await snapshot(page, 'employee-mobile-offline-reload-390x844.png');
+    assert(!/Sync & Sessions|Security Center|People & Payroll/.test(offlineReloadEvidence.text), 'offline permission snapshot exposed unauthorized modules');
 
     server.syncDelay = 900;
     server.syncMode = 'success';
@@ -288,6 +295,7 @@ async function main() {
     assert(server.businessEffects === effectsBeforeLost + 1, 'response-lost retry produced more than one business effect');
     assert(server.syncRequests >= 3, 'response-lost retry did not reach the server twice');
 
+    const effectsBeforeConflict = server.businessEffects;
     await goForms(page);
     await page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill('Conflict must remain visible.');
     await context.setOffline(true);
@@ -297,6 +305,7 @@ async function main() {
     await status(page, 'needs-attention');
     const conflictEvidence = await snapshot(page, 'employee-mobile-needs-attention-conflict-390x844.png');
     assert(conflictEvidence.text.includes('needs attention'), 'conflict state is not visible in plain language');
+    assert(server.businessEffects === effectsBeforeConflict, 'conflict handling changed the authoritative business effect');
     const localRecords = await page.evaluate(() => new Promise((resolve) => {
       const request = indexedDB.open('daenem-staff-offline-v1');
       request.onsuccess = () => {
@@ -317,6 +326,11 @@ async function main() {
       return response.status;
     });
     assert(badAttachment === 415, 'invalid attachment MIME was not rejected');
+    const oversizedAttachment = await page.evaluate(async () => {
+      const response = await fetch('/api/offline/attachments/qa-oversized', { method: 'PUT', headers: { 'content-type': 'image/png', 'content-length': String(10 * 1024 * 1024 + 1), 'x-offline-operation-id': 'qa-op', 'x-offline-company-id': 'company-printing' }, body: 'x' });
+      return response.status;
+    });
+    assert(oversizedAttachment === 413, 'oversized attachment was not rejected');
     gpsCalls = await page.evaluate(() => window.__daenemQaGpsCalls);
     assert(gpsCalls === 0, 'GPS was collected without an explicit user action');
 
@@ -330,6 +344,19 @@ async function main() {
     await runOutcome(browser, 'permission', 'needs-attention');
     await runOutcome(browser, 'authentication', 'authentication-required');
     await runOutcome(browser, 'server-error', 'waiting');
+
+    for (const sessionMode of ['revoked', 'expired']) {
+      const blocked = await openContext(browser, 'employee', { width: 390, height: 844 }, `qa-session-${sessionMode}`);
+      await goForms(blocked.page);
+      await blocked.page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill(`${sessionMode} before reconnect.`);
+      await blocked.context.setOffline(true);
+      await blocked.page.locator('[data-offline-form-submit="supported"]').click();
+      blocked.server.sessionMode = sessionMode;
+      await blocked.context.setOffline(false);
+      await status(blocked.page, 'authentication-required');
+      assert(blocked.server.syncRequests === 0, `${sessionMode} session allowed a queued mutation flush`);
+      await blocked.context.close();
+    }
 
     const multi = await openContext(browser, 'employee', { width: 390, height: 844 }, 'qa-multi-tab');
     await goForms(multi.page);
@@ -346,6 +373,22 @@ async function main() {
     assert(multi.server.businessEffects === 1, 'two open tabs produced duplicate business effects');
     await multi.context.close();
 
+    const sharedBrowser = await openContext(browser, 'employee', { width: 390, height: 844 }, 'qa-shared-browser-a');
+    await goForms(sharedBrowser.page);
+    await sharedBrowser.page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill('Private queue belongs to employee A.');
+    await sharedBrowser.context.setOffline(true);
+    await sharedBrowser.page.locator('[data-offline-form-submit="supported"]').click();
+    await status(sharedBrowser.page, 'offline');
+    const otherEmployeePage = await sharedBrowser.context.newPage();
+    await installApiRoutes(otherEmployeePage, 'employee', sharedBrowser.server, 'qa-shared-browser-b');
+    await otherEmployeePage.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+    await otherEmployeePage.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
+    await goForms(otherEmployeePage);
+    await otherEmployeePage.getByRole('button', { name: /Open My Sync Activity/ }).click();
+    assert(await otherEmployeePage.locator('.offline-activity-row').count() === 0, 'another employee saw the first employee queue in the same browser');
+    assert(!(await otherEmployeePage.locator('.offline-sheet').innerText()).includes('Private queue belongs to employee A'), 'another employee could inspect another employee Sync Activity');
+    await sharedBrowser.context.close();
+
     const unauthorized = await openContext(browser, 'employee', { width: 390, height: 844 }, 'qa-unauthorized');
     const ownerAttempt = await unauthorized.page.evaluate(async () => {
       const response = await fetch('/api/offline/owner/overview', { credentials: 'include', cache: 'no-store' });
@@ -357,6 +400,18 @@ async function main() {
     assert(!(await unauthorized.page.locator('body').innerText()).includes('Sync & Sessions'), 'unauthorized employee can reach Sync & Sessions');
     await snapshot(unauthorized.page, 'unauthorized-owner-control-390x844.png');
     await unauthorized.context.close();
+
+    const manager = await openContext(browser, 'manager', { width: 390, height: 844 }, 'qa-manager');
+    const managerAttempt = await manager.page.evaluate(async () => {
+      const response = await fetch('/api/offline/owner/overview', { credentials: 'include', cache: 'no-store' });
+      return response.status;
+    });
+    assert(managerAttempt === 403, 'manager owner-control API attempt was not denied');
+    await manager.page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:canonical-navigation', { detail: { target: 'sync-sessions' } })));
+    await manager.page.waitForTimeout(500);
+    assert(!(await manager.page.locator('body').innerText()).includes('Sync & Sessions'), 'manager can reach Sync & Sessions without an owner rule');
+    await snapshot(manager.page, 'unauthorized-manager-owner-control-390x844.png');
+    await manager.context.close();
 
     const owner = await openContext(browser, 'owner', { width: 1920, height: 1080 }, 'qa-offline-owner');
     await owner.page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'sync-sessions', erpId: 'controls' } })));
