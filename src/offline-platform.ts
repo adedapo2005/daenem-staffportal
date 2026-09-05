@@ -168,6 +168,12 @@ function requireBrowserStorage() {
   }
 }
 
+function asArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(new ArrayBuffer(bytes.byteLength));
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 function openDatabase() {
   requireBrowserStorage();
   if (databasePromise) return databasePromise;
@@ -257,7 +263,7 @@ async function encryptBytes(namespace: string, input: Uint8Array) {
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv, additionalData: encoder.encode(namespace) },
     key,
-    input,
+    asArrayBuffer(input),
   );
   return { iv: Array.from(iv), ciphertext: Array.from(new Uint8Array(ciphertext)) };
 }
@@ -721,7 +727,7 @@ export async function registerOfflineBackgroundSync() {
 }
 
 export async function sha256Bytes(bytes: Uint8Array) {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const digest = await crypto.subtle.digest('SHA-256', asArrayBuffer(bytes));
   return Array.from(new Uint8Array(digest)).map((item) => item.toString(16).padStart(2, '0')).join('');
 }
 

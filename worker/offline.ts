@@ -64,6 +64,12 @@ function safeText(value: unknown, max = 160) {
   return String(value || '').trim().slice(0, max);
 }
 
+function asArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(new ArrayBuffer(bytes.byteLength));
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 function validId(value: unknown, max = 160) {
   const text = safeText(value, max);
   return Boolean(text) && /^[A-Za-z0-9:_-]+$/.test(text);
@@ -655,7 +661,7 @@ function safeFileName(value: string) {
 }
 
 async function sha256(bytes: Uint8Array) {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const digest = await crypto.subtle.digest('SHA-256', asArrayBuffer(bytes));
   return Array.from(new Uint8Array(digest)).map((item) => item.toString(16).padStart(2, '0')).join('');
 }
 
