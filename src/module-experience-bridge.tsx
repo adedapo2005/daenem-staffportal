@@ -39,7 +39,6 @@ export function useModuleExperience(erpId: ErpId) {
 
 export function ModuleExperienceEnvelope({ experience, children }: { experience: ModuleExperienceContext; children: ReactNode }) {
   return <div className={'module-experience-envelope module-experience-shell-' + experience.shellMode} data-module-experience="true" data-module-context-ready="true" data-module-layout={experience.layoutId} data-module-shell={experience.shellMode} data-module-erp={experience.erpId} data-module-path={experience.canonicalPath} data-module-density={experience.density} data-module-motion={experience.motion}>
-    <div className="module-experience-context-line"><span>{experience.erpId.toUpperCase()}</span><span>{experience.canonicalPath}</span><span>{experience.layoutId.replaceAll('-', ' ')}</span></div>
     {children}
   </div>;
 }
