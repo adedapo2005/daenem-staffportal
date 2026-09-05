@@ -13,6 +13,7 @@ const databaseName = 'daenem-offline-runtime-test';
 const pepper = 'offline-runtime-test-pepper';
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const requestTimeoutMs = 10_000;
 
 function quote(value) {
   return "'" + String(value).replaceAll("'", "''") + "'";
@@ -61,8 +62,18 @@ function requestHeaders(token, extra) {
   return headers;
 }
 
+async function fetchWithTimeout(url, init = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function request(baseUrl, token, endpoint, init = {}) {
-  const response = await fetch(baseUrl + endpoint, {
+  const response = await fetchWithTimeout(baseUrl + endpoint, {
     ...init,
     headers: requestHeaders(token, init.headers),
   });
@@ -194,7 +205,7 @@ async function main() {
     runtime.stderr.on('data', (chunk) => { runtimeOutput += chunk; });
     for (let attempt = 0; attempt < 60; attempt += 1) {
       try {
-        const response = await fetch(baseUrl + '/api/offline/bootstrap');
+        const response = await fetchWithTimeout(baseUrl + '/api/offline/bootstrap');
         if ([200, 401, 403, 404, 500].includes(response.status)) break;
       } catch {}
       if (runtime.exitCode !== null) throw new Error('Worker runtime exited before serving:\n' + runtimeOutput);
