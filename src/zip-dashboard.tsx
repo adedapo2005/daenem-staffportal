@@ -859,7 +859,7 @@ export function ZipDashboard({
           <button type="button" className="secondary-button" onClick={onExitLayoutPreview}>Exit Preview</button>
         </div>
         {layoutPreviewMessage && <small className="layout-preview-message" role="status">{layoutPreviewMessage}</small>}
-      </div>
+      </div>}
       <ZipTopBar
         context={context}
         company={company}
