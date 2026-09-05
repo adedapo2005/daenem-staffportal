@@ -122,7 +122,10 @@ async function main() {
     name: 'daenem-offline-runtime-test',
     workers_dev: true,
     preview_urls: false,
-    compatibility_date: original.compatibility_date,
+    // Keep the ephemeral test Worker within the workerd date range shipped
+    // by the locked Wrangler version. The production Worker still uses the
+    // repository's compatibility date from wrangler.jsonc.
+    compatibility_date: '2026-08-08',
     main: original.main,
     limits: original.limits,
     assets: original.assets,
