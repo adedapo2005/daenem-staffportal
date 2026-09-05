@@ -576,7 +576,7 @@ export function watchOfflineChanges(listener: () => void) {
 
 type SyncRunResult = { processed: number; synced: number; needsReview: number; authRequired: number; retryable: number; skipped: boolean };
 
-export async function syncQueuedOperations(identity: OfflineIdentity): Promise<SyncRunResult> {
+export async function syncQueuedOperations(identity: OfflineIdentity, options: { ignoreBackoff?: boolean } = {}): Promise<SyncRunResult> {
   const empty: SyncRunResult = { processed: 0, synced: 0, needsReview: 0, authRequired: 0, retryable: 0, skipped: false };
   if (typeof navigator !== 'undefined' && !navigator.onLine) return empty;
   const namespace = namespaceFor(identity);
@@ -585,7 +585,7 @@ export async function syncQueuedOperations(identity: OfflineIdentity): Promise<S
     const operations = await namespaceOperations(identity);
     for (const operation of operations) {
       if (!['waiting-to-sync', 'failed-retryable'].includes(operation.state)) continue;
-      if (operation.nextAttemptAt && new Date(operation.nextAttemptAt).getTime() > Date.now()) continue;
+      if (!options.ignoreBackoff && operation.nextAttemptAt && new Date(operation.nextAttemptAt).getTime() > Date.now()) continue;
       result = { ...result, processed: result.processed + 1 };
       const attemptCount = operation.attemptCount + 1;
       await updateStoredOperation(identity, operation.id, { state: 'syncing', attemptCount, lastAttemptedAt: nowIso(), lastErrorCategory: undefined, lastErrorMessage: undefined });

@@ -185,7 +185,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     }).catch(() => undefined)));
   }, [identities]);
 
-  const syncNow = useCallback(async () => {
+  const syncNow = useCallback(async (ignoreBackoff = false) => {
     if (syncInFlight.current) return;
     if (!navigator.onLine) {
       setOnline(false);
@@ -204,7 +204,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
           bootstrapByCompany.current.set(identity.companyId, bootstrap);
           await saveCachedAuthContext(context, bootstrap);
           await registerOfflineBackgroundSync();
-          const result = await syncQueuedOperations(identity);
+          const result = await syncQueuedOperations(identity, { ignoreBackoff });
           syncedCount += result.synced;
         } catch (error) {
           if ((error as { status?: number }).status === 401) authenticationRequired = true;
@@ -324,7 +324,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     queueFormsDraft: queueDraft,
     queueFormsSubmission: queueSubmission,
     readFormsDraft: readDraft,
-    retryNow: syncNow,
+    retryNow: () => syncNow(true),
     openActivity: () => setActivityOpen(true),
   }), [lastSuccessfulSync, needsAttentionCount, online, operations, queueDraft, queueSubmission, readDraft, status, syncNow, waitingCount]);
 
