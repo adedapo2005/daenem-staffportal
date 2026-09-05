@@ -140,6 +140,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
   const onlineRef = useRef(online);
   const lastSuccessfulRef = useRef(lastSuccessfulSync);
   const bootstrapByCompany = useRef(new Map<string, OfflineBootstrap>());
+  const manualRetryQueued = useRef(false);
   useEffect(() => { onlineRef.current = online; }, [online]);
   useEffect(() => { lastSuccessfulRef.current = lastSuccessfulSync; }, [lastSuccessfulSync]);
 
@@ -186,7 +187,10 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
   }, [identities]);
 
   const syncNow = useCallback(async (ignoreBackoff = false) => {
-    if (syncInFlight.current) return;
+    if (syncInFlight.current) {
+      if (ignoreBackoff) manualRetryQueued.current = true;
+      return;
+    }
     if (!navigator.onLine) {
       setOnline(false);
       setStatus('offline');
@@ -233,6 +237,10 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       }
     } finally {
       syncInFlight.current = false;
+      if (manualRetryQueued.current && navigator.onLine) {
+        manualRetryQueued.current = false;
+        window.setTimeout(() => void syncNow(true), 0);
+      }
     }
   }, [context, identities, refreshOperations, sendTelemetry]);
 
