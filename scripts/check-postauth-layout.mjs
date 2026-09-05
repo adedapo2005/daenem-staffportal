@@ -52,7 +52,7 @@ must(worker.includes('before') && worker.includes('after') && worker.includes('t
 must(!worker.includes("saveSetting(env, 'experience.layout.forced', JSON.stringify(next)"), 'personal rollback can still become a global forced layout');
 must(worker.includes('if (manage)') && worker.includes('response.policy = policy'), 'full experience policy is not restricted to managers');
 must(main.includes('activeErpId') && main.includes('ERP_BY_VIEW') && !main.includes('erpId=controls'), 'active ERP context is not used for experience resolution');
-must(moduleBridge.includes('ModuleExperienceEnvelope') && moduleBridge.includes('data-module-context-ready') && zip.includes('module-experience'), 'canonical module experience bridge is missing');
+must(moduleBridge.includes('ModuleExperienceEnvelope') && moduleBridge.includes('data-module-context-ready') && hub.includes('daenem:module-experience'), 'canonical module experience bridge is missing');
 for (const entry of ['printing-entry.tsx','bakery-entry-v2.tsx','autos-entry.tsx','logistics-entry.tsx','properties-entry.tsx','finance-entry.tsx']) must(read('src/' + entry).includes('ModuleExperienceEnvelope'), entry + ' does not consume module experience');
 must(centers.includes('Assigned forms & submissions') && !main.includes('<h2>People, roles & payroll</h2>'), 'feature page heading ownership is duplicated');
 must(zip.includes('CommandPalette') && zip.includes('event.ctrlKey') && zip.includes('event.metaKey'), 'Ctrl/Cmd+K command palette behavior is missing');
