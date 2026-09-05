@@ -355,8 +355,58 @@ async function main() {
       await blocked.context.setOffline(false);
       await status(blocked.page, 'authentication-required');
       assert(blocked.server.syncRequests === 0, `${sessionMode} session allowed a queued mutation flush`);
-      await blocked.context.close();
+    await blocked.context.close();
     }
+
+    const erpCases = [
+      { id: 'printing', erp: 'printing', companyCode: 'PRINT', layout: 'operational-cockpit', shell: 'cockpit', surface: '.printing-shell', content: 'Print Operations ERP', screenshot: 'erp-printing-1440x900.png' },
+      { id: 'bakery', erp: 'bakery', companyCode: 'BAKERY', layout: 'executive-command', shell: 'command-rail', surface: '.bakery-shell', content: 'Bakery Operations' },
+      { id: 'autos', erp: 'autos', companyCode: 'AUTOS', layout: 'executive-command', shell: 'command-rail', surface: '.autos-shell', content: 'Autos' },
+      { id: 'logistics', erp: 'logistics', companyCode: 'LOGISTICS', layout: 'executive-command', shell: 'command-rail', surface: '.log-shell', content: 'Logistics' },
+      { id: 'properties', erp: 'properties', companyCode: 'PROPERTIES', layout: 'master-detail', shell: 'split-pane', surface: '.prop-shell', content: 'Properties', screenshot: 'erp-properties-1440x900.png' },
+      { id: 'finance', erp: 'finance', companyCode: 'PRINT', layout: 'horizon-wide', shell: 'wide-canvas', surface: '.fin-shell', content: 'Finance Command Center', screenshot: 'erp-finance-1440x900.png' },
+    ];
+    const erpExperienceEvidence = [];
+    for (const erpCase of erpCases) {
+      const erp = await openContext(browser, 'owner', { width: 1440, height: 900 }, `qa-erp-${erpCase.erp}`);
+      const { page: erpPage, context: erpContext } = erp;
+      if (erpCase.companyCode !== 'PRINT') {
+        await erpPage.getByRole('button', { name: erpCase.companyCode, exact: true }).click();
+        await erpPage.locator('.company-switcher button.active').getByText(erpCase.companyCode, { exact: true }).waitFor({ state: 'visible', timeout: 10000 });
+      }
+      await erpPage.evaluate((surface) => {
+        window.__daenemQaErpTrace = [];
+        const trace = window.__daenemQaErpTrace;
+        window.addEventListener('daenem:module-experience', () => trace.push({ type: 'experience', time: performance.now() }), { once: true });
+        const observer = new MutationObserver(() => {
+          if (document.querySelector(surface)) {
+            trace.push({ type: 'surface', time: performance.now() });
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }, erpCase.surface);
+      await erpPage.evaluate(({ id, erpId }) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id, erpId } })), { id: erpCase.id, erpId: erpCase.erp });
+      const surface = erpPage.locator(erpCase.surface).last();
+      await surface.waitFor({ state: 'visible', timeout: 30000 });
+      const evidence = await erpPage.evaluate(({ erpId, layout, shell, surfaceSelector }) => {
+        const envelope = document.querySelector(`[data-module-experience][data-module-erp="${erpId}"]`);
+        const trace = window.__daenemQaErpTrace || [];
+        const experienceTime = trace.find((item) => item.type === 'experience')?.time;
+        const surfaceTime = trace.find((item) => item.type === 'surface')?.time;
+        return { erpId, layout: envelope?.getAttribute('data-module-layout'), shell: envelope?.getAttribute('data-module-shell'), expectedLayout: layout, expectedShell: shell, resolvedBeforeSurface: typeof experienceTime === 'number' && typeof surfaceTime === 'number' && experienceTime <= surfaceTime, trace, surfaceVisible: Boolean(document.querySelector(`${surfaceSelector}:not([hidden])`)) };
+      }, { erpId: erpCase.erp, layout: erpCase.layout, shell: erpCase.shell, surfaceSelector: erpCase.surface });
+      assert(evidence.layout === erpCase.layout, `${erpCase.erp}: resolved layout ${evidence.layout} did not match ${erpCase.layout}`);
+      assert(evidence.shell === erpCase.shell, `${erpCase.erp}: resolved shell ${evidence.shell} did not match ${erpCase.shell}`);
+      assert(evidence.resolvedBeforeSurface, `${erpCase.erp}: surface initialized before the ERP experience resolved`);
+      assert(evidence.surfaceVisible, `${erpCase.erp}: business surface is not visible`);
+      assert((await surface.innerText()).includes(erpCase.content), `${erpCase.erp}: business content is not visible in the resolved surface`);
+      assert(erp.pageErrors.length === 0, `${erpCase.erp}: runtime page error during ERP open`);
+      erpExperienceEvidence.push(evidence);
+      if (erpCase.screenshot) await snapshot(erpPage, erpCase.screenshot);
+      await erpContext.close();
+    }
+    assert(new Set(erpExperienceEvidence.map((item) => `${item.layout}:${item.shell}`)).size >= 3, 'contrasting ERP layouts did not produce computed presentation differences');
 
     const multi = await openContext(browser, 'employee', { width: 390, height: 844 }, 'qa-multi-tab');
     await goForms(multi.page);
