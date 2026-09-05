@@ -982,11 +982,11 @@ export function ZipDashboard({
           ? <PostAuthOverviewComposition
             profile={layoutProfile}
             hero={<><PostAuthHomeBanner context={context} summary={summary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} /><DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} /></>}
-            pulse={<><WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} /><ErpPulseGrid context={context} company={company} summary={summary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} /></>}
+            pulse={<ErpPulseGrid context={context} company={company} summary={summary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             loading={<SmartLoadingCard pending={dataStatus === 'loading'} />}
             kpis={<KpiStrip summary={summary} company={company} />}
             widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Drag cards to personalize your view</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div><DashboardWidgets widgets={initialWidgets} summary={summary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
-            workspace={<div className="postauth-overview-workspace" />}
+            workspace={<WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             owner={<OwnerCommandCenter context={context} summary={summary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} />}
             intelligence={liveIntelligence ? <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section> : null}
             clocks={<section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>}
