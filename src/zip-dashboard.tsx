@@ -337,12 +337,13 @@ function ForecastWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
 }
 
 function QueueWidget({ summary, context, company, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'context' | 'company' | 'onNavigate' | 'onOpenModule'>) {
-  const queue: Array<{ field: DashboardAggregateField; label: string; detail: string; value: number; action: () => void }> = [
+  const queueItems: Array<{ field: DashboardAggregateField; label: string; detail: string; value: number; action: () => void }> = [
     { field: 'incompleteAttendance', label: 'Incomplete attendance', detail: 'Open Attendance & GPS', value: summary?.incompleteAttendance ?? 0, action: () => onOpenModule('attendance') },
     { field: 'pendingApprovals', label: 'Pending approvals', detail: 'Open People & Payroll', value: summary?.pendingApprovals ?? 0, action: () => onNavigate('people') },
     { field: 'overdueRequirements', label: 'Overdue requirements', detail: 'Review assigned forms', value: summary?.overdueRequirements ?? 0, action: () => onNavigate('forms') },
     { field: 'securityAlerts', label: 'Security alerts', detail: 'Open Security Center', value: summary?.securityAlerts ?? 0, action: () => onNavigate('security') },
-  ].filter((item) => canSeeDashboardField(context, item.field, company.id));
+  ];
+  const queue = queueItems.filter((item) => canSeeDashboardField(context, item.field, company.id));
   if (!queue.length) return null;
   return <article className="queue-card"><span className="queue-accent" /><ChartHeader eyebrow="ACTION QUEUE" title="Needs your attention" icon={AlertTriangle} /><div className="queue-list">{queue.map((item) => <button key={item.label} onClick={item.action}><span className="queue-number">{String(item.value).padStart(2, '0')}</span><span><b>{item.label}</b><small>{item.detail}</small></span><ArrowRight size={14} /></button>)}</div><div className="queue-footer"><span>Open records remain company-scoped</span><CheckCircle2 size={15} /></div></article>;
 }
@@ -501,12 +502,13 @@ function ManagerCommandCenter({
 }: Pick<ZipDashboardProps, 'context' | 'company' | 'summary' | 'onNavigate' | 'onOpenModuleHub'>) {
   const managerAccess = context.roles.some((role) => ['manager', 'company_admin', 'group_admin', 'owner'].includes(role.code));
   if (!managerAccess) return null;
-  const tiles: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
+  const managerTiles: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
     { field: 'employees', label: 'Team workload', value: numberValue(summary?.employees), detail: 'People in your authorized scope', icon: Users },
     { field: 'pendingApprovals', label: 'Approvals', value: numberValue(summary?.pendingApprovals), detail: 'Requests awaiting action', icon: ClipboardCheck },
     { field: 'overdueRequirements', label: 'Overdue work', value: numberValue(summary?.overdueRequirements), detail: 'Requirements to follow through', icon: AlertTriangle },
     { field: 'present', label: 'Attendance', value: summary ? percentage(attendanceRate(summary)) : '—', detail: 'Present today in scope', icon: CalendarCheck2 },
-  ].filter((tile) => canSeeDashboardField(context, tile.field, company.id));
+  ];
+  const tiles = managerTiles.filter((tile) => canSeeDashboardField(context, tile.field, company.id));
   const actions = [
     can(context, 'users.access', 'view', company.id) ? <button key="team" type="button" onClick={() => onNavigate('people')}><Users size={14} /> Review team</button> : null,
     can(context, 'forms.access', 'view', company.id) ? <button key="forms" type="button" onClick={() => onNavigate('forms')}><ClipboardCheck size={14} /> Open approvals</button> : null,
@@ -531,13 +533,14 @@ function OwnerCommandCenter({
   const ownerAccess = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   if (!ownerAccess) return null;
   const openFollowUps = (summary?.incompleteAttendance || 0) + (summary?.overdueRequirements || 0);
-  const tiles: Array<{ field?: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
+  const ownerTiles: Array<{ field?: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
     { field: 'employees', label: 'People in scope', value: numberValue(summary?.employees), detail: 'Authorized workforce context', icon: Users },
     { field: 'pendingApprovals', label: 'Operations follow-up', value: numberValue(summary?.pendingApprovals), detail: 'Approved requests awaiting action', icon: ClipboardCheck },
     { label: 'Platform health', value: online ? 'Operational' : 'Offline', detail: 'Portal connectivity', icon: Gauge },
     { field: 'securityAlerts', label: 'Control signals', value: numberValue(summary?.securityAlerts), detail: 'Authorized security alerts', icon: ShieldCheck },
     { field: 'incompleteAttendance', label: 'Open follow-ups', value: numberValue(openFollowUps), detail: 'Authorized items requiring review', icon: Activity },
-  ].filter((tile) => !tile.field || canSeeDashboardField(context, tile.field, company.id));
+  ];
+  const tiles = ownerTiles.filter((tile) => !tile.field || canSeeDashboardField(context, tile.field, company.id));
   return <section className="owner-command-center" data-owner-command-center="true" aria-label="Owner command center">
     <header className="owner-command-header"><div><span className="eyebrow">OWNER COMMAND CENTER · BUSINESS HEALTH</span><h2>Financial, operational and control truth</h2><p>Verified business intelligence stays connected to the canonical ERP actions that resolve it.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
     <div className="owner-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article className="owner-command-tile" key={tile.label}><span className="owner-command-icon"><Icon size={17} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>
