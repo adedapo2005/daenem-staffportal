@@ -22,7 +22,7 @@ export type WorkforceContext = {
   sessionId: string;
   employee: {
     id: string; employeeNo?: string; displayName: string; email?: string; phone?: string;
-    jobTitle?: string; department?: string; status: string; preferredTheme?: string; team?: string; lastLoginAt?: string;
+    jobTitle?: string; department?: string; status: string; preferredTheme?: string; timezone?: string; team?: string; lastLoginAt?: string;
   };
   companies: Array<{ id: string; code: string; name: string; locationId?: string; primary: boolean }>;
   roles: Array<{ id: string; code: string; name: string; companyId: string }>;

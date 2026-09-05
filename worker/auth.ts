@@ -21,6 +21,7 @@ export interface SessionContext {
     department?: string;
     status: string;
     preferredTheme?: string;
+    timezone?: string;
   };
   companies: Array<{ id: string; code: string; name: string; locationId?: string; primary: boolean }>;
   roles: Array<{ id: string; code: string; name: string; companyId: string }>;
@@ -440,7 +441,7 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
   const base = await env.DB.prepare(`
     SELECT s.id AS sessionId, e.id, e.employee_no AS employeeNo, e.display_name AS displayName,
            e.email, e.phone, e.job_title AS jobTitle, e.department,
-           e.employment_status AS status, COALESCE(ep.theme, e.preferred_theme) AS preferredTheme
+           e.employment_status AS status, COALESCE(ep.theme, e.preferred_theme) AS preferredTheme, ep.timezone AS timezone
     FROM auth_sessions s
     JOIN employees e ON e.id = s.employee_id
     LEFT JOIN employee_preferences ep ON ep.employee_id = e.id
@@ -538,6 +539,7 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
       department: base.department ? String(base.department) : undefined,
       status: String(base.status),
       preferredTheme: base.preferredTheme ? String(base.preferredTheme) : undefined,
+      timezone: base.timezone ? String(base.timezone) : undefined,
     },
     companies: (companiesResult.results || []).map((row) => ({
       id: String(row.id), code: String(row.code), name: String(row.name),
