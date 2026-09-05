@@ -1,3 +1,4 @@
+
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -14,7 +15,7 @@ const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const requestTimeoutMs = 10_000;
 const readinessTimeoutMs = 1_000;
-const wranglerTimeoutMs = 120_000;
+const wranglerTimeoutMs = 30_000;
 
 function quote(value) {
   return "'" + String(value).replaceAll("'", "''") + "'";
@@ -203,8 +204,11 @@ async function main() {
   try {
     persistDir = await fs.mkdtemp(path.join(os.tmpdir(), 'daenem-offline-runtime-'));
     await fs.writeFile(testConfig, JSON.stringify(config, null, 2) + '\n');
+    console.log('offline runtime test: applying D1 migrations');
     await runWrangler(['d1', 'migrations', 'apply', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir]);
+    console.log('offline runtime test: seeding D1 fixtures');
     await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', seed]);
+    console.log('offline runtime test: starting actual Worker runtime');
 
     runtime = spawn(npx, ['--no-install', 'wrangler', 'dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], {
       cwd: root,
@@ -229,6 +233,7 @@ async function main() {
     }
     if (runtime.exitCode !== null) throw new Error('Worker runtime exited before serving:\n' + runtimeOutput);
     if (!ready) throw new Error('Worker runtime did not become ready within 30 seconds:\n' + runtimeOutput);
+    console.log('offline runtime test: Worker runtime ready');
     const matrix = [];
     const unauth = await request(baseUrl, '', '/api/offline/bootstrap');
     expect('unauthenticated bootstrap', unauth, 401);
