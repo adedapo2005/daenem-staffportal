@@ -653,6 +653,9 @@ async function ownerRevoke(request: Request, env: OfflineEnv, context: SessionCo
   if (!owner(context)) return json({ error: 'Owner access is required.' }, 403);
   let body: { companyId?: string; employeeId?: string; sessionId?: string; action?: string; reason?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid session action.' }, 400); }
+  if (!['revoke_session', 'revoke_all_sessions'].includes(String(body.action || ''))) {
+    return json({ error: 'Only controlled session revocation is available from Sync & Sessions.' }, 400);
+  }
   const delegated = new Request(new URL('/api/support/admin/command', request.url), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
