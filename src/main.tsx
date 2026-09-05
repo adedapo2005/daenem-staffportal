@@ -570,7 +570,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       resolveExperience={resolveExperienceForErp}
       experience={{ layoutId: activeLayoutProfile.id, shellMode: activeLayoutProfile.shellMode, density: effectiveLayoutPreference.density, motion: effectiveLayoutPreference.motion, erpId: activeErpId }}
     />
-    <Suspense fallback={null}><SupportInbox context={context} /></Suspense>
+    {online && <Suspense fallback={null}><SupportInbox context={context} /></Suspense>}
   </div>;
 }
 
