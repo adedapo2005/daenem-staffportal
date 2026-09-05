@@ -635,7 +635,7 @@ async function main() {
   const motionMetric = results.find((item) => item.pageKind === 'motion presets');
   const motionPass = Boolean(motionMetric?.motionPass);
   const reducedMotionMetric = results.find((item) => item.pageKind === 'reduced-motion smoke');
-  const reducedMotionPass = Boolean((motionMetric?.reducedMotionDuration === '0ms' || motionMetric?.reducedMotionDuration === '0s') && motionMetric?.reducedMotion === true);
+  const reducedMotionPass = Boolean((motionMetric?.reducedMotionDuration === '0ms' || motionMetric?.reducedMotionDuration === '0s') && reducedMotionMetric?.reducedMotion === true);
   const smartContextPass = results.filter((item) => item.dashboardPresent).every((item) => item.smartContext === true || item.pageKind?.startsWith('ERP surface ') || item.pageKind === 'ERP default resolution');
   const typographyPass = results.filter((item) => item.dashboardPresent && item.viewport?.width >= 861).every((item) => item.keyTypographyMin >= 11);
   const businessPageResults = results.filter((item) => item.dashboardPresent && item.pageKind && !item.pageKind.includes('Layout Studio') && !item.pageKind.startsWith('ERP surface '));
@@ -685,11 +685,8 @@ async function main() {
     'HORIZONTAL_OVERFLOW=HARD_GATE',
     'QA_FIXTURE_DATA=NOT_APPLICATION_DATA',
   ];
-  fs.writeFileSync(path.join(evidenceDir, 'layout-metrics.json'), JSON.stringify({ generatedAt: new Date().toISOString(), results, runtimeErrors }, null, 2) + '
-');
-  fs.writeFileSync(path.join(evidenceDir, 'validation-summary.txt'), summaryLines.join('
-') + '
-');
+  fs.writeFileSync(path.join(evidenceDir, 'layout-metrics.json'), JSON.stringify({ generatedAt: new Date().toISOString(), results, runtimeErrors }, null, 2) + '\n');
+  fs.writeFileSync(path.join(evidenceDir, 'validation-summary.txt'), summaryLines.join('\n') + '\n');
   if (hardFailure) process.exitCode = 1;
 }
 
