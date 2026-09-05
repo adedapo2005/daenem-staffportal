@@ -238,10 +238,15 @@ async function capture(browser, role, layoutId, width, height, name, options = {
     await page.waitForTimeout(900);
     if (options.navigateText) {
       const button = page.locator('.sidebar-functional-item').filter({ hasText: options.navigateText }).first();
-      if (await button.count()) {
-        await button.click();
-        await page.waitForTimeout(900);
+      for (let attempt = 0; attempt < 16 && !(await button.count()); attempt += 1) {
+        const collapsed = page.locator('.sidebar-group-toggle[aria-expanded="false"], .sidebar-submenu-toggle[aria-expanded="false"], .sidebar-subsubmenu-toggle[aria-expanded="false"]').first();
+        if (!(await collapsed.count())) break;
+        await collapsed.click();
+        await page.waitForTimeout(100);
       }
+      if (!(await button.count())) throw new Error('Navigation item not rendered: ' + options.navigateText);
+      await button.click();
+      await page.waitForTimeout(900);
     }
     if (options.openLayoutStudio) {
       await page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'layout-studio' } })));
@@ -255,7 +260,7 @@ async function capture(browser, role, layoutId, width, height, name, options = {
       ...options.metric,
     });
     results.push(metric);
-    if (!metric.dashboardPresent || pageErrors.length || (options.openLayoutStudio && !metric.layoutStudioPresent)) {
+    if (!metric.dashboardPresent || pageErrors.length || (options.openLayoutStudio && !metric.layoutStudioPresent) || (options.navigateText && !metric.featureFramePresent)) {
       hardFailure = true;
     }
     if (pageErrors.length) runtimeErrors.push(role + '/' + layoutId + ': ' + pageErrors.join(' | '));
