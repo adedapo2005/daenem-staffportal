@@ -1842,7 +1842,8 @@
    not fall below the authenticated desktop floor. */
 @media (min-width: 861px) {
   html body .dashboard-page.postauth-layout button.postauth-nav-item,
-  html body .dashboard-page.postauth-layout .postauth-navigation strong {
+  html body .dashboard-page.postauth-layout .postauth-navigation strong,
+  html body .dashboard-page.postauth-layout .erp-pulse-card h3 {
     font-size: 11px !important;
   }
 }
