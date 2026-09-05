@@ -10,8 +10,30 @@ function isCacheableShellAsset(request, url) {
     || /\.(?:css|js|mjs|png|jpg|jpeg|webp|svg|woff2?)$/i.test(url.pathname);
 }
 
+async function precacheShell() {
+  const cache = await caches.open(CACHE);
+  const shellResponse = await fetch('/');
+  if (!shellResponse.ok) throw new Error('The Staff Portal shell could not be fetched.');
+  await cache.put('/', shellResponse.clone());
+  const html = await shellResponse.text();
+  const discovered = [...html.matchAll(/(?:src|href)=["']([^"']+)["']/gi)]
+    .map((match) => match[1])
+    .filter(Boolean)
+    .map((value) => new URL(value, self.location.origin))
+    .filter((url) => url.origin === self.location.origin)
+    .map((url) => url.pathname);
+  const urls = [...new Set([...SHELL.slice(1), ...discovered])].filter((pathname) => {
+    const url = new URL(pathname, self.location.origin);
+    return isCacheableShellAsset(new Request(url), url);
+  });
+  await Promise.all(urls.map(async (pathname) => {
+    const response = await fetch(pathname);
+    if (response.ok) await cache.put(pathname, response);
+  }));
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(precacheShell().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -43,7 +65,7 @@ self.addEventListener('fetch', (event) => {
       .catch(async () => {
         const cached = await caches.match(request);
         if (cached) return cached;
-        return caches.match('/');
+        return request.mode === 'navigate' ? caches.match('/') : Response.error();
       }),
   );
 });
