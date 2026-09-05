@@ -439,6 +439,7 @@ async function main() {
       await blocked.context.setOffline(true);
       await blocked.page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
       await blocked.page.locator('[data-offline-form-submit="supported"]').click();
+      await status(blocked.page, 'offline');
       blocked.server.sessionMode = sessionMode;
       await blocked.context.setOffline(false);
       await status(blocked.page, 'authentication-required');
