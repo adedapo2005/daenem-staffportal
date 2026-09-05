@@ -433,6 +433,7 @@ async function main() {
 
     for (const sessionMode of ['revoked', 'expired']) {
       const blocked = await openContext(browser, 'employee', { width: 390, height: 844 }, `qa-session-${sessionMode}`);
+      await status(blocked.page, 'online');
       await goForms(blocked.page);
       await blocked.page.locator('[data-form-assignment="qa-form-assignment"] textarea').fill(`${sessionMode} before reconnect.`);
       await blocked.context.setOffline(true);
