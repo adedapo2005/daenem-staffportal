@@ -627,6 +627,8 @@ async function main() {
   const erpSurfacePass = erpSurfaceResults.length === 6 && erpSurfaceResults.every((item) => item.moduleExperience?.erpId && item.moduleExperience?.shell && item.moduleExperience?.path);
   const motionMetric = results.find((item) => item.pageKind === 'motion presets');
   const motionPass = Boolean(motionMetric?.motionPass);
+  const reducedMotionMetric = results.find((item) => item.pageKind === 'reduced-motion smoke');
+  const reducedMotionPass = Boolean(motionMetric?.reducedMotionDuration === '0ms' && reducedMotionMetric?.reducedMotion === true);
   const smartContextPass = results.filter((item) => item.dashboardPresent).every((item) => item.smartContext === true || item.pageKind?.startsWith('ERP surface ') || item.pageKind === 'ERP default resolution');
   const typographyPass = results.filter((item) => item.dashboardPresent && item.viewport?.width >= 861).every((item) => item.keyTypographyMin >= 11);
   const noLayoutExplanationPass = results.filter((item) => item.pageKind && !item.pageKind.includes('Layout Studio') && !item.pageKind.startsWith('ERP surface ')).every((item) => item.layoutExplanation === false);
