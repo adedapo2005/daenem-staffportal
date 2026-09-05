@@ -409,13 +409,13 @@ function WorkspaceOverviewStrip({
   const moduleCount = moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)).length;
   const adminAccess = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) || Object.values(context.permissions).some((level) => level === 'manage');
   const availableModuleIds = new Set(moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)).map((module) => module.id));
-  const quickActions = [
-    availableModuleIds.has('profile') ? { label: 'My Profile', detail: 'Keep your employee record current', icon: Users, action: () => onOpenModule('profile') } : null,
-    availableModuleIds.has('employee') ? { label: 'My Workspace', detail: 'Open staff self-service', icon: BriefcaseBusiness, action: () => onOpenModule('employee') } : null,
-    can(context, 'forms.access', 'view', company.id) ? { label: 'My Forms', detail: 'Review assigned submissions', icon: ClipboardCheck, action: () => onNavigate('forms') } : null,
-    { label: 'Tasks & approvals', detail: 'Open authorized workspaces', icon: CheckCircle2, action: onOpenModuleHub },
-    can(context, 'ai_guide.access', 'view', company.id) ? { label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') } : null,
-  ].filter((item): item is { label: string; detail: string; icon: React.ComponentType<{ size?: number }>; action: () => void } => Boolean(item));
+  type QuickAction = { label: string; detail: string; icon: React.ComponentType<{ size?: number }>; action: () => void };
+  const quickActions: QuickAction[] = [];
+  if (availableModuleIds.has('profile')) quickActions.push({ label: 'My Profile', detail: 'Keep your employee record current', icon: Users, action: () => onOpenModule('profile') });
+  if (availableModuleIds.has('employee')) quickActions.push({ label: 'My Workspace', detail: 'Open staff self-service', icon: BriefcaseBusiness, action: () => onOpenModule('employee') });
+  if (can(context, 'forms.access', 'view', company.id)) quickActions.push({ label: 'My Forms', detail: 'Review assigned submissions', icon: ClipboardCheck, action: () => onNavigate('forms') });
+  quickActions.push({ label: 'Tasks & approvals', detail: 'Open authorized workspaces', icon: CheckCircle2, action: onOpenModuleHub });
+  if (can(context, 'ai_guide.access', 'view', company.id)) quickActions.push({ label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') });
   return <section className="workspace-overview-grid" aria-label="Personalized staff workspace overview">
     <article className="profile-summary-card">
       <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Welcome, {firstName}</h2></div><span className="live-chip"><i /> Personalized home</span></header>

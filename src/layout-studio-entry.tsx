@@ -124,8 +124,9 @@ function unique(values: string[]) {
   return [...new Set(values.filter(Boolean))];
 }
 
-function PolicyPanel({ payload, context, onRefresh, onMessage }: { payload: LayoutPayload & { policy: LayoutPolicy }; context: WorkforceContext; onRefresh: () => Promise<void>; onMessage: (value: string) => void }) {
+function PolicyPanel({ payload, context, onRefresh, onMessage }: { payload: LayoutPayload; context: WorkforceContext; onRefresh: () => Promise<void>; onMessage: (value: string) => void }) {
   const policy = payload.policy;
+  if (!policy) return null;
   const [organizationDefault, setOrganizationDefault] = useState(policy.organizationDefault);
   const [forcedLayout, setForcedLayout] = useState(policy.forcedLayout || '');
   const [allowPersonalPreference, setAllowPersonalPreference] = useState(policy.allowPersonalPreference);
