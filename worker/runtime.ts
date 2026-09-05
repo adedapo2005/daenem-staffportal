@@ -39,6 +39,7 @@ import { routeHrWorkflows } from './hr-workflows';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
 import { routePlatformCenter, routePublicWebsite } from './platform-center';
+import { routeOffline } from './offline';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -176,12 +177,17 @@ export default {
       url.pathname.startsWith('/api/experience/') ||
       url.pathname.startsWith('/api/ai/') ||
       url.pathname.startsWith('/api/platform/') ||
-      url.pathname.startsWith('/api/hr/workflows/');
+      url.pathname.startsWith('/api/hr/workflows/') ||
+      url.pathname.startsWith('/api/offline/');
 
     if (specialized) {
       const context = await getSessionContext(request, env);
       if (!context) return secure(json({ error: 'Authentication required.' }, 401));
 
+      if (url.pathname.startsWith('/api/offline/')) {
+        const response = await routeOffline(request, env, context);
+        if (response) return secure(response);
+      }
       if (url.pathname.startsWith('/api/theme/')) {
         const response = await routeThemePreferences(request, env, context);
         if (response) return secure(response);

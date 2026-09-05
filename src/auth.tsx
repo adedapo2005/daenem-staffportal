@@ -108,10 +108,26 @@ export function clearPortalAuthCache() {
   authMeRequest = null;
 }
 
+export function isNetworkTransportFailure(error: unknown) {
+  const status = typeof error === 'object' && error !== null && 'status' in error
+    ? (error as { status?: unknown }).status
+    : undefined;
+  if (typeof status === 'number') return status === 0;
+  return error instanceof TypeError || (typeof error === 'object' && error !== null && (error as { name?: unknown }).name === 'NetworkError');
+}
+
 async function requestJson<T>(path: string, options: RequestInit): Promise<T> {
   const headers = new Headers(options.headers);
   if (options.body && !(options.body instanceof FormData) && !headers.has('content-type')) headers.set('content-type', 'application/json');
-  const response = await fetch(path, { ...options, headers, credentials: 'include', cache: 'no-store' });
+  let response: Response;
+  try {
+    response = await fetch(path, { ...options, headers, credentials: 'include', cache: 'no-store' });
+  } catch (cause) {
+    const error = new Error(cause instanceof Error ? cause.message : 'Network transport failed.') as ApiError;
+    error.code = 'NETWORK_TRANSPORT';
+    error.status = 0;
+    throw error;
+  }
   const data = await response.json().catch(() => ({})) as Record<string, unknown>;
   if (!response.ok) {
     const error = new Error(String(data.error || `Request failed (${response.status})`)) as ApiError;
@@ -156,7 +172,7 @@ export function useAuth() {
       const result = await api<{ authenticated: boolean; context?: WorkforceContext }>('/api/auth/me');
       setAuthenticatedContext(result.context || null);
     } catch (error) {
-      const offline = typeof navigator !== 'undefined' && (!navigator.onLine || (error as ApiError).status === 0);
+      const offline = isNetworkTransportFailure(error);
       if (offline) {
         const cached = await readCachedAuthContext();
         if (cached && typeof cached === 'object') {

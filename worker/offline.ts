@@ -338,8 +338,32 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
   }
   const existing = await receiptByKey(env, idempotencyKey);
   if (existing) {
-    if (String(existing.employeeId) !== context.employee.id || String(existing.operationId) !== operationId) {
-      return json({ error: 'This idempotency key is already assigned to another operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
+    const mismatches = [
+      String(existing.employeeId) !== context.employee.id ? 'employee' : '',
+      String(existing.companyId) !== companyId ? 'company' : '',
+      String(existing.operationId) !== operationId ? 'operation' : '',
+      String(existing.operationKind) !== kind ? 'operation-kind' : '',
+      String(existing.idempotencyKey) !== idempotencyKey ? 'idempotency-key' : '',
+    ].filter(Boolean);
+    if (mismatches.length) {
+      await writeAudit(env, request, context, 'operation_rejected', 'offline_sync_receipt', String(existing.id), {
+        operationId,
+        idempotencyKey,
+        operationKind: kind,
+        outcome: 'idempotency-scope-mismatch',
+        errorCategory: 'idempotency-mismatch',
+        mismatchDimensions: mismatches.join(','),
+        clientTimezone: body.clientTimezone,
+        capturedAt,
+      }, companyId);
+      await logSecurity(env, request, 'offline_idempotency_scope_mismatch', {
+        employeeId: context.employee.id,
+        companyId,
+        sessionId: context.sessionId,
+        result: 'rejected',
+        details: { operationId, operationKind: kind, mismatchDimensions: mismatches.join(',') },
+      });
+      return json({ error: 'This idempotency key is already assigned to a different employee, company or operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
     }
     if (existing.state === 'completed') return json({ ok: true, state: 'synced', receipt: receiptBody(existing, true), result: JSON.parse(String(existing.resultJson || '{}')) });
     if (existing.state === 'rejected' || existing.state === 'conflict') return json({ ok: false, state: 'needs-review', receipt: receiptBody(existing, true), error: JSON.parse(String(existing.resultJson || '{}')).error || 'This operation needs review.' }, 409);
