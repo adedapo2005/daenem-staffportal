@@ -21,6 +21,9 @@ const saveSetting = async (env: Env, key: string, value: string, type = 'json') 
     .bind(key, value, type).run();
 };
 const isOwner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
+const canAccess = (context: EnhancedSessionContext) => isOwner(context)
+  || hasPermission(context, 'settings.access', 'view')
+  || hasPermission(context, 'navigation.studio', 'view');
 const canManage = (context: EnhancedSessionContext) => isOwner(context)
   || hasPermission(context, 'settings.access', 'manage')
   || hasPermission(context, 'navigation.studio', 'manage');
@@ -53,7 +56,7 @@ async function current(env: Env, context: EnhancedSessionContext, erpId?: string
       id: String(row.id), layoutId: normalizeLayoutId(row.layoutId),
       scope: String(row.scope || 'personal'), createdAt: String(row.createdAt || ''),
     }));
-  return { preference, policy, canManage: canManage(context), canChoose: canManage(context) || policy.allowPersonalPreference, history: historyRows };
+  return { preference, policy, canManage: canManage(context), canAccess: canAccess(context), canChoose: canAccess(context) && (canManage(context) || policy.allowPersonalPreference) && (!policy.forcedLayout || canManage(context)), history: historyRows };
 }
 async function audit(env: Env, context: EnhancedSessionContext, action: string, after: unknown) {
   await env.DB.prepare('INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,?,?,?,?,?)')
@@ -67,6 +70,8 @@ async function saveHistory(env: Env, entry: Record<string, unknown>) {
 async function savePersonal(request: Request, env: Env, context: EnhancedSessionContext) {
   let body: Partial<LayoutPreference>;
   try { body = await request.json() as Partial<LayoutPreference>; } catch { return json({ error: 'Invalid experience preference.' }, 400); }
+  if (!canAccess(context)) return json({ error: 'Experience access is not assigned.' }, 403);
+  if (await setting(env, 'experience.layout.forced', '') && !canManage(context)) return json({ error: 'The active experience policy is controlled by an administrator.' }, 409);
   if (!canManage(context) && await setting(env, 'experience.layout.allow_personal', 'true') !== 'true') return json({ error: 'Personal experience choice is disabled by policy.' }, 403);
   const next = normalizeLayoutPreference(body);
   await saveSetting(env, 'experience.layout.personal.' + context.employee.id, JSON.stringify(next));

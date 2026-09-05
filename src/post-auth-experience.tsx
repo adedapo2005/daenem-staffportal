@@ -33,7 +33,7 @@ export function PostAuthHomeBanner({
     ? [{ label: 'Review approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onOpenModule('intelligence') }, { label: 'Security signals', detail: String(summary?.securityAlerts ?? '—'), action: () => onNavigate('security') }]
     : tone === 'manager'
       ? [{ label: 'Team workload', detail: String(summary?.employees ?? '—'), action: () => onNavigate('people') }, { label: 'Pending approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onNavigate('forms') }]
-      : [{ label: 'My tasks', detail: String(summary?.overdueRequirements ?? '—'), action: () => onNavigate('forms') }, { label: 'Ask Daenem', detail: 'Guided help', action: () => onNavigate('help') }];
+      : [{ label: 'My workspace', detail: 'Next action', action: () => onOpenModule('employee') }, { label: 'Ask Daenem', detail: 'Guided help', action: () => onNavigate('help') }];
   return <section className={'postauth-home-banner postauth-tone-' + tone} aria-labelledby="postauth-home-title">
     <div className="postauth-home-copy">
       <span className="eyebrow">{eyebrow} · {company.name}</span>

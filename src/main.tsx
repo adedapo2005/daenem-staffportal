@@ -262,7 +262,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   const [theme, setTheme] = useState<ThemeId>(() => readThemeId(context.employee.preferredTheme));
   const [modePreference, setModePreference] = useState<ModePreference>(() => readModePreference());
   const [layoutPreference, setLayoutPreference] = useState<LayoutPreference>(() => readLocalLayoutPreference(context.employee.id) || { layoutId: DEFAULT_LAYOUT_ID, density: 'standard', motion: 'balanced' });
-  const [layoutAccess, setLayoutAccess] = useState({ canChoose: true, canManage: false });
+  const [layoutAccess, setLayoutAccess] = useState({ canChoose: true, canManage: false, canAccess: false });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
@@ -292,12 +292,12 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   useEffect(() => {
     let active = true;
     const query = company.id ? '?erpId=controls&companyId=' + encodeURIComponent(company.id) : '?erpId=controls';
-    api<{ preference: LayoutPreference; canChoose: boolean; canManage: boolean }>('/api/experience/layout' + query)
+    api<{ preference: LayoutPreference; canChoose: boolean; canManage: boolean; canAccess: boolean }>('/api/experience/layout' + query)
       .then((result) => {
         if (!active) return;
         const next = normalizeLayoutPreference(result.preference);
         setLayoutPreference(next);
-        setLayoutAccess({ canChoose: result.canChoose !== false, canManage: result.canManage === true });
+        setLayoutAccess({ canChoose: result.canChoose !== false, canManage: result.canManage === true, canAccess: result.canAccess === true });
         writeLocalLayoutPreference(context.employee.id, next);
       })
       .catch(() => undefined);
@@ -393,7 +393,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   }
   const activeTheme = themeList.find((item) => item.id === theme) || themeList[0];
   const activeLayoutProfile = getLayoutProfile(layoutPreference.layoutId);
-  const canUseLayoutStudio = layoutAccess.canChoose || layoutAccess.canManage;
+  const canUseLayoutStudio = layoutAccess.canAccess;
   const executive = can(context, 'dashboard.access', 'manage', company.id) || context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   const canChangeWeatherUnit = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   useEffect(() => { localStorage.setItem('daenem-weather-unit', temperatureUnit); }, [temperatureUnit]);

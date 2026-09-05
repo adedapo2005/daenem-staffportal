@@ -72,6 +72,7 @@ function Gallery({ payload, onRefresh }: { payload: LayoutPayload; onRefresh: ()
       <div><div className="layout-card-title"><h3>{definition.name}</h3>{selected && <span className="layout-badge">Current</span>}</div><p>{definition.description}</p><div className="layout-gallery-meta"><span>{definition.navigationMode.replaceAll('-', ' ')}</span><span>{definition.defaultDensity}</span><span><Monitor size={12} /> <Tablet size={12} /> <Smartphone size={12} /></span></div><small>Best for {definition.idealFor.join(' · ')}</small><div className="layout-gallery-actions"><button type="button" className="secondary-button" onClick={() => setPreview(id)}><Eye size={14} /> Preview</button><button type="button" className="primary-button" disabled={!payload.canChoose || selected || busy === id} onClick={() => void apply(id)}>{busy === id ? 'Applying…' : selected ? <><Check size={14} /> Applied</> : <><Save size={14} /> Apply to me</>}</button></div></div>
     </article>; })}</div>
     <SettingsPanel payload={payload} onRefresh={onRefresh} onMessage={setMessage} />
+    {payload.canManage && <PolicyPanel payload={payload} onRefresh={onRefresh} onMessage={setMessage} />}
     <HistoryPanel payload={payload} onRefresh={onRefresh} onMessage={setMessage} />
   </section>;
 }
@@ -92,6 +93,28 @@ function SettingsPanel({ payload, onRefresh, onMessage }: { payload: LayoutPaylo
     finally { setBusy(false); }
   }
   return <section id="layout-studio-settings" className="layout-policy-card"><div><span className="eyebrow">MY EXPERIENCE</span><h3>Density & motion</h3><p>Adjust table, panel and navigation rhythm without changing touch-target accessibility.</p></div><div className="layout-policy-row"><label>Density<select value={density} onChange={(event) => setDensity(normalizeDensity(event.target.value))}><option value="comfortable">Comfortable</option><option value="standard">Standard</option><option value="compact">Compact</option></select></label><label>Motion<select value={motion} onChange={(event) => setMotion(normalizeMotion(event.target.value))}><option value="off">Off</option><option value="calm">Calm</option><option value="balanced">Balanced</option><option value="expressive">Expressive</option></select></label></div><button type="button" className="primary-button" disabled={!payload.canChoose || busy} onClick={() => void save()}><Save size={14} /> Save experience</button></section>;
+}
+
+const ERP_SCOPE_OPTIONS = ['staff', 'printing', 'bakery', 'autos', 'logistics', 'properties', 'finance', 'controls'];
+const ROLE_SCOPE_OPTIONS = ['employee', 'manager', 'group_admin'];
+
+function PolicyPanel({ payload, onRefresh, onMessage }: { payload: LayoutPayload; onRefresh: () => Promise<void>; onMessage: (value: string) => void }) {
+  const [organizationDefault, setOrganizationDefault] = useState(payload.policy.organizationDefault);
+  const [forcedLayout, setForcedLayout] = useState(payload.policy.forcedLayout || '');
+  const [allowPersonalPreference, setAllowPersonalPreference] = useState(payload.policy.allowPersonalPreference);
+  const [roleDefaults, setRoleDefaults] = useState<Record<string, LayoutId>>(payload.policy.roleDefaults);
+  const [erpDefaults, setErpDefaults] = useState<Record<string, LayoutId>>(payload.policy.erpDefaults);
+  const [busy, setBusy] = useState(false);
+  async function save() {
+    setBusy(true);
+    try {
+      await api('/api/experience/layout/policy', { method: 'POST', body: JSON.stringify({ organizationDefault, forcedLayout: forcedLayout || null, allowPersonalPreference, roleDefaults, erpDefaults }) });
+      onMessage('Organization, role and ERP layout policy saved and audited.');
+      await onRefresh();
+    } catch (error) { onMessage(error instanceof Error ? error.message : 'Layout policy could not be saved.'); }
+    finally { setBusy(false); }
+  }
+  return <section className="layout-policy-card layout-policy-panel"><div><span className="eyebrow">OWNER / ADMIN POLICY</span><h3>Defaults & precedence</h3><p>Set organization, role and ERP defaults. A forced layout wins; otherwise permitted personal choice wins before role and ERP defaults.</p></div><div className="layout-policy-row"><label>Organization default<select value={organizationDefault} onChange={(event) => setOrganizationDefault(normalizeLayoutId(event.target.value))}>{LAYOUT_IDS.map((id) => <option key={id} value={id}>{labelFor(id)}</option>)}</select></label><label>Forced layout<select value={forcedLayout} onChange={(event) => setForcedLayout(event.target.value)}><option value="">No forced layout</option>{LAYOUT_IDS.map((id) => <option key={id} value={id}>{labelFor(id)}</option>)}</select></label></div><label className="layout-policy-toggle"><input type="checkbox" checked={allowPersonalPreference} onChange={(event) => setAllowPersonalPreference(event.target.checked)} /><span>Allow permitted employees to choose a personal layout</span></label><div className="layout-policy-subgrid"><div><strong>Role defaults</strong>{ROLE_SCOPE_OPTIONS.map((role) => <label key={role}>{role.replace('_', ' ')}<select value={roleDefaults[role] || ''} onChange={(event) => setRoleDefaults((current) => ({ ...current, [role]: normalizeLayoutId(event.target.value) }))}><option value="">Use organization/ERP default</option>{LAYOUT_IDS.map((id) => <option key={id} value={id}>{labelFor(id)}</option>)}</select></label>)}</div><div><strong>ERP defaults</strong>{ERP_SCOPE_OPTIONS.map((erp) => <label key={erp}>{erp.toUpperCase()}<select value={erpDefaults[erp] || ''} onChange={(event) => setErpDefaults((current) => ({ ...current, [erp]: normalizeLayoutId(event.target.value) }))}><option value="">Use organization default</option>{LAYOUT_IDS.map((id) => <option key={id} value={id}>{labelFor(id)}</option>)}</select></label>)}</div></div><button type="button" className="primary-button" disabled={busy || !payload.canManage} onClick={() => void save()}><Save size={14} /> Save policy</button></section>;
 }
 
 function HistoryPanel({ payload, onRefresh, onMessage }: { payload: LayoutPayload; onRefresh: () => Promise<void>; onMessage: (value: string) => void }) {
