@@ -410,7 +410,7 @@ async function main() {
     await context.setOffline(false);
     await status(page, 'needs-attention');
     const conflictEvidence = await snapshot(page, 'employee-mobile-needs-attention-conflict-390x844.png');
-    assert(conflictEvidence.text.includes('needs attention'), 'conflict state is not visible in plain language');
+    assert(conflictEvidence.text.toLowerCase().includes('needs attention'), 'conflict state is not visible in plain language');
     assert(server.businessEffects === effectsBeforeConflict, 'conflict handling changed the authoritative business effect');
     const localRecords = await page.evaluate(() => new Promise((resolve) => {
       const request = indexedDB.open('daenem-staff-offline-v1');
