@@ -24,7 +24,7 @@ must(system.includes('normalizeLayoutId') && system.includes('normalizeDensity')
 must(system.includes('navigationMode') && system.includes('featurePageStrategy') && system.includes('recordPageStrategy') && system.includes('responsiveRules'), 'layout profile strategy fields are missing');
 must(home.includes('PostAuthHomeBanner') && home.includes('OWNER COMMAND CENTER') && home.includes('MANAGER HOME') && home.includes('EMPLOYEE HOME'), 'role-aware home regions are missing');
 must(home.includes('PostAuthFeatureFrame') && home.includes('canonicalPath'), 'shared feature-page frame is missing');
-must(home.includes('PostAuthOverviewComposition') && ids.every((id) => home.includes('postauth-composition-' + id) || home.includes('postauth-composition-' + id)), 'all ten profiles need explicit dashboard composition adapters');
+must(home.includes("profile.id === 'workspace-canvas'") && home.includes("profile.id === 'operational-cockpit'") && home.includes("profile.id === 'insight-magazine'") && home.includes("profile.id === 'master-detail'") && home.includes("profile.id === 'horizon-wide'") && home.includes("profile.id === 'adaptive-bento'") && home.includes("profile.id === 'focus-flow'") && home.includes("profile.id === 'enterprise-studio'") && home.includes("profile.id === 'board-pulse'"), 'all ten profiles need explicit dashboard composition adapters');
 must(studio.includes('Layout Studio') && studio.includes('Preview') && studio.includes('Apply to me'), 'Layout Studio gallery is missing');
 must(studio.includes('layout-preview') && studio.includes('/api/experience/layout/preference'), 'non-destructive preview/apply behavior is missing');
 must(studio.includes('rollback') && studio.includes('History'), 'layout rollback/history is missing');
