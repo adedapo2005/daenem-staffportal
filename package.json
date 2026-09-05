@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "prebuild": "node scripts/check-signin-background-assets.mjs && node scripts/check-signin-configurability.mjs && node scripts/check-postauth-layout.mjs && node scripts/check-next-phase.mjs && node scripts/check-executive-dashboard.mjs && node scripts/check-guidance-broadcast-center.mjs && node scripts/check-performance-hotfix.mjs && node scripts/check-company-scoped-access.mjs && node scripts/check-owner-support-access.mjs && node scripts/check-smart-help-center.mjs && node scripts/check-platform-center.mjs && node scripts/check-website-consolidation.mjs && node scripts/check-business-website-catalogues.mjs && node scripts/check-properties-owner-investment.mjs && node scripts/check-properties-hostel.mjs && node scripts/check-bakery-accountability.mjs",
+    "prebuild": "node scripts/check-signin-background-assets.mjs && node scripts/check-signin-configurability.mjs && node scripts/check-postauth-layout.mjs && node scripts/check-dashboard-permissions.mjs && node scripts/check-next-phase.mjs && node scripts/check-executive-dashboard.mjs && node scripts/check-guidance-broadcast-center.mjs && node scripts/check-performance-hotfix.mjs && node scripts/check-company-scoped-access.mjs && node scripts/check-owner-support-access.mjs && node scripts/check-smart-help-center.mjs && node scripts/check-platform-center.mjs && node scripts/check-website-consolidation.mjs && node scripts/check-business-website-catalogues.mjs && node scripts/check-properties-owner-investment.mjs && node scripts/check-properties-hostel.mjs && node scripts/check-bakery-accountability.mjs",
     "build": "vite build",
     "preview": "npm run build && vite preview",
     "check:next-phase": "node scripts/check-next-phase.mjs",
@@ -27,7 +27,8 @@
     "db:migrations:list": "wrangler d1 migrations list daenem-workforce-hub",
     "db:migrations:apply:local": "wrangler d1 migrations apply daenem-workforce-hub --local",
     "db:migrations:apply:remote": "wrangler d1 migrations apply daenem-workforce-hub --remote",
-    "qa:postauth": "node scripts/render-postauth-qa.mjs"
+    "qa:postauth": "node scripts/render-postauth-qa.mjs",
+    "check:dashboard-permissions": "node scripts/check-dashboard-permissions.mjs"
   },
   "dependencies": {
     "lucide-react": "1.28.0",

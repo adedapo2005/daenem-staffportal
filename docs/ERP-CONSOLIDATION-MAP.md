@@ -104,3 +104,12 @@ infrastructure and keeping historical Auto records read-only/auditable.
 - The top command palette, explicit dashboard customization mode, dynamic
   canonical ERP options, and profile-specific Layout Studio preview surfaces
   are now part of the shared foundation.
+
+
+## Batch 1 correction — shared permission and context foundation
+
+- Dashboard aggregates are field-authorized by `src/dashboard-capabilities.ts`; worker responses and widget/KPI/queue rendering use the same domain map.
+- `src/smart-context.ts` is the canonical feature-context registry for home, Staff views and the six ERP entry surfaces.
+- `src/module-experience-bridge.tsx` envelopes Printing, Bakery, Autos, Logistics, Properties and Finance entry roots with the resolved layout, ERP, canonical path, density and motion context.
+- Layout Studio Preview emits an in-memory layout preference and returns to the authenticated shell; only Apply posts a saved preference.
+- The correction pass preserves the sign-in freeze and canonical module definitions. Autos remains vehicle-sales-only in the UI foundation; historical Workshop data is not deleted.

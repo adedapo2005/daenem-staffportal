@@ -42,66 +42,51 @@ const allCompanies = [
 ];
 
 const ownerPermissions = {
-  'dashboard.access': 'manage',
-  'users.access': 'manage',
-  'payroll.access': 'manage',
-  'payslips.access': 'manage',
-  'forms.access': 'manage',
-  'facilities.access': 'manage',
-  'broadcasts.access': 'manage',
-  'security.access': 'manage',
-  'ai_guide.access': 'manage',
-  'settings.access': 'manage',
-  'navigation.studio': 'manage',
-  'audit.explorer': 'manage',
-  'diagnostics.access': 'manage',
-  'integrations.access': 'manage',
-  'toolbox.access': 'manage',
+  'dashboard.access': 'manage', 'users.access': 'manage', 'attendance.access': 'manage',
+  'payroll.access': 'manage', 'payslips.access': 'manage', 'forms.access': 'manage',
+  'facilities.access': 'manage', 'broadcasts.access': 'manage', 'security.access': 'manage',
+  'ai_guide.access': 'manage', 'settings.access': 'manage', 'navigation.studio': 'manage',
+  'audit.explorer': 'manage', 'diagnostics.access': 'manage', 'integrations.access': 'manage',
   'owner.intelligence': 'manage',
 };
-
-const employeePermissions = {
-  'dashboard.access': 'view',
+const employeePermissions = { 'dashboard.access': 'view', 'ai_guide.access': 'view' };
+const managerPermissions = {
+  'dashboard.access': 'view', 'users.access': 'view', 'attendance.access': 'view',
+  'payroll.access': 'view', 'payslips.access': 'view', 'forms.access': 'view',
+  'facilities.access': 'view', 'broadcasts.access': 'view', 'security.access': 'view',
   'ai_guide.access': 'view',
 };
-
-const managerPermissions = {
-  'dashboard.access': 'view',
-  'users.access': 'view',
-  'payroll.access': 'view',
-  'payslips.access': 'view',
-  'forms.access': 'view',
-  'facilities.access': 'view',
-  'broadcasts.access': 'view',
-  'security.access': 'view',
-  'ai_guide.access': 'view',
+const roleFixtures = {
+  owner: { code: 'owner', name: 'Owner', displayName: 'Amina Daenem', jobTitle: 'Group Owner', department: 'Executive Office', team: 'Leadership', permissions: ownerPermissions },
+  manager: { code: 'manager', name: 'Manager', displayName: 'Mira Manager', jobTitle: 'Operations Manager', department: 'Operations', team: 'Printing', permissions: managerPermissions },
+  employee: { code: 'employee', name: 'Employee', displayName: 'Tolu Employee', jobTitle: 'Portal Employee', department: 'Operations', team: 'Printing', permissions: employeePermissions },
+  'attendance-manager': { code: 'manager', name: 'Attendance Manager', displayName: 'Ada Attendance', jobTitle: 'Attendance Manager', department: 'Operations', team: 'Printing', permissions: { 'dashboard.access': 'view', 'attendance.access': 'view', 'ai_guide.access': 'view' } },
+  'approval-manager': { code: 'manager', name: 'Approval Manager', displayName: 'Bola Approvals', jobTitle: 'Approval Manager', department: 'Operations', team: 'Printing', permissions: { 'dashboard.access': 'view', 'forms.access': 'view', 'ai_guide.access': 'view' } },
+  'security-manager': { code: 'manager', name: 'Security Manager', displayName: 'Chidi Security', jobTitle: 'Security Manager', department: 'Controls', team: 'Controls', permissions: { 'dashboard.access': 'view', 'security.access': 'view', 'ai_guide.access': 'view' } },
 };
 
 function contextFor(role) {
-  const isOwner = role === 'owner';
-  const isManager = role === 'manager';
+  const fixture = roleFixtures[role] || roleFixtures.employee;
+  const assignedCompanies = role === 'owner' ? allCompanies : [allCompanies[0]];
+  const companyPermissions = Object.fromEntries(assignedCompanies.map((company) => [company.id, fixture.permissions]));
   return {
     sessionId: 'qa-session-' + role,
     employee: {
       id: 'qa-' + role,
-      employeeNo: isOwner ? 'QA-OWNER' : isManager ? 'QA-MANAGER' : 'QA-EMPLOYEE',
-      displayName: isOwner ? 'Amina Daenem' : isManager ? 'Mira Manager' : 'Tolu Employee',
-      email: isOwner ? 'owner.qa@example.invalid' : isManager ? 'manager.qa@example.invalid' : 'employee.qa@example.invalid',
-      jobTitle: isOwner ? 'Group Owner' : isManager ? 'Operations Manager' : 'Portal Employee',
-      department: isOwner ? 'Executive Office' : isManager ? 'Operations' : 'Operations',
+      employeeNo: role === 'owner' ? 'QA-OWNER' : role === 'employee' ? 'QA-EMPLOYEE' : 'QA-MANAGER',
+      displayName: fixture.displayName,
+      email: role + '.qa@example.invalid',
+      jobTitle: fixture.jobTitle,
+      department: fixture.department,
       status: 'active',
       preferredTheme: 'unified-daylight',
-      team: isOwner ? 'Leadership' : isManager ? 'Printing' : 'Printing',
+      team: fixture.team,
       lastLoginAt: '2026-08-21T08:00:00.000Z',
     },
-    companies: isOwner ? allCompanies : [allCompanies[0]],
-    roles: [{
-      id: 'qa-role-' + role,
-      code: isOwner ? 'owner' : isManager ? 'manager' : 'employee',
-      name: isOwner ? 'Owner' : isManager ? 'Manager' : 'Employee',
-      companyId: 'company-printing',
-    }],
-    permissions: isOwner ? ownerPermissions : isManager ? managerPermissions : employeePermissions,
+    companies: assignedCompanies,
+    roles: [{ id: 'qa-role-' + role, code: fixture.code, name: fixture.name, companyId: 'company-printing' }],
+    permissions: fixture.permissions,
+    companyPermissions,
   };
 }
 
@@ -117,6 +102,24 @@ const summary = {
   maintenanceAlerts: 3,
   attendanceRule: 'Clock-in closes at 09:00 WAT',
 };
+
+const dashboardFieldRequirements = {
+  employees: ['users.access'],
+  present: ['attendance.access'],
+  incompleteAttendance: ['attendance.access'],
+  pendingApprovals: ['forms.access'],
+  securityAlerts: ['security.access'],
+  overdueRequirements: ['forms.access'],
+  maintenanceAlerts: ['facilities.access'],
+};
+function summaryForRole(role) {
+  const permissions = roleFixtures[role]?.permissions || {};
+  const can = (field) => dashboardFieldRequirements[field].some((permission) => permissions[permission] && permissions[permission] !== 'none');
+  const result = { refreshedAt: summary.refreshedAt, workDate: summary.workDate, companyId: 'company-printing', scope: role === 'employee' ? 'personal' : 'aggregate', attendanceRule: can('present') || can('incompleteAttendance') ? summary.attendanceRule : 'Only authorized personal or aggregate fields are returned.' };
+  for (const field of Object.keys(dashboardFieldRequirements)) if (can(field)) result[field] = summary[field];
+  return result;
+}
+
 
 function shared(seed) {
   return {
@@ -191,6 +194,7 @@ function layoutPayload(layoutId, role, erpId = 'staff') {
 
 async function installApiRoutes(page, role, layoutId) {
   const fixtureContext = contextFor(role);
+  let activeLayoutId = layoutId;
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -202,12 +206,13 @@ async function installApiRoutes(page, role, layoutId) {
     });
     if (url.pathname === '/api/auth/me') return json({ authenticated: true, context: fixtureContext });
     if (url.pathname === '/api/auth/logout') return json({ ok: true });
-    if (url.pathname === '/api/experience/layout') return json(layoutPayload(url.searchParams.get('layoutId') || layoutId, role, url.searchParams.get('erpId') || 'staff'));
-    if (url.pathname.startsWith('/api/experience/layout/')) return json({ ok: true, preference: layoutPayload(url.searchParams.get('layoutId') || layoutId, role, url.searchParams.get('erpId') || 'staff').preference });
-    if (url.pathname === '/api/dashboard/summary') {
-      if (role === 'employee') return json({ refreshedAt: '2026-08-21T10:30:00.000Z', workDate: '2026-08-21', companyId: url.searchParams.get('companyId'), scope: 'personal', attendanceRule: 'Personal dashboard signals are available when assigned.' });
-      return json(summary);
+    if (url.pathname === '/api/experience/layout' && method === 'GET') return json(layoutPayload(activeLayoutId, role, url.searchParams.get('erpId') || 'staff'));
+    if (url.pathname === '/api/experience/layout/preference' && method === 'POST') {
+      try { const body = JSON.parse(request.postData() || '{}'); if (body.layoutId) activeLayoutId = body.layoutId; } catch {}
+      return json({ ok: true, preference: layoutPayload(activeLayoutId, role, url.searchParams.get('erpId') || 'staff').preference });
     }
+    if (url.pathname.startsWith('/api/experience/layout/')) return json({ ok: true });
+    if (url.pathname === '/api/dashboard/summary') return json(summaryForRole(role));
     if (url.pathname === '/api/admin/roles') return json({ roles: [{ id: 'qa-role-owner', code: 'owner', name: 'Owner' }, { id: 'qa-role-manager', code: 'manager', name: 'Manager' }, { id: 'qa-role-custom', code: 'regional_lead', name: 'Regional Lead' }] });
     if (url.pathname === '/api/owner/intelligence') return json(intelligence());
     if (url.pathname === '/api/support/mine') return json({ commands: [], assistanceRequests: [] });
@@ -256,6 +261,11 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       employeeAggregateDisclosure,
       employeeKpiCount: input.role === 'employee' ? document.querySelectorAll('.kpi-grid article').length : 0,
       managerHome: Boolean(document.querySelector('.manager-command-center')),
+      keyTypographyMin: Math.min(99, ...Array.from(document.querySelectorAll('.postauth-nav-item,.postauth-navigation strong,.erp-pulse-card h3,.manager-command-actions button,.kpi-card strong')).map((node) => Number.parseFloat(getComputedStyle(node).fontSize) || 99)),
+      forbiddenDomDisclosure: (input.extra.forbiddenLabels || []).some((label) => bodyText.includes(label)),
+      smartContext: Boolean(document.querySelector('[data-smart-context="true"]')),
+      layoutExplanation: /WORKSPACE GUIDE|LAYOUT ADAPTER|Workspace composition|shellMode/.test(bodyText),
+      ownerBusinessIntelligence: Boolean(document.querySelector('[data-owner-business-intelligence="true"]')),
       ...input.extra,
     };
   }, { role, layoutId, extra });
@@ -312,19 +322,20 @@ async function capture(browser, role, layoutId, width, height, name, options = {
       await page.waitForSelector('.layout-studio-panel', { state: 'visible', timeout: 20000 });
       await page.waitForTimeout(600);
     }
-    const backendSummary = role === 'employee'
-      ? await page.evaluate(async () => {
-        const response = await fetch('/api/dashboard/summary');
-        return await response.json();
-      })
-      : null;
+    const backendSummary = await page.evaluate(async () => {
+      const response = await fetch('/api/dashboard/summary');
+      return await response.json();
+    });
     await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
     const metric = await pageMetrics(page, role, layoutId, screenshot, viewport, {
       pageErrors,
       navigatedTo: options.navigateText || null,
       backendSummaryKeys: backendSummary ? Object.keys(backendSummary) : null,
+      forbiddenKeys: options.forbiddenKeys || [],
+      forbiddenLabels: options.forbiddenLabels || [],
       ...options.metric,
     });
+    metric.forbiddenApiDisclosure = (options.forbiddenKeys || []).some((key) => (metric.backendSummaryKeys || []).includes(key));
     results.push(metric);
     const desktop = width >= 861;
     const homeCapture = !options.navigateText && !options.openLayoutStudio && !options.pageKind;
@@ -339,6 +350,11 @@ async function capture(browser, role, layoutId, width, height, name, options = {
       || metric.horizontalOverflow
       || metric.employeeAggregateDisclosure
       || metric.employeeKpiCount > 0
+      || metric.forbiddenApiDisclosure
+      || metric.forbiddenDomDisclosure
+      || (metric.keyTypographyMin < 11 && desktop)
+      || (metric.smartContext !== true)
+      || ((!options.openLayoutStudio && (homeCapture || options.navigateText)) && metric.layoutExplanation)
       || (options.managerHome && !metric.managerHome);
     if (hardDefect) hardFailure = true;
     if (pageErrors.length) runtimeErrors.push(role + '/' + layoutId + ': ' + pageErrors.join(' | '));
@@ -430,45 +446,131 @@ async function captureLayoutStudioPreview(browser) {
   const fixture = await createPage(browser, 'owner', 'executive-command');
   const page = fixture.page;
   const postRequests = [];
-  page.on('request', (request) => {
-    if (request.method() === 'POST') postRequests.push(request.url());
-  });
+  page.on('request', (request) => { if (request.method() === 'POST') postRequests.push(request.url()); });
+  let previewPass = false;
+  let exitPass = false;
+  let applyPass = false;
   try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
     await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+    const originalLayout = await page.locator('.dashboard-page').getAttribute('data-layout-profile');
+    const beforeStorage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'layout-studio' } })));
     await page.waitForSelector('.layout-studio-panel', { state: 'visible', timeout: 20000 });
-    const beforeStorage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
-    const previewButton = page.locator('.layout-gallery-card .secondary-button').first();
-    if (await previewButton.count()) {
-      const previewStartPostRequests = postRequests.length;
-      await previewButton.click();
-      await page.waitForSelector('.layout-preview-modal', { state: 'visible', timeout: 10000 });
-      const afterStorage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
-      const previewPostUrls = postRequests.slice(previewStartPostRequests);
-      const previewPreferencePostUrls = previewPostUrls.filter((url) => /\/api\/experience\/layout\/(preference|policy|rollback)/.test(url));
-      const screenshot = 'screenshots/postauth-layout-studio-preview-1440x900.png';
-      await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
-      results.push(await pageMetrics(page, 'owner', 'executive-command', screenshot, { width: 1440, height: 900 }, {
-        previewModal: true,
-        previewPostRequests: previewPreferencePostUrls.length,
-        previewPostUrls,
-        previewPreferencePostUrls,
-        previewStorageUnchanged: beforeStorage === afterStorage,
-        previewNavigation: await page.locator('.layout-preview-modal .layout-preview-large[data-preview-navigation]').getAttribute('data-preview-navigation'),
-      }));
-      if (previewPreferencePostUrls.length || beforeStorage !== afterStorage) {
-        hardFailure = true;
-        runtimeErrors.push('Layout Studio Preview persisted state or posted a preference: ' + postRequests.slice(previewStartPostRequests).join(', '));
-      }
-    } else {
+    const card = page.locator('.layout-gallery-card:not(.current)').first();
+    const targetLayout = await card.getAttribute('data-layout-id');
+    if (!targetLayout) throw new Error('No non-current layout card available for real preview.');
+    await card.getByRole('button', { name: 'Preview' }).click();
+    await page.waitForSelector('[data-layout-preview-banner="true"]', { state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(300);
+    const previewLayout = await page.locator('.dashboard-page').getAttribute('data-layout-profile');
+    const previewStorage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
+    const previewPostRequests = postRequests.filter((url) => /\/api\/experience\/layout\/(preference|policy|rollback)/.test(url));
+    previewPass = previewLayout === targetLayout
+      && previewStorage === beforeStorage
+      && previewPostRequests.length === 0
+      && await page.locator('.dashboard-main').count() > 0
+      && await page.locator('[data-layout-preview-banner="true"]').count() === 1;
+    const previewScreenshot = 'screenshots/postauth-layout-studio-real-preview-1440x900.png';
+    await page.screenshot({ path: path.join(evidenceDir, previewScreenshot), animations: 'disabled' });
+    results.push(await pageMetrics(page, 'owner', targetLayout, previewScreenshot, { width: 1440, height: 900 }, { pageKind: 'real layout preview', realPreview: previewPass, previewLayout, targetLayout, previewPostRequests: previewPostRequests.length }));
+    await page.getByRole('button', { name: 'Exit Preview' }).click();
+    await page.waitForFunction(() => !document.querySelector('[data-layout-preview-banner="true"]'));
+    exitPass = (await page.locator('.dashboard-page').getAttribute('data-layout-profile')) === originalLayout
+      && (await page.locator('[data-layout-preview-banner="true"]').count()) === 0
+      && await page.evaluate((before) => JSON.stringify({ ...localStorage }) === before, beforeStorage);
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'layout-studio' } })));
+    await page.waitForSelector('.layout-studio-panel', { state: 'visible', timeout: 10000 });
+    const applyCard = page.locator('.layout-gallery-card[data-layout-id="' + targetLayout + '"]');
+    await applyCard.getByRole('button', { name: 'Apply to me' }).click();
+    await page.waitForTimeout(350);
+    const applyPosts = postRequests.filter((url) => /\/api\/experience\/layout\/preference$/.test(url));
+    applyPass = applyPosts.length > 0 && (await page.locator('.dashboard-page').getAttribute('data-layout-profile')) === targetLayout;
+    results.push({ role: 'owner', requestedLayout: targetLayout, renderedLayout: targetLayout, viewport: { width: 1440, height: 900 }, pageKind: 'real layout preview lifecycle', realPreview: previewPass, previewExit: exitPass, explicitApply: applyPass, preferencePostCount: applyPosts.length, screenshot: null });
+    if (!previewPass || !exitPass || !applyPass) {
       hardFailure = true;
-      runtimeErrors.push('Layout Studio preview control was not rendered.');
+      runtimeErrors.push('Real layout preview lifecycle failed.');
     }
   } catch (error) {
     hardFailure = true;
-    runtimeErrors.push('Layout Studio preview: ' + (error instanceof Error ? error.message : String(error)));
+    runtimeErrors.push('Layout Studio real preview: ' + (error instanceof Error ? error.message : String(error)));
+  } finally {
+    await fixture.context.close();
+  }
+}
+
+async function capturePermissionMatrix(browser) {
+  const cases = [
+    { role: 'employee', layout: 'focus-flow', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Needs review', 'Security health', 'Attendance categories', 'Security alerts', 'Team workload', 'Approvals'] },
+    { role: 'attendance-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Security health', 'Pending approvals', 'Security alerts', 'Overdue requirements', 'Control signals'] },
+    { role: 'approval-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'securityAlerts', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Security health', 'Security alerts', 'Attendance'] },
+    { role: 'security-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Approvals', 'Overdue requirements', 'Needs review'] },
+  ];
+  for (const item of cases) {
+    await capture(browser, item.role, item.layout, 1440, 900, 'permission-' + item.role + '-1440x900', { pageKind: 'field-level permission matrix', forbiddenKeys: item.forbiddenKeys, forbiddenLabels: item.forbiddenLabels });
+  }
+}
+
+async function captureErpSurfaces(browser) {
+  const fixture = await createPage(browser, 'owner', 'executive-command');
+  const page = fixture.page;
+  const surfaces = [
+    ['printing', 'printing'], ['bakery', 'bakery'], ['autos', 'autos'],
+    ['logistics', 'logistics'], ['properties', 'properties'], ['finance', 'finance'],
+  ];
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+    for (const [moduleId, erpId] of surfaces) {
+      await page.evaluate((id) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } })), moduleId);
+      const marker = page.locator('[data-module-experience="true"][data-module-erp="' + erpId + '"]').last();
+      await marker.waitFor({ state: 'visible', timeout: 20000 });
+      await page.waitForTimeout(500);
+      const screenshot = 'screenshots/erp-' + moduleId + '-1440x900.png';
+      await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
+      results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: await marker.getAttribute('data-module-layout'), viewport: { width: 1440, height: 900 }, pageKind: 'ERP surface ' + moduleId, erpSurface: moduleId, moduleExperience: { erpId: await marker.getAttribute('data-module-erp'), shell: await marker.getAttribute('data-module-shell'), path: await marker.getAttribute('data-module-path'), layout: await marker.getAttribute('data-module-layout') }, screenshot });
+    }
+  } catch (error) {
+    hardFailure = true;
+    runtimeErrors.push('ERP surfaces: ' + (error instanceof Error ? error.message : String(error)));
+  } finally {
+    await fixture.context.close();
+  }
+}
+
+async function captureMotionPresets(browser) {
+  const fixture = await createPage(browser, 'owner', 'executive-command');
+  const page = fixture.page;
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+    await page.waitForSelector('.dashboard-page', { state: 'visible', timeout: 20000 });
+    const values = await page.evaluate(() => {
+      const root = document.querySelector('.dashboard-page');
+      if (!root) return {};
+      root.removeAttribute('style');
+      const result = {};
+      for (const preset of ['off', 'calm', 'balanced', 'expressive']) {
+        root.className = root.className.replace(/postauth-motion-[a-z]+/, 'postauth-motion-' + preset);
+        const computed = getComputedStyle(root);
+        result[preset] = { duration: computed.getPropertyValue('--postauth-motion-duration').trim(), distance: computed.getPropertyValue('--postauth-motion-distance').trim(), easing: computed.getPropertyValue('--postauth-motion-ease').trim() };
+      }
+      return result;
+    });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const reduced = await page.evaluate(() => getComputedStyle(document.querySelector('.dashboard-page')).getPropertyValue('--postauth-motion-duration').trim());
+    const uniqueValues = new Set(Object.values(values).map((item) => item.duration + '|' + item.distance + '|' + item.easing));
+    const pass = uniqueValues.size === 4 && reduced === '0ms';
+    results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: 'executive-command', viewport: { width: 1440, height: 900 }, pageKind: 'motion presets', motionValues: values, reducedMotionDuration: reduced, motionPass: pass, screenshot: null });
+    if (!pass) {
+      hardFailure = true;
+      runtimeErrors.push('Motion preset computed values did not differ or reduced motion was not zero.');
+    }
+  } catch (error) {
+    hardFailure = true;
+    runtimeErrors.push('Motion preset behavior: ' + (error instanceof Error ? error.message : String(error)));
   } finally {
     await fixture.context.close();
   }
@@ -493,6 +595,10 @@ async function main() {
     await capture(browser, 'owner', 'enterprise-studio', 1440, 900, 'feature-forms-enterprise-studio-1440x900', { navigateText: 'Forms Center', metric: { pageKind: 'form representative' } });
     await capture(browser, 'owner', 'executive-command', 1440, 900, 'layout-studio-gallery-1440x900', { openLayoutStudio: true, metric: { pageKind: 'Layout Studio gallery' } });
     await captureLayoutStudioPreview(browser);
+
+    await capturePermissionMatrix(browser);
+    await captureErpSurfaces(browser);
+    await captureMotionPresets(browser);
     await captureCommandPalette(browser);
     await captureCustomization(browser);
     await captureErpResolution(browser);
@@ -501,25 +607,31 @@ async function main() {
     await browser.close();
   }
 
-  const profileResults = results.filter((item) => item.role === 'owner' && item.viewport?.width === 1920 && item.viewport?.height === 1080 && !item.pageKind && !item.previewModal);
+  const profileResults = results.filter((item) => item.role === 'owner' && item.viewport?.width === 1920 && item.viewport?.height === 1080 && !item.pageKind && !item.realPreview);
   const renderedProfileIds = new Set(profileResults.map((item) => item.renderedLayout).filter(Boolean));
-  const ownerHomePass = results.some((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind && !item.previewModal && item.primaryHeroCount === 1 && item.h1Count === 1);
-  const employeeResults = results.filter((item) => item.role === 'employee');
+  const ownerHomePass = results.some((item) => item.role === 'owner' && item.renderedLayout === 'executive-command' && !item.pageKind && item.primaryHeroCount === 1 && item.h1Count === 1 && item.ownerBusinessIntelligence);
+  const employeeResults = results.filter((item) => item.role === 'employee' && item.pageKind !== 'field-level permission matrix');
   const employeeHomePass = employeeResults.length > 0 && employeeResults.every((item) => item.employeeAggregateDisclosure === false && item.employeeKpiCount === 0 && item.primaryHeroCount === 1 && item.h1Count === 1);
-  const employeePermissionPass = employeeResults.length > 0 && employeeResults.every((item) => !(item.backendSummaryKeys || []).some((key) => ['employees', 'present', 'securityAlerts', 'incompleteAttendance', 'pendingApprovals', 'overdueRequirements'].includes(key)));
-  const managerPass = results.filter((item) => item.role === 'manager').length === 3 && results.filter((item) => item.role === 'manager').every((item) => item.managerHome);
+  const employeePermissionPass = results.filter((item) => item.pageKind === 'field-level permission matrix').length === 4 && results.filter((item) => item.pageKind === 'field-level permission matrix').every((item) => !item.forbiddenApiDisclosure && !item.forbiddenDomDisclosure);
+  const managerPass = results.filter((item) => item.role === 'manager' && item.managerHome).length === 3 && results.filter((item) => item.role === 'manager').every((item) => item.managerHome);
   const navigationPass = profileResults.length === layouts.length && profileResults.every((item) => item.navigationAdapter === expectedAdapters[item.requestedLayout]);
   const featureFramePass = results.filter((item) => item.navigatedTo).length >= 2 && results.filter((item) => item.navigatedTo).every((item) => item.featureFramePresent && item.featureFrameH1Count === 1);
   const galleryPass = results.some((item) => item.layoutStudioPresent && item.pageKind === 'Layout Studio gallery');
-  const previewMetric = results.find((item) => item.previewModal === true);
-  const previewPass = Boolean(previewMetric && previewMetric.previewPostRequests === 0 && previewMetric.previewStorageUnchanged && previewMetric.previewNavigation);
+  const previewLifecycle = results.find((item) => item.pageKind === 'real layout preview lifecycle');
+  const previewPass = Boolean(previewLifecycle?.realPreview && previewLifecycle?.previewExit && previewLifecycle?.explicitApply);
   const commandPass = results.some((item) => item.pageKind === 'command palette' && item.commandPaletteOpen && item.commandPaletteEscape);
   const customizePass = results.some((item) => item.pageKind === 'customize dashboard' && item.customizeControlsBefore === 0 && item.customizeControlsAfter > 0);
   const erpMetric = results.find((item) => item.pageKind === 'ERP default resolution');
   const erpPass = Boolean(erpMetric && erpMetric.erpResolution?.printing === 'operational-cockpit' && erpMetric.erpResolution?.finance === 'horizon-wide' && erpMetric.erpResolution?.staff === 'executive-command');
-  const reducedMotionPass = results.some((item) => item.reducedMotion === true);
+  const erpSurfaceResults = results.filter((item) => item.pageKind?.startsWith('ERP surface '));
+  const erpSurfacePass = erpSurfaceResults.length === 6 && erpSurfaceResults.every((item) => item.moduleExperience?.erpId && item.moduleExperience?.shell && item.moduleExperience?.path);
+  const motionMetric = results.find((item) => item.pageKind === 'motion presets');
+  const motionPass = Boolean(motionMetric?.motionPass);
+  const smartContextPass = results.filter((item) => item.dashboardPresent).every((item) => item.smartContext === true || item.pageKind?.startsWith('ERP surface ') || item.pageKind === 'ERP default resolution');
+  const typographyPass = results.filter((item) => item.dashboardPresent && item.viewport?.width >= 861).every((item) => item.keyTypographyMin >= 11);
+  const noLayoutExplanationPass = results.filter((item) => item.pageKind && !item.pageKind.includes('Layout Studio') && !item.pageKind.startsWith('ERP surface ')).every((item) => item.layoutExplanation === false);
 
-  if (renderedProfileIds.size < layouts.length || !ownerHomePass || !employeeHomePass || !employeePermissionPass || !managerPass || !navigationPass || !featureFramePass || !galleryPass || !previewPass || !commandPass || !customizePass || !erpPass || !reducedMotionPass) {
+  if (renderedProfileIds.size < layouts.length || !ownerHomePass || !employeeHomePass || !employeePermissionPass || !managerPass || !navigationPass || !featureFramePass || !galleryPass || !previewPass || !commandPass || !customizePass || !erpPass || !erpSurfacePass || !motionPass || !smartContextPass || !typographyPass || !noLayoutExplanationPass) {
     hardFailure = true;
     runtimeErrors.push('Required authenticated behavior/rendered coverage was incomplete.');
   }
@@ -530,18 +642,26 @@ async function main() {
     'STATIC_PREVIEW=PASS',
     'CHROMIUM=PASS',
     'APPLICATION_SOURCE_MODIFIED_BY_QA=NO',
-    'AUTHENTICATED_CONTEXT=OWNER_MANAGER_EMPLOYEE_FIXTURES',
+    'AUTHENTICATED_CONTEXT=OWNER_MANAGER_EMPLOYEE_AND_RESTRICTED_MANAGER_FIXTURES',
     'OWNER_HOME=' + (ownerHomePass ? 'PASS' : 'FAIL'),
     'EMPLOYEE_HOME=' + (employeeHomePass ? 'PASS' : 'FAIL'),
+    'FIELD_LEVEL_PERMISSION_MATRIX=' + (employeePermissionPass ? 'PASS' : 'FAIL'),
     'EMPLOYEE_BACKEND_DATA_MINIMIZATION=' + (employeePermissionPass ? 'PASS' : 'FAIL'),
     'MANAGER_HOME=' + (managerPass ? 'PASS' : 'FAIL'),
     'FEATURE_PAGE_FRAME=' + (featureFramePass ? 'PASS' : 'FAIL'),
     'LAYOUT_STUDIO_GALLERY=' + (galleryPass ? 'PASS' : 'FAIL'),
-    'LAYOUT_STUDIO_NON_DESTRUCTIVE_PREVIEW=' + (previewPass ? 'PASS' : 'FAIL'),
+    'LAYOUT_STUDIO_REAL_PREVIEW=' + (previewPass ? 'PASS' : 'FAIL'),
+    'LAYOUT_PREVIEW_EXIT=' + (previewLifecycle?.previewExit ? 'PASS' : 'FAIL'),
+    'LAYOUT_STUDIO_EXPLICIT_APPLY=' + (previewLifecycle?.explicitApply ? 'PASS' : 'FAIL'),
     'COMMAND_PALETTE=' + (commandPass ? 'PASS' : 'FAIL'),
     'DASHBOARD_CUSTOMIZATION_MODE=' + (customizePass ? 'PASS' : 'FAIL'),
     'ERP_DEFAULT_RESOLUTION=' + (erpPass ? 'PASS' : 'FAIL'),
+    'ERP_SURFACES=' + (erpSurfacePass ? 'PASS' : 'FAIL'),
     'LAYOUT_SHELL_ADAPTERS=' + (navigationPass ? 'PASS' : 'FAIL'),
+    'MOTION_PRESETS=' + (motionPass ? 'PASS' : 'FAIL'),
+    'SMART_CONTEXT=' + (smartContextPass ? 'PASS' : 'FAIL'),
+    'TYPOGRAPHY=' + (typographyPass ? 'PASS' : 'FAIL'),
+    'NO_LAYOUT_EXPLANATION_ON_BUSINESS_PAGES=' + (noLayoutExplanationPass ? 'PASS' : 'FAIL'),
     'LAYOUT_PROFILES_DECLARED=' + layouts.length,
     'LAYOUT_PROFILES_RENDERED=' + renderedProfileIds.size,
     'DESKTOP_VIEWPORTS_RENDERED=1920x1080,3840x2160,1440x900,1366x768,1024x768',

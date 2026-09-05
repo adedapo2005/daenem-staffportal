@@ -501,6 +501,7 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
         density: experience?.density || 'standard',
         motion: experience?.motion || 'balanced',
       };
+      (window as Window & { __DAENEM_MODULE_EXPERIENCE__?: typeof moduleExperience }).__DAENEM_MODULE_EXPERIENCE__ = moduleExperience;
       window.dispatchEvent(new CustomEvent('daenem:module-experience', { detail: moduleExperience }));
       window.dispatchEvent(new CustomEvent('daenem:active-company-changed', { detail: { companyId, companyCode } }));
       if (module.event) window.dispatchEvent(new CustomEvent(module.event.name, { detail: { ...module.event.detail, companyId: companyId || '', companyCode, experience: moduleExperience } }));

@@ -1,5 +1,6 @@
 import { getSessionContext, hasPermission, routeAuth, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
 import { readSignInConfig } from './theme-preferences';
+import { DASHBOARD_FIELD_PERMISSIONS, type DashboardAggregateField } from '../src/dashboard-capabilities';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -296,6 +297,12 @@ function sqlList(values: string[]) {
   return values.map(() => '?').join(',');
 }
 
+function permittedDashboardCompanyIds(context: SessionContext, companyIds: string[], field: DashboardAggregateField) {
+  return companyIds.filter((companyId) =>
+    DASHBOARD_FIELD_PERMISSIONS[field].some((permission) => hasPermission(context, permission, 'view', companyId)),
+  );
+}
+
 async function dashboardSummary(request: Request, env: Env, context: SessionContext) {
   const url = new URL(request.url);
   const requestedCompany = url.searchParams.get('companyId');
@@ -305,55 +312,52 @@ async function dashboardSummary(request: Request, env: Env, context: SessionCont
     return json({ error: 'Dashboard access is not assigned for this business.' }, 403);
   }
   const companyId = requestedCompany || null;
-  const workDate = nigeriaDate();
-  const canSeeAggregateSummary = context.roles.some((role) => ['owner', 'group_admin', 'company_admin', 'manager'].includes(role.code))
-    || hasPermission(context, 'dashboard.access', 'manage');
-  if (!canSeeAggregateSummary) {
-    return json({
-      refreshedAt: new Date().toISOString(),
-      workDate,
-      companyId,
-      scope: 'personal',
-      attendanceRule: 'Personal dashboard aggregates are returned only when the current role is authorized for group or team reporting.',
-    });
-  }
   const companyIds = companyId ? [companyId] : dashboardCompanyIds;
-  const companyPlaceholders = sqlList(companyIds);
+  const workDate = nigeriaDate();
+  const result: Record<string, unknown> = { refreshedAt: new Date().toISOString(), workDate, companyId, scope: 'aggregate' };
 
-  const employeeCount = await env.DB.prepare(`SELECT COUNT(DISTINCT employee_id) AS count FROM employee_company_memberships WHERE active = 1 AND company_id IN (${companyPlaceholders})`).bind(...companyIds).first<{ count: number }>();
-  const incomplete = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendance_days WHERE work_date = ? AND status = 'incomplete' AND company_id IN (${companyPlaceholders})`).bind(workDate, ...companyIds).first<{ count: number }>();
-  const present = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendance_days WHERE work_date = ? AND status = 'present' AND company_id IN (${companyPlaceholders})`).bind(workDate, ...companyIds).first<{ count: number }>();
+  const employeeCompanyIds = permittedDashboardCompanyIds(context, companyIds, 'employees');
+  const attendanceCompanyIds = permittedDashboardCompanyIds(context, companyIds, 'present');
+  const incompleteCompanyIds = permittedDashboardCompanyIds(context, companyIds, 'incompleteAttendance');
+  const approvalCompanyIds = permittedDashboardCompanyIds(context, companyIds, 'pendingApprovals');
+  const securityCompanyIds = permittedDashboardCompanyIds(context, companyIds, 'securityAlerts');
+  const overdueCompanyIds = permittedDashboardCompanyIds(context, companyIds, 'overdueRequirements');
+  const facilitiesCompanyIds = permittedDashboardCompanyIds(context, companyIds, 'maintenanceAlerts');
 
-  const usersCompanyIds = companyIds.filter((id) => hasPermission(context, 'users.access', 'view', id));
-  const securityCompanyIds = companyIds.filter((id) => hasPermission(context, 'security.access', 'view', id));
-  const formsCompanyIds = companyIds.filter((id) => hasPermission(context, 'forms.access', 'view', id));
-  const facilitiesCompanyIds = companyIds.filter((id) => hasPermission(context, 'facilities.access', 'view', id));
-  const pendingApprovals = usersCompanyIds.length
-    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM signup_requests WHERE status = 'pending' AND requested_company_id IN (${sqlList(usersCompanyIds)})`).bind(...usersCompanyIds).first<{ count: number }>()
-    : null;
-  const securityAlerts = securityCompanyIds.length
-    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM security_logs WHERE reviewed_at IS NULL AND severity IN ('high','critical') AND company_id IN (${sqlList(securityCompanyIds)})`).bind(...securityCompanyIds).first<{ count: number }>()
-    : null;
-  const overdueRequirements = formsCompanyIds.length
-    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM requirement_completions WHERE status = 'overdue' AND company_id IN (${sqlList(formsCompanyIds)})`).bind(...formsCompanyIds).first<{ count: number }>()
-    : null;
-  const maintenance = facilitiesCompanyIds.length
-    ? await env.DB.prepare(`SELECT COUNT(*) AS count FROM maintenance_work_orders WHERE status NOT IN ('completed','verified','cancelled') AND priority IN ('high','critical') AND company_id IN (${sqlList(facilitiesCompanyIds)})`).bind(...facilitiesCompanyIds).first<{ count: number }>()
-    : null;
+  if (![employeeCompanyIds, attendanceCompanyIds, incompleteCompanyIds, approvalCompanyIds, securityCompanyIds, overdueCompanyIds, facilitiesCompanyIds].some((ids) => ids.length)) result.scope = 'personal';
 
-  return json({
-    refreshedAt: new Date().toISOString(),
-    workDate,
-    companyId,
-    employees: Number(employeeCount?.count || 0),
-    present: Number(present?.count || 0),
-    incompleteAttendance: Number(incomplete?.count || 0),
-    pendingApprovals: Number(pendingApprovals?.count || 0),
-    securityAlerts: Number(securityAlerts?.count || 0),
-    overdueRequirements: Number(overdueRequirements?.count || 0),
-    maintenanceAlerts: Number(maintenance?.count || 0),
-    attendanceRule: 'Present requires a policy-valid clock-in and clock-out. An incomplete day does not count as worked.',
-  });
+  if (employeeCompanyIds.length) {
+    const row = await env.DB.prepare(`SELECT COUNT(DISTINCT employee_id) AS count FROM employee_company_memberships WHERE active = 1 AND company_id IN (${sqlList(employeeCompanyIds)})`).bind(...employeeCompanyIds).first<{ count: number }>();
+    result.employees = Number(row?.count || 0);
+  }
+  if (attendanceCompanyIds.length) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendance_days WHERE work_date = ? AND status = 'present' AND company_id IN (${sqlList(attendanceCompanyIds)})`).bind(workDate, ...attendanceCompanyIds).first<{ count: number }>();
+    result.present = Number(row?.count || 0);
+  }
+  if (incompleteCompanyIds.length) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendance_days WHERE work_date = ? AND status = 'incomplete' AND company_id IN (${sqlList(incompleteCompanyIds)})`).bind(workDate, ...incompleteCompanyIds).first<{ count: number }>();
+    result.incompleteAttendance = Number(row?.count || 0);
+  }
+  if (approvalCompanyIds.length) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) AS count FROM signup_requests WHERE status = 'pending' AND requested_company_id IN (${sqlList(approvalCompanyIds)})`).bind(...approvalCompanyIds).first<{ count: number }>();
+    result.pendingApprovals = Number(row?.count || 0);
+  }
+  if (securityCompanyIds.length) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) AS count FROM security_logs WHERE reviewed_at IS NULL AND severity IN ('high','critical') AND company_id IN (${sqlList(securityCompanyIds)})`).bind(...securityCompanyIds).first<{ count: number }>();
+    result.securityAlerts = Number(row?.count || 0);
+  }
+  if (overdueCompanyIds.length) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) AS count FROM requirement_completions WHERE status = 'overdue' AND company_id IN (${sqlList(overdueCompanyIds)})`).bind(...overdueCompanyIds).first<{ count: number }>();
+    result.overdueRequirements = Number(row?.count || 0);
+  }
+  if (facilitiesCompanyIds.length) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) AS count FROM maintenance_work_orders WHERE status NOT IN ('completed','verified','cancelled') AND priority IN ('high','critical') AND company_id IN (${sqlList(facilitiesCompanyIds)})`).bind(...facilitiesCompanyIds).first<{ count: number }>();
+    result.maintenanceAlerts = Number(row?.count || 0);
+  }
+  result.attendanceRule = attendanceCompanyIds.length || incompleteCompanyIds.length
+    ? 'Present requires a policy-valid clock-in and clock-out. An incomplete day does not count as worked.'
+    : 'Only aggregates covered by your current permissions are included.';
+  return json(result);
 }
 
 async function recentSecurity(request: Request, env: Env, context: SessionContext) {

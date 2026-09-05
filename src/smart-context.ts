@@ -1,0 +1,50 @@
+import type { ErpId } from './module-hub';
+
+export type SmartContextDefinition = {
+  id: string;
+  erpId: ErpId;
+  canonicalPath: string;
+  title: string;
+  shortPurpose: string;
+  whatItDoes: string;
+  primaryActions: string[];
+  expectedOutcome: string;
+  relatedHelp: string;
+  permissions: string[];
+  contextualVariant?: string;
+};
+
+const defineContext = (
+  id: string, erpId: ErpId, canonicalPath: string, title: string, shortPurpose: string,
+  whatItDoes: string, primaryActions: string[], expectedOutcome: string, relatedHelp: string,
+  permissions: string[] = [], contextualVariant = 'page',
+): SmartContextDefinition => ({
+  id, erpId, canonicalPath, title, shortPurpose, whatItDoes, primaryActions,
+  expectedOutcome, relatedHelp, permissions, contextualVariant,
+});
+
+export const SMART_CONTEXT_REGISTRY: Record<string, SmartContextDefinition> = {
+  'employee-home': defineContext('employee-home', 'staff', 'staff/people/employee-records/Employee records', 'Employee Home', 'Your next useful action, assigned work and role-aware help in one place.', 'Surfaces personal work, assigned submissions, recent activity and permitted guidance.', ['Open My Workspace', 'Review assigned forms', 'Ask Daenem'], 'Leave the workspace knowing what to do next.', 'Help for your role', ['dashboard.access']),
+  'manager-home': defineContext('manager-home', 'staff', 'staff/people/employee-records/Group Overview', 'Manager Home', 'A focused view of work your authorized team can act on.', 'Brings together permitted workload, approvals, deadlines and operational follow-through.', ['Review team', 'Open approvals', 'Check permitted exceptions'], 'Turn the highest-priority team signal into a canonical action.', 'Manager guidance', ['dashboard.access']),
+  'owner-home': defineContext('owner-home', 'controls', 'controls/executive/command-center/Owner Command Center', 'Owner Command Center', 'Business health, operating performance and control signals from approved intelligence sources.', 'Connects financial, operational and control truth to canonical ERP workspaces.', ['Review business intelligence', 'Open an action center item', 'Manage workspace policy'], 'Move from a verified signal to the responsible business function.', 'Owner operating guide', ['dashboard.access', 'owner.intelligence']),
+  overview: defineContext('overview', 'staff', 'staff/people/employee-records/Group Overview', 'Group Overview', 'A permission-aware summary of the workspaces and signals available to you.', 'Brings together your permitted actions, current context and approved business intelligence.', ['Open a workspace', 'Refresh permitted data', 'Get help'], 'Start the right authorized workflow.', 'Overview help', ['dashboard.access']),
+  people: defineContext('people', 'staff', 'staff/people/employee-records/People & Payroll', 'People & Payroll', 'Manage the employee records and payroll views your access permits.', 'Provides a single canonical home for people, roles, requests and payroll-linked records.', ['Open a record', 'Review a request', 'Get help'], 'Complete or route the next people workflow.', 'People & Payroll help', ['users.access']),
+  forms: defineContext('forms', 'staff', 'staff/people/employee-lifecycle/Forms Center', 'Forms Center', 'Complete, review and route assigned forms through their approved workflow.', 'Keeps form submissions, validation and next steps together without exposing unrelated records.', ['Open an assigned form', 'Review a submission', 'Get help'], 'Submit or progress the correct form.', 'Forms Center help', ['forms.access']),
+  security: defineContext('security', 'controls', 'controls/security/security-center/Security Center', 'Security Center', 'Review security events and follow-up controls available to your role.', 'Presents authorized security evidence and canonical remediation actions.', ['Review an event', 'Open an investigation', 'Get help'], 'Resolve or document an authorized security action.', 'Security guidance', ['security.access']),
+  broadcasts: defineContext('broadcasts', 'social', 'social/communications/broadcasts/Broadcasts', 'Broadcasts', 'Read or publish the communications your role is allowed to manage.', 'Keeps approved announcements and communication actions in one canonical workspace.', ['Read an update', 'Publish an authorized message', 'Get help'], 'Understand the latest permitted business communication.', 'Broadcast guidance', ['broadcasts.access']),
+  facilities: defineContext('facilities', 'staff', 'staff/operations/facilities/Facilities', 'Facilities', 'Track permitted facilities and maintenance follow-through.', 'Surfaces authorized work orders, status and next actions.', ['Review a work order', 'Update an authorized item', 'Get help'], 'Move a facilities item toward completion.', 'Facilities guidance', ['facilities.access']),
+  help: defineContext('help', 'staff', 'staff/people/employee-lifecycle/Guidance/Smart Help', 'Smart Help', 'Find role-aware guidance without exposing knowledge outside your access.', 'Connects the current feature to approved help, context and next steps.', ['Search permitted help', 'Open a guided answer'], 'Get a useful answer for the work in front of you.', 'Smart Help', ['ai_guide.access']),
+  printing: defineContext('printing', 'printing', 'printing/print-management/print-jobs/Print jobs', 'Printing & Technology', 'Move an authorized print job from quote through production and delivery.', 'Provides the outer workspace for print operations while preserving the canonical Printing workflow.', ['Open Printing ERP', 'Review a production queue', 'Get help'], 'Continue the correct print workflow with current context.', 'Printing operations help', ['printing.access'], 'erp-entry'),
+  bakery: defineContext('bakery', 'bakery', 'bakery/production/bakery-operations/Bakery operations', 'Bakery', 'Coordinate authorized bakery production, stock and accountability workflows.', 'Provides the Bakery entry surface around existing production modules.', ['Open Bakery ERP', 'Review production status', 'Get help'], 'Keep bakery work moving with clear accountability.', 'Bakery operations help', ['bakery.access'], 'erp-entry'),
+  autos: defineContext('autos', 'autos', 'autos/vehicle-sales/vehicle-inventory/Vehicle sales', 'Daenem Autos', 'Manage vehicle sales, stock and follow-through.', 'Provides the Autos entry surface for the vehicle-sales business without workshop assumptions.', ['Open Autos DMS', 'Review vehicle inventory', 'Get help'], 'Progress a vehicle sale through its canonical workflow.', 'Autos sales help', ['autos.access'], 'erp-entry'),
+  logistics: defineContext('logistics', 'logistics', 'logistics/transport/shipments/Logistics operations', 'Logistics', 'Coordinate authorized trips, shipments and delivery controls.', 'Provides the Logistics entry surface around existing transport workflows.', ['Open Logistics TMS', 'Review an active shipment', 'Get help'], 'Keep the next delivery action visible and accountable.', 'Logistics operations help', ['logistics.access'], 'erp-entry'),
+  properties: defineContext('properties', 'properties', 'properties/portfolio/properties/Homes & Properties', 'Homes & Properties', 'Manage authorized property, rent and portfolio workflows.', 'Provides the Properties entry surface around existing property records and financial follow-through.', ['Open Properties CRM', 'Review a property record', 'Get help'], 'Advance a property or rent workflow safely.', 'Properties help', ['properties.access'], 'erp-entry'),
+  finance: defineContext('finance', 'finance', 'finance/ledger/finance-operations/Finance', 'Finance', 'Review authorized financial records, controls and reconciliations.', 'Provides the Finance entry surface while preserving existing finance calculations and APIs.', ['Open Finance', 'Review a control', 'Get help'], 'Complete the next verified finance action.', 'Finance help', ['finance.access'], 'erp-entry'),
+  'layout-studio': defineContext('layout-studio', 'controls', 'controls/experience/layout-studio/Layout Studio', 'Layout Studio', 'Preview and manage approved authenticated workspace experiences.', 'Controls permitted layout, density, motion and policy defaults without changing theme identity.', ['Preview a layout', 'Apply a personal preference', 'Review history'], 'Make an intentional, reversible experience decision.', 'Layout Studio help', ['navigation.studio'], 'admin'),
+};
+
+const fallback = defineContext('feature', 'staff', 'staff/people/employee-records/Feature', 'Workspace feature', 'Work in the current authorized business feature.', 'Provides the records, actions and guidance available in this feature.', ['Continue current work', 'Get help'], 'Complete the next authorized action.', 'Feature help');
+
+export function getSmartContext(id: string, overrides: Partial<SmartContextDefinition> = {}) {
+  return { ...(SMART_CONTEXT_REGISTRY[id] || fallback), ...overrides };
+}

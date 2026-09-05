@@ -59,22 +59,15 @@ function LayoutPreviewVisual({ profile, large = false }: { profile: LayoutId; la
   </div>;
 }
 
-function PreviewWindow({ profile, onClose }: { profile: LayoutId; onClose: () => void }) {
-  const definition = LAYOUT_PROFILES[profile];
-  return <div className="layout-preview-modal" role="dialog" aria-modal="true" aria-labelledby="layout-preview-title">
-    <div className="layout-preview-dialog">
-      <header><div><span className="eyebrow">NON-DESTRUCTIVE PREVIEW</span><h3 id="layout-preview-title">{definition.name}</h3></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close preview"><X size={18} /></button></header>
-      <LayoutPreviewVisual profile={profile} large />
-      <p>{definition.description}</p><div className="layout-preview-meta"><span>{definition.navigationMode.replaceAll('-', ' ')}</span><span>{definition.shellMode.replaceAll('-', ' ')}</span><span>Responsive reflow</span></div>
-    </div>
-  </div>;
-}
-
 function Gallery({ payload, context, onRefresh }: { payload: LayoutPayload; context: WorkforceContext; onRefresh: () => Promise<void> }) {
   const current = payload.preference.layoutId;
-  const [preview, setPreview] = useState<LayoutId | null>(null);
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
+  function startPreview(id: LayoutId) {
+    const next = { layoutId: id, density: payload.preference.density, motion: payload.preference.motion };
+    emitLayout({ ...next, preview: true });
+    window.dispatchEvent(new Event('daenem:close-layout-studio'));
+  }
   async function apply(id: LayoutId) {
     if (!payload.canChoose) return;
     setBusy(id);
@@ -88,13 +81,12 @@ function Gallery({ payload, context, onRefresh }: { payload: LayoutPayload; cont
     finally { setBusy(''); }
   }
   return <section className="layout-studio-panel">
-    {preview && <PreviewWindow profile={preview} onClose={() => setPreview(null)} />}
     <header className="layout-studio-header"><div><span className="eyebrow">ADMIN CENTER · EXPERIENCE</span><h2>Layout Studio</h2><p>Choose how the authenticated workspace is composed. Theme remains an independent visual layer; layout changes navigation, regions and information flow.</p></div><div className="layout-studio-header-mark"><LayoutDashboard size={26} /><span>{payload.canChoose ? 'Personal choice enabled' : 'Policy controlled'}</span></div></header>
     <div className="layout-studio-tabs"><button className="active" type="button"><LayoutDashboard size={15} /> Gallery</button><button type="button" onClick={() => document.getElementById('layout-studio-settings')?.scrollIntoView({ behavior: 'smooth' })}><Settings2 size={15} /> Experience settings</button><button type="button" onClick={() => document.getElementById('layout-studio-history')?.scrollIntoView({ behavior: 'smooth' })}><History size={15} /> History</button></div>
     {message && <div className="inline-message">{message}</div>}
-    <div className="layout-gallery">{LAYOUT_IDS.map((id) => { const definition = LAYOUT_PROFILES[id]; const selected = current === id; return <article className={'layout-gallery-card' + (selected ? ' current' : '')} key={id}>
+    <div className="layout-gallery">{LAYOUT_IDS.map((id) => { const definition = LAYOUT_PROFILES[id]; const selected = current === id; return <article className={'layout-gallery-card' + (selected ? ' current' : '')} data-layout-id={id} key={id}>
       <LayoutPreviewVisual profile={id} />
-      <div><div className="layout-card-title"><h3>{definition.name}</h3>{selected && <span className="layout-badge">Current</span>}</div><p>{definition.description}</p><div className="layout-gallery-meta"><span>{definition.navigationMode.replaceAll('-', ' ')}</span><span>{definition.defaultDensity}</span><span><Monitor size={12} /> <Tablet size={12} /> <Smartphone size={12} /></span></div><small>Best for {definition.idealFor.join(' · ')}</small><div className="layout-gallery-actions"><button type="button" className="secondary-button" onClick={() => setPreview(id)}><Eye size={14} /> Preview</button><button type="button" className="primary-button" disabled={!payload.canChoose || selected || busy === id} onClick={() => void apply(id)}>{busy === id ? 'Applying…' : selected ? <><Check size={14} /> Applied</> : <><Save size={14} /> Apply to me</>}</button></div></div>
+      <div><div className="layout-card-title"><h3>{definition.name}</h3>{selected && <span className="layout-badge">Current</span>}</div><p>{definition.description}</p><div className="layout-gallery-meta"><span>{definition.navigationMode.replaceAll('-', ' ')}</span><span>{definition.defaultDensity}</span><span><Monitor size={12} /> <Tablet size={12} /> <Smartphone size={12} /></span></div><small>Best for {definition.idealFor.join(' · ')}</small><div className="layout-gallery-actions"><button type="button" className="secondary-button" onClick={() => startPreview(id)}><Eye size={14} /> Preview</button><button type="button" className="primary-button" disabled={!payload.canChoose || selected || busy === id} onClick={() => void apply(id)}>{busy === id ? 'Applying…' : selected ? <><Check size={14} /> Applied</> : <><Save size={14} /> Apply to me</>}</button></div></div>
     </article>; })}</div>
     <SettingsPanel payload={payload} onRefresh={onRefresh} onMessage={setMessage} />
     {payload.canManage && payload.policy && <PolicyPanel payload={payload} context={context} onRefresh={onRefresh} onMessage={setMessage} />}
@@ -209,7 +201,9 @@ function LayoutStudioHost() {
       setOpen(true);
     };
     window.addEventListener('daenem:open-layout-studio', openStudio);
-    return () => window.removeEventListener('daenem:open-layout-studio', openStudio);
+    const closeStudio = () => setOpen(false);
+    window.addEventListener('daenem:close-layout-studio', closeStudio);
+    return () => { window.removeEventListener('daenem:open-layout-studio', openStudio); window.removeEventListener('daenem:close-layout-studio', closeStudio); };
   }, []);
   useEffect(() => {
     void api<{ context?: WorkforceContext }>('/api/auth/me').then((result) => setContext(result.context || null)).catch(() => setContext(null));

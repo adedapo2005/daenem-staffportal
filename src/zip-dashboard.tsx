@@ -11,7 +11,9 @@ import { getErpNavigation, isModuleVisible, moduleDefinitions, type ErpId, type 
 import { hasWorkforcePermission, readWorldClockPreferences, requestAppInstall, saveWorldClockPreferences, WORLD_CLOCKS, WorldClocks, type ClockStyle, type WorldClockPreferences } from './auth';
 import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
 import { themeList } from './theme-system';
-import type { LayoutDensity, LayoutId, LayoutProfile, MotionPreset } from './layout-system';
+import { getMotionTokens, type LayoutDensity, type LayoutId, type LayoutProfile, type MotionPreset } from './layout-system';
+import { DASHBOARD_SUMMARY_FIELDS, canSeeDashboardField, type DashboardAggregateField } from './dashboard-capabilities';
+import { getSmartContext } from './smart-context';
 import { PostAuthFeatureFrame, PostAuthHomeBanner, PostAuthOverviewComposition } from './post-auth-experience';
 import { PostAuthNavigation } from './postauth-navigation';
 
@@ -104,6 +106,8 @@ type ZipDashboardProps = {
   motion: MotionPreset;
   canUseLayoutStudio: boolean;
   onOpenLayoutStudio: () => void;
+  layoutPreview?: boolean;
+  onExitLayoutPreview?: () => void;
 };
 
 const initialWidgets: WidgetId[] = [
@@ -115,7 +119,7 @@ function can(context: WorkforceContext, permission: string, minimum: AccessLevel
 }
 
 function canSeeAggregateDashboard(context: WorkforceContext, companyId: string | null) {
-  return context.roles.some((role) => ['owner', 'group_admin', 'company_admin', 'manager'].includes(role.code)) || can(context, 'dashboard.access', 'manage', companyId);
+  return DASHBOARD_SUMMARY_FIELDS.some((field) => canSeeDashboardField(context, field, companyId));
 }
 
 function initials(name: string) {
@@ -269,14 +273,15 @@ function HierarchyIcon({ iconKey, size = 14 }: { iconKey: string; size?: number 
 }
 
 function KpiStrip({ summary, company, context }: Pick<ZipDashboardProps, 'summary' | 'company' | 'context'>) {
-  if (!canSeeAggregateDashboard(context, company.id)) return null;
-  const cards = [
-    { label: 'Employees', value: numberValue(summary?.employees), detail: company.id ? company.code : 'All assigned companies', icon: Users, tone: 'blue' },
-    { label: 'Present today', value: numberValue(summary?.present), detail: summary?.workDate || 'Live attendance', icon: CalendarCheck2, tone: 'green' },
-    { label: 'Needs review', value: numberValue((summary?.incompleteAttendance ?? 0) + (summary?.pendingApprovals ?? 0) + (summary?.overdueRequirements ?? 0)), detail: 'Attendance, approvals & requirements', icon: AlertTriangle, tone: 'amber' },
-    { label: 'Security health', value: summary ? (summary.securityAlerts ? 'Review' : 'Good') : '—', detail: summary ? `${summary.securityAlerts} high-risk event(s)` : 'Loading scoped status', icon: ShieldCheck, tone: summary?.securityAlerts ? 'red' : 'violet' },
+  const cards: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }>; tone: string }> = [
+    { field: 'employees', label: 'Employees', value: numberValue(summary?.employees), detail: company.id ? company.code : 'All assigned companies', icon: Users, tone: 'blue' },
+    { field: 'present', label: 'Present today', value: numberValue(summary?.present), detail: summary?.workDate || 'Live attendance', icon: CalendarCheck2, tone: 'green' },
+    { field: 'incompleteAttendance', label: 'Needs review', value: numberValue((summary?.incompleteAttendance ?? 0) + (summary?.pendingApprovals ?? 0) + (summary?.overdueRequirements ?? 0)), detail: 'Authorized follow-up items', icon: AlertTriangle, tone: 'amber' },
+    { field: 'securityAlerts', label: 'Security health', value: summary ? (summary.securityAlerts ? 'Review' : 'Good') : '—', detail: summary ? `${summary.securityAlerts} high-risk event(s)` : 'Loading scoped status', icon: ShieldCheck, tone: summary?.securityAlerts ? 'red' : 'violet' },
   ];
-  return <div className="kpi-grid">{cards.map(({ label, value, detail, icon: Icon, tone }) => <article className={`kpi-card tone-${tone}`} key={label}><span className="kpi-icon"><Icon size={16} /></span><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</div>;
+  const visible = cards.filter((card) => canSeeDashboardField(context, card.field, company.id));
+  if (!visible.length) return null;
+  return <div className="kpi-grid">{visible.map(({ label, value, detail, icon: Icon, tone }) => <article className={`kpi-card tone-${tone}`} key={label}><span className="kpi-icon"><Icon size={16} /></span><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</div>;
 }
 
 function ChartHeader({ eyebrow, title, icon }: { eyebrow: string; title: string; icon: React.ComponentType<{ size?: number }> }) {
@@ -331,13 +336,14 @@ function ForecastWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
   return <article className="insight-card forecast-card"><span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">WORKSPACE INSIGHT</span><h3>Make the next action obvious.</h3><p>Use the authorized queue to open the exact record that needs attention. No private or unauthorized data is inferred here.</p><div className="forecast-meter"><span style={{ width: `${readiness}%` }} /></div><div className="insight-foot"><span>{summary ? `${numberValue(followUps)} open follow-up${followUps === 1 ? '' : 's'}` : 'Waiting for live records'}</span><ArrowRight size={15} /></div></article>;
 }
 
-function QueueWidget({ summary, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'onNavigate' | 'onOpenModule'>) {
-  const queue = [
-    { label: 'Incomplete attendance', detail: 'Open Attendance & GPS', value: summary?.incompleteAttendance ?? 0, action: () => onOpenModule('attendance') },
-    { label: 'Pending approvals', detail: 'Open People & Payroll', value: summary?.pendingApprovals ?? 0, action: () => onNavigate('people') },
-    { label: 'Overdue requirements', detail: 'Review assigned forms', value: summary?.overdueRequirements ?? 0, action: () => onNavigate('forms') },
-    { label: 'Security alerts', detail: 'Open Security Center', value: summary?.securityAlerts ?? 0, action: () => onNavigate('security') },
-  ];
+function QueueWidget({ summary, context, company, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'context' | 'company' | 'onNavigate' | 'onOpenModule'>) {
+  const queue: Array<{ field: DashboardAggregateField; label: string; detail: string; value: number; action: () => void }> = [
+    { field: 'incompleteAttendance', label: 'Incomplete attendance', detail: 'Open Attendance & GPS', value: summary?.incompleteAttendance ?? 0, action: () => onOpenModule('attendance') },
+    { field: 'pendingApprovals', label: 'Pending approvals', detail: 'Open People & Payroll', value: summary?.pendingApprovals ?? 0, action: () => onNavigate('people') },
+    { field: 'overdueRequirements', label: 'Overdue requirements', detail: 'Review assigned forms', value: summary?.overdueRequirements ?? 0, action: () => onNavigate('forms') },
+    { field: 'securityAlerts', label: 'Security alerts', detail: 'Open Security Center', value: summary?.securityAlerts ?? 0, action: () => onNavigate('security') },
+  ].filter((item) => canSeeDashboardField(context, item.field, company.id));
+  if (!queue.length) return null;
   return <article className="queue-card"><span className="queue-accent" /><ChartHeader eyebrow="ACTION QUEUE" title="Needs your attention" icon={AlertTriangle} /><div className="queue-list">{queue.map((item) => <button key={item.label} onClick={item.action}><span className="queue-number">{String(item.value).padStart(2, '0')}</span><span><b>{item.label}</b><small>{item.detail}</small></span><ArrowRight size={14} /></button>)}</div><div className="queue-footer"><span>Open records remain company-scoped</span><CheckCircle2 size={15} /></div></article>;
 }
 
@@ -414,9 +420,9 @@ function WorkspaceOverviewStrip({
   if (availableModuleIds.has('profile')) quickActions.push({ label: 'My Profile', detail: 'Keep your employee record current', icon: Users, action: () => onOpenModule('profile') });
   if (availableModuleIds.has('employee')) quickActions.push({ label: 'My Workspace', detail: 'Open staff self-service', icon: BriefcaseBusiness, action: () => onOpenModule('employee') });
   if (can(context, 'forms.access', 'view', company.id)) quickActions.push({ label: 'My Forms', detail: 'Review assigned submissions', icon: ClipboardCheck, action: () => onNavigate('forms') });
-  quickActions.push({ label: 'Tasks & approvals', detail: 'Open authorized workspaces', icon: CheckCircle2, action: onOpenModuleHub });
+  quickActions.push({ label: isManagerial ? 'Tasks & approvals' : 'My workspaces', detail: 'Open authorized workspaces', icon: CheckCircle2, action: onOpenModuleHub });
   if (can(context, 'ai_guide.access', 'view', company.id)) quickActions.push({ label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') });
-  return <section className="workspace-overview-grid" aria-label="Personalized staff workspace overview">
+  return <section className={'workspace-overview-grid' + (isManagerial ? '' : ' employee-task-first')} aria-label="Personalized staff workspace overview">
     <article className="profile-summary-card">
       <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Your profile</h2></div><span className="live-chip"><i /> Personalized home</span></header>
       <div className="profile-summary-body">
@@ -488,49 +494,53 @@ function ErpPulseGrid({
 
 function ManagerCommandCenter({
   context,
+  company,
   summary,
   onNavigate,
   onOpenModuleHub,
-}: Pick<ZipDashboardProps, 'context' | 'summary' | 'onNavigate' | 'onOpenModuleHub'>) {
+}: Pick<ZipDashboardProps, 'context' | 'company' | 'summary' | 'onNavigate' | 'onOpenModuleHub'>) {
   const managerAccess = context.roles.some((role) => ['manager', 'company_admin', 'group_admin', 'owner'].includes(role.code));
   if (!managerAccess) return null;
-  const tiles = [
-    { label: 'Team workload', value: numberValue(summary?.employees), detail: 'People in your authorized scope', icon: Users },
-    { label: 'Approvals', value: numberValue(summary?.pendingApprovals), detail: 'Requests awaiting action', icon: ClipboardCheck },
-    { label: 'Overdue work', value: numberValue(summary?.overdueRequirements), detail: 'Requirements to follow through', icon: AlertTriangle },
-    { label: 'Attendance', value: summary ? percentage(attendanceRate(summary)) : '—', detail: 'Present today in scope', icon: CalendarCheck2 },
-  ];
+  const tiles: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
+    { field: 'employees', label: 'Team workload', value: numberValue(summary?.employees), detail: 'People in your authorized scope', icon: Users },
+    { field: 'pendingApprovals', label: 'Approvals', value: numberValue(summary?.pendingApprovals), detail: 'Requests awaiting action', icon: ClipboardCheck },
+    { field: 'overdueRequirements', label: 'Overdue work', value: numberValue(summary?.overdueRequirements), detail: 'Requirements to follow through', icon: AlertTriangle },
+    { field: 'present', label: 'Attendance', value: summary ? percentage(attendanceRate(summary)) : '—', detail: 'Present today in scope', icon: CalendarCheck2 },
+  ].filter((tile) => canSeeDashboardField(context, tile.field, company.id));
+  const actions = [
+    can(context, 'users.access', 'view', company.id) ? <button key="team" type="button" onClick={() => onNavigate('people')}><Users size={14} /> Review team</button> : null,
+    can(context, 'forms.access', 'view', company.id) ? <button key="forms" type="button" onClick={() => onNavigate('forms')}><ClipboardCheck size={14} /> Open approvals</button> : null,
+    can(context, 'security.access', 'view', company.id) ? <button key="security" type="button" onClick={() => onNavigate('security')}><ShieldCheck size={14} /> Check security signals</button> : null,
+  ].filter(Boolean);
+  if (!tiles.length && !actions.length) return null;
   return <section className="manager-command-center" aria-label="Manager home">
     <header className="manager-command-header"><div><span className="eyebrow">MANAGER HOME</span><h2>Team rhythm, next actions</h2><p>Prioritized workload, approvals and operational exceptions for your authorized team scope.</p></div><button type="button" className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open workspaces</button></header>
-    <div className="manager-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article key={tile.label}><span className="manager-command-icon"><Icon size={16} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>
-    <div className="manager-command-actions"><button type="button" onClick={() => onNavigate('people')}><Users size={14} /> Review team</button><button type="button" onClick={() => onNavigate('forms')}><ClipboardCheck size={14} /> Open approvals</button><button type="button" onClick={() => onNavigate('security')}><ShieldCheck size={14} /> Check exceptions</button></div>
+    {tiles.length > 0 && <div className="manager-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article key={tile.label}><span className="manager-command-icon"><Icon size={16} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>}
+    {actions.length > 0 && <div className="manager-command-actions">{actions}</div>}
   </section>;
 }
 
 function OwnerCommandCenter({
   context,
+  company,
   summary,
   online,
   onOpenAdmin,
   onOpenModuleHub,
-}: Pick<ZipDashboardProps, 'context' | 'summary' | 'onOpenAdmin' | 'onOpenModuleHub'> & { online: boolean }) {
+}: Pick<ZipDashboardProps, 'context' | 'company' | 'summary' | 'onOpenAdmin' | 'onOpenModuleHub'> & { online: boolean }) {
   const ownerAccess = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   if (!ownerAccess) return null;
   const openFollowUps = (summary?.incompleteAttendance || 0) + (summary?.overdueRequirements || 0);
-  const tiles = [
-    { label: 'Business overview', value: numberValue(summary?.employees), detail: 'Total users in scope', icon: Users },
-    { label: 'Operations overview', value: numberValue(summary?.pendingApprovals), detail: 'Pending approvals', icon: ClipboardCheck },
+  const tiles: Array<{ field?: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
+    { field: 'employees', label: 'People in scope', value: numberValue(summary?.employees), detail: 'Authorized workforce context', icon: Users },
+    { field: 'pendingApprovals', label: 'Operations follow-up', value: numberValue(summary?.pendingApprovals), detail: 'Approved requests awaiting action', icon: ClipboardCheck },
     { label: 'Platform health', value: online ? 'Operational' : 'Offline', detail: 'Portal connectivity', icon: Gauge },
-    { label: 'Security center', value: numberValue(summary?.securityAlerts), detail: 'Security alerts', icon: ShieldCheck },
-    { label: 'Activity center', value: numberValue(openFollowUps), detail: 'Open operational follow-ups', icon: Activity },
-    { label: 'Business metrics', value: '—', detail: 'Connect approved finance data', icon: CircleDollarSign },
-  ];
-  return <section className="owner-command-center" aria-label="Owner command center">
-    <header className="owner-command-header"><div><span className="eyebrow">OWNER DASHBOARD · SECURITY, ACCESS & ADMIN ERP</span><h2>Central command center</h2><p>Role-scoped business, operations, platform health, security, and activity signals.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
-    <div className="owner-command-grid">{tiles.map((tile) => {
-      const Icon = tile.icon;
-      return <article className="owner-command-tile" key={tile.label}><span className="owner-command-icon"><Icon size={17} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>;
-    })}</div>
+    { field: 'securityAlerts', label: 'Control signals', value: numberValue(summary?.securityAlerts), detail: 'Authorized security alerts', icon: ShieldCheck },
+    { field: 'incompleteAttendance', label: 'Open follow-ups', value: numberValue(openFollowUps), detail: 'Authorized items requiring review', icon: Activity },
+  ].filter((tile) => !tile.field || canSeeDashboardField(context, tile.field, company.id));
+  return <section className="owner-command-center" data-owner-command-center="true" aria-label="Owner command center">
+    <header className="owner-command-header"><div><span className="eyebrow">OWNER COMMAND CENTER · BUSINESS HEALTH</span><h2>Financial, operational and control truth</h2><p>Verified business intelligence stays connected to the canonical ERP actions that resolve it.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
+    <div className="owner-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article className="owner-command-tile" key={tile.label}><span className="owner-command-icon"><Icon size={17} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>
   </section>;
 }
 
@@ -563,12 +573,12 @@ const widgetLabels: Record<WidgetId, string> = {
   motivation: 'Daily motivation',
 };
 
-const dashboardWidgetRegistry: Record<WidgetId, { requiredPermission?: string; aggregate?: boolean }> = {
-  trend: { aggregate: true },
-  comparison: { aggregate: true },
-  category: { aggregate: true },
-  forecast: { aggregate: true },
-  queue: { aggregate: true },
+const dashboardWidgetRegistry: Record<WidgetId, { requiredPermission?: string; fields?: DashboardAggregateField[] }> = {
+  trend: { fields: ['present', 'employees', 'incompleteAttendance'] },
+  comparison: { fields: ['present', 'employees', 'incompleteAttendance', 'overdueRequirements', 'securityAlerts'] },
+  category: { fields: ['present', 'employees', 'incompleteAttendance'] },
+  forecast: { fields: ['present', 'employees', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts'] },
+  queue: {},
   status: {},
   news: { requiredPermission: 'broadcasts.access' },
   motivation: { requiredPermission: 'broadcasts.access' },
@@ -576,7 +586,7 @@ const dashboardWidgetRegistry: Record<WidgetId, { requiredPermission?: string; a
 
 function canRenderDashboardWidget(widget: WidgetId, context: WorkforceContext, companyId: string | null) {
   const definition = dashboardWidgetRegistry[widget];
-  if (definition.aggregate) return canSeeAggregateDashboard(context, companyId);
+  if (definition.fields && !definition.fields.every((field) => canSeeDashboardField(context, field, companyId))) return false;
   return !definition.requiredPermission || can(context, definition.requiredPermission, 'view', companyId);
 }
 
@@ -686,7 +696,7 @@ function DashboardWidgets({
       case 'comparison': return <ComparisonWidget summary={summary} />;
       case 'category': return <CategoryWidget summary={summary} />;
       case 'forecast': return <ForecastWidget summary={summary} />;
-      case 'queue': return <QueueWidget summary={summary} onNavigate={onNavigate} onOpenModule={onOpenModule} />;
+      case 'queue': return <QueueWidget summary={summary} context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} />;
       case 'status': return <StatusWidget online={online} context={context} company={company} />;
       case 'news': return <NewsWidget release={release} />;
       case 'motivation': return <MotivationWidget onNavigate={onNavigate} enabled={can(context, 'broadcasts.access', 'view', company.id)} />;
@@ -777,6 +787,8 @@ export function ZipDashboard({
   motion,
   canUseLayoutStudio,
   onOpenLayoutStudio,
+  layoutPreview = false,
+  onExitLayoutPreview,
 }: ZipDashboardProps) {
   useEffect(() => {
     document.body.classList.add('dashboard-active');
@@ -791,10 +803,13 @@ export function ZipDashboard({
       ? 'Data unavailable'
       : 'Syncing live data';
   const liveDataDetail = dataError || (dataLastSyncedAt ? `Updated ${formatLastSyncedAt(dataLastSyncedAt)}` : 'Reading secured D1 records');
+  const motionTokens = getMotionTokens(motion);
+  const homeContext = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) ? 'owner-home' : context.roles.some((role) => ['manager', 'company_admin'].includes(role.code)) ? 'manager-home' : 'employee-home';
+  const experienceStyle = { '--postauth-motion-duration': motionTokens.duration, '--postauth-motion-distance': motionTokens.distance, '--postauth-motion-ease': motionTokens.easing, '--postauth-motion-elevation': motionTokens.elevation } as CSSProperties;
 
-  const scopedSummary = canSeeAggregateDashboard(context, company.id) ? summary : null;
+  const scopedSummary = summary;
 
-  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} data-layout-profile={layoutId} data-layout-density={density} data-layout-motion={motion} data-active-erp={activeErpId}>
+  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} style={experienceStyle} data-layout-profile={layoutId} data-layout-density={density} data-layout-motion={motion} data-layout-preview={layoutPreview ? 'true' : 'false'} data-active-erp={activeErpId}>
     <PostAuthNavigation
       layoutProfile={layoutProfile}
       context={context}
@@ -813,6 +828,7 @@ export function ZipDashboard({
     {sidebarOpen && <button className="mobile-backdrop" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
 
     <section className="dashboard-content">
+      {layoutPreview && <div className="layout-preview-banner" data-layout-preview-banner="true"><span><strong>Previewing {layoutProfile.name}</strong><small>Your saved experience is unchanged until you apply this layout.</small></span><button type="button" className="secondary-button" onClick={onExitLayoutPreview}>Exit Preview</button></div>}
       <ZipTopBar
         context={context}
         company={company}
@@ -852,16 +868,18 @@ export function ZipDashboard({
         {view === 'overview'
           ? <PostAuthOverviewComposition
             profile={layoutProfile}
-            hero={<PostAuthHomeBanner context={context} summary={scopedSummary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} />}
+            context={context}
+            smartContext={getSmartContext(homeContext)}
+            hero={<PostAuthHomeBanner context={context} summary={scopedSummary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             pulse={<ErpPulseGrid context={context} company={company} summary={scopedSummary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             loading={<SmartLoadingCard pending={dataStatus === 'loading'} />}
             kpis={<KpiStrip summary={scopedSummary} company={company} context={context} />}
             widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Personalize the workspace when you are ready</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div><DashboardWidgets widgets={initialWidgets} summary={scopedSummary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
             workspace={<WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
-            owner={context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) ? <OwnerCommandCenter context={context} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} /> : <ManagerCommandCenter context={context} summary={scopedSummary} onNavigate={onNavigate} onOpenModuleHub={onOpenModuleHub} />}
-            intelligence={liveIntelligence ? <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section> : null}
+            owner={context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) ? <OwnerCommandCenter context={context} company={company} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} /> : <ManagerCommandCenter context={context} company={company} summary={scopedSummary} onNavigate={onNavigate} onOpenModuleHub={onOpenModuleHub} />}
+            intelligence={liveIntelligence ? <section className="zip-live-intelligence" data-owner-business-intelligence="true"><div className="zip-section-heading"><span className="eyebrow">OWNER INTELLIGENCE</span><h2>Financial and operational performance</h2></div>{liveIntelligence}</section> : null}
             clocks={<section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>}
-          /> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
+          /> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} contextKey={activeView} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
         <footer className="dashboard-footer"><span>Daenem Business ERP · {activeErpId.toUpperCase()}</span><span>Live D1 data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
       </div>
     </section>

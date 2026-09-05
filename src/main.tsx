@@ -274,6 +274,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   const [theme, setTheme] = useState<ThemeId>(() => readThemeId(context.employee.preferredTheme));
   const [modePreference, setModePreference] = useState<ModePreference>(() => readModePreference());
   const [layoutPreference, setLayoutPreference] = useState<LayoutPreference>(() => readLocalLayoutPreference(context.employee.id) || { layoutId: DEFAULT_LAYOUT_ID, density: 'standard', motion: 'balanced' });
+  const [layoutPreviewPreference, setLayoutPreviewPreference] = useState<LayoutPreference | null>(null);
   const [layoutAccess, setLayoutAccess] = useState({ canChoose: true, canManage: false, canAccess: false });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -320,14 +321,22 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       const detail = (event as CustomEvent<Partial<LayoutPreference>>).detail;
       if (!detail?.layoutId) return;
       const next = normalizeLayoutPreference(detail);
-      setLayoutPreference(next);
-      if ((event.type as string) === 'daenem:layout-change') writeLocalLayoutPreference(context.employee.id, next);
+      if ((event.type as string) === 'daenem:layout-preview') {
+        setLayoutPreviewPreference(next);
+      } else {
+        setLayoutPreviewPreference(null);
+        setLayoutPreference(next);
+        writeLocalLayoutPreference(context.employee.id, next);
+      }
     };
-    document.addEventListener('daenem:layout-preview', onLayoutEvent);
-    document.addEventListener('daenem:layout-change', onLayoutEvent);
+    const onExitPreview = () => setLayoutPreviewPreference(null);
+    window.addEventListener('daenem:layout-preview', onLayoutEvent);
+    window.addEventListener('daenem:layout-change', onLayoutEvent);
+    window.addEventListener('daenem:layout-preview-exit', onExitPreview);
     return () => {
-      document.removeEventListener('daenem:layout-preview', onLayoutEvent);
-      document.removeEventListener('daenem:layout-change', onLayoutEvent);
+      window.removeEventListener('daenem:layout-preview', onLayoutEvent);
+      window.removeEventListener('daenem:layout-change', onLayoutEvent);
+      window.removeEventListener('daenem:layout-preview-exit', onExitPreview);
     };
   }, [context.employee.id]);
   useEffect(() => {
@@ -412,7 +421,8 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
     } }));
   }
   const activeTheme = themeList.find((item) => item.id === theme) || themeList[0];
-  const activeLayoutProfile = getLayoutProfile(layoutPreference.layoutId);
+  const effectiveLayoutPreference = layoutPreviewPreference || layoutPreference;
+  const activeLayoutProfile = getLayoutProfile(effectiveLayoutPreference.layoutId);
   const canUseLayoutStudio = layoutAccess.canAccess;
   const executive = can(context, 'dashboard.access', 'manage', company.id) || context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   const canChangeWeatherUnit = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
@@ -473,14 +483,16 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       releaseOpen={releaseOpen}
       setReleaseOpen={setReleaseOpen}
       activeErpId={activeErpId}
-      layoutId={layoutPreference.layoutId}
+      layoutId={effectiveLayoutPreference.layoutId}
       layoutProfile={activeLayoutProfile}
-      density={layoutPreference.density}
-      motion={layoutPreference.motion}
+      density={effectiveLayoutPreference.density}
+      motion={effectiveLayoutPreference.motion}
       canUseLayoutStudio={canUseLayoutStudio}
       onOpenLayoutStudio={openLayoutStudio}
+      layoutPreview={Boolean(layoutPreviewPreference)}
+      onExitLayoutPreview={() => window.dispatchEvent(new Event('daenem:layout-preview-exit'))}
     />
-    <ModuleHub context={context} companyId={company.id} companyCode={company.code} experience={{ layoutId: activeLayoutProfile.id, shellMode: activeLayoutProfile.shellMode, density: layoutPreference.density, motion: layoutPreference.motion, erpId: activeErpId }} />
+    <ModuleHub context={context} companyId={company.id} companyCode={company.code} experience={{ layoutId: activeLayoutProfile.id, shellMode: activeLayoutProfile.shellMode, density: effectiveLayoutPreference.density, motion: effectiveLayoutPreference.motion, erpId: activeErpId }} />
     <Suspense fallback={null}><SupportInbox context={context} /></Suspense>
   </div>;
 }
