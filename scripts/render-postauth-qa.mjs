@@ -261,6 +261,7 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
     });
     const primaryKpiLabels = primaryKpiGrids.flatMap((grid) => Array.from(grid.querySelectorAll('.kpi-card > span:not(.kpi-icon)')).map((node) => node.textContent?.trim() || ''));
     const managerAttendanceText = document.querySelector('.manager-command-center')?.textContent || '';
+    const managerAttendanceValue = document.querySelector('.manager-command-center [data-dashboard-field="present"] strong')?.textContent?.trim() || '';
     const typographyDetails = Array.from(document.querySelectorAll('.postauth-nav-item,.postauth-navigation strong,.erp-pulse-card h3,.manager-command-actions button,.kpi-card strong')).map((node) => {
       const rect = node.getBoundingClientRect();
       return { tag: node.tagName, className: node.className, text: node.textContent?.trim().slice(0, 100) || '', fontSize: Number.parseFloat(getComputedStyle(node).fontSize) || 99, visible: rect.width > 0 && rect.height > 0 };
@@ -280,7 +281,7 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       primaryKpiLabelCount: primaryKpiLabels.length,
       primaryKpiLabels,
       ownerKpiPass: input.role !== 'owner' || (primaryKpiGrids.length === 1 && new Set(primaryKpiLabels).size === primaryKpiLabels.length),
-      attendanceManagerDirectCount: input.role !== 'attendance-manager' || (/\b116\b/.test(managerAttendanceText) && !/%/.test(managerAttendanceText) && !/NaN|Infinity/.test(managerAttendanceText)),
+      attendanceManagerDirectCount: input.role !== 'attendance-manager' || (managerAttendanceValue === '116' && !/%/.test(managerAttendanceValue) && !/NaN|Infinity/.test(managerAttendanceValue)),
       dashboardPresent: Boolean(root),
       featureFramePresent: Boolean(document.querySelector('.postauth-feature-frame')),
       layoutStudioPresent: Boolean(document.querySelector('.layout-studio-panel')),
@@ -302,6 +303,7 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       forbiddenDomDisclosure: (input.extra.forbiddenLabels || []).some((label) => bodyText.includes(label)),
       matchedForbiddenDomLabels: (input.extra.forbiddenLabels || []).filter((label) => bodyText.includes(label)),
       managerAttendanceText: managerAttendanceText.slice(0, 400),
+      managerAttendanceValue,
       smartContext: Boolean(document.querySelector('[data-smart-context="true"]')),
       layoutExplanation: /WORKSPACE GUIDE|LAYOUT ADAPTER|Workspace composition|shellMode/.test(bodyText),
       ownerBusinessIntelligence: Boolean(document.querySelector('[data-owner-business-intelligence="true"]')),
@@ -618,7 +620,7 @@ async function capturePermissionMatrix(browser) {
   const cases = [
     { role: 'employee', layout: 'focus-flow', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Needs review', 'Security health', 'Attendance categories', 'Security alerts', 'Team workload', 'Approvals'], allowedApiKeys: commonKeys },
     { role: 'attendance-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Security health', 'Pending approvals', 'Security alerts', 'Overdue requirements', 'Control signals'], allowedApiKeys: [...commonKeys, 'present', 'incompleteAttendance'] },
-    { role: 'approval-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'securityAlerts', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Security health', 'Security alerts', 'Attendance'], allowedApiKeys: [...commonKeys, 'pendingApprovals'] },
+    { role: 'approval-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'securityAlerts', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Security health', 'Security alerts', 'Attendance'], allowedApiKeys: [...commonKeys, 'pendingApprovals', 'overdueRequirements'] },
     { role: 'security-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Approvals', 'Overdue requirements', 'Needs review'], allowedApiKeys: [...commonKeys, 'securityAlerts'] },
     { role: 'owner', layout: 'executive-command', forbiddenKeys: [], forbiddenLabels: [], allowedApiKeys: allAggregateKeys },
   ];
@@ -958,6 +960,7 @@ async function main() {
       forbiddenDomDisclosure: item.forbiddenDomDisclosure,
       matchedForbiddenDomLabels: item.matchedForbiddenDomLabels,
       managerAttendanceText: item.managerAttendanceText,
+      managerAttendanceValue: item.managerAttendanceValue,
       attendanceManagerDirectCount: item.attendanceManagerDirectCount,
       attendanceSemanticsPass: item.attendanceSemanticsPass,
     }))),

@@ -534,7 +534,7 @@ function ManagerCommandCenter({
   if (!tiles.length && !actions.length) return null;
   return <section className="manager-command-center" aria-label="Manager home">
     <header className="manager-command-header"><div><span className="eyebrow">MANAGER HOME</span><h2>Team rhythm, next actions</h2><p>Prioritized workload, approvals and operational exceptions for your authorized team scope.</p></div><button type="button" className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open workspaces</button></header>
-    {tiles.length > 0 && <div className="manager-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article key={tile.label}><span className="manager-command-icon"><Icon size={16} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>}
+    {tiles.length > 0 && <div className="manager-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article key={tile.label} data-dashboard-field={tile.field} data-dashboard-value={tile.value}><span className="manager-command-icon"><Icon size={16} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>}
     {actions.length > 0 && <div className="manager-command-actions">{actions}</div>}
   </section>;
 }
