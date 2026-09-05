@@ -3,7 +3,7 @@ import { Check, Eye, History, LayoutDashboard, RotateCcw, Save, Settings2, Smart
 import { createRoot } from 'react-dom/client';
 import { api, type WorkforceContext } from './auth';
 import {
-  DEFAULT_LAYOUT_ID, LAYOUT_IDS, LAYOUT_PROFILES, normalizeDensity, normalizeMotion,
+  DEFAULT_LAYOUT_ID, LAYOUT_IDS, LAYOUT_PROFILES, normalizeDensity, normalizeLayoutId, normalizeMotion,
   type LayoutDensity, type LayoutId, type LayoutPolicy, type LayoutPreference, type MotionPreset,
 } from './layout-system';
 import './layout-studio.css';
