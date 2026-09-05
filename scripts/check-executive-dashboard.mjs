@@ -17,7 +17,7 @@ check('unassigned company data is suppressed',backend.includes("visible.has('com
 check('queries are bound',backend.includes('.bind(companyId, range.start, range.end)')&&backend.includes('companyIds.map(() =>'));
 check('independent D1 reads are batched',backend.includes('env.DB.batch(['));
 check('two-minute refresh cadence',dashboard.includes('120000'));
-check('drill-down uses existing module event',dashboard.includes("new CustomEvent('daenem:launch-module'")||dashboard.includes("new CustomEvent('daenem:open-module'"));
+check('drill-down uses existing module event',dashboard.includes("new CustomEvent('daenem:launch-module'")||dashboard.includes("new CustomEvent('daenem:open-module'")||dashboard.includes("new CustomEvent('daenem:canonical-navigation'"));
 check('responsive dashboard styles',styles.includes('@media(max-width:600px)')&&styles.includes('@media(max-width:390px)'));
 check('no fabricated sample values',!/(sample revenue|demo amount|mock revenue)/i.test(dashboard+backend));
 check('no credential literals',!/BEGIN (RSA|OPENSSH) PRIVATE KEY|api[_-]?key\s*[:=]\s*['\"][^'\"]+/i.test(dashboard+backend));
