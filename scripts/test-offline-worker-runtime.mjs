@@ -14,6 +14,7 @@ const pepper = 'offline-runtime-test-pepper';
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const requestTimeoutMs = 10_000;
+const wranglerTimeoutMs = 120_000;
 
 function quote(value) {
   return "'" + String(value).replaceAll("'", "''") + "'";
@@ -33,10 +34,20 @@ function runWrangler(args, options = {}) {
     });
     let stdout = '';
     let stderr = '';
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill('SIGTERM');
+      reject(new Error('wrangler ' + args.join(' ') + ' timed out after ' + wranglerTimeoutMs + 'ms:\n' + stdout + '\n' + stderr));
+    }, wranglerTimeoutMs);
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.on('error', reject);
     child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
       const result = { code, stdout, stderr };
       if (code === 0) resolve(result);
       else reject(new Error('wrangler ' + args.join(' ') + ' failed (' + code + '):\n' + stdout + '\n' + stderr));
