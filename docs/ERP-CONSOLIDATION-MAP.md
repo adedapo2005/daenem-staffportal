@@ -84,3 +84,23 @@ infrastructure and keeping historical Auto records read-only/auditable.
 - Focused authenticated browser coverage remains a release gate before merge:
   home by role, feature page, master-detail, form/admin, Layout Studio, four
   layouts, tablet/mobile, keyboard, and reduced-motion.
+
+
+## Independent review correction pass
+
+- The authenticated shell now renders a profile-specific navigation adapter
+  marker (executive-command-sidebar, workspace-canvas-rail,
+  operational-cockpit-rail, insight-magazine-command,
+  master-detail-navigation, horizon-wide-command,
+  adaptive-bento-sidebar, contextual, enterprise-studio-rail, or
+  board-pulse-operations). These are structural adapters over the same
+  canonical Module Hub data, not recolored sidebar variants.
+- Aggregate workforce widgets and dashboard summary values are withheld from
+  limited employee contexts at both the React registry boundary and the
+  Worker response boundary. Only authorized personal/status surfaces remain.
+- Experience history stores scope-aware before/after snapshots. Personal
+  rollback writes only the employee preference; policy rollback restores the
+  organization policy snapshot. Incomplete legacy entries are read-only.
+- The top command palette, explicit dashboard customization mode, dynamic
+  canonical ERP options, and profile-specific Layout Studio preview surfaces
+  are now part of the shared foundation.
