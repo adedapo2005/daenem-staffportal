@@ -179,9 +179,13 @@ async function status(page, expected, timeout = 15000) {
     await page.waitForFunction((value) => document.querySelector('[data-offline-sync-indicator]')?.getAttribute('data-sync-status') === value, expected, { timeout });
   } catch (error) {
     const observed = await page.evaluate(() => ({
+      url: location.href,
+      readyState: document.readyState,
       online: navigator.onLine,
       status: document.querySelector('[data-offline-sync-indicator]')?.getAttribute('data-sync-status') || null,
       label: document.querySelector('[data-offline-sync-indicator]')?.getAttribute('aria-label') || null,
+      rootChildren: document.getElementById('root')?.childElementCount || 0,
+      html: document.documentElement.outerHTML.slice(0, 4000),
       body: document.body.innerText.slice(0, 1200),
     }));
     throw new Error(`${error instanceof Error ? error.message : String(error)}\nSYNC_STATUS_DEBUG=${JSON.stringify(observed)}`);
