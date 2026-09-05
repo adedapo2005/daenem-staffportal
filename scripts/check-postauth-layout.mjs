@@ -22,7 +22,7 @@ must(system.includes("DEFAULT_LAYOUT_ID: LayoutId = 'executive-command'"), 'Exec
 must(system.includes('resolveLayout') && system.includes('forcedLayout') && system.includes('roleDefaults') && system.includes('erpDefaults'), 'layout precedence is missing');
 must(system.includes('normalizeLayoutId') && system.includes('normalizeDensity') && system.includes('normalizeMotion'), 'layout normalization is missing');
 must(system.includes('navigationMode') && system.includes('featurePageStrategy') && system.includes('recordPageStrategy') && system.includes('responsiveRules'), 'layout profile strategy fields are missing');
-must(home.includes('PostAuthHomeBanner') && home.includes('Owner') && home.includes('Manager'), 'role-aware home regions are missing');
+must(home.includes('PostAuthHomeBanner') && home.includes('OWNER COMMAND CENTER') && home.includes('MANAGER HOME') && home.includes('EMPLOYEE HOME'), 'role-aware home regions are missing');
 must(home.includes('PostAuthFeatureFrame') && home.includes('canonicalPath'), 'shared feature-page frame is missing');
 must(studio.includes('Layout Studio') && studio.includes('Preview') && studio.includes('Apply to me'), 'Layout Studio gallery is missing');
 must(studio.includes('layout-preview') && studio.includes('/api/experience/layout/preference'), 'non-destructive preview/apply behavior is missing');

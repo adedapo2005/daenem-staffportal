@@ -56,8 +56,8 @@ async function current(env: Env, context: EnhancedSessionContext, erpId?: string
   return { preference, policy, canManage: canManage(context), canChoose: canManage(context) || policy.allowPersonalPreference, history: historyRows };
 }
 async function audit(env: Env, context: EnhancedSessionContext, action: string, after: unknown) {
-  await env.DB.prepare("INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'',?,?,?,'web')")
-    .bind(uid(), context.employee.id, 'experience', action, 'layout', context.employee.id, JSON.stringify(after)).run();
+  await env.DB.prepare('INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,?,?,?,?,?)')
+    .bind(uid(), context.employee.id, 'experience', action, 'layout', context.employee.id, JSON.stringify(after), 'web').run();
 }
 async function saveHistory(env: Env, entry: Record<string, unknown>) {
   const history = await readJsonSetting<Array<Record<string, unknown>>>(env, 'experience.layout.history', []);
