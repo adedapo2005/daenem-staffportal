@@ -465,10 +465,6 @@ async function main() {
     for (const erpCase of erpCases) {
       const erp = await openContext(browser, 'owner', { width: 1440, height: 900 }, `qa-erp-${erpCase.erp}`);
       const { page: erpPage, context: erpContext } = erp;
-      if (erpCase.companyCode !== 'PRINT') {
-        await erpPage.getByRole('button', { name: erpCase.companyCode, exact: true }).click();
-        await erpPage.locator('.company-switcher button.active').getByText(erpCase.companyCode, { exact: true }).waitFor({ state: 'visible', timeout: 10000 });
-      }
       await erpPage.evaluate((surface) => {
         window.__daenemQaErpTrace = [];
         const trace = window.__daenemQaErpTrace;
