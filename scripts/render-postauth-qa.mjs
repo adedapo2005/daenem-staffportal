@@ -628,6 +628,16 @@ async function capturePermissionMatrix(browser) {
       allowedApiKeys: item.allowedApiKeys,
     });
   }
+
+  const attendanceManager = cases.find((item) => item.role === 'attendance-manager');
+  if (attendanceManager) {
+    await capture(browser, attendanceManager.role, attendanceManager.layout, 390, 844, 'permission-attendance-manager-390x844', {
+      pageKind: 'field-level permission matrix mobile',
+      forbiddenKeys: attendanceManager.forbiddenKeys,
+      forbiddenLabels: attendanceManager.forbiddenLabels,
+      allowedApiKeys: attendanceManager.allowedApiKeys,
+    });
+  }
 }
 
 async function captureOwnerCanonicalNavigation(browser) {

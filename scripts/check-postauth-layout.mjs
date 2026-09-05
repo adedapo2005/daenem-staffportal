@@ -62,7 +62,7 @@ must(executive.includes('daenem:canonical-navigation') && !executive.includes('s
 must(main.includes('daenem:canonical-navigation') && main.includes('isModuleVisible'), 'canonical navigation receiver is missing');
 must(moduleBridge.includes('ModuleExperienceEnvelope') && moduleBridge.includes('data-module-context-ready') && hub.includes('daenem:module-experience'), 'canonical module experience bridge is missing');
 must(main.includes('resolveExperienceForErp') && hub.includes('resolveExperience') && hub.includes('await resolveExperience'), 'ERP experience must resolve before module initialization');
-must(moduleBridgeCss.includes('--module-experience-surface-width') && moduleBridgeCss.includes('--module-experience-surface-padding') && moduleBridgeCss.includes('printing-shell') && moduleBridgeCss.includes('finance-shell'), 'shared ERP surface presentation tokens are missing');
+must(moduleBridgeCss.includes('--module-experience-surface-width') && moduleBridgeCss.includes('--module-experience-surface-padding') && moduleBridgeCss.includes('printing-shell') && moduleBridgeCss.includes('fin-shell'), 'shared ERP surface presentation tokens are missing');
 for (const entry of ['printing-entry.tsx','bakery-entry-v2.tsx','autos-entry.tsx','logistics-entry.tsx','properties-entry.tsx','finance-entry.tsx']) must(read('src/' + entry).includes('ModuleExperienceEnvelope'), entry + ' does not consume module experience');
 must(centers.includes('Assigned forms & submissions') && !main.includes('<h2>People, roles & payroll</h2>'), 'feature page heading ownership is duplicated');
 must(zip.includes('CommandPalette') && zip.includes('event.ctrlKey') && zip.includes('event.metaKey'), 'Ctrl/Cmd+K command palette behavior is missing');
