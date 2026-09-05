@@ -305,6 +305,14 @@ async function status(page, expected, timeout = 15000) {
   }
 }
 
+async function reconnect(context, page) {
+  await context.setOffline(false);
+  // Playwright changes the actual browser network state above. The explicit
+  // foreground event keeps reconnect coverage deterministic across Chromium
+  // versions whose online event delivery can be delayed by a service worker.
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+}
+
 async function snapshot(page, name) {
   await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
   const evidence = await page.evaluate(() => ({
@@ -329,7 +337,7 @@ async function runOutcome(browser, mode, expected) {
   await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
   await status(page, 'offline');
   server.syncMode = mode;
-  await context.setOffline(false);
+  await reconnect(context, page);
   await status(page, expected);
   await context.close();
 }
@@ -373,7 +381,7 @@ async function main() {
 
     server.syncDelay = 900;
     server.syncMode = 'success';
-    await context.setOffline(false);
+    await reconnect(context, page);
     await status(page, 'syncing');
     await snapshot(page, 'employee-mobile-syncing-390x844.png');
     await status(page, 'synced');
@@ -389,7 +397,7 @@ async function main() {
     const effectsBeforeLost = server.businessEffects;
     server.syncDelay = 0;
     server.syncMode = 'response-lost';
-    await context.setOffline(false);
+    await reconnect(context, page);
     await status(page, 'waiting');
     await sleep(2300);
     await page.getByRole('button', { name: /Open My Sync Activity/ }).click();
@@ -407,7 +415,7 @@ async function main() {
     await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
     await status(page, 'offline');
     server.syncMode = 'conflict';
-    await context.setOffline(false);
+    await reconnect(context, page);
     await status(page, 'needs-attention');
     const conflictEvidence = await snapshot(page, 'employee-mobile-needs-attention-conflict-390x844.png');
     assert(conflictEvidence.text.toLowerCase().includes('needs attention'), 'conflict state is not visible in plain language');
@@ -461,10 +469,7 @@ async function main() {
       await blocked.page.locator('[data-offline-form-submit="supported"]').click();
       await status(blocked.page, 'offline');
       blocked.server.sessionMode = sessionMode;
-      await blocked.context.setOffline(false);
-      // Keep the reconnect test event-driven while making the foreground
-      // reconnect trigger deterministic across Chromium versions.
-      await blocked.page.evaluate(() => window.dispatchEvent(new Event('online')));
+      await reconnect(blocked.context, blocked.page);
       await sleep(1000);
       await status(blocked.page, 'authentication-required');
       assert(blocked.server.syncRequests === 0, `${sessionMode} session allowed a queued mutation flush`);
@@ -528,7 +533,7 @@ async function main() {
     await installApiRoutes(tabTwo, 'employee', multi.server, 'qa-multi-tab');
     await tabTwo.goto(baseUrl, { waitUntil: 'domcontentloaded' });
     await tabTwo.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
-    await multi.context.setOffline(false);
+    await reconnect(multi.context, multi.page);
     await status(multi.page, 'synced');
     await status(tabTwo, 'synced');
     assert(multi.server.businessEffects === 1, 'two open tabs produced duplicate business effects');
