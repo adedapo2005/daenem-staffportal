@@ -177,6 +177,7 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
       if (server.authMeMode === '403') return send({ error: 'Access denied.' }, 403);
       return send({ authenticated: true, context });
     }
+    if (url.pathname === '/api/context/signin') return route.abort('failed');
     if (url.pathname === '/api/auth/logout') return send({ ok: true });
     if (url.pathname === '/api/experience/layout') return send(layoutPayload(url.searchParams.get('erpId') || 'staff'));
     if (url.pathname.startsWith('/api/experience/layout/')) return send({ ok: true, preference: layoutPayload('staff').preference });
@@ -368,7 +369,7 @@ async function runAuthTransportCase(browser, mode, expectedContinuation) {
     await item.page.waitForTimeout(700);
     assert(await item.page.evaluate(() => navigator.onLine === true), mode + ': test did not run with navigator.onLine=true');
     if (mode === 'expired' || mode === 'wrong-employee') await mutateCachedAuthSnapshot(item.page, mode);
-    item.server.authMeMode = mode === 'network' ? 'network' : mode;
+    item.server.authMeMode = ['network', 'expired', 'wrong-employee'].includes(mode) ? 'network' : mode;
     await item.page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
     await item.page.waitForTimeout(1000);
     const observed = await item.page.evaluate(() => ({
