@@ -149,19 +149,9 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
   return server;
 }
 
-async function clearOfflineDatabase(page) {
-  await page.goto('about:blank');
-  await page.evaluate(() => new Promise((resolve) => {
-    localStorage.clear();
-    const request = indexedDB.deleteDatabase('daenem-staff-offline-v1');
-    request.onsuccess = request.onerror = request.onblocked = () => resolve(undefined);
-  }));
-}
-
 async function openContext(browser, role, viewport, employeeId) {
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
   const page = await context.newPage();
-  await clearOfflineDatabase(page);
   const server = await installApiRoutes(page, role, makeServerState(), employeeId);
   const pageErrors = [];
   page.on('pageerror', (error) => { pageErrors.push(error.message); runtimeErrors.push(`${role}: ${error.message}`); });
