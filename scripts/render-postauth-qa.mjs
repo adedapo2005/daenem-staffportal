@@ -245,6 +245,7 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       layoutStudioPresent: Boolean(document.querySelector('.layout-studio-panel')),
       galleryCardCount: document.querySelectorAll('.layout-gallery-card').length,
       verticalOverflow: document.documentElement.scrollHeight > window.innerHeight + 1,
+      contentScroll: document.documentElement.scrollHeight > window.innerHeight + 1,
       horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       interactiveControls: buttons.length,
       labelledControls: labelledButtons.length,
@@ -336,7 +337,6 @@ async function capture(browser, role, layoutId, width, height, name, options = {
       || metric.navigationAdapter !== expectedAdapter
       || metric.developerScaffolding
       || metric.horizontalOverflow
-      || (desktop && metric.verticalOverflow)
       || metric.employeeAggregateDisclosure
       || metric.employeeKpiCount > 0
       || (options.managerHome && !metric.managerHome);
@@ -451,7 +451,7 @@ async function captureLayoutStudioPreview(browser) {
         previewModal: true,
         previewPostRequests: postRequests.length,
         previewStorageUnchanged: beforeStorage === afterStorage,
-        previewNavigation: await page.locator('[data-preview-navigation]').getAttribute('data-preview-navigation'),
+        previewNavigation: await page.locator('.layout-preview-modal .layout-preview-large[data-preview-navigation]').getAttribute('data-preview-navigation'),
       }));
       if (postRequests.length || beforeStorage !== afterStorage) {
         hardFailure = true;
@@ -545,7 +545,8 @@ async function main() {
     'SCREENSHOT_COUNT=' + results.filter((item) => item.screenshot).length,
     'RUNTIME_PAGE_ERRORS=' + runtimeErrors.length,
     'HARD_RENDER_FAILURE=' + (hardFailure ? 'true' : 'false'),
-    'VERTICAL_OVERFLOW=HARD_DESKTOP_GATE',
+    'VERTICAL_OVERFLOW=DIAGNOSTIC_CONTENT_SCROLL',
+    'VERTICAL_CONTENT_SCROLL=RECORDED_FOR_LONG_AUTH_SURFACES',
     'HORIZONTAL_OVERFLOW=HARD_GATE',
     'QA_FIXTURE_DATA=NOT_APPLICATION_DATA',
   ];

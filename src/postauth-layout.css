@@ -1470,3 +1470,257 @@
     width: min(350px, 92vw);
   }
 }
+
+
+/* Authenticated Batch 1 visual correction: keep the shared clock surface
+   in a full-width region so cards use the available workspace instead of a
+   narrow intelligence rail. */
+.dashboard-page.postauth-layout .postauth-composition-clocks {
+  grid-area: clocks;
+  min-width: 0;
+}
+.dashboard-page.postauth-layout .postauth-composition-clocks .dashboard-world-clock {
+  width: 100%;
+  max-width: none;
+  margin-top: 0;
+  overflow: visible;
+}
+.dashboard-page.postauth-layout .postauth-composition-clocks .world-clocks {
+  width: 100%;
+  max-width: none;
+  overflow: visible;
+}
+.dashboard-page.postauth-layout .postauth-composition-clocks .world-clocks-grid {
+  width: 100%;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+.dashboard-page.postauth-layout .postauth-composition-clocks .world-clock,
+.dashboard-page.postauth-layout .postauth-composition-clocks .clock-info,
+.dashboard-page.postauth-layout .postauth-composition-clocks .clock-copy {
+  min-width: 0;
+  overflow: visible;
+}
+.dashboard-page.postauth.layout .postauth-composition-clocks .world-clock,
+.dashboard-page.postauth-layout .postauth-composition-clocks .world-clock > * {
+  min-width: 0;
+}
+
+.postauth-composition-executive-command {
+  grid-template-areas: "lead lead" "kpis rail" "work rail" "clocks clocks";
+}
+.postauth-composition-workspace-canvas {
+  grid-template-areas: "canvasnav canvasmain rail" "clocks clocks clocks";
+}
+.postauth-composition-operational-cockpit {
+  grid-template-areas: "lead lead" "control control" "work rail" "clocks clocks";
+}
+.postauth-composition-insight-magazine {
+  grid-template-areas: "lead lead" "story storyrail" "clocks clocks";
+}
+.postauth-composition-master-detail {
+  grid-template-areas: "master detail rail" "clocks clocks clocks";
+}
+.postauth-composition-horizon-wide {
+  grid-template-areas: "lead lead" "kpis kpis" "canvas drawer" "clocks clocks";
+}
+.postauth-composition-adaptive-bento {
+  grid-template-areas: "hero hero rail" "work kpis rail" "work pulse rail" "widgets widgets rail" "clocks clocks clocks";
+}
+.postauth-composition-focus-flow {
+  grid-template-areas: "lead lead" "next rail" "work rail" "clocks clocks";
+}
+.postauth-composition-enterprise-studio {
+  grid-template-areas: "canvas inspector" "clocks clocks";
+}
+.postauth-composition-board-pulse {
+  grid-template-areas: "lead lead" "pulse pulse" "board rail" "clocks clocks";
+}
+
+.dashboard-page.postauth-layout .metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.dashboard-page.postauth-layout .metric-grid article {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 15px;
+}
+.dashboard-page.postauth-layout .metric-grid article > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.dashboard-page.postauth.layout .metric-grid article > div,
+.dashboard-page.postauth-layout .metric-grid article > div > * {
+  min-width: 0;
+}
+.dashboard-page.postauth-layout .metric-grid .metric-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--postauth-accent);
+  background: color-mix(in srgb, var(--postauth-accent) 11%, transparent);
+}
+.dashboard-page.postauth-layout .metric-grid small,
+.dashboard-page.postauth-layout .metric-grid em {
+  display: block;
+  color: var(--postauth-muted);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.35;
+}
+.dashboard-page.postauth-layout .metric-grid strong {
+  display: block;
+  color: var(--text);
+  font: 800 21px/1 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.04em;
+}
+
+@media (min-width: 2400px) {
+  .dashboard-page.postauth.layout .postauth-home-copy h1,
+  .dashboard-page.postauth-layout .postauth-home-copy h1 {
+    font-size: clamp(48px, 3.5vw, 92px);
+  }
+  .dashboard-page.postauth-layout .dashboard-main {
+    width: min(calc(100% - 64px), 3200px);
+    max-width: 3200px;
+    padding-top: 36px;
+  }
+  .dashboard-page.postauth-layout .postauth-home-banner {
+    gap: clamp(28px, 2vw, 64px);
+    padding: clamp(38px, 2.2vw, 72px);
+  }
+  .dashboard-page.postauth-layout .postauth-home-copy p {
+    max-width: 980px;
+    font-size: 19px;
+  }
+  .dashboard-page.postauth-layout .postauth-signal {
+    min-height: 154px;
+    padding: 22px;
+  }
+  .dashboard-page.postauth-layout .postauth-signal span {
+    font-size: 15px;
+  }
+  .dashboard-page.postauth-layout .postauth-signal strong {
+    font-size: 34px;
+  }
+  .dashboard-page.postauth-layout .postauth-dashboard-composition {
+    gap: 24px;
+  }
+  .dashboard-page.postauth-layout .workspace-overview-grid {
+    gap: 22px;
+  }
+  .dashboard-page.postauth-layout .workspace-overview-grid > article {
+    min-height: 210px;
+    padding: 24px;
+  }
+  .dashboard-page.postauth.layout .kpi-grid,
+  .dashboard-page.postauth-layout .kpi-grid {
+    gap: 18px;
+  }
+  .dashboard-page.postauth-layout .kpi-card {
+    min-height: 150px;
+    padding: 22px;
+  }
+  .dashboard-page.postauth.layout .kpi-card strong,
+  .dashboard-page.postauth-layout .kpi-card strong {
+    font-size: 34px;
+  }
+  .dashboard-page.postauth-layout .erp-pulse-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .dashboard-page.postauth-layout .top-bar {
+    min-height: 92px;
+    padding-inline: 36px;
+  }
+  .dashboard-page.postauth-layout .search-wrap {
+    max-width: 900px;
+  }
+}
+
+@media (min-width: 861px) and (max-width: 1180px) {
+  .dashboard-page.postauth-layout .top-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "search actions";
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+    min-height: 82px;
+    padding: 12px 18px;
+  }
+  .dashboard-page.postauth-layout .search-wrap {
+    grid-area: search;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    flex: none;
+  }
+  .dashboard-page.postauth-layout .top-actions {
+    grid-area: actions;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 4px;
+    min-width: 0;
+    margin-left: 0;
+  }
+  .dashboard-page.postauth.layout .top-actions .ai-button > span,
+  .dashboard-page.postauth-layout .top-actions .ai-button > span,
+  .dashboard-page.postauth.layout .weather-mini > span,
+  .dashboard-page.postauth-layout .weather-mini > span,
+  .dashboard-page.postauth.layout .profile-name,
+  .dashboard-page.postauth-layout .profile-name {
+    display: none !important;
+  }
+  .dashboard-page.postauth.layout .top-actions .ai-button,
+  .dashboard-page.postauth-layout .top-actions .ai-button,
+  .dashboard-page.postauth.layout .weather-mini,
+  .dashboard-page.postauth-layout .weather-mini,
+  .dashboard-page.postauth.layout .top-more-button,
+  .dashboard-page.postauth-layout .top-more-button,
+  .dashboard-page.postauth.layout .profile-button,
+  .dashboard-page.postauth-layout .profile-button {
+    width: 40px;
+    min-width: 40px;
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .dashboard-page.postauth-layout .profile-button {
+    gap: 3px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .dashboard-page.postauth-layout .postauth-composition-clocks {
+    grid-area: auto;
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 1180px) {
+  .dashboard-page.postauth-layout .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .dashboard-page.postauth-layout .metric-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-page.postauth-layout .postauth-composition-clocks .world-clocks-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .dashboard-page.postauth-layout .postauth-composition-clocks .world-clocks-grid {
+    grid-template-columns: 1fr;
+  }
+}

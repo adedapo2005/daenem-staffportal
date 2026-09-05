@@ -55,3 +55,92 @@
 .layout-studio-backdrop{position:fixed;inset:0;z-index:900;background:rgba(9,30,46,.34);display:grid;place-items:center;padding:18px}.layout-studio-modal{width:min(1480px,100%);max-height:calc(100dvh - 36px);overflow:auto;position:relative;border-radius:22px;background:#eff5f6;box-shadow:0 28px 90px rgba(8,36,54,.25)}.layout-studio-close{position:absolute;right:16px;top:16px;z-index:2;border:0;background:#fff;border-radius:999px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer}
 @media(max-width:640px){.layout-studio-backdrop{padding:0}.layout-studio-modal{max-height:100dvh;border-radius:0}.layout-preview-large{grid-template-columns:52px minmax(0,1fr);min-height:220px}.layout-preview-large>.preview-inspector{display:none}}
 @media(prefers-reduced-motion:reduce){.layout-preview-modal *,.layout-studio-modal *{transition:none!important;animation:none!important}}
+
+
+/* Gallery previews use the same profile classes as the large preview, but
+   intentionally expose their structural differences at card scale too. */
+.layout-gallery-card .layout-preview {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 34px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 5px;
+  min-height: 150px;
+  overflow: hidden;
+  padding: 8px;
+}
+.layout-gallery-card .layout-preview-side-nav {
+  grid-column: 1;
+  grid-row: 1;
+  width: auto;
+}
+.layout-gallery-card .layout-preview-main {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+.layout-gallery-card .preview-inspector {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+}
+.layout-gallery-card .layout-preview-top-nav {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+.layout-gallery-card .layout-preview-top-nav + .layout-preview-main {
+  grid-column: 1;
+  grid-row: 2;
+}
+.layout-gallery-card .layout-preview-top-nav ~ .preview-inspector {
+  grid-column: 2;
+  grid-row: 2;
+}
+.layout-gallery-card .preview-insight-magazine,
+.layout-gallery-card .preview-horizon-wide {
+  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-rows: 22px minmax(0, 1fr);
+}
+.layout-gallery-card .preview-insight-magazine .layout-preview-top-nav,
+.layout-gallery-card .preview-horizon-wide .layout-preview-top-nav {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+.layout-gallery-card .preview-insight-magazine .layout-preview-main,
+.layout-gallery-card .preview-horizon-wide .layout-preview-main {
+  grid-column: 1;
+  grid-row: 2;
+}
+.layout-gallery-card .preview-insight-magazine .preview-inspector,
+.layout-gallery-card .preview-horizon-wide .preview-inspector {
+  grid-column: 2;
+  grid-row: 2;
+}
+.layout-gallery-card .preview-workspace-canvas,
+.layout-gallery-card .preview-enterprise-studio {
+  grid-template-columns: 18px minmax(0, 1fr) 30px;
+}
+.layout-gallery-card .preview-master-detail {
+  grid-template-columns: 30% minmax(0, 1fr) 28%;
+}
+.layout-gallery-card .preview-master-detail .layout-preview-main {
+  grid-column: 2;
+}
+.layout-gallery-card .preview-adaptive-bento .preview-work {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+.layout-gallery-card .preview-board-pulse .preview-work {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.layout-gallery-card .preview-focus-flow {
+  grid-template-columns: 16px minmax(0, 1fr) 30px;
+}
+.layout-gallery-card .preview-focus-flow .layout-preview-side-nav {
+  background: linear-gradient(180deg, #16445a, #2f7d7e);
+}
+.layout-gallery-card .preview-enterprise-studio .preview-inspector {
+  background: color-mix(in srgb, #d3972f 17%, #fff);
+}
+.layout-gallery-card .preview-operational-cockpit .layout-preview-side-nav,
+.layout-gallery-card .preview-board-pulse .layout-preview-side-nav {
+  background: linear-gradient(180deg, #0f3c53, #215a70);
+}

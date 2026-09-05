@@ -117,29 +117,29 @@ export function PostAuthOverviewComposition({
   if (profile.id === 'workspace-canvas') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <aside className="postauth-composition-canvas-nav"><span className="eyebrow">CANVAS</span><strong>Work zones</strong><small>{profile.featurePageStrategy}</small></aside>
     <div className="postauth-composition-canvas-main">{hero}{workspace}{widgets}{pulse}{kpis}{owner}{intelligence}</div>
-    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{clocks}{loading}</aside>
+    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{loading}</aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'operational-cockpit') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <div className="postauth-composition-lead">{hero}</div>
     <div className="postauth-composition-control-strip"><span className="eyebrow">LIVE CONTROL SURFACE</span><strong>{profile.widgetStrategy}</strong></div>
     <div className="postauth-composition-work">{pulse}{kpis}{workspace}{widgets}{loading}{owner}{intelligence}</div>
-    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{clocks}</aside>
+    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} /></aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'insight-magazine') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <div className="postauth-composition-lead">{hero}</div>
     <main className="postauth-composition-story">{intelligence}{workspace}{pulse}{kpis}</main>
-    <aside className="postauth-composition-story-rail"><OverviewAdapterNote profile={profile} />{widgets}{owner}{clocks}{loading}</aside>
+    <aside className="postauth-composition-story-rail"><OverviewAdapterNote profile={profile} />{widgets}{owner}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'master-detail') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <aside className="postauth-composition-master-pane"><span className="eyebrow">WORK INDEX</span><strong>Recent work</strong>{workspace}{pulse}</aside>
     <main className="postauth-composition-detail-pane">{hero}{kpis}{widgets}{loading}{owner}{intelligence}</main>
-    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{clocks}</aside>
+    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} /></aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'horizon-wide') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <div className="postauth-composition-lead">{hero}</div>
     <div className="postauth-composition-kpis">{kpis}</div>
     <main className="postauth-composition-data-canvas">{workspace}{widgets}{pulse}{intelligence}{owner}{loading}</main>
-    <aside className="postauth-composition-drawer"><OverviewAdapterNote profile={profile} />{clocks}</aside>
+    <aside className="postauth-composition-drawer"><OverviewAdapterNote profile={profile} /></aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'adaptive-bento') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <div className="postauth-composition-bento-hero">{hero}</div>
@@ -147,28 +147,28 @@ export function PostAuthOverviewComposition({
     <div className="postauth-composition-bento-work">{workspace}</div>
     <div className="postauth-composition-bento-pulse">{pulse}</div>
     <div className="postauth-composition-bento-widgets">{widgets}{loading}</div>
-    <aside className="postauth-composition-bento-rail"><OverviewAdapterNote profile={profile} />{owner}{intelligence}{clocks}</aside>
+    <aside className="postauth-composition-bento-rail"><OverviewAdapterNote profile={profile} />{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'focus-flow') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <div className="postauth-composition-lead">{hero}</div>
     <div className="postauth-composition-next-action">{owner}{kpis}</div>
     <main className="postauth-composition-focus-work">{workspace}{widgets}</main>
-    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{pulse}{intelligence}{clocks}{loading}</aside>
+    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{pulse}{intelligence}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'enterprise-studio') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <main className="postauth-composition-studio-canvas">{hero}{workspace}{pulse}{widgets}{loading}</main>
-    <aside className="postauth-composition-studio-inspector"><OverviewAdapterNote profile={profile} />{kpis}{owner}{intelligence}{clocks}</aside>
+    <aside className="postauth-composition-studio-inspector"><OverviewAdapterNote profile={profile} />{kpis}{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   if (profile.id === 'board-pulse') return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <div className="postauth-composition-lead">{hero}</div>
     <div className="postauth-composition-pulse-strip">{pulse}{kpis}</div>
     <main className="postauth-composition-board">{workspace}{widgets}{loading}</main>
-    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{owner}{intelligence}{clocks}</aside>
+    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
   return <section className={className} aria-label={profile.name + ' dashboard composition'}>
     <div className="postauth-composition-lead">{hero}</div>
     <div className="postauth-composition-kpis">{kpis}</div>
     <main className="postauth-composition-work">{pulse}{loading}{widgets}{owner}{intelligence}</main>
-    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} />{clocks}</aside>
+    <aside className="postauth-composition-rail"><OverviewAdapterNote profile={profile} /></aside><div className="postauth-composition-clocks">{clocks}</div>
   </section>;
 }

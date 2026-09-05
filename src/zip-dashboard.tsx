@@ -402,12 +402,12 @@ function WorkspaceOverviewStrip({
   onOpenModule,
   onOpenModuleHub,
 }: Pick<ZipDashboardProps, 'context' | 'company' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub'>) {
-  const firstName = context.employee.displayName.split(' ')[0] || context.employee.displayName;
   const roles = context.roles.length ? context.roles : [{ id: 'employee', code: 'employee', name: 'Employee', companyId: company.id || 'assigned' }];
   const permissionCount = Object.values(context.permissions).filter((level) => level !== 'none').length;
   const approvalCount = Object.values(context.permissions).filter((level) => level === 'approve' || level === 'manage').length;
   const moduleCount = moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)).length;
-  const adminAccess = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) || Object.values(context.permissions).some((level) => level === 'manage');
+  const isManagerial = roles.some((role) => ['owner', 'group_admin', 'company_admin', 'manager'].includes(role.code));
+  const adminAccess = isManagerial || Object.values(context.permissions).some((level) => level === 'manage');
   const availableModuleIds = new Set(moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)).map((module) => module.id));
   type QuickAction = { label: string; detail: string; icon: React.ComponentType<{ size?: number }>; action: () => void };
   const quickActions: QuickAction[] = [];
@@ -418,7 +418,7 @@ function WorkspaceOverviewStrip({
   if (can(context, 'ai_guide.access', 'view', company.id)) quickActions.push({ label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') });
   return <section className="workspace-overview-grid" aria-label="Personalized staff workspace overview">
     <article className="profile-summary-card">
-      <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Welcome, {firstName}</h2></div><span className="live-chip"><i /> Personalized home</span></header>
+      <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Your profile</h2></div><span className="live-chip"><i /> Personalized home</span></header>
       <div className="profile-summary-body">
         <div className="profile-summary-avatar">{initials(context.employee.displayName)}</div>
         <div><strong>{context.employee.displayName}</strong><span>{context.employee.jobTitle || 'Employee'}{context.employee.department ? ' · ' : ''}{context.employee.department || ''}</span><small>{context.employee.team || 'Assigned team'} · {company.name}</small></div>
@@ -433,12 +433,16 @@ function WorkspaceOverviewStrip({
       </div>
     </article>
     <article className="access-summary-card">
-      <header className="overview-card-header"><div><span className="eyebrow">ACCESS & RESPONSIBILITIES</span><h2>Your operating perimeter</h2></div><ShieldCheck size={18} /></header>
-      <div className="access-summary-lines">
+      <header className="overview-card-header"><div><span className="eyebrow">{isManagerial ? 'ACCESS & RESPONSIBILITIES' : 'YOUR ACCESS'}</span><h2>{isManagerial ? 'Your operating perimeter' : 'Your access'}</h2></div><ShieldCheck size={18} /></header>
+      {isManagerial ? <div className="access-summary-lines">
         <div><span>Module access</span><strong>{moduleCount}</strong></div>
         <div><span>Approval rights</span><strong>{approvalCount}</strong></div>
         <div><span>Administrative privileges</span><strong>{adminAccess ? 'Enabled' : 'Role-scoped'}</strong></div>
-      </div>
+      </div> : <div className="access-summary-lines personal-access-lines">
+        <div><span>Assigned workspace</span><strong>{company.name}</strong></div>
+        <div><span>Role access</span><strong>{roles[0]?.name || 'Employee'}</strong></div>
+        <div><span>Guided help</span><strong>{can(context, 'ai_guide.access', 'view', company.id) ? 'Available' : '—'}</strong></div>
+      </div>}
       <div className="access-role-stack">{roles.slice(0, 4).map((role) => <span className="access-role-pill" key={role.id}>{role.name}</span>)}</div>
       <small className="access-summary-foot">Page access, role hierarchy, and approval actions remain enforced by server-side RBAC.</small>
     </article>

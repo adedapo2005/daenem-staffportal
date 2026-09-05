@@ -29,12 +29,14 @@ must(system.includes('normalizeLayoutId') && system.includes('normalizeDensity')
 must(system.includes('navigationMode') && system.includes('featurePageStrategy') && system.includes('recordPageStrategy') && system.includes('responsiveRules'), 'layout profile strategy fields are missing');
 must(home.includes('PostAuthHomeBanner') && home.includes('OWNER COMMAND CENTER') && home.includes('MANAGER HOME') && home.includes('EMPLOYEE HOME'), 'role-aware home regions are missing');
 must(home.includes('PostAuthFeatureFrame') && home.includes('canonicalPath'), 'shared feature-page frame is missing');
+must(home.includes('postauth-composition-clocks'), 'clock surface must have a dedicated full-width composition region');
 must(home.includes("profile.id === 'workspace-canvas'") && home.includes("profile.id === 'operational-cockpit'") && home.includes("profile.id === 'insight-magazine'") && home.includes("profile.id === 'master-detail'") && home.includes("profile.id === 'horizon-wide'") && home.includes("profile.id === 'adaptive-bento'") && home.includes("profile.id === 'focus-flow'") && home.includes("profile.id === 'enterprise-studio'") && home.includes("profile.id === 'board-pulse'"), 'all ten profiles need explicit dashboard composition adapters');
 must(studio.includes('Layout Studio') && studio.includes('Preview') && studio.includes('Apply to me'), 'Layout Studio gallery is missing');
 must(studio.includes('layout-preview') && studio.includes('/api/experience/layout/preference'), 'non-destructive preview/apply behavior is missing');
 must(studio.includes('rollback') && studio.includes('History'), 'layout rollback/history is missing');
 must(shell.includes('layoutProfile') && shell.includes('data-layout-profile') && shell.includes('postauth-layout.css'), 'authenticated shell is not connected to layout engine');
 must((zip.match(/<PostAuthHomeBanner/g) || []).length === 1, 'Home must render exactly one primary hero');
+must(zip.includes('Your profile') && zip.includes('Your access') && zip.includes('isManagerial'), 'employee overview must avoid unauthorized aggregate access disclosure');
 must(!zip.includes('postauth-layout-ribbon') && !zip.includes('LAYOUT ADAPTER') && !zip.includes('Theme 01') && !zip.includes('Workspace composition'), 'developer scaffolding is exposed in normal dashboard UI');
 must(zip.includes('dashboardWidgetRegistry') && zip.includes('canRenderDashboardWidget') && zip.includes('visibleOrder'), 'dashboard widgets are not permission-aware at render time');
 must(zip.includes('canSeeAggregateDashboard') && zip.includes('scopedSummary'), 'aggregate dashboard scope is not enforced');
@@ -52,6 +54,7 @@ must(hub.includes("id: 'layout-studio'") && hub.includes('Layout Studio'), 'Layo
 must(runtime.includes('routeExperiencePreferences') && runtime.includes('/api/experience/'), 'experience API is not routed');
 must(worker.includes('allow_personal') && worker.includes('role_defaults') && worker.includes('erp_defaults') && worker.includes('audit_logs'), 'experience persistence/precedence is missing');
 must(css.includes('prefers-reduced-motion') && css.includes('postauth-layout-') && css.includes('--postauth-motion-duration'), 'responsive/motion styles are missing');
+must(css.includes('postauth-composition-clocks') && css.includes('metric-grid article'), 'post-auth visual corrections are not wired');
 must(system.includes('MOTION_TOKENS') && system.includes('getMotionTokens'), 'central motion presets are missing');
 must(studio.includes('CANONICAL_ERP_IDS') && studio.includes('/api/admin/roles') && studio.includes('Read-only legacy record'), 'Layout Studio must derive scope options and protect legacy history');
 must(studio.includes('LayoutPreviewVisual') && studio.includes('data-preview-navigation') && studio.includes('data-preview-shell'), 'Layout Studio previews are too generic');
