@@ -518,7 +518,7 @@ async function captureLayoutStudioPreview(browser) {
     const previewLayout = await previewPage.locator('.dashboard-page').getAttribute('data-layout-profile');
     const previewStorage = await previewPage.evaluate(() => JSON.stringify({ ...localStorage }));
     const applyButtonVisible = await previewPage.getByRole('button', { name: 'Apply to Me', exact: true }).isVisible();
-    const previewPreferencePosts = previewPostRequests.filter((url) => /api/experience/layout/preference$/.test(url));
+    const previewPreferencePosts = previewPostRequests.filter((url) => /\/api\/experience\/layout\/preference$/.test(url));
     previewPass = previewLayout === targetLayout
       && previewStorage === beforeStorage
       && previewPreferencePosts.length === 0
@@ -541,7 +541,7 @@ async function captureLayoutStudioPreview(browser) {
     exitPass = (await previewPage.locator('.dashboard-page').getAttribute('data-layout-profile')) === originalLayout
       && (await previewPage.locator('[data-layout-preview-banner="true"]').count()) === 0
       && await previewPage.evaluate((before) => JSON.stringify({ ...localStorage }) === before, beforeStorage)
-      && previewPostRequests.filter((url) => /api/experience/layout/preference$/.test(url)).length === 0;
+      && previewPostRequests.filter((url) => /\/api\/experience\/layout\/preference$/.test(url)).length === 0;
   } catch (error) {
     hardFailure = true;
     runtimeErrors.push('Layout Studio preview/exit: ' + (error instanceof Error ? error.message : String(error)));
@@ -576,7 +576,7 @@ async function captureLayoutStudioPreview(browser) {
       const value = localStorage.getItem('daenem-experience-layout-v1:qa-owner');
       try { return value ? JSON.parse(value) : null; } catch { return null; }
     });
-    const preferencePosts = applyPostRequests.filter((url) => /api/experience/layout/preference$/.test(url));
+    const preferencePosts = applyPostRequests.filter((url) => /\/api\/experience\/layout\/preference$/.test(url));
     applyPass = applyVisible
       && duringPreviewLayout === targetLayout
       && duringPreviewStorage === applyBeforeStorage
