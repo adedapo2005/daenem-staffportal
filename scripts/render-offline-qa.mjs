@@ -182,7 +182,7 @@ async function status(page, expected, timeout = 15000) {
   try {
     await page.waitForFunction((value) => document.querySelector('[data-offline-sync-indicator]')?.getAttribute('data-sync-status') === value, expected, { timeout });
   } catch (error) {
-    const observed = await page.evaluate(() => ({
+    const observed = await page.evaluate(async () => ({
       url: location.href,
       readyState: document.readyState,
       online: navigator.onLine,
