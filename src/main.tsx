@@ -18,6 +18,8 @@ import './zip-theme.css';
 import './zip-dashboard.css';
 import './premium-staffportal.css';
 import './signin-experience.css';
+import './postauth-layout.css';
+import { DEFAULT_LAYOUT_ID, getLayoutProfile, normalizeLayoutPreference, readLocalLayoutPreference, writeLocalLayoutPreference, type LayoutPreference } from './layout-system';
 import './theme-studio-entry';
 import { ZipDashboard, type LiveDataStatus, type ZipDashboardSummary } from './zip-dashboard';
 
@@ -259,6 +261,8 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   const [company, setCompany] = useState<CompanyChoice>(companyChoices[0]);
   const [theme, setTheme] = useState<ThemeId>(() => readThemeId(context.employee.preferredTheme));
   const [modePreference, setModePreference] = useState<ModePreference>(() => readModePreference());
+  const [layoutPreference, setLayoutPreference] = useState<LayoutPreference>(() => readLocalLayoutPreference(context.employee.id) || { layoutId: DEFAULT_LAYOUT_ID, density: 'standard', motion: 'balanced' });
+  const [layoutAccess, setLayoutAccess] = useState({ canChoose: true, canManage: false });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
@@ -285,6 +289,35 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
     document.addEventListener('daenem:theme-change', onThemeChange);
     return () => document.removeEventListener('daenem:theme-change', onThemeChange);
   }, []);
+  useEffect(() => {
+    let active = true;
+    const query = company.id ? '?erpId=controls&companyId=' + encodeURIComponent(company.id) : '?erpId=controls';
+    api<{ preference: LayoutPreference; canChoose: boolean; canManage: boolean }>('/api/experience/layout' + query)
+      .then((result) => {
+        if (!active) return;
+        const next = normalizeLayoutPreference(result.preference);
+        setLayoutPreference(next);
+        setLayoutAccess({ canChoose: result.canChoose !== false, canManage: result.canManage === true });
+        writeLocalLayoutPreference(context.employee.id, next);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [company.id, context.employee.id]);
+  useEffect(() => {
+    const onLayoutEvent = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<LayoutPreference>>).detail;
+      if (!detail?.layoutId) return;
+      const next = normalizeLayoutPreference(detail);
+      setLayoutPreference(next);
+      if ((event.type as string) === 'daenem:layout-change') writeLocalLayoutPreference(context.employee.id, next);
+    };
+    document.addEventListener('daenem:layout-preview', onLayoutEvent);
+    document.addEventListener('daenem:layout-change', onLayoutEvent);
+    return () => {
+      document.removeEventListener('daenem:layout-preview', onLayoutEvent);
+      document.removeEventListener('daenem:layout-change', onLayoutEvent);
+    };
+  }, [context.employee.id]);
   useEffect(() => {
     const refreshClock = () => { if (document.visibilityState === 'visible') setClock(watNow()); };
     const timer = window.setInterval(refreshClock, 30_000);
@@ -359,12 +392,17 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
     window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } }));
   }
   const activeTheme = themeList.find((item) => item.id === theme) || themeList[0];
+  const activeLayoutProfile = getLayoutProfile(layoutPreference.layoutId);
+  const canUseLayoutStudio = layoutAccess.canChoose || layoutAccess.canManage;
   const executive = can(context, 'dashboard.access', 'manage', company.id) || context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   const canChangeWeatherUnit = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
   useEffect(() => { localStorage.setItem('daenem-weather-unit', temperatureUnit); }, [temperatureUnit]);
 
   function openAdmin() {
     openErpModule('admin');
+  }
+  function openLayoutStudio() {
+    openErpModule('layout-studio');
   }
 
   let content: React.ReactNode;
@@ -414,6 +452,12 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       release={PORTAL_RELEASE}
       releaseOpen={releaseOpen}
       setReleaseOpen={setReleaseOpen}
+      layoutId={layoutPreference.layoutId}
+      layoutProfile={activeLayoutProfile}
+      density={layoutPreference.density}
+      motion={layoutPreference.motion}
+      canUseLayoutStudio={canUseLayoutStudio}
+      onOpenLayoutStudio={openLayoutStudio}
     />
     <ModuleHub context={context} companyId={company.id} companyCode={company.code} />
     <Suspense fallback={null}><SupportInbox context={context} /></Suspense>

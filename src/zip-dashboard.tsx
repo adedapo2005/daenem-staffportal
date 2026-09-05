@@ -11,6 +11,8 @@ import { getErpNavigation, isModuleVisible, moduleDefinitions, type ErpId, type 
 import { hasWorkforcePermission, readWorldClockPreferences, requestAppInstall, saveWorldClockPreferences, WORLD_CLOCKS, WorldClocks, type ClockStyle, type WorldClockPreferences } from './auth';
 import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
 import { themeList, themePersonalityById } from './theme-system';
+import type { LayoutDensity, LayoutId, LayoutProfile, MotionPreset } from './layout-system';
+import { PostAuthFeatureFrame, PostAuthHomeBanner } from './post-auth-experience';
 
 export type ZipDashboardSummary = {
   workDate: string;
@@ -94,6 +96,12 @@ type ZipDashboardProps = {
   release: ReleaseInfo;
   releaseOpen: boolean;
   setReleaseOpen: (open: boolean) => void;
+  layoutId: LayoutId;
+  layoutProfile: LayoutProfile;
+  density: LayoutDensity;
+  motion: MotionPreset;
+  canUseLayoutStudio: boolean;
+  onOpenLayoutStudio: () => void;
 };
 
 const initialWidgets: WidgetId[] = [
@@ -155,6 +163,8 @@ function ZipTopBar({
   onOpenModule,
   onOpenModuleHub,
   onOpenAdmin,
+  onOpenLayoutStudio,
+  canUseLayoutStudio,
   onLogout,
   company,
   companyChoices,
@@ -162,7 +172,7 @@ function ZipTopBar({
   summary,
   release,
   setReleaseOpen,
-}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'temperatureUnit' | 'setTemperatureUnit' | 'canChangeWeatherUnit' | 'enableLocation' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub' | 'onOpenAdmin' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany' | 'summary' | 'release' | 'setReleaseOpen'>) {
+}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'temperatureUnit' | 'setTemperatureUnit' | 'canChangeWeatherUnit' | 'enableLocation' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub' | 'onOpenAdmin' | 'onOpenLayoutStudio' | 'canUseLayoutStudio' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany' | 'summary' | 'release' | 'setReleaseOpen'>) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -207,6 +217,7 @@ function ZipTopBar({
       {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
       <button className="top-action top-utility-button" onClick={onOpenModuleHub}><Plus size={16} /><span>Quick actions</span></button>
       <button className="top-action install-action" onClick={() => void handleInstallApp()} title="Install the Daenem Staff Portal app"><Download size={16} /><span>{installState === 'working' ? 'Installing…' : installState === 'installed' ? 'App installed' : 'Install App'}</span></button>
+      {canUseLayoutStudio && <button className="top-action layout-studio-action" onClick={onOpenLayoutStudio}><LayoutDashboard size={16} /><span>Layout Studio</span></button>}
       <button className="top-action support-action" onClick={() => setSupportOpen((open) => !open)} aria-expanded={supportOpen}><ShieldCheck size={16} /><span>Help & Support</span></button>
       <button className="top-action messages-action" onClick={() => onNavigate('help')} title="Open messages center"><MessageSquareText size={16} /><span>Messages</span></button>
       <button className="top-action favorites-action" onClick={onOpenModuleHub} title="Open saved and authorized modules"><Star size={16} /><span>Favorites</span></button>
@@ -714,6 +725,7 @@ function DashboardWidgets({
   release,
 }: Pick<ZipDashboardProps, 'summary' | 'company' | 'context' | 'online' | 'refreshSummary' | 'onNavigate' | 'onOpenModule' | 'release'> & { widgets: WidgetId[] }) {
   const [dragged, setDragged] = useState<WidgetId | null>(null);
+  const [customizing, setCustomizing] = useState(false);
   const widgetStorageKey = `daenem-dashboard-widgets:${context.employee.id}:${company.id || 'group'}`;
   const [order, setOrder] = useState<WidgetId[]>(() => {
     if (typeof window === 'undefined') return widgets;
@@ -813,6 +825,7 @@ function DashboardWidgets({
   }
 
   return <>
+    <div className="widget-customize-toolbar" aria-label="Dashboard customization"><span><Settings2 size={14} /> {customizing ? 'Customize Dashboard' : 'Personal dashboard'}</span><button type="button" className="text-button" onClick={() => setCustomizing((value) => !value)}>{customizing ? 'Done' : 'Customize Dashboard'}</button></div>
     {canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator widget controls">
       <span><Settings2 size={14} /> Admin widget controls</span>
       <label className="widget-style-control">Widget style<select value={widgetStyle} onChange={(event) => setWidgetStyle(event.target.value as WidgetStyle)} aria-label="Dashboard widget style"><option value="compact">Compact</option><option value="full">Full</option><option value="card">Card</option><option value="strip">Strip</option></select></label>
@@ -831,10 +844,10 @@ function DashboardWidgets({
         key={widget}
         className={`widget-slot widget-${widget} widget-style-${widgetStyle}`}
         data-widget-style={widgetStyle}
-        draggable
-        onDragStart={() => setDragged(widget)}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={() => moveWidget(widget)}
+        draggable={customizing}
+        onDragStart={() => { if (customizing) setDragged(widget); }}
+        onDragOver={(event) => { if (customizing) event.preventDefault(); }}
+        onDrop={() => { if (customizing) moveWidget(widget); }}
       >
         <WidgetActions index={index} count={order.length} onMove={moveByKeyboard} canManage={canManageWidgets} onRemove={() => removeWidget(widget)} onReplace={() => replaceWidget(index)} />
         {renderWidget(widget)}
@@ -888,6 +901,12 @@ export function ZipDashboard({
   release,
   releaseOpen,
   setReleaseOpen,
+  layoutId,
+  layoutProfile,
+  density,
+  motion,
+  canUseLayoutStudio,
+  onOpenLayoutStudio,
 }: ZipDashboardProps) {
   useEffect(() => {
     document.body.classList.add('dashboard-active');
@@ -903,7 +922,7 @@ export function ZipDashboard({
       : 'Syncing live data';
   const liveDataDetail = dataError || (dataLastSyncedAt ? `Updated ${formatLastSyncedAt(dataLastSyncedAt)}` : 'Reading secured D1 records');
 
-  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView}`}>
+  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} data-layout-profile={layoutId} data-layout-density={density} data-layout-motion={motion}>
     <Sidebar
       context={context}
       company={company}
@@ -941,15 +960,18 @@ export function ZipDashboard({
         onOpenModuleHub={onOpenModuleHub}
         onOpenModule={onOpenModule}
         onOpenAdmin={onOpenAdmin}
+        onOpenLayoutStudio={onOpenLayoutStudio}
+        canUseLayoutStudio={canUseLayoutStudio}
         onLogout={onLogout}
         summary={summary}
         release={release}
         setReleaseOpen={setReleaseOpen}
       />
+      <div className="postauth-layout-ribbon"><span>Workspace composition · <strong>{layoutProfile.name}</strong> · {layoutProfile.shellMode}</span>{canUseLayoutStudio && <button type="button" onClick={onOpenLayoutStudio}>Change layout</button>}</div>
       <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
       <div className="dashboard-main">
         {view === 'overview'
-          ? <DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} />
+          ? <><PostAuthHomeBanner context={context} summary={summary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} /><DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} /></>
           : <div className="dashboard-heading module-page-heading"><div><span className="eyebrow">DAENEM BUSINESS ERP</span><h1>{moduleLabel}</h1><p>Open records and workflows assigned to your role and company scope.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Module Hub</button></div></div>}
         <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}{weather.temperature !== undefined ? ` · ${formatWeatherTemperature(weather.temperature, temperatureUnit)}` : ''}</button><span className={`data-sync-chip data-sync-${dataStatus}`} title={liveDataDetail}><i /> {liveDataLabel}{dataLastSyncedAt && dataStatus !== 'loading' ? ` · ${formatLastSyncedAt(dataLastSyncedAt)}` : ''}</span></div>
         <div className="company-switcher" role="list" aria-label="Company filter">{companyChoices.map((item) => {
@@ -976,7 +998,7 @@ export function ZipDashboard({
           <OwnerCommandCenter context={context} summary={summary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} />
           {liveIntelligence && <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section>}
           <section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>
-        </> : <div className="zip-module-content">{content}</div>}
+        </> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
         <footer className="dashboard-footer"><span>Daenem Business ERP · {themeName}</span><span>Live D1 data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
       </div>
     </section>

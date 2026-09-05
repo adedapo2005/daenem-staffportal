@@ -34,6 +34,7 @@ import { routeOwnerTemporaryPasswordRepair } from './owner-temp-repair';
 import { guardTemporaryPasswordChange, routeTemporaryPasswordSelf } from './temporary-password';
 import { routeThemePreferences } from './theme-preferences';
 import { routeNavigationWorkspace } from './navigation-workspace';
+import { routeExperiencePreferences } from './experience-preferences';
 import { routeHrWorkflows } from './hr-workflows';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
@@ -172,6 +173,7 @@ export default {
       url.pathname.startsWith('/api/mobile/') ||
       url.pathname.startsWith('/api/theme/') ||
       url.pathname.startsWith('/api/navigation/') ||
+      url.pathname.startsWith('/api/experience/') ||
       url.pathname.startsWith('/api/ai/') ||
       url.pathname.startsWith('/api/platform/') ||
       url.pathname.startsWith('/api/hr/workflows/');
@@ -182,6 +184,12 @@ export default {
 
       if (url.pathname.startsWith('/api/theme/')) {
         const response = await routeThemePreferences(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/experience/')) {
+        const enhanced = await getEnhancedSessionContext(request, env);
+        if (!enhanced) return secure(json({ error: 'Authentication required.' }, 401));
+        const response = await routeExperiencePreferences(request, env, enhanced);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/hr/workflows/')) {
