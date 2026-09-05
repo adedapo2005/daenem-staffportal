@@ -1,7 +1,7 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 import type { EnhancedSessionContext } from './auth-context-v2';
 import {
-  DEFAULT_LAYOUT_ID, LAYOUT_IDS, normalizeLayoutId, normalizeLayoutPolicy, normalizeLayoutPreference,
+  DEFAULT_LAYOUT_ID, LAYOUT_IDS, normalizeLayoutId, normalizeLayoutPolicy, normalizeLayoutPreference, resolveLayout,
   type LayoutId, type LayoutPolicy, type LayoutPreference,
 } from '../src/layout-system';
 

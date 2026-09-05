@@ -305,6 +305,7 @@ async function dashboardSummary(request: Request, env: Env, context: SessionCont
     return json({ error: 'Dashboard access is not assigned for this business.' }, 403);
   }
   const companyId = requestedCompany || null;
+  const workDate = nigeriaDate();
   const canSeeAggregateSummary = context.roles.some((role) => ['owner', 'group_admin', 'company_admin', 'manager'].includes(role.code))
     || hasPermission(context, 'dashboard.access', 'manage');
   if (!canSeeAggregateSummary) {
@@ -318,7 +319,6 @@ async function dashboardSummary(request: Request, env: Env, context: SessionCont
   }
   const companyIds = companyId ? [companyId] : dashboardCompanyIds;
   const companyPlaceholders = sqlList(companyIds);
-  const workDate = nigeriaDate();
 
   const employeeCount = await env.DB.prepare(`SELECT COUNT(DISTINCT employee_id) AS count FROM employee_company_memberships WHERE active = 1 AND company_id IN (${companyPlaceholders})`).bind(...companyIds).first<{ count: number }>();
   const incomplete = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendance_days WHERE work_date = ? AND status = 'incomplete' AND company_id IN (${companyPlaceholders})`).bind(workDate, ...companyIds).first<{ count: number }>();
