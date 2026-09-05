@@ -51,3 +51,1422 @@
 .postauth-composition-board-pulse{grid-template-columns:minmax(0,1fr) 300px;grid-template-areas:"lead lead" "pulse pulse" "board rail"}.postauth-composition-board-pulse .postauth-composition-lead{grid-area:lead}.postauth-composition-board-pulse .postauth-composition-pulse-strip{grid-area:pulse;display:grid;align-content:start;gap:18px}.postauth-composition-board-pulse .postauth-composition-board{grid-area:board;display:grid;align-content:start;gap:18px}.postauth-composition-board-pulse .postauth-composition-rail{grid-area:rail}
 @media(max-width:1100px){.postauth-dashboard-composition{grid-template-columns:1fr;grid-template-areas:"lead" "control" "canvasnav" "kpis" "story" "master" "detail" "canvas" "work" "pulse" "widgets" "next" "board" "inspector" "rail"}.postauth-composition-canvas-main,.postauth-composition-story,.postauth-composition-detail-pane,.postauth-composition-data-canvas,.postauth-composition-studio-canvas,.postauth-composition-board,.postauth-composition-work,.postauth-composition-bento-widgets,.postauth-composition-focus-work{display:grid;gap:16px}.postauth-composition-canvas-nav,.postauth-composition-master-pane,.postauth-composition-kpis,.postauth-composition-bento-hero,.postauth-composition-bento-kpis,.postauth-composition-bento-work,.postauth-composition-bento-pulse,.postauth-composition-bento-rail,.postauth-composition-next-action,.postauth-composition-pulse-strip,.postauth-composition-studio-inspector,.postauth-composition-story-rail,.postauth-composition-drawer,.postauth-composition-rail{grid-area:auto}.postauth-composition-canvas-nav small{writing-mode:horizontal-tb;transform:none}.postauth-composition-master-pane .workspace-overview-strip,.postauth-composition-master-pane .erp-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.postauth-dashboard-composition{gap:14px}.postauth-composition-canvas-nav{padding:12px}.postauth-composition-master-pane{padding:14px}.postauth-composition-master-pane .workspace-overview-strip,.postauth-composition-master-pane .erp-pulse-grid{grid-template-columns:1fr}.postauth-composition-control-strip{align-items:flex-start;flex-direction:column}.postauth-adapter-note{padding:14px}}
+
+/* Post-auth shell adapters: each profile owns a real navigation surface while
+   the canonical module registry remains shared. */
+.dashboard-page.postauth-layout {
+  --postauth-motion-duration: 200ms;
+  --postauth-motion-ease: cubic-bezier(.2,.75,.25,1);
+  --postauth-nav-width: 252px;
+}
+.dashboard-page.postauth-layout .dashboard-content {
+  width: auto;
+  margin-left: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 100dvh;
+}
+.dashboard-page.postauth-layout .postauth-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  min-width: 0;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: auto;
+  scrollbar-width: thin;
+  flex: 0 0 var(--postauth-nav-width);
+  border-right: 1px solid var(--postauth-line);
+  background: color-mix(in srgb, var(--surface-strong, #fff) 92%, var(--canvas));
+  color: var(--text);
+}
+.dashboard-page.postauth-layout .postauth-expanded-navigation {
+  --postauth-nav-width: 252px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 13px 15px;
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation {
+  --postauth-nav-width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 12px 15px;
+  background: color-mix(in srgb, #0f3c53 94%, var(--surface-strong));
+  color: #fff;
+}
+.dashboard-page.postauth-layout .postauth-master-detail-navigation {
+  --postauth-nav-width: 330px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 12px 15px;
+}
+.dashboard-page.postauth-layout .postauth-bento-navigation {
+  --postauth-nav-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 13px 15px;
+}
+.dashboard-page.postauth-layout .postauth-icon-navigation {
+  --postauth-nav-width: 330px;
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: start;
+  padding: 14px 10px 14px 8px;
+  gap: 10px;
+}
+.dashboard-page.postauth-layout .postauth-icon-navigation .postauth-nav-brand {
+  grid-column: 1 / -1;
+}
+.dashboard-page.postauth-layout .postauth-icon-navigation .postauth-nav-scope {
+  grid-column: 1 / -1;
+}
+.dashboard-page.postauth-layout .postauth-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 6px;
+}
+.dashboard-page.postauth-layout .postauth-nav-brand .brand-mark {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 11px 11px 14px 6px;
+  background: linear-gradient(145deg, var(--accent), var(--primary) 58%, var(--secondary));
+  box-shadow: 0 9px 22px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-nav-brand .brand-mark-image {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+}
+.dashboard-page.postauth-layout .postauth-nav-brand > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.dashboard-page.postauth-layout .postauth-nav-brand strong {
+  overflow: hidden;
+  color: var(--text);
+  font: 800 16px/1 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-brand strong {
+  color: #fff;
+}
+.dashboard-page.postauth-layout .postauth-nav-brand small {
+  color: var(--postauth-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .05em;
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-brand small {
+  color: rgba(255,255,255,.64);
+}
+.dashboard-page.postauth-layout .postauth-nav-brand.compact {
+  justify-content: center;
+  padding: 0;
+}
+.dashboard-page.postauth-layout .postauth-nav-brand.compact > span {
+  display: none;
+}
+.dashboard-page.postauth-layout .postauth-nav-kicker,
+.dashboard-page.postauth-layout .postauth-operations-heading {
+  padding: 3px 7px;
+  color: var(--postauth-muted);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.dashboard-page.postauth-layout .postauth-operations-heading {
+  display: grid;
+  gap: 4px;
+  color: rgba(255,255,255,.62);
+}
+.dashboard-page.postauth-layout .postauth-operations-heading strong {
+  color: #fff;
+  font: 800 18px/1.1 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.04em;
+  text-transform: none;
+}
+.dashboard-page.postauth-layout .postauth-operations-heading small {
+  color: rgba(255,255,255,.56);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.dashboard-page.postauth-layout .postauth-nav-tree,
+.dashboard-page.postauth-layout .postauth-operations-list {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.dashboard-page.postauth-layout .postauth-nav-tree {
+  overflow: auto;
+  padding-right: 2px;
+}
+.dashboard-page.postauth-layout .postauth-nav-group {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 11px;
+}
+.dashboard-page.postauth-layout .postauth-nav-group[open] {
+  border-color: var(--postauth-line);
+  background: color-mix(in srgb, var(--primary) 3%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-nav-group summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 43px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  color: var(--postauth-muted);
+  cursor: pointer;
+  list-style: none;
+}
+.dashboard-page.postauth-layout .postauth-nav-group summary::-webkit-details-marker {
+  display: none;
+}
+.dashboard-page.postauth-layout .postauth-nav-group summary > span:nth-child(2) {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.dashboard-page.postauth-layout .postauth-nav-group summary strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .postauth-nav-group summary small {
+  overflow: hidden;
+  color: var(--postauth-muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .postauth-nav-group summary b {
+  min-width: 18px;
+  padding: 2px 4px;
+  border-radius: 5px;
+  color: var(--postauth-accent);
+  background: color-mix(in srgb, var(--postauth-accent) 10%, transparent);
+  font-size: 8px;
+  text-align: center;
+}
+.dashboard-page.postauth-layout .postauth-nav-group-items,
+.dashboard-page.postauth-layout .postauth-top-navigation-group > div {
+  display: grid;
+  gap: 3px;
+  padding: 4px 5px 7px;
+}
+.dashboard-page.postauth-layout .postauth-nav-item {
+  width: 100%;
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 6px 7px;
+  color: var(--postauth-muted);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--postauth-motion-duration) var(--postauth-motion-ease), background var(--postauth-motion-duration) var(--postauth-motion-ease), border-color var(--postauth-motion-duration) var(--postauth-motion-ease), transform var(--postauth-motion-duration) var(--postauth-motion-ease);
+}
+.dashboard-page.postauth-layout .postauth-nav-item:hover,
+.dashboard-page.postauth-layout .postauth-nav-item.active {
+  color: var(--postauth-accent);
+  border-color: color-mix(in srgb, var(--postauth-accent) 14%, var(--postauth-line));
+  background: color-mix(in srgb, var(--postauth-accent) 8%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-nav-item:hover {
+  transform: translateX(2px);
+}
+.dashboard-page.postauth-layout .postauth-nav-item.compact {
+  min-height: 33px;
+  padding-block: 5px;
+}
+.dashboard-page.postauth-layout .postauth-nav-item-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 7px;
+  color: currentColor;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-nav-item-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.dashboard-page.postauth-layout .postauth-nav-item-copy strong,
+.dashboard-page.postauth-layout .postauth-nav-item-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .postauth-nav-item-copy strong {
+  color: currentColor;
+  font-size: 10px;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .postauth-nav-item-copy small {
+  color: var(--postauth-muted);
+  font-size: 8px;
+}
+.dashboard-page.postauth-layout .postauth-nav-item > svg {
+  flex: 0 0 auto;
+}
+.dashboard-page.postauth-layout .postauth-nav-footer {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--postauth-line);
+}
+.dashboard-page.postauth-layout .postauth-nav-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--postauth-muted);
+  font-size: 9px;
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-status {
+  color: rgba(255,255,255,.64);
+}
+.dashboard-page.postauth-layout .postauth-nav-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3bbf8a;
+  box-shadow: 0 0 0 3px rgba(59,191,138,.16);
+}
+.dashboard-page.postauth-layout .postauth-nav-status i.offline {
+  background: #f2b24b;
+}
+.dashboard-page.postauth-layout .postauth-nav-version {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  width: 100%;
+  border: 0;
+  padding: 5px 0;
+  color: var(--postauth-accent);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .postauth-nav-version small {
+  color: var(--postauth-muted);
+  font-size: 8px;
+  font-weight: 600;
+}
+.dashboard-page.postauth-layout .postauth-nav-scope {
+  display: block;
+  overflow: hidden;
+  color: var(--postauth-muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-scope {
+  color: rgba(255,255,255,.54);
+}
+.dashboard-page.postauth-layout .postauth-icon-rail {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding-top: 3px;
+}
+.dashboard-page.postauth-layout .postauth-icon-rail-button {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: var(--postauth-muted);
+  background: transparent;
+  cursor: pointer;
+}
+.dashboard-page.postauth-layout .postauth-icon-rail-button:hover,
+.dashboard-page.postauth-layout .postauth-icon-rail-button.active {
+  color: var(--postauth-accent);
+  border-color: color-mix(in srgb, var(--postauth-accent) 20%, var(--postauth-line));
+  background: color-mix(in srgb, var(--postauth-accent) 9%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-secondary-navigation {
+  min-width: 0;
+  padding: 7px 0 0 9px;
+  border-left: 1px solid var(--postauth-line);
+}
+.dashboard-page.postauth-layout .postauth-secondary-navigation > header,
+.dashboard-page.postauth-layout .postauth-master-nav-detail > header {
+  display: grid;
+  gap: 3px;
+  padding: 0 6px 9px;
+}
+.dashboard-page.postauth-layout .postauth-secondary-navigation > header small,
+.dashboard-page.postauth-layout .postauth-master-nav-detail > header small {
+  color: var(--postauth-muted);
+  font-size: 8px;
+}
+.dashboard-page.postauth-layout .postauth-secondary-navigation > div {
+  display: grid;
+  gap: 3px;
+}
+.dashboard-page.postauth-layout .postauth-canvas-tools,
+.dashboard-page.postauth-layout .postauth-studio-inspector-nav {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+  padding: 11px;
+  border: 1px solid var(--postauth-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-canvas-tools strong,
+.dashboard-page.postauth-layout .postauth-studio-inspector-nav strong {
+  font-size: 11px;
+}
+.dashboard-page.postauth-layout .postauth-canvas-tools small,
+.dashboard-page.postauth-layout .postauth-studio-inspector-nav small {
+  color: var(--postauth-muted);
+  font-size: 8px;
+  line-height: 1.35;
+}
+.dashboard-page.postauth-layout .postauth-operations-list {
+  overflow: auto;
+}
+.dashboard-page.postauth-layout .postauth-operation-group {
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+.dashboard-page.postauth-layout .postauth-operation-group-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  padding: 6px 4px;
+  color: #fff;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.dashboard-page.postauth-layout .postauth-operation-group-button > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.dashboard-page.postauth-layout .postauth-operation-group-button strong {
+  font-size: 10px;
+}
+.dashboard-page.postauth.layout .postauth-operation-group-button small,
+.dashboard-page.postauth-layout .postauth-operation-group-button small {
+  color: rgba(255,255,255,.56);
+  font-size: 8px;
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-item {
+  color: rgba(255,255,255,.64);
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-item:hover,
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-item.active {
+  color: #fff;
+  border-color: rgba(255,255,255,.16);
+  background: rgba(255,255,255,.1);
+}
+.dashboard-page.postauth-layout .postauth-operations-navigation .postauth-nav-item-copy small {
+  color: rgba(255,255,255,.48);
+}
+.dashboard-page.postauth-layout .postauth-master-nav-layout {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 9px;
+  min-height: 0;
+  flex: 1;
+}
+.dashboard-page.postauth-layout .postauth-master-nav-groups {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding-right: 7px;
+  border-right: 1px solid var(--postauth-line);
+}
+.dashboard-page.postauth-layout .postauth-master-nav-groups > button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 61px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 5px 4px;
+  color: var(--postauth-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+  text-align: center;
+}
+.dashboard-page.postauth-layout .postauth-master-nav-groups > button.active {
+  color: var(--postauth-accent);
+  border-color: color-mix(in srgb, var(--postauth-accent) 18%, var(--postauth-line));
+  background: color-mix(in srgb, var(--postauth-accent) 8%, transparent);
+}
+.dashboard-page.postauth.layout .postauth-master-nav-groups > button span,
+.dashboard-page.postauth-layout .postauth-master-nav-groups > button span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.dashboard-page.postauth-layout .postauth-master-nav-groups > button strong {
+  overflow: hidden;
+  max-width: 78px;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .postauth-master-nav-groups > button small {
+  overflow: hidden;
+  max-width: 78px;
+  color: var(--postauth-muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .postauth-master-nav-detail {
+  min-width: 0;
+  overflow: auto;
+}
+.dashboard-page.postauth-layout .postauth-master-nav-detail > div {
+  display: grid;
+  gap: 4px;
+}
+.dashboard-page.postauth-layout .postauth-master-hub {
+  color: var(--postauth-accent) !important;
+}
+.dashboard-page.postauth-layout .postauth-bento-priority {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(145deg, #0d5160, #167d79);
+}
+.dashboard-page.postauth-layout .postauth-bento-priority strong {
+  font: 800 17px/1.1 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.04em;
+}
+.dashboard-page.postauth-layout .postauth-bento-priority small {
+  color: rgba(255,255,255,.7);
+  font-size: 8px;
+  line-height: 1.35;
+}
+.dashboard-page.postauth-layout .postauth-bento-nav-groups {
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+}
+.dashboard-page.postauth-layout .postauth-bento-nav-groups > section {
+  padding: 9px;
+  border: 1px solid var(--postauth-line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-bento-nav-groups header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--postauth-accent);
+}
+.dashboard-page.postauth-layout .postauth-bento-nav-groups header span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.dashboard-page.postauth-layout .postauth-bento-nav-groups header strong {
+  font-size: 9px;
+}
+.dashboard-page.postauth-layout .postauth-bento-nav-groups header small {
+  color: var(--postauth-muted);
+  font-size: 7px;
+}
+.dashboard-page.postauth-layout .postauth-bento-nav-groups > section > div {
+  display: grid;
+  gap: 2px;
+  margin-top: 5px;
+}
+.dashboard-page.postauth.layout .postauth-bento-nav-groups .postauth-nav-item,
+.dashboard-page.postauth-layout .postauth-bento-nav-groups .postauth-nav-item {
+  min-height: 29px;
+  padding-block: 4px;
+}
+.dashboard-page.postauth-layout .postauth-bento-hub,
+.dashboard-page.postauth-layout .postauth-contextual-hub {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 35px;
+  border: 1px solid color-mix(in srgb, var(--postauth-accent) 24%, var(--postauth-line));
+  border-radius: 9px;
+  color: var(--postauth-accent);
+  background: color-mix(in srgb, var(--postauth-accent) 7%, transparent);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .postauth-contextual-navigation {
+  --postauth-nav-width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 18px 13px;
+}
+.dashboard-page.postauth-layout .postauth-contextual-navigation > header {
+  display: grid;
+  gap: 4px;
+  padding: 8px 4px 11px;
+  border-bottom: 1px solid var(--postauth-line);
+}
+.dashboard-page.postauth-layout .postauth-contextual-navigation > header strong {
+  font: 800 20px/1.05 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.05em;
+}
+.dashboard-page.postauth-layout .postauth-contextual-navigation > header small {
+  color: var(--postauth-muted);
+  font-size: 8px;
+}
+.dashboard-page.postauth.layout .postauth-contextual-navigation nav,
+.dashboard-page.postauth-layout .postauth-contextual-navigation nav {
+  display: grid;
+  gap: 4px;
+}
+.dashboard-page.postauth-layout .postauth-contextual-navigation .postauth-nav-item {
+  min-height: 36px;
+}
+.dashboard-page.postauth-layout .postauth-top-navigation {
+  position: relative;
+  top: auto;
+  z-index: 25;
+  width: 100%;
+  min-height: 62px;
+  max-height: none;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  overflow: visible;
+  padding: 10px clamp(18px, 3vw, 42px);
+  border-right: 0;
+  border-bottom: 1px solid var(--postauth-line);
+  background: color-mix(in srgb, var(--surface-strong, #fff) 94%, var(--canvas));
+  flex: none;
+}
+.dashboard-page.postauth-layout .postauth-top-navigation-brand {
+  flex: 0 0 auto;
+}
+.dashboard-page.postauth-layout .postauth-top-navigation .postauth-nav-brand {
+  min-height: 38px;
+}
+.dashboard-page.postauth-layout .postauth-top-navigation-groups {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+}
+.dashboard-page.postauth-layout .postauth-top-navigation-group {
+  position: relative;
+  min-width: 0;
+}
+.dashboard-page.postauth-layout .postauth-top-navigation-group > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 35px;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: var(--postauth-muted);
+  cursor: pointer;
+  list-style: none;
+  font-size: 9px;
+  font-weight: 800;
+}
+.dashboard-page.postauth.layout .postauth-top-navigation-group > summary::-webkit-details-marker,
+.dashboard-page.postauth-layout .postauth-top-navigation-group > summary::-webkit-details-marker {
+  display: none;
+}
+.dashboard-page.postauth-layout .postauth-top-navigation-group > summary:hover {
+  color: var(--postauth-accent);
+  background: color-mix(in srgb, var(--postauth-accent) 7%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-top-navigation-group > div {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  z-index: 60;
+  width: 250px;
+  border: 1px solid var(--postauth-line);
+  border-radius: 12px;
+  background: var(--surface-strong, #fff);
+  box-shadow: 0 18px 48px rgba(22,44,67,.14);
+}
+.dashboard-page.postauth-layout .postauth-top-navigation-context {
+  flex: 0 0 auto;
+  color: var(--postauth-muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .postauth-horizon-command-lane {
+  display: grid;
+  gap: 2px;
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-left: 1px solid var(--postauth-line);
+}
+.dashboard-page.postauth-layout .postauth-horizon-command-lane strong {
+  color: var(--text);
+  font-size: 9px;
+}
+.dashboard-page.postauth-layout .postauth-horizon-command-lane small {
+  color: var(--postauth-muted);
+  font-size: 7px;
+}
+.dashboard-page.postauth-layout.postauth-layout-insight-magazine,
+.dashboard-page.postauth-layout.postauth-layout-horizon-wide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.dashboard-page.postauth-layout.postauth-layout-insight-magazine > .postauth-top-navigation,
+.dashboard-page.postauth-layout.postauth-layout-horizon-wide > .postauth-top-navigation {
+  grid-column: 1;
+}
+.dashboard-page.postauth-layout.postauth-layout-insight-magazine > .dashboard-content,
+.dashboard-page.postauth-layout.postauth-layout-horizon-wide > .dashboard-content {
+  grid-column: 1;
+  width: 100%;
+  margin-left: 0;
+}
+.dashboard-page.postauth-layout .dashboard-main {
+  width: min(100% - 40px, 1900px);
+}
+.dashboard-page.postauth-layout .top-command-trigger {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  padding: 0;
+  color: var(--postauth-muted);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+}
+.dashboard-page.postauth-layout .top-command-trigger:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  outline-offset: 3px;
+}
+.dashboard-page.postauth-layout .top-utilities {
+  position: relative;
+  flex: 0 0 auto;
+}
+.dashboard-page.postauth-layout .top-more-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 10px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .top-utilities-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 70;
+  width: 205px;
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface-strong);
+  box-shadow: 0 18px 48px rgba(15,42,70,.16);
+}
+.dashboard-page.postauth-layout .top-utilities-menu button {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 8px;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+  text-align: left;
+}
+.dashboard-page.postauth-layout .top-utilities-menu button:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+.dashboard-page.postauth-layout .command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: start center;
+  padding: 12vh 20px 20px;
+  background: rgba(9,24,43,.34);
+  backdrop-filter: blur(7px);
+}
+.dashboard-page.postauth-layout .command-palette {
+  width: min(650px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-strong);
+  box-shadow: 0 28px 84px rgba(9,24,43,.22);
+}
+.dashboard-page.postauth-layout .command-palette > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 13px;
+}
+.dashboard-page.postauth-layout .command-palette h2 {
+  margin: 5px 0 0;
+  color: var(--text);
+  font: 800 24px/1.08 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.05em;
+}
+.dashboard-page.postauth-layout .command-palette-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 20px 10px;
+  padding: 0 11px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--primary);
+  background: var(--canvas);
+}
+.dashboard-page.postauth-layout .command-palette-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 12px;
+}
+.dashboard-page.postauth-layout .command-palette-results {
+  max-height: min(410px, 46vh);
+  overflow: auto;
+  padding: 0 12px 8px;
+}
+.dashboard-page.postauth-layout .command-palette-results > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  padding: 6px 8px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.dashboard-page.postauth.layout .command-palette-results > button:hover,
+.dashboard-page.postauth-layout .command-palette-results > button.selected {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+.dashboard-page.postauth-layout .command-result-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.dashboard-page.postauth-layout .command-palette-results > button > span:nth-child(2) {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.dashboard-page.postauth-layout .command-palette-results small {
+  overflow: hidden;
+  color: var(--postauth-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-page.postauth-layout .command-palette-empty {
+  padding: 26px 10px;
+  color: var(--postauth-muted);
+  font-size: 11px;
+}
+.dashboard-page.postauth-layout .command-palette > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 20px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--postauth-muted);
+  font-size: 9px;
+}
+.dashboard-page.postauth-layout .command-palette > footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  color: var(--primary);
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .postauth-studio-inspector-nav {
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+.dashboard-page.postauth-layout .postauth-board-pulse-nav {
+  display: grid;
+  gap: 5px;
+  margin-top: auto;
+  padding: 11px;
+  border: 1px solid rgba(255,255,255,.17);
+  border-radius: 12px;
+  background: rgba(255,255,255,.08);
+}
+.dashboard-page.postauth-layout .postauth-board-pulse-nav strong {
+  font-size: 11px;
+}
+.dashboard-page.postauth-layout .postauth-board-pulse-nav small {
+  color: rgba(255,255,255,.64);
+  font-size: 8px;
+  line-height: 1.35;
+}
+.dashboard-page.postauth-layout .postauth-board-pulse-nav > div {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+}
+.dashboard-page.postauth-layout .postauth-board-pulse-nav > div i {
+  width: 24px;
+  height: 4px;
+  border-radius: 3px;
+  background: #71d8be;
+}
+.dashboard-page.postauth-layout .postauth-board-pulse-nav > div i:nth-child(2) { width: 37px; background: #f4c268; }
+.dashboard-page.postauth-layout .postauth-board-pulse-nav > div i:nth-child(3) { width: 18px; background: #e98787; }
+.dashboard-page.postauth-layout .postauth-context-note {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--postauth-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .postauth-context-note strong {
+  color: var(--text);
+  font: 800 16px/1.1 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.04em;
+}
+.dashboard-page.postauth-layout .postauth-context-note p,
+.dashboard-page.postauth-layout .postauth-context-note small {
+  margin: 0;
+  color: var(--postauth-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.dashboard-page.postauth-layout .dashboard-module-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+.dashboard-page.postauth-layout .dashboard-module-toolbar .eyebrow {
+  color: var(--postauth-muted);
+}
+.dashboard-page.postauth-layout .widget-customize-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--postauth-line);
+  border-radius: 10px;
+  color: var(--postauth-muted);
+  background: color-mix(in srgb, var(--surface-strong) 76%, transparent);
+  font-size: 10px;
+}
+.dashboard-page.postauth-layout .widget-customize-toolbar > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dashboard-page.postauth-layout .widget-admin-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 21%, var(--postauth-line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface-strong));
+  font-size: 9px;
+}
+.dashboard-page.postauth-layout .widget-admin-toolbar > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: auto;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .widget-admin-toolbar button,
+.dashboard-page.postauth-layout .widget-style-control select,
+.dashboard-page.postauth-layout .widget-clock-config summary {
+  min-height: 29px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 7px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 9px;
+}
+.dashboard-page.postauth-layout .widget-style-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--postauth-muted);
+}
+.dashboard-page.postauth-layout .widget-clock-config summary {
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+.dashboard-page.postauth-layout .widget-clock-config summary::-webkit-details-marker {
+  display: none;
+}
+.dashboard-page.postauth-layout .widget-clock-config-body {
+  position: absolute;
+  z-index: 40;
+  display: grid;
+  gap: 8px;
+  width: min(280px, calc(100vw - 40px));
+  margin-top: 5px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  box-shadow: 0 18px 45px rgba(11,31,54,.16);
+}
+.dashboard-page.postauth-layout .widget-clock-config {
+  position: relative;
+}
+.dashboard-page.postauth-layout .manager-command-center {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--postauth-line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface-strong));
+  box-shadow: var(--postauth-shadow);
+}
+.dashboard-page.postauth-layout .manager-command-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+.dashboard-page.postauth-layout .manager-command-header h2 {
+  margin: 5px 0 6px;
+  font: 800 22px/1.08 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.05em;
+}
+.dashboard-page.postauth-layout .manager-command-header p {
+  margin: 0;
+  max-width: 680px;
+  color: var(--postauth-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.dashboard-page.postauth-layout .manager-command-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.dashboard-page.postauth-layout .manager-command-grid article {
+  display: grid;
+  gap: 5px;
+  min-height: 108px;
+  padding: 12px;
+  border: 1px solid var(--postauth-line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+}
+.dashboard-page.postauth-layout .manager-command-icon {
+  color: var(--postauth-accent);
+}
+.dashboard-page.postauth-layout .manager-command-grid strong {
+  font: 800 22px/1 var(--font-heading, "Manrope"), sans-serif;
+  letter-spacing: -.04em;
+}
+.dashboard-page.postauth-layout .manager-command-grid small {
+  color: var(--postauth-muted);
+  font-size: 9px;
+}
+.dashboard-page.postauth-layout .manager-command-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.dashboard-page.postauth-layout .manager-command-actions button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--postauth-line);
+  border-radius: 8px;
+  padding: 0 9px;
+  color: var(--postauth-accent);
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 800;
+}
+.dashboard-page.postauth-layout .manager-command-actions button:hover {
+  background: color-mix(in srgb, var(--postauth-accent) 8%, transparent);
+}
+.dashboard-page.postauth-layout .layout-preview {
+  position: relative;
+  min-height: 110px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 34px;
+  gap: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--canvas) 82%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .layout-preview-large {
+  position: relative;
+  min-height: 280px;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) 105px;
+  gap: 10px;
+  overflow: hidden;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--canvas) 82%, var(--surface-strong));
+}
+.layout-preview-side-nav,
+.layout-preview-top-nav,
+.layout-preview-main,
+.layout-preview-inspector,
+.layout-preview-mobile-flow {
+  min-width: 0;
+}
+.dashboard-page.postauth-layout .layout-preview-side-nav,
+.dashboard-page.postauth-layout .layout-preview-top-nav {
+  background: color-mix(in srgb, var(--primary) 18%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .layout-preview-side-nav {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 8px 5px;
+}
+.dashboard-page.postauth-layout .layout-preview-side-nav i {
+  height: 13px;
+  border-radius: 4px;
+  background: color-mix(in srgb, #fff 68%, var(--primary));
+}
+.dashboard-page.postauth-layout .layout-preview-top-nav {
+  grid-column: 1 / -1;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+}
+.dashboard-page.postauth-layout .layout-preview-top-nav i {
+  width: 30px;
+  height: 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, #fff 70%, var(--primary));
+}
+.dashboard-page.postauth-layout .layout-preview-top-nav b {
+  width: 18px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: color-mix(in srgb, #fff 65%, var(--primary));
+}
+.dashboard-page.postauth-layout .layout-preview-main {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 9px;
+}
+.dashboard-page.postauth-layout .preview-command {
+  height: 20px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 15%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .preview-work {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.dashboard-page.postauth-layout .preview-work span,
+.dashboard-page.postauth-layout .preview-table i,
+.dashboard-page.postauth-layout .preview-inspector span {
+  display: block;
+  min-height: 19px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--secondary) 16%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .preview-table {
+  display: grid;
+  gap: 4px;
+}
+.dashboard-page.postauth-layout .preview-table i {
+  min-height: 8px;
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .preview-inspector {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 9px 6px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .layout-preview-mobile-flow {
+  display: none;
+}
+.dashboard-page.postauth-layout .preview-work span:nth-child(1) { background: color-mix(in srgb, var(--primary) 25%, var(--surface-strong)); }
+.dashboard-page.postauth-layout .preview-work span:nth-child(2) { background: color-mix(in srgb, var(--secondary) 25%, var(--surface-strong)); }
+.dashboard-page.postauth-layout .preview-work span:nth-child(3) { background: color-mix(in srgb, var(--accent) 22%, var(--surface-strong)); }
+.dashboard-page.postauth-layout .preview-master-detail {
+  grid-template-columns: 25% minmax(0, 1fr) 28%;
+}
+.dashboard-page.postauth-layout .preview-master-detail .layout-preview-side-nav {
+  width: auto;
+}
+.dashboard-page.postauth-layout .preview-workspace-canvas,
+.dashboard-page.postauth-layout .preview-horizon-wide {
+  grid-template-columns: 18px minmax(0, 1fr) 28px;
+}
+.dashboard-page.postauth-layout .preview-workspace-canvas .layout-preview-side-nav,
+.dashboard-page.postauth-layout .preview-enterprise-studio .layout-preview-side-nav {
+  background: color-mix(in srgb, var(--secondary) 28%, var(--surface-strong));
+}
+.dashboard-page.postauth-layout .preview-adaptive-bento .preview-work {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+.dashboard-page.postauth-layout .preview-focus-flow .layout-preview-side-nav {
+  width: 16px;
+}
+.dashboard-page.postauth-layout .preview-board-pulse .preview-work {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dashboard-page.postauth-layout .layout-preview-large .layout-preview-top-nav {
+  grid-column: 1 / -1;
+}
+.dashboard-page.postauth-layout .postauth-layout-ribbon {
+  display: none;
+}
+.dashboard-page.postauth-layout .postauth-feature-frame > .postauth-feature-header .eyebrow {
+  color: var(--postauth-muted);
+}
+.dashboard-page.postauth-layout .postauth-feature-context .eyebrow {
+  color: var(--postauth-accent);
+}
+.dashboard-page.postauth-layout .history-readonly {
+  color: var(--postauth-muted);
+  font-size: 9px;
+  font-style: italic;
+}
+.dashboard-page.postauth-layout .postauth-motion-off {
+  --postauth-motion-duration: 0ms;
+}
+.dashboard-page.postauth-layout .postauth-motion-calm {
+  --postauth-motion-duration: 140ms;
+  --postauth-motion-ease: ease-out;
+}
+.dashboard-page.postauth-layout .postauth-motion-balanced {
+  --postauth-motion-duration: 200ms;
+}
+.dashboard-page.postauth-layout .postauth-motion-expressive {
+  --postauth-motion-duration: 300ms;
+  --postauth-motion-ease: cubic-bezier(.16,1,.3,1);
+}
+.dashboard-page.postauth-layout .postauth-navigation,
+.dashboard-page.postauth-layout .postauth-nav-item,
+.dashboard-page.postauth-layout .dashboard-content,
+.dashboard-page.postauth-layout .dashboard-main,
+.dashboard-page.postauth-layout .panel,
+.dashboard-page.postauth-layout .widget-slot {
+  transition: transform var(--postauth-motion-duration) var(--postauth-motion-ease), box-shadow var(--postauth-motion-duration) var(--postauth-motion-ease), opacity var(--postauth-motion-duration) var(--postauth-motion-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page.postauth-layout,
+  .dashboard-page.postauth-layout.postauth-motion-expressive,
+  .dashboard-page.postauth-layout.postauth-motion-balanced,
+  .dashboard-page.postauth-layout.postauth-motion-calm {
+    --postauth-motion-duration: 0ms;
+  }
+  .dashboard-page.postauth-layout *,
+  .dashboard-page.postauth-layout *::before,
+  .dashboard-page.postauth-layout *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (max-width: 1180px) {
+  .dashboard-page.postauth-layout .postauth-expanded-navigation { --postauth-nav-width: 224px; }
+  .dashboard-page.postauth-layout .postauth-master-detail-navigation { --postauth-nav-width: 288px; }
+  .dashboard-page.postauth-layout .postauth-bento-navigation { --postauth-nav-width: 230px; }
+  .dashboard-page.postauth-layout .postauth-icon-navigation { --postauth-nav-width: 292px; }
+  .dashboard-page.postauth-layout .top-bar { flex-wrap: wrap; }
+  .dashboard-page.postauth-layout .search-wrap { max-width: none; flex-basis: min(100%, 480px); }
+  .dashboard-page.postauth-layout .top-actions { flex: 1 1 auto; justify-content: flex-end; }
+  .dashboard-page.postauth-layout .postauth-top-navigation-groups { overflow: auto; }
+}
+@media (max-width: 860px) {
+  .dashboard-page.postauth-layout {
+    display: block;
+  }
+  .dashboard-page.postauth-layout .postauth-navigation {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    width: min(330px, 88vw);
+    min-height: 100dvh;
+    max-height: 100dvh;
+    transform: translateX(-104%);
+    transition: transform var(--postauth-motion-duration) var(--postauth-motion-ease);
+    box-shadow: 18px 0 52px rgba(12,34,58,.2);
+  }
+  .dashboard-page.postauth-layout .postauth-navigation.is-open {
+    transform: translateX(0);
+  }
+  .dashboard-page.postauth-layout .postauth-top-navigation {
+    position: relative;
+    inset: auto;
+    transform: none;
+    width: 100%;
+    min-height: 54px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 8px 12px;
+    overflow: visible;
+  }
+  .dashboard-page.postauth-layout .postauth-top-navigation-groups {
+    order: 3;
+    flex-basis: 100%;
+    overflow: auto;
+  }
+  .dashboard-page.postauth-layout .postauth-top-navigation-group > summary {
+    font-size: 8px;
+  }
+  .dashboard-page.postauth-layout .dashboard-content {
+    width: 100%;
+    margin-left: 0;
+  }
+  .dashboard-page.postauth-layout .dashboard-main {
+    width: min(100% - 20px, 1900px);
+    padding-top: 18px;
+  }
+  .dashboard-page.postauth-layout .top-command-trigger span:not(.search-shortcut) {
+    display: none;
+  }
+  .dashboard-page.postauth-layout .search-wrap {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .dashboard-page.postauth.layout .top-utilities-menu,
+  .dashboard-page.postauth-layout .top-utilities-menu {
+    right: -4px;
+  }
+  .dashboard-page.postauth-layout .manager-command-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dashboard-page.postauth-layout .manager-command-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-page.postauth-layout .postauth-top-navigation-brand .postauth-nav-brand strong {
+    font-size: 14px;
+  }
+  .dashboard-page.postauth-layout .postauth-top-navigation-context,
+  .dashboard-page.postauth-layout .postauth-horizon-command-lane {
+    display: none;
+  }
+  .dashboard-page.postauth-layout .command-palette-backdrop {
+    padding: 7vh 10px 10px;
+  }
+  .dashboard-page.postauth-layout .command-palette > footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dashboard-page.postauth-layout .manager-command-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-page.postauth-layout .postauth-master-detail-navigation {
+    width: min(350px, 92vw);
+  }
+}

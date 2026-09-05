@@ -120,7 +120,7 @@ function NavigationBrand({ compact = false }: { compact?: boolean }) {
 function ExpandedNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation> }) {
   const { navigation, context, company, online, sidebarOpen, setSidebarOpen, activeView, onNavigate, onOpenModule, onOpenModuleHub, release, setReleaseOpen } = props;
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  return <aside className={'postauth-navigation postauth-expanded-navigation' + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter="expanded-sidebar" data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
+  return <aside className={'postauth-navigation postauth-expanded-navigation' + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter="executive-command-sidebar" data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
     <NavigationBrand />
     <div className="postauth-nav-kicker">Workspace</div>
     <nav className="postauth-nav-tree" aria-label="ERP workspace navigation">
@@ -140,12 +140,13 @@ function ExpandedNavigation(props: PostAuthNavigationProps & { navigation: Retur
   </aside>;
 }
 
-function IconRailNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation> }) {
+function IconRailNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation>; variant?: 'workspace' | 'studio' }) {
+  const variant = props.variant || 'workspace';
   const { navigation, context, company, sidebarOpen, setSidebarOpen, activeView, onNavigate, onOpenModule, onOpenModuleHub } = props;
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const activeGroup = navigation.find((group) => group.id === (selectedGroup || navigation[0]?.id)) || navigation[0];
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  return <aside className={'postauth-navigation postauth-icon-navigation' + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter="icon-rail" data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
+  return <aside className={'postauth-navigation postauth-icon-navigation postauth-icon-navigation-' + variant + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter={variant === 'studio' ? 'enterprise-studio-rail' : 'workspace-canvas-rail'} data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
     <NavigationBrand compact />
     <nav className="postauth-icon-rail" aria-label="ERP workspaces">
       {navigation.map((group) => <button type="button" key={group.id} className={'postauth-icon-rail-button' + (activeGroup?.id === group.id ? ' active' : '')} aria-label={group.label} title={group.detail} onClick={() => setSelectedGroup(group.id)}><HierarchyIcon iconKey={group.iconKey} /></button>)}
@@ -155,33 +156,40 @@ function IconRailNavigation(props: PostAuthNavigationProps & { navigation: Retur
       <header><span className="eyebrow">{activeGroup.label}</span><small>{company.name}</small></header>
       <div>{flattenGroup(activeGroup).map((item) => <NavigationItem key={item.id} item={item} group={activeGroup.id} activeView={activeView} activeModuleId={activeModuleId} onNavigate={onNavigate} onOpenModule={(id) => { setActiveModuleId(id); onOpenModule(id); }} onOpenModuleHub={onOpenModuleHub} setSidebarOpen={setSidebarOpen} />)}</div>
     </section>}
+    {variant === 'studio'
+      ? <section className="postauth-studio-inspector-nav"><span className="eyebrow">Inspector ready</span><strong>Properties & audit</strong><small>Contextual tools open beside the active work surface.</small></section>
+      : <section className="postauth-canvas-tools"><span className="eyebrow">Canvas tools</span><strong>Flexible work zones</strong><small>Arrange permitted modules around the current task.</small></section>}
     <small className="postauth-nav-scope">{context.employee.displayName}</small>
   </aside>;
 }
 
-function OperationsNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation> }) {
+function OperationsNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation>; variant?: 'operations' | 'board' }) {
+  const variant = props.variant || 'operations';
   const { navigation, company, online, sidebarOpen, setSidebarOpen, activeView, onNavigate, onOpenModule, onOpenModuleHub, release, setReleaseOpen } = props;
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  return <aside className={'postauth-navigation postauth-operations-navigation' + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter="operations-rail" data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
+  return <aside className={'postauth-navigation postauth-operations-navigation postauth-operations-navigation-' + variant + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter={variant === 'board' ? 'board-pulse-operations' : 'operational-cockpit-rail'} data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
     <NavigationBrand />
     <header className="postauth-operations-heading"><span className="eyebrow">Operations</span><strong>Active work</strong><small>{company.name}</small></header>
     <nav className="postauth-operations-list" aria-label="Operations navigation">{navigation.map((group) => {
       const items = flattenGroup(group);
       return <section key={group.id} className="postauth-operation-group"><button type="button" className="postauth-operation-group-button" onClick={onOpenModuleHub}><HierarchyIcon iconKey={group.iconKey} /><span><strong>{group.label}</strong><small>{items.length} authorized workspaces</small></span><ChevronRight size={14} /></button><div>{items.slice(0, 6).map((item) => <NavigationItem key={item.id} item={item} group={group.id} compact activeView={activeView} activeModuleId={activeModuleId} onNavigate={onNavigate} onOpenModule={(id) => { setActiveModuleId(id); onOpenModule(id); }} onOpenModuleHub={onOpenModuleHub} setSidebarOpen={setSidebarOpen} />)}</div></section>;
     })}</nav>
+    {variant === 'board' && <section className="postauth-board-pulse-nav" aria-label="Workflow pulse"><span className="eyebrow">Workflow pulse</span><strong>Boards · timelines · queues</strong><small>Choose the view that matches the work state.</small><div><i /><i /><i /></div></section>}
     <div className="postauth-nav-footer"><div className="postauth-nav-status"><i className={online ? '' : 'offline'} /><span>{online ? 'Live controls ready' : 'Offline mode'}</span></div><button type="button" className="postauth-nav-version" onClick={() => setReleaseOpen(true)}><span>Version {release.version}</span><small>Release notes</small></button></div>
   </aside>;
 }
 
-function TopCommandNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation> }) {
+function TopCommandNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation>; variant?: 'insight' | 'horizon' }) {
+  const variant = props.variant || 'insight';
   const { navigation, company, sidebarOpen, setSidebarOpen, activeView, onNavigate, onOpenModule, onOpenModuleHub } = props;
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  return <nav className={'postauth-navigation postauth-top-navigation' + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter="top-command" data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id} aria-label="Top workspace navigation">
+  return <nav className={'postauth-navigation postauth-top-navigation postauth-top-navigation-' + variant + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter={variant === 'horizon' ? 'horizon-wide-command' : 'insight-magazine-command'} data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id} aria-label="Top workspace navigation">
     <div className="postauth-top-navigation-brand"><NavigationBrand compact={false} /></div>
     <div className="postauth-top-navigation-groups">{navigation.slice(0, 6).map((group) => {
       const items = flattenGroup(group);
       return <details key={group.id} className="postauth-top-navigation-group"><summary><HierarchyIcon iconKey={group.iconKey} /><span>{group.label}</span></summary><div>{items.slice(0, 8).map((item) => <NavigationItem key={item.id} item={item} group={group.id} compact activeView={activeView} activeModuleId={activeModuleId} onNavigate={onNavigate} onOpenModule={(id) => { setActiveModuleId(id); onOpenModule(id); }} onOpenModuleHub={onOpenModuleHub} setSidebarOpen={setSidebarOpen} />)}</div></details>;
     })}</div>
+    {variant === 'horizon' && <div className="postauth-horizon-command-lane"><span className="eyebrow">Wide data canvas</span><strong>Filters · saved views · exports</strong><small>Maximum-width analytical workspace</small></div>}
     <span className="postauth-top-navigation-context">{company.name}</span>
   </nav>;
 }
@@ -200,13 +208,56 @@ function ContextualNavigation(props: PostAuthNavigationProps & { navigation: Ret
   </aside>;
 }
 
+
+function MasterDetailNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation> }) {
+  const { navigation, company, sidebarOpen, setSidebarOpen, activeView, onNavigate, onOpenModule, onOpenModuleHub } = props;
+  const [selectedGroup, setSelectedGroup] = useState<ErpId>(navigation[0]?.id || 'staff');
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  const activeGroup = navigation.find((group) => group.id === selectedGroup) || navigation[0];
+  const items = activeGroup ? flattenGroup(activeGroup) : [];
+  return <aside className={'postauth-navigation postauth-master-detail-navigation' + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter="master-detail-navigation" data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
+    <NavigationBrand />
+    <div className="postauth-master-nav-layout">
+      <nav className="postauth-master-nav-groups" aria-label="ERP record workspaces">
+        {navigation.map((group) => <button type="button" key={group.id} className={selectedGroup === group.id ? 'active' : ''} onClick={() => setSelectedGroup(group.id)}><HierarchyIcon iconKey={group.iconKey} /><span><strong>{group.label}</strong><small>{group.detail}</small></span></button>)}
+        <button type="button" className="postauth-master-hub" onClick={onOpenModuleHub}><Grid3X3 size={15} /><span>All workspaces</span></button>
+      </nav>
+      <section className="postauth-master-nav-detail" aria-label={(activeGroup?.label || 'Workspace') + ' records'}>
+        <header><span className="eyebrow">Selected workspace</span><strong>{activeGroup?.label || company.name}</strong><small>{company.name} · list → detail</small></header>
+        <div>{items.map((item) => <NavigationItem key={item.id} item={item} group={activeGroup?.id || 'staff'} activeView={activeView} activeModuleId={activeModuleId} onNavigate={onNavigate} onOpenModule={(id) => { setActiveModuleId(id); onOpenModule(id); }} onOpenModuleHub={onOpenModuleHub} setSidebarOpen={setSidebarOpen} />)}</div>
+      </section>
+    </div>
+    <small className="postauth-nav-scope">{company.name}</small>
+  </aside>;
+}
+
+function BentoNavigation(props: PostAuthNavigationProps & { navigation: ReturnType<typeof getErpNavigation> }) {
+  const { navigation, company, sidebarOpen, setSidebarOpen, activeView, onNavigate, onOpenModule, onOpenModuleHub } = props;
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  return <aside className={'postauth-navigation postauth-bento-navigation' + (sidebarOpen ? ' is-open' : '')} data-navigation-adapter="adaptive-bento-sidebar" data-shell-mode={props.layoutProfile.shellMode} data-layout-profile={props.layoutProfile.id}>
+    <NavigationBrand />
+    <section className="postauth-bento-priority"><span className="eyebrow">Priority flow</span><strong>What matters next</strong><small>Large signals first, supporting work below.</small></section>
+    <nav className="postauth-bento-nav-groups" aria-label="Priority ERP navigation">{navigation.slice(0, 5).map((group) => {
+      const items = flattenGroup(group);
+      return <section key={group.id}><header><HierarchyIcon iconKey={group.iconKey} /><span><strong>{group.label}</strong><small>{items.length} authorized paths</small></span></header><div>{items.slice(0, 3).map((item) => <NavigationItem key={item.id} item={item} group={group.id} compact activeView={activeView} activeModuleId={activeModuleId} onNavigate={onNavigate} onOpenModule={(id) => { setActiveModuleId(id); onOpenModule(id); }} onOpenModuleHub={onOpenModuleHub} setSidebarOpen={setSidebarOpen} />)}</div></section>;
+    })}</nav>
+    <button type="button" className="postauth-bento-hub" onClick={onOpenModuleHub}><Grid3X3 size={14} /> Explore all authorized workspaces</button>
+    <small className="postauth-nav-scope">{company.name}</small>
+  </aside>;
+}
+
 export function PostAuthNavigation(props: PostAuthNavigationProps) {
   const navigation = useNavigation(props);
-  switch (props.layoutProfile.navigationMode) {
-    case 'icon-rail': return <IconRailNavigation {...props} navigation={navigation} />;
-    case 'operations-rail': return <OperationsNavigation {...props} navigation={navigation} />;
-    case 'top-command': return <TopCommandNavigation {...props} navigation={navigation} />;
-    case 'contextual': return <ContextualNavigation {...props} navigation={navigation} />;
+  switch (props.layoutProfile.id) {
+    case 'workspace-canvas': return <IconRailNavigation {...props} navigation={navigation} variant="workspace" />;
+    case 'operational-cockpit': return <OperationsNavigation {...props} navigation={navigation} variant="operations" />;
+    case 'insight-magazine': return <TopCommandNavigation {...props} navigation={navigation} variant="insight" />;
+    case 'master-detail': return <MasterDetailNavigation {...props} navigation={navigation} />;
+    case 'horizon-wide': return <TopCommandNavigation {...props} navigation={navigation} variant="horizon" />;
+    case 'adaptive-bento': return <BentoNavigation {...props} navigation={navigation} />;
+    case 'focus-flow': return <ContextualNavigation {...props} navigation={navigation} />;
+    case 'enterprise-studio': return <IconRailNavigation {...props} navigation={navigation} variant="studio" />;
+    case 'board-pulse': return <OperationsNavigation {...props} navigation={navigation} variant="board" />;
     default: return <ExpandedNavigation {...props} navigation={navigation} />;
   }
 }

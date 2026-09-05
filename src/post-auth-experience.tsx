@@ -68,12 +68,12 @@ export function PostAuthFeatureFrame({
   const hasHelp = context.permissions['ai_guide.access'] && context.permissions['ai_guide.access'] !== 'none';
   return <section className={'postauth-feature-frame postauth-feature-' + profile.id} aria-labelledby="postauth-feature-title">
     <header className="postauth-feature-header">
-      <div><span className="eyebrow">CANONICAL WORKSPACE · {canonicalPath}</span><h1 id="postauth-feature-title">{moduleLabel}</h1><p>{strategy}. Your existing records, workflows and permissions remain the source of truth.</p></div>
+      <div><span className="eyebrow">WORKSPACE · {canonicalPath}</span><h1 id="postauth-feature-title">{moduleLabel}</h1><p>{strategy}. Your existing records, workflows and permissions remain the source of truth.</p></div>
       <div className="postauth-feature-actions"><button type="button" className="secondary-button" onClick={onOpenModuleHub}>Switch workspace</button>{hasHelp && <button type="button" className="text-action" onClick={onNavigateHelp}>Context help</button>}</div>
     </header>
     <div className={'postauth-feature-regions postauth-regions-' + profile.detailMode}>
       <div className="postauth-feature-main">{children}</div>
-      {showRail && <aside className="postauth-feature-context"><span className="eyebrow">WORKING PATTERN</span><strong>{profile.name}</strong><p>{profile.description}</p><small>Keep this function in its approved workspace while the surrounding regions adapt to your chosen working pattern.</small></aside>}
+      {showRail && <aside className="postauth-feature-context"><span className="eyebrow">WORKSPACE GUIDE</span><strong>{profile.name}</strong><p>{profile.description}</p><small>Your records and actions stay in the same approved workspace as the surrounding regions adapt.</small></aside>}
     </div>
   </section>;
 }
@@ -94,7 +94,7 @@ type PostAuthOverviewCompositionProps = {
 
 function OverviewAdapterNote({ profile }: { profile: LayoutProfile }) {
   return <aside className="postauth-context-note" data-layout-context-note={profile.id}>
-    <span className="eyebrow">WORKING PATTERN</span>
+    <span className="eyebrow">WORKSPACE GUIDE</span>
     <strong>{profile.name}</strong>
     <p>{profile.dashboardStrategy}</p>
     <small>Prioritized for the way this workspace is used.</small>

@@ -195,6 +195,7 @@ function PeopleView({ context, companyId }: { context: WorkforceContext; company
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const canView = can(context, 'users.access', 'view', companyId) || can(context, 'payroll.access', 'view', companyId) || can(context, 'payslips.access', 'view', companyId);
   const canManage = can(context, 'users.access', 'manage', companyId);
 
   async function loadRequests() {
@@ -228,8 +229,9 @@ function PeopleView({ context, companyId }: { context: WorkforceContext; company
     finally { setLoading(false); }
   }
 
+  if (!canView) return null;
   return <div className="view-stack">
-    <div className="view-heading"><div><span className="eyebrow">WORKFORCE CONTROL</span><h2>People, roles & payroll</h2><p>Approve employees, assign company-specific roles and keep payroll/HR access separated by permissions.</p></div><button className="text-action" onClick={loadRequests}><RefreshCw size={15} /> Refresh</button></div>
+    <div className="view-heading"><div><span className="eyebrow">WORKFORCE CONTROL</span><h2>Approval & payroll workspace</h2><p>Approve employees, assign company-specific roles and keep payroll/HR access separated by permissions.</p></div><button className="text-action" onClick={loadRequests}><RefreshCw size={15} /> Refresh</button></div>
     <div className="metric-grid compact-metrics">
       <article><span className="metric-icon"><Users size={19} /></span><div><small>My company access</small><strong>{context.companies.length}</strong><em>Assigned companies</em></div></article>
       <article><span className="metric-icon"><ClipboardCheck size={19} /></span><div><small>Pending signup</small><strong>{requests.length}</strong><em>Requires authorized approval</em></div></article>
@@ -261,7 +263,7 @@ function SecurityView({ context, companyId }: { context: WorkforceContext; compa
 
 function PlaceholderView({ view, context }: { view: ViewName; context: WorkforceContext }) {
   const descriptions: Partial<Record<ViewName, string>> = {};
-  return <div className="view-stack"><div className="view-heading"><div><span className="eyebrow">MODULE FOUNDATION</span><h2>{nav.find((item) => item.id === view)?.label}</h2><p>{descriptions[view]}</p></div></div><article className="panel empty-state tall"><PackageSearch size={36} /><strong>Authenticated module shell is ready</strong><span>Your current access level is enforced from server-side RBAC. This page will connect to its company-specific records and workflows.</span><small>Assigned permissions: {Object.entries(context.permissions).filter(([, level]) => level !== 'none').length}</small></article></div>;
+  return <div className="view-stack"><div className="view-heading"><div><span className="eyebrow">MODULE FOUNDATION</span><p className="view-context-title">{nav.find((item) => item.id === view)?.label}</p><p>{descriptions[view]}</p></div></div><article className="panel empty-state tall"><PackageSearch size={36} /><strong>Authenticated module shell is ready</strong><span>Your current access level is enforced from server-side RBAC. This page will connect to its company-specific records and workflows.</span><small>Assigned permissions: {Object.entries(context.permissions).filter(([, level]) => level !== 'none').length}</small></article></div>;
 }
 
 function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {

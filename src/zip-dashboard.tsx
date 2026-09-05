@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Bell, BriefcaseBusiness, CalendarCheck2, CheckCircle2,
-  ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CloudSun, Download, Factory, Gauge, GripVertical, Home, LayoutDashboard, MapPin, Menu, Plus,
+  ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CloudSun, Download, Factory, Gauge, Grid3X3, GripVertical, Home, LayoutDashboard, MapPin, Menu, Plus,
   Moon, PackageSearch, Palette, Radio, RefreshCw, Search, Settings2, ShieldCheck, Sparkles,
   Sun, Users, WalletCards, Wrench, X, Boxes, MessageSquareText, Star,
 } from 'lucide-react';
@@ -408,13 +408,14 @@ function WorkspaceOverviewStrip({
   const approvalCount = Object.values(context.permissions).filter((level) => level === 'approve' || level === 'manage').length;
   const moduleCount = moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)).length;
   const adminAccess = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) || Object.values(context.permissions).some((level) => level === 'manage');
+  const availableModuleIds = new Set(moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)).map((module) => module.id));
   const quickActions = [
-    { label: 'My Profile', detail: 'Keep your employee record current', icon: Users, action: () => onOpenModule('profile') },
-    { label: 'My Workspace', detail: 'Open staff self-service', icon: BriefcaseBusiness, action: () => onOpenModule('employee') },
-    { label: 'My Forms', detail: 'Review assigned submissions', icon: ClipboardCheck, action: () => onNavigate('forms') },
+    availableModuleIds.has('profile') ? { label: 'My Profile', detail: 'Keep your employee record current', icon: Users, action: () => onOpenModule('profile') } : null,
+    availableModuleIds.has('employee') ? { label: 'My Workspace', detail: 'Open staff self-service', icon: BriefcaseBusiness, action: () => onOpenModule('employee') } : null,
+    can(context, 'forms.access', 'view', company.id) ? { label: 'My Forms', detail: 'Review assigned submissions', icon: ClipboardCheck, action: () => onNavigate('forms') } : null,
     { label: 'Tasks & approvals', detail: 'Open authorized workspaces', icon: CheckCircle2, action: onOpenModuleHub },
-    { label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') },
-  ];
+    can(context, 'ai_guide.access', 'view', company.id) ? { label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') } : null,
+  ].filter((item): item is { label: string; detail: string; icon: React.ComponentType<{ size?: number }>; action: () => void } => Boolean(item));
   return <section className="workspace-overview-grid" aria-label="Personalized staff workspace overview">
     <article className="profile-summary-card">
       <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Welcome, {firstName}</h2></div><span className="live-chip"><i /> Personalized home</span></header>
@@ -478,6 +479,27 @@ function ErpPulseGrid({
         <div className="erp-pulse-actions"><button type="button" onClick={() => firstModule ? onOpenModule(firstModule.id) : onOpenModuleHub()}>{firstModule ? 'Open ERP' : 'Open directory'} <ArrowRight size={13} /></button><button type="button" onClick={onOpenModuleHub}>Functions <ChevronRight size={13} /></button></div>
       </article>;
     })}</div>
+  </section>;
+}
+
+function ManagerCommandCenter({
+  context,
+  summary,
+  onNavigate,
+  onOpenModuleHub,
+}: Pick<ZipDashboardProps, 'context' | 'summary' | 'onNavigate' | 'onOpenModuleHub'>) {
+  const managerAccess = context.roles.some((role) => ['manager', 'company_admin', 'group_admin', 'owner'].includes(role.code));
+  if (!managerAccess) return null;
+  const tiles = [
+    { label: 'Team workload', value: numberValue(summary?.employees), detail: 'People in your authorized scope', icon: Users },
+    { label: 'Approvals', value: numberValue(summary?.pendingApprovals), detail: 'Requests awaiting action', icon: ClipboardCheck },
+    { label: 'Overdue work', value: numberValue(summary?.overdueRequirements), detail: 'Requirements to follow through', icon: AlertTriangle },
+    { label: 'Attendance', value: summary ? percentage(attendanceRate(summary)) : '—', detail: 'Present today in scope', icon: CalendarCheck2 },
+  ];
+  return <section className="manager-command-center" aria-label="Manager home">
+    <header className="manager-command-header"><div><span className="eyebrow">MANAGER HOME</span><h2>Team rhythm, next actions</h2><p>Prioritized workload, approvals and operational exceptions for your authorized team scope.</p></div><button type="button" className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open workspaces</button></header>
+    <div className="manager-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article key={tile.label}><span className="manager-command-icon"><Icon size={16} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>
+    <div className="manager-command-actions"><button type="button" onClick={() => onNavigate('people')}><Users size={14} /> Review team</button><button type="button" onClick={() => onNavigate('forms')}><ClipboardCheck size={14} /> Open approvals</button><button type="button" onClick={() => onNavigate('security')}><ShieldCheck size={14} /> Check exceptions</button></div>
   </section>;
 }
 
@@ -570,13 +592,13 @@ function DashboardWidgets({
   const allowedWidgets = useMemo(() => widgets.filter((widget) => canRenderDashboardWidget(widget, context, company.id)), [company.id, context, widgets]);
   const widgetStorageKey = 'daenem-dashboard-widgets:' + context.employee.id + ':' + (company.id || 'group');
   const [order, setOrder] = useState<WidgetId[]>(() => {
-    if (typeof window === 'undefined') return widgets;
+    if (typeof window === 'undefined') return allowedWidgets;
     try {
       const stored = JSON.parse(localStorage.getItem(widgetStorageKey) || 'null') as unknown;
       const valid = Array.isArray(stored) ? stored.filter((item): item is WidgetId => Object.prototype.hasOwnProperty.call(widgetLabels, item) && allowedWidgets.includes(item)) : [];
       return valid.length ? [...new Set(valid)] : allowedWidgets;
     } catch {
-      return widgets;
+      return allowedWidgets;
     }
   });
   const [widgetStyle, setWidgetStyle] = useState<WidgetStyle>(() => {
@@ -587,7 +609,8 @@ function DashboardWidgets({
   const [clockPreferences, setClockPreferences] = useState<WorldClockPreferences>(() => readWorldClockPreferences());
   const [clockQuery, setClockQuery] = useState('');
   const canManageWidgets = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
-  const hiddenWidgets = allowedWidgets.filter((widget) => !order.includes(widget));
+  const visibleOrder = order.filter((widget) => allowedWidgets.includes(widget));
+  const hiddenWidgets = allowedWidgets.filter((widget) => !visibleOrder.includes(widget));
   const filteredClockLocations = WORLD_CLOCKS.filter((item) => `${item.name} ${item.region}`.toLowerCase().includes(clockQuery.trim().toLowerCase()));
 
   useEffect(() => {
@@ -599,7 +622,7 @@ function DashboardWidgets({
       const savedStyle = localStorage.getItem(`${widgetStorageKey}:style`);
       setWidgetStyle(savedStyle === 'compact' || savedStyle === 'full' || savedStyle === 'strip' ? savedStyle : 'card');
     } catch {
-      setOrder(widgets);
+      setOrder(allowedWidgets);
       setWidgetStyle('card');
     }
   }, [allowedWidgets, widgetStorageKey]);
@@ -682,7 +705,7 @@ function DashboardWidgets({
       </details>
     </div>}
     <div className="dashboard-grid">
-      {order.map((widget, index) => <div
+      {visibleOrder.map((widget, index) => <div
         key={widget}
         className={`widget-slot widget-${widget} widget-style-${widgetStyle}`}
         data-widget-style={widgetStyle}
@@ -691,7 +714,7 @@ function DashboardWidgets({
         onDragOver={(event) => { if (customizing) event.preventDefault(); }}
         onDrop={() => { if (customizing) moveWidget(widget); }}
       >
-        <WidgetActions index={index} count={order.length} onMove={moveByKeyboard} canManage={customizing && canManageWidgets} enabled={customizing} onRemove={() => removeWidget(widget)} onReplace={() => replaceWidget(index)} />
+        <WidgetActions index={index} count={visibleOrder.length} onMove={moveByKeyboard} canManage={customizing && canManageWidgets} enabled={customizing} onRemove={() => removeWidget(widget)} onReplace={() => replaceWidget(index)} />
         {renderWidget(widget)}
       </div>)}
     </div>
@@ -831,7 +854,7 @@ export function ZipDashboard({
             kpis={<KpiStrip summary={scopedSummary} company={company} context={context} />}
             widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Personalize the workspace when you are ready</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div><DashboardWidgets widgets={initialWidgets} summary={scopedSummary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
             workspace={<WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
-            owner={<OwnerCommandCenter context={context} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} />}
+            owner={executive ? <OwnerCommandCenter context={context} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} /> : <ManagerCommandCenter context={context} summary={scopedSummary} onNavigate={onNavigate} onOpenModuleHub={onOpenModuleHub} />}
             intelligence={liveIntelligence ? <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section> : null}
             clocks={<section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>}
           /> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
