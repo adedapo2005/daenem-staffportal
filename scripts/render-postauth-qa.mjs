@@ -568,15 +568,16 @@ async function captureErpSurfaces(browser) {
       await page.evaluate((id) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } })), moduleId);
       const surface = page.locator(surfaceSelector);
       await surface.waitFor({ state: 'visible', timeout: 20000 });
-      const marker = surface.locator('[data-module-experience="true"]').last().or(page.locator('[data-module-experience="true"][data-module-erp="' + erpId + '"]').last());
       await page.waitForTimeout(500);
       const screenshot = 'screenshots/erp-' + moduleId + '-1440x900.png';
+      const surfaceScreenshot = 'screenshots/erp-' + moduleId + '-surface-1440x900.png';
       await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
-      const envelope = page.locator('[data-module-experience="true"][data-module-erp="' + erpId + '"]').last();
-      results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: await envelope.getAttribute('data-module-layout'), viewport: { width: 1440, height: 900 }, pageKind: 'ERP surface ' + moduleId, erpSurface: moduleId, moduleExperience: { erpId: await envelope.getAttribute('data-module-erp'), shell: await envelope.getAttribute('data-module-shell'), path: await envelope.getAttribute('data-module-path'), layout: await envelope.getAttribute('data-module-layout') }, screenshot });
+      await surface.screenshot({ path: path.join(evidenceDir, surfaceScreenshot), animations: 'disabled' });
+      const envelope = surface.locator('[data-module-experience="true"]').first();
+      results.push({ role: 'owner', requestedLayout: 'executive-command', renderedLayout: await envelope.getAttribute('data-module-layout'), viewport: { width: 1440, height: 900 }, pageKind: 'ERP surface ' + moduleId, erpSurface: moduleId, moduleExperience: { erpId: await envelope.getAttribute('data-module-erp'), shell: await envelope.getAttribute('data-module-shell'), path: await envelope.getAttribute('data-module-path'), layout: await envelope.getAttribute('data-module-layout') }, screenshot, surfaceScreenshot });
       const close = page.locator(closeSelector).last();
       if (!(await close.count())) throw new Error('ERP surface close control missing: ' + moduleId);
-      await close.click();
+      await close.evaluate((button) => button.click());
       await surface.waitFor({ state: 'hidden', timeout: 10000 });
     }
   } catch (error) {
