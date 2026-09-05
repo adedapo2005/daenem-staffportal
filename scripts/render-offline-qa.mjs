@@ -28,6 +28,10 @@ const ownerPermissions = {
   'broadcasts.access': 'manage', 'security.access': 'manage', 'ai_guide.access': 'manage',
   'settings.access': 'manage', 'navigation.studio': 'manage', 'audit.explorer': 'manage',
   'diagnostics.access': 'manage', 'integrations.access': 'manage', 'owner.intelligence': 'manage',
+  'printing.access': 'manage', 'bakery.access': 'manage', 'autos.access': 'manage',
+  'sales.access': 'manage', 'logistics.access': 'manage', 'properties.access': 'manage',
+  'finance.access': 'manage', 'finance.reports': 'manage', 'finance.receivables': 'manage',
+  'finance.ledger': 'manage', 'finance.journal': 'manage', 'finance.budgets': 'manage',
 };
 
 function contextFor(role, employeeId = 'qa-offline-employee') {
@@ -76,6 +80,35 @@ function ownerIntelligence() {
   };
 }
 
+function erpFixtures() {
+  return {
+    printingDashboard: {
+      date: '2026-09-05', month: '2026-09',
+      metrics: { openJobs: 3, overdueJobs: 1, readyJobs: 2, customers: 8, lowStockItems: 1, revenueKobo: 42000000, costKobo: 18000000, grossProfitKobo: 24000000, marginBasisPoints: 5714 },
+      pipeline: [], recentJobs: [],
+    },
+    bakeryDashboard: {
+      date: '2026-09-05',
+      metrics: { orders: 12, revenueKobo: 3000000, paidKobo: 2800000, activeBatches: 2, unitsProduced: 400, batchWaste: 5, wasteCostKobo: 50000, lowStockItems: 1 },
+      bestSellers: [],
+    },
+    autosDashboard: {
+      metrics: { vehicles: 10, stockValueKobo: 150000000, ready: 4, preparation: 2, reserved: 1, openLeads: 3, testDrives: 1, negotiations: 1, followupsDue: 2, openWorkshopJobs: 4, waitingParts: 1, urgentWorkshop: 1, monthlySales: 2, monthlyRevenueKobo: 50000000, monthlyGrossProfitKobo: 8000000 },
+    },
+    logisticsDashboard: {
+      metrics: { fleet: 8, vehiclesAvailable: 5, vehiclesUnavailable: 3, activeShipments: 4, shipmentsMoving: 2, deliveredToday: 3, activeTrips: 2, monthlyRevenueKobo: 30000000, monthlyGrossProfitKobo: 7000000, expiringDocuments: 1 },
+    },
+    propertiesDashboard: {
+      metrics: { properties: 6, available: 2, occupied: 3, underOffer: 1, portfolioValueKobo: 500000000, openLeads: 4, inspectionsScheduled: 2, negotiations: 1, followupsDue: 2, outstandingKobo: 12000000, arrearsKobo: 4000000, overdueCharges: 1, activeLeases: 3, expiringSoon: 1, openMaintenance: 2, urgentMaintenance: 1, maintenanceCostKobo: 350000 },
+    },
+    financeSummary: {
+      month: '2026-09', balances: { cash: 85000000, bank: 125000000, receivables: 18000000 },
+      receivables: { openCount: 2, openKobo: 18000000, overdueKobo: 4000000 },
+      approvedBudgetKobo: 90000000, netFundingKobo: 65000000, draftJournals: 1,
+    },
+  };
+}
+
 function layoutPayload(erpId = 'staff') {
   const layouts = { staff: 'focus-flow', printing: 'operational-cockpit', bakery: 'executive-command', autos: 'executive-command', logistics: 'executive-command', properties: 'master-detail', finance: 'horizon-wide', controls: 'enterprise-studio' };
   return { preference: { layoutId: layouts[erpId] || 'focus-flow', density: 'standard', motion: 'balanced' }, canChoose: true, canManage: false, canAccess: false };
@@ -105,6 +138,7 @@ function makeServerState() {
 
 async function installApiRoutes(page, role, server = makeServerState(), employeeId) {
   const context = contextFor(role, employeeId || (role === 'owner' ? 'qa-offline-owner' : 'qa-offline-employee'));
+  const erp = erpFixtures();
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -117,6 +151,38 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
     if (url.pathname === '/api/dashboard/summary') return send({ ...summary, scope: role === 'owner' ? 'aggregate' : 'personal' });
     if (url.pathname === '/api/owner/intelligence') return send(ownerIntelligence());
     if (url.pathname === '/api/support/mine') return send({ commands: [], assistanceRequests: [] });
+    if (url.pathname === '/api/printing/dashboard') return send(erp.printingDashboard);
+    if (url.pathname === '/api/printing/services') return send({ services: [] });
+    if (url.pathname === '/api/printing/customers') return send({ customers: [] });
+    if (url.pathname === '/api/printing/jobs') return send({ jobs: [] });
+    if (url.pathname === '/api/bakery/dashboard') return send(erp.bakeryDashboard);
+    if (url.pathname === '/api/bakery/catalog') return send({ products: [], recipes: [] });
+    if (url.pathname === '/api/bakery/batches') return send({ batches: [] });
+    if (url.pathname === '/api/bakery/ingredients') return send({ ingredients: [] });
+    if (url.pathname === '/api/bakery/accountability') return send({ date: '2026-09-05', summary: {}, capabilities: {} });
+    if (url.pathname === '/api/bakery/accountability/reports') return send({ dateFrom: '2026-09-01', dateTo: '2026-09-05', capabilities: {}, debtAgeing: {}, descriptions: {} });
+    if (url.pathname === '/api/autos/dashboard') return send(erp.autosDashboard);
+    if (url.pathname === '/api/autos/vehicles') return send({ vehicles: [] });
+    if (url.pathname === '/api/autos/leads') return send({ leads: [] });
+    if (url.pathname === '/api/autos/workshop') return send({ jobs: [] });
+    if (url.pathname === '/api/logistics/dashboard') return send(erp.logisticsDashboard);
+    if (url.pathname === '/api/logistics/fleet') return send({ vehicles: [], drivers: [] });
+    if (url.pathname === '/api/logistics/shipments') return send({ shipments: [] });
+    if (url.pathname === '/api/logistics/trips') return send({ trips: [] });
+    if (url.pathname === '/api/properties/dashboard') return send(erp.propertiesDashboard);
+    if (url.pathname === '/api/properties/catalog') return send({ properties: [] });
+    if (url.pathname === '/api/properties/leads') return send({ leads: [] });
+    if (url.pathname === '/api/properties/inspections') return send({ inspections: [] });
+    if (url.pathname === '/api/properties/leases') return send({ leases: [] });
+    if (url.pathname === '/api/properties/receivables') return send({ receivables: [] });
+    if (url.pathname === '/api/properties/maintenance') return send({ maintenance: [] });
+    if (url.pathname === '/api/properties/owners-investments') return send({ capabilities: {}, owners: [], units: [], investments: [] });
+    if (url.pathname === '/api/finance/summary') return send(erp.financeSummary);
+    if (url.pathname === '/api/finance/receivables') return send({ receivables: [] });
+    if (url.pathname === '/api/finance/accounts') return send({ accounts: [] });
+    if (url.pathname === '/api/finance/journals') return send({ journals: [] });
+    if (url.pathname === '/api/finance/reports') return send({ startDate: '2026-01-01', endDate: '2026-09-05', trialBalance: { accounts: [], totalDebitKobo: 0, totalCreditKobo: 0, balanced: true }, profitLoss: { revenueKobo: 0, costOfSalesKobo: 0, grossProfitKobo: 0, operatingExpensesKobo: 0, netProfitKobo: 0 } });
+    if (url.pathname === '/api/finance/budgets') return send({ budgets: [] });
     if (url.pathname === '/api/forms' && method === 'GET') return send({ forms: [{ id: 'qa-form', companyName: 'Printing & Technology', title: assignment.title, formType: assignment.formType, schemaJson: assignment.schemaJson, assignmentCount: 1 }] });
     if (url.pathname === '/api/forms/mine' && method === 'GET') return send({ assignments: [assignment] });
     if (url.pathname.startsWith('/api/directory/')) return send({ employees: [], roles: [] });
