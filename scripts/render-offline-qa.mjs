@@ -696,6 +696,12 @@ async function main() {
     });
     await owner.page.waitForTimeout(250);
     await snapshot(owner.page, 'owner-desktop-sync-detail-1920x1080.png', { fullPage: false });
+    await owner.page.locator('.offline-detail-clock-card').scrollIntoViewIfNeeded();
+    await owner.page.waitForTimeout(100);
+    await snapshot(owner.page, 'owner-desktop-sync-detail-time-1920x1080.png', { fullPage: false });
+    await owner.page.locator('.offline-detail-timeline').scrollIntoViewIfNeeded();
+    await owner.page.waitForTimeout(100);
+    await snapshot(owner.page, 'owner-desktop-sync-detail-timeline-1920x1080.png', { fullPage: false });
 
     const apiCacheEntries = await owner.page.evaluate(async () => {
       const keys = [];
