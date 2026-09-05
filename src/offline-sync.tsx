@@ -117,6 +117,16 @@ function statusLabel(status: SyncStatus, waiting: number, needs: number) {
   return 'Online';
 }
 
+function compactStatusLabel(status: SyncStatus) {
+  if (status === 'authentication-required') return 'Sign in required';
+  if (status === 'needs-attention') return 'Needs attention';
+  if (status === 'syncing') return 'Syncing';
+  if (status === 'waiting') return 'Waiting';
+  if (status === 'offline') return 'Offline';
+  if (status === 'synced') return 'Synced';
+  return 'Online';
+}
+
 function statusIcon(status: SyncStatus) {
   if (status === 'offline') return <CloudOff size={15} aria-hidden="true" />;
   if (status === 'syncing') return <LoaderCircle className="offline-spin" size={15} aria-hidden="true" />;
@@ -354,16 +364,17 @@ export function useOfflinePlatform() {
 
 export function OfflineSyncIndicator() {
   const { status, waitingCount, needsAttentionCount, openActivity } = useOfflinePlatform();
+  const label = statusLabel(status, waitingCount, needsAttentionCount);
   return <button
     type="button"
     className={'offline-sync-indicator offline-sync-' + status}
     onClick={openActivity}
-    aria-label={statusLabel(status, waitingCount, needsAttentionCount) + '. Open My Sync Activity'}
+    aria-label={label + '. Open My Sync Activity'}
     data-offline-sync-indicator="true"
     data-sync-status={status}
   >
     {statusIcon(status)}
-    <span aria-live="polite">{statusLabel(status, waitingCount, needsAttentionCount)}</span>
+    <span aria-live="polite"><span className="offline-sync-label-full">{label}</span><span className="offline-sync-label-compact" aria-hidden="true">{compactStatusLabel(status)}</span></span>
   </button>;
 }
 

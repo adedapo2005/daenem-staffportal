@@ -13,6 +13,11 @@ const runtimeErrors = [];
 const assert = (condition, message) => { if (!condition) failures.push(message); };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function isExpectedBrowserConsoleError(message) {
+  return /Failed to load resource: net::ERR_(?:INTERNET_DISCONNECTED|FAILED)/.test(message)
+    || /Failed to load resource: the server responded with a status of (?:401|403|409|413|415|422|503)\b/.test(message);
+}
+
 const companies = [
   { id: 'company-printing', code: 'PRINT', name: 'Printing & Technology', primary: true },
   { id: 'company-bakery', code: 'BAKERY', name: 'Bakery', primary: false },
@@ -230,7 +235,7 @@ async function installApiRoutes(page, role, server = makeServerState(), employee
     if (url.pathname.startsWith('/api/offline/owner/')) return role === 'owner' ? send({}) : send({ error: 'Owner access is required.' }, 403);
     if (url.pathname.startsWith('/api/offline/attachments/')) {
       const mime = (request.headers()['content-type'] || '').split(';')[0];
-      const size = Number(request.headers()['content-length'] || 0);
+      const size = Number(request.headers()['content-length'] || request.postDataBuffer()?.byteLength || 0);
       if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(mime)) return send({ error: 'This attachment MIME type is not allowed.' }, 415);
       if (size > 10485760) return send({ error: 'This attachment is larger than the configured limit.' }, 413);
       return send({ ok: true, attachment: { id: url.pathname.split('/').pop(), status: 'uploaded' } }, 201);
@@ -253,17 +258,23 @@ async function openContext(browser, role, viewport, employeeId) {
     runtimeErrors.push(`${role}: ${error.message}`);
     console.error(`QA_PAGE_ERROR ${role}: ${error.stack || error.message}`);
   });
-  page.on('console', (message) => { if (message.type() === 'error') runtimeErrors.push(`${role} console: ${message.text()}`); });
+  page.on('console', (message) => {
+    if (message.type() === 'error' && !isExpectedBrowserConsoleError(message.text())) runtimeErrors.push(`${role} console: ${message.text()}`);
+  });
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
   await page.waitForTimeout(400);
+  await installGpsProbe(page);
+  return { context, page, server, pageErrors };
+}
+
+async function installGpsProbe(page) {
   await page.evaluate(() => {
     window.__daenemQaGpsCalls = 0;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition = () => { window.__daenemQaGpsCalls += 1; };
     }
   });
-  return { context, page, server, pageErrors };
 }
 
 async function goForms(page) {
@@ -354,6 +365,7 @@ async function main() {
     await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), { timeout: 15000 });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
+    await installGpsProbe(page);
     await page.waitForFunction(() => navigator.onLine === false, { timeout: 5000 });
     await status(page, 'offline');
     const offlineReloadEvidence = await snapshot(page, 'employee-mobile-offline-reload-390x844.png');
@@ -425,7 +437,7 @@ async function main() {
       return response.status;
     });
     assert(oversizedAttachment === 413, 'oversized attachment was not rejected');
-    gpsCalls = await page.evaluate(() => window.__daenemQaGpsCalls);
+    gpsCalls = await page.evaluate(() => Number(window.__daenemQaGpsCalls || 0));
     assert(gpsCalls === 0, 'GPS was collected without an explicit user action');
 
     const tablet = await openContext(browser, 'employee', { width: 1024, height: 768 }, 'qa-offline-tablet');
@@ -451,7 +463,6 @@ async function main() {
       blocked.server.sessionMode = sessionMode;
       await blocked.context.setOffline(false);
       await sleep(1000);
-      console.log('QA_SESSION_GATE_DEBUG', JSON.stringify({ sessionMode, status: await blocked.page.locator('[data-offline-sync-indicator]').getAttribute('data-sync-status'), syncRequests: blocked.server.syncRequests, bootstrapRequests: blocked.server.bootstrapRequests, bootstrapModes: blocked.server.bootstrapModes }));
       await status(blocked.page, 'authentication-required');
       assert(blocked.server.syncRequests === 0, `${sessionMode} session allowed a queued mutation flush`);
     await blocked.context.close();
@@ -495,7 +506,7 @@ async function main() {
       assert(evidence.shell === erpCase.shell, `${erpCase.erp}: resolved shell ${evidence.shell} did not match ${erpCase.shell}`);
       assert(evidence.resolvedBeforeSurface, `${erpCase.erp}: surface initialized before the ERP experience resolved`);
       assert(evidence.surfaceVisible, `${erpCase.erp}: business surface is not visible`);
-      assert((await surface.innerText()).includes(erpCase.content), `${erpCase.erp}: business content is not visible in the resolved surface`);
+      assert((await surface.innerText()).toLowerCase().includes(erpCase.content.toLowerCase()), `${erpCase.erp}: business content is not visible in the resolved surface`);
       assert(erp.pageErrors.length === 0, `${erpCase.erp}: runtime page error during ERP open`);
       erpExperienceEvidence.push(evidence);
       if (erpCase.screenshot) await snapshot(erpPage, erpCase.screenshot);

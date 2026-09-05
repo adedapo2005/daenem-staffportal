@@ -355,9 +355,10 @@ function ForecastWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
 }
 
 function QueueWidget({ summary, context, company, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'context' | 'company' | 'onNavigate' | 'onOpenModule'>) {
+  const canOpenPeople = can(context, 'users.access', 'view', company.id) || can(context, 'payroll.access', 'view', company.id);
   const queueItems: Array<{ field: DashboardAggregateField; label: string; detail: string; value: number; action: () => void }> = [
     { field: 'incompleteAttendance', label: 'Incomplete attendance', detail: 'Open Attendance & GPS', value: summary?.incompleteAttendance ?? 0, action: () => onOpenModule('attendance') },
-    { field: 'pendingApprovals', label: 'Pending approvals', detail: 'Open People & Payroll', value: summary?.pendingApprovals ?? 0, action: () => onNavigate('people') },
+    { field: 'pendingApprovals', label: 'Pending approvals', detail: canOpenPeople ? 'Open People & Payroll' : 'Review assigned forms', value: summary?.pendingApprovals ?? 0, action: () => onNavigate(canOpenPeople ? 'people' : 'forms') },
     { field: 'overdueRequirements', label: 'Overdue requirements', detail: 'Review assigned forms', value: summary?.overdueRequirements ?? 0, action: () => onNavigate('forms') },
     { field: 'securityAlerts', label: 'Security alerts', detail: 'Open Security Center', value: summary?.securityAlerts ?? 0, action: () => onNavigate('security') },
   ];
