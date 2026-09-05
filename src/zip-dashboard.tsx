@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Bell, BriefcaseBusiness, CalendarCheck2, CheckCircle2,
   ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, CloudSun, Download, Factory, Gauge, GripVertical, Home, LayoutDashboard, MapPin, Menu, Plus,
   Moon, PackageSearch, Palette, Radio, RefreshCw, Search, Settings2, ShieldCheck, Sparkles,
   Sun, Users, WalletCards, Wrench, X, Boxes, MessageSquareText, Star,
 } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import type { AccessLevel, WorkforceContext } from './auth';
 import { getErpNavigation, isModuleVisible, moduleDefinitions, type ErpId, type HierarchyItem, type ModuleDefinition } from './module-hub';
 import { hasWorkforcePermission, readWorldClockPreferences, requestAppInstall, saveWorldClockPreferences, WORLD_CLOCKS, WorldClocks, type ClockStyle, type WorldClockPreferences } from './auth';
 import type { LayoutVariant, ModePreference, ThemeId } from './theme-system';
-import { themeList, themePersonalityById } from './theme-system';
+import { themeList } from './theme-system';
 import type { LayoutDensity, LayoutId, LayoutProfile, MotionPreset } from './layout-system';
 import { PostAuthFeatureFrame, PostAuthHomeBanner, PostAuthOverviewComposition } from './post-auth-experience';
+import { PostAuthNavigation } from './postauth-navigation';
 
 export type ZipDashboardSummary = {
   workDate: string;
@@ -96,6 +97,7 @@ type ZipDashboardProps = {
   release: ReleaseInfo;
   releaseOpen: boolean;
   setReleaseOpen: (open: boolean) => void;
+  activeErpId: ErpId;
   layoutId: LayoutId;
   layoutProfile: LayoutProfile;
   density: LayoutDensity;
@@ -110,6 +112,10 @@ const initialWidgets: WidgetId[] = [
 
 function can(context: WorkforceContext, permission: string, minimum: AccessLevel = 'view', companyId?: string | null) {
   return hasWorkforcePermission(context, permission, minimum, companyId);
+}
+
+function canSeeAggregateDashboard(context: WorkforceContext, companyId: string | null) {
+  return context.roles.some((role) => ['owner', 'group_admin', 'company_admin', 'manager'].includes(role.code)) || can(context, 'dashboard.access', 'manage', companyId);
 }
 
 function initials(name: string) {
@@ -146,141 +152,105 @@ function attendanceRate(summary: ZipDashboardSummary | null) {
   return (summary.present / summary.employees) * 100;
 }
 
+function CommandPalette({
+  context, company, visibleNav, onNavigate, onOpenModule, onOpenModuleHub, onClose,
+}: Pick<ZipDashboardProps, 'context' | 'company' | 'visibleNav' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub'> & { onClose: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const availableModules = useMemo(() => moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)), [company.code, company.id, context]);
+  const results = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    const viewResults = visibleNav.map((item) => ({ kind: 'view' as const, id: item.id, label: item.label, detail: item.description }));
+    const moduleResults = availableModules.map((item) => ({ kind: 'module' as const, id: item.id, label: item.label, detail: item.detail }));
+    return [...viewResults, ...moduleResults].filter((item) => !normalized || (item.label + ' ' + item.detail).toLowerCase().includes(normalized)).slice(0, 20);
+  }, [availableModules, query, visibleNav]);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => { setSelectedIndex((index) => Math.min(index, Math.max(0, results.length - 1))); }, [results.length]);
+  function choose(item: typeof results[number]) {
+    onClose();
+    if (item.kind === 'view') onNavigate(item.id);
+    else onOpenModule(item.id);
+  }
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'ArrowDown') { event.preventDefault(); setSelectedIndex((index) => Math.min(index + 1, Math.max(0, results.length - 1))); }
+    if (event.key === 'ArrowUp') { event.preventDefault(); setSelectedIndex((index) => Math.max(index - 1, 0)); }
+    if (event.key === 'Enter' && results[selectedIndex]) { event.preventDefault(); choose(results[selectedIndex]); }
+    if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+  }
+  return <div className="command-palette-backdrop" role="presentation" onMouseDown={onClose}>
+    <section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-palette-title" onMouseDown={(event) => event.stopPropagation()} data-command-palette="true">
+      <header><div><span className="eyebrow">AUTHORIZED WORKSPACES</span><h2 id="command-palette-title">What do you need next?</h2></div><button type="button" className="icon-button subtle" onClick={onClose} aria-label="Close command palette"><X size={16} /></button></header>
+      <label className="command-palette-input"><Search size={17} aria-hidden="true" /><input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setSelectedIndex(0); }} onKeyDown={handleKeyDown} placeholder="Search authorized functions" aria-label="Search authorized functions" /></label>
+      <div className="command-palette-results" role="listbox" aria-label="Authorized command results">
+        {results.length ? results.map((item, index) => <button type="button" key={item.kind + '-' + item.id} className={index === selectedIndex ? 'selected' : ''} onMouseEnter={() => setSelectedIndex(index)} onClick={() => choose(item)} role="option" aria-selected={index === selectedIndex} data-command-result={item.id}><span className="command-result-icon">{item.kind === 'view' ? <Gauge size={15} /> : <Boxes size={15} />}</span><span><strong>{item.label}</strong><small>{item.detail}</small></span><ChevronRight size={14} /></button>) : <div className="command-palette-empty">No authorized workspace matches that search.</div>}
+      </div>
+      <footer><span>Arrow keys to move · Enter to open · Esc to close</span><button type="button" onClick={() => { onClose(); onOpenModuleHub(); }}><Grid3X3 size={14} /> Open Module Hub</button></footer>
+    </section>
+  </div>;
+}
+
 function ZipTopBar({
-  context,
-  theme,
-  modePreference,
-  setTheme,
-  setModePreference,
-  themeName,
-  clock,
-  weather,
-  temperatureUnit,
-  setTemperatureUnit,
-  canChangeWeatherUnit,
-  enableLocation,
-  onNavigate,
-  onOpenModule,
-  onOpenModuleHub,
-  onOpenAdmin,
-  onOpenLayoutStudio,
-  canUseLayoutStudio,
-  onLogout,
-  company,
-  companyChoices,
-  setCompany,
-  summary,
-  release,
-  setReleaseOpen,
-}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'temperatureUnit' | 'setTemperatureUnit' | 'canChangeWeatherUnit' | 'enableLocation' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub' | 'onOpenAdmin' | 'onOpenLayoutStudio' | 'canUseLayoutStudio' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany' | 'summary' | 'release' | 'setReleaseOpen'>) {
+  context, theme, modePreference, setTheme, setModePreference, themeName, clock, weather, temperatureUnit, setTemperatureUnit,
+  canChangeWeatherUnit, enableLocation, onNavigate, onOpenModule, onOpenModuleHub, onOpenAdmin, onOpenLayoutStudio,
+  canUseLayoutStudio, onLogout, company, companyChoices, setCompany, summary, release, setReleaseOpen, visibleNav,
+}: Pick<ZipDashboardProps, 'context' | 'theme' | 'modePreference' | 'setTheme' | 'setModePreference' | 'themeName' | 'clock' | 'weather' | 'temperatureUnit' | 'setTemperatureUnit' | 'canChangeWeatherUnit' | 'enableLocation' | 'onNavigate' | 'onOpenModule' | 'onOpenModuleHub' | 'onOpenAdmin' | 'onOpenLayoutStudio' | 'canUseLayoutStudio' | 'onLogout' | 'company' | 'companyChoices' | 'setCompany' | 'summary' | 'release' | 'setReleaseOpen' | 'visibleNav'>) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [utilitiesOpen, setUtilitiesOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [installState, setInstallState] = useState<'idle' | 'working' | 'installed' | 'unavailable'>('idle');
+  const commandTriggerRef = useRef<HTMLButtonElement>(null);
   const employeeInitials = initials(context.employee.displayName);
   const primaryRole = context.roles[0]?.name || (context.employee.status === 'provisional' ? 'Provisional Employee' : 'Employee');
   const permissionCount = Object.values(context.permissions).filter((level) => level !== 'none').length;
   const canAsk = can(context, 'ai_guide.access');
-
+  const canSeeApprovals = can(context, 'users.access', 'view', company.id) || can(context, 'forms.access', 'view', company.id);
+  const canSeeSecurity = can(context, 'security.access', 'view', company.id);
+  const canSeeFacilities = can(context, 'facilities.access', 'view', company.id);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setCommandOpen(true); }
+      if (event.key === 'Escape') { setUtilitiesOpen(false); setSupportOpen(false); setNotificationsOpen(false); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+  useEffect(() => {
+    if (!commandOpen) window.setTimeout(() => commandTriggerRef.current?.focus(), 0);
+  }, [commandOpen]);
   async function handleInstallApp() {
     if (installState === 'working') return;
     setInstallState('working');
-    try {
-      const outcome = await requestAppInstall();
-      setInstallState(outcome === 'accepted' ? 'installed' : outcome === 'dismissed' ? 'idle' : 'unavailable');
-    } catch {
-      setInstallState('unavailable');
-    }
+    try { const outcome = await requestAppInstall(); setInstallState(outcome === 'accepted' ? 'installed' : outcome === 'dismissed' ? 'idle' : 'unavailable'); }
+    catch { setInstallState('unavailable'); }
   }
-
-  const notificationItems = summary ? [
-    { title: summary.pendingApprovals ? `${summary.pendingApprovals} approval${summary.pendingApprovals === 1 ? '' : 's'} need attention` : 'Approval queue is clear', detail: 'Staff ERP · approvals', tone: summary.pendingApprovals ? 'amber' : 'green' },
-    { title: summary.securityAlerts ? `${summary.securityAlerts} security alert${summary.securityAlerts === 1 ? '' : 's'} to review` : 'Security center is clear', detail: 'Security, Access & Admin ERP', tone: summary.securityAlerts ? 'red' : 'green' },
-    { title: summary.maintenanceAlerts ? `${summary.maintenanceAlerts} maintenance item${summary.maintenanceAlerts === 1 ? '' : 's'} open` : 'No maintenance alerts', detail: 'Finance & Operations ERP', tone: summary.maintenanceAlerts ? 'blue' : 'green' },
-  ] : [{ title: 'Workspace sync in progress', detail: 'Scoped dashboard data', tone: 'blue' }];
-
-  return <header className="top-bar">
-    <div className="search-wrap">
-      <Search size={17} aria-hidden="true" />
-      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask anything about your workspace" aria-label="Search authorized ERP workspaces" />
-      {query && <button className="icon-button subtle" onClick={() => setQuery('')} aria-label="Clear search"><X size={15} /></button>}
-      {!query && <span className="search-ghost">Try “attendance”, “print jobs”, or “my profile”</span>}
-      <span className="search-shortcut">⌘ K</span>
-      {query && <div className="search-suggestions" role="listbox" aria-label="Search suggestions">
-        <button type="button" onClick={() => { setQuery(''); onOpenModuleHub(); }}><Search size={14} /><span>Search authorized modules for <b>“{query}”</b></span><ChevronRight size={14} /></button>
-        {canAsk && <button type="button" onClick={() => { setQuery(''); onNavigate('help'); }}><Sparkles size={14} /><span>Ask Daenem AI about <b>“{query}”</b></span><ChevronRight size={14} /></button>}
-      </div>}
-    </div>
-
+  const notificationItems = [
+    canSeeApprovals && { title: summary?.pendingApprovals ? String(summary.pendingApprovals) + ' approval' + (summary.pendingApprovals === 1 ? '' : 's') + ' need attention' : 'Approval queue is clear', detail: 'Authorized approval work', tone: summary?.pendingApprovals ? 'amber' : 'green' },
+    canSeeSecurity && { title: summary?.securityAlerts ? String(summary.securityAlerts) + ' security alert' + (summary.securityAlerts === 1 ? '' : 's') + ' to review' : 'Security center is clear', detail: 'Authorized security work', tone: summary?.securityAlerts ? 'red' : 'green' },
+    canSeeFacilities && { title: summary?.maintenanceAlerts ? String(summary.maintenanceAlerts) + ' maintenance item' + (summary.maintenanceAlerts === 1 ? '' : 's') + ' open' : 'No maintenance alerts', detail: 'Authorized facilities work', tone: summary?.maintenanceAlerts ? 'blue' : 'green' },
+  ].filter(Boolean) as Array<{ title: string; detail: string; tone: string }>;
+  if (!notificationItems.length) notificationItems.push({ title: 'No new authorized signals', detail: 'Your workspace is up to date', tone: 'green' });
+  return <header className="top-bar" data-command-bar="true">
+    <div className="search-wrap"><button ref={commandTriggerRef} type="button" className="top-command-trigger" onClick={() => setCommandOpen(true)} aria-label="Open command palette"><Search size={17} aria-hidden="true" /><span>Search authorized workspaces</span><span className="search-shortcut">⌘ / Ctrl K</span></button></div>
     <div className="top-actions">
       {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
-      <button className="top-action top-utility-button" onClick={onOpenModuleHub}><Plus size={16} /><span>Quick actions</span></button>
-      <button className="top-action install-action" onClick={() => void handleInstallApp()} title="Install the Daenem Staff Portal app"><Download size={16} /><span>{installState === 'working' ? 'Installing…' : installState === 'installed' ? 'App installed' : 'Install App'}</span></button>
-      {canUseLayoutStudio && <button className="top-action layout-studio-action" onClick={onOpenLayoutStudio}><LayoutDashboard size={16} /><span>Layout Studio</span></button>}
-      <button className="top-action support-action" onClick={() => setSupportOpen((open) => !open)} aria-expanded={supportOpen}><ShieldCheck size={16} /><span>Help & Support</span></button>
-      <button className="top-action messages-action" onClick={() => onNavigate('help')} title="Open messages center"><MessageSquareText size={16} /><span>Messages</span></button>
-      <button className="top-action favorites-action" onClick={onOpenModuleHub} title="Open saved and authorized modules"><Star size={16} /><span>Favorites</span></button>
-      <div className="notification-wrap">
-        <button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className="alert-dot" /></button>
-        {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications">
-          <div className="popover-title"><b>Notifications</b><button className="icon-button subtle" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><X size={15} /></button></div>
-          <p>Live signals from your authorized ERP workspaces.</p>
-          <div className="notification-list">{notificationItems.map((item) => <div className="notification-row" key={item.title}><i className={`notification-dot ${item.tone}`} /><span><strong>{item.title}</strong><small>{item.detail}</small></span></div>)}</div>
-        </div>}
+      <div className="notification-wrap"><button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className="alert-dot" /></button>
+        {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications"><div className="popover-title"><b>Notifications</b><button className="icon-button subtle" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><X size={15} /></button></div><p>Signals from your authorized workspaces.</p><div className="notification-list">{notificationItems.map((item) => <div className="notification-row" key={item.title}><i className={'notification-dot ' + item.tone} /><span><strong>{item.title}</strong><small>{item.detail}</small></span></div>)}</div></div>}
       </div>
-      <button className="weather-mini" onClick={enableLocation} title="Enable location and weather">
-        <CloudSun size={19} />
-        <span><b>{formatWeatherTemperature(weather.temperature, temperatureUnit)}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span>
-      </button>
-      <button className="release-chip" onClick={() => setReleaseOpen(true)} title="View release notes"><span>v{release.version.replace(/^v/, '')}</span><small>Release notes</small></button>
-      <div className="profile-wrap">
-        <button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen}>
-          <span className="avatar">{employeeInitials}</span>
-          <span className="profile-name"><strong>{context.employee.displayName}</strong><small>{primaryRole}</small></span>
-          <ChevronDown size={16} />
-        </button>
-        {profileOpen && <div className="profile-menu">
-          <div className="profile-menu-head"><span className="avatar">{employeeInitials}</span><div className="profile-menu-head-copy"><strong>{context.employee.displayName}</strong><small>{context.employee.email || 'Employee account'}</small></div></div>
-          <div className="profile-menu-access"><span>{primaryRole}</span><span>{permissionCount} active permissions</span></div>
-          {companyChoices.length > 1 && <div className="profile-scope">
-            <small>Organization scope</small>
-            <div>{companyChoices.map((item) => {
-              const Icon = item.icon;
-              return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.name}</span></button>;
-            })}</div>
-          </div>}
-          <strong>Workspace appearance · {themeName}</strong>
-          {themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}
-          <div className="mode-picker">
-            <small>Display mode · light is default</small>
-            <div>
-              <button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Light</button>
-              <button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Dark</button>
-              <button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button>
-            </div>
-          </div>
-          {canChangeWeatherUnit && <div className="mode-picker temperature-picker">
-            <small>Weather units · admin control</small>
-            <div>
-              <button className={temperatureUnit === 'F' ? 'selected' : ''} onClick={() => setTemperatureUnit('F')}>°F</button>
-              <button className={temperatureUnit === 'C' ? 'selected' : ''} onClick={() => setTemperatureUnit('C')}>°C</button>
-            </div>
-          </div>}
-          <button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button>
-          <button className="logout-menu" onClick={() => void onLogout()}><span>Sign out</span></button>
-        </div>}
+      <button className="weather-mini" onClick={enableLocation} title="Enable location and weather"><CloudSun size={19} /><span><b>{formatWeatherTemperature(weather.temperature, temperatureUnit)}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span></button>
+      <div className="top-utilities"><button type="button" className="top-more-button" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen}><Menu size={16} /> More</button>
+        {utilitiesOpen && <div className="top-utilities-menu" role="menu"><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Plus size={15} /> Quick actions</button><button role="menuitem" onClick={() => void handleInstallApp()}><Download size={15} /> {installState === 'working' ? 'Installing…' : installState === 'installed' ? 'App installed' : 'Install App'}</button>{canUseLayoutStudio && <button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenLayoutStudio(); }}><LayoutDashboard size={15} /> Layout Studio</button>}<button role="menuitem" onClick={() => { setUtilitiesOpen(false); setSupportOpen((open) => !open); }}><ShieldCheck size={15} /> Help & Support</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onNavigate('help'); }}><MessageSquareText size={15} /> Messages</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Star size={15} /> Favorites</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); setReleaseOpen(true); }}><Radio size={15} /> Release notes</button></div>}
+      </div>
+      <div className="profile-wrap"><button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen}><span className="avatar">{employeeInitials}</span><span className="profile-name"><strong>{context.employee.displayName}</strong><small>{primaryRole}</small></span><ChevronDown size={16} /></button>
+        {profileOpen && <div className="profile-menu"><div className="profile-menu-head"><span className="avatar">{employeeInitials}</span><div className="profile-menu-head-copy"><strong>{context.employee.displayName}</strong><small>{context.employee.email || 'Employee account'}</small></div></div><div className="profile-menu-access"><span>{primaryRole}</span><span>{permissionCount} active permissions</span></div>{companyChoices.length > 1 && <div className="profile-scope"><small>Organization scope</small><div>{companyChoices.map((item) => { const Icon = item.icon; return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.name}</span></button>; })}</div></div>}<strong>Workspace appearance · {themeName}</strong>{themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}<div className="mode-picker"><small>Display mode</small><div><button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Light</button><button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Dark</button><button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button></div></div>{canChangeWeatherUnit && <div className="mode-picker temperature-picker"><small>Weather units · admin control</small><div><button className={temperatureUnit === 'F' ? 'selected' : ''} onClick={() => setTemperatureUnit('F')}>°F</button><button className={temperatureUnit === 'C' ? 'selected' : ''} onClick={() => setTemperatureUnit('C')}>°C</button></div></div>}<button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button><button className="logout-menu" onClick={() => void onLogout()}><span>Sign out</span></button></div>}
       </div>
     </div>
-
-    {supportOpen && <div className="support-popover">
-      <div className="popover-title"><b>Help & Support</b><button className="icon-button subtle" onClick={() => setSupportOpen(false)} aria-label="Close help"><X size={15} /></button></div>
-      <p>Find answers, view product guidance, or contact the platform team.</p>
-      <div className="support-links"><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Browse FAQs <span>→</span></button><button onClick={() => { setSupportOpen(false); onOpenAdmin(); }}>Read admin docs <span>→</span></button><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Contact support <span>→</span></button></div>
-    </div>}
+    {supportOpen && <div className="support-popover"><div className="popover-title"><b>Help & Support</b><button className="icon-button subtle" onClick={() => setSupportOpen(false)} aria-label="Close help"><X size={15} /></button></div><p>Find answers, view product guidance, or contact the platform team.</p><div className="support-links"><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Browse FAQs <span>→</span></button><button onClick={() => { setSupportOpen(false); onOpenAdmin(); }}>Read admin docs <span>→</span></button><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Contact support <span>→</span></button></div></div>}
+    {commandOpen && <CommandPalette context={context} company={company} visibleNav={visibleNav} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} onClose={() => setCommandOpen(false)} />}
   </header>;
 }
-
 function HierarchyIcon({ iconKey, size = 14 }: { iconKey: string; size?: number }) {
   const Icon = iconKey === 'users' ? Users
     : iconKey === 'factory' ? Factory
@@ -298,157 +268,8 @@ function HierarchyIcon({ iconKey, size = 14 }: { iconKey: string; size?: number 
   return <Icon size={size} />;
 }
 
-function Sidebar({
-  context,
-  company,
-  visibleNav,
-  online,
-  sidebarOpen,
-  setSidebarOpen,
-  onNavigate,
-  onOpenModuleHub,
-  onOpenModule,
-  release,
-  setReleaseOpen,
-  activeView,
-}: Pick<ZipDashboardProps, 'context' | 'company' | 'visibleNav' | 'online' | 'sidebarOpen' | 'setSidebarOpen' | 'onNavigate' | 'onOpenModuleHub' | 'onOpenModule' | 'release' | 'setReleaseOpen'> & { activeView: ViewName }) {
-  const employeeInitials = initials(context.employee.displayName);
-  const primaryRole = context.roles[0]?.name || (context.employee.status === 'provisional' ? 'Provisional Employee' : 'Employee');
-  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ staff: true });
-  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
-  const [openSubsubmenus, setOpenSubsubmenus] = useState<Record<string, boolean>>({});
-  const availableModules = useMemo(
-    () => moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)),
-    [company.code, company.id, context],
-  );
-  const navigation = useMemo(
-    () => getErpNavigation(availableModules, visibleNav.map((item) => item.id)),
-    [availableModules, visibleNav],
-  );
-
-  useEffect(() => {
-    const activeGroup = navigation.find((group) => group.submenus.some((submenu) => submenu.submenus.some((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId))));
-    if (!activeGroup) return;
-    const activeSubmenu = activeGroup.submenus.find((submenu) => submenu.submenus.some((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId)));
-    const activeSubsubmenu = activeSubmenu?.submenus.find((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId));
-    setOpenGroups((current) => current[activeGroup.id] ? current : { ...current, [activeGroup.id]: true });
-    if (activeSubmenu) setOpenSubmenus((current) => current[`${activeGroup.id}:${activeSubmenu.id}`] ? current : { ...current, [`${activeGroup.id}:${activeSubmenu.id}`]: true });
-    if (activeSubmenu && activeSubsubmenu) setOpenSubsubmenus((current) => current[`${activeGroup.id}:${activeSubmenu.id}:${activeSubsubmenu.id}`] ? current : { ...current, [`${activeGroup.id}:${activeSubmenu.id}:${activeSubsubmenu.id}`]: true });
-  }, [activeModuleId, activeView, navigation]);
-
-  function openView(id: ViewName) {
-    setActiveModuleId(null);
-    setSidebarOpen(false);
-    onNavigate(id);
-  }
-
-  function openModule(id: string, group: ErpId) {
-    setActiveModuleId(id);
-    setSidebarOpen(false);
-    setOpenGroups((current) => current[group] ? current : { ...current, [group]: true });
-    onOpenModule(id);
-  }
-
-  function openItem(item: HierarchyItem, group: ErpId) {
-    if (item.kind === 'view' && item.view) openView(item.view);
-    else if (item.kind === 'module' && item.moduleId) openModule(item.moduleId, group);
-    else if (item.utility === 'module-hub') {
-      setSidebarOpen(false);
-      onOpenModuleHub();
-    }
-  }
-
-  function renderFunctionalItem(item: HierarchyItem, group: ErpId) {
-    const active = item.view === activeView || item.moduleId === activeModuleId;
-    return <button key={`${item.kind}-${item.id}`} className={`sidebar-functional-item ${active ? 'active' : ''}`} type="button" title={item.path || item.detail} aria-label={item.path || item.label} data-erp-path={item.path} onClick={() => openItem(item, group)}>
-      <span className="sidebar-functional-icon"><HierarchyIcon iconKey={item.iconKey} /></span>
-      <span className="sidebar-functional-copy"><strong>{item.label}</strong><small>{item.detail}</small></span>
-    </button>;
-  }
-
-  function renderGroup(group: ReturnType<typeof getErpNavigation>[number]) {
-    const childCount = group.submenus.reduce((count, submenu) => count + submenu.submenus.reduce((subtotal, subsubmenu) => subtotal + subsubmenu.items.length, 0), 0);
-    if (!childCount) return null;
-    const expanded = openGroups[group.id] ?? false;
-    const hasActiveItem = group.submenus.some((submenu) => submenu.submenus.some((subsubmenu) => subsubmenu.items.some((item) => item.view === activeView || item.moduleId === activeModuleId)));
-    return <div className={`sidebar-group ${expanded ? 'is-expanded' : ''} ${hasActiveItem ? 'has-active' : ''}`} key={group.id}>
-      <button className="sidebar-group-toggle" type="button" aria-expanded={expanded} aria-controls={`sidebar-submenu-${group.id}`} onClick={() => setOpenGroups((current) => ({ ...current, [group.id]: !expanded }))} title={group.detail}>
-        <span className="module-icon"><HierarchyIcon iconKey={group.iconKey} size={17} /></span>
-        <span className="sidebar-group-copy"><strong>{group.label}</strong><small>{group.detail}</small></span>
-        <span className="sidebar-group-meta"><b>{childCount}</b><ChevronRight className="sidebar-group-chevron" size={15} /></span>
-      </button>
-      {expanded && <div className="sidebar-submenu" id={`sidebar-submenu-${group.id}`}>
-        {group.submenus.map((submenu) => {
-          const submenuKey = `${group.id}:${submenu.id}`;
-          const submenuExpanded = openSubmenus[submenuKey] ?? false;
-          const submenuCount = submenu.submenus.reduce((count, subsubmenu) => count + subsubmenu.items.length, 0);
-          return <div className={`sidebar-submenu-group ${submenuExpanded ? 'is-expanded' : ''}`} key={submenu.id}>
-            <button className="sidebar-submenu-toggle" type="button" aria-expanded={submenuExpanded} aria-controls={`sidebar-subsubmenu-${submenuKey}`} onClick={() => setOpenSubmenus((current) => ({ ...current, [submenuKey]: !submenuExpanded }))} title={submenu.detail}>
-              <span className="sidebar-submenu-copy"><strong>{submenu.label}</strong><small>{submenu.detail}</small></span><span className="sidebar-group-meta"><b>{submenuCount}</b><ChevronRight className="sidebar-submenu-chevron" size={14} /></span>
-            </button>
-            {submenuExpanded && <div className="sidebar-subsubmenu" id={`sidebar-subsubmenu-${submenuKey}`}>
-              {submenu.submenus.map((subsubmenu) => {
-                const subsubmenuKey = `${submenuKey}:${subsubmenu.id}`;
-                const subsubmenuExpanded = openSubsubmenus[subsubmenuKey] ?? false;
-                return <div className={`sidebar-subsubmenu-group ${subsubmenuExpanded ? 'is-expanded' : ''}`} key={subsubmenu.id}>
-                  <button className="sidebar-subsubmenu-toggle" type="button" aria-expanded={subsubmenuExpanded} aria-controls={`sidebar-functional-${subsubmenuKey}`} onClick={() => setOpenSubsubmenus((current) => ({ ...current, [subsubmenuKey]: !subsubmenuExpanded }))} title={subsubmenu.detail}>
-                    <span><strong>{subsubmenu.label}</strong><small>{subsubmenu.detail}</small></span><ChevronRight className="sidebar-subsubmenu-chevron" size={13} />
-                  </button>
-                  {subsubmenuExpanded && <div className="sidebar-functional-items" id={`sidebar-functional-${subsubmenuKey}`}>
-                    {subsubmenu.items.map((item) => renderFunctionalItem(item, group.id))}
-                  </div>}
-                </div>;
-              })}
-            </div>}
-          </div>;
-        })}
-      </div>}
-    </div>;
-  }
-
-  return <aside className={`sidebar ${sidebarOpen ? 'is-open open' : ''}`}>
-    <div className="sidebar-head">
-      <div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div>
-      <div className="sidebar-copy"><strong>Daenem</strong><span>Staff Portal</span></div>
-      <button className="icon-button sidebar-close mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close navigation"><X size={18} /></button>
-    </div>
-    <div className="sidebar-label">Workspace</div>
-    <div className="sidebar-hierarchy-note" aria-label="Navigation hierarchy"><span>ERP</span><i /> <span>Sub-menu</span><i /> <span>Sub-sub-menu</span><i /> <span>Functional item</span></div>
-    <nav className="sidebar-nav" aria-label="ERP workspace navigation">
-      <section className="sidebar-section" aria-label="ERP workspaces">
-        <div className="sidebar-section-heading"><span>ERP WORKSPACES</span><small>{availableModules.length} authorized modules</small></div>
-        {navigation.map(renderGroup)}
-      </section>
-    </nav>
-    <div className="sidebar-bottom">
-      <div className="sidebar-status"><i className={online ? '' : 'offline'} /><span>{online ? 'All systems operational' : 'Offline mode'}</span></div>
-      <div className="mini-user"><div className="avatar">{employeeInitials}</div><div><strong>{context.employee.displayName}</strong><span>{primaryRole}</span></div></div>
-      <small>{context.companies.length} company assignment{context.companies.length === 1 ? '' : 's'} · RBAC enforced</small>
-      <button className="version-chip" onClick={() => setReleaseOpen(true)}><span>Version {release.version}</span><small>What changed</small></button>
-    </div>
-  </aside>;
-}
-
-function DashboardHeading({ context, company, clock, onOpenModuleHub, theme, themeName }: Pick<ZipDashboardProps, 'context' | 'company' | 'clock' | 'onOpenModuleHub' | 'theme' | 'themeName'>) {
-  const firstName = context.employee.displayName.split(' ')[0] || context.employee.displayName;
-  const personality = themePersonalityById(theme);
-  const themeNumber = String(themeList.findIndex((item) => item.id === theme) + 1).padStart(2, '0');
-  return <div className="dashboard-heading overview-heading">
-    <div>
-      <span className="dashboard-design-label"><i /> Theme {themeNumber} · {personality.identity} · Dashboard</span>
-      <span className="eyebrow">{clock}</span>
-      <h1>Good day, {firstName} <span>✦</span></h1>
-      <p>{personality.dashboardPersonality}. Your {themeName} workspace brings the connected operations pulse into focus across {company.id ? company.name : 'the workspace'}.</p>
-    </div>
-    <div className="heading-actions">
-      <button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Customize view</button>
-      <button className="primary-button" onClick={onOpenModuleHub}><Plus size={16} /> New action</button>
-    </div>
-  </div>;
-}
-
-function KpiStrip({ summary, company }: Pick<ZipDashboardProps, 'summary' | 'company'>) {
+function KpiStrip({ summary, company, context }: Pick<ZipDashboardProps, 'summary' | 'company' | 'context'>) {
+  if (!canSeeAggregateDashboard(context, company.id)) return null;
   const cards = [
     { label: 'Employees', value: numberValue(summary?.employees), detail: company.id ? company.code : 'All assigned companies', icon: Users, tone: 'blue' },
     { label: 'Present today', value: numberValue(summary?.present), detail: summary?.workDate || 'Live attendance', icon: CalendarCheck2, tone: 'green' },
@@ -548,6 +369,7 @@ function WidgetActions({
   count,
   onMove,
   canManage,
+  enabled,
   onRemove,
   onReplace,
 }: {
@@ -555,16 +377,17 @@ function WidgetActions({
   count: number;
   onMove: (index: number, direction: -1 | 1) => void;
   canManage: boolean;
+  enabled: boolean;
   onRemove: () => void;
   onReplace: () => void;
 }) {
-  return <span className="widget-actions" onClick={(event) => event.stopPropagation()}>
+  if (!enabled) return null;
+  return <span className="widget-actions" onClick={(event) => event.stopPropagation()} data-customization-controls="true">
     <button type="button" aria-label="Move card up" disabled={index === 0} onClick={() => onMove(index, -1)}><ArrowUp size={12} /></button>
     <button type="button" aria-label="Move card down" disabled={index === count - 1} onClick={() => onMove(index, 1)}><ArrowDown size={12} /></button>
     {canManage && <><button type="button" aria-label="Replace widget" onClick={onReplace}><RefreshCw size={12} /></button><button type="button" aria-label="Remove widget" disabled={count <= 1} onClick={onRemove}><X size={12} /></button></>}
   </span>;
 }
-
 
 function formatLastLogin(value?: string) {
   if (!value) return 'Current session verified';
@@ -645,8 +468,9 @@ function ErpPulseGrid({
       const modules = availableModules.filter((module) => module.erpId === group.id);
       const firstModule = modules[0];
       const isStaff = group.id === 'staff';
-      const signal = isStaff ? numberValue(summary?.present) : '—';
-      const signalLabel = isStaff ? 'Present today' : 'Live signal on open';
+      const aggregateAllowed = canSeeAggregateDashboard(context, company.id);
+      const signal = isStaff && aggregateAllowed ? numberValue(summary?.present) : 'Available on open';
+      const signalLabel = isStaff && aggregateAllowed ? 'Present today' : 'Authorized functions';
       return <article className="erp-pulse-card" key={group.id}>
         <header><span className="erp-pulse-icon"><HierarchyIcon iconKey={group.iconKey} size={16} /></span><div><span className="eyebrow">{group.label}</span><h3>{group.detail}</h3></div></header>
         <div className="erp-pulse-chart" aria-hidden="true"><i /><i /><i /><i /><i /></div>
@@ -713,6 +537,23 @@ const widgetLabels: Record<WidgetId, string> = {
   motivation: 'Daily motivation',
 };
 
+const dashboardWidgetRegistry: Record<WidgetId, { requiredPermission?: string; aggregate?: boolean }> = {
+  trend: { aggregate: true },
+  comparison: { aggregate: true },
+  category: { aggregate: true },
+  forecast: { aggregate: true },
+  queue: { aggregate: true },
+  status: {},
+  news: { requiredPermission: 'broadcasts.access' },
+  motivation: { requiredPermission: 'broadcasts.access' },
+};
+
+function canRenderDashboardWidget(widget: WidgetId, context: WorkforceContext, companyId: string | null) {
+  const definition = dashboardWidgetRegistry[widget];
+  if (definition.aggregate) return canSeeAggregateDashboard(context, companyId);
+  return !definition.requiredPermission || can(context, definition.requiredPermission, 'view', companyId);
+}
+
 function DashboardWidgets({
   widgets,
   summary,
@@ -726,13 +567,14 @@ function DashboardWidgets({
 }: Pick<ZipDashboardProps, 'summary' | 'company' | 'context' | 'online' | 'refreshSummary' | 'onNavigate' | 'onOpenModule' | 'release'> & { widgets: WidgetId[] }) {
   const [dragged, setDragged] = useState<WidgetId | null>(null);
   const [customizing, setCustomizing] = useState(false);
-  const widgetStorageKey = `daenem-dashboard-widgets:${context.employee.id}:${company.id || 'group'}`;
+  const allowedWidgets = useMemo(() => widgets.filter((widget) => canRenderDashboardWidget(widget, context, company.id)), [company.id, context, widgets]);
+  const widgetStorageKey = 'daenem-dashboard-widgets:' + context.employee.id + ':' + (company.id || 'group');
   const [order, setOrder] = useState<WidgetId[]>(() => {
     if (typeof window === 'undefined') return widgets;
     try {
       const stored = JSON.parse(localStorage.getItem(widgetStorageKey) || 'null') as unknown;
-      const valid = Array.isArray(stored) ? stored.filter((item): item is WidgetId => Object.prototype.hasOwnProperty.call(widgetLabels, item)) : [];
-      return valid.length ? [...new Set(valid)] : widgets;
+      const valid = Array.isArray(stored) ? stored.filter((item): item is WidgetId => Object.prototype.hasOwnProperty.call(widgetLabels, item) && allowedWidgets.includes(item)) : [];
+      return valid.length ? [...new Set(valid)] : allowedWidgets;
     } catch {
       return widgets;
     }
@@ -745,22 +587,22 @@ function DashboardWidgets({
   const [clockPreferences, setClockPreferences] = useState<WorldClockPreferences>(() => readWorldClockPreferences());
   const [clockQuery, setClockQuery] = useState('');
   const canManageWidgets = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
-  const hiddenWidgets = (Object.keys(widgetLabels) as WidgetId[]).filter((widget) => !order.includes(widget));
+  const hiddenWidgets = allowedWidgets.filter((widget) => !order.includes(widget));
   const filteredClockLocations = WORLD_CLOCKS.filter((item) => `${item.name} ${item.region}`.toLowerCase().includes(clockQuery.trim().toLowerCase()));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const stored = JSON.parse(localStorage.getItem(widgetStorageKey) || 'null') as unknown;
-      const valid = Array.isArray(stored) ? stored.filter((item): item is WidgetId => Object.prototype.hasOwnProperty.call(widgetLabels, item)) : [];
-      setOrder(valid.length ? [...new Set(valid)] : widgets);
+      const valid = Array.isArray(stored) ? stored.filter((item): item is WidgetId => Object.prototype.hasOwnProperty.call(widgetLabels, item) && allowedWidgets.includes(item)) : [];
+      setOrder(valid.length ? [...new Set(valid)] : allowedWidgets);
       const savedStyle = localStorage.getItem(`${widgetStorageKey}:style`);
       setWidgetStyle(savedStyle === 'compact' || savedStyle === 'full' || savedStyle === 'strip' ? savedStyle : 'card');
     } catch {
       setOrder(widgets);
       setWidgetStyle('card');
     }
-  }, [widgetStorageKey, widgets]);
+  }, [allowedWidgets, widgetStorageKey]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -826,7 +668,7 @@ function DashboardWidgets({
 
   return <>
     <div className="widget-customize-toolbar" aria-label="Dashboard customization"><span><Settings2 size={14} /> {customizing ? 'Customize Dashboard' : 'Personal dashboard'}</span><button type="button" className="text-button" onClick={() => setCustomizing((value) => !value)}>{customizing ? 'Done' : 'Customize Dashboard'}</button></div>
-    {canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator widget controls">
+    {customizing && canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator widget controls">
       <span><Settings2 size={14} /> Admin widget controls</span>
       <label className="widget-style-control">Widget style<select value={widgetStyle} onChange={(event) => setWidgetStyle(event.target.value as WidgetStyle)} aria-label="Dashboard widget style"><option value="compact">Compact</option><option value="full">Full</option><option value="card">Card</option><option value="strip">Strip</option></select></label>
       {hiddenWidgets.map((widget) => <button type="button" key={widget} onClick={() => addWidget(widget)}>+ {widgetLabels[widget]}</button>)}
@@ -849,7 +691,7 @@ function DashboardWidgets({
         onDragOver={(event) => { if (customizing) event.preventDefault(); }}
         onDrop={() => { if (customizing) moveWidget(widget); }}
       >
-        <WidgetActions index={index} count={order.length} onMove={moveByKeyboard} canManage={canManageWidgets} onRemove={() => removeWidget(widget)} onReplace={() => replaceWidget(index)} />
+        <WidgetActions index={index} count={order.length} onMove={moveByKeyboard} canManage={customizing && canManageWidgets} enabled={customizing} onRemove={() => removeWidget(widget)} onReplace={() => replaceWidget(index)} />
         {renderWidget(widget)}
       </div>)}
     </div>
@@ -901,6 +743,7 @@ export function ZipDashboard({
   release,
   releaseOpen,
   setReleaseOpen,
+  activeErpId,
   layoutId,
   layoutProfile,
   density,
@@ -922,11 +765,15 @@ export function ZipDashboard({
       : 'Syncing live data';
   const liveDataDetail = dataError || (dataLastSyncedAt ? `Updated ${formatLastSyncedAt(dataLastSyncedAt)}` : 'Reading secured D1 records');
 
-  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} data-layout-profile={layoutId} data-layout-density={density} data-layout-motion={motion}>
-    <Sidebar
+  const scopedSummary = canSeeAggregateDashboard(context, company.id) ? summary : null;
+
+  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} data-layout-profile={layoutId} data-layout-density={density} data-layout-motion={motion} data-active-erp={activeErpId}>
+    <PostAuthNavigation
+      layoutProfile={layoutProfile}
       context={context}
       company={company}
       visibleNav={visibleNav}
+      activeView={activeView}
       online={online}
       sidebarOpen={sidebarOpen}
       setSidebarOpen={setSidebarOpen}
@@ -935,7 +782,6 @@ export function ZipDashboard({
       onOpenModule={onOpenModule}
       release={release}
       setReleaseOpen={setReleaseOpen}
-      activeView={activeView}
     />
     {sidebarOpen && <button className="mobile-backdrop" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
 
@@ -943,6 +789,7 @@ export function ZipDashboard({
       <ZipTopBar
         context={context}
         company={company}
+        visibleNav={visibleNav}
         companyChoices={companyChoices}
         setCompany={setCompany}
         theme={theme}
@@ -967,12 +814,9 @@ export function ZipDashboard({
         release={release}
         setReleaseOpen={setReleaseOpen}
       />
-      <div className="postauth-layout-ribbon"><span>Workspace composition · <strong>{layoutProfile.name}</strong> · {layoutProfile.shellMode}</span>{canUseLayoutStudio && <button type="button" onClick={onOpenLayoutStudio}>Change layout</button>}</div>
       <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
       <div className="dashboard-main">
-        {view === 'overview'
-          ? <><PostAuthHomeBanner context={context} summary={summary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} /><DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} /></>
-          : <div className="dashboard-heading module-page-heading"><div><span className="eyebrow">DAENEM BUSINESS ERP</span><h1>{moduleLabel}</h1><p>Open records and workflows assigned to your role and company scope.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={16} /> Module Hub</button></div></div>}
+        {view !== 'overview' && <div className="dashboard-module-toolbar"><span className="eyebrow">DAENEM BUSINESS ERP · {moduleLabel}</span><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Module Hub</button></div>}
         <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}{weather.temperature !== undefined ? ` · ${formatWeatherTemperature(weather.temperature, temperatureUnit)}` : ''}</button><span className={`data-sync-chip data-sync-${dataStatus}`} title={liveDataDetail}><i /> {liveDataLabel}{dataLastSyncedAt && dataStatus !== 'loading' ? ` · ${formatLastSyncedAt(dataLastSyncedAt)}` : ''}</span></div>
         <div className="company-switcher" role="list" aria-label="Company filter">{companyChoices.map((item) => {
           const Icon = item.icon;
@@ -981,17 +825,17 @@ export function ZipDashboard({
         {view === 'overview'
           ? <PostAuthOverviewComposition
             profile={layoutProfile}
-            hero={<><PostAuthHomeBanner context={context} summary={summary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} /><DashboardHeading context={context} company={company} clock={clock} onOpenModuleHub={onOpenModuleHub} theme={theme} themeName={themeName} /></>}
-            pulse={<ErpPulseGrid context={context} company={company} summary={summary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
+            hero={<PostAuthHomeBanner context={context} summary={scopedSummary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} />}
+            pulse={<ErpPulseGrid context={context} company={company} summary={scopedSummary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             loading={<SmartLoadingCard pending={dataStatus === 'loading'} />}
-            kpis={<KpiStrip summary={summary} company={company} />}
-            widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Drag cards to personalize your view</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div><DashboardWidgets widgets={initialWidgets} summary={summary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
+            kpis={<KpiStrip summary={scopedSummary} company={company} context={context} />}
+            widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Personalize the workspace when you are ready</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div><DashboardWidgets widgets={initialWidgets} summary={scopedSummary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
             workspace={<WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
-            owner={<OwnerCommandCenter context={context} summary={summary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} />}
+            owner={<OwnerCommandCenter context={context} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} />}
             intelligence={liveIntelligence ? <section className="zip-live-intelligence"><div className="zip-section-heading"><span className="eyebrow">AUTHORIZED LIVE INTELLIGENCE</span><h2>Executive records</h2></div>{liveIntelligence}</section> : null}
             clocks={<section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>}
           /> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
-        <footer className="dashboard-footer"><span>Daenem Business ERP · {themeName}</span><span>Live D1 data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
+        <footer className="dashboard-footer"><span>Daenem Business ERP · {activeErpId.toUpperCase()}</span><span>Live D1 data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
       </div>
     </section>
 
