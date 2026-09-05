@@ -1,4 +1,3 @@
-
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -14,6 +13,7 @@ const pepper = 'offline-runtime-test-pepper';
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const requestTimeoutMs = 10_000;
+const readinessTimeoutMs = 1_000;
 const wranglerTimeoutMs = 120_000;
 
 function quote(value) {
@@ -73,9 +73,9 @@ function requestHeaders(token, extra) {
   return headers;
 }
 
-async function fetchWithTimeout(url, init = {}) {
+async function fetchWithTimeout(url, init = {}, timeoutMs = requestTimeoutMs) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } finally {
@@ -214,14 +214,21 @@ async function main() {
     let runtimeOutput = '';
     runtime.stdout.on('data', (chunk) => { runtimeOutput += chunk; });
     runtime.stderr.on('data', (chunk) => { runtimeOutput += chunk; });
-    for (let attempt = 0; attempt < 60; attempt += 1) {
+    const readinessDeadline = Date.now() + 30_000;
+    let ready = false;
+    for (let attempt = 0; Date.now() < readinessDeadline; attempt += 1) {
       try {
-        const response = await fetchWithTimeout(baseUrl + '/api/offline/bootstrap');
-        if ([200, 401, 403, 404, 500].includes(response.status)) break;
+        const response = await fetchWithTimeout(baseUrl + '/api/offline/bootstrap', {}, readinessTimeoutMs);
+        if ([200, 401, 403, 404, 500].includes(response.status)) {
+          ready = true;
+          break;
+        }
       } catch {}
       if (runtime.exitCode !== null) throw new Error('Worker runtime exited before serving:\n' + runtimeOutput);
       await sleep(500);
     }
+    if (runtime.exitCode !== null) throw new Error('Worker runtime exited before serving:\n' + runtimeOutput);
+    if (!ready) throw new Error('Worker runtime did not become ready within 30 seconds:\n' + runtimeOutput);
     const matrix = [];
     const unauth = await request(baseUrl, '', '/api/offline/bootstrap');
     expect('unauthenticated bootstrap', unauth, 401);
