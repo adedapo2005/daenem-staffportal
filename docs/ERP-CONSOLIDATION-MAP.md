@@ -69,7 +69,7 @@ filtered module list rather than an unfiltered registry.
 
 ## Autos surgical retirement note
 
-Current Autos code still contains historical Workshop, repair/status,
+Current Autos Workshop code still contains historical Workshop, repair/status,
 mechanic/technician, waiting-parts and bodywork references. They are not
 expanded by Batch 1. The next Autos sales-only phase should remove those
 presentation/workflow paths while preserving shared Logistics maintenance
