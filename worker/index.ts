@@ -305,6 +305,17 @@ async function dashboardSummary(request: Request, env: Env, context: SessionCont
     return json({ error: 'Dashboard access is not assigned for this business.' }, 403);
   }
   const companyId = requestedCompany || null;
+  const canSeeAggregateSummary = context.roles.some((role) => ['owner', 'group_admin', 'company_admin', 'manager'].includes(role.code))
+    || hasPermission(context, 'dashboard.access', 'manage');
+  if (!canSeeAggregateSummary) {
+    return json({
+      refreshedAt: new Date().toISOString(),
+      workDate,
+      companyId,
+      scope: 'personal',
+      attendanceRule: 'Personal dashboard aggregates are returned only when the current role is authorized for group or team reporting.',
+    });
+  }
   const companyIds = companyId ? [companyId] : dashboardCompanyIds;
   const companyPlaceholders = sqlList(companyIds);
   const workDate = nigeriaDate();

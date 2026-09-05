@@ -8,8 +8,8 @@ import {
   Sun, Monitor,
 } from 'lucide-react';
 import { api, AuthScreen, hasWorkforcePermission, useAuth, type AccessLevel, type WorkforceContext } from './auth';
-import { ModuleHub } from './module-hub';
-import type { HierarchyViewId } from './module-hub';
+import { ModuleHub, moduleDefinitions } from './module-hub';
+import type { ErpId, HierarchyViewId } from './module-hub';
 import {
   applyThemeToDocument, normalizeThemeId, readModePreference, readThemeId,
   themeList, type ModePreference, type ThemeId,
@@ -103,6 +103,15 @@ const nav: Array<{ id: ViewName; label: string; description: string; icon: React
   { id: 'security', label: 'Security Center', description: 'Review permitted sign-in, device, access-denial and location security events.', icon: ShieldCheck, permission: 'security.access' },
   { id: 'help', label: 'AI Guide', description: 'Ask permission-aware questions and learn what each portal function does.', icon: Bot, permission: 'ai_guide.access' },
 ];
+const ERP_BY_VIEW: Record<ViewName, ErpId> = {
+  overview: 'staff',
+  people: 'staff',
+  forms: 'staff',
+  facilities: 'finance',
+  broadcasts: 'social',
+  security: 'controls',
+  help: 'controls',
+};
 
 const companyIcons: Record<string, React.ComponentType<{ size?: number }>> = {
   PRINT: Factory, BAKERY: Store, AUTOS: BriefcaseBusiness, LOGISTICS: Activity, PROPERTIES: Home,
@@ -257,6 +266,7 @@ function PlaceholderView({ view, context }: { view: ViewName; context: Workforce
 
 function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
   const [view, setView] = useState<ViewName>(can(context, 'dashboard.access') ? 'overview' : 'help');
+  const [activeErpId, setActiveErpId] = useState<ErpId>('staff');
   const companyChoices = useCompanyChoices(context);
   const [company, setCompany] = useState<CompanyChoice>(companyChoices[0]);
   const [theme, setTheme] = useState<ThemeId>(() => readThemeId(context.employee.preferredTheme));
@@ -291,7 +301,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   }, []);
   useEffect(() => {
     let active = true;
-    const query = company.id ? '?erpId=controls&companyId=' + encodeURIComponent(company.id) : '?erpId=controls';
+    const query = company.id ? '?erpId=' + encodeURIComponent(activeErpId) + '&companyId=' + encodeURIComponent(company.id) : '?erpId=' + encodeURIComponent(activeErpId);
     api<{ preference: LayoutPreference; canChoose: boolean; canManage: boolean; canAccess: boolean }>('/api/experience/layout' + query)
       .then((result) => {
         if (!active) return;
@@ -302,7 +312,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       })
       .catch(() => undefined);
     return () => { active = false; };
-  }, [company.id, context.employee.id]);
+  }, [activeErpId, company.id, context.employee.id]);
   useEffect(() => {
     const onLayoutEvent = (event: Event) => {
       const detail = (event as CustomEvent<Partial<LayoutPreference>>).detail;
@@ -385,11 +395,19 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
 
   function navigate(next: ViewName) {
     setSidebarOpen(false);
+    setActiveErpId(ERP_BY_VIEW[next]);
     setView(next);
   }
   function openErpModule(id: string) {
     setSidebarOpen(false);
-    window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } }));
+    const module = moduleDefinitions.find((candidate) => candidate.id === id);
+    const erpId = module?.erpId || 'staff';
+    setActiveErpId(erpId);
+    window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: {
+      id,
+      erpId,
+      canonicalPath: module ? module.erpId + '/' + module.submenuId + '/' + module.subsubmenuId + '/' + module.functionalItem : undefined,
+    } }));
   }
   const activeTheme = themeList.find((item) => item.id === theme) || themeList[0];
   const activeLayoutProfile = getLayoutProfile(layoutPreference.layoutId);
@@ -452,6 +470,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       release={PORTAL_RELEASE}
       releaseOpen={releaseOpen}
       setReleaseOpen={setReleaseOpen}
+      activeErpId={activeErpId}
       layoutId={layoutPreference.layoutId}
       layoutProfile={activeLayoutProfile}
       density={layoutPreference.density}
@@ -459,7 +478,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
       canUseLayoutStudio={canUseLayoutStudio}
       onOpenLayoutStudio={openLayoutStudio}
     />
-    <ModuleHub context={context} companyId={company.id} companyCode={company.code} />
+    <ModuleHub context={context} companyId={company.id} companyCode={company.code} experience={{ layoutId: activeLayoutProfile.id, shellMode: activeLayoutProfile.shellMode, density: layoutPreference.density, motion: layoutPreference.motion, erpId: activeErpId }} />
     <Suspense fallback={null}><SupportInbox context={context} /></Suspense>
   </div>;
 }

@@ -15,6 +15,8 @@ export type ErpId =
   | 'controls'
   | 'jobs';
 
+export const CANONICAL_ERP_IDS: ErpId[] = ['staff', 'printing', 'bakery', 'autos', 'logistics', 'properties', 'finance', 'controls', 'jobs', 'social'];
+
 export type HierarchyViewId =
   | 'overview'
   | 'people'
@@ -132,6 +134,14 @@ const modules: ModuleDefinition[] = [
 ];
 
 export const moduleDefinitions = modules;
+
+export function getCanonicalModule(moduleId: string) {
+  return moduleDefinitions.find((module) => module.id === moduleId);
+}
+
+export function getCanonicalErpForModule(moduleId: string): ErpId | null {
+  return getCanonicalModule(moduleId)?.erpId || null;
+}
 
 type HierarchyTemplate = Omit<ErpNavigationGroup, 'submenus'> & {
   submenus: Array<Omit<ErpSubmenu, 'submenus'> & { submenus: Array<Omit<ErpSubSubmenu, 'items'> & { items?: HierarchyItem[] }> }>;
@@ -440,7 +450,9 @@ async function clickWhenReady(selector: string) {
   return false;
 }
 
-export function ModuleHub({ context, companyId, companyCode, showLauncher = false }: { context: WorkforceContext; companyId: string | null; companyCode: string; showLauncher?: boolean }) {
+export type PostAuthModuleExperience = { layoutId: string; shellMode: string; density: string; motion: string; erpId: ErpId; };
+
+export function ModuleHub({ context, companyId, companyCode, showLauncher = false, experience }: { context: WorkforceContext; companyId: string | null; companyCode: string; showLauncher?: boolean; experience?: PostAuthModuleExperience }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState('');
@@ -480,8 +492,18 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
       await module.load();
       await nextFrame();
       await nextFrame();
+      const moduleExperience = {
+        moduleId: module.id,
+        erpId: module.erpId,
+        canonicalPath: module.erpId + '/' + module.submenuId + '/' + module.subsubmenuId + '/' + module.functionalItem,
+        layoutId: experience?.layoutId || 'executive-command',
+        shellMode: experience?.shellMode || 'command-rail',
+        density: experience?.density || 'standard',
+        motion: experience?.motion || 'balanced',
+      };
+      window.dispatchEvent(new CustomEvent('daenem:module-experience', { detail: moduleExperience }));
       window.dispatchEvent(new CustomEvent('daenem:active-company-changed', { detail: { companyId, companyCode } }));
-      if (module.event) window.dispatchEvent(new CustomEvent(module.event.name, { detail: { ...module.event.detail, companyId: companyId || '', companyCode } }));
+      if (module.event) window.dispatchEvent(new CustomEvent(module.event.name, { detail: { ...module.event.detail, companyId: companyId || '', companyCode, experience: moduleExperience } }));
       const opened = module.selector ? await clickWhenReady(module.selector) : true;
       if (!opened) throw new Error(`${module.label} did not finish opening. Please try once more.`);
       setOpen(false);
@@ -492,7 +514,7 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
     }
   }
 
-  return <>
+  return <div className="postauth-module-envelope" data-module-envelope="true" data-module-layout={experience?.layoutId || 'executive-command'} data-module-erp={experience?.erpId || 'staff'}>
     {showLauncher && <button className="module-hub-launcher" onClick={() => setOpen(true)} aria-label="Open module hub"><Grid3X3 size={18} /><span>Modules</span></button>}
     {open && <div className="module-hub-backdrop" onClick={() => !loading && setOpen(false)}>
       <section className="module-hub-panel" role="dialog" aria-modal="true" aria-labelledby="module-hub-title" onClick={(event) => event.stopPropagation()}>
@@ -506,5 +528,5 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
         })}</div></section>) : <div className="module-hub-empty">No module matches your search.</div>}</main>
       </section>
     </div>}
-  </>;
+  </div>;
 }

@@ -30,11 +30,11 @@ export function PostAuthHomeBanner({
     : 'A calmer, clearer workday starts here.';
   const eyebrow = tone === 'owner' ? 'OWNER COMMAND CENTER' : tone === 'manager' ? 'MANAGER HOME' : 'EMPLOYEE HOME';
   const primary = tone === 'owner'
-    ? [{ label: 'Review approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onOpenModule('intelligence') }, { label: 'Security signals', detail: String(summary?.securityAlerts ?? '—'), action: () => onNavigate('security') }]
+    ? [{ label: 'Review approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onOpenModule('owner-intelligence') }, { label: 'Security signals', detail: String(summary?.securityAlerts ?? '—'), action: () => onNavigate('security') }]
     : tone === 'manager'
       ? [{ label: 'Team workload', detail: String(summary?.employees ?? '—'), action: () => onNavigate('people') }, { label: 'Pending approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onNavigate('forms') }]
       : [{ label: 'My workspace', detail: 'Next action', action: () => onOpenModule('employee') }, { label: 'Ask Daenem', detail: 'Guided help', action: () => onNavigate('help') }];
-  return <section className={'postauth-home-banner postauth-tone-' + tone} aria-labelledby="postauth-home-title">
+  return <section className={'postauth-home-banner postauth-tone-' + tone} data-postauth-primary-hero="true" aria-labelledby="postauth-home-title">
     <div className="postauth-home-copy">
       <span className="eyebrow">{eyebrow} · {company.name}</span>
       <h1 id="postauth-home-title">{title}</h1>
@@ -73,7 +73,7 @@ export function PostAuthFeatureFrame({
     </header>
     <div className={'postauth-feature-regions postauth-regions-' + profile.detailMode}>
       <div className="postauth-feature-main">{children}</div>
-      {showRail && <aside className="postauth-feature-context"><span className="eyebrow">LAYOUT CONTEXT</span><strong>{profile.name}</strong><p>{profile.description}</p><small>Use the canonical route for this function; this surface changes composition, not data ownership.</small></aside>}
+      {showRail && <aside className="postauth-feature-context"><span className="eyebrow">WORKING PATTERN</span><strong>{profile.name}</strong><p>{profile.description}</p><small>Keep this function in its approved workspace while the surrounding regions adapt to your chosen working pattern.</small></aside>}
     </div>
   </section>;
 }
@@ -93,11 +93,11 @@ type PostAuthOverviewCompositionProps = {
 };
 
 function OverviewAdapterNote({ profile }: { profile: LayoutProfile }) {
-  return <aside className="postauth-adapter-note">
-    <span className="eyebrow">LAYOUT ADAPTER</span>
+  return <aside className="postauth-context-note" data-layout-context-note={profile.id}>
+    <span className="eyebrow">WORKING PATTERN</span>
     <strong>{profile.name}</strong>
     <p>{profile.dashboardStrategy}</p>
-    <small>One canonical data surface, composed for this work pattern.</small>
+    <small>Prioritized for the way this workspace is used.</small>
   </aside>;
 }
 

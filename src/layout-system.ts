@@ -12,6 +12,24 @@ export type LayoutId =
 
 export type LayoutDensity = 'comfortable' | 'standard' | 'compact';
 export type MotionPreset = 'off' | 'calm' | 'balanced' | 'expressive';
+
+export type MotionTokens = {
+  duration: string;
+  distance: string;
+  easing: string;
+  elevation: string;
+};
+
+export const MOTION_TOKENS: Record<MotionPreset, MotionTokens> = {
+  off: { duration: '0ms', distance: '0px', easing: 'linear', elevation: '0px' },
+  calm: { duration: '160ms', distance: '4px', easing: 'cubic-bezier(.2,.8,.2,1)', elevation: '0 6px 18px rgba(19,36,58,.06)' },
+  balanced: { duration: '200ms', distance: '6px', easing: 'cubic-bezier(.2,.7,.2,1)', elevation: '0 12px 30px rgba(19,36,58,.09)' },
+  expressive: { duration: '320ms', distance: '8px', easing: 'cubic-bezier(.16,1,.3,1)', elevation: '0 16px 36px rgba(19,36,58,.12)' },
+};
+
+export function getMotionTokens(value: unknown): MotionTokens {
+  return MOTION_TOKENS[normalizeMotion(value)];
+}
 export type NavigationMode = 'expanded-sidebar' | 'icon-rail' | 'operations-rail' | 'top-command' | 'contextual';
 export type ShellMode = 'command-rail' | 'canvas' | 'cockpit' | 'editorial' | 'split-pane' | 'wide-canvas' | 'bento' | 'focus' | 'studio' | 'board';
 
@@ -226,9 +244,11 @@ export function resolveLayout(
     || roles.map((role) => normalized.roleDefaults[role]).find(Boolean)
     || (erpId ? normalized.erpDefaults[erpId] : null)
     || normalized.organizationDefault;
-  const source = personal?.layoutId && normalized.allowPersonalPreference
-    ? personal
-    : { layoutId };
+  const source = normalized.forcedLayout
+    ? { layoutId }
+    : personal?.layoutId && normalized.allowPersonalPreference
+      ? personal
+      : { layoutId };
   return normalizeLayoutPreference(source, layoutId);
 }
 

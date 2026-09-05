@@ -7,6 +7,23 @@ import {
 
 interface Env extends AuthEnv {}
 
+type ExperienceSnapshot = {
+  preference?: LayoutPreference | null;
+  policy?: LayoutPolicy | null;
+};
+
+type ExperienceHistoryRecord = {
+  id: string;
+  scope: 'personal' | 'policy' | 'rollback' | string;
+  target?: string;
+  before?: ExperienceSnapshot;
+  after?: ExperienceSnapshot;
+  actorId?: string;
+  createdAt: string;
+  reason?: string;
+  restorable?: boolean;
+  layoutId?: LayoutId;
+};
 const json = (body: Record<string, unknown> | unknown[], status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
@@ -33,30 +50,76 @@ async function readJsonSetting<T>(env: Env, key: string, fallback: T): Promise<T
 function companyAllowed(context: SessionContext, companyId?: string | null) {
   return !companyId || isOwner(context) || context.companies.some((company) => company.id === companyId);
 }
-async function current(env: Env, context: EnhancedSessionContext, erpId?: string | null) {
-  const [organizationDefault, forcedLayout, allowPersonalPreference, roleDefaults, erpDefaults, history, personal] = await Promise.all([
+async function readPolicy(env: Env): Promise<LayoutPolicy> {
+  const [organizationDefault, forcedLayout, allowPersonalPreference, roleDefaults, erpDefaults] = await Promise.all([
     setting(env, 'experience.layout.organization_default', DEFAULT_LAYOUT_ID),
     setting(env, 'experience.layout.forced', ''),
     setting(env, 'experience.layout.allow_personal', 'true'),
     readJsonSetting<Record<string, LayoutId>>(env, 'experience.layout.role_defaults', {}),
     readJsonSetting<Record<string, LayoutId>>(env, 'experience.layout.erp_defaults', {}),
-    readJsonSetting<Array<Record<string, unknown>>>(env, 'experience.layout.history', []),
+  ]);
+  return normalizeLayoutPolicy({ organizationDefault, forcedLayout: forcedLayout || null, allowPersonalPreference: allowPersonalPreference === 'true', roleDefaults, erpDefaults });
+}
+
+function historyRecord(row: Record<string, unknown>): ExperienceHistoryRecord | null {
+  if (typeof row.id !== 'string') return null;
+  const after = row.after && typeof row.after === 'object' ? row.after as ExperienceSnapshot : undefined;
+  const before = row.before && typeof row.before === 'object' ? row.before as ExperienceSnapshot : undefined;
+  const inferredLayout = after?.preference?.layoutId || after?.policy?.forcedLayout || after?.policy?.organizationDefault || (typeof row.layoutId === 'string' ? row.layoutId : undefined);
+  return {
+    id: row.id,
+    scope: typeof row.scope === 'string' ? row.scope : 'legacy',
+    target: typeof row.target === 'string' ? row.target : typeof row.employeeId === 'string' ? row.employeeId : undefined,
+    before,
+    after,
+    actorId: typeof row.actorId === 'string' ? row.actorId : undefined,
+    createdAt: typeof row.createdAt === 'string' ? row.createdAt : '',
+    reason: typeof row.reason === 'string' ? row.reason : undefined,
+    restorable: row.restorable === true && Boolean(before && after),
+    layoutId: inferredLayout ? normalizeLayoutId(inferredLayout) : undefined,
+  };
+}
+
+function publicHistory(rows: Array<Record<string, unknown>>): ExperienceHistoryRecord[] {
+  return rows.map(historyRecord).filter((row): row is ExperienceHistoryRecord => Boolean(row)).slice(-20).reverse();
+}
+
+function personalSnapshot(value: Partial<LayoutPreference> | null): ExperienceSnapshot {
+  return { preference: value ? normalizeLayoutPreference(value) : null };
+}
+
+async function applyPolicy(env: Env, policy: LayoutPolicy) {
+  const next = normalizeLayoutPolicy(policy);
+  await saveSetting(env, 'experience.layout.organization_default', next.organizationDefault);
+  await saveSetting(env, 'experience.layout.forced', next.forcedLayout || '');
+  await saveSetting(env, 'experience.layout.allow_personal', String(next.allowPersonalPreference), 'boolean');
+  await saveSetting(env, 'experience.layout.role_defaults', JSON.stringify(next.roleDefaults));
+  await saveSetting(env, 'experience.layout.erp_defaults', JSON.stringify(next.erpDefaults));
+  return next;
+}
+
+async function current(env: Env, context: EnhancedSessionContext, erpId?: string | null) {
+  const [policy, personal] = await Promise.all([
+    readPolicy(env),
     readJsonSetting<Partial<LayoutPreference> | null>(env, 'experience.layout.personal.' + context.employee.id, null),
   ]);
-  const policy = normalizeLayoutPolicy({ organizationDefault, forcedLayout: forcedLayout || null, allowPersonalPreference: allowPersonalPreference === 'true', roleDefaults, erpDefaults });
-  const roleLayout = context.roles.map((role) => policy.roleDefaults[role.code]).find(Boolean);
-  const erpLayout = erpId ? policy.erpDefaults[erpId] : undefined;
-  const layoutId = policy.forcedLayout
-    || (policy.allowPersonalPreference && personal?.layoutId ? normalizeLayoutId(personal.layoutId) : null)
-    || roleLayout || erpLayout || policy.organizationDefault;
-  const source = policy.allowPersonalPreference && personal?.layoutId ? personal : { layoutId };
-  const preference = normalizeLayoutPreference(source, layoutId);
-  const historyRows = history.filter((row) => typeof row.id === 'string' && LAYOUT_IDS.includes(String(row.layoutId) as LayoutId))
-    .slice(-20).reverse().map((row) => ({
-      id: String(row.id), layoutId: normalizeLayoutId(row.layoutId),
-      scope: String(row.scope || 'personal'), createdAt: String(row.createdAt || ''),
-    }));
-  return { preference, policy, canManage: canManage(context), canAccess: canAccess(context), canChoose: canAccess(context) && (canManage(context) || policy.allowPersonalPreference) && (!policy.forcedLayout || canManage(context)), history: historyRows };
+  const preference = resolveLayout(policy, personal, context.roles.map((role) => role.code), erpId);
+  const manage = canManage(context);
+  const access = canAccess(context);
+  const canChoose = access && (manage || policy.allowPersonalPreference) && (!policy.forcedLayout || manage);
+  const response: Record<string, unknown> = {
+    preference,
+    canManage: manage,
+    canAccess: access,
+    canChoose,
+    ability: { canPreview: access, canChoose },
+  };
+  if (manage) {
+    const history = await readJsonSetting<Array<Record<string, unknown>>>(env, 'experience.layout.history', []);
+    response.policy = policy;
+    response.history = publicHistory(history);
+  }
+  return response;
 }
 async function audit(env: Env, context: EnhancedSessionContext, action: string, after: unknown) {
   await env.DB.prepare('INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,?,?,?,?,?)')
@@ -73,9 +136,14 @@ async function savePersonal(request: Request, env: Env, context: EnhancedSession
   if (!canAccess(context)) return json({ error: 'Experience access is not assigned.' }, 403);
   if (await setting(env, 'experience.layout.forced', '') && !canManage(context)) return json({ error: 'The active experience policy is controlled by an administrator.' }, 409);
   if (!canManage(context) && await setting(env, 'experience.layout.allow_personal', 'true') !== 'true') return json({ error: 'Personal experience choice is disabled by policy.' }, 403);
+  const before = await readJsonSetting<Partial<LayoutPreference> | null>(env, 'experience.layout.personal.' + context.employee.id, null);
   const next = normalizeLayoutPreference(body);
+  const now = new Date().toISOString();
   await saveSetting(env, 'experience.layout.personal.' + context.employee.id, JSON.stringify(next));
-  await saveHistory(env, { id: uid(), layoutId: next.layoutId, scope: 'personal', createdAt: new Date().toISOString(), employeeId: context.employee.id });
+  await saveHistory(env, {
+    id: uid(), scope: 'personal', target: context.employee.id, actorId: context.employee.id, createdAt: now,
+    before: personalSnapshot(before), after: personalSnapshot(next), reason: 'personal preference change', restorable: true, layoutId: next.layoutId,
+  });
   await audit(env, context, 'save_personal', next);
   return json({ ok: true, preference: next });
 }
@@ -83,28 +151,53 @@ async function savePolicy(request: Request, env: Env, context: EnhancedSessionCo
   if (!canManage(context)) return json({ error: 'Experience policy permission is required.' }, 403);
   let body: Partial<LayoutPolicy>;
   try { body = await request.json() as Partial<LayoutPolicy>; } catch { return json({ error: 'Invalid experience policy.' }, 400); }
-  const next = normalizeLayoutPolicy(body);
-  await saveSetting(env, 'experience.layout.organization_default', next.organizationDefault);
-  await saveSetting(env, 'experience.layout.forced', next.forcedLayout || '');
-  await saveSetting(env, 'experience.layout.allow_personal', String(next.allowPersonalPreference), 'boolean');
-  await saveSetting(env, 'experience.layout.role_defaults', JSON.stringify(next.roleDefaults));
-  await saveSetting(env, 'experience.layout.erp_defaults', JSON.stringify(next.erpDefaults));
-  await saveHistory(env, { id: uid(), layoutId: next.forcedLayout || next.organizationDefault, scope: 'policy', createdAt: new Date().toISOString(), actorId: context.employee.id });
+  const before = await readPolicy(env);
+  const next = await applyPolicy(env, normalizeLayoutPolicy(body));
+  const now = new Date().toISOString();
+  await saveHistory(env, {
+    id: uid(), scope: 'policy', target: 'organization', actorId: context.employee.id, createdAt: now,
+    before: { policy: before }, after: { policy: next }, reason: 'organization experience policy change', restorable: true,
+    layoutId: next.forcedLayout || next.organizationDefault,
+  });
   await audit(env, context, 'save_policy', next);
   return json({ ok: true, policy: next });
 }
 async function rollback(request: Request, env: Env, context: EnhancedSessionContext) {
-  if (!canManage(context)) return json({ error: 'Experience policy permission is required.' }, 403);
   let body: { historyId?: string };
   try { body = await request.json() as { historyId?: string }; } catch { return json({ error: 'Invalid rollback request.' }, 400); }
   const history = await readJsonSetting<Array<Record<string, unknown>>>(env, 'experience.layout.history', []);
-  const entry = history.find((item) => item.id === body.historyId);
+  const raw = history.find((item) => item.id === body.historyId);
+  const entry = raw ? historyRecord(raw) : null;
   if (!entry) return json({ error: 'Experience version not found.' }, 404);
-  const next = normalizeLayoutId(entry.layoutId);
-  await saveSetting(env, 'experience.layout.forced', next);
-  await saveHistory(env, { id: uid(), layoutId: next, scope: 'rollback', createdAt: new Date().toISOString(), actorId: context.employee.id });
-  await audit(env, context, 'rollback', { historyId: body.historyId, layoutId: next });
-  return json({ ok: true, layoutId: next });
+  if (!entry.restorable || !entry.before || !entry.after) return json({ error: 'This legacy experience record is read-only because its scope is incomplete.' }, 409);
+
+  if (entry.scope === 'personal') {
+    const target = entry.target;
+    if (!target || (target !== context.employee.id && !canManage(context))) return json({ error: 'Personal history belongs to another employee.' }, 403);
+    const beforePreference = entry.before.preference || null;
+    await saveSetting(env, 'experience.layout.personal.' + target, beforePreference ? JSON.stringify(normalizeLayoutPreference(beforePreference)) : '');
+    const now = new Date().toISOString();
+    await saveHistory(env, {
+      id: uid(), scope: 'rollback', target, actorId: context.employee.id, createdAt: now,
+      before: { preference: entry.after.preference || null }, after: { preference: beforePreference },
+      reason: 'personal preference rollback', restorable: false, layoutId: beforePreference?.layoutId,
+    });
+    await audit(env, context, 'rollback_personal', { historyId: entry.id, target, before: beforePreference });
+    return json({ ok: true, preference: beforePreference ? normalizeLayoutPreference(beforePreference) : resolveLayout(await readPolicy(env), null, context.roles.map((role) => role.code)) });
+  }
+
+  if (entry.scope !== 'policy' || !canManage(context) || !entry.before.policy) return json({ error: 'This experience record cannot be restored under the current scope.' }, 409);
+  const beforePolicy = normalizeLayoutPolicy(entry.before.policy);
+  const afterPolicy = await readPolicy(env);
+  await applyPolicy(env, beforePolicy);
+  const now = new Date().toISOString();
+  await saveHistory(env, {
+    id: uid(), scope: 'rollback', target: 'organization', actorId: context.employee.id, createdAt: now,
+    before: { policy: afterPolicy }, after: { policy: beforePolicy },
+    reason: 'organization policy rollback', restorable: false, layoutId: beforePolicy.forcedLayout || beforePolicy.organizationDefault,
+  });
+  await audit(env, context, 'rollback_policy', { historyId: entry.id, target: 'organization', policy: beforePolicy });
+  return json({ ok: true, policy: beforePolicy });
 }
 
 export async function routeExperiencePreferences(request: Request, env: Env, context: EnhancedSessionContext): Promise<Response | null> {
