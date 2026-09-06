@@ -15,6 +15,24 @@ interface SpendEnv extends AuthEnv {
 
 type SpendAction = 'submit' | 'approve' | 'return' | 'reject';
 type AllocationMethod = 'percentage' | 'fixed_amount' | 'equal_split';
+type AllocationRow = {
+  companyId: string;
+  department: string;
+  costCenterId: string;
+  allocationMethod: AllocationMethod;
+  sourceAmountKobo: number;
+  allocatedAmountKobo: number;
+  roundingAdjustmentKobo: number;
+  basis: Record<string, unknown>;
+};
+type AllocationAmountsResult = { amounts: number[] } | { error: string };
+type AllocationRowsResult = AllocationRow[] | { error: string };
+type SerializedRequest = Record<string, unknown> & {
+  requestNo?: unknown;
+  requesterName?: unknown;
+  companyName?: unknown;
+  events?: Array<Record<string, unknown>>;
+};
 
 const json = (body: Record<string, unknown> | unknown[], status = 200, headers?: HeadersInit) => {
   const responseHeaders = new Headers(headers);
@@ -226,15 +244,15 @@ async function matchingApprovalRules(env: SpendEnv, context: SessionContext, com
   return [{ id: 'spend-approval-default', stepNo: 1, approverRoleCode: 'manager', requiredPermission: 'expense.approve' }];
 }
 
-function allocationAmounts(method: AllocationMethod, sourceAmount: number, rows: Array<Record<string, unknown>>) {
-  if (!rows.length) return { error: 'A shared expense needs at least one beneficiary.' } as const;
+function allocationAmounts(method: AllocationMethod, sourceAmount: number, rows: Array<Record<string, unknown>>): AllocationAmountsResult {
+  if (!rows.length) return { error: 'A shared expense needs at least one beneficiary.' };
   const amounts: number[] = [];
   if (method === 'fixed_amount') {
     for (const row of rows) amounts.push(positiveInteger(row.fixedAmountKobo || row.amountKobo));
-    if (amounts.some((value) => value <= 0) || amounts.reduce((sum, value) => sum + value, 0) !== sourceAmount) return { error: 'Fixed allocations must reconcile exactly to the source amount.' } as const;
+    if (amounts.some((value) => value <= 0) || amounts.reduce((sum, value) => sum + value, 0) !== sourceAmount) return { error: 'Fixed allocations must reconcile exactly to the source amount.' };
   } else if (method === 'percentage') {
     const percentages = rows.map((row) => Number(row.percentage || 0));
-    if (percentages.some((value) => !Number.isFinite(value) || value < 0) || Math.abs(percentages.reduce((sum, value) => sum + value, 0) - 100) > 0.0001) return { error: 'Percentage allocations must total exactly 100%.' } as const;
+    if (percentages.some((value) => !Number.isFinite(value) || value < 0) || Math.abs(percentages.reduce((sum, value) => sum + value, 0) - 100) > 0.0001) return { error: 'Percentage allocations must total exactly 100%.' };
     let allocated = 0;
     percentages.forEach((percentage, index) => {
       const amount = index === percentages.length - 1 ? sourceAmount - allocated : Math.floor(sourceAmount * percentage / 100);
@@ -250,24 +268,24 @@ function allocationAmounts(method: AllocationMethod, sourceAmount: number, rows:
       remainder -= remainder > 0 ? 1 : 0;
     });
   }
-  if (amounts.reduce((sum, value) => sum + value, 0) !== sourceAmount) return { error: 'Allocations do not reconcile to the source amount.' } as const;
-  return { amounts } as const;
+  if (amounts.reduce((sum, value) => sum + value, 0) !== sourceAmount) return { error: 'Allocations do not reconcile to the source amount.' };
+  return { amounts };
 }
 
-async function allocationRows(env: SpendEnv, context: SessionContext, companyId: string, amount: number, directShared: string, body: Record<string, unknown>) {
+async function allocationRows(env: SpendEnv, context: SessionContext, companyId: string, amount: number, directShared: string, body: Record<string, unknown>): Promise<AllocationRowsResult> {
   const supplied = parseArray(body.allocations);
   if (directShared === 'direct' && !supplied.length) return [{ companyId, department: safeText(body.department || context.employee.department, 160), costCenterId: safeText(body.costCenterId, 160), allocationMethod: 'fixed_amount' as AllocationMethod, sourceAmountKobo: amount, allocatedAmountKobo: amount, roundingAdjustmentKobo: 0, basis: { source: 'direct' } }];
-  if (!supplied.length) return { error: 'Select beneficiaries and allocation shares for a shared expense.' } as const;
+  if (!supplied.length) return { error: 'Select beneficiaries and allocation shares for a shared expense.' };
   const method = safeText(body.allocationMethod || supplied[0].method || 'percentage', 40) as AllocationMethod;
-  if (!['percentage', 'fixed_amount', 'equal_split'].includes(method)) return { error: 'Select a supported allocation method.' } as const;
+  if (!['percentage', 'fixed_amount', 'equal_split'].includes(method)) return { error: 'Select a supported allocation method.' };
   const destinations = supplied.map((row) => safeText(row.companyId, 160));
   const destinationAllowed = owner(context) || can(context, 'expense.allocations', 'manage');
   const activeCompanies = destinationAllowed
     ? await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()
     : { results: context.companies.map((company) => ({ id: company.id })) };
   const allowed = new Set((activeCompanies.results || []).map((row) => row.id));
-  if (destinations.some((destination) => !allowed.has(destination))) return { error: 'One or more beneficiary companies are outside your authorized scope.' } as const;
-  if (new Set(destinations).size !== destinations.length) return { error: 'Each beneficiary company may appear only once.' } as const;
+  if (destinations.some((destination) => !allowed.has(destination))) return { error: 'One or more beneficiary companies are outside your authorized scope.' };
+  if (new Set(destinations).size !== destinations.length) return { error: 'Each beneficiary company may appear only once.' };
   const calculated = allocationAmounts(method, amount, supplied);
   if ('error' in calculated) return calculated;
   return supplied.map((row, index) => ({
@@ -327,7 +345,7 @@ function safeOwnerAuditDetails(value: unknown) {
   return Object.fromEntries(allowed.filter((key) => parsed[key] !== undefined && parsed[key] !== null && parsed[key] !== '').map((key) => [key, parsed[key]]));
 }
 
-async function serializeRequest(env: SpendEnv, context: SessionContext, row: Record<string, unknown>, detailed = false) {
+async function serializeRequest(env: SpendEnv, context: SessionContext, row: Record<string, unknown>, detailed = false): Promise<SerializedRequest> {
   const [lines, allocations, evidence, approvals, events, auditRows] = await Promise.all([
     env.DB.prepare(`SELECT l.id,l.line_no AS lineNo,l.description,l.amount_kobo AS amountKobo,l.direct_shared AS directShared,l.category_id AS categoryId,c.name AS categoryName,t.code AS accountingTreatmentCode FROM spend_expense_lines l JOIN spend_categories c ON c.id=l.category_id JOIN spend_accounting_treatments t ON t.id=l.accounting_treatment_id WHERE l.expense_request_id=? ORDER BY l.line_no`).bind(row.id).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT a.id,a.company_id AS companyId,c.code AS companyCode,c.name AS companyName,a.department,a.cost_center_id AS costCenterId,cc.name AS costCenterName,a.allocation_method AS allocationMethod,a.basis_json AS basisJson,a.source_amount_kobo AS sourceAmountKobo,a.allocated_amount_kobo AS allocatedAmountKobo,a.rounding_adjustment_kobo AS roundingAdjustmentKobo FROM spend_expense_allocations a JOIN companies c ON c.id=a.company_id LEFT JOIN spend_cost_centers cc ON cc.id=a.cost_center_id WHERE a.expense_request_id=? ORDER BY a.company_id`).bind(row.id).all<Record<string, unknown>>(),
@@ -444,7 +462,7 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
     if (!['direct', 'shared'].includes(safeText(line.directShared || (directShared === 'direct' ? 'direct' : 'shared'), 20))) return error('Every expense line needs a valid direct/shared designation.', 422, { errorCategory: 'validation' });
   }
   const allocationsResult = await allocationRows(env, context, companyId, amount, directShared, { ...body, costCenterId });
-  if ('error' in allocationsResult) return error(allocationsResult.error, 422, { errorCategory: 'allocation' });
+  if (!Array.isArray(allocationsResult)) return error(allocationsResult.error, 422, { errorCategory: 'allocation' });
   const allocationTotal = allocationsResult.reduce((sum, row) => sum + row.allocatedAmountKobo, 0);
   if (allocationTotal !== amount) return error('Allocations must total exactly the source amount.', 422, { errorCategory: 'allocation' });
   if (directShared !== 'direct' && allocationsResult.length < 2) return error('A shared expense must name at least two beneficiary companies.', 422, { errorCategory: 'allocation' });
@@ -887,7 +905,9 @@ function safeFileName(value: string) {
 }
 
 async function sha256(bytes: Uint8Array) {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const copy = new Uint8Array(new ArrayBuffer(bytes.byteLength));
+  copy.set(bytes);
+  const digest = await crypto.subtle.digest('SHA-256', copy.buffer);
   return Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, '0')).join('');
 }
 
