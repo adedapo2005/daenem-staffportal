@@ -5,7 +5,7 @@ import {
   Filter, Landmark, LoaderCircle, LockKeyhole, Plus, Receipt, Save, Send, ShieldCheck,
   UploadCloud, WalletCards, X,
 } from 'lucide-react';
-import { api, hasWorkforcePermission, type WorkforceContext } from './auth';
+import { api, hasWorkforcePermission, isNetworkTransportFailure, type WorkforceContext } from './auth';
 import { SmartContextPanel } from './post-auth-experience';
 import { getSmartContext } from './smart-context';
 import {
@@ -93,9 +93,15 @@ function Launcher() {
       try {
         const result = await api<{ context?: WorkforceContext }>('/api/auth/me');
         if (active) setContext(result.context || null);
-      } catch {
-        const cached = await import('./offline-platform').then((module) => module.readCachedAuthContext()).catch(() => null);
-        if (active && cached && typeof cached === 'object') setContext(cached as WorkforceContext);
+      } catch (error) {
+        if (isNetworkTransportFailure(error)) {
+          const cached = await import('./offline-platform').then((module) => module.readCachedAuthContext()).catch(() => null);
+          if (active) setContext(cached && typeof cached === 'object' ? cached as WorkforceContext : null);
+        } else if (active) {
+          // A real HTTP denial is authoritative; never use cached context to
+          // keep a revoked or unauthorized account visible in this root.
+          setContext(null);
+        }
       }
     };
     void refresh();
