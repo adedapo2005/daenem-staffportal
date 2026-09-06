@@ -8,7 +8,6 @@ import {
 } from './auth';
 import { routeOwnerSupport } from './owner-support';
 import { submitForm } from './forms';
-import { handleOfflineSpendOperation } from './spend';
 
 interface OfflineEnv extends AuthEnv {
   FILES: R2Bucket;
@@ -51,8 +50,7 @@ const uid = (prefix: string) => prefix + '-' + crypto.randomUUID();
 const businessTimezone = (env: OfflineEnv) => env.TIMEZONE || 'Africa/Lagos';
 const owner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
 const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
-const operationKinds = new Set(['forms.submit', 'expense.draft.save', 'expense.request.submit', 'expense.evidence.upload']);
-const defaultAllowedOperations = ['forms.submit', 'expense.draft.save', 'expense.request.submit', 'expense.evidence.upload'];
+const operationKinds = new Set(['forms.submit']);
 
 function companyInScope(context: SessionContext, companyId: string) {
   return context.companies.some((company) => company.id === companyId);
@@ -95,12 +93,12 @@ async function readPolicy(env: OfflineEnv): Promise<Policy> {
       retention_days AS retentionDays,allowed_operations_json AS allowedOperationsJson
     FROM offline_policy WHERE id='global'
   `).first<PolicyRow>();
-  let allowedOperations: string[] = defaultAllowedOperations;
+  let allowedOperations: string[] = ['forms.submit'];
   try {
-    const parsed = JSON.parse(row?.allowedOperationsJson || JSON.stringify(defaultAllowedOperations));
+    const parsed = JSON.parse(row?.allowedOperationsJson || '["forms.submit"]');
     if (Array.isArray(parsed)) allowedOperations = parsed.map(String).filter((item) => operationKinds.has(item));
   } catch {
-    allowedOperations = defaultAllowedOperations;
+    allowedOperations = ['forms.submit'];
   }
   return {
     enabled: row?.enabled !== 0,
@@ -129,7 +127,7 @@ async function writeAudit(
     employeeId: context.employee.id,
     companyId: companyId || safeText(details.companyId, 120) || undefined,
     sessionId: context.sessionId,
-    deviceId: safeText(details.deviceId || request.headers.get('x-daenem-device-id'), 160) || undefined,
+    deviceId: safeText(details.deviceId, 160) || undefined,
     operationId: safeText(details.operationId, 160) || undefined,
     idempotencyKey: safeText(details.idempotencyKey, 200) || undefined,
     operationKind: safeText(details.operationKind, 80) || undefined,
@@ -189,16 +187,7 @@ async function bootstrap(request: Request, env: OfflineEnv, context: SessionCont
   }
   const policy = await readPolicy(env);
   const effectiveAge = Math.min(policy.maxOfflineAgeMinutes, sessionRemainingMinutes(session));
-  const canForms = Boolean(companyId) && policy.enabled && policy.allowedOperations.includes('forms.submit') && hasPermission(context, 'forms.access', 'view', companyId);
-  const canExpense = Boolean(companyId) && policy.enabled && policy.allowedOperations.some((kind) => kind.startsWith('expense.')) && hasPermission(context, 'expense.requests', 'create', companyId);
-  const operations = [
-    ...(canForms ? [{ kind: 'forms.submit', mode: 'draft-and-submit', permission: 'forms.access' }] : []),
-    ...(canExpense ? [
-      { kind: 'expense.draft.save', mode: 'draft-only', permission: 'expense.requests' },
-      { kind: 'expense.request.submit', mode: 'draft-and-submit', permission: 'expense.requests' },
-      { kind: 'expense.evidence.upload', mode: 'draft-and-submit', permission: 'expense.requests' },
-    ] : []),
-  ];
+  const canSubmit = Boolean(companyId) && policy.enabled && policy.allowedOperations.includes('forms.submit') && hasPermission(context, 'forms.access', 'view', companyId);
   return json({
     ok: true,
     serverTime: new Date().toISOString(),
@@ -214,9 +203,11 @@ async function bootstrap(request: Request, env: OfflineEnv, context: SessionCont
       automaticSync: policy.automaticSync,
       manualRetry: policy.manualRetry,
       retentionDays: policy.retentionDays,
-      allowedOperations: policy.allowedOperations.filter((item) => item === 'forms.submit' ? canForms : item.startsWith('expense.') && canExpense),
+      allowedOperations: policy.allowedOperations.filter((item) => item === 'forms.submit' && hasPermission(context, 'forms.access', 'view', companyId)),
     },
-    operations,
+    operations: canSubmit
+      ? [{ kind: 'forms.submit', mode: 'draft-and-submit', permission: 'forms.access' }]
+      : [],
   });
 }
 
@@ -248,7 +239,6 @@ function receiptBody(row: Record<string, unknown>, deduplicated = false) {
     serverReceivedAt: row.serverReceivedAt,
     completedAt: row.completedAt,
     submissionId: result.submissionId,
-    requestId: result.requestId,
     status: result.status,
     deduplicated,
   };
@@ -284,14 +274,9 @@ async function reconcileProcessingReceipt(
   context: SessionContext,
   receipt: Record<string, unknown>,
 ) {
-  const operationKind = String(receipt.operationKind || '');
-  const applied = operationKind.startsWith('expense.')
-    ? await env.DB.prepare(`SELECT id,status FROM spend_expense_requests WHERE id=? AND requester_employee_id=?`).bind(String(receipt.entityId || ''), context.employee.id).first<{ id: string; status: string }>()
-    : await operationAlreadyApplied(env, context.employee.id, String(receipt.idempotencyKey));
+  const applied = await operationAlreadyApplied(env, context.employee.id, String(receipt.idempotencyKey));
   if (!applied) return null;
-  const result = operationKind.startsWith('expense.')
-    ? { ok: true, requestId: applied.id, status: applied.status, deduplicated: true }
-    : { ok: true, submissionId: applied.id, status: applied.status, deduplicated: true };
+  const result = { ok: true, submissionId: applied.id, status: applied.status, deduplicated: true };
   await updateReceipt(env, String(receipt.id), 'completed', result, undefined, applied.id);
   await writeAudit(env, request, context, 'operation_deduplicated', 'offline_sync_receipt', String(receipt.id), {
     operationId: receipt.operationId,
@@ -314,7 +299,7 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     entityId?: string;
     capturedAt?: string;
     clientTimezone?: string;
-    payload?: Record<string, unknown>;
+    payload?: { assignmentId?: string; responses?: Record<string, unknown>; latitude?: number; longitude?: number; accuracy?: number; baseUpdatedAt?: string };
   };
   try { body = await request.json(); } catch { return json({ error: 'Invalid offline operation.' }, 400); }
   const operationId = safeText(body.operationId, 160);
@@ -377,22 +362,43 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'policy-disallowed', clientTimezone: body.clientTimezone, capturedAt }, companyId);
     return json({ error: 'This offline action is not enabled by the current policy.', state: 'needs-review', errorCategory: 'policy' }, 403);
   }
-  const requiredPermission = kind.startsWith('expense.') ? 'expense.requests' : 'forms.access';
-  const requiredLevel = kind === 'expense.draft.save' ? 'create' : 'view';
-  if (!hasPermission(context, requiredPermission, requiredLevel as 'view' | 'create', companyId)) {
+  if (!hasPermission(context, 'forms.access', 'view', companyId)) {
     await writeAudit(env, request, context, 'permission_denied', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'current-permission-denied', clientTimezone: body.clientTimezone, capturedAt }, companyId);
     await logSecurity(env, request, 'offline_permission_denied', { employeeId: context.employee.id, companyId, sessionId: context.sessionId, result: 'rejected', details: { operationId, operationKind: kind } });
-    return json({ error: 'Your current permission does not allow this queued action.', state: 'needs-review', errorCategory: 'permission-denied' }, 403);
+    return json({ error: 'Your current Forms permission does not allow this queued action.', state: 'needs-review', errorCategory: 'permission-denied' }, 403);
   }
   if (Date.now() - new Date(capturedAt).getTime() > Math.min(policy.maxOfflineAgeMinutes, sessionRemainingMinutes(session)) * 60_000) {
     await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'offline-age-exceeded', clientTimezone: body.clientTimezone, capturedAt }, companyId);
     return json({ error: 'This work is outside the permitted offline continuation window.', state: 'needs-review', errorCategory: 'offline-age' }, 409);
   }
   const existing = existingForKey || await receiptByKey(env, idempotencyKey);
-  let insertedReceiptId: string | undefined;
   if (existing) {
-    if (String(existing.employeeId) !== context.employee.id || String(existing.operationId) !== operationId) {
-      return json({ error: 'This idempotency key is already assigned to another operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
+    const mismatches = [
+      String(existing.employeeId) !== context.employee.id ? 'employee' : '',
+      String(existing.companyId) !== companyId ? 'company' : '',
+      String(existing.operationId) !== operationId ? 'operation' : '',
+      String(existing.operationKind) !== kind ? 'operation-kind' : '',
+      String(existing.idempotencyKey) !== idempotencyKey ? 'idempotency-key' : '',
+    ].filter(Boolean);
+    if (mismatches.length) {
+      await writeAudit(env, request, context, 'operation_rejected', 'offline_sync_receipt', String(existing.id), {
+        operationId,
+        idempotencyKey,
+        operationKind: kind,
+        outcome: 'idempotency-scope-mismatch',
+        errorCategory: 'idempotency-mismatch',
+        mismatchDimensions: mismatches.join(','),
+        clientTimezone: body.clientTimezone,
+        capturedAt,
+      }, companyId);
+      await logSecurity(env, request, 'offline_idempotency_scope_mismatch', {
+        employeeId: context.employee.id,
+        companyId,
+        sessionId: context.sessionId,
+        result: 'rejected',
+        details: { operationId, operationKind: kind, mismatchDimensions: mismatches.join(',') },
+      });
+      return json({ error: 'This idempotency key is already assigned to a different employee, company or operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
     }
     if (existing.state === 'completed') return json({ ok: true, state: 'synced', receipt: receiptBody(existing, true), result: JSON.parse(String(existing.resultJson || '{}')) });
     if (existing.state === 'rejected' || existing.state === 'conflict') return json({ ok: false, state: 'needs-review', receipt: receiptBody(existing, true), error: JSON.parse(String(existing.resultJson || '{}')).error || 'This operation needs review.' }, 409);
@@ -406,12 +412,10 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
       return json({ error: 'The server could not prove whether this operation completed. Review the Forms record before retrying.', state: 'needs-review', errorCategory: 'processing-uncertain' }, 409);
     }
     if (existing.state === 'failed_retryable') {
-      const claim = await env.DB.prepare(`UPDATE offline_sync_receipts SET state='processing',attempt_count=attempt_count+1,started_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND state='failed_retryable'`).bind(existing.id).run();
-      if (!Number(claim.meta?.changes || 0)) return json({ error: 'Another request is already retrying this operation. Retry after it finishes.', state: 'needs-review', errorCategory: 'processing-uncertain' }, 409);
+      await env.DB.prepare(`UPDATE offline_sync_receipts SET state='processing',attempt_count=attempt_count+1,started_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND state='failed_retryable'`).bind(existing.id).run();
     }
   } else {
     const id = uid('sync-receipt');
-    insertedReceiptId = id;
     await env.DB.prepare(`
       INSERT INTO offline_sync_receipts(
         id,operation_id,idempotency_key,employee_id,company_id,session_id,
@@ -420,52 +424,22 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
       ON CONFLICT(idempotency_key) DO NOTHING
     `).bind(id, operationId, idempotencyKey, context.employee.id, companyId, context.sessionId, kind, safeText(body.entityType, 120) || 'workflow_form_assignment', safeText(body.entityId, 160) || safeText(body.payload?.assignmentId, 160) || null).run();
   }
+  if (kind !== 'forms.submit') {
+    await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, {
+      operationId,
+      idempotencyKey,
+      operationKind: kind,
+      outcome: 'unsupported-operation-kind',
+      errorCategory: 'validation',
+      clientTimezone: body.clientTimezone,
+      capturedAt,
+    }, companyId);
+    return json({ error: 'This offline operation kind is not supported.', state: 'needs-review', errorCategory: 'validation' }, 400);
+  }
   const receipt = await receiptByKey(env, idempotencyKey);
   if (!receipt) return json({ error: 'The sync receipt could not be created safely.', state: 'failed-retryable', errorCategory: 'receipt' }, 503);
-  if (!existingForKey && String(receipt.id) !== insertedReceiptId) {
-    const mismatch = String(receipt.employeeId) !== context.employee.id
-      || String(receipt.companyId) !== companyId
-      || String(receipt.operationKind) !== kind
-      || String(receipt.entityType) !== (safeText(body.entityType, 120) || 'workflow_form_assignment')
-      || String(receipt.entityId || '') !== (safeText(body.entityId, 160) || safeText(body.payload?.assignmentId, 160) || '');
-    if (mismatch) {
-      await writeAudit(env, request, context, 'operation_rejected', 'offline_sync_receipt', String(receipt.id), {
-        operationId, idempotencyKey, operationKind: kind, outcome: 'concurrent-idempotency-mismatch', errorCategory: 'idempotency-mismatch', capturedAt, clientTimezone: body.clientTimezone,
-      }, companyInScope(context, companyId) ? companyId : undefined);
-      return json({ error: 'This idempotency key is already assigned to a different employee, company or operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
-    }
-    if (receipt.state === 'completed') return json({ ok: true, state: 'synced', receipt: receiptBody(receipt, true), result: JSON.parse(String(receipt.resultJson || '{}')) });
-    if (receipt.state === 'processing') {
-      const reconciled = await reconcileProcessingReceipt(env, request, context, receipt);
-      if (reconciled) return reconciled;
-      return json({ error: 'Another request is processing this operation. Retry after it finishes.', state: 'needs-review', errorCategory: 'processing-uncertain' }, 409);
-    }
-    return json({ error: 'This operation is already being checked. Retry after the current receipt is resolved.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
-  }
   await writeAudit(env, request, context, 'sync_started', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, attemptCount: Number(receipt.attemptCount || 1), clientTimezone: body.clientTimezone, capturedAt }, companyId);
   const payload = body.payload || {};
-  if (kind.startsWith('expense.')) {
-    try {
-      const response = await handleOfflineSpendOperation(request, env, context, kind, payload);
-      if (!response) return json({ error: 'This offline expense operation is not supported.', state: 'needs-review', errorCategory: 'validation' }, 400);
-      const responseBody = await response.clone().json().catch(() => ({})) as Record<string, unknown>;
-      if (response.ok) {
-        const result = { ok: true, requestId: safeText((responseBody.request as Record<string, unknown> | undefined)?.id || payload.requestId, 160), status: safeText((responseBody.request as Record<string, unknown> | undefined)?.status, 80) || 'submitted' };
-        await updateReceipt(env, String(receipt.id), 'completed', result, undefined, result.requestId);
-        await writeAudit(env, request, context, responseBody.deduplicated ? 'operation_deduplicated' : 'operation_accepted', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, outcome: responseBody.deduplicated ? 'deduplicated' : 'accepted', attemptCount: Number(receipt.attemptCount || 1), clientTimezone: body.clientTimezone, capturedAt }, companyId);
-        const completed = await receiptByKey(env, idempotencyKey);
-        return json({ ok: true, state: 'synced', receipt: completed ? receiptBody(completed, Boolean(responseBody.deduplicated)) : result, result });
-      }
-      const message = safeText(responseBody.error, 240) || 'The server rejected this expense operation.';
-      const terminal = [400, 401, 403, 409, 415, 422].includes(response.status);
-      await updateReceipt(env, String(receipt.id), response.status === 409 ? 'conflict' : terminal ? 'rejected' : 'failed_retryable', { error: message }, response.status === 409 ? 'conflict' : terminal ? 'validation' : 'server-retryable');
-      await writeAudit(env, request, context, response.status === 403 ? 'permission_denied' : response.status === 409 ? 'operation_conflict' : 'operation_rejected', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, outcome: response.status === 409 ? 'conflict' : 'rejected', errorCategory: response.status === 403 ? 'permission-denied' : response.status === 409 ? 'conflict' : 'validation', clientTimezone: body.clientTimezone, capturedAt }, companyId);
-      return json({ error: message, state: response.status === 409 || terminal ? 'needs-review' : 'failed-retryable', errorCategory: response.status === 403 ? 'permission-denied' : response.status === 409 ? 'conflict' : terminal ? 'validation' : 'server-retryable' }, response.status === 403 ? 403 : response.status === 409 ? 409 : response.status >= 400 && response.status < 500 ? response.status : 503);
-    } catch {
-      await updateReceipt(env, String(receipt.id), 'failed_retryable', { error: 'The server could not process this expense operation yet.' }, 'server-retryable');
-      return json({ error: 'The server could not process this expense operation yet.', state: 'failed-retryable', errorCategory: 'server-retryable' }, 503);
-    }
-  }
   const formRequest = new Request(new URL('/api/forms/submit', request.url), {
     method: 'POST',
     headers: {
@@ -520,10 +494,10 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
 async function activity(request: Request, env: OfflineEnv, context: SessionContext) {
   const companyId = safeText(new URL(request.url).searchParams.get('companyId'), 120);
   if (companyId && !companyInScope(context, companyId)) return json({ error: 'Company access is not assigned.' }, 403);
-  const activityVisible = companyId
-    ? hasPermission(context, 'forms.access', 'view', companyId) || hasPermission(context, 'expense.own', 'view', companyId)
-    : context.companies.some((company) => hasPermission(context, 'forms.access', 'view', company.id) || hasPermission(context, 'expense.own', 'view', company.id));
-  if (!activityVisible) return json({ error: 'Offline activity access is not assigned.' }, 403);
+  const formsVisible = companyId
+    ? hasPermission(context, 'forms.access', 'view', companyId)
+    : context.companies.some((company) => hasPermission(context, 'forms.access', 'view', company.id));
+  if (!formsVisible) return json({ error: 'Forms access is not assigned.' }, 403);
   const rows = await env.DB.prepare(`
     SELECT id,operation_id AS operationId,operation_kind AS operationKind,
       entity_type AS entityType,entity_id AS entityId,state,attempt_count AS attemptCount,
@@ -684,40 +658,224 @@ async function ownerOverview(request: Request, env: OfflineEnv, context: Session
   });
 }
 
+
+const ownerDetailAllowedKeys = new Set([
+  'employeeId', 'companyId', 'sessionId', 'deviceId', 'operationId', 'idempotencyKey',
+  'operationKind', 'outcome', 'errorCategory', 'attemptCount', 'attachmentId',
+  'mimeType', 'sizeBytes', 'sha256', 'requestId', 'clientTimezone', 'capturedAt',
+  'serverReceivedAt', 'applicationVersion', 'mismatchDimensions', 'ipAddress',
+  'networkLocation',
+]);
+
+function ownerDetailObject(value: unknown) {
+  if (!value || typeof value !== 'string') return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+}
+
+function canonicalOwnerTime(value: unknown) {
+  const text = safeText(value, 80);
+  if (!text) return undefined;
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(text)) return text;
+  return text.replace(' ', 'T') + 'Z';
+}
+
+function safeOwnerDetails(value: unknown) {
+  const parsed = ownerDetailObject(value);
+  return Object.fromEntries(Object.entries(parsed)
+    .filter(([key, item]) => ownerDetailAllowedKeys.has(key) && item !== undefined && item !== null && item !== '')
+    .map(([key, item]) => {
+      if (typeof item === 'number' && Number.isFinite(item)) return [key, item];
+      return [key, safeText(item, 240)];
+    }));
+}
+
+function safeOwnerReceipt(row: Record<string, unknown>) {
+  const result = ownerDetailObject(row.resultJson);
+  const state = safeText(row.state, 40);
+  return {
+    id: safeText(row.id, 160),
+    operationId: safeText(row.operationId, 160),
+    idempotencyKey: safeText(row.idempotencyKey, 200),
+    employeeId: safeText(row.employeeId, 120),
+    companyId: safeText(row.companyId, 120) || undefined,
+    sessionId: safeText(row.sessionId, 160) || undefined,
+    operationKind: safeText(row.operationKind, 80),
+    entityType: safeText(row.entityType, 80),
+    entityId: safeText(row.entityId, 160) || undefined,
+    state,
+    attemptCount: Number(row.attemptCount || 0),
+    lastErrorCategory: safeText(row.lastErrorCategory, 80) || undefined,
+    startedAt: canonicalOwnerTime(row.startedAt),
+    serverReceivedAt: canonicalOwnerTime(row.serverReceivedAt),
+    completedAt: canonicalOwnerTime(row.completedAt),
+    updatedAt: canonicalOwnerTime(row.updatedAt),
+    outcome: safeText(result.outcome, 80) || (state === 'completed' ? 'accepted' : state === 'conflict' ? 'conflict' : state === 'rejected' ? 'rejected' : undefined),
+    submissionId: safeText(result.submissionId, 160) || undefined,
+    resultStatus: safeText(result.status, 80) || undefined,
+  };
+}
+
+function ownerTimelineTitle(action: string) {
+  return ({
+    offline_work_queued: 'Work queued offline',
+    sync_started: 'Sync attempt started',
+    operation_accepted: 'Operation accepted',
+    operation_deduplicated: 'Operation deduplicated safely',
+    operation_rejected: 'Operation rejected',
+    permission_denied: 'Permission denied',
+    authentication_required: 'Authentication required',
+    operation_conflict: 'Conflict needs review',
+    attachment_accepted: 'Attachment upload acknowledged',
+    sync_completed: 'Sync completed',
+    session_revoked: 'Session revoked',
+  } as Record<string, string>)[action] || action.replaceAll('_', ' ');
+}
+
 async function ownerDetail(request: Request, env: OfflineEnv, context: SessionContext) {
   if (!owner(context)) return json({ error: 'Owner access is required.' }, 403);
   const url = new URL(request.url);
   const employeeId = safeText(url.searchParams.get('employeeId'), 120);
   const deviceId = safeText(url.searchParams.get('deviceId'), 160);
+  const sessionId = safeText(url.searchParams.get('sessionId'), 160);
+  const state = safeText(url.searchParams.get('state'), 80);
+  const eventType = safeText(url.searchParams.get('eventType'), 100);
+  const companyId = safeText(url.searchParams.get('companyId'), 120);
+  const from = parseIso(url.searchParams.get('from')) || '';
+  const to = parseIso(url.searchParams.get('to')) || '';
   if (!employeeId) return json({ error: 'Employee is required.' }, 400);
-  const [employee, sessions, telemetryRows, receipts, audit] = await Promise.all([
-    env.DB.prepare(`SELECT id,employee_no AS employeeNo,display_name AS displayName,email,job_title AS jobTitle,department,employment_status AS status FROM employees WHERE id=?`).bind(employeeId).first<Record<string, unknown>>(),
-    env.DB.prepare(`SELECT id,device_id AS deviceId,device_name AS deviceName,user_agent AS userAgent,ip_address AS ipAddress,created_at AS createdAt,last_seen_at AS lastSeenAt,expires_at AS expiresAt,revoked_at AS revokedAt FROM auth_sessions WHERE employee_id=? ORDER BY last_seen_at DESC LIMIT 50`).bind(employeeId).all<Record<string, unknown>>(),
-    env.DB.prepare(`
-      SELECT company_id AS companyId,device_id AS deviceId,device_name AS deviceName,platform,app_version AS appVersion,
-        client_timezone AS clientTimezone,pending_count AS pendingCount,sync_status AS syncStatus,
-        last_successful_sync_at AS lastSuccessfulSyncAt,last_failed_sync_at AS lastFailedSyncAt,
-        last_error_category AS lastErrorCategory,last_reported_at AS lastReportedAt,
-        ip_address AS ipAddress,network_location AS networkLocation
-      FROM offline_client_telemetry WHERE employee_id=? AND (?='' OR device_id=?)
-      ORDER BY last_reported_at DESC LIMIT 50
-    `).bind(employeeId, deviceId, deviceId).all<Record<string, unknown>>(),
-    env.DB.prepare(`
-      SELECT id,operation_id AS operationId,operation_kind AS operationKind,company_id AS companyId,
-        entity_type AS entityType,entity_id AS entityId,state,attempt_count AS attemptCount,
-        last_error_category AS lastErrorCategory,server_received_at AS serverReceivedAt,
-        completed_at AS completedAt,updated_at AS updatedAt
-      FROM offline_sync_receipts WHERE employee_id=? ORDER BY updated_at DESC LIMIT 50
-    `).bind(employeeId).all<Record<string, unknown>>(),
-    env.DB.prepare(`
-      SELECT id,occurred_at AS occurredAt,action,entity_type AS entityType,entity_id AS entityId,
-        reason,source,request_id AS requestId,after_json AS afterJson
-      FROM audit_logs WHERE actor_employee_id=? AND module='offline_sync'
-      ORDER BY occurred_at DESC LIMIT 50
-    `).bind(employeeId).all<Record<string, unknown>>(),
+
+  const [
+    employeeResult,
+    memberships,
+    roles,
+    sessions,
+    telemetryRows,
+    receipts,
+    attachments,
+    auditRows,
+  ] = await Promise.all([
+    env.DB.prepare(
+      "SELECT e.id,e.employee_no AS employeeNo,e.display_name AS displayName,e.email,e.job_title AS jobTitle,e.department,e.employment_status AS status,ep.timezone AS timezone FROM employees e LEFT JOIN employee_preferences ep ON ep.employee_id=e.id WHERE e.id=?",
+    ).bind(employeeId).first<Record<string, unknown>>(),
+    env.DB.prepare(
+      "SELECT m.company_id AS companyId,c.code AS companyCode,c.name AS companyName,m.location_id AS locationId,l.name AS locationName,m.is_primary AS isPrimary FROM employee_company_memberships m JOIN companies c ON c.id=m.company_id LEFT JOIN company_locations l ON l.id=m.location_id WHERE m.employee_id=? AND m.active=1 ORDER BY m.is_primary DESC,c.name",
+    ).bind(employeeId).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      "SELECT r.id,r.code,r.name,er.company_id AS companyId FROM employee_roles er JOIN roles r ON r.id=er.role_id WHERE er.employee_id=? AND r.active=1 ORDER BY r.is_system DESC,r.name",
+    ).bind(employeeId).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      "SELECT s.id,s.id AS sessionId,s.employee_id AS employeeId,s.device_id AS deviceId,s.device_name AS deviceName,s.user_agent AS userAgent,s.ip_address AS ipAddress,s.created_at AS createdAt,s.last_seen_at AS lastSeenAt,s.expires_at AS expiresAt,s.revoked_at AS revokedAt,t.company_id AS companyId,t.app_version AS appVersion,t.platform,t.client_timezone AS clientTimezone,t.pending_count AS pendingCount,t.sync_status AS syncStatus,t.last_successful_sync_at AS lastSuccessfulSyncAt,t.last_failed_sync_at AS lastFailedSyncAt,t.last_reported_at AS lastReportedAt,t.network_location AS networkLocation,t.ip_address AS lastReportedIp FROM auth_sessions s LEFT JOIN offline_client_telemetry t ON t.session_id=s.id WHERE s.employee_id=? AND (?='' OR s.device_id=?) AND (?='' OR s.id=?) AND (?='' OR t.company_id=?) ORDER BY s.last_seen_at DESC LIMIT 100",
+    ).bind(employeeId, deviceId, deviceId, sessionId, sessionId, companyId, companyId).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      "SELECT t.employee_id AS employeeId,e.display_name AS employeeName,t.company_id AS companyId,t.device_id AS deviceId,t.device_name AS deviceName,t.platform,t.app_version AS appVersion,t.client_timezone AS clientTimezone,t.pending_count AS pendingCount,t.sync_status AS syncStatus,t.last_successful_sync_at AS lastSuccessfulSyncAt,t.last_failed_sync_at AS lastFailedSyncAt,t.last_error_category AS lastErrorCategory,t.last_reported_at AS lastReportedAt,t.ip_address AS ipAddress,t.network_location AS networkLocation FROM offline_client_telemetry t JOIN employees e ON e.id=t.employee_id WHERE t.employee_id=? AND (?='' OR t.device_id=?) AND (?='' OR t.company_id=?) ORDER BY t.last_reported_at DESC LIMIT 100",
+    ).bind(employeeId, deviceId, deviceId, companyId, companyId).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      "SELECT r.id,r.operation_id AS operationId,r.idempotency_key AS idempotencyKey,r.employee_id AS employeeId,r.company_id AS companyId,r.session_id AS sessionId,r.operation_kind AS operationKind,r.entity_type AS entityType,r.entity_id AS entityId,r.state,r.attempt_count AS attemptCount,r.last_error_category AS lastErrorCategory,r.result_json AS resultJson,r.server_received_at AS serverReceivedAt,r.started_at AS startedAt,r.completed_at AS completedAt,r.updated_at AS updatedAt FROM offline_sync_receipts r WHERE r.employee_id=? AND (?='' OR r.company_id=?) AND (?='' OR r.session_id=?) AND (?='' OR r.state=?) AND (?='' OR datetime(r.updated_at)>=datetime(?)) AND (?='' OR datetime(r.updated_at)<=datetime(?)) ORDER BY r.updated_at DESC LIMIT 100",
+    ).bind(employeeId, companyId, companyId, sessionId, sessionId, state, state, from, from, to, to).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      "SELECT id,company_id AS companyId,operation_id AS operationId,original_name AS originalName,mime_type AS mimeType,size_bytes AS sizeBytes,sha256,status,created_at AS createdAt,uploaded_at AS uploadedAt,reconciled_at AS reconciledAt FROM offline_attachments WHERE employee_id=? AND (?='' OR company_id=?) AND (?='' OR status=?) ORDER BY created_at DESC LIMIT 100",
+    ).bind(employeeId, companyId, companyId, state, state).all<Record<string, unknown>>(),
+    env.DB.prepare(
+      "SELECT id,occurred_at AS occurredAt,action,company_id AS companyId,entity_type AS entityType,entity_id AS entityId,reason,source,request_id AS requestId,after_json AS afterJson FROM audit_logs WHERE actor_employee_id=? AND module='offline_sync' AND (?='' OR company_id=?) AND (?='' OR action=?) AND (?='' OR datetime(occurred_at)>=datetime(?)) AND (?='' OR datetime(occurred_at)<=datetime(?)) ORDER BY occurred_at DESC LIMIT 250",
+    ).bind(employeeId, companyId, companyId, eventType, eventType, from, from, to, to).all<Record<string, unknown>>(),
   ]);
-  if (!employee) return json({ error: 'Employee not found.' }, 404);
-  return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), employee, sessions: sessions.results || [], telemetry: telemetryRows.results || [], receipts: receipts.results || [], audit: audit.results || [] });
+
+  if (!employeeResult) return json({ error: 'Employee not found.' }, 404);
+
+  const safeSessions = (sessions.results || []).map((row) => ({
+    ...row,
+    id: safeText(row.id, 160),
+    sessionId: safeText(row.sessionId, 160),
+    employeeId: safeText(row.employeeId, 120),
+    deviceId: safeText(row.deviceId, 160) || undefined,
+    companyId: safeText(row.companyId, 120) || undefined,
+    createdAt: canonicalOwnerTime(row.createdAt),
+    lastSeenAt: canonicalOwnerTime(row.lastSeenAt),
+    expiresAt: canonicalOwnerTime(row.expiresAt),
+    revokedAt: canonicalOwnerTime(row.revokedAt),
+  }));
+  const safeTelemetry = (telemetryRows.results || []).map((row) => ({
+    ...row,
+    lastReportedAt: canonicalOwnerTime(row.lastReportedAt),
+    lastSuccessfulSyncAt: canonicalOwnerTime(row.lastSuccessfulSyncAt),
+    lastFailedSyncAt: canonicalOwnerTime(row.lastFailedSyncAt),
+  }));
+  const safeReceipts = (receipts.results || []).map(safeOwnerReceipt);
+  const safeAttachments = (attachments.results || []).map((row) => ({
+    id: safeText(row.id, 160),
+    companyId: safeText(row.companyId, 120) || undefined,
+    operationId: safeText(row.operationId, 160),
+    originalName: safeText(row.originalName, 240),
+    mimeType: safeText(row.mimeType, 80),
+    sizeBytes: Number(row.sizeBytes || 0),
+    sha256: safeText(row.sha256, 80),
+    status: safeText(row.status, 40),
+    createdAt: canonicalOwnerTime(row.createdAt),
+    uploadedAt: canonicalOwnerTime(row.uploadedAt),
+    reconciledAt: canonicalOwnerTime(row.reconciledAt),
+  }));
+  const safeAudit = (auditRows.results || []).map((row) => ({
+    id: safeText(row.id, 160),
+    occurredAt: canonicalOwnerTime(row.occurredAt) || new Date(0).toISOString(),
+    action: safeText(row.action, 100),
+    companyId: safeText(row.companyId, 120) || undefined,
+    entityType: safeText(row.entityType, 100),
+    entityId: safeText(row.entityId, 160) || undefined,
+    reason: safeText(row.reason, 240) || undefined,
+    source: safeText(row.source, 80) || undefined,
+    requestId: safeText(row.requestId, 160) || undefined,
+    details: safeOwnerDetails(row.afterJson),
+  })).filter((row) => (!deviceId || row.details?.deviceId === deviceId) && (!sessionId || row.details?.sessionId === sessionId));
+
+  const timeline: Array<Record<string, unknown>> = safeAudit.map((row) => ({
+    id: 'audit-' + row.id,
+    at: row.occurredAt,
+    category: 'audit',
+    title: ownerTimelineTitle(row.action),
+    action: row.action,
+    entityType: row.entityType,
+    entityId: row.entityId,
+    requestId: row.requestId,
+    details: row.details,
+  }));
+  for (const receipt of safeReceipts) {
+    if (receipt.startedAt) timeline.push({ id: 'receipt-' + receipt.id + '-started', at: receipt.startedAt, category: 'receipt', title: 'Sync attempt recorded', action: 'sync_attempt_started', entityType: receipt.entityType, entityId: receipt.entityId, details: { operationId: receipt.operationId, operationKind: receipt.operationKind, attemptCount: receipt.attemptCount, sessionId: receipt.sessionId, companyId: receipt.companyId } });
+    if (receipt.serverReceivedAt) timeline.push({ id: 'receipt-' + receipt.id + '-received', at: receipt.serverReceivedAt, category: 'receipt', title: 'Server received operation', action: 'server_received', entityType: receipt.entityType, entityId: receipt.entityId, details: { operationId: receipt.operationId, operationKind: receipt.operationKind, idempotencyKey: receipt.idempotencyKey, sessionId: receipt.sessionId, companyId: receipt.companyId } });
+    if (receipt.completedAt) timeline.push({ id: 'receipt-' + receipt.id + '-completed', at: receipt.completedAt, category: 'receipt', title: receipt.state === 'completed' ? 'Submission accepted' : receipt.state === 'conflict' ? 'Conflict recorded' : receipt.state === 'rejected' ? 'Submission rejected' : 'Sync outcome recorded', action: receipt.state === 'completed' ? 'operation_accepted' : receipt.state, entityType: receipt.entityType, entityId: receipt.entityId, details: { operationId: receipt.operationId, operationKind: receipt.operationKind, outcome: receipt.outcome, errorCategory: receipt.lastErrorCategory, attemptCount: receipt.attemptCount } });
+  }
+  for (const attachment of safeAttachments) {
+    if (attachment.uploadedAt) timeline.push({ id: 'attachment-' + attachment.id + '-uploaded', at: attachment.uploadedAt, category: 'attachment', title: 'Attachment upload acknowledged', action: 'attachment_accepted', entityType: 'offline_attachment', entityId: attachment.id, details: { attachmentId: attachment.id, operationId: attachment.operationId, mimeType: attachment.mimeType, sizeBytes: attachment.sizeBytes, sha256: attachment.sha256, outcome: attachment.status } });
+  }
+  timeline.sort((left, right) => new Date(String(left.at)).getTime() - new Date(String(right.at)).getTime());
+
+  const employee = {
+    id: safeText(employeeResult.id, 120),
+    employeeNo: safeText(employeeResult.employeeNo, 80) || undefined,
+    displayName: safeText(employeeResult.displayName, 160),
+    email: safeText(employeeResult.email, 240) || undefined,
+    jobTitle: safeText(employeeResult.jobTitle, 160) || undefined,
+    department: safeText(employeeResult.department, 160) || undefined,
+    status: safeText(employeeResult.status, 40),
+    timezone: safeText(employeeResult.timezone, 80) || undefined,
+  };
+  return json({
+    serverTime: new Date().toISOString(),
+    businessTimezone: businessTimezone(env),
+    employee,
+    memberships: memberships.results || [],
+    roles: roles.results || [],
+    sessions: safeSessions,
+    telemetry: safeTelemetry,
+    receipts: safeReceipts,
+    attachments: safeAttachments,
+    audit: safeAudit,
+    timeline,
+  });
 }
 
 async function ownerPolicy(request: Request, env: OfflineEnv, context: SessionContext) {
@@ -729,7 +887,7 @@ async function ownerPolicy(request: Request, env: OfflineEnv, context: SessionCo
   const maxQueueCount = Math.max(1, Math.min(500, Math.floor(Number(body.maxQueueCount || 50))));
   const attachmentMaxBytes = Math.max(1024, Math.min(52_428_800, Math.floor(Number(body.attachmentMaxBytes || 10 * 1024 * 1024))));
   const retentionDays = Math.max(1, Math.min(365, Math.floor(Number(body.retentionDays || 30))));
-  const allowedOperations = Array.isArray(body.allowedOperations) ? body.allowedOperations.map(String).filter((item) => operationKinds.has(item)) : defaultAllowedOperations;
+  const allowedOperations = Array.isArray(body.allowedOperations) ? body.allowedOperations.map(String).filter((item) => operationKinds.has(item)) : ['forms.submit'];
   await env.DB.prepare(`
     UPDATE offline_policy SET enabled=?,max_offline_age_minutes=?,max_queue_count=?,
       attachment_max_bytes=?,automatic_sync=?,manual_retry=?,retention_days=?,
@@ -742,7 +900,7 @@ async function ownerPolicy(request: Request, env: OfflineEnv, context: SessionCo
     body.automaticSync === false ? 0 : 1,
     body.manualRetry === false ? 0 : 1,
     retentionDays,
-    JSON.stringify(allowedOperations.length ? allowedOperations : defaultAllowedOperations),
+    JSON.stringify(allowedOperations.length ? allowedOperations : ['forms.submit']),
     context.employee.id,
   ).run();
   await writeAudit(env, request, context, 'offline_policy_updated', 'offline_policy', 'global', {
