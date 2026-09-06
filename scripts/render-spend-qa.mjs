@@ -168,7 +168,8 @@ async function openSpend(browser, role, viewport, tab) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
   await page.waitForTimeout(500);
-  await page.evaluate((requestedTab) => window.dispatchEvent(new CustomEvent('daenem:open-spend', { detail: { tab: requestedTab } })), tab);
+  const moduleId = role === 'owner' ? 'spend-intelligence' : role === 'manager' ? 'expense-approvals' : 'expense-requests';
+  await page.evaluate((id) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } })), moduleId);
   await page.waitForSelector('.spend-shell', { timeout: 15000 });
   return { browserContext, page, server, context };
 }
@@ -256,7 +257,7 @@ async function main() {
     await tablet.browserContext.close();
 
     const manager = await openSpend(browser, 'manager', { width: 390, height: 844 }, 'intelligence');
-    const managerText = (await inspect(manager.page, 'spend-manager-owner-absent-390x844.png', 'My Expense Requests')).text;
+    const managerText = (await inspect(manager.page, 'spend-manager-owner-absent-390x844.png', 'Approval queue')).text;
     assert(!managerText.includes('Spend & Profit Intelligence') && !managerText.includes('OWNER-ONLY COMMAND CENTER'), 'Manager can reach Owner Spend intelligence UI');
     await manager.browserContext.close();
   } finally {
