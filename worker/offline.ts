@@ -129,7 +129,7 @@ async function writeAudit(
     employeeId: context.employee.id,
     companyId: companyId || safeText(details.companyId, 120) || undefined,
     sessionId: context.sessionId,
-    deviceId: safeText(details.deviceId, 160) || undefined,
+    deviceId: safeText(details.deviceId || request.headers.get('x-daenem-device-id'), 160) || undefined,
     operationId: safeText(details.operationId, 160) || undefined,
     idempotencyKey: safeText(details.idempotencyKey, 200) || undefined,
     operationKind: safeText(details.operationKind, 80) || undefined,
@@ -248,6 +248,7 @@ function receiptBody(row: Record<string, unknown>, deduplicated = false) {
     serverReceivedAt: row.serverReceivedAt,
     completedAt: row.completedAt,
     submissionId: result.submissionId,
+    requestId: result.requestId,
     status: result.status,
     deduplicated,
   };
@@ -283,9 +284,14 @@ async function reconcileProcessingReceipt(
   context: SessionContext,
   receipt: Record<string, unknown>,
 ) {
-  const applied = await operationAlreadyApplied(env, context.employee.id, String(receipt.idempotencyKey));
+  const operationKind = String(receipt.operationKind || '');
+  const applied = operationKind.startsWith('expense.')
+    ? await env.DB.prepare(`SELECT id,status FROM spend_expense_requests WHERE id=? AND requester_employee_id=?`).bind(String(receipt.entityId || ''), context.employee.id).first<{ id: string; status: string }>()
+    : await operationAlreadyApplied(env, context.employee.id, String(receipt.idempotencyKey));
   if (!applied) return null;
-  const result = { ok: true, submissionId: applied.id, status: applied.status, deduplicated: true };
+  const result = operationKind.startsWith('expense.')
+    ? { ok: true, requestId: applied.id, status: applied.status, deduplicated: true }
+    : { ok: true, submissionId: applied.id, status: applied.status, deduplicated: true };
   await updateReceipt(env, String(receipt.id), 'completed', result, undefined, applied.id);
   await writeAudit(env, request, context, 'operation_deduplicated', 'offline_sync_receipt', String(receipt.id), {
     operationId: receipt.operationId,
@@ -383,6 +389,7 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     return json({ error: 'This work is outside the permitted offline continuation window.', state: 'needs-review', errorCategory: 'offline-age' }, 409);
   }
   const existing = existingForKey || await receiptByKey(env, idempotencyKey);
+  let insertedReceiptId: string | undefined;
   if (existing) {
     if (String(existing.employeeId) !== context.employee.id || String(existing.operationId) !== operationId) {
       return json({ error: 'This idempotency key is already assigned to another operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
@@ -399,10 +406,12 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
       return json({ error: 'The server could not prove whether this operation completed. Review the Forms record before retrying.', state: 'needs-review', errorCategory: 'processing-uncertain' }, 409);
     }
     if (existing.state === 'failed_retryable') {
-      await env.DB.prepare(`UPDATE offline_sync_receipts SET state='processing',attempt_count=attempt_count+1,started_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND state='failed_retryable'`).bind(existing.id).run();
+      const claim = await env.DB.prepare(`UPDATE offline_sync_receipts SET state='processing',attempt_count=attempt_count+1,started_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND state='failed_retryable'`).bind(existing.id).run();
+      if (!Number(claim.meta?.changes || 0)) return json({ error: 'Another request is already retrying this operation. Retry after it finishes.', state: 'needs-review', errorCategory: 'processing-uncertain' }, 409);
     }
   } else {
     const id = uid('sync-receipt');
+    insertedReceiptId = id;
     await env.DB.prepare(`
       INSERT INTO offline_sync_receipts(
         id,operation_id,idempotency_key,employee_id,company_id,session_id,
@@ -413,6 +422,26 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
   }
   const receipt = await receiptByKey(env, idempotencyKey);
   if (!receipt) return json({ error: 'The sync receipt could not be created safely.', state: 'failed-retryable', errorCategory: 'receipt' }, 503);
+  if (!existingForKey && String(receipt.id) !== insertedReceiptId) {
+    const mismatch = String(receipt.employeeId) !== context.employee.id
+      || String(receipt.companyId) !== companyId
+      || String(receipt.operationKind) !== kind
+      || String(receipt.entityType) !== (safeText(body.entityType, 120) || 'workflow_form_assignment')
+      || String(receipt.entityId || '') !== (safeText(body.entityId, 160) || safeText(body.payload?.assignmentId, 160) || '');
+    if (mismatch) {
+      await writeAudit(env, request, context, 'operation_rejected', 'offline_sync_receipt', String(receipt.id), {
+        operationId, idempotencyKey, operationKind: kind, outcome: 'concurrent-idempotency-mismatch', errorCategory: 'idempotency-mismatch', capturedAt, clientTimezone: body.clientTimezone,
+      }, companyInScope(context, companyId) ? companyId : undefined);
+      return json({ error: 'This idempotency key is already assigned to a different employee, company or operation.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
+    }
+    if (receipt.state === 'completed') return json({ ok: true, state: 'synced', receipt: receiptBody(receipt, true), result: JSON.parse(String(receipt.resultJson || '{}')) });
+    if (receipt.state === 'processing') {
+      const reconciled = await reconcileProcessingReceipt(env, request, context, receipt);
+      if (reconciled) return reconciled;
+      return json({ error: 'Another request is processing this operation. Retry after it finishes.', state: 'needs-review', errorCategory: 'processing-uncertain' }, 409);
+    }
+    return json({ error: 'This operation is already being checked. Retry after the current receipt is resolved.', state: 'needs-review', errorCategory: 'idempotency-mismatch' }, 409);
+  }
   await writeAudit(env, request, context, 'sync_started', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, attemptCount: Number(receipt.attemptCount || 1), clientTimezone: body.clientTimezone, capturedAt }, companyId);
   const payload = body.payload || {};
   if (kind.startsWith('expense.')) {

@@ -365,12 +365,20 @@ VALUES ('spend-approval-default',NULL,0,NULL,1,'manager','expense.approve');
 -- calculated from selected participants and reconciled server-side.
 INSERT OR IGNORE INTO spend_allocation_templates(id,company_id,name,normalized_name,method,default_treatment_id,active)
 VALUES
- ('spend-template-complex-generator-fuel',NULL,'Daenem Complex Generator Fuel','daenem complex generator fuel','equal_split','spend-treatment-opex',1),
+ ('spend-template-complex-generator-fuel',NULL,'Daenem Complex Generator Fuel','daenem complex generator fuel','percentage','spend-treatment-opex',1),
  ('spend-template-complex-security',NULL,'Daenem Complex Security','daenem complex security','equal_split','spend-treatment-opex',1),
  ('spend-template-complex-cleaning',NULL,'Daenem Complex Cleaning','daenem complex cleaning','equal_split','spend-treatment-opex',1),
  ('spend-template-complex-electricity',NULL,'Daenem Complex Electricity','daenem complex electricity','equal_split','spend-treatment-opex',1),
  ('spend-template-complex-internet',NULL,'Daenem Complex Internet','daenem complex internet','equal_split','spend-treatment-opex',1),
  ('spend-template-complex-maintenance',NULL,'Daenem Complex Maintenance','daenem complex maintenance','equal_split','spend-treatment-opex',1);
+
+-- One approved headquarters template proves that reusable beneficiaries and
+-- deterministic percentages are stored as controlled data, not free text.
+INSERT OR IGNORE INTO spend_allocation_template_items(id,template_id,company_id,cost_center_id,percentage,basis,sort_order) VALUES
+ ('spend-template-generator-print','spend-template-complex-generator-fuel','company-printing','spend-cc-PRINT-general',40,'admin-approved headquarters split',0),
+ ('spend-template-generator-bakery','spend-template-complex-generator-fuel','company-bakery','spend-cc-BAKERY-general',35,'admin-approved headquarters split',1),
+ ('spend-template-generator-logistics','spend-template-complex-generator-fuel','company-logistics','spend-cc-LOGISTICS-general',15,'admin-approved headquarters split',2),
+ ('spend-template-generator-properties','spend-template-complex-generator-fuel','company-properties','spend-cc-PROPERTIES-general',10,'admin-approved headquarters split',3);
 
 INSERT OR IGNORE INTO permissions(id,code,module,action,description,sensitive) VALUES
  ('perm-expense-requests','expense.requests','expense','requests','Create and submit employee expense requests',1),

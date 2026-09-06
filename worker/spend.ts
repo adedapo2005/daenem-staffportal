@@ -29,6 +29,7 @@ const businessTimezone = (env: SpendEnv) => env.TIMEZONE || 'Africa/Lagos';
 const owner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
 const safeText = (value: unknown, max = 240) => String(value || '').trim().slice(0, max);
 const normalised = (value: unknown) => safeText(value, 180).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+const duplicateNameKey = (value: unknown) => normalised(value).replace(/\b(?:limited|ltd|plc|incorporated|inc|llc)\b/g, ' ').replace(/\s+/g, ' ').trim();
 const validId = (value: unknown, max = 180) => /^[A-Za-z0-9:_-]+$/.test(safeText(value, max));
 const positiveInteger = (value: unknown) => Number.isInteger(Number(value)) && Number(value) > 0 ? Number(value) : 0;
 const parseIso = (value: unknown) => {
@@ -53,7 +54,7 @@ function requestId(request: Request) {
 }
 
 function safeMetadata(request: Request, context: SessionContext, details: Record<string, unknown> = {}) {
-  const allowed = ['requestNo', 'categoryId', 'supplierId', 'directShared', 'status', 'action', 'reason', 'outcome', 'errorCategory', 'masterKind', 'source', 'duplicateWarning'];
+  const allowed = ['requestNo', 'categoryId', 'supplierId', 'directShared', 'status', 'action', 'reason', 'missingEvidenceReason', 'outcome', 'errorCategory', 'masterKind', 'source', 'duplicateWarning', 'attachmentId', 'mimeType', 'sizeBytes', 'sha256'];
   const metadata: Record<string, unknown> = {
     employeeId: context.employee.id,
     sessionId: context.sessionId,
@@ -64,6 +65,7 @@ function safeMetadata(request: Request, context: SessionContext, details: Record
     capturedAt: parseIso(details.capturedAt),
     serverReceivedAt: new Date().toISOString(),
     applicationVersion: safeText(details.applicationVersion, 80) || undefined,
+    deviceId: safeText(request.headers.get('x-daenem-device-id'), 160) || undefined,
   };
   for (const key of allowed) if (details[key] !== undefined) metadata[key] = details[key];
   return metadata;
@@ -106,11 +108,11 @@ async function event(
     INSERT INTO spend_expense_events(
       id,expense_request_id,actor_employee_id,company_id,action,previous_status,next_status,
       reason,request_id,source,captured_at,metadata_json
-    ) VALUES(?,?,?,?,?,?,?,?,?,'web',?,?)
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
   `).bind(
     uid('spend-event'), expenseRequestId, context.employee.id, companyId, action,
     previousStatus || null, nextStatus || null, reason || null, requestId(request) || null,
-    parseIso(details.capturedAt) || null, JSON.stringify(safeMetadata(request, context, details)),
+    request.url.includes('/api/offline/sync') ? 'offline' : 'web', parseIso(details.capturedAt) || null, JSON.stringify(safeMetadata(request, context, details)),
   ).run();
 }
 
@@ -154,6 +156,15 @@ async function categoryRow(env: SpendEnv, categoryId: string, companyId: string)
   `).bind(categoryId, companyId).first<Record<string, unknown>>();
 }
 
+async function possibleMasterDuplicate(env: SpendEnv, kind: string, name: string, companyId: string) {
+  const table = kind === 'supplier' ? 'spend_suppliers' : kind === 'category' ? 'spend_categories' : 'spend_cost_centers';
+  const rows = kind === 'cost_center'
+    ? await env.DB.prepare(`SELECT id,name FROM ${table} WHERE active=1 AND company_id=? ORDER BY name LIMIT 200`).bind(companyId).all<Record<string, unknown>>()
+    : await env.DB.prepare(`SELECT id,name FROM ${table} WHERE active=1 AND (company_id=? OR company_id IS NULL) ORDER BY name LIMIT 200`).bind(companyId).all<Record<string, unknown>>();
+  const candidate = duplicateNameKey(name);
+  return (rows.results || []).find((row) => duplicateNameKey(row.name) === candidate);
+}
+
 async function costCenterRow(env: SpendEnv, id: string, companyId: string) {
   return env.DB.prepare(`SELECT id,company_id AS companyId,code,name,active FROM spend_cost_centers WHERE id=? AND company_id=? AND active=1`).bind(id, companyId).first<Record<string, unknown>>();
 }
@@ -188,7 +199,7 @@ async function matchingApprovalRules(env: SpendEnv, context: SessionContext, com
       min_amount_kobo AS minAmountKobo,max_amount_kobo AS maxAmountKobo,step_no AS stepNo,
       approver_role_code AS approverRoleCode,required_permission AS requiredPermission
     FROM spend_approval_rules WHERE active=1 AND (company_id IS NULL OR company_id=?)
-    ORDER BY step_no ASC,min_amount_kobo DESC
+    ORDER BY step_no ASC,(company_id IS NULL) ASC,(branch_location_id IS NULL) ASC,(department IS NULL) ASC,(category_id IS NULL) ASC,(cost_center_id IS NULL) ASC,(project_id IS NULL) ASC,min_amount_kobo DESC,id ASC
   `).bind(companyId).all<Record<string, unknown>>();
   const roleCodes = context.roles.filter((role) => role.companyId === companyId).map((role) => role.code);
   const department = safeText(body.department || context.employee.department, 160);
@@ -204,7 +215,14 @@ async function matchingApprovalRules(env: SpendEnv, context: SessionContext, com
     return true;
   };
   const result = (rows.results || []).filter(matches);
-  if (result.length) return result;
+  if (result.length) {
+    const selected = new Map<number, Record<string, unknown>>();
+    for (const row of result) {
+      const step = Number(row.stepNo || 1);
+      if (!selected.has(step)) selected.set(step, row);
+    }
+    return [...selected.entries()].sort(([left], [right]) => left - right).map(([, row]) => row);
+  }
   return [{ id: 'spend-approval-default', stepNo: 1, approverRoleCode: 'manager', requiredPermission: 'expense.approve' }];
 }
 
@@ -278,6 +296,7 @@ async function requestById(env: SpendEnv, id: string) {
       r.direct_shared AS directShared,r.payment_method AS paymentMethod,r.bank_reference AS bankReference,
       r.accounting_treatment_id AS accountingTreatmentId,t.code AS accountingTreatmentCode,t.name AS accountingTreatmentName,
       t.profit_effect AS profitEffect,t.is_p_and_l AS isPandl,r.status,r.captured_at AS capturedAt,
+      COALESCE(p.recognized_kobo,0) AS recognizedKobo,
       r.submitted_at AS submittedAt,r.approved_at AS approvedAt,r.committed_at AS committedAt,r.paid_at AS paidAt,
       r.posted_at AS postedAt,r.created_at AS createdAt,r.updated_at AS updatedAt
     FROM spend_expense_requests r
@@ -289,6 +308,7 @@ async function requestById(env: SpendEnv, id: string) {
     LEFT JOIN spend_suppliers sup ON sup.id=r.supplier_id
     LEFT JOIN construction_projects cp ON cp.id=r.project_id
     JOIN spend_accounting_treatments t ON t.id=r.accounting_treatment_id
+    LEFT JOIN spend_accounting_postings p ON p.expense_request_id=r.id
     WHERE r.id=? LIMIT 1
   `).bind(id).first<Record<string, unknown>>();
 }
@@ -300,13 +320,21 @@ async function visibleRequest(env: SpendEnv, context: SessionContext, row: Recor
   return String(row.requesterEmployeeId) === context.employee.id && can(context, 'expense.own', 'view', companyId);
 }
 
+function safeOwnerAuditDetails(value: unknown) {
+  let parsed: Record<string, unknown> = {};
+  try { parsed = parseObject(JSON.parse(String(value || '{}'))); } catch { parsed = {}; }
+  const allowed = ['employeeId', 'sessionId', 'deviceId', 'requestId', 'ipAddress', 'networkLocation', 'clientTimezone', 'capturedAt', 'serverReceivedAt', 'applicationVersion', 'outcome', 'errorCategory', 'action', 'status', 'categoryId', 'supplierId', 'directShared', 'missingEvidenceReason', 'attachmentId', 'mimeType', 'sizeBytes', 'sha256'];
+  return Object.fromEntries(allowed.filter((key) => parsed[key] !== undefined && parsed[key] !== null && parsed[key] !== '').map((key) => [key, parsed[key]]));
+}
+
 async function serializeRequest(env: SpendEnv, context: SessionContext, row: Record<string, unknown>, detailed = false) {
-  const [lines, allocations, evidence, approvals, events] = await Promise.all([
+  const [lines, allocations, evidence, approvals, events, auditRows] = await Promise.all([
     env.DB.prepare(`SELECT l.id,l.line_no AS lineNo,l.description,l.amount_kobo AS amountKobo,l.direct_shared AS directShared,l.category_id AS categoryId,c.name AS categoryName,t.code AS accountingTreatmentCode FROM spend_expense_lines l JOIN spend_categories c ON c.id=l.category_id JOIN spend_accounting_treatments t ON t.id=l.accounting_treatment_id WHERE l.expense_request_id=? ORDER BY l.line_no`).bind(row.id).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT a.id,a.company_id AS companyId,c.code AS companyCode,c.name AS companyName,a.department,a.cost_center_id AS costCenterId,cc.name AS costCenterName,a.allocation_method AS allocationMethod,a.basis_json AS basisJson,a.source_amount_kobo AS sourceAmountKobo,a.allocated_amount_kobo AS allocatedAmountKobo,a.rounding_adjustment_kobo AS roundingAdjustmentKobo FROM spend_expense_allocations a JOIN companies c ON c.id=a.company_id LEFT JOIN spend_cost_centers cc ON cc.id=a.cost_center_id WHERE a.expense_request_id=? ORDER BY a.company_id`).bind(row.id).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT id,evidence_type AS evidenceType,original_name AS originalName,mime_type AS mimeType,size_bytes AS sizeBytes,sha256,status,captured_at AS capturedAt,client_timezone AS clientTimezone,uploaded_at AS uploadedAt,verified_at AS verifiedAt FROM spend_expense_evidence WHERE expense_request_id=? AND employee_id=? ORDER BY created_at`).bind(row.id, String(row.requesterEmployeeId)).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT a.id,a.step_no AS stepNo,a.approver_role_code AS approverRoleCode,a.status,a.reason,a.acted_at AS actedAt,e.display_name AS approverName FROM spend_expense_approvals a LEFT JOIN employees e ON e.id=a.approver_employee_id WHERE a.expense_request_id=? ORDER BY a.step_no`).bind(row.id).all<Record<string, unknown>>(),
     detailed ? env.DB.prepare(`SELECT id,action,previous_status AS previousStatus,next_status AS nextStatus,reason,request_id AS requestId,captured_at AS capturedAt,server_received_at AS serverReceivedAt,metadata_json AS metadataJson FROM spend_expense_events WHERE expense_request_id=? ORDER BY server_received_at ASC`).bind(row.id).all<Record<string, unknown>>() : Promise.resolve({ results: [] as Record<string, unknown>[] }),
+    detailed && owner(context) ? env.DB.prepare(`SELECT id,occurred_at AS occurredAt,action,entity_type AS entityType,entity_id AS entityId,reason,source,request_id AS requestId,after_json AS afterJson FROM audit_logs WHERE module='spend' AND entity_id=? ORDER BY occurred_at ASC LIMIT 100`).bind(row.id).all<Record<string, unknown>>() : Promise.resolve({ results: [] as Record<string, unknown>[] }),
   ]);
   const parseBasis = allocations.results?.map((allocation) => {
     let basis: Record<string, unknown> = {};
@@ -314,21 +342,52 @@ async function serializeRequest(env: SpendEnv, context: SessionContext, row: Rec
     const { basisJson: _basisJson, ...rest } = allocation;
     return { ...rest, basis };
   }) || [];
+  const status = String(row.status || '');
+  const commitmentStates = new Set(['committed', 'purchased', 'paid', 'evidence_verified', 'finance_posted', 'bank_reconciled', 'closed']);
+  const paidStates = new Set(['paid', 'evidence_verified', 'finance_posted', 'bank_reconciled', 'closed']);
   return {
     ...row,
+    committedKobo: commitmentStates.has(status) ? Number(row.totalKobo || 0) : 0,
+    paidKobo: paidStates.has(status) ? Number(row.totalKobo || 0) : 0,
     lines: lines.results || [],
     allocations: parseBasis,
     evidence: evidence.results || [],
     approvals: approvals.results || [],
     ...(detailed ? { events: (events.results || []).map((item) => { const { metadataJson: _metadataJson, ...safe } = item; return safe; }) } : {}),
+    ...(detailed && owner(context) ? { auditEvidence: (auditRows.results || []).map((item) => ({ id: item.id, occurredAt: item.occurredAt, action: item.action, entityType: item.entityType, entityId: item.entityId, reason: item.reason, source: item.source, requestId: item.requestId, details: safeOwnerAuditDetails(item.afterJson) })) } : {}),
   };
 }
 
 async function listRequests(request: Request, env: SpendEnv, context: SessionContext) {
   const url = new URL(request.url);
   const companyId = safeText(url.searchParams.get('companyId'), 160);
-  if (companyId && !companyInScope(context, companyId)) return error('Company access is not assigned.', 403);
-  const reviewer = context.companies.some((company) => can(context, 'expense.review', 'view', company.id));
+  const scopedCompanyIds = owner(context)
+    ? ((await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()).results || []).map((row) => row.id)
+    : context.companies.map((company) => company.id);
+  if (companyId && !scopedCompanyIds.includes(companyId)) return error('Company access is not assigned.', 403);
+  const reviewCompanyIds = owner(context)
+    ? scopedCompanyIds
+    : context.companies.filter((company) => can(context, 'expense.review', 'view', company.id)).map((company) => company.id);
+  const bindings: unknown[] = [];
+  const conditions: string[] = [];
+  if (companyId) {
+    conditions.push('r.company_id=?');
+    bindings.push(companyId);
+    if (!reviewCompanyIds.includes(companyId)) {
+      conditions.push('r.requester_employee_id=?');
+      bindings.push(context.employee.id);
+    }
+  } else if (scopedCompanyIds.length) {
+    conditions.push(`r.company_id IN (${scopedCompanyIds.map(() => '?').join(',')})`);
+    bindings.push(...scopedCompanyIds);
+    if (reviewCompanyIds.length && !owner(context)) {
+      conditions.push(`(r.company_id IN (${reviewCompanyIds.map(() => '?').join(',')}) OR r.requester_employee_id=?)`);
+      bindings.push(...reviewCompanyIds, context.employee.id);
+    } else if (!owner(context)) {
+      conditions.push('r.requester_employee_id=?');
+      bindings.push(context.employee.id);
+    }
+  } else return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), requests: [] });
   const rows = await env.DB.prepare(`
     SELECT r.id,r.request_no AS requestNo,r.requester_employee_id AS requesterEmployeeId,e.display_name AS requesterName,
       r.company_id AS companyId,c.code AS companyCode,c.name AS companyName,r.category_id AS categoryId,cat.name AS categoryName,
@@ -339,9 +398,9 @@ async function listRequests(request: Request, env: SpendEnv, context: SessionCon
     FROM spend_expense_requests r
     JOIN employees e ON e.id=r.requester_employee_id JOIN companies c ON c.id=r.company_id
     LEFT JOIN spend_categories cat ON cat.id=r.category_id LEFT JOIN spend_suppliers sup ON sup.id=r.supplier_id
-    WHERE (?='' OR r.company_id=?) AND (${reviewer ? '1=1' : 'r.requester_employee_id=?'})
+    WHERE ${conditions.join(' AND ')}
     ORDER BY r.updated_at DESC LIMIT 100
-  `).bind(companyId, companyId, ...(reviewer ? [] : [context.employee.id])).all<Record<string, unknown>>();
+  `).bind(...bindings).all<Record<string, unknown>>();
   return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), requests: rows.results || [] });
 }
 
@@ -353,6 +412,10 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
   const category = await categoryRow(env, categoryId, companyId);
   if (!category || Number(category.employeeRequestAllowed) === 0) return error('Select an active controlled expense category.', 422, { errorCategory: 'master-data' });
   if (String(category.accountingTreatmentId) === 'spend-treatment-payroll') return error('Payroll is sourced from the canonical payroll ledger and cannot be duplicated as an expense request.', 422, { errorCategory: 'accounting' });
+  const erpModule = safeText(body.erpModule, 60);
+  let allowedErp: string[] = [];
+  try { const parsed = JSON.parse(String(category.allowedErpJson || '[]')); if (Array.isArray(parsed)) allowedErp = parsed.map(String); } catch { allowedErp = []; }
+  if (erpModule && allowedErp.length && !allowedErp.includes(erpModule)) return error('This category is not enabled for the selected ERP context.', 422, { errorCategory: 'master-data' });
   const costCenterId = safeText(body.costCenterId || category.defaultCostCenterId, 180);
   const costCenter = costCenterId ? await costCenterRow(env, costCenterId, companyId) : null;
   if (!costCenter) return error('Select an active controlled cost center.', 422, { errorCategory: 'master-data' });
@@ -377,19 +440,21 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
     const lineCategory = await categoryRow(env, lineCategoryId, companyId);
     if (!lineCategory || Number(lineCategory.employeeRequestAllowed) === 0) return error('Every expense line must use an active controlled category.', 422, { errorCategory: 'master-data' });
     if (String(lineCategory.accountingTreatmentId) === 'spend-treatment-payroll') return error('Payroll cannot be entered as a second expense ledger.', 422, { errorCategory: 'accounting' });
+    if (String(lineCategory.accountingTreatmentId) !== String(category.accountingTreatmentId)) return error('All lines in a request must use the same accounting treatment.', 422, { errorCategory: 'accounting' });
+    if (!['direct', 'shared'].includes(safeText(line.directShared || (directShared === 'direct' ? 'direct' : 'shared'), 20))) return error('Every expense line needs a valid direct/shared designation.', 422, { errorCategory: 'validation' });
   }
   const allocationsResult = await allocationRows(env, context, companyId, amount, directShared, { ...body, costCenterId });
   if ('error' in allocationsResult) return error(allocationsResult.error, 422, { errorCategory: 'allocation' });
   const allocationTotal = allocationsResult.reduce((sum, row) => sum + row.allocatedAmountKobo, 0);
   if (allocationTotal !== amount) return error('Allocations must total exactly the source amount.', 422, { errorCategory: 'allocation' });
   if (directShared !== 'direct' && allocationsResult.length < 2) return error('A shared expense must name at least two beneficiary companies.', 422, { errorCategory: 'allocation' });
-  const evidenceRule = await evidenceRequirement(env, categoryId, companyId, amount);
-  const evidenceCount = Math.max(0, Math.floor(Number(body.evidenceCount || 0)));
-  if (submit && evidenceRule.required && evidenceCount < evidenceRule.minimumCount && !safeText(body.missingEvidenceReason, 300)) return error('Attach the required evidence or explain why it is unavailable.', 422, { errorCategory: 'evidence' });
-
   const suppliedId = safeText(body.requestId, 180);
   const id = suppliedId && validId(suppliedId) ? suppliedId : uid('expense');
   const existing = await requestById(env, id);
+  const evidenceRule = await evidenceRequirement(env, categoryId, companyId, amount);
+  const evidenceRow = await env.DB.prepare(`SELECT COUNT(*) AS count FROM spend_expense_evidence WHERE expense_request_id=? AND status IN ('uploaded','verified')`).bind(id).first<{ count: number }>();
+  const evidenceCount = Math.max(0, Number(evidenceRow?.count || 0));
+  if (submit && evidenceRule.required && evidenceCount < evidenceRule.minimumCount && !safeText(body.missingEvidenceReason, 300)) return error('Attach the required evidence or explain why it is unavailable.', 422, { errorCategory: 'evidence' });
   if (existing && (String(existing.requesterEmployeeId) !== context.employee.id || String(existing.companyId) !== companyId)) {
     await audit(env, request, context, 'expense_request_rejected', 'expense_request', id, companyId, { outcome: 'identity-mismatch', errorCategory: 'idempotency-mismatch' });
     return error('This request identifier belongs to another employee or company.', 409, { errorCategory: 'idempotency-mismatch' });
@@ -427,7 +492,9 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
     ));
   }
   for (const allocation of allocationsResult) {
-    const cc = allocation.costCenterId ? await costCenterRow(env, allocation.costCenterId, allocation.companyId) : null;
+    const cc = allocation.costCenterId
+      ? await costCenterRow(env, allocation.costCenterId, allocation.companyId)
+      : await env.DB.prepare(`SELECT id,company_id AS companyId,code,name,active FROM spend_cost_centers WHERE company_id=? AND active=1 ORDER BY CASE WHEN code='GENERAL' THEN 0 ELSE 1 END,name LIMIT 1`).bind(allocation.companyId).first<Record<string, unknown>>();
     if (!cc) return error('Every beneficiary needs an active cost center.', 422, { errorCategory: 'master-data' });
     statements.push(env.DB.prepare(`INSERT INTO spend_expense_allocations(id,expense_request_id,company_id,department,cost_center_id,allocation_method,basis_json,source_amount_kobo,allocated_amount_kobo,rounding_adjustment_kobo) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(
       uid('expense-allocation'), id, allocation.companyId, allocation.department || null, cc.id, allocation.allocationMethod,
@@ -441,8 +508,9 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
   await env.DB.batch(statements);
   const next = await requestById(env, id);
   if (!next) return error('The expense request could not be saved.', 500);
-  await event(env, request, context, id, companyId, existing ? 'request_updated' : 'request_created', existing?.status ? String(existing.status) : undefined, status, undefined, { requestNo, status, categoryId, directShared, capturedAt, clientTimezone: body.clientTimezone });
-  await audit(env, request, context, submit ? 'expense_request_submitted' : existing ? 'expense_request_updated' : 'expense_request_draft_saved', 'expense_request', id, companyId, { requestNo, status, categoryId, directShared, capturedAt, clientTimezone: body.clientTimezone });
+  const missingEvidenceReason = safeText(body.missingEvidenceReason, 300) || undefined;
+  await event(env, request, context, id, companyId, existing ? 'request_updated' : 'request_created', existing?.status ? String(existing.status) : undefined, status, missingEvidenceReason, { requestNo, status, categoryId, directShared, capturedAt, clientTimezone: body.clientTimezone, missingEvidenceReason });
+  await audit(env, request, context, submit ? 'expense_request_submitted' : existing ? 'expense_request_updated' : 'expense_request_draft_saved', 'expense_request', id, companyId, { requestNo, status, categoryId, directShared, capturedAt, clientTimezone: body.clientTimezone, missingEvidenceReason });
   return json({ ok: true, request: await serializeRequest(env, context, next, false), deduplicated: Boolean(existing && safeText(request.headers.get('idempotency-key'), 200)) }, existing ? 200 : 201);
 }
 
@@ -475,16 +543,21 @@ async function actionExpense(request: Request, env: SpendEnv, context: SessionCo
     if (!can(context, 'expense.approve', 'approve', companyId)) return deny(env, request, context, companyId, 'Approval permission is required.');
     if (requesterId === context.employee.id) return error('Maker-checker policy prevents approving your own request.', 403, { errorCategory: 'maker-checker' });
     if (!['submitted', 'reviewed'].includes(String(current.status))) return error('This request is not awaiting approval.', 409);
-    const pending = await env.DB.prepare(`SELECT id,step_no AS stepNo FROM spend_expense_approvals WHERE expense_request_id=? AND status='pending' ORDER BY step_no LIMIT 1`).bind(id).first<{ id: string; stepNo: number }>();
+    const pending = await env.DB.prepare(`SELECT id,step_no AS stepNo,approver_role_code AS approverRoleCode FROM spend_expense_approvals WHERE expense_request_id=? AND status='pending' ORDER BY step_no LIMIT 1`).bind(id).first<{ id: string; stepNo: number; approverRoleCode: string }>();
+    if (!pending) return error('This request has no pending approval step.', 409, { errorCategory: 'approval-state' });
+    const assignedRole = context.roles.some((role) => role.code === String(pending.approverRoleCode) && (!role.companyId || role.companyId === companyId));
+    if (!owner(context) && !assignedRole) return deny(env, request, context, companyId, 'This approval step is assigned to another role.', 'approval_role_denied');
+    const pendingCount = await env.DB.prepare(`SELECT COUNT(*) AS count FROM spend_expense_approvals WHERE expense_request_id=? AND status='pending'`).bind(id).first<{ count: number }>();
+    const nextStatus = Number(pendingCount?.count || 0) <= 1 ? 'approved' : 'reviewed';
     await env.DB.batch([
-      env.DB.prepare(`UPDATE spend_expense_approvals SET status='approved',approver_employee_id=?,acted_at=CURRENT_TIMESTAMP WHERE id=?`).bind(context.employee.id, pending?.id || uid('approval')), 
-      env.DB.prepare(`UPDATE spend_expense_requests SET status='approved',approved_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(id),
+      env.DB.prepare(`UPDATE spend_expense_approvals SET status='approved',approver_employee_id=?,acted_at=CURRENT_TIMESTAMP WHERE id=?`).bind(context.employee.id, pending.id),
+      env.DB.prepare(`UPDATE spend_expense_requests SET status=?,approved_at=CASE WHEN ?='approved' THEN CURRENT_TIMESTAMP ELSE approved_at END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(nextStatus, nextStatus, id),
     ]);
-    await event(env, request, context, id, companyId, 'request_approved', String(current.status), 'approved', undefined, { action: 'approve' });
-    await audit(env, request, context, 'expense_request_approved', 'expense_request', id, companyId, { outcome: 'approved', action: 'approve' });
+    await event(env, request, context, id, companyId, 'request_approved', String(current.status), nextStatus, undefined, { action: 'approve', stepNo: pending.stepNo });
+    await audit(env, request, context, 'expense_request_approved', 'expense_request', id, companyId, { outcome: nextStatus, action: 'approve', stepNo: pending.stepNo });
     return json({ ok: true, request: await serializeRequest(env, context, (await requestById(env, id))!, true) });
   }
-  if (!can(context, 'expense.approve', 'approve', companyId) && !(requesterId === context.employee.id && can(context, 'expense.requests', 'create', companyId))) return deny(env, request, context, companyId, 'You cannot change this request.');
+  if (!can(context, 'expense.approve', 'approve', companyId)) return deny(env, request, context, companyId, 'Only an assigned reviewer can return or reject this request.');
   const reason = safeText(body.reason, 1000);
   if (reason.length < 3) return error('A reason is required for return or rejection.', 422);
   const nextStatus = action === 'return' ? 'returned' : 'rejected';
@@ -562,12 +635,23 @@ async function bootstrap(request: Request, env: SpendEnv, context: SessionContex
     env.DB.prepare(`SELECT t.id,t.name,t.method,t.default_treatment_id AS defaultTreatmentId,i.company_id AS beneficiaryCompanyId,i.percentage,i.fixed_amount_kobo AS fixedAmountKobo,i.cost_center_id AS costCenterId FROM spend_allocation_templates t LEFT JOIN spend_allocation_template_items i ON i.template_id=t.id WHERE t.active=1 AND (t.company_id IS NULL OR t.company_id=?) ORDER BY t.name,i.sort_order`).bind(companyId).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT id,project_no AS projectNo,name,status FROM construction_projects WHERE company_id=? AND status NOT IN ('cancelled') ORDER BY name LIMIT 100`).bind(companyId).all<Record<string, unknown>>(),
   ]);
+  const permittedCompanyIds = new Set(context.companies.map((item) => item.id));
+  const templateGroups = new Map<string, Record<string, unknown>[]>();
+  for (const row of templates.results || []) {
+    const key = String(row.id || '');
+    const group = templateGroups.get(key) || [];
+    group.push(row);
+    templateGroups.set(key, group);
+  }
+  const safeTemplates = [...templateGroups.values()]
+    .filter((group) => group.every((row) => !row.beneficiaryCompanyId || permittedCompanyIds.has(String(row.beneficiaryCompanyId))))
+    .flat();
   const company = context.companies.find((item) => item.id === companyId);
   return json({
     serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), company,
     version: new Date().toISOString(), lastVerifiedAt: new Date().toISOString(),
     permissions: { create: can(context, 'expense.requests', 'create', companyId), approve: can(context, 'expense.approve', 'approve', companyId), post: can(context, 'expense.post', 'manage', companyId), master: can(context, 'expense.master', 'manage', companyId), allocations: can(context, 'expense.allocations', 'manage', companyId) },
-    masterData: { categories: categories.results || [], costCenters: costCenters.results || [], suppliers: suppliers.results || [], allocationTemplates: templates.results || [], projects: projects.results || [] },
+    masterData: { categories: categories.results || [], costCenters: costCenters.results || [], suppliers: suppliers.results || [], allocationTemplates: safeTemplates, projects: projects.results || [] },
     offline: { supportedKinds: ['expense.draft.save', 'expense.request.submit', 'expense.evidence.upload'], revalidateBeforeSubmit: true },
   });
 }
@@ -609,7 +693,10 @@ async function ownerDetail(request: Request, env: SpendEnv, context: SessionCont
   const companyId = safeText(params.get('companyId'), 180);
   const status = safeText(params.get('status'), 60);
   const categoryId = safeText(params.get('categoryId'), 180);
+  const supplierId = safeText(params.get('supplierId'), 180);
+  const erpModule = safeText(params.get('erpModule'), 60);
   const directShared = safeText(params.get('directShared'), 20);
+  const eventAction = safeText(params.get('eventAction'), 80);
   const from = parseIso(params.get('from'));
   const to = parseIso(params.get('to'));
   const rows = await env.DB.prepare(`
@@ -618,19 +705,21 @@ async function ownerDetail(request: Request, env: SpendEnv, context: SessionCont
       r.cost_center_id AS costCenterId,cc.code AS costCenterCode,cc.name AS costCenterName,r.category_id AS categoryId,cat.name AS categoryName,
       r.supplier_id AS supplierId,sup.name AS supplierName,r.project_id AS projectId,cp.name AS projectName,r.erp_module AS erpModule,r.context_entity_type AS contextEntityType,r.context_entity_id AS contextEntityId,
       r.total_kobo AS totalKobo,r.currency,r.direct_shared AS directShared,r.accounting_treatment_id AS accountingTreatmentId,t.code AS accountingTreatmentCode,t.name AS accountingTreatmentName,t.profit_effect AS profitEffect,
+      COALESCE(p.recognized_kobo,0) AS recognizedKobo,
       r.purpose,r.business_reason AS businessReason,r.status,r.captured_at AS capturedAt,r.submitted_at AS submittedAt,r.created_at AS createdAt,r.updated_at AS updatedAt,
       (SELECT COUNT(*) FROM spend_expense_evidence ev WHERE ev.expense_request_id=r.id) AS evidenceCount,
       (SELECT COUNT(*) FROM spend_expense_approvals ap WHERE ap.expense_request_id=r.id AND ap.status='pending') AS pendingApprovalCount
     FROM spend_expense_requests r JOIN employees e ON e.id=r.requester_employee_id JOIN companies c ON c.id=r.company_id
       LEFT JOIN company_locations cl ON cl.id=r.branch_location_id LEFT JOIN spend_cost_centers cc ON cc.id=r.cost_center_id LEFT JOIN spend_categories cat ON cat.id=r.category_id
-      LEFT JOIN spend_suppliers sup ON sup.id=r.supplier_id LEFT JOIN construction_projects cp ON cp.id=r.project_id JOIN spend_accounting_treatments t ON t.id=r.accounting_treatment_id
-    WHERE (?='' OR r.requester_employee_id=?) AND (?='' OR r.company_id=?) AND (?='' OR r.status=?) AND (?='' OR r.category_id=?) AND (?='' OR r.direct_shared=?)
+      LEFT JOIN spend_suppliers sup ON sup.id=r.supplier_id LEFT JOIN construction_projects cp ON cp.id=r.project_id JOIN spend_accounting_treatments t ON t.id=r.accounting_treatment_id LEFT JOIN spend_accounting_postings p ON p.expense_request_id=r.id
+    WHERE (?='' OR r.requester_employee_id=?) AND (?='' OR r.company_id=?) AND (?='' OR r.status=?) AND (?='' OR r.category_id=?) AND (?='' OR r.supplier_id=?) AND (?='' OR r.erp_module=?) AND (?='' OR r.direct_shared=?)
       AND (? IS NULL OR r.created_at>=?) AND (? IS NULL OR r.created_at<=?) ORDER BY r.updated_at DESC LIMIT 100
-  `).bind(employeeId, employeeId, companyId, companyId, status, status, categoryId, categoryId, directShared, directShared, from || null, from || null, to || null, to || null).all<Record<string, unknown>>();
+  `).bind(employeeId, employeeId, companyId, companyId, status, status, categoryId, categoryId, supplierId, supplierId, erpModule, erpModule, directShared, directShared, from || null, from || null, to || null, to || null).all<Record<string, unknown>>();
   const selected = rows.results || [];
   const requests = await Promise.all(selected.map((row) => serializeRequest(env, context, row, true)));
-  const events = requests.flatMap((row) => (row.events || []).map((item) => ({ ...item, requestNo: row.requestNo, employeeName: row.requesterName, companyName: row.companyName })));
-  return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), filters: { employeeId, companyId, status, categoryId, directShared, from, to }, requests, events });
+  const filteredRequests = eventAction ? requests.filter((row) => Array.isArray(row.events) && (row.events as Array<Record<string, unknown>>).some((item) => String(item.action || '') === eventAction)) : requests;
+  const events = filteredRequests.flatMap((row) => (row.events || []).map((item) => ({ ...item, requestNo: row.requestNo, employeeName: row.requesterName, companyName: row.companyName })));
+  return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), filters: { employeeId, companyId, status, categoryId, supplierId, erpModule, directShared, eventAction, from, to }, requests: filteredRequests, events });
 }
 
 async function proposal(request: Request, env: SpendEnv, context: SessionContext) {
@@ -641,7 +730,7 @@ async function proposal(request: Request, env: SpendEnv, context: SessionContext
   const proposedName = safeText(body.proposedName || body.name, 180);
   if (!['supplier', 'category', 'cost_center'].includes(kind) || !proposedName || !companyId || !companyInScope(context, companyId)) return error('A valid company and proposed master value are required.', 422);
   if (!can(context, 'expense.requests', 'create', companyId)) return deny(env, request, context, companyId, 'Expense request access is required to propose a master value.');
-  const duplicate = await env.DB.prepare(`SELECT id,name FROM ${kind === 'supplier' ? 'spend_suppliers' : kind === 'category' ? 'spend_categories' : 'spend_cost_centers'} WHERE normalized_name=? AND (company_id=? OR company_id IS NULL) LIMIT 1`).bind(normalised(proposedName), companyId).first<Record<string, unknown>>();
+  const duplicate = await possibleMasterDuplicate(env, kind, proposedName, companyId);
   const id = uid('spend-proposal');
   await env.DB.prepare(`INSERT INTO spend_master_proposals(id,submitted_by,company_id,kind,proposed_name,normalized_name,details_json,status) VALUES(?,?,?,?,?,?,?,'proposed')`).bind(id, context.employee.id, companyId, kind, proposedName, normalised(proposedName), JSON.stringify({ erpModule: safeText(body.erpModule, 60), duplicateId: duplicate?.id || null })).run();
   await audit(env, request, context, 'master_value_proposed', 'spend_master_proposal', id, companyId, { masterKind: kind, duplicateWarning: Boolean(duplicate), outcome: 'proposed' });
@@ -662,7 +751,7 @@ async function adminMaster(request: Request, env: SpendEnv, context: SessionCont
       env.DB.prepare(`SELECT id,company_id AS companyId,code,name,active,source FROM spend_cost_centers WHERE company_id IN (${placeholders}) ORDER BY companyId,name`).bind(...ids).all<Record<string, unknown>>(),
       env.DB.prepare(`SELECT id,company_id AS companyId,name,phone,email,active,source FROM spend_suppliers WHERE active=1 AND (company_id IS NULL OR company_id IN (${placeholders})) ORDER BY name`).bind(...ids).all<Record<string, unknown>>(),
       env.DB.prepare(`SELECT id,code,name,profit_effect AS profitEffect,is_p_and_l AS isPandl,active,source FROM spend_accounting_treatments ORDER BY name`).all<Record<string, unknown>>(),
-      env.DB.prepare(`SELECT id,name,method,active FROM spend_allocation_templates WHERE active=1 ORDER BY name`).all<Record<string, unknown>>(),
+      env.DB.prepare(`SELECT id,company_id AS companyId,name,method,active FROM spend_allocation_templates WHERE active=1 AND (company_id IS NULL OR company_id IN (${placeholders})) ORDER BY name`).bind(...ids).all<Record<string, unknown>>(),
       env.DB.prepare(`SELECT id,company_id AS companyId,department,min_amount_kobo AS minAmountKobo,max_amount_kobo AS maxAmountKobo,step_no AS stepNo,approver_role_code AS approverRoleCode,active FROM spend_approval_rules WHERE active=1 AND (company_id IS NULL OR company_id IN (${placeholders})) ORDER BY stepNo`).bind(...ids).all<Record<string, unknown>>(),
       env.DB.prepare(`SELECT id,company_id AS companyId,category_id AS categoryId,min_amount_kobo AS minAmountKobo,evidence_type AS evidenceType,required,minimum_count AS minimumCount,requires_reason_if_missing AS requiresReason,active FROM spend_evidence_policies WHERE active=1 AND (company_id IS NULL OR company_id IN (${placeholders}))`).bind(...ids).all<Record<string, unknown>>(),
       env.DB.prepare(`SELECT p.id,p.company_id AS companyId,p.kind,p.proposed_name AS proposedName,p.status,p.review_reason AS reviewReason,p.created_at AS createdAt,e.display_name AS submittedByName FROM spend_master_proposals p JOIN employees e ON e.id=p.submitted_by WHERE p.company_id IN (${placeholders}) ORDER BY p.created_at DESC LIMIT 100`).bind(...ids).all<Record<string, unknown>>(),
@@ -675,14 +764,35 @@ async function adminMaster(request: Request, env: SpendEnv, context: SessionCont
   const action = safeText(body.action, 40);
   const targetCompanyId = safeText(body.companyId, 180);
   if (targetCompanyId && !allowedCompanies.includes(targetCompanyId)) return error('Master-data access is not assigned for this company.', 403);
-  if (!['category', 'supplier', 'cost_center', 'template'].includes(kind)) return error('This master-data type is not available in Batch 1.', 400);
+  if (!['category', 'supplier', 'cost_center', 'template', 'approval_rule', 'evidence_policy'].includes(kind)) return error('This master-data type is not available in Batch 1.', 400);
   if (!['create', 'activate', 'deactivate', 'merge'].includes(action)) return error('This master-data action is not available in Batch 1.', 400);
-  const table = kind === 'category' ? 'spend_categories' : kind === 'supplier' ? 'spend_suppliers' : kind === 'cost_center' ? 'spend_cost_centers' : 'spend_allocation_templates';
+  const table = kind === 'category' ? 'spend_categories' : kind === 'supplier' ? 'spend_suppliers' : kind === 'cost_center' ? 'spend_cost_centers' : kind === 'template' ? 'spend_allocation_templates' : kind === 'approval_rule' ? 'spend_approval_rules' : 'spend_evidence_policies';
   if (action === 'create') {
     const name = safeText(body.name, 180);
-    if (!name || !targetCompanyId) return error('Name and company are required.', 422);
-    const duplicate = await env.DB.prepare(`SELECT id,name FROM ${table} WHERE normalized_name=? AND company_id=? LIMIT 1`).bind(normalised(name), targetCompanyId).first<Record<string, unknown>>();
+    if ((['category', 'supplier', 'cost_center', 'template'].includes(kind) && !name) || (!targetCompanyId && !['approval_rule', 'evidence_policy'].includes(kind))) return error('Company and required master fields are required.', 422);
+    const duplicate = ['category', 'supplier', 'cost_center'].includes(kind)
+      ? await possibleMasterDuplicate(env, kind, name, targetCompanyId)
+      : kind === 'template'
+        ? await env.DB.prepare(`SELECT id,name FROM ${table} WHERE active=1 AND normalized_name=? AND (company_id=? OR company_id IS NULL) LIMIT 1`).bind(normalised(name), targetCompanyId).first<Record<string, unknown>>()
+        : null;
     if (duplicate) return error('A similar active master value already exists. Review or merge it instead of creating a duplicate.', 409, { duplicateWarning: true, existing: { id: duplicate.id, name: duplicate.name } });
+    const templateItems = kind === 'template' ? parseArray(body.items) : [];
+    if (kind === 'template') {
+      if (templateItems.length < 2) return error('An allocation template needs at least two controlled beneficiary companies.', 422, { errorCategory: 'allocation' });
+      const beneficiaryIds = templateItems.map((item) => safeText(item.companyId, 180));
+      if (beneficiaryIds.some((beneficiaryId) => !beneficiaryId || !companyInScope(context, beneficiaryId)) || new Set(beneficiaryIds).size !== beneficiaryIds.length) return error('Every template participant must be a distinct authorized company.', 403, { errorCategory: 'allocation' });
+      const templateMethod = ['percentage','fixed_amount','equal_split'].includes(String(body.method)) ? String(body.method) : 'equal_split';
+      if (templateMethod === 'percentage') {
+        const total = templateItems.reduce((sum, item) => sum + Number(item.percentage || 0), 0);
+        if (!Number.isFinite(total) || Math.abs(total - 100) > 0.0001 || templateItems.some((item) => !Number.isFinite(Number(item.percentage)) || Number(item.percentage) <= 0)) return error('Percentage template participants must total exactly 100%.', 422, { errorCategory: 'allocation' });
+      }
+      if (templateMethod === 'fixed_amount' && templateItems.some((item) => positiveInteger(item.fixedAmountKobo) <= 0)) return error('Fixed-amount template participants must have positive controlled amounts.', 422, { errorCategory: 'allocation' });
+      for (const item of templateItems) {
+        const beneficiaryId = safeText(item.companyId, 180);
+        const itemCostCenterId = safeText(item.costCenterId, 180);
+        if (itemCostCenterId && !(await costCenterRow(env, itemCostCenterId, beneficiaryId))) return error('Every template participant cost center must be active in that company.', 422, { errorCategory: 'master-data' });
+      }
+    }
     const id = uid(`spend-${kind}`);
     if (kind === 'category') {
       const treatment = safeText(body.accountingTreatmentId || 'spend-treatment-opex', 180);
@@ -691,8 +801,29 @@ async function adminMaster(request: Request, env: SpendEnv, context: SessionCont
       await env.DB.prepare(`INSERT INTO spend_suppliers(id,company_id,name,normalized_name,phone,email,source,created_by) VALUES(?,?,?,?,?,?, 'admin',?)`).bind(id, targetCompanyId, name, normalised(name), safeText(body.phone, 60) || null, safeText(body.email, 160) || null, context.employee.id).run();
     } else if (kind === 'cost_center') {
       await env.DB.prepare(`INSERT INTO spend_cost_centers(id,company_id,code,name,source) VALUES(?,?,?,?, 'admin')`).bind(id, targetCompanyId, safeText(body.code || normalised(name).replaceAll(' ', '_').toUpperCase(), 50), name).run();
-    } else {
+    } else if (kind === 'template') {
       await env.DB.prepare(`INSERT INTO spend_allocation_templates(id,company_id,name,normalized_name,method,default_treatment_id,active,created_by) VALUES(?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId, name, normalised(name), ['percentage','fixed_amount','equal_split'].includes(String(body.method)) ? body.method : 'equal_split', safeText(body.defaultTreatmentId, 180) || null, context.employee.id).run();
+      const items = templateItems;
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const beneficiaryCompanyId = safeText(item.companyId, 180);
+        if (!beneficiaryCompanyId || !companyInScope(context, beneficiaryCompanyId)) return error('Every allocation template participant must be in your authorized company scope.', 403);
+        const beneficiaryCostCenter = safeText(item.costCenterId, 180);
+        if (beneficiaryCostCenter && !(await costCenterRow(env, beneficiaryCostCenter, beneficiaryCompanyId))) return error('Every allocation template participant needs an active cost center.', 422);
+        await env.DB.prepare(`INSERT INTO spend_allocation_template_items(id,template_id,company_id,department,cost_center_id,percentage,fixed_amount_kobo,basis,sort_order) VALUES(?,?,?,?,?,?,?,?,?)`).bind(uid('spend-template-item'), id, beneficiaryCompanyId, safeText(item.department, 160) || null, beneficiaryCostCenter || null, Number.isFinite(Number(item.percentage)) ? Number(item.percentage) : null, positiveInteger(item.fixedAmountKobo) || null, safeText(item.basis || 'admin-approved-template', 160), index).run();
+      }
+    } else if (kind === 'approval_rule') {
+      const minAmount = Math.max(0, Math.floor(Number(body.minAmountKobo || 0)));
+      const maxAmount = body.maxAmountKobo === undefined || body.maxAmountKobo === '' ? null : Math.max(0, Math.floor(Number(body.maxAmountKobo)));
+      const stepNo = Math.max(1, Math.floor(Number(body.stepNo || 1)));
+      const approverRoleCode = safeText(body.approverRoleCode || 'manager', 80);
+      if (!approverRoleCode || (maxAmount !== null && maxAmount < minAmount)) return error('Approval threshold values are invalid.', 422);
+      await env.DB.prepare(`INSERT INTO spend_approval_rules(id,company_id,department,category_id,cost_center_id,project_id,requester_role_code,min_amount_kobo,max_amount_kobo,step_no,approver_role_code,required_permission,active,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId || null, safeText(body.department, 160) || null, safeText(body.categoryId, 180) || null, safeText(body.costCenterId, 180) || null, safeText(body.projectId, 180) || null, safeText(body.requesterRoleCode, 80) || null, minAmount, maxAmount, stepNo, approverRoleCode, safeText(body.requiredPermission || 'expense.approve', 100), context.employee.id).run();
+    } else {
+      const minAmount = Math.max(0, Math.floor(Number(body.minAmountKobo || 0)));
+      const evidenceType = ['receipt','invoice','quote','delivery_note','payment_evidence','other'].includes(String(body.evidenceType)) ? String(body.evidenceType) : 'receipt';
+      const minimumCount = Math.max(0, Math.floor(Number(body.minimumCount || 1)));
+      await env.DB.prepare(`INSERT INTO spend_evidence_policies(id,company_id,category_id,min_amount_kobo,evidence_type,required,minimum_count,requires_reason_if_missing,active,created_by) VALUES(?,?,?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId || null, safeText(body.categoryId, 180) || null, minAmount, evidenceType, body.required === false ? 0 : 1, minimumCount, body.requiresReasonIfMissing === false ? 0 : 1, context.employee.id).run();
     }
     await audit(env, request, context, 'master_value_created', kind, id, targetCompanyId, { masterKind: kind, outcome: 'created' });
     return json({ ok: true, id, status: 'active' }, 201);
@@ -721,12 +852,15 @@ async function adminProposalAction(request: Request, env: SpendEnv, context: Ses
   if (!proposalRow) return error('Proposal not found.', 404);
   const companyId = String(proposalRow.companyId);
   if (!can(context, 'expense.master', 'manage', companyId)) return deny(env, request, context, companyId, 'Master-data management permission is required.');
+  if (String(proposalRow.status) !== 'proposed') return error('This proposal has already been resolved and cannot be changed.', 409, { errorCategory: 'master-state' });
   const action = safeText(body.action, 30);
   if (!['approve', 'reject', 'merge'].includes(action)) return error('Select approve, reject or merge.', 422);
   const reason = safeText(body.reason, 500);
   if (action !== 'approve' && reason.length < 3) return error('A reason is required.', 422);
   let status = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'merged';
   if (action === 'approve') {
+    const duplicate = await possibleMasterDuplicate(env, String(proposalRow.kind), String(proposalRow.proposedName), companyId);
+    if (duplicate) return error('A similar active master value already exists. Merge or reject this proposal instead of creating a duplicate.', 409, { duplicateWarning: true, existing: { id: duplicate.id, name: duplicate.name } });
     const idNew = uid(`spend-${proposalRow.kind}`);
     if (proposalRow.kind === 'supplier') {
       await env.DB.prepare(`INSERT OR IGNORE INTO spend_suppliers(id,company_id,name,normalized_name,source,created_by) VALUES(?,?,?,?,'admin',?)`).bind(idNew, companyId, proposalRow.proposedName, proposalRow.normalizedName, context.employee.id).run();
@@ -774,18 +908,23 @@ async function uploadEvidence(request: Request, env: SpendEnv, context: SessionC
   const digest = await sha256(bytes);
   const claimed = safeText(request.headers.get('x-evidence-sha256'), 80).toLowerCase();
   if (claimed && claimed !== digest) return error('Evidence integrity verification failed.', 400);
-  const existing = await env.DB.prepare(`SELECT id,r2_key AS r2Key,sha256,mime_type AS mimeType,size_bytes AS sizeBytes,status FROM spend_expense_evidence WHERE id=? AND expense_request_id=?`).bind(evidenceId, requestEntityId).first<Record<string, unknown>>();
+  const existingById = await env.DB.prepare(`SELECT id,expense_request_id AS expenseRequestId,employee_id AS employeeId,company_id AS companyId,r2_key AS r2Key,sha256,mime_type AS mimeType,size_bytes AS sizeBytes,status FROM spend_expense_evidence WHERE id=?`).bind(evidenceId).first<Record<string, unknown>>();
+  if (existingById && (String(existingById.expenseRequestId) !== requestEntityId || String(existingById.companyId) !== companyId || String(existingById.employeeId) !== String(current.requesterEmployeeId))) return error('This evidence identifier is already bound to another expense scope.', 409, { errorCategory: 'idempotency-mismatch' });
+  const existing = existingById;
   if (existing && existing.sha256 === digest && existing.mimeType === mimeType && Number(existing.sizeBytes) === bytes.byteLength) return json({ ok: true, evidence: { id: evidenceId, status: existing.status, sha256: digest, sizeBytes: bytes.byteLength }, deduplicated: true });
+  if (existing) return error('This evidence identifier is already bound to different content. Preserve the original evidence and use a new identifier.', 409, { errorCategory: 'idempotency-mismatch' });
   const key = `spend/${companyId}/${requestEntityId}/${evidenceId}-${digest}`;
   await env.FILES.put(key, bytes, { httpMetadata: { contentType: mimeType, cacheControl: 'private, no-store' }, customMetadata: { employeeId: context.employee.id, companyId, expenseRequestId: requestEntityId, sha256: digest } });
   try {
     await env.DB.prepare(`
       INSERT INTO spend_expense_evidence(id,expense_request_id,employee_id,company_id,evidence_type,original_name,mime_type,size_bytes,sha256,r2_key,status,captured_at,client_timezone,uploaded_at)
-      VALUES(?,?,?,?,?,?,?,?,?,?, 'uploaded',?,?,?,CURRENT_TIMESTAMP)
-      ON CONFLICT(id) DO UPDATE SET r2_key=excluded.r2_key,original_name=excluded.original_name,mime_type=excluded.mime_type,size_bytes=excluded.size_bytes,sha256=excluded.sha256,status='uploaded',uploaded_at=CURRENT_TIMESTAMP
+      VALUES(?,?,?,?,?,?,?,?,?,?, 'uploaded',?,?,CURRENT_TIMESTAMP)
     `).bind(evidenceId, requestEntityId, String(current.requesterEmployeeId), companyId, ['receipt','invoice','quote','delivery_note','payment_evidence','other'].includes(safeText(request.headers.get('x-evidence-type'), 40)) ? safeText(request.headers.get('x-evidence-type'), 40) : 'receipt', safeFileName(safeText(request.headers.get('x-evidence-name'), 160)), mimeType, bytes.byteLength, digest, key, parseIso(request.headers.get('x-evidence-captured-at')) || null, safeText(request.headers.get('x-evidence-timezone'), 80) || null).run();
   } catch (cause) {
     await env.FILES.delete(key);
+    const winner = await env.DB.prepare(`SELECT id,status,sha256,mime_type AS mimeType,size_bytes AS sizeBytes FROM spend_expense_evidence WHERE id=?`).bind(evidenceId).first<Record<string, unknown>>();
+    if (winner && winner.sha256 === digest && winner.mimeType === mimeType && Number(winner.sizeBytes) === bytes.byteLength) return json({ ok: true, evidence: { id: evidenceId, status: winner.status, sha256: digest, sizeBytes: bytes.byteLength }, deduplicated: true });
+    if (winner) return error('This evidence identifier is already bound to different content. Preserve the original evidence and use a new identifier.', 409, { errorCategory: 'idempotency-mismatch' });
     throw cause;
   }
   await audit(env, request, context, 'expense_evidence_uploaded', 'expense_evidence', evidenceId, companyId, { outcome: 'uploaded', mimeType, sizeBytes: bytes.byteLength, sha256: digest, capturedAt: request.headers.get('x-evidence-captured-at'), clientTimezone: request.headers.get('x-evidence-timezone') });
@@ -826,7 +965,20 @@ export async function routeSpend(request: Request, env: SpendEnv, context: Sessi
   if (url.pathname === '/api/spend/owner/detail' && request.method === 'GET') return ownerDetail(request, env, context);
   if (url.pathname === '/api/spend/erp-context' && request.method === 'GET') {
     if (!hasPermission(context, 'expense.requests', 'view') && !owner(context)) return error('Expense access is not assigned.', 403);
-    return json({ engine: 'shared-spend', erps: ['printing', 'bakery', 'autos', 'logistics', 'properties', 'finance'], constructionContext: 'DAENEM COMPLEX · IBADAN · OYO STATE', autos: { workshopRetained: true, truth: 'Autos continues to include vehicle sales, preparation and existing Workshop functionality.' } });
+    return json({
+      engine: 'shared-spend',
+      erps: ['printing', 'bakery', 'autos', 'logistics', 'properties', 'finance'],
+      contexts: [
+        { id: 'printing', label: 'Printing & Technology', categories: ['paper', 'media', 'ink', 'plates', 'finishing', 'machine parts', 'delivery', 'subcontracting'] },
+        { id: 'bakery', label: 'Bakery', categories: ['ingredients', 'packaging', 'fuel', 'transport', 'equipment', 'utilities'] },
+        { id: 'autos', label: 'Autos', categories: ['vehicle acquisition', 'import', 'shipping', 'clearing', 'transport', 'inspection', 'licensing', 'advertising', 'commission', 'professional services'] },
+        { id: 'logistics', label: 'Logistics', categories: ['fuel', 'toll', 'driver allowance', 'loading', 'parking', 'insurance', 'maintenance', 'tyres', 'permits'] },
+        { id: 'properties', label: 'Homes & Properties', categories: ['maintenance', 'security', 'utilities', 'cleaning', 'legal', 'agency', 'contractor', 'tax'] },
+        { id: 'finance', label: 'Finance / Group', categories: ['shared services', 'professional services', 'group administration'] },
+      ],
+      constructionContext: 'DAENEM COMPLEX · IBADAN · OYO STATE',
+      autos: { workshopRetained: true, truth: 'Autos continues to include vehicle sales, preparation and existing Workshop functionality.' },
+    });
   }
   const evidenceMatch = url.pathname.match(/^\/api\/spend\/evidence\/([^/]+)$/);
   if (evidenceMatch && request.method === 'PUT') return uploadEvidence(request, env, context, evidenceMatch[1]);

@@ -9,11 +9,14 @@ import {
   listOfflineOperations,
   readFormsDraft,
   queueFormsSubmission,
+  queueExpenseSubmission as queueExpenseSubmissionLocal,
   registerOfflineBackgroundSync,
   saveCachedAuthContext,
   saveFormsDraft,
+  saveExpenseDraft,
   syncQueuedOperations,
   type FormsDraftInput,
+  type ExpenseDraftInput,
   type OfflineBootstrap,
   type OfflineIdentity,
   type OfflineOperation,
@@ -33,6 +36,8 @@ type OfflineContextValue = {
   lastSuccessfulSync: string | null;
   queueFormsDraft: (input: FormsDraftInput, companyId?: string) => Promise<OfflineOperation>;
   queueFormsSubmission: (input: FormsDraftInput, companyId?: string) => Promise<OfflineOperation>;
+  queueExpenseDraft: (input: ExpenseDraftInput, companyId?: string) => Promise<OfflineOperation>;
+  queueExpenseSubmission: (input: ExpenseDraftInput & { operationId?: string }, companyId?: string) => Promise<OfflineOperation>;
   readFormsDraft: (assignmentId: string, companyId?: string) => Promise<{ operationId: string; responses: Record<string, unknown>; state: string } | null>;
   retryNow: () => Promise<void>;
   openActivity: () => void;
@@ -47,6 +52,8 @@ const defaultValue: OfflineContextValue = {
   lastSuccessfulSync: null,
   queueFormsDraft: async () => { throw new Error('Offline platform is not ready.'); },
   queueFormsSubmission: async () => { throw new Error('Offline platform is not ready.'); },
+  queueExpenseDraft: async () => { throw new Error('Offline platform is not ready.'); },
+  queueExpenseSubmission: async () => { throw new Error('Offline platform is not ready.'); },
   readFormsDraft: async () => null,
   retryNow: async () => undefined,
   openActivity: () => undefined,
@@ -332,6 +339,32 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     return result;
   }, [context, refreshOperations, sendTelemetry]);
 
+  const queueExpenseDraft = useCallback(async (input: ExpenseDraftInput, companyId?: string) => {
+    const identity = identityFor(context, companyId);
+    const current = await refreshOperations();
+    const policy = bootstrapByCompany.current.get(identity.companyId)?.policy;
+    const activeCount = current.filter((item) => item.state !== 'synced' && item.state !== 'local-draft').length;
+    if (policy && activeCount >= policy.maxQueueCount) throw new Error('Your offline queue is full. Retry existing work before adding another submission.');
+    const result = await saveExpenseDraft(identity, input);
+    await refreshOperations();
+    await registerOfflineBackgroundSync();
+    return result;
+  }, [context, refreshOperations]);
+
+  const queueExpenseSubmit = useCallback(async (input: ExpenseDraftInput & { operationId?: string }, companyId?: string) => {
+    const identity = identityFor(context, companyId);
+    const current = await refreshOperations();
+    const policy = bootstrapByCompany.current.get(identity.companyId)?.policy;
+    const activeCount = current.filter((item) => item.state !== 'synced' && item.state !== 'local-draft').length;
+    if (policy && activeCount >= policy.maxQueueCount) throw new Error('Your offline queue is full. Retry existing work before adding another submission.');
+    const result = await queueExpenseSubmissionLocal(identity, input);
+    const next = await refreshOperations();
+    setStatus(navigator.onLine ? 'waiting' : 'offline');
+    await sendTelemetry(navigator.onLine ? 'waiting' : 'offline', next);
+    await registerOfflineBackgroundSync();
+    return result;
+  }, [context, refreshOperations, sendTelemetry]);
+
   const readDraft = useCallback(async (assignmentId: string, companyId?: string) => {
     return readFormsDraft(identityFor(context, companyId), assignmentId);
   }, [context]);
@@ -347,10 +380,12 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     lastSuccessfulSync,
     queueFormsDraft: queueDraft,
     queueFormsSubmission: queueSubmission,
+    queueExpenseDraft,
+    queueExpenseSubmission: queueExpenseSubmit,
     readFormsDraft: readDraft,
     retryNow: () => syncNow(true),
     openActivity: () => setActivityOpen(true),
-  }), [lastSuccessfulSync, needsAttentionCount, online, operations, queueDraft, queueSubmission, readDraft, status, syncNow, waitingCount]);
+  }), [lastSuccessfulSync, needsAttentionCount, online, operations, queueDraft, queueExpenseDraft, queueExpenseSubmit, queueSubmission, readDraft, status, syncNow, waitingCount]);
 
   return <OfflineContext.Provider value={value}>
     {children}
@@ -394,9 +429,9 @@ function SyncActivitySheet({ onClose }: { onClose: () => void }) {
       <div className="offline-activity-summary" aria-live="polite"><span>{statusIcon(status)} {statusLabel(status, waitingCount, needsAttentionCount)}</span><button type="button" onClick={() => void retry()} disabled={retrying || status === 'offline'}><RefreshCw size={14} className={retrying ? 'offline-spin' : ''} /> {retrying ? 'Retrying…' : 'Retry Now'}</button></div>
       <div className="offline-activity-note"><Cloud size={17} /><span>Captured on device is evidence. Server received time is authoritative and shown in Daenem business time (Africa/Lagos) when available.</span></div>
       <main className="offline-activity-list">
-        {operations.length === 0 ? <div className="offline-empty"><CheckCircle2 size={28} /><strong>No queued sync activity</strong><span>Supported Forms work will appear here after you save or submit it offline.</span></div> : operations.map((operation) => <article className={'offline-activity-row state-' + operation.state} key={operation.id}>
+        {operations.length === 0 ? <div className="offline-empty"><CheckCircle2 size={28} /><strong>No queued sync activity</strong><span>Supported Forms and expense work will appear here after you save or submit it offline.</span></div> : operations.map((operation) => <article className={'offline-activity-row state-' + operation.state} key={operation.id}>
           <div className="offline-row-icon">{operation.state === 'synced' ? <CheckCircle2 size={17} /> : isNeedsAttention(operation.state) ? <AlertCircle size={17} /> : operation.state === 'authentication-required' ? <LockKeyhole size={17} /> : <UploadCloud size={17} />}</div>
-          <div><strong>Forms submission</strong><span>{operation.state.replaceAll('-', ' ')} · {operation.attemptCount} attempt{operation.attemptCount === 1 ? '' : 's'}</span>{operation.lastErrorMessage && <small>{operation.lastErrorMessage}</small>}<small>Captured on device · {formatTime(operation.capturedAt, operation.clientTimezone)}</small>{operation.serverReceipt?.serverReceivedAt && <small>Received by server · {formatTime(String(operation.serverReceipt.serverReceivedAt), 'Africa/Lagos')}</small>}</div>
+          <div><strong>{operation.kind === 'forms.submit' ? 'Forms submission' : operation.kind === 'expense.draft.save' ? 'Expense draft' : operation.kind === 'expense.evidence.upload' ? 'Expense evidence' : 'Expense request submission'}</strong><span>{operation.state.replaceAll('-', ' ')} · {operation.attemptCount} attempt{operation.attemptCount === 1 ? '' : 's'}</span>{operation.lastErrorMessage && <small>{operation.lastErrorMessage}</small>}<small>Captured on device · {formatTime(operation.capturedAt, operation.clientTimezone)}</small>{operation.serverReceipt?.serverReceivedAt && <small>Received by server · {formatTime(String(operation.serverReceipt.serverReceivedAt), 'Africa/Lagos')}</small>}</div>
           <time>{formatTime(operation.updatedAt)}</time>
         </article>)}
       </main>

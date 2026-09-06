@@ -354,6 +354,16 @@ function clientTimezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
 }
 
+function applicationDeviceId() {
+  let deviceId = '';
+  try { deviceId = localStorage.getItem('daenem-workforce-device-id') || ''; } catch { deviceId = ''; }
+  if (!deviceId) {
+    deviceId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'device-' + Date.now().toString(36);
+    try { localStorage.setItem('daenem-workforce-device-id', deviceId); } catch { /* telemetry remains optional */ }
+  }
+  return deviceId;
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -568,6 +578,7 @@ async function uploadOfflineAttachments(identity: OfflineIdentity, operation: Of
       headers: {
         'content-type': attachment.metadata.mimeType,
         'content-length': String(attachment.metadata.sizeBytes),
+        'x-daenem-device-id': applicationDeviceId(),
         ...(expenseEvidence ? {
           'x-expense-request-id': String(payload.expenseRequestId || payload.requestId || operation.entityId || ''),
           'x-evidence-type': String(attachment.metadata.evidenceType || 'receipt'),
@@ -680,7 +691,7 @@ export async function syncQueuedOperations(identity: OfflineIdentity, options: {
           method: 'POST',
           credentials: 'include',
           cache: 'no-store',
-          headers: { 'content-type': 'application/json', 'idempotency-key': operation.idempotencyKey },
+          headers: { 'content-type': 'application/json', 'idempotency-key': operation.idempotencyKey, 'x-daenem-device-id': applicationDeviceId() },
           body: JSON.stringify({
             operationId: operation.id,
             idempotencyKey: operation.idempotencyKey,
@@ -727,6 +738,9 @@ export async function syncQueuedOperations(identity: OfflineIdentity, options: {
           result = { ...result, authRequired: result.authRequired + 1 };
         } else if (status === 403 || status === 409) {
           await setQueuedState(identity, operation.id, 'needs-review', status === 409 ? 'conflict' : 'permission-denied', error instanceof Error ? error.message : 'This queued work needs review.');
+          result = { ...result, needsReview: result.needsReview + 1 };
+        } else if (typeof status === 'number' && status >= 400 && status < 500) {
+          await setQueuedState(identity, operation.id, 'needs-review', 'validation', error instanceof Error ? error.message : 'This queued work needs review.');
           result = { ...result, needsReview: result.needsReview + 1 };
         } else {
           const category = error instanceof TypeError ? 'network' : 'server-retryable';
