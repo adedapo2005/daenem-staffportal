@@ -16,12 +16,16 @@ interface SpendEnv extends AuthEnv {
 type SpendAction = 'submit' | 'approve' | 'return' | 'reject';
 type AllocationMethod = 'percentage' | 'fixed_amount' | 'equal_split';
 type SpendCommitmentState = 'active' | 'released' | 'reversed';
+type SpendCommitmentAuditState = 'verified' | 'missing_evidence' | 'not_applicable';
 type SpendCommitment = {
   id: string;
   expenseRequestId: string;
   companyId: string;
   amountKobo: number;
   state: SpendCommitmentState;
+  purchaseOrderStatus?: string;
+  commitmentAuditState?: SpendCommitmentAuditState;
+  unverifiedCommitmentKobo?: number;
   source: 'purchase_order' | 'contract' | 'approved_commitment' | 'canonical_procurement';
   sourceReference?: string;
   idempotencyKey: string;
@@ -29,6 +33,9 @@ type SpendCommitment = {
   releasedAt?: string;
   reversedAt?: string;
   createdBy?: string;
+  commitmentEventId?: string;
+  releaseEventId?: string;
+  reversalEventId?: string;
 };
 type AllocationRow = {
   companyId: string;
@@ -396,6 +403,8 @@ async function requestById(env: SpendEnv, id: string) {
       COALESCE(truth.finance_posting_state,'not_posted') AS financePostingState,
       COALESCE(truth.committed_kobo,0) AS committedKobo,
       COALESCE(truth.commitment_state,'uncommitted') AS commitmentState,
+      COALESCE(truth.commitment_audit_state,'not_applicable') AS commitmentAuditState,
+      COALESCE(truth.unverified_commitment_kobo,0) AS unverifiedCommitmentKobo,
       r.submitted_at AS submittedAt,r.approved_at AS approvedAt,
       (SELECT MIN(pc.committed_at) FROM spend_purchase_order_commitments pc WHERE pc.expense_request_id=r.id AND pc.company_id=r.company_id AND pc.state='active') AS committedAt,
       r.paid_at AS paidAt,
@@ -445,14 +454,15 @@ function safeOwnerAuditDetails(value: unknown) {
 }
 
 async function serializeRequest(env: SpendEnv, context: SessionContext, row: Record<string, unknown>, detailed = false): Promise<SerializedRequest> {
-  const [lines, allocations, evidence, approvals, events, auditRows, commitments] = await Promise.all([
+  const [lines, allocations, evidence, approvals, events, auditRows, commitments, commitmentAuditTimeline] = await Promise.all([
     env.DB.prepare(`SELECT l.id,l.line_no AS lineNo,l.description,l.amount_kobo AS amountKobo,l.direct_shared AS directShared,l.category_id AS categoryId,c.name AS categoryName,t.code AS accountingTreatmentCode FROM spend_expense_lines l JOIN spend_categories c ON c.id=l.category_id JOIN spend_accounting_treatments t ON t.id=l.accounting_treatment_id WHERE l.expense_request_id=? ORDER BY l.line_no`).bind(row.id).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT a.id,a.company_id AS companyId,c.code AS companyCode,c.name AS companyName,a.department,a.cost_center_id AS costCenterId,cc.name AS costCenterName,a.allocation_method AS allocationMethod,a.basis_json AS basisJson,a.source_amount_kobo AS sourceAmountKobo,a.allocated_amount_kobo AS allocatedAmountKobo,a.rounding_adjustment_kobo AS roundingAdjustmentKobo FROM spend_expense_allocations a JOIN companies c ON c.id=a.company_id LEFT JOIN spend_cost_centers cc ON cc.id=a.cost_center_id WHERE a.expense_request_id=? ORDER BY a.company_id`).bind(row.id).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT id,evidence_type AS evidenceType,original_name AS originalName,mime_type AS mimeType,size_bytes AS sizeBytes,sha256,status,captured_at AS capturedAt,client_timezone AS clientTimezone,uploaded_at AS uploadedAt,verified_at AS verifiedAt FROM spend_expense_evidence WHERE expense_request_id=? AND employee_id=? ORDER BY created_at`).bind(row.id, String(row.requesterEmployeeId)).all<Record<string, unknown>>(),
     env.DB.prepare(`SELECT a.id,a.step_no AS stepNo,a.approver_role_code AS approverRoleCode,a.status,a.reason,a.acted_at AS actedAt,e.display_name AS approverName FROM spend_expense_approvals a LEFT JOIN employees e ON e.id=a.approver_employee_id WHERE a.expense_request_id=? ORDER BY a.step_no`).bind(row.id).all<Record<string, unknown>>(),
     detailed ? env.DB.prepare(`SELECT id,action,previous_status AS previousStatus,next_status AS nextStatus,reason,request_id AS requestId,captured_at AS capturedAt,server_received_at AS serverReceivedAt,metadata_json AS metadataJson FROM spend_expense_events WHERE expense_request_id=? ORDER BY server_received_at ASC`).bind(row.id).all<Record<string, unknown>>() : Promise.resolve({ results: [] as Record<string, unknown>[] }),
     detailed && owner(context) ? env.DB.prepare(`SELECT id,occurred_at AS occurredAt,action,entity_type AS entityType,entity_id AS entityId,reason,source,request_id AS requestId,after_json AS afterJson FROM audit_logs WHERE module='spend' AND entity_id=? ORDER BY occurred_at ASC LIMIT 100`).bind(row.id).all<Record<string, unknown>>() : Promise.resolve({ results: [] as Record<string, unknown>[] }),
-    detailed && owner(context) ? env.DB.prepare(`SELECT id,expense_request_id AS expenseRequestId,company_id AS companyId,amount_kobo AS amountKobo,state,source,source_reference AS sourceReference,idempotency_key AS idempotencyKey,committed_at AS committedAt,released_at AS releasedAt,reversed_at AS reversedAt,created_by AS createdBy,created_at AS createdAt,updated_at AS updatedAt FROM spend_purchase_order_commitments WHERE expense_request_id=? AND company_id=? ORDER BY committed_at ASC,id ASC`).bind(row.id, String(row.companyId || '')).all<SpendCommitment & Record<string, unknown>>() : Promise.resolve({ results: [] as Array<SpendCommitment & Record<string, unknown>> }),
+    detailed && owner(context) ? env.DB.prepare(`SELECT id,expense_request_id AS expenseRequestId,company_id AS companyId,po_no AS purchaseOrderNo,purchase_order_status AS purchaseOrderStatus,amount_kobo AS amountKobo,state,commitment_audit_state AS commitmentAuditState,unverified_commitment_kobo AS unverifiedCommitmentKobo,source,source_reference AS sourceReference,idempotency_key AS idempotencyKey,committed_at AS committedAt,released_at AS releasedAt,reversed_at AS reversedAt,created_by AS createdBy,commitment_event_id AS commitmentEventId,release_event_id AS releaseEventId,reversal_event_id AS reversalEventId,created_at AS createdAt,updated_at AS updatedAt FROM spend_purchase_order_commitments WHERE expense_request_id=? AND company_id=? ORDER BY COALESCE(committed_at,released_at,reversed_at,created_at) ASC,id ASC`).bind(row.id, String(row.companyId || '')).all<SpendCommitment & Record<string, unknown>>() : Promise.resolve({ results: [] as Array<SpendCommitment & Record<string, unknown>> }),
+    detailed && owner(context) ? env.DB.prepare(`SELECT ev.id,ev.purchase_order_id AS purchaseOrderId,po.po_no AS purchaseOrderNo,ev.company_id AS companyId,ev.spend_expense_request_id AS expenseRequestId,ev.from_status AS fromStatus,ev.to_status AS toStatus,ev.amount_kobo AS amountKobo,ev.actor_employee_id AS actorEmployeeId,actor.display_name AS actorName,ev.session_id AS sessionId,ev.reason,ev.source_reference AS sourceReference,ev.request_id AS requestId,ev.idempotency_key AS idempotencyKey,ev.device_id AS deviceId,ev.ip_address AS ipAddress,ev.network_location AS networkLocation,ev.client_timezone AS clientTimezone,ev.captured_at AS capturedAt,ev.server_received_at AS serverReceivedAt,CASE WHEN ev.to_status IN ('ordered','partially_received','received','cancelled') THEN 'verified' ELSE 'not_applicable' END AS auditState,'purchase_order' AS source FROM purchase_order_status_events ev JOIN purchase_orders po ON po.id=ev.purchase_order_id AND po.company_id=ev.company_id LEFT JOIN employees actor ON actor.id=ev.actor_employee_id WHERE ev.spend_expense_request_id=? AND ev.company_id=? ORDER BY ev.server_received_at ASC,ev.id ASC`).bind(row.id, String(row.companyId || '')).all<Record<string, unknown>>() : Promise.resolve({ results: [] as Record<string, unknown>[] }),
   ]);
   const parseBasis = allocations.results?.map((allocation) => {
     let basis: Record<string, unknown> = {};
@@ -466,6 +476,8 @@ async function serializeRequest(env: SpendEnv, context: SessionContext, row: Rec
     // posting, evidence and closure never establish it retroactively.
     committedKobo: Number(row.committedKobo || 0),
     commitmentState: String(row.commitmentState || 'uncommitted'),
+    commitmentAuditState: String(row.commitmentAuditState || 'not_applicable'),
+    unverifiedCommitmentKobo: Number(row.unverifiedCommitmentKobo || 0),
     // Paid is derived only from settled canonical payment rows. Workflow and
     // Finance posting states are intentionally orthogonal.
     paidKobo: Number(row.paidKobo || 0),
@@ -478,6 +490,7 @@ async function serializeRequest(env: SpendEnv, context: SessionContext, row: Rec
     ...(detailed ? { events: (events.results || []).map((item) => { const { metadataJson: _metadataJson, ...safe } = item; return safe; }) } : {}),
     ...(detailed && owner(context) ? { auditEvidence: (auditRows.results || []).map((item) => ({ id: item.id, occurredAt: item.occurredAt, action: item.action, entityType: item.entityType, entityId: item.entityId, reason: item.reason, source: item.source, requestId: item.requestId, details: safeOwnerAuditDetails(item.afterJson) })) } : {}),
     ...(detailed && owner(context) ? { commitments: commitments.results || [] } : {}),
+    ...(detailed && owner(context) ? { commitmentAuditTimeline: commitmentAuditTimeline.results || [] } : {}),
   };
 }
 
@@ -838,7 +851,15 @@ async function ownerOverview(request: Request, env: SpendEnv, context: SessionCo
         COALESCE((SELECT SUM(pc.amount_kobo)
           FROM spend_purchase_order_commitments pc
           JOIN spend_expense_requests cr ON cr.id=pc.expense_request_id AND cr.company_id=pc.company_id
-          WHERE pc.state='active'),0) AS committedKobo,
+          WHERE pc.state='active' AND pc.commitment_audit_state='verified'),0) AS committedKobo,
+        COALESCE((SELECT SUM(pc.unverified_commitment_kobo)
+          FROM spend_purchase_order_commitments pc
+          JOIN spend_expense_requests cr ON cr.id=pc.expense_request_id AND cr.company_id=pc.company_id
+          WHERE pc.state='active' AND pc.commitment_audit_state='missing_evidence'),0) AS unverifiedCommitmentKobo,
+        COALESCE((SELECT COUNT(DISTINCT pc.expense_request_id)
+          FROM spend_purchase_order_commitments pc
+          JOIN spend_expense_requests cr ON cr.id=pc.expense_request_id AND cr.company_id=pc.company_id
+          WHERE pc.state='active' AND pc.commitment_audit_state='missing_evidence'),0) AS commitmentAuditExceptions,
         COALESCE((SELECT SUM(pay.amount_kobo) FROM spend_expense_payments pay WHERE pay.status='settled'),0) AS paidKobo,
         COALESCE(SUM(CASE WHEN direct_shared IN ('shared','mixed') THEN total_kobo ELSE 0 END),0) AS sharedKobo,
         COALESCE(SUM(CASE WHEN status='returned' THEN total_kobo ELSE 0 END),0) AS returnedKobo,
@@ -854,10 +875,10 @@ async function ownerOverview(request: Request, env: SpendEnv, context: SessionCo
   return json({
     serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env),
     metrics: {
-      requestedKobo: Number(metrics?.requestedKobo || 0), approvedKobo: Number(metrics?.approvedKobo || 0), committedKobo: Number(metrics?.committedKobo || 0), paidKobo: Number(metrics?.paidKobo || 0), postedOperatingExpenseKobo: Number(byTreatment.operating?.recognizedKobo || 0), postedCogsKobo: Number(byTreatment.cogs?.recognizedKobo || 0), sharedExpenseKobo: Number(metrics?.sharedKobo || 0), unallocatedSharedExpenseKobo: 0, missingEvidence: missingEvidence.results?.length || 0, pendingApprovals: Number(metrics?.pendingApprovals || 0), returnedRequests: Number(metrics?.returnedRequests || 0), nonPnlPostedKobo: Number(byTreatment.non_pnl?.amountKobo || 0), requestCount: Number(metrics?.requestCount || 0),
+      requestedKobo: Number(metrics?.requestedKobo || 0), approvedKobo: Number(metrics?.approvedKobo || 0), committedKobo: Number(metrics?.committedKobo || 0), unverifiedCommitmentKobo: Number(metrics?.unverifiedCommitmentKobo || 0), commitmentAuditExceptions: Number(metrics?.commitmentAuditExceptions || 0), paidKobo: Number(metrics?.paidKobo || 0), postedOperatingExpenseKobo: Number(byTreatment.operating?.recognizedKobo || 0), postedCogsKobo: Number(byTreatment.cogs?.recognizedKobo || 0), sharedExpenseKobo: Number(metrics?.sharedKobo || 0), unallocatedSharedExpenseKobo: 0, missingEvidence: missingEvidence.results?.length || 0, pendingApprovals: Number(metrics?.pendingApprovals || 0), returnedRequests: Number(metrics?.returnedRequests || 0), nonPnlPostedKobo: Number(byTreatment.non_pnl?.amountKobo || 0), requestCount: Number(metrics?.requestCount || 0),
     },
     profitability: { available: false, reason: 'Revenue, canonical COGS and canonical payroll are not yet complete enough in the existing Finance sources for a truthful group profit figure.' },
-    sourceTruth: { groupRequestCountedOnce: true, approvedIsExposureNotActualExpense: true, committedUsesCanonicalProcurement: true, paidUsesSettledCanonicalPayments: true, actualProfitUsesPostedPAndLOnly: true },
+    sourceTruth: { groupRequestCountedOnce: true, approvedIsExposureNotActualExpense: true, committedUsesCanonicalProcurement: true, committedUsesVerifiedProcurementStatusEvents: true, unauditedCommitmentsExcluded: true, paidUsesSettledCanonicalPayments: true, actualProfitUsesPostedPAndLOnly: true },
   });
 }
 
@@ -885,6 +906,8 @@ async function ownerDetail(request: Request, env: SpendEnv, context: SessionCont
       COALESCE(truth.finance_posting_state,'not_posted') AS financePostingState,
       COALESCE(truth.committed_kobo,0) AS committedKobo,
       COALESCE(truth.commitment_state,'uncommitted') AS commitmentState,
+      COALESCE(truth.commitment_audit_state,'not_applicable') AS commitmentAuditState,
+      COALESCE(truth.unverified_commitment_kobo,0) AS unverifiedCommitmentKobo,
       r.purpose,r.business_reason AS businessReason,r.status,r.captured_at AS capturedAt,r.submitted_at AS submittedAt,r.created_at AS createdAt,r.updated_at AS updatedAt,
       (SELECT COUNT(*) FROM spend_expense_evidence ev WHERE ev.expense_request_id=r.id) AS evidenceCount,
       (SELECT COUNT(*) FROM spend_expense_approvals ap WHERE ap.expense_request_id=r.id AND ap.status='pending') AS pendingApprovalCount

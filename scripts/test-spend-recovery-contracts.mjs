@@ -15,6 +15,7 @@ const entry = read('src/spend-entry.tsx');
 const procurement = read('migrations/0005_commerce_printing.sql');
 const migration = read('migrations/0056_spend_truth_and_controlled_mapping.sql');
 const commitmentMigration = read('migrations/0057_spend_commitment_truth.sql');
+const commitmentAuditMigration = read('migrations/0058_purchase_order_commitment_audit.sql');
 const css = read('src/spend.css');
 
 // Deployment/Actions safety is a source-control contract, not something this
@@ -30,6 +31,26 @@ for (const contract of ['spend_purchase_order_commitments', 'DROP VIEW IF EXISTS
 must(!/CREATE TABLE IF NOT EXISTS\s+spend_expense_commitments/i.test(commitmentMigration), 'a duplicate Spend commitment ledger was introduced');
 must(commitmentMigration.includes('ON DELETE RESTRICT') && commitmentMigration.includes('state=\'active\''), 'canonical commitment history or active-state filtering is not protected');
 
+// Approved is not a binding procurement obligation. A verified commitment
+// requires a matching, amount-bound append-only status event, and unaudited
+// active source rows stay visible only as an exception.
+must(commitmentAuditMigration.includes('CREATE TABLE IF NOT EXISTS purchase_order_status_events'), 'the canonical Purchase Order status-event source is missing');
+for (const field of ['purchase_order_id', 'company_id', 'spend_expense_request_id', 'from_status', 'to_status', 'amount_kobo', 'actor_employee_id', 'session_id', 'reason', 'source_reference', 'request_id', 'idempotency_key', 'device_id', 'ip_address', 'network_location', 'client_timezone', 'captured_at', 'server_received_at', 'metadata_json']) must(commitmentAuditMigration.includes(field), `Purchase Order audit field is missing: ${field}`);
+must(commitmentAuditMigration.includes('purchase_order_status_events_no_update') && commitmentAuditMigration.includes('purchase_order_status_events_no_delete'), 'Purchase Order status events are not database-enforced append-only');
+must(commitmentAuditMigration.includes("po.purchase_order_status IN ('ordered', 'partially_received')") && commitmentAuditMigration.includes("e.to_status IN ('ordered', 'partially_received')"), 'only ordered or partially received POs may establish active commitment');
+must(!/po\.purchase_order_status IN \('approved'\s*,\s*'ordered'\s*,\s*'partially_received'\)/i.test(commitmentAuditMigration), 'approved Purchase Orders still become active commitments');
+must(commitmentAuditMigration.includes("c.commitment_audit_state='verified'") && commitmentAuditMigration.includes('unverified_commitment_kobo'), 'verified and unaudited commitment amounts are not separated');
+must(commitmentAuditMigration.includes('e.amount_kobo=po.amount_kobo') && commitmentAuditMigration.includes('e.server_received_at'), 'commitment evidence is not bound to the canonical amount and server event time');
+const procurementCommitmentState = (status) => {
+  if (['ordered', 'partially_received'].includes(status)) return 'active';
+  if (status === 'received') return 'released';
+  if (status === 'cancelled') return 'reversed';
+  return 'not_committed';
+};
+must(procurementCommitmentState('approved') === 'not_committed', 'approved Purchase Orders must remain uncommitted');
+must(procurementCommitmentState('ordered') === 'active' && procurementCommitmentState('partially_received') === 'active', 'ordered and partially received Purchase Orders must be active');
+must(procurementCommitmentState('received') === 'released' && procurementCommitmentState('cancelled') === 'reversed', 'terminal Purchase Order states must retain release/reversal semantics');
+
 // Payment truth and accounting-posting truth are separate canonical sources.
 for (const state of ['payment_state', 'finance_posting_state', 'unpaid', 'partially_paid', 'paid', 'not_posted', 'posted', 'reversed']) must(migration.includes(state), `missing orthogonal state ${state}`);
 must(migration.includes('CREATE TABLE IF NOT EXISTS spend_expense_payments'), 'canonical payment table is missing');
@@ -38,20 +59,22 @@ const requestById = spend.slice(spend.indexOf('async function requestById'), spe
 must(requestById.includes('LEFT JOIN spend_request_truth truth') && requestById.includes('truth.paid_kobo') && requestById.includes('truth.recognized_kobo') && requestById.includes('truth.committed_kobo'), 'request metrics do not read the canonical truth projection');
 must(!/paidKobo[\s\S]{0,300}finance_posted|finance_posted[\s\S]{0,300}paidKobo/.test(requestById), 'Finance posting is being used as payment evidence');
 must(!spend.includes('INSERT INTO spend_expense_payments'), 'Batch 1 must not execute payments');
-must(spend.includes('paymentState') && spend.includes('financePostingState') && spend.includes('commitmentState'), 'orthogonal state fields are not serialized');
+must(spend.includes('paymentState') && spend.includes('financePostingState') && spend.includes('commitmentState') && spend.includes('commitmentAuditState') && spend.includes('unverifiedCommitmentKobo') && spend.includes('commitmentAuditTimeline'), 'orthogonal state fields are not serialized');
+must(spend.includes("pc.commitment_audit_state='verified'") && spend.includes("pc.commitment_audit_state='missing_evidence'"), 'Owner committed metrics do not separate verified commitments from audit exceptions');
 must(!spend.includes('commitmentStates') && !/status\s+IN\s*\(\s*'committed'[^)]*'closed'/i.test(spend), 'committed spend is still inferred from workflow statuses');
 
 // Deterministic truth fixtures cover the independent states without making a
 // later payment, posting, or closure establish a commitment.
 const calculateCommittedKobo = (commitments) => commitments
-  .filter((commitment) => commitment.state === 'active')
+  .filter((commitment) => commitment.state === 'active' && commitment.commitmentAuditState === 'verified')
   .reduce((total, commitment) => total + commitment.amountKobo, 0);
 must(calculateCommittedKobo([]) === 0, 'approved-only requests must remain uncommitted');
-must(calculateCommittedKobo([{ amountKobo: 1_000_000, state: 'active' }]) === 1_000_000, 'explicit commitment amount is not authoritative');
-must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'active' }]) === 600_000, 'partial commitment is inflated to the request amount');
-must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'released' }]) === 0, 'released commitment still contributes to current spend');
-must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'reversed' }]) === 0, 'reversed commitment still contributes to current spend');
-must(calculateCommittedKobo([{ amountKobo: 300_000, state: 'active' }, { amountKobo: 200_000, state: 'active' }]) === 500_000, 'multiple active commitments are not summed');
+must(calculateCommittedKobo([{ amountKobo: 1_000_000, state: 'active', commitmentAuditState: 'verified' }]) === 1_000_000, 'explicit commitment amount is not authoritative');
+must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'active', commitmentAuditState: 'verified' }]) === 600_000, 'partial commitment is inflated to the request amount');
+must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'active', commitmentAuditState: 'missing_evidence' }]) === 0, 'unaudited active commitment still contributes to verified spend');
+must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'released', commitmentAuditState: 'verified' }]) === 0, 'released commitment still contributes to current spend');
+must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'reversed', commitmentAuditState: 'verified' }]) === 0, 'reversed commitment still contributes to current spend');
+must(calculateCommittedKobo([{ amountKobo: 300_000, state: 'active', commitmentAuditState: 'verified' }, { amountKobo: 200_000, state: 'active', commitmentAuditState: 'verified' }]) === 500_000, 'multiple active commitments are not summed');
 must(commitmentMigration.includes("WHERE c.expense_request_id=r.id") && commitmentMigration.includes("c.company_id=r.company_id") && commitmentMigration.includes("c.state='active'"), 'request truth does not scope canonical commitments by request, company, and active state');
 
 // Payroll and ledger mappings must fail closed.
