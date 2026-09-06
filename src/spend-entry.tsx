@@ -12,7 +12,7 @@ import {
   readCachedSpendMasterData, saveOfflineAttachment, saveCachedSpendMasterData, sha256Bytes,
   type ExpenseDraftInput, type OfflineOperation,
 } from './offline-platform';
-import { useOfflinePlatform } from './offline-sync';
+import { OfflinePlatformProvider, useOfflinePlatform } from './offline-sync';
 import './spend.css';
 
 type Tab = 'requests' | 'create' | 'approvals' | 'intelligence' | 'admin';
@@ -112,10 +112,12 @@ function Launcher() {
   if (!context) return null;
   const visible = isOwner(context) || context.companies.some((company) => can(context, 'expense.requests', 'create', company.id) || can(context, 'expense.own', 'view', company.id) || can(context, 'expense.approve', 'view', company.id) || can(context, 'expense.master', 'manage', company.id));
   if (!visible) return null;
-  return <>
-    <button type="button" className="spend-launcher" onClick={() => { setTab('requests'); setOpen(true); }}><WalletCards size={18} /><span>Spend & costs</span></button>
-    {open && <SpendCenter context={context} initialTab={tab} onClose={() => setOpen(false)} />}
-  </>;
+  return <OfflinePlatformProvider context={context}>
+    <>
+      <button type="button" className="spend-launcher" onClick={() => { setTab('requests'); setOpen(true); }}><WalletCards size={18} /><span>Spend & costs</span></button>
+      {open && <SpendCenter context={context} initialTab={tab} onClose={() => setOpen(false)} />}
+    </>
+  </OfflinePlatformProvider>;
 }
 
 function AccessNotice({ children }: { children: string }) {
