@@ -112,7 +112,7 @@ async function main() {
     "INSERT OR IGNORE INTO company_locations(id,company_id,name,timezone) VALUES ('qa-spend-print-location','company-printing','Spend QA Printing Location','Africa/Lagos');",
     "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,location_id,is_primary,active) VALUES ('qa-spend-manager-print','qa-spend-manager','company-printing','qa-spend-print-location',1,1);",
     "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,is_primary,active) VALUES ('qa-spend-manager-bakery','qa-spend-manager','company-bakery',0,1);",
-    "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,is_primary,active) VALUES ('qa-spend-employee-print','qa-spend-employee','company-printing','qa-spend-print-location',1,1);",
+    "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,location_id,is_primary,active) VALUES ('qa-spend-employee-print','qa-spend-employee','company-printing','qa-spend-print-location',1,1);",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-spend-manager-print-role','qa-spend-manager','company-printing','role-print-manager');",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-spend-manager-bakery-role','qa-spend-manager','company-bakery','role-bakery-manager');",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-spend-employee-role','qa-spend-employee','company-printing','role-print-designer');",
