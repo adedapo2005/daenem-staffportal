@@ -163,14 +163,25 @@ async function openSpend(browser, role, viewport, tab) {
   const page = await browserContext.newPage();
   const server = makeServerState();
   const context = await installApiRoutes(page, role, server);
-  page.on('pageerror', (error) => { runtimeErrors.push(`${role}: ${error.message}`); });
-  page.on('console', (message) => { if (message.type() === 'error' && !/Failed to load resource/.test(message.text())) runtimeErrors.push(`${role} console: ${message.text()}`); });
+  page.on('pageerror', (error) => { runtimeErrors.push(`${role}: ${error.message}`); console.error(`QA_PAGE_ERROR ${role}: ${error.stack || error.message}`); });
+  page.on('console', (message) => { if (message.type() === 'error' && !/Failed to load resource/.test(message.text())) { runtimeErrors.push(`${role} console: ${message.text()}`); console.error(`QA_CONSOLE_ERROR ${role}: ${message.text()}`); } });
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
   await page.waitForTimeout(500);
   const moduleId = role === 'owner' ? 'spend-intelligence' : role === 'manager' ? 'expense-approvals' : 'expense-requests';
   await page.evaluate((id) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } })), moduleId);
-  await page.waitForSelector('.spend-shell', { timeout: 15000 });
+  try {
+    await page.waitForSelector('.spend-shell', { timeout: 15000 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      bodyText: document.body.innerText.slice(0, 6000),
+      spendLauncher: Boolean(document.querySelector('.spend-launcher')),
+      spendRoot: Boolean(document.querySelector('#spend-launcher')),
+      moduleEnvelope: Boolean(document.querySelector('[data-module-envelope]')),
+      moduleHub: Boolean(document.querySelector('.module-hub-panel')),
+    }));
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\\nQA_OPEN_DIAGNOSTIC ${JSON.stringify(diagnostic)}`);
+  }
   return { browserContext, page, server, context };
 }
 
