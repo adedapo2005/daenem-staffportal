@@ -14,6 +14,7 @@ const migration = read('migrations/0055_spend_cost_profit_foundation.sql');
 const truthMigration = read('migrations/0056_spend_truth_and_controlled_mapping.sql');
 const commitmentMigration = read('migrations/0057_spend_commitment_truth.sql');
 const commitmentAuditMigration = read('migrations/0058_purchase_order_commitment_audit.sql');
+const transitionMigration = read('migrations/0059_purchase_order_transition_enforcement.sql');
 const offline = read('src/offline-platform.ts');
 const entry = read('src/spend-entry.tsx');
 
@@ -61,6 +62,27 @@ for (const contract of [
 ]) expect('0058 commitment audit migration', commitmentAuditMigration, contract);
 if (/status IN \('approved'\s*,\s*'ordered'\s*,\s*'partially_received'\)/i.test(commitmentAuditMigration)) throw new Error('0058 must not treat approved Purchase Orders as active commitments.');
 if (!commitmentAuditMigration.includes("c.commitment_audit_state='verified'") || !commitmentAuditMigration.includes("c.commitment_audit_state='missing_evidence'")) throw new Error('verified and unverified commitment amounts are not separated');
+for (const contract of [
+  'ALTER TABLE purchase_orders ADD COLUMN last_status_event_id',
+  'purchase_orders_spend_insert_requires_transition',
+  'purchase_order_status_events_validate_transition',
+  'purchase_orders_spend_status_requires_event',
+  "NEW.from_status='approved' AND NEW.to_status IN ('ordered', 'cancelled')",
+  "NEW.from_status='ordered' AND NEW.to_status IN ('partially_received', 'received', 'cancelled')",
+  "NEW.from_status='partially_received' AND NEW.to_status IN ('received', 'cancelled')",
+  'NEW.actor_employee_id IS NULL',
+  'NEW.session_id IS NULL',
+  "length(trim(COALESCE(NEW.request_id, ''))) = 0",
+  'po.spend_expense_request_id=NEW.spend_expense_request_id',
+  'po.po_no=NEW.source_reference',
+  'e.source_reference=po.po_no',
+  'e.from_status=OLD.status',
+  'e.to_status=NEW.status',
+  'NEW.last_status_event_id',
+]) expect('0059 transition enforcement migration', transitionMigration, contract);
+for (const contract of ['/api/procurement/purchase-orders/', 'procurement.access', 'deduplicated', 'last_status_event_id']) expect('worker/procurement.ts', read('worker/procurement.ts'), contract);
+expect('worker/runtime.ts', runtime, "import { routeProcurement } from './procurement';");
+expect('worker/runtime.ts', runtime, "url.pathname.startsWith('/api/procurement/')");
 for (const endpoint of ['/api/spend/bootstrap', '/api/spend/requests', '/api/spend/approvals', '/api/spend/owner/overview', '/api/spend/owner/detail', '/api/spend/admin/master', '/api/spend/erp-context']) expect('worker/spend.ts', spend, endpoint);
 expect('worker/spend.ts', spend, 'evidenceMatch && request.method === \'PUT\'');
 for (const erp of ['printing', 'bakery', 'autos', 'logistics', 'properties', 'finance']) expect('worker/spend.ts', spend, `'${erp}'`);

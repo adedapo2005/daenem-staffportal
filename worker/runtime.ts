@@ -41,6 +41,7 @@ import { routeAiGuide } from './ai-guide';
 import { routePlatformCenter, routePublicWebsite } from './platform-center';
 import { routeOffline } from './offline';
 import { routeSpend } from './spend';
+import { routeProcurement } from './procurement';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -180,6 +181,7 @@ export default {
       url.pathname.startsWith('/api/platform/') ||
       url.pathname.startsWith('/api/hr/workflows/') ||
       url.pathname.startsWith('/api/offline/') ||
+      url.pathname.startsWith('/api/procurement/') ||
       url.pathname.startsWith('/api/spend/');
 
     if (specialized) {
@@ -192,6 +194,10 @@ export default {
       }
       if (url.pathname.startsWith('/api/spend/')) {
         const response = await routeSpend(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/procurement/')) {
+        const response = await routeProcurement(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/theme/')) {

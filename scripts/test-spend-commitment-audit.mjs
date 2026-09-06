@@ -4,7 +4,10 @@ import { join } from 'node:path';
 const root = process.cwd();
 const read = (file) => readFileSync(join(root, file), 'utf8');
 const migration = read('migrations/0058_purchase_order_commitment_audit.sql');
+const transitionMigration = read('migrations/0059_purchase_order_transition_enforcement.sql');
 const worker = read('worker/spend.ts');
+const procurementWorker = read('worker/procurement.ts');
+const runtimeWorker = read('worker/runtime.ts');
 const runtime = read('scripts/test-spend-worker-runtime.mjs');
 const must = (condition, message) => {
   if (!condition) throw new Error(`Spend commitment audit contract failed: ${message}`);
@@ -28,10 +31,33 @@ must(migration.includes('commitment_audit_state') && migration.includes('unverif
 must(migration.includes('e.server_received_at') && migration.includes('released_at') && migration.includes('reversed_at'), 'canonical transition timestamps are missing');
 must(migration.includes("c.commitment_audit_state='verified'") && migration.includes("c.commitment_audit_state='missing_evidence'"), 'truth view does not exclude unaudited commitment amounts');
 
+for (const contract of [
+  'ALTER TABLE purchase_orders ADD COLUMN last_status_event_id',
+  'purchase_orders_spend_insert_requires_transition',
+  'purchase_order_status_events_validate_transition',
+  'purchase_orders_spend_status_requires_event',
+  "NEW.from_status='approved' AND NEW.to_status IN ('ordered', 'cancelled')",
+  "NEW.from_status='ordered' AND NEW.to_status IN ('partially_received', 'received', 'cancelled')",
+  "NEW.from_status='partially_received' AND NEW.to_status IN ('received', 'cancelled')",
+  'NEW.actor_employee_id IS NULL',
+  'NEW.session_id IS NULL',
+  "length(trim(COALESCE(NEW.request_id, ''))) = 0",
+  'po.spend_expense_request_id=NEW.spend_expense_request_id',
+  'po.po_no=NEW.source_reference',
+  'e.source_reference=po.po_no',
+  'e.from_status=OLD.status',
+  'e.to_status=NEW.status',
+  'NEW.last_status_event_id',
+]) must(transitionMigration.includes(contract), `transition enforcement contract ${contract} is missing`);
+must(procurementWorker.includes('/api/procurement/purchase-orders/') && procurementWorker.includes("hasPermission(context, 'procurement.access', 'approve'"), 'authenticated Procurement transition route or permission is missing');
+must(procurementWorker.includes('await env.DB.batch([') && procurementWorker.includes('INSERT INTO purchase_order_status_events') && procurementWorker.includes('UPDATE purchase_orders'), 'PO mutation and audit append are not implemented in one batch');
+must(runtimeWorker.includes("import { routeProcurement } from './procurement';") && runtimeWorker.includes("url.pathname.startsWith('/api/procurement/')"), 'Procurement route is not authenticated/routed by the Worker');
+
 for (const contract of ['commitmentAuditState', 'unverifiedCommitmentKobo', 'commitmentAuditTimeline', 'commitmentEventId', 'releaseEventId', 'reversalEventId', 'committedUsesVerifiedProcurementStatusEvents', 'unauditedCommitmentsExcluded']) must(worker.includes(contract), `Worker commitment audit contract ${contract} is missing`);
 must(worker.includes('actorEmployeeId') && worker.includes('sessionId') && worker.includes('deviceId') && worker.includes('ipAddress') && worker.includes('networkLocation') && worker.includes('clientTimezone') && worker.includes('serverReceivedAt'), 'Owner audit timeline omits required transition evidence');
 must(worker.includes("pc.commitment_audit_state='verified'"), 'Owner committed metric counts unaudited active Purchase Orders');
-must(runtime.includes('approved Purchase Order is not commitment') && runtime.includes('ordered Purchase Order without audit') && runtime.includes('ordered Purchase Order with audit') && runtime.includes('received Purchase Order release') && runtime.includes('cancelled Purchase Order reversal') && runtime.includes('direct SQL status change fails closed'), 'runtime matrix does not cover commitment audit boundaries');
-must(runtime.includes('status-event update append-only guard') && runtime.includes('status-event delete append-only guard') && runtime.includes('duplicate Purchase Order status event retry'), 'runtime matrix does not cover append-only and idempotency boundaries');
+must(runtime.includes('approved Purchase Order is not commitment') && runtime.includes('real HTTP approved to ordered') && runtime.includes('real HTTP received release') && runtime.includes('real HTTP cancelled reversal') && runtime.includes('legacy missing-evidence read model') && runtime.includes('direct SQL Purchase Order status rejection'), 'runtime matrix does not cover commitment audit boundaries');
+must(runtime.includes('status-event update append-only guard') && runtime.includes('status-event delete append-only guard') && runtime.includes('idempotent Procurement transition retry'), 'runtime matrix does not cover append-only and idempotency boundaries');
+for (const label of ['real HTTP approved to ordered', 'employee Procurement transition', 'company-isolated Procurement transition', 'invalid backward Procurement transition', 'sparse status event rejection', 'direct SQL Purchase Order status rejection', 'real HTTP received release', 'real HTTP cancelled reversal', 'approved to cancelled Procurement transition', 'idempotency conflict']) must(runtime.includes(label), `runtime matrix does not cover ${label}`);
 
 console.log('SPEND_COMMITMENT_AUDIT_CONTRACT_TESTS=PASS');

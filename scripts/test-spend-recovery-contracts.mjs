@@ -16,6 +16,7 @@ const procurement = read('migrations/0005_commerce_printing.sql');
 const migration = read('migrations/0056_spend_truth_and_controlled_mapping.sql');
 const commitmentMigration = read('migrations/0057_spend_commitment_truth.sql');
 const commitmentAuditMigration = read('migrations/0058_purchase_order_commitment_audit.sql');
+const transitionMigration = read('migrations/0059_purchase_order_transition_enforcement.sql');
 const css = read('src/spend.css');
 
 // Deployment/Actions safety is a source-control contract, not something this
@@ -41,6 +42,28 @@ must(commitmentAuditMigration.includes("po.purchase_order_status IN ('ordered', 
 must(!/po\.purchase_order_status IN \('approved'\s*,\s*'ordered'\s*,\s*'partially_received'\)/i.test(commitmentAuditMigration), 'approved Purchase Orders still become active commitments');
 must(commitmentAuditMigration.includes("c.commitment_audit_state='verified'") && commitmentAuditMigration.includes('unverified_commitment_kobo'), 'verified and unaudited commitment amounts are not separated');
 must(commitmentAuditMigration.includes('e.amount_kobo=po.amount_kobo') && commitmentAuditMigration.includes('e.server_received_at'), 'commitment evidence is not bound to the canonical amount and server event time');
+for (const contract of [
+  'ALTER TABLE purchase_orders ADD COLUMN last_status_event_id',
+  'purchase_orders_spend_insert_requires_transition',
+  'purchase_order_status_events_validate_transition',
+  'purchase_orders_spend_status_requires_event',
+  "NEW.from_status='approved' AND NEW.to_status IN ('ordered', 'cancelled')",
+  "NEW.from_status='ordered' AND NEW.to_status IN ('partially_received', 'received', 'cancelled')",
+  "NEW.from_status='partially_received' AND NEW.to_status IN ('received', 'cancelled')",
+  'NEW.actor_employee_id IS NULL',
+  'NEW.session_id IS NULL',
+  "length(trim(COALESCE(NEW.request_id, ''))) = 0",
+  'po.spend_expense_request_id=NEW.spend_expense_request_id',
+  'po.po_no=NEW.source_reference',
+  'e.source_reference=po.po_no',
+  'e.from_status=OLD.status',
+  'e.to_status=NEW.status',
+  'NEW.last_status_event_id',
+]) must(transitionMigration.includes(contract), `missing Purchase Order transition enforcement contract: ${contract}`);
+must(transitionMigration.includes('CREATE VIEW spend_purchase_order_commitments') && transitionMigration.includes('commitment_audit_state'), '0059 does not rebuild the fail-closed commitment read model');
+const procurementWorker = read('worker/procurement.ts');
+must(procurementWorker.includes('/api/procurement/purchase-orders/') && procurementWorker.includes("hasPermission(context, 'procurement.access', 'approve'") && procurementWorker.includes('deduplicated'), 'authenticated Procurement transition boundary is missing');
+must(procurementWorker.includes('await env.DB.batch([') && procurementWorker.includes('last_status_event_id') && procurementWorker.includes('x-daenem-device-id'), 'Procurement transition is not atomic or does not capture canonical audit context');
 const procurementCommitmentState = (status) => {
   if (['ordered', 'partially_received'].includes(status)) return 'active';
   if (status === 'received') return 'released';
@@ -76,6 +99,9 @@ must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'released', commitmen
 must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'reversed', commitmentAuditState: 'verified' }]) === 0, 'reversed commitment still contributes to current spend');
 must(calculateCommittedKobo([{ amountKobo: 300_000, state: 'active', commitmentAuditState: 'verified' }, { amountKobo: 200_000, state: 'active', commitmentAuditState: 'verified' }]) === 500_000, 'multiple active commitments are not summed');
 must(commitmentMigration.includes("WHERE c.expense_request_id=r.id") && commitmentMigration.includes("c.company_id=r.company_id") && commitmentMigration.includes("c.state='active'"), 'request truth does not scope canonical commitments by request, company, and active state');
+
+const runtime = read('scripts/test-spend-worker-runtime.mjs');
+for (const label of ['real HTTP approved to ordered', 'employee Procurement transition', 'company-isolated Procurement transition', 'invalid backward Procurement transition', 'sparse status event rejection', 'direct SQL Purchase Order status rejection', 'real HTTP received release', 'real HTTP cancelled reversal', 'approved to cancelled Procurement transition', 'idempotency conflict']) must(runtime.includes(label), `runtime matrix does not cover ${label}`);
 
 // Payroll and ledger mappings must fail closed.
 must((spend.match(/payroll_canonical/g) || []).length >= 2, 'manual payroll protection is not present at request and posting boundaries');
