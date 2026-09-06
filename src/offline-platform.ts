@@ -11,7 +11,7 @@ const ACTIVE_EMPLOYEE_KEY = 'daenem-offline-active-employee';
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-export type OfflineOperationKind = 'forms.submit' | 'expense.draft.save' | 'expense.request.submit' | 'expense.evidence.upload';
+export type OfflineOperationKind = 'forms.submit' | 'expense.draft.save' | 'expense.request.submit';
 export type OfflineOperationState =
   | 'local-draft'
   | 'waiting-to-sync'
@@ -179,6 +179,12 @@ type StoredMeta = {
 
 let databasePromise: Promise<IDBDatabase> | null = null;
 let broadcastChannel: BroadcastChannel | null = null;
+const localChangeListeners = new Set<() => void>();
+
+function notifyOfflineChange(type: 'operation-updated' | 'attachment-updated' | 'sync-finished', namespace: string) {
+  for (const listener of localChangeListeners) listener();
+  broadcastChannel?.postMessage({ type, namespace });
+}
 
 function namespaceFor(identity: OfflineIdentity) {
   return identity.employeeId + ':' + identity.companyId;
@@ -412,7 +418,7 @@ async function upsertOperationUnlocked(
     updatedAt: timestamp,
   };
   await writeRecord(OPERATION_STORE, stored);
-  broadcastChannel?.postMessage({ type: 'operation-updated', namespace, state: stored.state });
+  notifyOfflineChange('operation-updated', namespace);
   return publicOperation(stored);
 }
 
@@ -479,22 +485,6 @@ export async function queueExpenseSubmission(identity: OfflineIdentity, input: E
   });
 }
 
-export async function queueExpenseEvidenceUpload(identity: OfflineIdentity, input: {
-  expenseRequestId: string;
-  operationId?: string;
-  attachmentRefs: string[];
-}) {
-  return upsertOperation(identity, {
-    operationId: input.operationId,
-    kind: 'expense.evidence.upload',
-    entityType: 'spend_expense_request',
-    entityId: input.expenseRequestId,
-    state: 'waiting-to-sync',
-    payload: { expenseRequestId: input.expenseRequestId, attachmentRefs: input.attachmentRefs },
-    attachmentRefs: input.attachmentRefs,
-  });
-}
-
 export async function listOfflineOperations(identity: OfflineIdentity) {
   return (await namespaceOperations(identity)).map(publicOperation);
 }
@@ -543,7 +533,7 @@ export async function saveOfflineAttachment(
     encryptedBlob: await encryptBytes(namespaceFor(identity), input.bytes),
   };
   await writeRecord(ATTACHMENT_STORE, record);
-  broadcastChannel?.postMessage({ type: 'attachment-updated', namespace: record.namespace });
+  notifyOfflineChange('attachment-updated', record.namespace);
   return { id, operationId: record.operationId, originalName: record.originalName, mimeType: record.mimeType, sizeBytes: record.sizeBytes, sha256: record.sha256, evidenceType: record.evidenceType, capturedAt: record.capturedAt, clientTimezone: record.clientTimezone };
 }
 
@@ -563,9 +553,19 @@ async function deleteOfflineAttachment(identity: OfflineIdentity, id: string) {
   if (record?.namespace === namespaceFor(identity)) await deleteRecord(ATTACHMENT_STORE, id);
 }
 
-async function uploadOfflineAttachments(identity: OfflineIdentity, operation: OfflineOperation) {
-  let payload: Record<string, unknown> = {};
-  try { payload = await readQueuedPayload<Record<string, unknown>>(identity, operation.id); } catch { /* payload is re-read by the sync request */ }
+class OfflineSyncHttpError extends Error {
+  status?: number;
+  body: Record<string, unknown>;
+
+  constructor(message: string, status: number | undefined, body: Record<string, unknown> = {}) {
+    super(message);
+    this.name = 'OfflineSyncHttpError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
+async function uploadOfflineAttachments(identity: OfflineIdentity, operation: OfflineOperation, requestIdValue: string) {
   for (const attachmentId of operation.attachmentRefs) {
     const attachment = await readOfflineAttachment(identity, attachmentId);
     const expenseEvidence = operation.kind.startsWith('expense.');
@@ -580,7 +580,7 @@ async function uploadOfflineAttachments(identity: OfflineIdentity, operation: Of
         'content-length': String(attachment.metadata.sizeBytes),
         'x-daenem-device-id': applicationDeviceId(),
         ...(expenseEvidence ? {
-          'x-expense-request-id': String(payload.expenseRequestId || payload.requestId || operation.entityId || ''),
+          'x-expense-request-id': requestIdValue,
           'x-evidence-type': String(attachment.metadata.evidenceType || 'receipt'),
           'x-evidence-name': attachment.metadata.originalName,
           'x-evidence-sha256': attachment.metadata.sha256,
@@ -592,15 +592,19 @@ async function uploadOfflineAttachments(identity: OfflineIdentity, operation: Of
           'x-offline-file-name': attachment.metadata.originalName,
           'x-offline-sha256': attachment.metadata.sha256,
         }),
-        'idempotency-key': operation.idempotencyKey,
+        'idempotency-key': `${operation.idempotencyKey}:evidence:${attachment.metadata.id}`,
       },
       body: attachment.bytes,
     });
-    const body = await response.json().catch(() => ({})) as { error?: string };
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
     if (!response.ok) {
-      const error = new Error(body.error || 'The attachment could not be uploaded yet.') as Error & { status?: number };
-      error.status = response.status;
-      throw error;
+      throw new OfflineSyncHttpError(String(body.error || 'The attachment could not be uploaded yet.'), response.status, body);
+    }
+    if (expenseEvidence) {
+      const acknowledged = body.evidence && typeof body.evidence === 'object' ? body.evidence as Record<string, unknown> : {};
+      if (String(acknowledged.id || '') !== attachment.metadata.id || String(acknowledged.sha256 || '').toLowerCase() !== attachment.metadata.sha256.toLowerCase()) {
+        throw new OfflineSyncHttpError('The server did not acknowledge the evidence hash and identifier exactly.', undefined, { errorCategory: 'evidence-ack-mismatch' });
+      }
     }
     await deleteOfflineAttachment(identity, attachment.metadata.id);
   }
@@ -665,9 +669,79 @@ function openBroadcastChannel() {
 
 export function watchOfflineChanges(listener: () => void) {
   openBroadcastChannel();
-  const handler = (event: MessageEvent) => { if (event.data?.type === 'operation-updated' || event.data?.type === 'attachment-updated') listener(); };
+  const handler = (event: MessageEvent) => { if (event.data?.type === 'operation-updated' || event.data?.type === 'attachment-updated' || event.data?.type === 'sync-finished') listener(); };
+  localChangeListeners.add(listener);
   broadcastChannel?.addEventListener('message', handler);
-  return () => broadcastChannel?.removeEventListener('message', handler);
+  return () => { localChangeListeners.delete(listener); broadcastChannel?.removeEventListener('message', handler); };
+}
+
+async function postOfflineOperation(
+  operation: OfflineOperation,
+  operationId: string,
+  idempotencyKey: string,
+  kind: OfflineOperationKind,
+  entityId: string,
+  payload: Record<string, unknown>,
+) {
+  const response = await fetch('/api/offline/sync', {
+    method: 'POST',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'content-type': 'application/json', 'idempotency-key': idempotencyKey, 'x-daenem-device-id': applicationDeviceId() },
+    body: JSON.stringify({
+      operationId,
+      idempotencyKey,
+      kind,
+      employeeId: operation.employeeId,
+      companyId: operation.companyId,
+      entityType: operation.entityType,
+      entityId,
+      capturedAt: operation.capturedAt,
+      clientTimezone: operation.clientTimezone,
+      payload,
+    }),
+  });
+  const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+  if (!response.ok || !(body.state === 'synced' || body.ok === true)) {
+    throw new OfflineSyncHttpError(String(body.error || 'The server could not accept this work yet.'), response.status, body);
+  }
+  return body;
+}
+
+function resultRequestId(body: Record<string, unknown>, fallback: string) {
+  const result = body.result && typeof body.result === 'object' ? body.result as Record<string, unknown> : {};
+  const receipt = body.receipt && typeof body.receipt === 'object' ? body.receipt as Record<string, unknown> : {};
+  return String(result.requestId || receipt.requestId || body.requestId || fallback || '').trim();
+}
+
+export async function syncExpenseSubmission(identity: OfflineIdentity, operation: OfflineOperation, payload: Record<string, unknown>) {
+  const requestedId = String(payload.requestId || operation.entityId || '').trim();
+  if (!requestedId) throw new OfflineSyncHttpError('The queued expense has no stable request identity.', 422, { errorCategory: 'idempotency' });
+  const draftOperationId = `${operation.id}:draft`;
+  const draftIdempotencyKey = `${operation.idempotencyKey}:draft`;
+  const draftBody = await postOfflineOperation(
+    operation,
+    draftOperationId,
+    draftIdempotencyKey,
+    'expense.draft.save',
+    requestedId,
+    { ...payload, requestId: requestedId, submit: false, attachmentRefs: [] },
+  );
+  const serverDraftId = resultRequestId(draftBody, requestedId);
+  if (!serverDraftId) throw new OfflineSyncHttpError('The server did not acknowledge the expense draft identity.', 503, { errorCategory: 'draft-ack' });
+
+  // Evidence is uploaded only after the server has acknowledged the draft.
+  // A failed upload throws before the final submit, leaving the parent queued.
+  await uploadOfflineAttachments(identity, operation, serverDraftId);
+
+  return postOfflineOperation(
+    operation,
+    operation.id,
+    operation.idempotencyKey,
+    'expense.request.submit',
+    serverDraftId,
+    { ...payload, requestId: serverDraftId, submit: true, attachmentRefs: [] },
+  );
 }
 
 type SyncRunResult = { processed: number; synced: number; needsReview: number; authRequired: number; retryable: number; skipped: boolean };
@@ -687,27 +761,11 @@ export async function syncQueuedOperations(identity: OfflineIdentity, options: {
       await updateStoredOperation(identity, operation.id, { state: 'syncing', attemptCount, lastAttemptedAt: nowIso(), lastErrorCategory: undefined, lastErrorMessage: undefined });
       try {
         const payload = await readQueuedPayload<Record<string, unknown>>(identity, operation.id);
-        const response = await fetch('/api/offline/sync', {
-          method: 'POST',
-          credentials: 'include',
-          cache: 'no-store',
-          headers: { 'content-type': 'application/json', 'idempotency-key': operation.idempotencyKey, 'x-daenem-device-id': applicationDeviceId() },
-          body: JSON.stringify({
-            operationId: operation.id,
-            idempotencyKey: operation.idempotencyKey,
-            kind: operation.kind,
-            employeeId: operation.employeeId,
-            companyId: operation.companyId,
-            entityType: operation.entityType,
-            entityId: operation.entityId,
-            capturedAt: operation.capturedAt,
-            clientTimezone: operation.clientTimezone,
-            payload,
-          }),
-        });
-        const body = await response.json().catch(() => ({})) as Record<string, unknown>;
-        if (response.ok && (body.state === 'synced' || body.ok === true)) {
-          await uploadOfflineAttachments(identity, operation);
+        const body = operation.kind === 'expense.request.submit'
+          ? await syncExpenseSubmission(identity, operation, payload)
+          : await postOfflineOperation(operation, operation.id, operation.idempotencyKey, operation.kind, operation.entityId || '', payload);
+        if (operation.kind !== 'expense.request.submit') await uploadOfflineAttachments(identity, operation, resultRequestId(body, operation.entityId || ''));
+        {
           await updateStoredOperation(identity, operation.id, {
             state: 'synced',
             serverReceipt: (body.receipt || body.result || body) as OfflineReceipt,
@@ -716,20 +774,6 @@ export async function syncQueuedOperations(identity: OfflineIdentity, options: {
             lastErrorMessage: undefined,
           });
           result = { ...result, synced: result.synced + 1 };
-        } else if (response.status === 401 || body.state === 'authentication-required') {
-          await setQueuedState(identity, operation.id, 'authentication-required', 'authentication-required', 'Sign in to continue syncing.');
-          result = { ...result, authRequired: result.authRequired + 1 };
-        } else if (response.status === 403) {
-          await setQueuedState(identity, operation.id, 'needs-review', 'permission-denied', 'Your current permission does not allow this queued action.');
-          result = { ...result, needsReview: result.needsReview + 1 };
-        } else if (response.status === 409) {
-          await setQueuedState(identity, operation.id, 'needs-review', 'conflict', String(body.error || 'The server changed while this work was offline.'));
-          result = { ...result, needsReview: result.needsReview + 1 };
-        } else if (response.status >= 400 && response.status < 500) {
-          await setQueuedState(identity, operation.id, 'needs-review', String(body.errorCategory || 'validation'), String(body.error || 'The server needs this work reviewed.'));
-          result = { ...result, needsReview: result.needsReview + 1 };
-        } else {
-          throw new Error(String(body.error || 'The server could not accept this work yet.'));
         }
       } catch (error) {
         const status = (error as { status?: number }).status;
@@ -762,7 +806,7 @@ export async function syncQueuedOperations(identity: OfflineIdentity, options: {
   const lockResult = await withSyncLock(identity, execute);
   if (!lockResult.acquired) return { ...empty, skipped: true };
   openBroadcastChannel();
-  broadcastChannel?.postMessage({ type: 'sync-finished', namespace });
+  notifyOfflineChange('sync-finished', namespace);
   return result;
 }
 

@@ -153,6 +153,8 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
   const [activityOpen, setActivityOpen] = useState(false);
   const syncInFlight = useRef(false);
   const mounted = useRef(true);
+  const refreshGeneration = useRef(0);
+  const operationsRef = useRef<OfflineOperation[]>([]);
   const lastTelemetryAt = useRef(0);
   const onlineRef = useRef(online);
   const lastSuccessfulRef = useRef(lastSuccessfulSync);
@@ -163,10 +165,21 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
   useEffect(() => { lastSuccessfulRef.current = lastSuccessfulSync; }, [lastSuccessfulSync]);
 
   const refreshOperations = useCallback(async () => {
+    const generation = ++refreshGeneration.current;
     try {
       const lists = await Promise.all(identities.map((identity) => listOfflineOperations(identity)));
       if (!mounted.current) return [];
-      const next = lists.flat().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      const latestById = new Map(operationsRef.current.map((item) => [item.id, item]));
+      for (const item of lists.flat()) {
+        const current = latestById.get(item.id);
+        if (!current || item.updatedAt >= current.updatedAt) latestById.set(item.id, item);
+      }
+      const next = [...latestById.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      // Broadcast notifications and sync completion can cause overlapping
+      // IndexedDB reads. An older read must never put a stale waiting state
+      // back over a newer synced result.
+      if (generation !== refreshGeneration.current) return operationsRef.current;
+      operationsRef.current = next;
       setOperations(next);
       const receiptTimes = next
         .filter((item) => item.state === 'synced')
@@ -175,7 +188,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       if (receiptTimes.length) setLastSuccessfulSync(receiptTimes.sort().at(-1) || null);
       return next;
     } catch {
-      return [];
+      return operationsRef.current;
     }
   }, [identities]);
 
@@ -371,6 +384,15 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
 
   const waitingCount = operations.filter((item) => isPending(item.state)).length;
   const needsAttentionCount = operations.filter((item) => isNeedsAttention(item.state)).length;
+  useEffect(() => {
+    // A sibling React root may complete the shared sync lease. Once this
+    // provider has refreshed the durable queue, do not leave its indicator
+    // stuck on a pre-ACK waiting state.
+    if (!online || waitingCount || needsAttentionCount || status === 'syncing') return;
+    if (operations.some((item) => item.state === 'synced')) {
+      setStatus('synced');
+    }
+  }, [needsAttentionCount, online, operations, status, waitingCount]);
   const value = useMemo<OfflineContextValue>(() => ({
     status,
     online,
@@ -431,7 +453,7 @@ function SyncActivitySheet({ onClose }: { onClose: () => void }) {
       <main className="offline-activity-list">
         {operations.length === 0 ? <div className="offline-empty"><CheckCircle2 size={28} /><strong>No queued sync activity</strong><span>Supported Forms and expense work will appear here after you save or submit it offline.</span></div> : operations.map((operation) => <article className={'offline-activity-row state-' + operation.state} key={operation.id}>
           <div className="offline-row-icon">{operation.state === 'synced' ? <CheckCircle2 size={17} /> : isNeedsAttention(operation.state) ? <AlertCircle size={17} /> : operation.state === 'authentication-required' ? <LockKeyhole size={17} /> : <UploadCloud size={17} />}</div>
-          <div><strong>{operation.kind === 'forms.submit' ? 'Forms submission' : operation.kind === 'expense.draft.save' ? 'Expense draft' : operation.kind === 'expense.evidence.upload' ? 'Expense evidence' : 'Expense request submission'}</strong><span>{operation.state.replaceAll('-', ' ')} · {operation.attemptCount} attempt{operation.attemptCount === 1 ? '' : 's'}</span>{operation.lastErrorMessage && <small>{operation.lastErrorMessage}</small>}<small>Captured on device · {formatTime(operation.capturedAt, operation.clientTimezone)}</small>{operation.serverReceipt?.serverReceivedAt && <small>Received by server · {formatTime(String(operation.serverReceipt.serverReceivedAt), 'Africa/Lagos')}</small>}</div>
+          <div><strong>{operation.kind === 'forms.submit' ? 'Forms submission' : operation.kind === 'expense.draft.save' ? 'Expense draft' : 'Expense request submission'}</strong><span>{operation.state.replaceAll('-', ' ')} · {operation.attemptCount} attempt{operation.attemptCount === 1 ? '' : 's'}</span>{operation.lastErrorMessage && <small>{operation.lastErrorMessage}</small>}<small>Captured on device · {formatTime(operation.capturedAt, operation.clientTimezone)}</small>{operation.serverReceipt?.serverReceivedAt && <small>Received by server · {formatTime(String(operation.serverReceipt.serverReceivedAt), 'Africa/Lagos')}</small>}</div>
           <time>{formatTime(operation.updatedAt)}</time>
         </article>)}
       </main>

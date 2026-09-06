@@ -51,7 +51,7 @@ const uid = (prefix: string) => prefix + '-' + crypto.randomUUID();
 const businessTimezone = (env: OfflineEnv) => env.TIMEZONE || 'Africa/Lagos';
 const owner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
 const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
-const defaultAllowedOperations = ['forms.submit', 'expense.draft.save', 'expense.request.submit', 'expense.evidence.upload'];
+const defaultAllowedOperations = ['forms.submit', 'expense.draft.save', 'expense.request.submit'];
 const operationKinds = new Set(defaultAllowedOperations);
 
 function companyInScope(context: SessionContext, companyId: string) {
@@ -222,9 +222,6 @@ async function bootstrap(request: Request, env: OfflineEnv, context: SessionCont
         : []),
       ...(canSubmitExpenses && policy.allowedOperations.includes('expense.request.submit')
         ? [{ kind: 'expense.request.submit', mode: 'draft-and-submit', permission: 'expense.requests' }]
-        : []),
-      ...(canSubmitExpenses && policy.allowedOperations.includes('expense.evidence.upload')
-        ? [{ kind: 'expense.evidence.upload', mode: 'attachment-after-reconnect', permission: 'expense.requests' }]
         : []),
     ],
   });
@@ -484,7 +481,7 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
           : undefined;
         const requestIdValue = safeText(requestRecord?.id || responseBody.requestId || payload.requestId || body.entityId, 160);
         const status = safeText(requestRecord?.status || responseBody.status, 80)
-          || (kind === 'expense.draft.save' ? 'draft' : kind === 'expense.evidence.upload' ? 'evidence-queued' : 'submitted');
+          || (kind === 'expense.draft.save' ? 'draft' : 'submitted');
         const deduplicated = responseBody.deduplicated === true;
         const result = { ok: true, requestId: requestIdValue, status, deduplicated };
         await updateReceipt(env, String(receipt.id), 'completed', result, undefined, requestIdValue || undefined);

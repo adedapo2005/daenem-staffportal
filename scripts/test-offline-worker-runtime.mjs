@@ -11,7 +11,7 @@ const repositoryConfig = path.join(root, 'wrangler.jsonc');
 const testConfig = path.join(root, '.wrangler-offline-runtime-test.jsonc');
 const databaseName = 'daenem-offline-runtime-test';
 const pepper = 'offline-runtime-test-pepper';
-const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const wrangler = path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'wrangler.cmd' : 'wrangler');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const requestTimeoutMs = 10_000;
 const readinessTimeoutMs = 1_000;
@@ -27,7 +27,7 @@ function sha256(value) {
 
 function runWrangler(args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(npx, ['--no-install', 'wrangler', ...args], {
+    const child = spawn(wrangler, args, {
       cwd: root,
       env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -232,7 +232,7 @@ async function main() {
     await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', seed]);
     console.log('offline runtime test: starting actual Worker runtime');
 
-    runtime = spawn(npx, ['--no-install', 'wrangler', 'dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], {
+    runtime = spawn(wrangler, ['dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], {
       cwd: root,
       env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
       stdio: ['ignore', 'pipe', 'pipe'],

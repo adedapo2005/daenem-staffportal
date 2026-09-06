@@ -33,6 +33,7 @@
     "qa:offline-sync": "node scripts/render-offline-qa.mjs",
     "test:offline-worker-runtime": "node scripts/test-offline-worker-runtime.mjs",
     "check:spend-foundation": "node scripts/check-spend-foundation.mjs",
+    "test:spend-recovery": "node scripts/test-spend-recovery-contracts.mjs",
     "test:spend-worker-runtime": "node scripts/test-spend-worker-runtime.mjs",
     "qa:spend-foundation": "node scripts/render-spend-qa.mjs"
   },

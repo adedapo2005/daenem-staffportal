@@ -58,11 +58,14 @@ must(serviceWorker.includes("pathname.startsWith('/api/')") && serviceWorker.inc
 must(!serviceWorker.includes('cache.put(request, copy)'), 'service worker must not cache arbitrary authenticated responses');
 must(!read('src/signin-experience.tsx').includes('offline'), 'sign-in composition contains no offline UI');
 
-try {
-  const changed = execFileSync('git', ['diff', '--name-only', '40a96e1cbd89f5570197a8e7c0c5380ba4b2479b...HEAD'], { encoding: 'utf8' });
-  must(!changed.split(/\r?\n/).some((file) => /signin-experience\.(tsx|css)$/.test(file)), 'accepted sign-in visual files changed');
-} catch (error) {
-  if (error?.status !== undefined) throw error;
+if (fs.existsSync(path.join(root, '.git'))) {
+  try {
+    const changed = execFileSync('git', ['diff', '--name-only', '40a96e1cbd89f5570197a8e7c0c5380ba4b2479b...HEAD'], { encoding: 'utf8' });
+    must(!changed.split(/\r?\n/).some((file) => /signin-experience\.(tsx|css)$/.test(file)), 'accepted sign-in visual files changed');
+  } catch (error) {
+    const gitMessage = [error?.stderr, error?.stdout, ...(error?.output || [])].filter(Boolean).join('\n');
+    if (error?.status !== undefined && !/not a git repository/i.test(gitMessage)) throw error;
+  }
 }
 
 console.log('OFFLINE_SYNC_CONTRACTS=PASS');

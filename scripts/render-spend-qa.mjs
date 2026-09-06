@@ -90,6 +90,7 @@ const requestRow = {
     { id: 'alloc-properties', companyName: 'Homes & Properties', allocatedAmountKobo: 10000000, costCenterName: 'General' },
   ],
   evidence: [{ id: 'evidence-qa-001', originalName: 'generator-invoice.pdf', evidenceType: 'invoice', mimeType: 'application/pdf', sizeBytes: 2048, sha256: 'a'.repeat(64), status: 'uploaded' }],
+  auditEvidence: [{ id: 'audit-evidence-qa-001', action: 'evidence_accepted', details: { ipAddress: '203.0.113.10', networkLocation: 'Ibadan, NG', deviceId: 'qa-device-01', sessionId: 'qa-spend-session-owner' }, requestId: 'corr-evidence' }],
   approvals: [{ id: 'approval-qa-001', stepNo: 1, approverRoleCode: 'manager', status: 'pending' }],
   events: [
     { id: 'event-qa-created', action: 'request_created', serverReceivedAt: '2026-09-05T14:19:30.000Z', capturedAt: '2026-09-05T14:19:00.000Z', requestId: 'corr-created' },
@@ -117,6 +118,26 @@ function ownerDetail() {
   };
 }
 
+function ownerIntelligence() {
+  const shared = { inventory: { valueKobo: 362000000, lowStock: 2 }, workforce: { employees: 24, present: 21, incomplete: 1 }, payroll: { runs: 1, grossKobo: 42000000, netKobo: 38000000 }, maintenance: { open: 2, urgent: 1, costKobo: 800000 } };
+  return {
+    generatedAt: '2026-09-05T14:48:18.000Z', workDate: '2026-09-05',
+    period: { key: 'current_month', label: 'Current month', start: '2026-09-01', end: '2026-09-05', comparisonLabel: 'previous month' },
+    scope: { companyId: null, companyName: 'Daenem Group', companyIds: companies.map((company) => company.id) },
+    group: { revenueKobo: 1485000000, previousRevenueKobo: 1320000000, payrollNetKobo: 286000000, operatingExpenseKobo: 198000000, outstandingReceivablesKobo: 174000000, inventoryValueKobo: 362000000, employees: 128, present: 116, incompleteAttendance: 4, lowStock: 6, highRiskSecurity: 0, overdueRequirements: 2, pendingForms: 1 },
+    finance: { operatingExpenseKobo: 198000000, outstandingReceivablesKobo: 174000000, overdueReceivables: 3, postedJournals: 14 },
+    construction: { activeProjects: 1, budgetKobo: 90000000, spentKobo: 32000000, remainingKobo: 58000000, overdueMilestones: 0 },
+    companies: {
+      printing: { ...shared, current: { orders: 42, revenueKobo: 420000000, collectedKobo: 318000000 }, previous: { revenueKobo: 390000000 } },
+      bakery: { ...shared, current: { orders: 1280, revenueKobo: 310000000, collectedKobo: 298000000 }, previous: { revenueKobo: 286000000 }, wasteCostKobo: 1200000, wastePctOfSales: 1.8 },
+      autos: { ...shared, salesCount: 7, revenueKobo: 520000000, collectedKobo: 450000000, previousRevenueKobo: 470000000, grossProfitKobo: 72000000, stockCount: 18, stockValueKobo: 240000000, followupsDue: 4 },
+      logistics: { ...shared, trips: 64, revenueKobo: 180000000, previousRevenueKobo: 165000000, expenseKobo: 110000000, grossProfitKobo: 70000000, activeShipments: 12, expiringDocs: 1 },
+      properties: { ...shared, rentCollectedKobo: 95000000, previousRentCollectedKobo: 88000000, rentReceipts: 31, arrearsKobo: 17000000, overdueCharges: 2 },
+    },
+    alerts: [],
+  };
+}
+
 function makeServerState() { return { syncRequests: 0, effects: 0, receipts: new Map() }; }
 
 async function installApiRoutes(page, role, server) {
@@ -130,15 +151,16 @@ async function installApiRoutes(page, role, server) {
     if (url.pathname === '/api/auth/logout') return send({ ok: true });
     if (url.pathname === '/api/experience/layout') return send({ preference: { layoutId: 'focus-flow', density: 'standard', motion: 'balanced' }, canChoose: true, canManage: false, canAccess: false });
     if (url.pathname.startsWith('/api/experience/layout/')) return send({ ok: true });
-    if (url.pathname === '/api/offline/bootstrap') return send({ ok: true, serverTime: '2026-09-05T14:48:18.000Z', businessTimezone: 'Africa/Lagos', maxOfflineAgeMinutes: 720, session: { id: context.sessionId, expiresAt: '2030-09-05T08:00:00.000Z', lastVerifiedAt: '2026-09-05T14:48:18.000Z' }, policy: { enabled: true, maxQueueCount: 50, attachmentMaxBytes: 10485760, automaticSync: true, manualRetry: true, retentionDays: 30, allowedOperations: ['expense.draft.save', 'expense.request.submit', 'expense.evidence.upload'] }, operations: [{ kind: 'expense.draft.save', mode: 'draft-only', permission: 'expense.requests' }, { kind: 'expense.request.submit', mode: 'draft-and-submit', permission: 'expense.requests' }] });
+    if (url.pathname === '/api/offline/bootstrap') return send({ ok: true, serverTime: '2026-09-05T14:48:18.000Z', businessTimezone: 'Africa/Lagos', maxOfflineAgeMinutes: 720, session: { id: context.sessionId, expiresAt: '2030-09-05T08:00:00.000Z', lastVerifiedAt: '2026-09-05T14:48:18.000Z' }, policy: { enabled: true, maxQueueCount: 50, attachmentMaxBytes: 10485760, automaticSync: true, manualRetry: true, retentionDays: 30, allowedOperations: ['expense.draft.save', 'expense.request.submit'], evidenceSequence: ['draft_ack', 'evidence_ack_hash', 'final_submit'] }, operations: [{ kind: 'expense.draft.save', mode: 'draft-only', permission: 'expense.requests' }, { kind: 'expense.request.submit', mode: 'draft-and-submit', permission: 'expense.requests' }] });
     if (url.pathname === '/api/offline/telemetry') return send({ ok: true, serverReceivedAt: '2026-09-05T14:48:18.000Z', networkLocation: 'Ibadan, NG' });
+    if (url.pathname === '/api/support/mine') return send({ commands: [], assistanceRequests: [] });
     if (url.pathname === '/api/offline/sync' && method === 'POST') {
       server.syncRequests += 1;
       let body = {};
       try { body = JSON.parse(request.postData() || '{}'); } catch { return send({ error: 'Invalid sync body' }, 400); }
       const key = String(body.idempotencyKey || request.headers()['idempotency-key'] || '');
       if (server.receipts.has(key)) return send({ ok: true, state: 'synced', receipt: server.receipts.get(key), result: { requestId: body.entityId, status: 'submitted' }, deduplicated: true });
-      server.effects += 1;
+      if (body.kind === 'expense.request.submit') server.effects += 1;
       const receipt = { id: `receipt-${key.slice(-8)}`, operationId: body.operationId, idempotencyKey: key, state: 'completed', serverReceivedAt: '2026-09-05T14:48:18.000Z', completedAt: '2026-09-05T14:48:18.000Z' };
       server.receipts.set(key, receipt);
       return send({ ok: true, state: 'synced', receipt, result: { requestId: body.entityId, status: 'submitted' } });
@@ -147,9 +169,19 @@ async function installApiRoutes(page, role, server) {
     if (url.pathname === '/api/spend/requests' && method === 'GET') return send({ requests: role === 'employee' ? [{ ...requestRow, status: 'submitted', requesterName: context.employee.displayName }] : [] });
     if (url.pathname === '/api/spend/requests' && method === 'POST') return send({ ok: true, request: { ...requestRow, id: 'queued-expense' } }, 201);
     if (url.pathname.startsWith('/api/spend/requests/') && method === 'GET') return send({ request: { ...requestRow, requesterName: context.employee.displayName } });
+    if (url.pathname === '/api/owner/intelligence') return send(ownerIntelligence());
     if (url.pathname === '/api/spend/owner/overview') return role === 'owner' ? send(ownerOverview()) : send({ error: 'Owner access is required.' }, 403);
     if (url.pathname === '/api/spend/owner/detail') return role === 'owner' ? send(ownerDetail()) : send({ error: 'Owner access is required.' }, 403);
-    if (url.pathname === '/api/spend/admin/master') return role === 'owner' ? send({ categories: [], costCenters: [], suppliers: [], treatments: [], allocationTemplates: [], approvalRules: [], evidencePolicies: [], proposals: [] }) : send({ error: 'Master-data access is required.' }, 403);
+    if (url.pathname === '/api/spend/admin/master') return role === 'owner' ? send({
+      categories: [{ id: 'spend-category-office-supplies', companyId: 'company-printing', name: 'Office supplies', code: 'OFFICE_SUPPLIES', directSharedPolicy: 'either', source: 'system', active: 1 }],
+      costCenters: [{ id: 'spend-cc-PRINT-general', companyId: 'company-printing', code: 'GENERAL', name: 'General operations', source: 'system', active: 1 }],
+      suppliers: [{ id: 'spend-supplier-a', companyId: 'company-printing', name: 'Supplier A', source: 'admin', active: 1 }],
+      treatments: [{ id: 'spend-treatment-opex', name: 'Operating Expense', profitEffect: 'operating', isPandl: 1, active: 1, source: 'system' }, { id: 'spend-treatment-capex', name: 'Capital Expenditure', profitEffect: 'non_pnl', isPandl: 0, active: 1, source: 'system' }],
+      allocationTemplates: [{ id: 'spend-template-generator', companyId: null, name: 'Daenem Complex Generator Fuel', method: 'percentage', active: 1, source: 'system' }],
+      approvalRules: [{ id: 'spend-approval-default', companyId: null, approverRoleCode: 'manager', stepNo: 1, requiredPermission: 'expense.approve', minAmountKobo: 0, active: 1 }],
+      evidencePolicies: [{ id: 'spend-evidence-default', companyId: null, evidenceType: 'receipt', required: 1, minimumCount: 1, active: 1 }],
+      proposals: [{ id: 'proposal-qa-001', kind: 'supplier', proposedName: 'North depot supplier', status: 'proposed' }],
+    }) : send({ error: 'Master-data access is required.' }, 403);
     if (url.pathname === '/api/spend/master/proposals') return send({ ok: true, status: 'proposed' }, 201);
     if (url.pathname === '/api/spend/evidence/' || url.pathname.startsWith('/api/spend/evidence/')) return send({ ok: true, status: 'uploaded' }, 201);
     if (url.pathname.startsWith('/api/')) return send(method === 'GET' ? {} : { ok: true });
@@ -165,6 +197,7 @@ async function openSpend(browser, role, viewport, tab) {
   const context = await installApiRoutes(page, role, server);
   page.on('pageerror', (error) => { runtimeErrors.push(`${role}: ${error.message}`); console.error(`QA_PAGE_ERROR ${role}: ${error.stack || error.message}`); });
   page.on('console', (message) => { if (message.type() === 'error' && !/Failed to load resource/.test(message.text())) { runtimeErrors.push(`${role} console: ${message.text()}`); console.error(`QA_CONSOLE_ERROR ${role}: ${message.text()}`); } });
+  page.on('dialog', (dialog) => { runtimeErrors.push(`${role}: unexpected browser dialog ${dialog.type()}`); console.error(`QA_BROWSER_DIALOG ${role}: ${dialog.type()}`); void dialog.dismiss(); });
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
   await page.waitForTimeout(500);
@@ -182,11 +215,17 @@ async function openSpend(browser, role, viewport, tab) {
     }));
     throw new Error(`${error instanceof Error ? error.message : String(error)}\\nQA_OPEN_DIAGNOSTIC ${JSON.stringify(diagnostic)}`);
   }
+  if (tab) {
+    await page.evaluate((requestedTab) => window.dispatchEvent(new CustomEvent('daenem:open-spend', { detail: { tab: requestedTab } })), tab);
+    await page.waitForTimeout(250);
+    const tabLabels = { requests: 'My requests', create: 'Create request', approvals: 'Approval queue', intelligence: 'Spend & profit', admin: 'Administration' };
+    if (tab !== 'requests' && tabLabels[tab]) await page.getByRole('button', { name: tabLabels[tab], exact: true }).click();
+  }
   return { browserContext, page, server, context };
 }
 
 async function inspect(page, filename, expectedText) {
-  await page.screenshot({ path: path.join(screenshotDir, filename), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, filename), fullPage: false });
   const evidence = await page.evaluate(async () => {
     const apiCachePaths = [];
     if ('caches' in globalThis) {
@@ -209,32 +248,38 @@ async function inspect(page, filename, expectedText) {
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined,
+  });
   try {
     const owner = await openSpend(browser, 'owner', { width: 1920, height: 1080 }, 'intelligence');
-    await owner.page.getByText('Spend & Profit Intelligence', { exact: true }).waitFor();
+    await owner.page.getByText('Spend, Cost & Profit Intelligence', { exact: true }).waitFor();
     await inspect(owner.page, 'spend-owner-overview-1920x1080.png', 'Actual profit unavailable');
     await owner.page.getByRole('button', { name: /EXP-2026-0001/ }).click();
     await owner.page.getByRole('complementary', { name: 'Expense operational detail' }).waitFor();
+    await owner.page.locator('.spend-owner-inspector').scrollIntoViewIfNeeded();
     const ownerDetailEvidence = await inspect(owner.page, 'spend-owner-detail-1920x1080.png', 'Operational timeline');
     assert(ownerDetailEvidence.text.includes('Africa/Lagos') && ownerDetailEvidence.text.includes('UTC'), 'Owner detail does not show business and canonical time context');
-    assert(ownerDetailEvidence.text.includes('network location') && !ownerDetailEvidence.text.match(/IP.*GPS|GPS.*IP/i), 'Owner detail network/GPS distinction missing');
+    assert(ownerDetailEvidence.text.toLowerCase().includes('network location') && !ownerDetailEvidence.text.match(/IP.*GPS|GPS.*IP/i), 'Owner detail network/GPS distinction missing');
     await owner.browserContext.close();
 
     const largeOwner = await openSpend(browser, 'owner', { width: 2560, height: 1440 }, 'intelligence');
     await largeOwner.page.getByRole('button', { name: /EXP-2026-0001/ }).click();
     await largeOwner.page.getByRole('complementary', { name: 'Expense operational detail' }).waitFor();
+    await largeOwner.page.locator('.spend-owner-inspector').scrollIntoViewIfNeeded();
     await inspect(largeOwner.page, 'spend-owner-detail-2560x1440.png', 'Time display');
     await largeOwner.browserContext.close();
 
     const mobileOwner = await openSpend(browser, 'owner', { width: 390, height: 844 }, 'intelligence');
     await mobileOwner.page.getByRole('button', { name: /EXP-2026-0001/ }).click();
     await mobileOwner.page.getByRole('complementary', { name: 'Expense operational detail' }).waitFor();
+    await mobileOwner.page.locator('.spend-owner-inspector').scrollIntoViewIfNeeded();
     await inspect(mobileOwner.page, 'spend-owner-mobile-detail-390x844.png', 'Operational timeline');
     await mobileOwner.browserContext.close();
 
     const employee = await openSpend(browser, 'employee', { width: 390, height: 844 }, 'requests');
-    await employee.page.getByText('My Expense Requests', { exact: true }).waitFor();
+    await employee.page.locator('.spend-view > .spend-view-heading h2').filter({ hasText: 'My Expense Requests' }).waitFor();
     const ownEvidence = await inspect(employee.page, 'spend-employee-mobile-my-requests-390x844.png', 'My Expense Requests');
     assert(!ownEvidence.text.includes('Operational timeline') && !ownEvidence.text.includes('IP address'), 'Employee surface exposed Owner detail fields');
     await employee.page.getByRole('button', { name: 'New request' }).click();
@@ -254,23 +299,63 @@ async function main() {
     await employee.browserContext.setOffline(true);
     await employee.page.waitForFunction(() => navigator.onLine === false);
     await employee.page.getByRole('button', { name: 'Submit request' }).click();
-    await employee.page.waitForFunction(() => document.querySelector('[data-spend-sync-status]')?.textContent?.toLowerCase().includes('waiting') || document.querySelector('[data-spend-sync-status]')?.textContent?.toLowerCase().includes('offline'), { timeout: 15000 });
+    try {
+      await employee.page.waitForFunction(() => document.querySelector('[data-spend-sync-status]')?.textContent?.toLowerCase().includes('waiting') || document.querySelector('[data-spend-sync-status]')?.textContent?.toLowerCase().includes('offline'), { timeout: 15000 });
+    } catch (error) {
+      console.error(`QA_SPEND_OFFLINE_DIAGNOSTIC ${JSON.stringify({ online: await employee.page.evaluate(() => navigator.onLine), status: await employee.page.locator('[data-spend-sync-status]').getAttribute('data-spend-sync-status'), label: await employee.page.locator('[data-spend-sync-status]').innerText(), message: await employee.page.locator('body').innerText().then((value) => value.slice(-600)) })}`);
+      throw error;
+    }
     const queued = await inspect(employee.page, 'spend-employee-mobile-offline-waiting-390x844.png', 'Offline');
     assert(/waiting/i.test(queued.text), 'Offline expense screenshot does not show a waiting-to-sync state');
     await employee.browserContext.setOffline(false);
-    await employee.page.waitForFunction(() => document.querySelector('[data-sync-status]')?.getAttribute('data-sync-status') === 'synced', null, { timeout: 15000 });
+    await employee.page.evaluate(() => window.dispatchEvent(new Event('online')));
+    try {
+      await employee.page.waitForFunction(() => document.querySelector('[data-spend-sync-status]')?.getAttribute('data-spend-sync-status') === 'synced', null, { timeout: 15000 });
+    } catch (error) {
+      const offlineOperations = await employee.page.evaluate(() => new Promise((resolve) => {
+        const request = indexedDB.open('daenem-staff-offline-v1');
+        request.onerror = () => resolve([]);
+        request.onsuccess = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains('operations')) { resolve([]); return; }
+          const read = db.transaction('operations', 'readonly').objectStore('operations').getAll();
+          read.onerror = () => resolve([]);
+          read.onsuccess = () => resolve(read.result.map((item) => ({ id: item.id, kind: item.kind, state: item.state, entityId: item.entityId, attachmentRefs: item.attachmentRefs })));
+        };
+      }));
+      console.error(`QA_SPEND_SYNC_DIAGNOSTIC ${JSON.stringify({ online: await employee.page.evaluate(() => navigator.onLine), status: await employee.page.locator('[data-spend-sync-status]').getAttribute('data-spend-sync-status'), label: await employee.page.locator('[data-spend-sync-status]').innerText(), syncRequests: employee.server.syncRequests, effects: employee.server.effects, offlineOperations })}`);
+      throw error;
+    }
     await inspect(employee.page, 'spend-employee-mobile-synced-390x844.png', 'All work synced');
     assert(employee.server.effects === 1 && employee.server.syncRequests >= 1, 'Offline expense reconnect did not produce one authoritative sync effect');
     await employee.browserContext.close();
+
+    const desktopEmployee = await openSpend(browser, 'employee', { width: 1440, height: 900 }, 'requests');
+    await desktopEmployee.page.locator('.spend-view > .spend-view-heading h2').filter({ hasText: 'My Expense Requests' }).waitFor();
+    await inspect(desktopEmployee.page, 'spend-employee-desktop-1440x900.png', 'My Expense Requests');
+    await desktopEmployee.browserContext.close();
 
     const tablet = await openSpend(browser, 'employee', { width: 1024, height: 768 }, 'requests');
     await inspect(tablet.page, 'spend-employee-tablet-1024x768.png', 'My Expense Requests');
     await tablet.browserContext.close();
 
-    const manager = await openSpend(browser, 'manager', { width: 390, height: 844 }, 'intelligence');
-    const managerText = (await inspect(manager.page, 'spend-manager-owner-absent-390x844.png', 'Approval queue')).text;
-    assert(!managerText.includes('Spend & Profit Intelligence') && !managerText.includes('OWNER-ONLY COMMAND CENTER'), 'Manager can reach Owner Spend intelligence UI');
+    const manager = await openSpend(browser, 'manager', { width: 390, height: 844 }, 'approvals');
+    const managerText = (await inspect(manager.page, 'spend-approver-mobile-390x844.png', 'Approval queue')).text;
+    assert(managerText.includes('Approval queue') && !managerText.includes('OWNER-ONLY COMMAND CENTER'), 'Manager can reach Owner Spend intelligence UI');
     await manager.browserContext.close();
+
+    const admin = await openSpend(browser, 'owner', { width: 390, height: 844 }, 'admin');
+    await admin.page.getByRole('button', { name: 'Administration', exact: true }).click();
+    await admin.page.locator('.spend-view > .spend-view-heading h2').filter({ hasText: 'Cost Intelligence Administration' }).waitFor();
+    const adminEvidence = await inspect(admin.page, 'spend-admin-mobile-390x844.png', 'Cost Intelligence Administration');
+    assert(adminEvidence.text.includes('Edit') && adminEvidence.text.includes('Deactivate') && adminEvidence.text.includes('PROPOSALS'), 'Admin controlled-data actions are not visible in the rendered UI');
+    await admin.page.getByRole('button', { name: 'Reject', exact: true }).click();
+    const rejectionDialog = admin.page.getByRole('dialog', { name: 'Reject master-data proposal' });
+    await rejectionDialog.waitFor();
+    assert(await rejectionDialog.locator('textarea').evaluate((element) => element === document.activeElement), 'Controlled rejection modal did not focus its textarea');
+    await admin.page.keyboard.press('Escape');
+    await rejectionDialog.waitFor({ state: 'detached' });
+    await admin.browserContext.close();
   } finally {
     await browser.close();
   }

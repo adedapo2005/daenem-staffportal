@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   AlertTriangle, Building2, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
@@ -118,11 +118,12 @@ function Launcher() {
   if (!context) return null;
   const visible = isOwner(context) || context.companies.some((company) => can(context, 'expense.requests', 'create', company.id) || can(context, 'expense.own', 'view', company.id) || can(context, 'expense.approve', 'view', company.id) || can(context, 'expense.master', 'manage', company.id));
   if (!visible) return null;
+  // This lazy entry is mounted in its own React root, so the authenticated
+  // shell provider cannot cross into it. Keep one provider for this entry
+  // root and let the visible Spend workspace consume that same instance.
   return <OfflinePlatformProvider context={context}>
-    <>
-      <button type="button" className="spend-launcher" onClick={() => { setTab('requests'); setOpen(true); }}><WalletCards size={18} /><span>Spend & costs</span></button>
-      {open && <SpendCenter context={context} initialTab={tab} onClose={() => setOpen(false)} />}
-    </>
+    <button type="button" className="spend-launcher" onClick={() => { setTab('requests'); setOpen(true); }}><WalletCards size={18} /><span>Spend & costs</span></button>
+    {open && <SpendCenter context={context} initialTab={tab} onClose={() => setOpen(false)} />}
   </OfflinePlatformProvider>;
 }
 
@@ -133,6 +134,100 @@ function AccessNotice({ children }: { children: string }) {
 function StatusPill({ status }: { status: unknown }) {
   const label = text(status).replaceAll('_', ' ').replaceAll('-', ' ');
   return <span className={'spend-status spend-status-' + text(status)}>{label || 'unknown'}</span>;
+}
+
+function TextEntryDialog({
+  open,
+  title,
+  description,
+  label,
+  placeholder,
+  submitLabel,
+  danger = false,
+  initialValue = '',
+  onCancel,
+  onSubmit,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  label: string;
+  placeholder: string;
+  submitLabel: string;
+  danger?: boolean;
+  initialValue?: string;
+  onCancel: () => void;
+  onSubmit: (value: string) => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const [validation, setValidation] = useState('');
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const cancelRef = useRef(onCancel);
+  useEffect(() => { cancelRef.current = onCancel; }, [onCancel]);
+  useEffect(() => {
+    if (!open) return undefined;
+    setValue(initialValue);
+    setValidation('');
+    const previous = document.activeElement as HTMLElement | null;
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 0);
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') cancelRef.current(); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('keydown', onKeyDown);
+      if (previous && typeof previous.focus === 'function') window.setTimeout(() => previous.focus(), 0);
+    };
+  }, [open, initialValue]);
+  if (!open) return null;
+  const submit = () => {
+    const trimmed = value.trim();
+    if (trimmed.length < 3) { setValidation('Enter at least 3 characters so the reviewer has useful context.'); return; }
+    onSubmit(trimmed);
+  };
+  return <div className="spend-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+    <div className="spend-dialog" role="dialog" aria-modal="true" aria-labelledby="spend-dialog-title" aria-describedby="spend-dialog-description" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="spend-dialog-heading"><div><span className="eyebrow">CONTROLLED INPUT</span><h2 id="spend-dialog-title">{title}</h2><p id="spend-dialog-description">{description}</p></div><button type="button" className="spend-dialog-close" onClick={onCancel} aria-label="Close dialog"><X size={18} /></button></div>
+      <label><span>{label}</span><textarea ref={inputRef} value={value} onChange={(event) => { setValue(event.target.value); setValidation(''); }} placeholder={placeholder} rows={5} aria-invalid={Boolean(validation)} aria-describedby={validation ? 'spend-dialog-error' : undefined} /></label>
+      {validation && <p id="spend-dialog-error" className="spend-dialog-error" role="alert">{validation}</p>}
+      <div className="spend-dialog-actions"><button type="button" className="spend-secondary" onClick={onCancel}>Cancel</button><button type="button" className={danger ? 'spend-danger' : 'spend-primary'} onClick={submit}>{submitLabel}</button></div>
+    </div>
+  </div>;
+}
+
+type AdminMasterKind = 'category' | 'supplier' | 'cost_center' | 'template' | 'approval_rule' | 'evidence_policy';
+type AdminMasterAction = 'edit' | 'activate' | 'deactivate' | 'merge';
+type MasterActionPayload = { action: AdminMasterAction; name?: string; requiredPermission?: string; evidenceType?: string; reason?: string; replacementId?: string };
+
+function AdminMasterControls({ kind, item, options, onMutate }: { kind: AdminMasterKind; item: RequestRow; options: RequestRow[]; onMutate: (payload: MasterActionPayload) => void }) {
+  const [mode, setMode] = useState<AdminMasterAction | null>(null);
+  const [replacementId, setReplacementId] = useState('');
+  const [editName, setEditName] = useState(text(item.name));
+  const [editReason, setEditReason] = useState('');
+  const active = Number(item.active) === 1;
+  const mergeable = ['category', 'supplier', 'cost_center'].includes(kind);
+  const editLabel = kind === 'approval_rule' ? 'Required permission' : kind === 'evidence_policy' ? 'Evidence type' : 'New name';
+  const editValue = kind === 'approval_rule' ? text(item.requiredPermission || 'expense.approve') : kind === 'evidence_policy' ? text(item.evidenceType || 'receipt') : text(item.name);
+  const replacementOptions = options.filter((candidate) => text(candidate.id) !== text(item.id) && Number(candidate.active) === 1 && text(candidate.companyId) === text(item.companyId));
+  const submitReasonedAction = (reason: string) => {
+    if (!mode || mode === 'edit') return;
+    onMutate({ action: mode, reason, replacementId: mode === 'merge' ? replacementId : undefined });
+    setMode(null);
+    setReplacementId('');
+  };
+  const submitEdit = () => {
+    if (editName.trim().length < 2 || editReason.trim().length < 3) return;
+    onMutate({ action: 'edit', ...(kind === 'approval_rule' ? { requiredPermission: editName.trim() } : kind === 'evidence_policy' ? { evidenceType: editName.trim() } : { name: editName.trim() }), reason: editReason.trim() });
+    setMode(null);
+    setEditReason('');
+  };
+  return <div className="spend-admin-controls">
+    <button type="button" className="spend-text-action" onClick={() => { setEditName(editValue); setMode('edit'); }}>Edit</button>
+    <button type="button" className="spend-text-action" onClick={() => setMode(active ? 'deactivate' : 'activate')}>{active ? 'Deactivate' : 'Activate'}</button>
+    {mergeable && active && <button type="button" className="spend-text-action" onClick={() => { setReplacementId(''); setMode('merge'); }}>Merge</button>}
+    {mode === 'edit' && <div className="spend-admin-inline-form"><label><span>{editLabel}</span>{kind === 'evidence_policy' ? <select value={editName} onChange={(event) => setEditName(event.target.value)}><option value="receipt">Receipt</option><option value="invoice">Invoice</option><option value="quote">Quote</option><option value="delivery_note">Delivery note</option><option value="payment_evidence">Payment evidence</option><option value="other">Other</option></select> : <input value={editName} onChange={(event) => setEditName(event.target.value)} />}</label><label><span>Reason</span><textarea value={editReason} onChange={(event) => setEditReason(event.target.value)} placeholder="Why is this controlled value changing?" rows={2} /></label><div><button type="button" className="spend-secondary" onClick={() => setMode(null)}>Cancel</button><button type="button" className="spend-primary" disabled={editName.trim().length < 2 || editReason.trim().length < 3} onClick={submitEdit}>Save edit</button></div></div>}
+    <TextEntryDialog open={mode === 'activate' || mode === 'deactivate' || (mode === 'merge' && Boolean(replacementId))} title={mode === 'merge' ? 'Merge controlled value' : mode === 'activate' ? 'Activate controlled value' : 'Deactivate controlled value'} description={mode === 'merge' ? 'The old value remains historical and the selected replacement becomes canonical.' : mode === 'activate' ? 'Confirm why this value is becoming selectable again.' : 'The value will stop being selectable while historical references remain intact.'} label="Audit reason" placeholder={mode === 'merge' ? 'Explain why the replacement is the canonical value.' : 'Explain the controlled-data change.'} submitLabel={mode === 'merge' ? 'Merge and supersede' : mode === 'activate' ? 'Activate value' : 'Deactivate value'} danger={mode === 'deactivate' || mode === 'merge'} onCancel={() => setMode(null)} onSubmit={submitReasonedAction} />
+    {mode === 'merge' && !replacementId && <div className="spend-admin-inline-form"><label><span>Replacement value</span><select value={replacementId} onChange={(event) => setReplacementId(event.target.value)}><option value="">Select active replacement</option>{replacementOptions.map((candidate) => <option key={text(candidate.id)} value={text(candidate.id)}>{text(candidate.name)}</option>)}</select></label><button type="button" className="spend-secondary" onClick={() => setMode(null)}>Cancel merge</button></div>}
+  </div>;
 }
 
 function SpendCenter({ context, initialTab, onClose }: { context: WorkforceContext; initialTab: Tab; onClose: () => void }) {
@@ -183,7 +278,7 @@ function SpendCenter({ context, initialTab, onClose }: { context: WorkforceConte
   return <div className="spend-backdrop" role="presentation" onClick={onClose}>
     <section className="spend-shell" role="dialog" aria-modal="true" aria-labelledby="spend-title" onClick={(event) => event.stopPropagation()}>
       <header className="spend-header">
-        <div><span className="eyebrow">DAENEM GROUP · SHARED SPEND ENGINE</span><h1 id="spend-title">Spend, Cost & Profit Intelligence</h1><p>Requests, evidence and controlled allocation in one accountable workflow.</p></div>
+        <div><span className="eyebrow">DAENEM GROUP · SHARED SPEND ENGINE</span><h2 id="spend-title">Spend, Cost & Profit Intelligence</h2><p>Requests, evidence and controlled allocation in one accountable workflow.</p></div>
         <button type="button" className="spend-close" onClick={onClose} aria-label="Close Spend and Cost workspace"><X size={20} /></button>
       </header>
       <div className="spend-toolbar">
@@ -229,32 +324,52 @@ function CreateView({ context, companyId, master, erpModule }: { context: Workfo
       return !Array.isArray(allowed) || allowed.length === 0 || allowed.map(String).includes(erpModule);
     } catch { return true; }
   }), [data.categories, erpModule]);
+  const primaryCostCenters = useMemo(() => data.costCenters.filter((item) => !item.companyId || text(item.companyId) === companyId), [data.costCenters, companyId]);
   const [step, setStep] = useState(1);
   const [requestId] = useState(() => idFor('expense-draft'));
   const [amount, setAmount] = useState('');
   const [purpose, setPurpose] = useState('');
   const [businessReason, setBusinessReason] = useState('');
   const [categoryId, setCategoryId] = useState(text(availableCategories[0]?.id));
-  const [costCenterId, setCostCenterId] = useState(text(data.costCenters[0]?.id));
+  const [costCenterId, setCostCenterId] = useState(text(primaryCostCenters[0]?.id));
   const [supplierId, setSupplierId] = useState('');
   const [projectId, setProjectId] = useState('');
   const [directShared, setDirectShared] = useState<'direct' | 'shared'>('direct');
   const [allocationMethod, setAllocationMethod] = useState<'percentage' | 'fixed_amount' | 'equal_split'>('percentage');
   const [beneficiaries, setBeneficiaries] = useState<Record<string, string>>({ [companyId]: '100' });
+  const [beneficiaryCostCenters, setBeneficiaryCostCenters] = useState<Record<string, string>>({ [companyId]: text(primaryCostCenters[0]?.id) });
+  const [allocationTemplateId, setAllocationTemplateId] = useState('');
+  const [allocationOverrideReason, setAllocationOverrideReason] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [missingEvidenceReason, setMissingEvidenceReason] = useState('');
+  const [proposalKind, setProposalKind] = useState<'supplier' | 'category' | null>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const clientTimezone = useMemo(() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } }, []);
   const category = availableCategories.find((item) => text(item.id) === categoryId);
   const allowedBeneficiaries = context.companies;
+  const templateGroups = useMemo(() => {
+    const groups = new Map<string, RequestRow[]>();
+    for (const row of data.allocationTemplates) {
+      const key = text(row.id);
+      groups.set(key, [...(groups.get(key) || []), row]);
+    }
+    return [...groups.values()];
+  }, [data.allocationTemplates]);
   useEffect(() => {
     if (!availableCategories.some((item) => text(item.id) === categoryId)) setCategoryId(text(availableCategories[0]?.id));
   }, [availableCategories, categoryId]);
+  useEffect(() => {
+    if (!primaryCostCenters.some((item) => text(item.id) === costCenterId)) {
+      const next = text(primaryCostCenters[0]?.id);
+      setCostCenterId(next);
+      setBeneficiaryCostCenters((current) => ({ ...current, [companyId]: next }));
+    }
+  }, [companyId, costCenterId, primaryCostCenters]);
   const draft = (): ExpenseDraftInput => ({
     requestId, companyId, categoryId, costCenterId, supplierId: supplierId || undefined, projectId: projectId || undefined,
-    purpose, businessReason, amountNaira: Number(amount), directShared, allocationMethod, erpModule,
-    allocations: Object.entries(beneficiaries).filter(([, value]) => Number(value) > 0).map(([beneficiaryCompanyId, value]) => ({ companyId: beneficiaryCompanyId, percentage: allocationMethod === 'percentage' ? Number(value) : undefined, fixedAmountKobo: allocationMethod === 'fixed_amount' ? Math.round(Number(value) * 100) : undefined, costCenterId: beneficiaryCompanyId === companyId ? costCenterId : undefined })),
+    purpose, businessReason, amountNaira: Number(amount), directShared, allocationMethod, allocationTemplateId: allocationTemplateId || undefined, allocationOverrideReason: allocationOverrideReason.trim() || undefined, erpModule,
+    allocations: Object.entries(beneficiaries).filter(([, value]) => Number(value) > 0).map(([beneficiaryCompanyId, value]) => ({ companyId: beneficiaryCompanyId, percentage: allocationMethod === 'percentage' ? Number(value) : undefined, fixedAmountKobo: allocationMethod === 'fixed_amount' ? Math.round(Number(value) * 100) : undefined, costCenterId: beneficiaryCostCenters[beneficiaryCompanyId] || (beneficiaryCompanyId === companyId ? costCenterId : undefined) })),
     lines: [{ description: purpose || 'Business expense', amountNaira: Number(amount), categoryId, directShared: directShared === 'direct' ? 'direct' : 'shared' }],
     evidenceCount: files.length, missingEvidenceReason: missingEvidenceReason.trim() || undefined, capturedAt: new Date().toISOString(), clientTimezone,
   });
@@ -267,7 +382,7 @@ function CreateView({ context, companyId, master, erpModule }: { context: Workfo
     try {
       if (!purpose.trim() || !businessReason.trim() || Number(amount) <= 0 || !categoryId || !costCenterId) throw new Error('Complete the required purpose, amount, category and cost centre fields.');
       if (!files.length && Number(category?.evidenceRequired ?? 1) !== 0 && !missingEvidenceReason.trim()) throw new Error('Attach evidence or explain why it is unavailable.');
-      const input = { ...draft(), missingEvidenceReason: files.length ? 'Evidence is encrypted and queued for upload after the request is created.' : missingEvidenceReason.trim() };
+      const input = draft();
       const draftOperation = await queueExpenseDraft(input, companyId);
       const attachments: string[] = [];
       for (const file of files) {
@@ -282,27 +397,41 @@ function CreateView({ context, companyId, master, erpModule }: { context: Workfo
       setStep(4);
     } catch (error) { setMessage(error instanceof Error ? error.message : 'The request could not be queued.'); } finally { setBusy(false); }
   }
-  async function propose(kind: 'supplier' | 'category') {
-    const proposedName = window.prompt(`Name the ${kind} you could not find:`)?.trim();
-    if (!proposedName) return;
+  async function submitProposal(proposedName: string) {
+    const kind = proposalKind;
+    if (!kind) return;
     try {
       await api('/api/spend/master/proposals', { method: 'POST', body: JSON.stringify({ kind, companyId, proposedName, erpModule }) });
       setMessage(`${kind === 'supplier' ? 'Supplier' : 'Category'} proposal sent for Admin review. It is not available until approved.`);
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'The proposal could not be sent.'); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'The proposal could not be sent.'); } finally { setProposalKind(null); }
   }
-  const toggleBeneficiary = (id: string) => setBeneficiaries((current) => current[id] ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== id)) : { ...current, [id]: '0' });
-  return <section className="spend-view spend-create-view"><div className="spend-view-heading"><div><span className="eyebrow">MOBILE-FIRST CAPTURE</span><h2>Create expense request</h2><p>Step {step} of 4 · {step === 1 ? 'Purpose and amount' : step === 2 ? 'Controlled classification' : step === 3 ? 'Evidence and beneficiaries' : 'Review and queue'}</p></div><span className="spend-draft-badge"><Save size={14} />Draft safe</span></div>
+  function applyAllocationTemplate(templateId: string) {
+    setAllocationTemplateId(templateId);
+    if (!templateId) return;
+    const group = templateGroups.find((items) => text(items[0]?.id) === templateId) || [];
+    const templateMethod = text(group[0]?.method) as typeof allocationMethod;
+    if (!['percentage', 'fixed_amount', 'equal_split'].includes(templateMethod)) return;
+    setDirectShared('shared');
+    setAllocationMethod(templateMethod);
+    setBeneficiaries(Object.fromEntries(group.map((item) => [text(item.beneficiaryCompanyId), templateMethod === 'percentage' ? text(item.percentage || '0') : templateMethod === 'fixed_amount' ? String(Number(item.fixedAmountKobo || 0) / 100) : '1'])));
+    setBeneficiaryCostCenters(Object.fromEntries(group.filter((item) => item.beneficiaryCompanyId).map((item) => [text(item.beneficiaryCompanyId), text(item.costCenterId)])));
+    const own = group.find((item) => text(item.beneficiaryCompanyId) === companyId);
+    if (own?.costCenterId) setCostCenterId(text(own.costCenterId));
+    setAllocationOverrideReason('');
+  }
+  const toggleBeneficiary = (id: string) => setBeneficiaries((current) => current[id] ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== id)) : { ...current, [id]: allocationMethod === 'percentage' ? '0' : '' });
+  return <><section className="spend-view spend-create-view"><div className="spend-view-heading"><div><span className="eyebrow">MOBILE-FIRST CAPTURE</span><h2>Create expense request</h2><p>Step {step} of 4 · {step === 1 ? 'Purpose and amount' : step === 2 ? 'Controlled classification' : step === 3 ? 'Evidence and beneficiaries' : 'Review and queue'}</p></div><span className="spend-draft-badge"><Save size={14} />Draft safe</span></div>
     <div className="spend-stepper" aria-label={`Expense request step ${step} of 4`}>{[1, 2, 3, 4].map((item) => <span className={item <= step ? 'active' : ''} key={item}>{item}</span>)}</div>
     <div className="spend-form-card">
       {step === 1 && <div className="spend-form-grid"><label><span>What is this expense for? *</span><input value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder="e.g. Generator fuel for Daenem Complex" autoFocus /></label><label><span>Amount (NGN) *</span><input type="number" min="1" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0" /></label><label className="span-two"><span>Business reason *</span><textarea value={businessReason} onChange={(event) => setBusinessReason(event.target.value)} placeholder="Explain the business need and expected outcome." rows={4} /></label></div>}
-      {step === 2 && <div className="spend-form-grid"><label><span>Expense category *</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{availableCategories.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select><small>Controlled values for {ERP_CONTEXTS.find((item) => item.id === erpModule)?.label || erpModule}. {text(category?.directSharedPolicy || 'either')} treatment.</small><button type="button" className="spend-text-action" onClick={() => void propose('category')}>Not listed? Request new option</button></label><label><span>Cost centre *</span><select value={costCenterId} onChange={(event) => setCostCenterId(event.target.value)}>{data.costCenters.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select></label><label><span>Supplier / payee</span><select value={supplierId} onChange={(event) => setSupplierId(event.target.value)}><option value="">Select later / not known</option>{data.suppliers.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select><small>Choose a controlled supplier; proposals never become authoritative automatically.</small><button type="button" className="spend-text-action" onClick={() => void propose('supplier')}>Not listed? Request new option</button></label><label><span>Project reference</span><select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">No project</option>{data.projects.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select></label></div>}
-      {step === 3 && <div className="spend-form-grid"><label><span>Direct or shared expense *</span><select value={directShared} onChange={(event) => { const value = event.target.value as 'direct' | 'shared'; setDirectShared(value); if (value === 'direct') setBeneficiaries({ [companyId]: '100' }); }}><option value="direct">Direct · one company</option><option value="shared">Shared · allocate beneficiaries</option></select></label>{directShared === 'shared' && <div className="spend-allocation-box span-two"><div className="spend-field-heading"><span>Beneficiary companies</span><select value={allocationMethod} onChange={(event) => setAllocationMethod(event.target.value as typeof allocationMethod)}><option value="percentage">Percentage</option><option value="equal_split">Equal split</option><option value="fixed_amount">Fixed amount</option></select></div>{allowedBeneficiaries.map((item) => <label className="spend-beneficiary" key={item.id}><input type="checkbox" checked={Boolean(beneficiaries[item.id])} onChange={() => toggleBeneficiary(item.id)} /><span>{item.name}</span>{allocationMethod !== 'equal_split' && beneficiaries[item.id] !== undefined && <input aria-label={`${item.name} allocation`} value={beneficiaries[item.id]} onChange={(event) => setBeneficiaries((current) => ({ ...current, [item.id]: event.target.value }))} inputMode="decimal" />}<small>{allocationMethod === 'percentage' ? '%' : allocationMethod === 'fixed_amount' ? 'NGN' : 'equal'}</small></label>)}<p className="spend-hint">Server reconciliation is exact to the kobo. Invalid totals become Needs Attention and are never silently rounded.</p></div>}
+      {step === 2 && <div className="spend-form-grid"><label><span>Expense category *</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{availableCategories.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select><small>Controlled values for {ERP_CONTEXTS.find((item) => item.id === erpModule)?.label || erpModule}. {text(category?.directSharedPolicy || 'either')} treatment.</small><button type="button" className="spend-text-action" onClick={() => setProposalKind('category')}>Not listed? Request new option</button></label><label><span>Cost centre *</span><select value={costCenterId} onChange={(event) => setCostCenterId(event.target.value)}>{primaryCostCenters.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select></label><label><span>Supplier / payee</span><select value={supplierId} onChange={(event) => setSupplierId(event.target.value)}><option value="">Select later / not known</option>{data.suppliers.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select><small>Choose a controlled supplier; proposals never become authoritative automatically.</small><button type="button" className="spend-text-action" onClick={() => setProposalKind('supplier')}>Not listed? Request new option</button></label><label><span>Project reference</span><select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">No project</option>{data.projects.map((item) => <option value={text(item.id)} key={text(item.id)}>{text(item.name)}</option>)}</select></label></div>}
+      {step === 3 && <div className="spend-form-grid"><label><span>Direct or shared expense *</span><select value={directShared} onChange={(event) => { const value = event.target.value as 'direct' | 'shared'; setDirectShared(value); if (value === 'direct') { setBeneficiaries({ [companyId]: '100' }); setAllocationTemplateId(''); setAllocationOverrideReason(''); } }}><option value="direct">Direct · one company</option><option value="shared">Shared · allocate beneficiaries</option></select></label>{directShared === 'shared' && <div className="spend-allocation-box span-two"><label><span>Allocation template</span><select value={allocationTemplateId} onChange={(event) => applyAllocationTemplate(event.target.value)} aria-label="Allocation template"><option value="">Select approved template</option>{templateGroups.map((group) => <option key={text(group[0]?.id)} value={text(group[0]?.id)}>{text(group[0]?.name)} · {text(group[0]?.method)}</option>)}</select><small>Approved headquarters allocations populate beneficiaries, method and cost centres for this request.</small></label><div className="spend-field-heading"><span>Beneficiary companies</span><select value={allocationMethod} onChange={(event) => setAllocationMethod(event.target.value as typeof allocationMethod)}><option value="percentage">Percentage</option><option value="equal_split">Equal split</option><option value="fixed_amount">Fixed amount</option></select></div>{allocationTemplateId && <label><span>Authorized template override reason</span><textarea value={allocationOverrideReason} onChange={(event) => setAllocationOverrideReason(event.target.value)} placeholder="Required only when changing the approved template allocation." rows={2} /><small>Server authorization and audit checks still apply.</small></label>}{allowedBeneficiaries.map((item) => <label className="spend-beneficiary" key={item.id}><input type="checkbox" checked={Boolean(beneficiaries[item.id])} onChange={() => toggleBeneficiary(item.id)} /><span>{item.name}</span>{allocationMethod !== 'equal_split' && beneficiaries[item.id] !== undefined && <input aria-label={`${item.name} allocation`} value={beneficiaries[item.id]} onChange={(event) => setBeneficiaries((current) => ({ ...current, [item.id]: event.target.value }))} inputMode="decimal" />} {beneficiaries[item.id] !== undefined && <select aria-label={`${item.name} cost centre`} value={beneficiaryCostCenters[item.id] || ''} onChange={(event) => setBeneficiaryCostCenters((current) => ({ ...current, [item.id]: event.target.value }))}><option value="">Default cost centre</option>{data.costCenters.filter((costCenter) => !costCenter.companyId || text(costCenter.companyId) === item.id).map((costCenter) => <option value={text(costCenter.id)} key={text(costCenter.id)}>{text(costCenter.name)}</option>)}</select>}<small>{allocationMethod === 'percentage' ? '%' : allocationMethod === 'fixed_amount' ? 'NGN' : 'equal'}</small></label>)}<p className="spend-hint">Server reconciliation is exact to the kobo. Invalid totals become Needs Attention and are never silently rounded.</p></div>}
         <label className="spend-evidence-picker span-two"><span>Receipt / invoice evidence</span><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" multiple onChange={(event) => setFiles(Array.from(event.target.files || []))} /><span className="spend-upload-action"><UploadCloud size={19} />Choose photo, camera image or PDF</span><small>{files.length ? `${files.length} file${files.length === 1 ? '' : 's'} ready · encrypted until reconnect` : 'Required by the selected policy before submission.'}</small></label>{!files.length && Number(category?.evidenceRequired ?? 1) !== 0 && <label className="span-two"><span>Why is evidence unavailable? *</span><textarea value={missingEvidenceReason} onChange={(event) => setMissingEvidenceReason(event.target.value)} placeholder="Explain the exception for the reviewer." rows={3} /></label>}</div>}
       {step === 4 && <div className="spend-review"><div className="spend-review-hero"><div><span className="eyebrow">READY FOR SERVER VALIDATION</span><h3>{purpose || 'Expense request'}</h3><p>{businessReason || 'Business reason not entered'}</p></div><strong>{money(Number(amount || 0) * 100)}</strong></div><dl><div><dt>Category</dt><dd>{text(category?.name) || 'Not selected'}</dd></div><div><dt>Cost centre</dt><dd>{text(data.costCenters.find((item) => text(item.id) === costCenterId)?.name) || 'Not selected'}</dd></div><div><dt>Supplier</dt><dd>{text(data.suppliers.find((item) => text(item.id) === supplierId)?.name) || 'Not known yet'}</dd></div><div><dt>Evidence</dt><dd>{files.length ? `${files.length} file${files.length === 1 ? '' : 's'}` : 'Missing — server will request a reason'}</dd></div><div><dt>Accounting</dt><dd>{text(category?.accountingTreatmentId).includes('capex') ? 'Capital expenditure · not automatic OpEx' : 'Classification follows category treatment'}</dd></div></dl><div className="spend-review-note"><ShieldCheck size={18} />Final approval, payment and Finance posting always remain live/server-authoritative.</div></div>}
       {message && <div className="spend-inline-status" role="status"><CheckCircle2 size={17} />{message}</div>}
       <footer className="spend-form-actions">{step > 1 && <button type="button" className="spend-secondary" onClick={() => setStep((value) => value - 1)}><ChevronLeft size={17} />Back</button>}{step < 4 && <button type="button" className="spend-secondary" onClick={() => void saveDraft()} disabled={busy}><Save size={16} />Save draft</button>}{step < 4 && <button type="button" className="spend-primary" onClick={() => setStep((value) => value + 1)} disabled={busy}>{step === 3 ? 'Review request' : 'Continue'}<ChevronRight size={17} /></button>}{step === 4 && <button type="button" className="spend-primary" onClick={() => void submit()} disabled={busy}><Send size={16} />{busy ? 'Queueing…' : 'Submit request'}</button>}</footer>
     </div>
-  </section>;
+  </section><TextEntryDialog open={proposalKind !== null} title={`Request a controlled ${proposalKind || 'master'} option`} description="Tell the Finance/Admin reviewer what should be added and why. The proposal will not become selectable until approved." label="Proposed name and context" placeholder="e.g. North depot packaging supplier — needed for recurring delivery invoices" submitLabel="Send for review" onCancel={() => setProposalKind(null)} onSubmit={(value) => void submitProposal(value)} /></>;
 }
 
 function RequestDetail({ context, requestId, onBack }: { context: WorkforceContext; requestId: string; onBack: () => void }) {
@@ -321,11 +450,15 @@ function RequestDetail({ context, requestId, onBack }: { context: WorkforceConte
 function ApprovalsView({ context, companyId }: { context: WorkforceContext; companyId: string }) {
   const [rows, setRows] = useState<RequestRow[]>([]);
   const [message, setMessage] = useState('');
+  const [decision, setDecision] = useState<{ id: string; action: 'return' | 'reject' } | null>(null);
   const load = () => void api<{ approvals: RequestRow[] }>('/api/spend/approvals?companyId=' + encodeURIComponent(companyId)).then((value) => setRows(value.approvals || [])).catch(() => setRows([]));
   useEffect(() => { load(); }, [companyId]);
   if (!can(context, 'expense.approve', 'view', companyId)) return <AccessNotice>Approval queue access is limited to assigned reviewers.</AccessNotice>;
-  async function decide(id: string, action: string) { const reason = action === 'approve' ? undefined : window.prompt(action === 'return' ? 'Reason for correction:' : 'Reason for rejection:'); if (action !== 'approve' && !reason) return; try { await api(`/api/spend/requests/${encodeURIComponent(id)}/action`, { method: 'POST', body: JSON.stringify({ action, reason }) }); setMessage('Approval decision recorded in the audit trail.'); load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Decision failed.'); } }
-  return <section className="spend-view"><div className="spend-view-heading"><div><span className="eyebrow">MAKER-CHECKER</span><h2>Approval queue</h2><p>Review evidence and allocation before a controlled approval. Payment and posting remain separate.</p></div><Landmark size={28} /></div>{message && <div className="spend-inline-status" role="status">{message}</div>}{rows.length === 0 ? <div className="spend-empty"><CheckCircle2 size={26} /><strong>No pending approvals</strong><span>New submitted requests will appear here when a rule assigns them to you.</span></div> : <div className="spend-approval-list">{rows.map((row) => <article className="spend-approval-card" key={text(row.approvalId)}><div className="spend-request-card-top"><span className="spend-request-no">{text(row.requestNo)}</span><b>{money(row.totalKobo)}</b></div><h3>{text(row.categoryName)}</h3><p>{text(row.businessReason)}</p><div className="spend-meta-row"><span>{text(row.requesterName)}</span><span>{text(row.companyName)}</span><span>{Number(row.evidenceCount || 0)} evidence</span></div><div className="spend-detail-actions"><button type="button" className="spend-primary" onClick={() => void decide(text(row.id), 'approve')}><CheckCircle2 size={15} />Approve</button><button type="button" className="spend-secondary" onClick={() => void decide(text(row.id), 'return')}>Return</button><button type="button" className="spend-danger" onClick={() => void decide(text(row.id), 'reject')}>Reject</button></div></article>)}</div>}</section>;
+  async function decide(id: string, action: 'approve' | 'return' | 'reject', reason?: string) {
+    if (action !== 'approve' && !reason?.trim()) { setDecision({ id, action }); return; }
+    try { await api(`/api/spend/requests/${encodeURIComponent(id)}/action`, { method: 'POST', body: JSON.stringify({ action, reason: reason?.trim() || undefined }) }); setMessage('Approval decision recorded in the audit trail.'); load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Decision failed.'); }
+  }
+  return <><section className="spend-view"><div className="spend-view-heading"><div><span className="eyebrow">MAKER-CHECKER</span><h2>Approval queue</h2><p>Review evidence and allocation before a controlled approval. Payment and posting remain separate.</p></div><Landmark size={28} /></div>{message && <div className="spend-inline-status" role="status">{message}</div>}{rows.length === 0 ? <div className="spend-empty"><CheckCircle2 size={26} /><strong>No pending approvals</strong><span>New submitted requests will appear here when a rule assigns them to you.</span></div> : <div className="spend-approval-list">{rows.map((row) => <article className="spend-approval-card" key={text(row.approvalId)}><div className="spend-request-card-top"><span className="spend-request-no">{text(row.requestNo)}</span><b>{money(row.totalKobo)}</b></div><h3>{text(row.categoryName)}</h3><p>{text(row.businessReason)}</p><div className="spend-meta-row"><span>{text(row.requesterName)}</span><span>{text(row.companyName)}</span><span>{Number(row.evidenceCount || 0)} evidence</span></div><div className="spend-detail-actions"><button type="button" className="spend-primary" onClick={() => void decide(text(row.id), 'approve')}><CheckCircle2 size={15} />Approve</button><button type="button" className="spend-secondary" onClick={() => setDecision({ id: text(row.id), action: 'return' })}>Return</button><button type="button" className="spend-danger" onClick={() => setDecision({ id: text(row.id), action: 'reject' })}>Reject</button></div></article>)}</div>}</section><TextEntryDialog open={decision !== null} title={decision?.action === 'return' ? 'Return request for correction' : 'Reject expense request'} description={decision?.action === 'return' ? 'Explain what the employee must correct before resubmission.' : 'Record the business reason for rejecting this request. This reason is retained in the audit trail.'} label="Decision reason" placeholder={decision?.action === 'return' ? 'e.g. Add the supplier invoice and correct the shared allocation.' : 'Explain why this request cannot proceed.'} submitLabel={decision?.action === 'return' ? 'Return for correction' : 'Reject request'} danger={decision?.action === 'reject'} onCancel={() => setDecision(null)} onSubmit={(reason) => { const current = decision; setDecision(null); if (current) void decide(current.id, current.action, reason); }} /></>;
 }
 
 function OwnerIntelligenceView({ context }: { context: WorkforceContext }) {
@@ -382,23 +515,27 @@ function AdminView({ context, companyId }: { context: WorkforceContext; companyI
   const [evidenceRequired, setEvidenceRequired] = useState(true);
   const [method, setMethod] = useState('equal_split');
   const [approverRoleCode, setApproverRoleCode] = useState('manager');
+  const [requiredPermission, setRequiredPermission] = useState('expense.approve');
   const [minAmountNaira, setMinAmountNaira] = useState('');
   const [maxAmountNaira, setMaxAmountNaira] = useState('');
   const [evidenceType, setEvidenceType] = useState('receipt');
   const [templateParticipants, setTemplateParticipants] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
+  const [proposalDecision, setProposalDecision] = useState<{ id: string; action: 'reject' } | null>(null);
   const load = () => void api<RequestRow>('/api/spend/admin/master?companyId=' + encodeURIComponent(companyId)).then(setData).catch(() => setData(null));
   useEffect(() => { load(); }, [companyId]);
   if (!can(context, 'expense.master', 'manage', companyId)) return <AccessNotice>Only assigned Finance/Admin operators can manage controlled master data.</AccessNotice>;
   async function create() {
     if (['category', 'supplier', 'cost_center', 'template'].includes(kind) && !name.trim()) return;
-    const body: Record<string, unknown> = { kind, action: 'create', companyId, name: name.trim(), accountingTreatmentId: treatmentId, defaultTreatmentId: treatmentId, directSharedPolicy, evidenceRequired, method, approverRoleCode, minAmountKobo: Math.round(Number(minAmountNaira || 0) * 100), maxAmountKobo: maxAmountNaira ? Math.round(Number(maxAmountNaira) * 100) : undefined, evidenceType, items: Object.entries(templateParticipants).filter(([, value]) => Number(value) > 0).map(([beneficiaryCompanyId, value]) => ({ companyId: beneficiaryCompanyId, percentage: method === 'percentage' ? Number(value) : undefined, fixedAmountKobo: method === 'fixed_amount' ? Math.round(Number(value) * 100) : undefined })) };
+    const body: Record<string, unknown> = { kind, action: 'create', companyId, name: name.trim(), accountingTreatmentId: treatmentId, defaultTreatmentId: treatmentId, directSharedPolicy, evidenceRequired, method, approverRoleCode, requiredPermission, minAmountKobo: Math.round(Number(minAmountNaira || 0) * 100), maxAmountKobo: maxAmountNaira ? Math.round(Number(maxAmountNaira) * 100) : undefined, evidenceType, items: Object.entries(templateParticipants).filter(([, value]) => Number(value) > 0).map(([beneficiaryCompanyId, value]) => ({ companyId: beneficiaryCompanyId, percentage: method === 'percentage' ? Number(value) : undefined, fixedAmountKobo: method === 'fixed_amount' ? Math.round(Number(value) * 100) : undefined })) };
     try { await api('/api/spend/admin/master', { method: 'POST', body: JSON.stringify(body) }); setName(''); setMessage('Controlled value or rule added. Historical references remain intact.'); load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'The value was not added.'); }
   }
-  async function reviewProposal(id: string, action: 'approve' | 'reject') {
-    const reason = action === 'approve' ? undefined : window.prompt('Reason for rejecting this proposal:');
-    if (action === 'reject' && !reason) return;
-    try { await api(`/api/spend/admin/proposals/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify({ action, reason }) }); setMessage(`Proposal ${action}d and recorded in the audit trail.`); load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Proposal review failed.'); }
+  async function reviewProposal(id: string, action: 'approve' | 'reject', reason?: string) {
+    if (action === 'reject' && !reason?.trim()) { setProposalDecision({ id, action: 'reject' }); return; }
+    try { await api(`/api/spend/admin/proposals/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify({ action, reason: reason?.trim() || undefined }) }); setMessage(`Proposal ${action}d and recorded in the audit trail.`); load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Proposal review failed.'); }
+  }
+  async function mutateMaster(masterKind: AdminMasterKind, id: string, payload: MasterActionPayload) {
+    try { await api('/api/spend/admin/master', { method: 'POST', body: JSON.stringify({ ...payload, kind: masterKind, id, companyId }) }); setMessage(`Controlled ${masterKind.replaceAll('_', ' ')} ${payload.action} recorded with before/after audit evidence.`); load(); } catch (error) { setMessage(error instanceof Error ? error.message : 'The controlled-data change failed.'); }
   }
   const toggleTemplateParticipant = (id: string) => setTemplateParticipants((current) => current[id] !== undefined ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== id)) : { ...current, [id]: method === 'percentage' ? '0' : '' });
   const categories = Array.isArray(data?.categories) ? data?.categories as RequestRow[] : [];
@@ -409,7 +546,7 @@ function AdminView({ context, companyId }: { context: WorkforceContext; companyI
   const rules = Array.isArray(data?.approvalRules) ? data?.approvalRules as RequestRow[] : [];
   const policies = Array.isArray(data?.evidencePolicies) ? data?.evidencePolicies as RequestRow[] : [];
   const proposals = Array.isArray(data?.proposals) ? data?.proposals as RequestRow[] : [];
-  return <section className="spend-view"><div className="spend-view-heading"><div><span className="eyebrow">CONTROLLED MASTER DATA</span><h2>Cost Intelligence Administration</h2><p>System values remain authoritative; Admin values are governed; proposals never become options automatically.</p></div><ShieldCheck size={28} /></div><div className="spend-admin-form"><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)} aria-label="Master data type"><option value="supplier">Supplier / payee</option><option value="category">Expense category</option><option value="cost_center">Cost centre</option><option value="template">Allocation template</option><option value="approval_rule">Approval rule</option><option value="evidence_policy">Evidence policy</option></select>{['category', 'supplier', 'cost_center', 'template'].includes(kind) && <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Approved master value" aria-label="Master value name" />}{kind === 'category' && <><select value={treatmentId} onChange={(event) => setTreatmentId(event.target.value)} aria-label="Accounting treatment">{treatments.map((item) => <option key={text(item.id)} value={text(item.id)}>{text(item.name)}</option>)}</select><select value={directSharedPolicy} onChange={(event) => setDirectSharedPolicy(event.target.value)} aria-label="Direct or shared policy"><option value="either">Direct or shared</option><option value="direct">Direct only</option><option value="shared">Shared only</option></select><label className="spend-checkbox"><input type="checkbox" checked={evidenceRequired} onChange={(event) => setEvidenceRequired(event.target.checked)} /> Evidence required</label></>}{kind === 'template' && <><select value={method} onChange={(event) => setMethod(event.target.value)} aria-label="Allocation method"><option value="equal_split">Equal split</option><option value="percentage">Percentage</option><option value="fixed_amount">Fixed amount</option></select><div className="spend-template-participants" aria-label="Allocation template beneficiaries"><span>Template beneficiaries</span>{context.companies.map((company) => <label className="spend-checkbox" key={company.id}><input type="checkbox" checked={templateParticipants[company.id] !== undefined} onChange={() => toggleTemplateParticipant(company.id)} /><span>{company.name}</span>{templateParticipants[company.id] !== undefined && method !== 'equal_split' && <input aria-label={`${company.name} allocation`} inputMode="decimal" value={templateParticipants[company.id]} onChange={(event) => setTemplateParticipants((current) => ({ ...current, [company.id]: event.target.value }))} placeholder={method === 'percentage' ? '%' : 'NGN'} />}</label>)}</div></>}{kind === 'approval_rule' && <><input value={approverRoleCode} onChange={(event) => setApproverRoleCode(event.target.value)} placeholder="Approver role code" aria-label="Approver role code" /><input inputMode="decimal" value={minAmountNaira} onChange={(event) => setMinAmountNaira(event.target.value)} placeholder="Minimum NGN" aria-label="Minimum amount in Naira" /><input inputMode="decimal" value={maxAmountNaira} onChange={(event) => setMaxAmountNaira(event.target.value)} placeholder="Maximum NGN (optional)" aria-label="Maximum amount in Naira" /></>}{kind === 'evidence_policy' && <><select value={evidenceType} onChange={(event) => setEvidenceType(event.target.value)} aria-label="Evidence type"><option value="receipt">Receipt</option><option value="invoice">Invoice</option><option value="quote">Quote</option><option value="delivery_note">Delivery note</option></select><input inputMode="decimal" value={minAmountNaira} onChange={(event) => setMinAmountNaira(event.target.value)} placeholder="Minimum NGN" aria-label="Evidence minimum amount in Naira" /></>}<button type="button" className="spend-primary" onClick={() => void create()}><Plus size={16} />Save controlled rule</button></div>{message && <div className="spend-inline-status" role="status">{message}</div>}<div className="spend-admin-grid"><article className="spend-detail-card"><span className="eyebrow">CATEGORIES</span>{categories.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.name)}</span><small>{text(item.directSharedPolicy)} · {text(item.source)}</small></div>)}</article><article className="spend-detail-card"><span className="eyebrow">COST CENTRES</span>{costCenters.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.name)}</span><small>{text(item.code)} · {text(item.source)}</small></div>)}</article><article className="spend-detail-card"><span className="eyebrow">SUPPLIERS</span>{suppliers.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.name)}</span><small>{text(item.source)}</small></div>)}</article><article className="spend-detail-card"><span className="eyebrow">ACCOUNTING TREATMENTS</span>{treatments.map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.name)}</span><small>{text(item.profitEffect)} · {Number(item.isPandl) ? 'P&L' : 'non-P&L'}</small></div>)}</article><article className="spend-detail-card"><span className="eyebrow">ALLOCATION TEMPLATES</span>{templates.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.name)}</span><small>{text(item.method)} · {text(item.active) === '1' ? 'active' : 'inactive'}</small></div>)}</article><article className="spend-detail-card"><span className="eyebrow">APPROVAL RULES / EVIDENCE POLICIES</span>{rules.slice(0, 8).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.approverRoleCode)} · step {text(item.stepNo)}</span><small>{money(item.minAmountKobo)}+</small></div>)}{policies.slice(0, 8).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.evidenceType)} policy</span><small>{Number(item.required) ? 'required' : 'optional'}</small></div>)}</article><article className="spend-detail-card"><span className="eyebrow">PROPOSALS · REVIEW BEFORE MASTER</span>{proposals.length ? proposals.map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.proposedName)}<small>{text(item.kind)} · {text(item.status)}</small></span>{text(item.status) === 'proposed' ? <span className="spend-admin-actions"><button type="button" className="spend-secondary" onClick={() => void reviewProposal(text(item.id), 'approve')}>Approve</button><button type="button" className="spend-danger" onClick={() => void reviewProposal(text(item.id), 'reject')}>Reject</button></span> : null}</div>) : <p className="spend-muted">No proposed values require review.</p>}</article></div></section>;
+  return <><section className="spend-view"><div className="spend-view-heading"><div><span className="eyebrow">CONTROLLED MASTER DATA</span><h2>Cost Intelligence Administration</h2><p>System values remain authoritative; Admin values are governed; proposals never become options automatically.</p></div><ShieldCheck size={28} /></div><div className="spend-admin-form"><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)} aria-label="Master data type"><option value="supplier">Supplier / payee</option><option value="category">Expense category</option><option value="cost_center">Cost centre</option><option value="template">Allocation template</option><option value="approval_rule">Approval rule</option><option value="evidence_policy">Evidence policy</option></select>{['category', 'supplier', 'cost_center', 'template'].includes(kind) && <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Approved master value" aria-label="Master value name" />}{kind === 'category' && <><select value={treatmentId} onChange={(event) => setTreatmentId(event.target.value)} aria-label="Accounting treatment">{treatments.map((item) => <option key={text(item.id)} value={text(item.id)}>{text(item.name)}</option>)}</select><select value={directSharedPolicy} onChange={(event) => setDirectSharedPolicy(event.target.value)} aria-label="Direct or shared policy"><option value="either">Direct or shared</option><option value="direct">Direct only</option><option value="shared">Shared only</option></select><label className="spend-checkbox"><input type="checkbox" checked={evidenceRequired} onChange={(event) => setEvidenceRequired(event.target.checked)} /> Evidence required</label></>}{kind === 'template' && <><select value={method} onChange={(event) => setMethod(event.target.value)} aria-label="Allocation method"><option value="equal_split">Equal split</option><option value="percentage">Percentage</option><option value="fixed_amount">Fixed amount</option></select><div className="spend-template-participants" aria-label="Allocation template beneficiaries"><span>Template beneficiaries</span>{context.companies.map((company) => <label className="spend-checkbox" key={company.id}><input type="checkbox" checked={templateParticipants[company.id] !== undefined} onChange={() => toggleTemplateParticipant(company.id)} /><span>{company.name}</span>{templateParticipants[company.id] !== undefined && method !== 'equal_split' && <input aria-label={`${company.name} allocation`} inputMode="decimal" value={templateParticipants[company.id]} onChange={(event) => setTemplateParticipants((current) => ({ ...current, [company.id]: event.target.value }))} placeholder={method === 'percentage' ? '%' : 'NGN'} />}</label>)}</div></>}{kind === 'approval_rule' && <><input value={approverRoleCode} onChange={(event) => setApproverRoleCode(event.target.value)} placeholder="Approver role code" aria-label="Approver role code" /><input value={requiredPermission} onChange={(event) => setRequiredPermission(event.target.value)} placeholder="Required permission" aria-label="Required permission" /><input inputMode="decimal" value={minAmountNaira} onChange={(event) => setMinAmountNaira(event.target.value)} placeholder="Minimum NGN" aria-label="Minimum amount in Naira" /><input inputMode="decimal" value={maxAmountNaira} onChange={(event) => setMaxAmountNaira(event.target.value)} placeholder="Maximum NGN (optional)" aria-label="Maximum amount in Naira" /></>}{kind === 'evidence_policy' && <><select value={evidenceType} onChange={(event) => setEvidenceType(event.target.value)} aria-label="Evidence type"><option value="receipt">Receipt</option><option value="invoice">Invoice</option><option value="quote">Quote</option><option value="delivery_note">Delivery note</option></select><input inputMode="decimal" value={minAmountNaira} onChange={(event) => setMinAmountNaira(event.target.value)} placeholder="Minimum NGN" aria-label="Evidence minimum amount in Naira" /></>}<button type="button" className="spend-primary" onClick={() => void create()}><Plus size={16} />Save controlled rule</button></div>{message && <div className="spend-inline-status" role="status">{message}</div>}<div className="spend-admin-grid"><article className="spend-detail-card"><span className="eyebrow">CATEGORIES</span>{categories.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span><b>{text(item.name)}</b><small>{text(item.directSharedPolicy)} · {text(item.source)} · {Number(item.active) ? 'active' : 'inactive'}</small></span><AdminMasterControls kind="category" item={item} options={categories} onMutate={(payload) => mutateMaster('category', text(item.id), payload)} /></div>)}</article><article className="spend-detail-card"><span className="eyebrow">COST CENTRES</span>{costCenters.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span><b>{text(item.name)}</b><small>{text(item.code)} · {text(item.source)} · {Number(item.active) ? 'active' : 'inactive'}</small></span><AdminMasterControls kind="cost_center" item={item} options={costCenters} onMutate={(payload) => mutateMaster('cost_center', text(item.id), payload)} /></div>)}</article><article className="spend-detail-card"><span className="eyebrow">SUPPLIERS</span>{suppliers.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span><b>{text(item.name)}</b><small>{text(item.source)} · {Number(item.active) ? 'active' : 'inactive'}</small></span><AdminMasterControls kind="supplier" item={item} options={suppliers} onMutate={(payload) => mutateMaster('supplier', text(item.id), payload)} /></div>)}</article><article className="spend-detail-card"><span className="eyebrow">ACCOUNTING TREATMENTS</span>{treatments.map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.name)}</span><small>{text(item.profitEffect)} · {Number(item.isPandl) ? 'P&L' : 'non-P&L'}</small></div>)}</article><article className="spend-detail-card"><span className="eyebrow">ALLOCATION TEMPLATES</span>{templates.slice(0, 12).map((item) => <div className="spend-admin-row" key={text(item.id)}><span><b>{text(item.name)}</b><small>{text(item.method)} · {Number(item.active) ? 'active' : 'inactive'}</small></span><AdminMasterControls kind="template" item={item} options={templates} onMutate={(payload) => mutateMaster('template', text(item.id), payload)} /></div>)}</article><article className="spend-detail-card"><span className="eyebrow">APPROVAL RULES / EVIDENCE POLICIES</span>{rules.slice(0, 8).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.approverRoleCode)} · step {text(item.stepNo)}<small>{text(item.requiredPermission)} · {money(item.minAmountKobo)}+ · {Number(item.active) ? 'active' : 'inactive'}</small></span><AdminMasterControls kind="approval_rule" item={item} options={rules} onMutate={(payload) => mutateMaster('approval_rule', text(item.id), payload)} /></div>)}{policies.slice(0, 8).map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.evidenceType)} policy<small>{Number(item.required) ? 'required' : 'optional'} · {Number(item.active) ? 'active' : 'inactive'}</small></span><AdminMasterControls kind="evidence_policy" item={item} options={policies} onMutate={(payload) => mutateMaster('evidence_policy', text(item.id), payload)} /></div>)}</article><article className="spend-detail-card"><span className="eyebrow">PROPOSALS · REVIEW BEFORE MASTER</span>{proposals.length ? proposals.map((item) => <div className="spend-admin-row" key={text(item.id)}><span>{text(item.proposedName)}<small>{text(item.kind)} · {text(item.status)}</small></span>{text(item.status) === 'proposed' ? <span className="spend-admin-actions"><button type="button" className="spend-secondary" onClick={() => void reviewProposal(text(item.id), 'approve')}>Approve</button><button type="button" className="spend-danger" onClick={() => setProposalDecision({ id: text(item.id), action: 'reject' })}>Reject</button></span> : null}</div>) : <p className="spend-muted">No proposed values require review.</p>}</article></div></section><TextEntryDialog open={proposalDecision !== null} title="Reject master-data proposal" description="Record why this proposed supplier or category cannot become an authoritative option." label="Rejection reason" placeholder="Explain the concern or duplicate match." submitLabel="Reject proposal" danger onCancel={() => setProposalDecision(null)} onSubmit={(reason) => { const current = proposalDecision; setProposalDecision(null); if (current) void reviewProposal(current.id, current.action, reason); }} /></>;
 }
 
 const host = document.createElement('div');
