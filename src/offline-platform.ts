@@ -11,7 +11,7 @@ const ACTIVE_EMPLOYEE_KEY = 'daenem-offline-active-employee';
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-export type OfflineOperationKind = 'forms.submit';
+export type OfflineOperationKind = 'forms.submit' | 'expense.draft.save' | 'expense.request.submit' | 'expense.evidence.upload';
 export type OfflineOperationState =
   | 'local-draft'
   | 'waiting-to-sync'
@@ -90,6 +90,32 @@ export type FormsDraftInput = {
   attachmentRefs?: string[];
 };
 
+export type ExpenseDraftInput = {
+  requestId: string;
+  companyId: string;
+  categoryId: string;
+  costCenterId: string;
+  supplierId?: string;
+  projectId?: string;
+  branchLocationId?: string;
+  department?: string;
+  erpModule?: string;
+  purpose: string;
+  businessReason: string;
+  amountNaira?: number;
+  totalKobo?: number;
+  directShared?: 'direct' | 'shared' | 'mixed';
+  allocationMethod?: 'percentage' | 'fixed_amount' | 'equal_split';
+  allocations?: Array<Record<string, unknown>>;
+  lines?: Array<Record<string, unknown>>;
+  evidenceCount?: number;
+  missingEvidenceReason?: string;
+  attachmentRefs?: string[];
+  capturedAt?: string;
+  clientTimezone?: string;
+  [key: string]: unknown;
+};
+
 type EncryptedValue = {
   iv: number[];
   ciphertext: number[];
@@ -130,6 +156,9 @@ type StoredAttachment = {
   mimeType: string;
   sizeBytes: number;
   sha256: string;
+  evidenceType?: string;
+  capturedAt?: string;
+  clientTimezone?: string;
   createdAt: string;
   encryptedBlob: EncryptedValue;
 };
@@ -417,6 +446,45 @@ export async function queueFormsSubmission(identity: OfflineIdentity, input: For
   });
 }
 
+export async function saveExpenseDraft(identity: OfflineIdentity, input: ExpenseDraftInput) {
+  return upsertOperation(identity, {
+    kind: 'expense.draft.save',
+    entityType: 'spend_expense_request',
+    entityId: input.requestId,
+    state: 'local-draft',
+    payload: { ...input, draftOnly: true, capturedAt: input.capturedAt || nowIso(), clientTimezone: input.clientTimezone || clientTimezone() },
+    attachmentRefs: input.attachmentRefs,
+  });
+}
+
+export async function queueExpenseSubmission(identity: OfflineIdentity, input: ExpenseDraftInput & { operationId?: string }) {
+  return upsertOperation(identity, {
+    operationId: input.operationId,
+    kind: 'expense.request.submit',
+    entityType: 'spend_expense_request',
+    entityId: input.requestId,
+    state: 'waiting-to-sync',
+    payload: { ...input, submit: true, capturedAt: input.capturedAt || nowIso(), clientTimezone: input.clientTimezone || clientTimezone() },
+    attachmentRefs: input.attachmentRefs,
+  });
+}
+
+export async function queueExpenseEvidenceUpload(identity: OfflineIdentity, input: {
+  expenseRequestId: string;
+  operationId?: string;
+  attachmentRefs: string[];
+}) {
+  return upsertOperation(identity, {
+    operationId: input.operationId,
+    kind: 'expense.evidence.upload',
+    entityType: 'spend_expense_request',
+    entityId: input.expenseRequestId,
+    state: 'waiting-to-sync',
+    payload: { expenseRequestId: input.expenseRequestId, attachmentRefs: input.attachmentRefs },
+    attachmentRefs: input.attachmentRefs,
+  });
+}
+
 export async function listOfflineOperations(identity: OfflineIdentity) {
   return (await namespaceOperations(identity)).map(publicOperation);
 }
@@ -440,7 +508,7 @@ export async function readQueuedPayload<T>(identity: OfflineIdentity, operationI
 
 export async function saveOfflineAttachment(
   identity: OfflineIdentity,
-  input: { id?: string; operationId: string; originalName: string; mimeType: string; bytes: Uint8Array; sha256: string },
+  input: { id?: string; operationId: string; originalName: string; mimeType: string; bytes: Uint8Array; sha256: string; evidenceType?: string; capturedAt?: string; clientTimezone?: string },
 ) {
   const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
   if (!allowed.includes(input.mimeType)) throw new Error('This attachment type is not supported for offline work.');
@@ -458,23 +526,26 @@ export async function saveOfflineAttachment(
     mimeType: input.mimeType,
     sizeBytes: input.bytes.byteLength,
     sha256: digest,
+    evidenceType: input.evidenceType,
+    capturedAt: input.capturedAt,
+    clientTimezone: input.clientTimezone,
     createdAt: nowIso(),
     encryptedBlob: await encryptBytes(namespaceFor(identity), input.bytes),
   };
   await writeRecord(ATTACHMENT_STORE, record);
   broadcastChannel?.postMessage({ type: 'attachment-updated', namespace: record.namespace });
-  return { id, operationId: record.operationId, originalName: record.originalName, mimeType: record.mimeType, sizeBytes: record.sizeBytes, sha256: record.sha256 };
+  return { id, operationId: record.operationId, originalName: record.originalName, mimeType: record.mimeType, sizeBytes: record.sizeBytes, sha256: record.sha256, evidenceType: record.evidenceType, capturedAt: record.capturedAt, clientTimezone: record.clientTimezone };
 }
 
 export async function readOfflineAttachment(identity: OfflineIdentity, id: string) {
   const record = await readRecord<StoredAttachment>(ATTACHMENT_STORE, id);
   if (!record || record.namespace !== namespaceFor(identity)) throw new Error('Offline attachment is not available in this account scope.');
-  return { metadata: { id: record.id, operationId: record.operationId, originalName: record.originalName, mimeType: record.mimeType, sizeBytes: record.sizeBytes, sha256: record.sha256 }, bytes: await decryptBytes(record.namespace, record.encryptedBlob) };
+  return { metadata: { id: record.id, operationId: record.operationId, originalName: record.originalName, mimeType: record.mimeType, sizeBytes: record.sizeBytes, sha256: record.sha256, evidenceType: record.evidenceType, capturedAt: record.capturedAt, clientTimezone: record.clientTimezone }, bytes: await decryptBytes(record.namespace, record.encryptedBlob) };
 }
 
 export async function listOfflineAttachments(identity: OfflineIdentity, operationId: string) {
   const records = await readAll<StoredAttachment>(ATTACHMENT_STORE, 'operationId', IDBKeyRange.only([namespaceFor(identity), operationId]));
-  return records.map((record) => ({ id: record.id, operationId: record.operationId, originalName: record.originalName, mimeType: record.mimeType, sizeBytes: record.sizeBytes, sha256: record.sha256 }));
+  return records.map((record) => ({ id: record.id, operationId: record.operationId, originalName: record.originalName, mimeType: record.mimeType, sizeBytes: record.sizeBytes, sha256: record.sha256, evidenceType: record.evidenceType, capturedAt: record.capturedAt, clientTimezone: record.clientTimezone }));
 }
 
 async function deleteOfflineAttachment(identity: OfflineIdentity, id: string) {
@@ -483,19 +554,33 @@ async function deleteOfflineAttachment(identity: OfflineIdentity, id: string) {
 }
 
 async function uploadOfflineAttachments(identity: OfflineIdentity, operation: OfflineOperation) {
+  let payload: Record<string, unknown> = {};
+  try { payload = await readQueuedPayload<Record<string, unknown>>(identity, operation.id); } catch { /* payload is re-read by the sync request */ }
   for (const attachmentId of operation.attachmentRefs) {
     const attachment = await readOfflineAttachment(identity, attachmentId);
-    const response = await fetch('/api/offline/attachments/' + encodeURIComponent(attachment.metadata.id), {
+    const expenseEvidence = operation.kind.startsWith('expense.');
+    const response = await fetch(expenseEvidence
+      ? '/api/spend/evidence/' + encodeURIComponent(attachment.metadata.id)
+      : '/api/offline/attachments/' + encodeURIComponent(attachment.metadata.id), {
       method: 'PUT',
       credentials: 'include',
       cache: 'no-store',
       headers: {
         'content-type': attachment.metadata.mimeType,
         'content-length': String(attachment.metadata.sizeBytes),
-        'x-offline-operation-id': operation.id,
-        'x-offline-company-id': identity.companyId,
-        'x-offline-file-name': attachment.metadata.originalName,
-        'x-offline-sha256': attachment.metadata.sha256,
+        ...(expenseEvidence ? {
+          'x-expense-request-id': String(payload.expenseRequestId || payload.requestId || operation.entityId || ''),
+          'x-evidence-type': String(attachment.metadata.evidenceType || 'receipt'),
+          'x-evidence-name': attachment.metadata.originalName,
+          'x-evidence-sha256': attachment.metadata.sha256,
+          'x-evidence-captured-at': String(attachment.metadata.capturedAt || operation.capturedAt),
+          'x-evidence-timezone': String(attachment.metadata.clientTimezone || operation.clientTimezone),
+        } : {
+          'x-offline-operation-id': operation.id,
+          'x-offline-company-id': identity.companyId,
+          'x-offline-file-name': attachment.metadata.originalName,
+          'x-offline-sha256': attachment.metadata.sha256,
+        }),
         'idempotency-key': operation.idempotencyKey,
       },
       body: attachment.bytes,
@@ -683,6 +768,26 @@ export async function saveCachedAuthContext(context: unknown, bootstrap: Offline
     encrypted: value,
     updatedAt: nowIso(),
   } satisfies StoredMeta);
+}
+
+export async function saveCachedSpendMasterData(identity: OfflineIdentity, value: unknown, verifiedAt = nowIso()) {
+  const namespace = namespaceFor(identity);
+  await writeRecord(META_STORE, {
+    id: 'spend-master:' + namespace,
+    kind: 'spend-master',
+    namespace,
+    verifiedAt,
+    encrypted: await encryptJson(namespace, value),
+    updatedAt: nowIso(),
+  } satisfies StoredMeta);
+}
+
+export async function readCachedSpendMasterData(identity: OfflineIdentity) {
+  try {
+    const record = await readRecord<StoredMeta>(META_STORE, 'spend-master:' + namespaceFor(identity));
+    if (!record?.encrypted || record.namespace !== namespaceFor(identity)) return null;
+    return { verifiedAt: record.verifiedAt, value: await decryptJson<unknown>(record.namespace, record.encrypted) };
+  } catch { return null; }
 }
 
 export async function readCachedAuthContext(): Promise<unknown | null> {

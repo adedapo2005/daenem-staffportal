@@ -40,6 +40,7 @@ import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
 import { routePlatformCenter, routePublicWebsite } from './platform-center';
 import { routeOffline } from './offline';
+import { routeSpend } from './spend';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -178,7 +179,8 @@ export default {
       url.pathname.startsWith('/api/ai/') ||
       url.pathname.startsWith('/api/platform/') ||
       url.pathname.startsWith('/api/hr/workflows/') ||
-      url.pathname.startsWith('/api/offline/');
+      url.pathname.startsWith('/api/offline/') ||
+      url.pathname.startsWith('/api/spend/');
 
     if (specialized) {
       const context = await getSessionContext(request, env);
@@ -186,6 +188,10 @@ export default {
 
       if (url.pathname.startsWith('/api/offline/')) {
         const response = await routeOffline(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/spend/')) {
+        const response = await routeSpend(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/theme/')) {
