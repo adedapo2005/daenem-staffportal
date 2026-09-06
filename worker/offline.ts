@@ -8,6 +8,7 @@ import {
 } from './auth';
 import { routeOwnerSupport } from './owner-support';
 import { submitForm } from './forms';
+import { handleOfflineSpendOperation } from './spend';
 
 interface OfflineEnv extends AuthEnv {
   FILES: R2Bucket;
@@ -50,7 +51,8 @@ const uid = (prefix: string) => prefix + '-' + crypto.randomUUID();
 const businessTimezone = (env: OfflineEnv) => env.TIMEZONE || 'Africa/Lagos';
 const owner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
 const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
-const operationKinds = new Set(['forms.submit']);
+const defaultAllowedOperations = ['forms.submit', 'expense.draft.save', 'expense.request.submit', 'expense.evidence.upload'];
+const operationKinds = new Set(defaultAllowedOperations);
 
 function companyInScope(context: SessionContext, companyId: string) {
   return context.companies.some((company) => company.id === companyId);
@@ -93,12 +95,12 @@ async function readPolicy(env: OfflineEnv): Promise<Policy> {
       retention_days AS retentionDays,allowed_operations_json AS allowedOperationsJson
     FROM offline_policy WHERE id='global'
   `).first<PolicyRow>();
-  let allowedOperations: string[] = ['forms.submit'];
+  let allowedOperations: string[] = [...defaultAllowedOperations];
   try {
-    const parsed = JSON.parse(row?.allowedOperationsJson || '["forms.submit"]');
+    const parsed = JSON.parse(row?.allowedOperationsJson || JSON.stringify(defaultAllowedOperations));
     if (Array.isArray(parsed)) allowedOperations = parsed.map(String).filter((item) => operationKinds.has(item));
   } catch {
-    allowedOperations = ['forms.submit'];
+    allowedOperations = [...defaultAllowedOperations];
   }
   return {
     enabled: row?.enabled !== 0,
@@ -187,7 +189,15 @@ async function bootstrap(request: Request, env: OfflineEnv, context: SessionCont
   }
   const policy = await readPolicy(env);
   const effectiveAge = Math.min(policy.maxOfflineAgeMinutes, sessionRemainingMinutes(session));
-  const canSubmit = Boolean(companyId) && policy.enabled && policy.allowedOperations.includes('forms.submit') && hasPermission(context, 'forms.access', 'view', companyId);
+  const canSubmitForms = Boolean(companyId) && policy.enabled && policy.allowedOperations.includes('forms.submit') && hasPermission(context, 'forms.access', 'view', companyId);
+  const canSubmitExpenses = Boolean(companyId) && policy.enabled
+    && policy.allowedOperations.some((item) => item.startsWith('expense.'))
+    && hasPermission(context, 'expense.requests', 'create', companyId);
+  const allowedOperations = policy.allowedOperations.filter((item) => {
+    if (item === 'forms.submit') return hasPermission(context, 'forms.access', 'view', companyId);
+    if (item.startsWith('expense.')) return hasPermission(context, 'expense.requests', 'create', companyId);
+    return false;
+  });
   return json({
     ok: true,
     serverTime: new Date().toISOString(),
@@ -203,14 +213,18 @@ async function bootstrap(request: Request, env: OfflineEnv, context: SessionCont
       automaticSync: policy.automaticSync,
       manualRetry: policy.manualRetry,
       retentionDays: policy.retentionDays,
-      allowedOperations: policy.allowedOperations.filter((item) => item === 'forms.submit' && hasPermission(context, 'forms.access', 'view', companyId)),
+      allowedOperations,
     },
-    operations: canSubmit
-      ? [{ kind: 'forms.submit', mode: 'draft-and-submit', permission: 'forms.access' }]
-      : [],
+    operations: [
+      ...(canSubmitForms ? [{ kind: 'forms.submit', mode: 'draft-and-submit', permission: 'forms.access' }] : []),
+      ...(canSubmitExpenses ? [
+        { kind: 'expense.draft.save', mode: 'draft-and-submit', permission: 'expense.requests' },
+        { kind: 'expense.request.submit', mode: 'draft-and-submit', permission: 'expense.requests' },
+        { kind: 'expense.evidence.upload', mode: 'attachment-after-reconnect', permission: 'expense.requests' },
+      ] : []),
+    ],
   });
 }
-
 async function receiptByKey(env: OfflineEnv, idempotencyKey: string) {
   return env.DB.prepare(`
     SELECT id,operation_id AS operationId,idempotency_key AS idempotencyKey,
@@ -239,6 +253,7 @@ function receiptBody(row: Record<string, unknown>, deduplicated = false) {
     serverReceivedAt: row.serverReceivedAt,
     completedAt: row.completedAt,
     submissionId: result.submissionId,
+    requestId: result.requestId,
     status: result.status,
     deduplicated,
   };
@@ -274,9 +289,16 @@ async function reconcileProcessingReceipt(
   context: SessionContext,
   receipt: Record<string, unknown>,
 ) {
-  const applied = await operationAlreadyApplied(env, context.employee.id, String(receipt.idempotencyKey));
+  const isExpense = String(receipt.operationKind || '').startsWith('expense.');
+  const applied = isExpense
+    ? await env.DB.prepare('SELECT id,status FROM spend_expense_requests WHERE id=? AND requester_employee_id=?')
+      .bind(String(receipt.entityId || ''), context.employee.id)
+      .first<{ id: string; status: string }>()
+    : await operationAlreadyApplied(env, context.employee.id, String(receipt.idempotencyKey));
   if (!applied) return null;
-  const result = { ok: true, submissionId: applied.id, status: applied.status, deduplicated: true };
+  const result: Record<string, unknown> = isExpense
+    ? { ok: true, requestId: applied.id, status: applied.status, deduplicated: true }
+    : { ok: true, submissionId: applied.id, status: applied.status, deduplicated: true };
   await updateReceipt(env, String(receipt.id), 'completed', result, undefined, applied.id);
   await writeAudit(env, request, context, 'operation_deduplicated', 'offline_sync_receipt', String(receipt.id), {
     operationId: receipt.operationId,
@@ -287,7 +309,6 @@ async function reconcileProcessingReceipt(
   const next = await receiptByKey(env, String(receipt.idempotencyKey));
   return json({ ok: true, state: 'synced', receipt: next ? receiptBody(next, true) : result, result });
 }
-
 async function sync(request: Request, env: OfflineEnv, context: SessionContext) {
   let body: {
     operationId?: string;
@@ -299,7 +320,7 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     entityId?: string;
     capturedAt?: string;
     clientTimezone?: string;
-    payload?: { assignmentId?: string; responses?: Record<string, unknown>; latitude?: number; longitude?: number; accuracy?: number; baseUpdatedAt?: string };
+    payload?: Record<string, unknown>;
   };
   try { body = await request.json(); } catch { return json({ error: 'Invalid offline operation.' }, 400); }
   const operationId = safeText(body.operationId, 160);
@@ -362,10 +383,15 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
     await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'policy-disallowed', clientTimezone: body.clientTimezone, capturedAt }, companyId);
     return json({ error: 'This offline action is not enabled by the current policy.', state: 'needs-review', errorCategory: 'policy' }, 403);
   }
-  if (!hasPermission(context, 'forms.access', 'view', companyId)) {
+  const requiredPermission = kind.startsWith('expense.') ? 'expense.requests' : 'forms.access';
+  const requiredLevel: 'view' | 'create' = kind.startsWith('expense.') ? 'create' : 'view';
+  if (!hasPermission(context, requiredPermission, requiredLevel, companyId)) {
     await writeAudit(env, request, context, 'permission_denied', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'current-permission-denied', clientTimezone: body.clientTimezone, capturedAt }, companyId);
     await logSecurity(env, request, 'offline_permission_denied', { employeeId: context.employee.id, companyId, sessionId: context.sessionId, result: 'rejected', details: { operationId, operationKind: kind } });
-    return json({ error: 'Your current Forms permission does not allow this queued action.', state: 'needs-review', errorCategory: 'permission-denied' }, 403);
+    const error = kind.startsWith('expense.')
+      ? 'Your current expense request permission does not allow this queued action.'
+      : 'Your current Forms permission does not allow this queued action.';
+    return json({ error, state: 'needs-review', errorCategory: 'permission-denied' }, 403);
   }
   if (Date.now() - new Date(capturedAt).getTime() > Math.min(policy.maxOfflineAgeMinutes, sessionRemainingMinutes(session)) * 60_000) {
     await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, { operationId, idempotencyKey, operationKind: kind, outcome: 'offline-age-exceeded', clientTimezone: body.clientTimezone, capturedAt }, companyId);
@@ -422,9 +448,9 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
         operation_kind,entity_type,entity_id,state,attempt_count
       ) VALUES(?,?,?,?,?,?,?, ?,?,'processing',1)
       ON CONFLICT(idempotency_key) DO NOTHING
-    `).bind(id, operationId, idempotencyKey, context.employee.id, companyId, context.sessionId, kind, safeText(body.entityType, 120) || 'workflow_form_assignment', safeText(body.entityId, 160) || safeText(body.payload?.assignmentId, 160) || null).run();
+    `).bind(id, operationId, idempotencyKey, context.employee.id, companyId, context.sessionId, kind, safeText(body.entityType, 120) || (kind.startsWith('expense.') ? 'spend_expense_request' : 'workflow_form_assignment'), safeText(body.entityId, 160) || safeText(body.payload?.assignmentId, 160) || safeText(body.payload?.requestId, 160) || null).run();
   }
-  if (kind !== 'forms.submit') {
+  if (!kind.startsWith('expense.') && kind !== 'forms.submit') {
     await writeAudit(env, request, context, 'operation_rejected', 'offline_operation', operationId, {
       operationId,
       idempotencyKey,
@@ -440,6 +466,61 @@ async function sync(request: Request, env: OfflineEnv, context: SessionContext) 
   if (!receipt) return json({ error: 'The sync receipt could not be created safely.', state: 'failed-retryable', errorCategory: 'receipt' }, 503);
   await writeAudit(env, request, context, 'sync_started', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, attemptCount: Number(receipt.attemptCount || 1), clientTimezone: body.clientTimezone, capturedAt }, companyId);
   const payload = body.payload || {};
+  if (kind.startsWith('expense.')) {
+    try {
+      const response = await handleOfflineSpendOperation(request, env, context, kind, payload);
+      if (!response) {
+        await updateReceipt(env, String(receipt.id), 'rejected', { error: 'This offline expense operation is not supported.' }, 'validation');
+        return json({ error: 'This offline expense operation is not supported.', state: 'needs-review', errorCategory: 'validation' }, 400);
+      }
+      const responseBody = await response.clone().json().catch(() => ({})) as Record<string, unknown>;
+      if (response.ok) {
+        const requestRecord = responseBody.request && typeof responseBody.request === 'object'
+          ? responseBody.request as Record<string, unknown>
+          : undefined;
+        const requestIdValue = safeText(requestRecord?.id || responseBody.requestId || payload.requestId || body.entityId, 160);
+        const status = safeText(requestRecord?.status || responseBody.status, 80)
+          || (kind === 'expense.draft.save' ? 'draft' : kind === 'expense.evidence.upload' ? 'evidence-queued' : 'submitted');
+        const deduplicated = responseBody.deduplicated === true;
+        const result = { ok: true, requestId: requestIdValue, status, deduplicated };
+        await updateReceipt(env, String(receipt.id), 'completed', result, undefined, requestIdValue || undefined);
+        await writeAudit(env, request, context, deduplicated ? 'operation_deduplicated' : 'operation_accepted', 'offline_sync_receipt', String(receipt.id), {
+          operationId,
+          idempotencyKey,
+          operationKind: kind,
+          outcome: deduplicated ? 'deduplicated' : 'accepted',
+          attemptCount: Number(receipt.attemptCount || 1),
+          clientTimezone: body.clientTimezone,
+          capturedAt,
+        }, companyId);
+        const completed = await receiptByKey(env, idempotencyKey);
+        return json({ ok: true, state: 'synced', receipt: completed ? receiptBody(completed, deduplicated) : result, result });
+      }
+      const error = safeText(responseBody.error, 240) || 'The server rejected this queued expense operation.';
+      if (response.status === 409) {
+        await updateReceipt(env, String(receipt.id), 'conflict', { error }, 'conflict');
+        await writeAudit(env, request, context, 'operation_conflict', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, outcome: 'conflict', errorCategory: 'conflict', clientTimezone: body.clientTimezone, capturedAt }, companyId);
+        return json({ error, state: 'needs-review', errorCategory: 'conflict' }, 409);
+      }
+      if (response.status === 403) {
+        await updateReceipt(env, String(receipt.id), 'rejected', { error }, 'permission-denied');
+        await writeAudit(env, request, context, 'permission_denied', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, outcome: 'rejected', errorCategory: 'permission-denied', clientTimezone: body.clientTimezone, capturedAt }, companyId);
+        return json({ error, state: 'needs-review', errorCategory: 'permission-denied' }, 403);
+      }
+      if (response.status >= 400 && response.status < 500) {
+        await updateReceipt(env, String(receipt.id), 'rejected', { error }, 'validation');
+        await writeAudit(env, request, context, 'operation_rejected', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, outcome: 'rejected', errorCategory: 'validation', clientTimezone: body.clientTimezone, capturedAt }, companyId);
+        return json({ error, state: 'needs-review', errorCategory: 'validation' }, response.status);
+      }
+      await updateReceipt(env, String(receipt.id), 'failed_retryable', { error }, 'server-retryable');
+      await writeAudit(env, request, context, 'operation_rejected', 'offline_sync_receipt', String(receipt.id), { operationId, idempotencyKey, operationKind: kind, outcome: 'retryable', errorCategory: 'server-retryable', clientTimezone: body.clientTimezone, capturedAt }, companyId);
+      return json({ error, state: 'failed-retryable', errorCategory: 'server-retryable' }, 503);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'The server could not process this queued expense operation.';
+      await updateReceipt(env, String(receipt.id), 'failed_retryable', { error: message.slice(0, 240) }, 'server-retryable');
+      return json({ error: 'The server could not process this queued expense operation yet.', state: 'failed-retryable', errorCategory: 'server-retryable' }, 503);
+    }
+  }
   const formRequest = new Request(new URL('/api/forms/submit', request.url), {
     method: 'POST',
     headers: {
@@ -496,8 +577,12 @@ async function activity(request: Request, env: OfflineEnv, context: SessionConte
   if (companyId && !companyInScope(context, companyId)) return json({ error: 'Company access is not assigned.' }, 403);
   const formsVisible = companyId
     ? hasPermission(context, 'forms.access', 'view', companyId)
-    : context.companies.some((company) => hasPermission(context, 'forms.access', 'view', company.id));
-  if (!formsVisible) return json({ error: 'Forms access is not assigned.' }, 403);
+      || hasPermission(context, 'expense.own', 'view', companyId)
+      || hasPermission(context, 'expense.requests', 'create', companyId)
+    : context.companies.some((company) => hasPermission(context, 'forms.access', 'view', company.id)
+      || hasPermission(context, 'expense.own', 'view', company.id)
+      || hasPermission(context, 'expense.requests', 'create', company.id));
+  if (!formsVisible) return json({ error: 'Forms or expense access is not assigned.' }, 403);
   const rows = await env.DB.prepare(`
     SELECT id,operation_id AS operationId,operation_kind AS operationKind,
       entity_type AS entityType,entity_id AS entityId,state,attempt_count AS attemptCount,
@@ -887,7 +972,7 @@ async function ownerPolicy(request: Request, env: OfflineEnv, context: SessionCo
   const maxQueueCount = Math.max(1, Math.min(500, Math.floor(Number(body.maxQueueCount || 50))));
   const attachmentMaxBytes = Math.max(1024, Math.min(52_428_800, Math.floor(Number(body.attachmentMaxBytes || 10 * 1024 * 1024))));
   const retentionDays = Math.max(1, Math.min(365, Math.floor(Number(body.retentionDays || 30))));
-  const allowedOperations = Array.isArray(body.allowedOperations) ? body.allowedOperations.map(String).filter((item) => operationKinds.has(item)) : ['forms.submit'];
+  const allowedOperations = Array.isArray(body.allowedOperations) ? body.allowedOperations.map(String).filter((item) => operationKinds.has(item)) : [...defaultAllowedOperations];
   await env.DB.prepare(`
     UPDATE offline_policy SET enabled=?,max_offline_age_minutes=?,max_queue_count=?,
       attachment_max_bytes=?,automatic_sync=?,manual_retry=?,retention_days=?,
@@ -900,7 +985,7 @@ async function ownerPolicy(request: Request, env: OfflineEnv, context: SessionCo
     body.automaticSync === false ? 0 : 1,
     body.manualRetry === false ? 0 : 1,
     retentionDays,
-    JSON.stringify(allowedOperations.length ? allowedOperations : ['forms.submit']),
+    JSON.stringify(allowedOperations.length ? allowedOperations : defaultAllowedOperations),
     context.employee.id,
   ).run();
   await writeAudit(env, request, context, 'offline_policy_updated', 'offline_policy', 'global', {
