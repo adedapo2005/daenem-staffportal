@@ -17,7 +17,7 @@ function sha256(value) { return crypto.createHash('sha256').update(value).digest
 function quote(value) { return "'" + String(value).replaceAll("'", "''") + "'"; }
 function uid(prefix) { return `${prefix}-${crypto.randomUUID()}`; }
 
-function runWrangler(args) {
+function runWrangler(args, label = 'wrangler') {
   return new Promise((resolve, reject) => {
     const child = spawn(npx, ['--no-install', 'wrangler', ...args], { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'] });
     let output = '';
@@ -25,7 +25,7 @@ function runWrangler(args) {
     child.stderr.on('data', (chunk) => { output += chunk; });
     const timeout = setTimeout(() => { child.kill('SIGTERM'); reject(new Error(`wrangler timed out:\n${output}`)); }, 60_000);
     child.on('error', reject);
-    child.on('close', (code) => { clearTimeout(timeout); if (code === 0) resolve(output); else reject(new Error(`wrangler failed (${code}):\n${output}`)); });
+    child.on('close', (code) => { clearTimeout(timeout); if (code === 0) resolve(output); else reject(new Error(`${label} failed (${code}):\n${output}`)); });
   });
 }
 
@@ -133,8 +133,8 @@ async function main() {
   try {
     persistDir = await fs.mkdtemp(path.join(os.tmpdir(), 'daenem-spend-runtime-'));
     await fs.writeFile(testConfig, JSON.stringify(config, null, 2) + '\n');
-    await runWrangler(['d1', 'migrations', 'apply', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir]);
-    await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', seed]);
+    await runWrangler(['d1', 'migrations', 'apply', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir], 'spend migration setup');
+    await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', seed], 'spend fixture seed');
     runtime = spawn(npx, ['--no-install', 'wrangler', 'dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     let output = '';
     runtime.stdout.on('data', (chunk) => { output += chunk; }); runtime.stderr.on('data', (chunk) => { output += chunk; });
