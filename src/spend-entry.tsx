@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import {
   AlertTriangle, Building2, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
   Filter, Landmark, LoaderCircle, LockKeyhole, Plus, Receipt, Save, Send, ShieldCheck,
@@ -406,4 +407,4 @@ function AdminView({ context, companyId }: { context: WorkforceContext; companyI
 const host = document.createElement('div');
 host.id = 'spend-launcher';
 document.body.appendChild(host);
-import('react-dom/client').then(({ createRoot }) => createRoot(host).render(<Launcher />));
+createRoot(host).render(<Launcher />);
