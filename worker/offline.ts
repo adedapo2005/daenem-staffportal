@@ -217,11 +217,15 @@ async function bootstrap(request: Request, env: OfflineEnv, context: SessionCont
     },
     operations: [
       ...(canSubmitForms ? [{ kind: 'forms.submit', mode: 'draft-and-submit', permission: 'forms.access' }] : []),
-      ...(canSubmitExpenses ? [
-        { kind: 'expense.draft.save', mode: 'draft-and-submit', permission: 'expense.requests' },
-        { kind: 'expense.request.submit', mode: 'draft-and-submit', permission: 'expense.requests' },
-        { kind: 'expense.evidence.upload', mode: 'attachment-after-reconnect', permission: 'expense.requests' },
-      ] : []),
+      ...(canSubmitExpenses && policy.allowedOperations.includes('expense.draft.save')
+        ? [{ kind: 'expense.draft.save', mode: 'draft-and-submit', permission: 'expense.requests' }]
+        : []),
+      ...(canSubmitExpenses && policy.allowedOperations.includes('expense.request.submit')
+        ? [{ kind: 'expense.request.submit', mode: 'draft-and-submit', permission: 'expense.requests' }]
+        : []),
+      ...(canSubmitExpenses && policy.allowedOperations.includes('expense.evidence.upload')
+        ? [{ kind: 'expense.evidence.upload', mode: 'attachment-after-reconnect', permission: 'expense.requests' }]
+        : []),
     ],
   });
 }
@@ -291,8 +295,8 @@ async function reconcileProcessingReceipt(
 ) {
   const isExpense = String(receipt.operationKind || '').startsWith('expense.');
   const applied = isExpense
-    ? await env.DB.prepare('SELECT id,status FROM spend_expense_requests WHERE id=? AND requester_employee_id=?')
-      .bind(String(receipt.entityId || ''), context.employee.id)
+    ? await env.DB.prepare('SELECT id,status FROM spend_expense_requests WHERE id=? AND requester_employee_id=? AND company_id=?')
+      .bind(String(receipt.entityId || ''), context.employee.id, String(receipt.companyId || ''))
       .first<{ id: string; status: string }>()
     : await operationAlreadyApplied(env, context.employee.id, String(receipt.idempotencyKey));
   if (!applied) return null;
