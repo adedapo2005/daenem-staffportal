@@ -39,6 +39,21 @@ async function expectWranglerFailure(args, label, expectedText) {
   }
 }
 
+function parseWranglerJson(output, label) {
+  const match = output.match(/(?:^|\n)\s*([\[{][\s\S]*)$/);
+  if (!match) throw new Error(`${label}: Wrangler did not return JSON:\n${output}`);
+  try { return JSON.parse(match[1].trim()); } catch (error) { throw new Error(`${label}: invalid Wrangler JSON: ${error.message}\n${output}`); }
+}
+
+async function localJsonQuery(persistDir, testConfig, command, label) {
+  const output = await runWrangler([
+    'd1', 'execute', databaseName, '--local', '--config', testConfig,
+    '--persist-to', persistDir, '--json', '--command', command,
+  ], label);
+  const parsed = parseWranglerJson(output, label);
+  return Array.isArray(parsed) ? parsed[0] : parsed;
+}
+
 async function freePort() {
   const server = net.createServer();
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
@@ -327,7 +342,53 @@ async function main() {
     result = await request(baseUrl, ownerToken, `/api/spend/requests/${encodeURIComponent(commitmentId)}`); expect('idempotent Procurement transition detail', result, 200); assert('idempotent retry has one event', result.body.request?.commitmentAuditTimeline?.filter((item) => item.idempotencyKey === 'qa-po-idempotent-key').length === 1, result.body); matrix.push(['idempotency retry', 'deduplicated=true; one event/effect', 'PASS']);
     result = await request(baseUrl, managerToken, `/api/procurement/purchase-orders/${encodeURIComponent(idempotentPoId)}/transition`, procurementTransitionInit('received', 'qa-po-idempotent-key', 'qa-po-idempotent-conflict-request', 'Conflict attempt must not reuse the ordered key.')); expect('idempotency conflict', result, 409); assert('idempotency key transition conflict', result.body.errorCategory === 'idempotency-conflict', result.body); matrix.push(['idempotency conflict', '409 for same key with different transition', 'PASS']);
 
-    result = await request(baseUrl, ownerToken, '/api/spend/owner/overview'); expect('owner committed spend metric', result, 200); assert('Owner committed metric uses verified active Procurement rows and exposes exceptions separately', Number(result.body.metrics?.committedKobo) === 730000 && Number(result.body.metrics?.unverifiedCommitmentKobo) === 0, result.body); matrix.push(['Owner committed spend metric', 'verified active rows only; exceptions separate', 'PASS']);
+    const concurrencyRequest = expensePayload('qa-spend-po-concurrency-request', {
+      totalKobo: 900000,
+      purpose: 'Concurrent Purchase Order transition test',
+      businessReason: 'Only one stale-safe transition may create the commitment effect.',
+      lines: [{ description: 'Concurrent transition fixture', amountKobo: 900000, categoryId: 'spend-category-office-supplies', directShared: 'direct' }],
+    });
+    result = await request(baseUrl, ownerToken, '/api/spend/requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(concurrencyRequest) }); expect('concurrency Spend request', result, 201); const concurrencyRequestId = result.body.request?.id;
+    const concurrencyPoId = 'qa-spend-po-concurrency';
+    await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', purchaseOrderFixture({ id: concurrencyPoId, poNo: 'PO-QA-CONCURRENCY', requestId: concurrencyRequestId, amountKobo: 240000, status: 'approved' })], 'concurrency Purchase Order fixture');
+    const concurrentResults = await Promise.all(Array.from({ length: 8 }, (_, index) => request(
+      baseUrl,
+      managerToken,
+      `/api/procurement/purchase-orders/${encodeURIComponent(concurrencyPoId)}/transition`,
+      procurementTransitionInit('ordered', `qa-po-concurrency-key-${index}`, `qa-po-concurrency-request-${index}`),
+    )));
+    for (const [index, concurrent] of concurrentResults.entries()) {
+      if (![201, 409].includes(concurrent.status)) throw new Error(`concurrent transition ${index}: expected 201 or 409, received ${concurrent.status} ${JSON.stringify(concurrent.body)}`);
+      expect(`concurrent transition ${index}`, concurrent, concurrent.status);
+    }
+    const concurrentSuccesses = concurrentResults.filter((item) => item.status === 201);
+    const concurrentConflicts = concurrentResults.filter((item) => item.status === 409);
+    assert('concurrent transitions have exactly one winner', concurrentSuccesses.length === 1 && concurrentConflicts.length === 7, concurrentResults.map((item) => item.status));
+    const losingIndices = concurrentResults.map((item, index) => item.status === 409 ? index : null).filter((index) => index !== null);
+    const losingKeys = losingIndices.map((index) => quote(`qa-po-concurrency-key-${index}`)).join(',');
+    const losingRequestIds = losingIndices.map((index) => quote(`qa-po-concurrency-request-${index}`)).join(',');
+    const concurrencyQuery = await localJsonQuery(persistDir, testConfig, `SELECT
+      (SELECT status FROM purchase_orders WHERE id=${quote(concurrencyPoId)}) AS po_status,
+      (SELECT last_status_event_id FROM purchase_orders WHERE id=${quote(concurrencyPoId)}) AS last_status_event_id,
+      CASE WHEN EXISTS (SELECT 1 FROM purchase_orders po WHERE po.id=${quote(concurrencyPoId)} AND po.last_status_event_id=(SELECT e.id FROM purchase_order_status_events e WHERE e.purchase_order_id=po.id AND e.from_status='approved' AND e.to_status='ordered' LIMIT 1)) THEN 1 ELSE 0 END AS pointer_matches,
+      (SELECT COUNT(*) FROM purchase_order_status_events WHERE purchase_order_id=${quote(concurrencyPoId)} AND from_status='approved' AND to_status='ordered') AS ordered_event_count,
+      (SELECT COUNT(*) FROM audit_logs WHERE module='procurement' AND action='purchase_order_transition' AND entity_type='purchase_order' AND entity_id=${quote(concurrencyPoId)}) AS success_audit_count,
+      (SELECT COALESCE(SUM(amount_kobo),0) FROM spend_purchase_order_commitments WHERE id=${quote(concurrencyPoId)} AND state='active' AND commitment_audit_state='verified') AS committed_effect_kobo,
+      (SELECT COUNT(*) FROM spend_purchase_order_commitments WHERE id=${quote(concurrencyPoId)} AND state='active' AND commitment_audit_state='verified') AS verified_commitment_count,
+      (SELECT COUNT(*) FROM purchase_order_status_events WHERE purchase_order_id=${quote(concurrencyPoId)} AND idempotency_key IN (${losingKeys})) AS losing_event_count,
+      (SELECT COUNT(*) FROM audit_logs WHERE module='procurement' AND action='purchase_order_transition' AND entity_type='purchase_order' AND entity_id=${quote(concurrencyPoId)} AND request_id IN (${losingRequestIds})) AS losing_success_audit_count,
+      (SELECT COUNT(*) FROM purchase_order_status_events WHERE purchase_order_id=${quote(idempotentPoId)} AND idempotency_key='qa-po-idempotent-key') AS idempotent_event_count,
+      (SELECT COUNT(*) FROM audit_logs WHERE module='procurement' AND action='purchase_order_transition' AND entity_type='purchase_order' AND entity_id=${quote(idempotentPoId)} AND request_id='qa-po-idempotent-request') AS idempotent_audit_count,
+      CASE WHEN (SELECT COUNT(*) FROM spend_purchase_order_commitments WHERE id=${quote(concurrencyPoId)} AND state='active' AND commitment_audit_state='verified') > 1 THEN (SELECT COUNT(*) FROM spend_purchase_order_commitments WHERE id=${quote(concurrencyPoId)} AND state='active' AND commitment_audit_state='verified') - 1 ELSE 0 END AS duplicate_financial_effect_count;`, 'concurrency postcondition query');
+    const concurrencyRow = concurrencyQuery.results?.[0] || {};
+    assert('concurrency PO final state and pointer', concurrencyRow.po_status === 'ordered' && Number(concurrencyRow.pointer_matches) === 1 && String(concurrencyRow.last_status_event_id || '').length > 0, concurrencyRow);
+    assert('concurrency creates exactly one ordered event and success audit', Number(concurrencyRow.ordered_event_count) === 1 && Number(concurrencyRow.success_audit_count) === 1, concurrencyRow);
+    assert('concurrency creates one financial effect', Number(concurrencyRow.committed_effect_kobo) === 240000 && Number(concurrencyRow.verified_commitment_count) === 1 && Number(concurrencyRow.duplicate_financial_effect_count) === 0, concurrencyRow);
+    assert('losing requests create no canonical event or success audit', Number(concurrencyRow.losing_event_count) === 0 && Number(concurrencyRow.losing_success_audit_count) === 0, concurrencyRow);
+    assert('idempotent retry creates one audit', Number(concurrencyRow.idempotent_event_count) === 1 && Number(concurrencyRow.idempotent_audit_count) === 1, concurrencyRow);
+    matrix.push(['concurrent different-key Procurement transitions', '8 requests; 1 x 201; 7 x 409; one event/audit/effect', 'PASS']);
+
+    result = await request(baseUrl, ownerToken, '/api/spend/owner/overview'); expect('owner committed spend metric', result, 200); assert('Owner committed metric uses verified active Procurement rows and exposes exceptions separately', Number(result.body.metrics?.committedKobo) === 970000 && Number(result.body.metrics?.unverifiedCommitmentKobo) === 0, result.body); matrix.push(['Owner committed spend metric', 'verified active rows only; exceptions separate', 'PASS']);
     result = await request(baseUrl, ownerToken, `/api/spend/owner/detail?companyId=company-printing&employeeId=qa-spend-employee`); expect('owner commitment evidence detail', result, 200); const ownerCommitmentRow = result.body.requests?.find((row) => row.id === commitmentId); assert('Owner receives safe commitment audit timeline', ownerCommitmentRow?.commitmentAuditTimeline?.some((item) => item.toStatus === 'ordered' && item.actorEmployeeId === 'qa-spend-manager' && item.sessionId === 'qa-spend-manager-session' && item.deviceId === 'qa-spend-manager-device' && item.ipAddress === '198.51.100.21' && item.clientTimezone === 'Africa/Lagos' && item.capturedAt && item.serverReceivedAt && item.requestId === 'qa-po-http-ordered-request' && item.auditState === 'verified'), ownerCommitmentRow); matrix.push(['Owner commitment audit timeline', 'actor/transition/amount/session/time evidence', 'PASS']);
     result = await request(baseUrl, employeeToken, `/api/spend/requests/${encodeURIComponent(commitmentId)}`); expect('employee own commitment request', result, 200); assert('employee does not receive Owner commitment audit history', !Array.isArray(result.body.request?.commitments) && !Array.isArray(result.body.request?.commitmentAuditTimeline), result.body); matrix.push(['employee commitment audit negative', 'Owner-only commitment history', 'PASS']);
     const capex = expensePayload('qa-spend-capex-request', { categoryId: 'qa-spend-capex-category', purpose: 'Capital equipment for the production floor', businessReason: 'A controlled capital purchase must not be treated as operating expense.', directShared: 'direct', erpModule: 'finance', lines: [{ description: 'Capital equipment', amountKobo: 125000, categoryId: 'qa-spend-capex-category', directShared: 'direct' }] });

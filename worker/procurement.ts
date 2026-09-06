@@ -310,7 +310,7 @@ export async function routeProcurement(request: Request, env: ProcurementEnv, co
     // The INSERT derives company, Spend request, from-status, amount and PO
     // number from the canonical row. The event trigger independently checks
     // the same relationship before the following status update runs.
-    await env.DB.batch([
+    const [eventResult, updateResult, auditResult] = await env.DB.batch([
       env.DB.prepare(`
         INSERT INTO purchase_order_status_events(
           id,purchase_order_id,company_id,spend_expense_request_id,from_status,to_status,
@@ -361,22 +361,55 @@ export async function routeProcurement(request: Request, env: ProcurementEnv, co
         INSERT INTO audit_logs(
           id,actor_employee_id,company_id,module,action,entity_type,entity_id,
           before_json,after_json,reason,source,request_id
-        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+        )
+        SELECT
+          ?,e.actor_employee_id,e.company_id,'procurement','purchase_order_transition',
+          'purchase_order',e.purchase_order_id,
+          json_object(
+            'status',e.from_status,
+            'amountKobo',e.amount_kobo,
+            'sourceReference',e.source_reference
+          ),
+          json_object(
+            'status',e.to_status,
+            'amountKobo',e.amount_kobo,
+            'sourceReference',e.source_reference,
+            'eventId',e.id
+          ),
+          e.reason,'web',e.request_id
+        FROM purchase_order_status_events e
+        JOIN purchase_orders po ON po.id=e.purchase_order_id
+        WHERE e.id=?
+          AND po.id=?
+          AND po.company_id=e.company_id
+          AND po.spend_expense_request_id=e.spend_expense_request_id
+          AND po.total_kobo=e.amount_kobo
+          AND po.last_status_event_id=e.id
+          AND po.status=e.to_status
+          AND e.from_status=?
+          AND e.to_status=?
       `).bind(
         uid('audit'),
-        context.employee.id,
-        purchaseOrder.companyId,
-        'procurement',
-        'purchase_order_transition',
-        'purchase_order',
+        eventId,
         purchaseOrderId,
-        JSON.stringify({ status: purchaseOrder.status, amountKobo: Number(purchaseOrder.amountKobo), sourceReference: purchaseOrder.sourceReference }),
-        JSON.stringify({ status: target, amountKobo: Number(purchaseOrder.amountKobo), sourceReference: purchaseOrder.sourceReference, eventId }),
-        reason,
-        'web',
-        correlationId,
+        purchaseOrder.status,
+        target,
       ),
     ]);
+
+    const eventChanges = Number(eventResult?.meta?.changes || 0);
+    const updateChanges = Number(updateResult?.meta?.changes || 0);
+    const auditChanges = Number(auditResult?.meta?.changes || 0);
+    if (eventChanges !== 1 || updateChanges !== 1 || auditChanges !== 1) {
+      // D1 treats zero-row INSERT ... SELECT and conditional UPDATE statements
+      // as successful SQL. Confirm the canonical state before classifying this
+      // attempt; a stale loser must never receive a success audit record.
+      const staleAttempt = await findSavedTransition(env, eventId);
+      if (!staleAttempt || staleAttempt.purchaseOrderStatus !== target || staleAttempt.lastStatusEventId !== eventId) {
+        return json({ error: 'Purchase Order transition lost the canonical concurrency check.', errorCategory: 'transition-conflict' }, 409);
+      }
+      return json({ error: 'Purchase Order transition audit evidence was incomplete.', errorCategory: 'transition-audit-incomplete' }, 409);
+    }
   } catch {
     const retry = await findEventByIdempotencyKey(env, idempotencyKey);
     if (retry && sameIdempotentTransition(retry, purchaseOrder, target)) {
