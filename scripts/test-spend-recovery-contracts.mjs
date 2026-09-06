@@ -12,7 +12,9 @@ const spend = read('worker/spend.ts');
 const offline = read('src/offline-platform.ts');
 const offlineServer = read('worker/offline.ts');
 const entry = read('src/spend-entry.tsx');
+const procurement = read('migrations/0005_commerce_printing.sql');
 const migration = read('migrations/0056_spend_truth_and_controlled_mapping.sql');
+const commitmentMigration = read('migrations/0057_spend_commitment_truth.sql');
 const css = read('src/spend.css');
 
 // Deployment/Actions safety is a source-control contract, not something this
@@ -21,15 +23,36 @@ must(/on:\s*\n\s*workflow_dispatch:\s*\n/.test(workflow), 'Spend QA must be manu
 must(!/^\s*(push|pull_request):/m.test(workflow), 'Spend QA still has an automatic push or pull_request trigger');
 must(workflow.includes('permissions:\n  contents: read') && workflow.includes('jobs:\n  spend-foundation:'), 'workflow permissions or validation job changed unexpectedly');
 
+// Commitment truth reuses the existing Procurement purchase-order source.
+must(procurement.includes('CREATE TABLE IF NOT EXISTS purchase_orders'), 'the existing Procurement purchase-order source is missing');
+must(commitmentMigration.includes('ALTER TABLE purchase_orders ADD COLUMN spend_expense_request_id'), 'Spend request link to the canonical purchase-order source is missing');
+for (const contract of ['spend_purchase_order_commitments', 'DROP VIEW IF EXISTS spend_request_truth', 'committed_kobo', 'commitment_state', "'approved', 'ordered', 'partially_received'", "'received'", "'cancelled'", "'purchase_order'", 'idempotency_key']) must(commitmentMigration.includes(contract), `missing commitment truth contract ${contract}`);
+must(!/CREATE TABLE IF NOT EXISTS\s+spend_expense_commitments/i.test(commitmentMigration), 'a duplicate Spend commitment ledger was introduced');
+must(commitmentMigration.includes('ON DELETE RESTRICT') && commitmentMigration.includes('state=\'active\''), 'canonical commitment history or active-state filtering is not protected');
+
 // Payment truth and accounting-posting truth are separate canonical sources.
 for (const state of ['payment_state', 'finance_posting_state', 'unpaid', 'partially_paid', 'paid', 'not_posted', 'posted', 'reversed']) must(migration.includes(state), `missing orthogonal state ${state}`);
 must(migration.includes('CREATE TABLE IF NOT EXISTS spend_expense_payments'), 'canonical payment table is missing');
 must(migration.includes('CREATE VIEW IF NOT EXISTS spend_request_truth'), 'truth view is missing');
 const requestById = spend.slice(spend.indexOf('async function requestById'), spend.indexOf('async function serializeRequest'));
-must(requestById.includes("pay.status='settled'") && requestById.includes("p.posting_state='posted'") && requestById.includes("je.status='posted'"), 'request metrics do not read canonical payment and posting facts');
+must(requestById.includes('LEFT JOIN spend_request_truth truth') && requestById.includes('truth.paid_kobo') && requestById.includes('truth.recognized_kobo') && requestById.includes('truth.committed_kobo'), 'request metrics do not read the canonical truth projection');
 must(!/paidKobo[\s\S]{0,300}finance_posted|finance_posted[\s\S]{0,300}paidKobo/.test(requestById), 'Finance posting is being used as payment evidence');
 must(!spend.includes('INSERT INTO spend_expense_payments'), 'Batch 1 must not execute payments');
-must(spend.includes('paymentState') && spend.includes('financePostingState'), 'orthogonal state fields are not serialized');
+must(spend.includes('paymentState') && spend.includes('financePostingState') && spend.includes('commitmentState'), 'orthogonal state fields are not serialized');
+must(!spend.includes('commitmentStates') && !/status\s+IN\s*\(\s*'committed'[^)]*'closed'/i.test(spend), 'committed spend is still inferred from workflow statuses');
+
+// Deterministic truth fixtures cover the independent states without making a
+// later payment, posting, or closure establish a commitment.
+const calculateCommittedKobo = (commitments) => commitments
+  .filter((commitment) => commitment.state === 'active')
+  .reduce((total, commitment) => total + commitment.amountKobo, 0);
+must(calculateCommittedKobo([]) === 0, 'approved-only requests must remain uncommitted');
+must(calculateCommittedKobo([{ amountKobo: 1_000_000, state: 'active' }]) === 1_000_000, 'explicit commitment amount is not authoritative');
+must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'active' }]) === 600_000, 'partial commitment is inflated to the request amount');
+must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'released' }]) === 0, 'released commitment still contributes to current spend');
+must(calculateCommittedKobo([{ amountKobo: 600_000, state: 'reversed' }]) === 0, 'reversed commitment still contributes to current spend');
+must(calculateCommittedKobo([{ amountKobo: 300_000, state: 'active' }, { amountKobo: 200_000, state: 'active' }]) === 500_000, 'multiple active commitments are not summed');
+must(commitmentMigration.includes("WHERE c.expense_request_id=r.id") && commitmentMigration.includes("c.company_id=r.company_id") && commitmentMigration.includes("c.state='active'"), 'request truth does not scope canonical commitments by request, company, and active state');
 
 // Payroll and ledger mappings must fail closed.
 must((spend.match(/payroll_canonical/g) || []).length >= 2, 'manual payroll protection is not present at request and posting boundaries');
