@@ -22,6 +22,10 @@ expect('worker/spend.ts', spend, 'evidenceMatch && request.method === \'PUT\'');
 for (const erp of ['printing', 'bakery', 'autos', 'logistics', 'properties', 'finance']) expect('worker/spend.ts', spend, `'${erp}'`);
 for (const kind of ['expense.draft.save', 'expense.request.submit', 'expense.evidence.upload']) expect('offline-platform.ts', offline, kind);
 for (const phrase of ['My Expense Requests', 'controlled', 'Submit request', 'Offline: request safely queued', 'ERP_CONTEXTS', 'Show Both', 'Network location is not GPS']) expect('spend-entry.tsx', entry, phrase);
+expect('spend-entry.tsx', entry, "import { OfflinePlatformProvider, useOfflinePlatform } from './offline-sync';");
+expect('spend-entry.tsx', entry, '<OfflinePlatformProvider context={context}>');
+expect('spend-entry.tsx', entry, 'isNetworkTransportFailure(error)');
+expect('spend-entry.tsx', entry, 'setContext(null)');
 expect('spend worker integration', read('scripts/test-spend-worker-runtime.mjs'), "runtimeEntrypoint: 'worker/runtime.ts'");
 
 console.log('Spend foundation contract checks passed.');
