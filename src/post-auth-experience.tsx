@@ -18,14 +18,35 @@ export function SmartContextPanel({ definition, context, onOpenHelp, compact = f
   definition: SmartContextDefinition; context: WorkforceContext; onOpenHelp?: () => void; compact?: boolean;
 }) {
   const canHelp = hasWorkforcePermission(context, 'ai_guide.access', 'view');
-  return <aside className={'smart-context-panel' + (compact ? ' smart-context-compact' : '')} data-smart-context="true">
+  return <aside className={'smart-context-panel' + (compact ? ' smart-context-compact' : '')} data-smart-context="true" data-smart-context-definition={definition.id} data-smart-context-path={definition.canonicalPath}>
     <span className="eyebrow">HELP FOR THIS PAGE</span>
     <h3>{definition.title}</h3>
     <p>{definition.shortPurpose}</p>
-    <details><summary>What this feature does</summary><p>{definition.whatItDoes}</p></details>
-    <details><summary>What to do next</summary><p>{definition.expectedOutcome}</p></details>
+    <details><summary>What This Feature Does</summary><p>{definition.whatItDoes}</p></details>
+    <details><summary>What To Do Next</summary><p>{definition.expectedOutcome}</p></details>
     {canHelp && onOpenHelp && <button type="button" className="text-action" onClick={onOpenHelp}>Open {definition.relatedHelp}</button>}
   </aside>;
+}
+
+export function PostAuthContextualNavigation({ moduleLabel, canonicalPath, contextKey }: {
+  moduleLabel: string; canonicalPath: string; contextKey: string;
+}) {
+  const definition = getSmartContext(contextKey, { title: moduleLabel, canonicalPath });
+  return <nav className="postauth-contextual-page-navigation" data-contextual-page-navigation="true" data-contextual-context={definition.id} data-contextual-path={canonicalPath} aria-label="Page context navigation">
+    <ol className="postauth-breadcrumbs">
+      <li>Staff Portal</li>
+      <li aria-current="page">{moduleLabel}</li>
+    </ol>
+    <div className="postauth-contextual-page-summary">
+      <span className="eyebrow">CURRENT WORKSPACE</span>
+      <strong>{moduleLabel}</strong>
+      <span>{definition.shortPurpose}</span>
+    </div>
+    <div className="postauth-contextual-tabs" role="list" aria-label="Current page sections">
+      <span role="listitem" className="active" aria-current="page">Overview</span>
+      <span role="listitem">Smart Context</span>
+    </div>
+  </nav>;
 }
 
 export function PostAuthHomeBanner({ context, summary, company, onNavigate, onOpenModule, onOpenModuleHub }: {
@@ -38,16 +59,16 @@ export function PostAuthHomeBanner({ context, summary, company, onNavigate, onOp
   const field = (name: DashboardAggregateField) => canSeeDashboardField(context, name, company.id);
   const primary: HomeAction[] = tone === 'owner'
     ? [
-      field('pendingApprovals') ? { label: 'Review approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onNavigate('forms') } : null,
-      field('securityAlerts') ? { label: 'Security signals', detail: String(summary?.securityAlerts ?? '—'), action: () => onNavigate('security') } : null,
+      field('pendingApprovals') ? { label: 'Review Approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onNavigate('forms') } : null,
+      field('securityAlerts') ? { label: 'Security Signals', detail: String(summary?.securityAlerts ?? '—'), action: () => onNavigate('security') } : null,
     ].filter((item): item is HomeAction => Boolean(item))
     : tone === 'manager'
       ? [
-        field('employees') ? { label: 'Team workload', detail: String(summary?.employees ?? '—'), action: () => onNavigate('people') } : null,
-        field('pendingApprovals') ? { label: 'Pending approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onNavigate('forms') } : null,
+        field('employees') ? { label: 'Team Workload', detail: String(summary?.employees ?? '—'), action: () => onNavigate('people') } : null,
+        field('pendingApprovals') ? { label: 'Pending Approvals', detail: String(summary?.pendingApprovals ?? '—'), action: () => onNavigate('forms') } : null,
       ].filter((item): item is HomeAction => Boolean(item))
       : [];
-  const actions: HomeAction[] = primary.length ? primary : [{ label: tone === 'employee' ? 'My workspace' : 'Open workspaces', detail: tone === 'employee' ? 'Next action' : 'Authorized actions', action: onOpenModuleHub || (() => onOpenModule('employee')) }];
+  const actions: HomeAction[] = primary.length ? primary : [{ label: tone === 'employee' ? 'My Workspace' : 'Open Workspaces', detail: tone === 'employee' ? 'Next Action' : 'Authorized Actions', action: onOpenModuleHub || (() => onOpenModule('employee')) }];
   return <section className={'postauth-home-banner postauth-tone-' + tone} data-postauth-primary-hero="true" aria-labelledby="postauth-home-title">
     <div className="postauth-home-copy"><span className="eyebrow">{tone === 'owner' ? 'OWNER COMMAND CENTER' : tone === 'manager' ? 'MANAGER HOME' : 'EMPLOYEE HOME'} · {company.name}</span><h1 id="postauth-home-title">{definition.title}</h1><p>{definition.shortPurpose}</p></div>
     <div className="postauth-home-actions">{actions.map((item) => <button key={item.label} type="button" className="postauth-signal" onClick={item.action}><span>{item.label}</span><strong>{item.detail}</strong></button>)}</div>
@@ -60,7 +81,8 @@ export function PostAuthFeatureFrame({ profile, moduleLabel, canonicalPath, cont
 }) {
   const definition = getSmartContext(contextKey || moduleLabel.toLowerCase().replaceAll(' ', '-'), { title: moduleLabel, canonicalPath });
   return <section className={'postauth-feature-frame postauth-feature-' + profile.id} aria-labelledby="postauth-feature-title" data-feature-context={definition.id}>
-    <header className="postauth-feature-header"><div><span className="eyebrow">DAENEM BUSINESS ERP · {definition.canonicalPath}</span><h1 id="postauth-feature-title">{moduleLabel}</h1><p>{definition.shortPurpose}</p></div><div className="postauth-feature-actions"><button type="button" className="secondary-button" onClick={onOpenModuleHub}>Switch workspace</button>{hasWorkforcePermission(context, 'ai_guide.access', 'view') && <button type="button" className="text-action" onClick={onNavigateHelp}>Help for this page</button>}</div></header>
+    <PostAuthContextualNavigation moduleLabel={moduleLabel} canonicalPath={canonicalPath} contextKey={contextKey || definition.id} />
+    <header className="postauth-feature-header"><div><span className="eyebrow">DAENEM BUSINESS ERP · {definition.canonicalPath}</span><h1 id="postauth-feature-title">{moduleLabel}</h1><p>{definition.shortPurpose}</p></div><div className="postauth-feature-actions"><button type="button" className="secondary-button" onClick={onOpenModuleHub}>Switch Workspace</button>{hasWorkforcePermission(context, 'ai_guide.access', 'view') && <button type="button" className="text-action" onClick={onNavigateHelp}>Help For This Page</button>}</div></header>
     <div className={'postauth-feature-regions postauth-regions-' + profile.detailMode}><div className="postauth-feature-main">{children}</div><SmartContextPanel definition={definition} context={context} onOpenHelp={onNavigateHelp} /></div>
   </section>;
 }
@@ -70,18 +92,33 @@ type PostAuthOverviewCompositionProps = {
   kpis: ReactNode; widgets: ReactNode; workspace: ReactNode; owner: ReactNode; intelligence: ReactNode; clocks: ReactNode;
 };
 
-export function PostAuthOverviewComposition({ profile, context, smartContext, hero, pulse, loading, kpis, widgets, workspace, owner, intelligence, clocks }: PostAuthOverviewCompositionProps) {
+export function PostAuthLayoutRenderer({ profile, context, smartContext, hero, pulse, loading, kpis, widgets, workspace, owner, intelligence, clocks }: PostAuthOverviewCompositionProps) {
   const className = 'postauth-dashboard-composition postauth-composition-' + profile.id;
   const contextPanel = <SmartContextPanel definition={smartContext} context={context} compact />;
   const ownerFirst = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) && Boolean(intelligence);
-  if (profile.id === 'workspace-canvas') return <section className={className} aria-label="Authenticated dashboard"><aside className="postauth-composition-canvas-nav"><span className="eyebrow">MY WORKSPACE</span><strong>Work zones</strong><small>Move between the work areas you use most.</small></aside><div className="postauth-composition-canvas-main">{hero}{workspace}{widgets}{pulse}{kpis}{owner}{intelligence}</div><aside className="postauth-composition-rail">{contextPanel}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'operational-cockpit') return <section className={className} aria-label="Authenticated dashboard"><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-control-strip"><span className="eyebrow">LIVE CONTROL SURFACE</span><strong>Queues, status and next actions.</strong></div><div className="postauth-composition-work">{pulse}{kpis}{workspace}{widgets}{loading}{owner}{intelligence}</div><aside className="postauth-composition-rail">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'insight-magazine') return <section className={className} aria-label="Authenticated dashboard"><div className="postauth-composition-lead">{hero}</div><main className="postauth-composition-story">{intelligence}{workspace}{pulse}{kpis}</main><aside className="postauth-composition-story-rail">{contextPanel}{widgets}{owner}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'master-detail') return <section className={className} aria-label="Authenticated dashboard"><aside className="postauth-composition-master-pane"><span className="eyebrow">WORK INDEX</span><strong>Recent work</strong>{workspace}{pulse}</aside><main className="postauth-composition-detail-pane">{hero}{kpis}{widgets}{loading}{owner}{intelligence}</main><aside className="postauth-composition-rail">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'horizon-wide') return <section className={className} aria-label="Authenticated dashboard"><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-kpis">{kpis}</div><main className="postauth-composition-data-canvas">{workspace}{widgets}{pulse}{intelligence}{owner}{loading}</main><aside className="postauth-composition-drawer">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'adaptive-bento') return <section className={className} aria-label="Authenticated dashboard"><div className="postauth-composition-bento-hero">{hero}</div><div className="postauth-composition-bento-kpis">{kpis}</div><div className="postauth-composition-bento-work">{workspace}</div><div className="postauth-composition-bento-pulse">{pulse}</div><div className="postauth-composition-bento-widgets">{widgets}{loading}</div><aside className="postauth-composition-bento-rail">{contextPanel}{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'focus-flow') return <section className={className} aria-label="Authenticated dashboard"><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-next-action">{owner}{kpis}</div><main className="postauth-composition-focus-work">{workspace}{widgets}</main><aside className="postauth-composition-rail">{contextPanel}{pulse}{intelligence}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'enterprise-studio') return <section className={className} aria-label="Authenticated dashboard"><main className="postauth-composition-studio-canvas">{hero}{workspace}{pulse}{widgets}{loading}</main><aside className="postauth-composition-studio-inspector">{contextPanel}{kpis}{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  if (profile.id === 'board-pulse') return <section className={className} aria-label="Authenticated dashboard"><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-pulse-strip">{pulse}{kpis}</div><main className="postauth-composition-board">{workspace}{widgets}{loading}</main><aside className="postauth-composition-rail">{contextPanel}{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
-  return <section className={className} aria-label="Authenticated dashboard"><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-kpis">{kpis}</div><main className="postauth-composition-work">{ownerFirst ? <>{intelligence}{owner}{pulse}{loading}{widgets}</> : <>{pulse}{loading}{widgets}{owner}{intelligence}</>}</main><aside className="postauth-composition-rail">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  const structure = profile.structure;
+  const sectionProps = {
+    className,
+    'aria-label': 'Authenticated dashboard',
+    'data-layout-renderer': structure.rendererId,
+    'data-layout-contract-id': profile.id === 'master-detail' ? 'master-detail-workspace' : profile.id,
+    'data-layout-navigation-geometry': structure.navigationGeometry,
+    'data-layout-content-mode': structure.contentMode,
+    'data-layout-inspector-mode': structure.inspectorMode,
+    'data-layout-mobile-transform': structure.mobileTransform,
+    'data-layout-motion-personality': structure.motionPersonality,
+  } as const;
+  if (profile.id === 'workspace-canvas') return <section {...sectionProps}><aside className="postauth-composition-canvas-nav"><span className="eyebrow">MY WORKSPACE</span><strong>Work Zones</strong><small>Move Between The Work Areas You Use Most.</small></aside><div className="postauth-composition-canvas-main">{hero}{workspace}{widgets}{pulse}{kpis}{owner}{intelligence}</div><aside className="postauth-composition-rail">{contextPanel}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'operational-cockpit') return <section {...sectionProps}><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-control-strip"><span className="eyebrow">LIVE CONTROL SURFACE</span><strong>Queues, Status And Next Actions.</strong></div><div className="postauth-composition-work">{pulse}{kpis}{workspace}{widgets}{loading}{owner}{intelligence}</div><aside className="postauth-composition-rail">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'insight-magazine') return <section {...sectionProps}><div className="postauth-composition-lead">{hero}</div><main className="postauth-composition-story">{intelligence}{workspace}{pulse}{kpis}</main><aside className="postauth-composition-story-rail">{contextPanel}{widgets}{owner}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'master-detail') return <section {...sectionProps}><aside className="postauth-composition-master-pane"><span className="eyebrow">WORK INDEX</span><strong>Recent Work</strong>{workspace}{pulse}</aside><main className="postauth-composition-detail-pane">{hero}{kpis}{widgets}{loading}{owner}{intelligence}</main><aside className="postauth-composition-rail">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'horizon-wide') return <section {...sectionProps}><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-kpis">{kpis}</div><main className="postauth-composition-data-canvas">{workspace}{widgets}{pulse}{intelligence}{owner}{loading}</main><aside className="postauth-composition-drawer">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'adaptive-bento') return <section {...sectionProps}><div className="postauth-composition-bento-hero">{hero}</div><div className="postauth-composition-bento-kpis">{kpis}</div><div className="postauth-composition-bento-work">{workspace}</div><div className="postauth-composition-bento-pulse">{pulse}</div><div className="postauth-composition-bento-widgets">{widgets}{loading}</div><aside className="postauth-composition-bento-rail">{contextPanel}{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'focus-flow') return <section {...sectionProps}><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-next-action">{owner}{kpis}</div><main className="postauth-composition-focus-work">{workspace}{widgets}</main><aside className="postauth-composition-rail">{contextPanel}{pulse}{intelligence}{loading}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'enterprise-studio') return <section {...sectionProps}><main className="postauth-composition-studio-canvas">{hero}{workspace}{pulse}{widgets}{loading}</main><aside className="postauth-composition-studio-inspector">{contextPanel}{kpis}{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  if (profile.id === 'board-pulse') return <section {...sectionProps}><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-pulse-strip">{pulse}{kpis}</div><main className="postauth-composition-board">{workspace}{widgets}{loading}</main><aside className="postauth-composition-rail">{contextPanel}{owner}{intelligence}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
+  return <section {...sectionProps}><div className="postauth-composition-lead">{hero}</div><div className="postauth-composition-kpis">{kpis}</div><main className="postauth-composition-work">{ownerFirst ? <>{intelligence}{owner}{pulse}{loading}{widgets}</> : <>{pulse}{loading}{widgets}{owner}{intelligence}</>}</main><aside className="postauth-composition-rail">{contextPanel}</aside><div className="postauth-composition-clocks">{clocks}</div></section>;
 }
+
+/** Backwards-compatible export for accepted call sites and contract tooling. */
+export const PostAuthOverviewComposition = PostAuthLayoutRenderer;

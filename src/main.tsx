@@ -19,6 +19,7 @@ import './zip-dashboard.css';
 import './premium-staffportal.css';
 import './signin-experience.css';
 import './postauth-layout.css';
+import './postauth-readiness.css';
 import { DEFAULT_LAYOUT_ID, getLayoutProfile, normalizeLayoutPreference, readLocalLayoutPreference, writeLocalLayoutPreference, type LayoutPreference } from './layout-system';
 import './theme-studio-entry';
 import { ZipDashboard, type LiveDataStatus, type ZipDashboardSummary } from './zip-dashboard';

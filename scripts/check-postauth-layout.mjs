@@ -46,12 +46,12 @@ must(shell.includes('layoutProfile') && shell.includes('data-layout-profile') &&
 must((zip.match(/<PostAuthHomeBanner/g) || []).length === 1, 'Home must render exactly one primary hero');
 must(home.includes('postauth-composition-kpis') && home.includes('{intelligence}{owner}{pulse') && !home.includes('{intelligence}{owner}{kpis}{pulse'), 'Owner Executive Command must render one primary KPI strip');
 must(zip.includes('data-primary-kpi-grid'), 'primary KPI strip must have a stable structural marker');
-must(zip.includes('Your profile') && zip.includes('Your access') && zip.includes('isManagerial'), 'employee overview must avoid unauthorized aggregate access disclosure');
+must(zip.includes('Your Profile') && zip.includes('Your Access') && zip.includes('isManagerial'), 'employee overview must avoid unauthorized aggregate access disclosure');
 must(!zip.includes('postauth-layout-ribbon') && !zip.includes('LAYOUT ADAPTER') && !zip.includes('Theme 01') && !zip.includes('Workspace composition'), 'developer scaffolding is exposed in normal dashboard UI');
 must(zip.includes('dashboardWidgetRegistry') && zip.includes('canRenderDashboardWidget') && zip.includes('visibleOrder'), 'dashboard widgets are not permission-aware at render time');
 must(capabilities.includes('DASHBOARD_FIELD_PERMISSIONS') && capabilities.includes('canSeeDashboardField'), 'dashboard capability map is missing');
 must(zip.includes('canSeeDashboardField') && zip.includes('scopedSummary') && zip.includes('fields:') && capabilities.includes("'attendance.access'") && capabilities.includes("'security.access'") && capabilities.includes("'forms.access'") && capabilities.includes("'facilities.access'"), 'aggregate dashboard field gating is not enforced');
-must(zip.includes('attendancePresentation') && zip.includes('finiteNumber') && zip.includes('Present today in authorized scope') && zip.includes('data-dashboard-field={tile.field}'), 'attendance presentation must not calculate an unauthorized denominator');
+must(zip.includes('attendancePresentation') && zip.includes('finiteNumber') && zip.includes('Present Today In Authorized Scope') && zip.includes('data-dashboard-field={tile.field}'), 'attendance presentation must not calculate an unauthorized denominator');
 must(summaryWorker.includes('DASHBOARD_FIELD_PERMISSIONS') && summaryWorker.includes('permittedDashboardCompanyIds') && !summaryWorker.includes('canSeeAggregateSummary'), 'dashboard summary is not field-authorized at the server boundary');
 must(navigation.includes('data-navigation-adapter') && ['executive-command-sidebar', 'workspace-canvas-rail', 'operational-cockpit-rail', 'insight-magazine-command', 'master-detail-navigation', 'horizon-wide-command', 'adaptive-bento-sidebar', 'contextual', 'enterprise-studio-rail', 'board-pulse-operations'].every((marker) => navigation.includes(marker)), 'each layout needs an actual navigation adapter');
 must(worker.includes('before') && worker.includes('after') && worker.includes('target') && worker.includes('restorable') && worker.includes("entry.scope === 'personal'") && worker.includes('rollback_personal'), 'scope-aware experience rollback is missing');
@@ -76,7 +76,7 @@ must(css.includes('postauth-composition-clocks') && css.includes('metric-grid ar
 must(system.includes('MOTION_TOKENS') && system.includes('getMotionTokens'), 'central motion presets are missing');
 must(studio.includes('CANONICAL_ERP_IDS') && studio.includes('/api/admin/roles') && studio.includes('Read-only legacy record'), 'Layout Studio must derive scope options and protect legacy history');
 must(studio.includes('LayoutPreviewVisual') && studio.includes('data-preview-navigation') && studio.includes('data-preview-shell'), 'Layout Studio previews are too generic');
-must(zip.includes('ManagerCommandCenter') && zip.includes('Team rhythm, next actions'), 'Manager Home is not implemented as a role-specific experience');
+must(zip.includes('ManagerCommandCenter') && zip.includes('Team Rhythm, Next Actions'), 'Manager Home is not implemented as a role-specific experience');
 must(ids.every((id) => css.includes('postauth-composition-' + id)), 'each layout profile needs a distinct composition style');
 must(packageFile.scripts?.prebuild?.includes('check-postauth-layout.mjs'), 'post-auth contract is not wired into prebuild');
 must(smartContext.includes('SMART_CONTEXT_REGISTRY') && smartContext.includes('whatItDoes') && smartContext.includes('expectedOutcome'), 'smart context registry is incomplete');

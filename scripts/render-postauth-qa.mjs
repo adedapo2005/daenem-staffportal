@@ -33,6 +33,10 @@ const expectedAdapters = {
   'board-pulse': 'board-pulse-operations',
 };
 
+function isExpectedQaResourceWarning(message) {
+  return message.includes('fonts.googleapis.com');
+}
+
 const allCompanies = [
   { id: 'company-printing', code: 'PRINT', name: 'Printing & Technology', primary: true },
   { id: 'company-bakery', code: 'BAKERY', name: 'Bakery', primary: false },
@@ -248,6 +252,7 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
   const metric = await page.evaluate((input) => {
     const root = document.querySelector('.dashboard-page');
     const nav = document.querySelector('[data-navigation-adapter]');
+    const layoutNode = document.querySelector('[data-layout-renderer]');
     const buttons = Array.from(document.querySelectorAll('button'));
     const labelledButtons = buttons.filter((button) => Boolean(button.getAttribute('aria-label') || button.textContent?.trim()));
     const bodyText = document.body.innerText || '';
@@ -270,6 +275,13 @@ async function pageMetrics(page, role, layoutId, screenshot, viewport, extra = {
       role: input.role,
       requestedLayout: input.layoutId,
       renderedLayout: root?.getAttribute('data-layout-profile') || null,
+      layoutRenderer: layoutNode?.getAttribute('data-layout-renderer') || null,
+      layoutContractId: layoutNode?.getAttribute('data-layout-contract-id') || null,
+      layoutNavigationGeometry: layoutNode?.getAttribute('data-layout-navigation-geometry') || null,
+      layoutContentMode: layoutNode?.getAttribute('data-layout-content-mode') || null,
+      layoutInspectorMode: layoutNode?.getAttribute('data-layout-inspector-mode') || null,
+      layoutMobileTransform: layoutNode?.getAttribute('data-layout-mobile-transform') || null,
+      layoutMotionPersonality: layoutNode?.getAttribute('data-layout-motion-personality') || null,
       activeErp: root?.getAttribute('data-active-erp') || null,
       shellMode: nav?.getAttribute('data-shell-mode') || null,
       navigationAdapter: nav?.getAttribute('data-navigation-adapter') || null,
@@ -342,9 +354,11 @@ async function capture(browser, role, layoutId, width, height, name, options = {
   const viewport = { width, height };
   const screenshot = 'screenshots/' + name + '.png';
   const pageErrors = [];
+  const failedRequests = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), errorText: request.failure()?.errorText || '' }));
   page.on('console', (message) => {
-    if (message.type() === 'error') runtimeErrors.push(role + '/' + layoutId + ': ' + message.text());
+    if (message.type() === 'error' && !isExpectedQaResourceWarning(message.location().url + ' ' + message.text())) runtimeErrors.push(role + '/' + layoutId + ': ' + message.text() + (message.location().url ? ' [' + message.location().url + ']' : ''));
   });
   try {
     await page.setViewportSize(viewport);
@@ -371,9 +385,10 @@ async function capture(browser, role, layoutId, width, height, name, options = {
       const response = await fetch('/api/dashboard/summary');
       return await response.json();
     });
-    await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
+    await page.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled', fullPage: Boolean(options.fullPage) });
     const metric = await pageMetrics(page, role, layoutId, screenshot, viewport, {
       pageErrors,
+      failedRequests,
       pageKind: options.pageKind || options.metric?.pageKind,
       navigatedTo: options.navigateText || null,
       backendSummaryKeys: backendSummary ? Object.keys(backendSummary) : null,
@@ -618,10 +633,10 @@ async function capturePermissionMatrix(browser) {
   const commonKeys = ['refreshedAt', 'workDate', 'companyId', 'scope', 'attendanceRule'];
   const allAggregateKeys = [...commonKeys, 'employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'];
   const cases = [
-    { role: 'employee', layout: 'focus-flow', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Needs review', 'Security health', 'Attendance categories', 'Security alerts', 'Team workload', 'Approvals'], allowedApiKeys: commonKeys },
-    { role: 'attendance-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Security health', 'Pending approvals', 'Security alerts', 'Overdue requirements', 'Control signals'], allowedApiKeys: [...commonKeys, 'present', 'incompleteAttendance'] },
-    { role: 'approval-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'securityAlerts', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Security health', 'Security alerts', 'Attendance'], allowedApiKeys: [...commonKeys, 'pendingApprovals', 'overdueRequirements'] },
-    { role: 'security-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present today', 'Attendance categories', 'Approvals', 'Overdue requirements', 'Needs review'], allowedApiKeys: [...commonKeys, 'securityAlerts'] },
+    { role: 'employee', layout: 'focus-flow', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present Today', 'Needs Review', 'Security Health', 'Attendance Categories', 'Security Alerts', 'Team Workload', 'Approvals'], allowedApiKeys: commonKeys },
+    { role: 'attendance-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'pendingApprovals', 'securityAlerts', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Security Health', 'Pending Approvals', 'Security Alerts', 'Overdue Requirements', 'Control Signals'], allowedApiKeys: [...commonKeys, 'present', 'incompleteAttendance'] },
+    { role: 'approval-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'securityAlerts', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present Today', 'Attendance Categories', 'Security Health', 'Security Alerts', 'Attendance'], allowedApiKeys: [...commonKeys, 'pendingApprovals', 'overdueRequirements'] },
+    { role: 'security-manager', layout: 'operational-cockpit', forbiddenKeys: ['employees', 'present', 'incompleteAttendance', 'pendingApprovals', 'overdueRequirements', 'maintenanceAlerts'], forbiddenLabels: ['Employees', 'Present Today', 'Attendance Categories', 'Approvals', 'Overdue Requirements', 'Needs Review'], allowedApiKeys: [...commonKeys, 'securityAlerts'] },
     { role: 'owner', layout: 'executive-command', forbiddenKeys: [], forbiddenLabels: [], allowedApiKeys: allAggregateKeys },
   ];
   for (const item of cases) {
@@ -652,8 +667,10 @@ async function captureOwnerCanonicalNavigation(browser) {
     const page = fixture.page;
     const pageErrors = [];
     const consoleErrors = [];
+    const failedRequests = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
-    page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+    page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), errorText: request.failure()?.errorText || '' }));
+    page.on('console', (message) => { if (message.type() === 'error' && !isExpectedQaResourceWarning(message.location().url + ' ' + message.text())) consoleErrors.push(message.text()); });
     try {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
@@ -664,10 +681,10 @@ async function captureOwnerCanonicalNavigation(browser) {
       await action.click();
       await page.waitForSelector('.dashboard-view-security .postauth-feature-frame', { state: 'visible', timeout: 10000 });
       const opened = await page.locator('.dashboard-view-security .postauth-feature-frame h1').filter({ hasText: 'Security Center' }).count() === 1;
-      outcomes.push({ layoutId, opened, pageErrors, consoleErrors });
+      outcomes.push({ layoutId, opened, pageErrors, consoleErrors, failedRequests });
       if (!opened || pageErrors.length || consoleErrors.length) throw new Error('Security canonical navigation failed for ' + layoutId);
     } catch (error) {
-      outcomes.push({ layoutId, opened: false, pageErrors, consoleErrors, error: error instanceof Error ? error.message : String(error) });
+      outcomes.push({ layoutId, opened: false, pageErrors, consoleErrors, failedRequests, error: error instanceof Error ? error.message : String(error) });
       hardFailure = true;
       runtimeErrors.push('Owner canonical navigation: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
@@ -712,8 +729,10 @@ async function captureErpSurfaces(browser) {
     const page = fixture.page;
     const pageErrors = [];
     const consoleErrors = [];
+    const failedRequests = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
-    page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+    page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), errorText: request.failure()?.errorText || '' }));
+    page.on('console', (message) => { if (message.type() === 'error' && !isExpectedQaResourceWarning(message.location().url + ' ' + message.text())) consoleErrors.push(message.text()); });
     try {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
@@ -760,7 +779,7 @@ async function captureErpSurfaces(browser) {
         screenshot = 'screenshots/' + screenshotName + '.png';
         await surface.screenshot({ path: path.join(evidenceDir, screenshot), animations: 'disabled' });
       }
-      const result = { moduleId, layoutId, moduleExperience, presentation, resolvedBeforeSurface, surfaceContentVisible, surfaceHeading: await heading.textContent(), pageErrors, consoleErrors, screenshot };
+      const result = { moduleId, layoutId, moduleExperience, presentation, resolvedBeforeSurface, surfaceContentVisible, surfaceHeading: await heading.textContent(), pageErrors, consoleErrors, failedRequests, screenshot };
       await page.locator(closeSelector).last().evaluate((button) => button.click());
       await surface.waitFor({ state: 'hidden', timeout: 10000 });
       return result;
@@ -847,14 +866,27 @@ async function captureMotionPresets(browser) {
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
+  const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH
+    || [
+      '/tmp/daenem-webadmin-chromium-v2/chromium',
+      '/root/.cache/ms-playwright/chromium-1187/chrome-linux/chrome',
+    ].find((candidate) => fs.existsSync(candidate));
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--no-zygote'],
+    ...(executablePath ? { executablePath } : {}),
+  });
   try {
     for (const layoutId of layouts) await capture(browser, 'owner', layoutId, 1920, 1080, 'owner-' + layoutId + '-1920x1080');
     await capture(browser, 'owner', 'executive-command', 3840, 2160, 'owner-executive-command-3840x2160');
+    await capture(browser, 'owner', 'executive-command', 2560, 1440, 'owner-executive-command-2560x1440');
     await capture(browser, 'owner', 'executive-command', 1440, 900, 'owner-executive-command-1440x900');
     await capture(browser, 'owner', 'executive-command', 1366, 768, 'owner-executive-command-1366x768');
     await capture(browser, 'owner', 'executive-command', 1024, 768, 'owner-executive-command-1024x768');
+    await capture(browser, 'owner', 'executive-command', 768, 1024, 'owner-executive-command-768x1024');
+    await capture(browser, 'owner', 'executive-command', 1024, 1366, 'owner-executive-command-1024x1366');
     await capture(browser, 'owner', 'executive-command', 390, 844, 'owner-executive-command-390x844');
+    await capture(browser, 'owner', 'executive-command', 430, 932, 'owner-executive-command-430x932');
     await capture(browser, 'employee', 'focus-flow', 1920, 1080, 'employee-home-focus-flow-1920x1080');
     await capture(browser, 'employee', 'focus-flow', 1024, 768, 'employee-home-focus-flow-1024x768');
     await capture(browser, 'employee', 'focus-flow', 390, 844, 'employee-home-focus-flow-390x844');
@@ -864,6 +896,7 @@ async function main() {
     await capture(browser, 'owner', 'master-detail', 1440, 900, 'feature-people-master-detail-1440x900', { navigateText: 'People & Payroll', metric: { pageKind: 'master-detail representative' } });
     await capture(browser, 'owner', 'enterprise-studio', 1440, 900, 'feature-forms-enterprise-studio-1440x900', { navigateText: 'Forms Center', metric: { pageKind: 'form representative' } });
     await capture(browser, 'owner', 'executive-command', 1440, 900, 'layout-studio-gallery-1440x900', { openLayoutStudio: true, metric: { pageKind: 'Layout Studio gallery' } });
+    await capture(browser, 'owner', 'executive-command', 1440, 2400, 'ten-layout-structural-comparison-1440x2400', { openLayoutStudio: true, metric: { pageKind: 'ten-layout structural comparison' } });
     await captureLayoutStudioPreview(browser);
 
     await capturePermissionMatrix(browser);
@@ -888,6 +921,11 @@ async function main() {
   const employeePermissionPass = permissionMatrixResults.length === 5 && permissionMatrixResults.every((item) => !item.forbiddenApiDisclosure && !item.apiKeyMismatch && !item.forbiddenDomDisclosure && item.attendanceSemanticsPass);
   const managerPass = results.filter((item) => item.role === 'manager' && item.managerHome).length === 3 && results.filter((item) => item.role === 'manager').every((item) => item.managerHome);
   const navigationPass = profileResults.length === layouts.length && profileResults.every((item) => item.navigationAdapter === expectedAdapters[item.requestedLayout]);
+  const structuralProfilePass = profileResults.length === layouts.length
+    && new Set(profileResults.map((item) => item.layoutRenderer)).size === layouts.length
+    && new Set(profileResults.map((item) => item.layoutContentMode)).size === layouts.length
+    && new Set(profileResults.map((item) => item.layoutMobileTransform)).size >= 5
+    && profileResults.every((item) => item.layoutRenderer && item.layoutContentMode && item.layoutMobileTransform && item.layoutMotionPersonality);
   const featureFramePass = results.filter((item) => item.navigatedTo).length >= 2 && results.filter((item) => item.navigatedTo).every((item) => item.featureFramePresent && item.featureFrameH1Count === 1);
   const galleryPass = results.some((item) => item.layoutStudioPresent && item.pageKind === 'Layout Studio gallery');
   const previewLifecycle = results.find((item) => item.pageKind === 'real layout preview lifecycle');
@@ -909,7 +947,7 @@ async function main() {
   const businessPageResults = results.filter((item) => item.dashboardPresent && item.pageKind && !item.pageKind.includes('Layout Studio') && !item.pageKind.startsWith('ERP surface '));
   const noLayoutExplanationPass = businessPageResults.length > 0 && businessPageResults.every((item) => item.layoutExplanation === false);
 
-  if (renderedProfileIds.size < layouts.length || !ownerHomePass || !ownerKpiPass || !employeeHomePass || !employeePermissionPass || !managerPass || !navigationPass || !ownerCanonicalNavigationPass || !featureFramePass || !galleryPass || !previewPass || !commandPass || !customizePass || !erpPass || !erpSurfacePass || !motionPass || !smartContextPass || !typographyPass || !noLayoutExplanationPass) {
+  if (renderedProfileIds.size < layouts.length || !ownerHomePass || !ownerKpiPass || !employeeHomePass || !employeePermissionPass || !managerPass || !navigationPass || !structuralProfilePass || !ownerCanonicalNavigationPass || !featureFramePass || !galleryPass || !previewPass || !commandPass || !customizePass || !erpPass || !erpSurfacePass || !motionPass || !smartContextPass || !typographyPass || !noLayoutExplanationPass) {
     hardFailure = true;
     runtimeErrors.push('Required authenticated behavior/rendered coverage was incomplete.');
   }
@@ -940,14 +978,17 @@ async function main() {
     'ERP_SURFACES=' + (erpSurfacePass ? 'PASS' : 'FAIL'),
     'ERP_LAYOUT_CONTEXT_CONSUMPTION=' + (erpSurfacePass ? 'PASS' : 'FAIL'),
     'LAYOUT_SHELL_ADAPTERS=' + (navigationPass ? 'PASS' : 'FAIL'),
+    'TEN_LAYOUT_STRUCTURAL_PROFILES=' + (structuralProfilePass ? 'PASS' : 'FAIL'),
     'MOTION_PRESETS=' + (motionPass ? 'PASS' : 'FAIL'),
     'SMART_CONTEXT=' + (smartContextPass ? 'PASS' : 'FAIL'),
     'TYPOGRAPHY=' + (typographyPass ? 'PASS' : 'FAIL'),
     'NO_LAYOUT_EXPLANATION_ON_BUSINESS_PAGES=' + (noLayoutExplanationPass ? 'PASS' : 'FAIL'),
     'LAYOUT_PROFILES_DECLARED=' + layouts.length,
     'LAYOUT_PROFILES_RENDERED=' + renderedProfileIds.size,
-    'DESKTOP_VIEWPORTS_RENDERED=1920x1080,3840x2160,1440x900,1366x768,1024x768',
-    'MOBILE_VIEWPORT_RENDERED=390x844',
+    'DESKTOP_VIEWPORTS_RENDERED=1920x1080,2560x1440,3840x2160,1440x900,1366x768,1024x768',
+    'TABLET_VIEWPORTS_RENDERED=768x1024,1024x1366,1024x768',
+    'MOBILE_VIEWPORTS_RENDERED=390x844,430x932',
+    'TEN_LAYOUT_COMPARISON=ten-layout-structural-comparison-1440x2400.png plus ten real 1920x1080 layout captures',
     'REDUCED_MOTION=' + (reducedMotionPass ? 'PASS' : 'FAIL'),
     'SCREENSHOT_COUNT=' + results.filter((item) => item.screenshot).length,
     'RUNTIME_PAGE_ERRORS=' + runtimeErrors.length,

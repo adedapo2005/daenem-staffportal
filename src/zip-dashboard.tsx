@@ -14,7 +14,7 @@ import { themeList } from './theme-system';
 import { getMotionTokens, type LayoutDensity, type LayoutId, type LayoutProfile, type MotionPreset } from './layout-system';
 import { canSeeDashboardField, type DashboardAggregateField } from './dashboard-capabilities';
 import { getSmartContext } from './smart-context';
-import { PostAuthFeatureFrame, PostAuthHomeBanner, PostAuthOverviewComposition } from './post-auth-experience';
+import { PostAuthContextualNavigation, PostAuthFeatureFrame, PostAuthHomeBanner, PostAuthLayoutRenderer } from './post-auth-experience';
 import { PostAuthNavigation } from './postauth-navigation';
 import { OfflineSyncIndicator } from './offline-sync';
 
@@ -168,9 +168,9 @@ function attendancePresentation(summary: ZipDashboardSummary | null, context: Wo
   const employees = finiteNumber(summary?.employees) ? summary.employees : undefined;
   if (!canSeePresent || present === undefined) return { value: '—', detail: 'Attendance data unavailable for this scope' };
   if (canSeeDenominator && employees !== undefined && employees > 0) {
-    return { value: percentage((present / employees) * 100), detail: 'Present today in authorized scope' };
+    return { value: percentage((present / employees) * 100), detail: 'Present Today In Authorized Scope' };
   }
-  return { value: numberValue(present), detail: 'Present today in authorized scope' };
+  return { value: numberValue(present), detail: 'Present Today In Authorized Scope' };
 }
 
 function CommandPalette({
@@ -253,19 +253,21 @@ function ZipTopBar({
     canSeeFacilities && { title: summary?.maintenanceAlerts ? String(summary.maintenanceAlerts) + ' maintenance item' + (summary.maintenanceAlerts === 1 ? '' : 's') + ' open' : 'No maintenance alerts', detail: 'Authorized facilities work', tone: summary?.maintenanceAlerts ? 'blue' : 'green' },
   ].filter(Boolean) as Array<{ title: string; detail: string; tone: string }>;
   if (!notificationItems.length) notificationItems.push({ title: 'No new authorized signals', detail: 'Your workspace is up to date', tone: 'green' });
-  return <header className="top-bar" data-command-bar="true">
-    <div className="search-wrap"><button ref={commandTriggerRef} type="button" className="top-command-trigger" onClick={() => setCommandOpen(true)} aria-label="Open command palette"><Search size={17} aria-hidden="true" /><span>Search authorized workspaces</span><span className="search-shortcut">⌘ / Ctrl K</span></button></div>
+  const hasAttentionSignals = notificationItems.some((item) => item.tone !== 'green');
+  return <header className="top-bar" data-command-bar="true" data-hybrid-top-bar="true" aria-label="Staff Portal global navigation">
+    <div className="postauth-top-identity" data-top-slot="workspace-identity" aria-label="Current Staff Portal workspace"><span className="postauth-top-identity-mark"><BriefcaseBusiness size={16} /></span><span><small>DAENEM STAFF PORTAL</small><strong>Workforce Hub</strong><em>{company.name}</em></span></div>
+    <div className="search-wrap" data-top-slot="global-search"><button ref={commandTriggerRef} type="button" className="top-command-trigger" onClick={() => setCommandOpen(true)} aria-label="Open command palette"><Search size={17} aria-hidden="true" /><span>Search Authorized Workspaces</span><span className="search-shortcut">⌘ / Ctrl K</span></button></div>
     <div className="top-actions">
-      <OfflineSyncIndicator />
-      {canAsk && <button className="top-action ai-button" onClick={() => onNavigate('help')}><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
-      <div className="notification-wrap"><button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className="alert-dot" /></button>
+      <span data-top-slot="sync-status" className="postauth-top-slot-sync"><OfflineSyncIndicator /></span>
+      {canAsk && <button data-top-slot="ai-command" className="top-action ai-button" onClick={() => onNavigate('help')} aria-label="Ask Daenem AI"><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
+      <div className="notification-wrap" data-top-slot="notifications"><button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className={'alert-dot' + (hasAttentionSignals ? '' : ' quiet')} /></button>
         {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications"><div className="popover-title"><b>Notifications</b><button className="icon-button subtle" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><X size={15} /></button></div><p>Signals from your authorized workspaces.</p><div className="notification-list">{notificationItems.map((item) => <div className="notification-row" key={item.title}><i className={'notification-dot ' + item.tone} /><span><strong>{item.title}</strong><small>{item.detail}</small></span></div>)}</div></div>}
       </div>
-      <button className="weather-mini" onClick={enableLocation} title="Enable location and weather"><CloudSun size={19} /><span><b>{formatWeatherTemperature(weather.temperature, temperatureUnit)}</b><small>{weather.loading ? 'Finding location…' : weather.description || weather.label}</small></span></button>
-      <div className="top-utilities"><button type="button" className="top-more-button" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen}><Menu size={16} /> More</button>
-        {utilitiesOpen && <div className="top-utilities-menu" role="menu"><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Plus size={15} /> Quick actions</button><button role="menuitem" onClick={() => void handleInstallApp()}><Download size={15} /> {installState === 'working' ? 'Installing…' : installState === 'installed' ? 'App installed' : 'Install App'}</button>{canUseLayoutStudio && <button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenLayoutStudio(); }}><LayoutDashboard size={15} /> Layout Studio</button>}<button role="menuitem" onClick={() => { setUtilitiesOpen(false); setSupportOpen((open) => !open); }}><ShieldCheck size={15} /> Help & Support</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onNavigate('help'); }}><MessageSquareText size={15} /> Messages</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Star size={15} /> Favorites</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); setReleaseOpen(true); }}><Radio size={15} /> Release notes</button></div>}
+      <button data-top-slot="weather" className="weather-mini" onClick={enableLocation} title="Enable location and weather" aria-label="Enable local weather"><CloudSun size={19} /><span><b>{formatWeatherTemperature(weather.temperature, temperatureUnit)}</b><small>{weather.loading ? 'Finding Location…' : weather.description || weather.label}</small></span></button>
+      <div className="top-utilities" data-top-slot="workspace-utilities"><button type="button" className="top-more-button" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen} aria-label="Open workspace utilities"><Menu size={16} /> More</button>
+        {utilitiesOpen && <div className="top-utilities-menu" role="menu"><button role="menuitem" data-top-slot="quick-create" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Plus size={15} /> Quick Create</button><button role="menuitem" onClick={() => void handleInstallApp()}><Download size={15} /> {installState === 'working' ? 'Installing…' : installState === 'installed' ? 'App Installed' : 'Install App'}</button>{canUseLayoutStudio && <button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenLayoutStudio(); }}><LayoutDashboard size={15} /> Layout Studio</button>}<button role="menuitem" onClick={() => { setUtilitiesOpen(false); setSupportOpen((open) => !open); }}><ShieldCheck size={15} /> Help & Support</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onNavigate('help'); }}><MessageSquareText size={15} /> Messages</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Star size={15} /> Favorites</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); setReleaseOpen(true); }}><Radio size={15} /> Release Notes</button></div>}
       </div>
-      <div className="profile-wrap"><button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen}><span className="avatar">{employeeInitials}</span><span className="profile-name"><strong>{context.employee.displayName}</strong><small>{primaryRole}</small></span><ChevronDown size={16} /></button>
+      <div className="profile-wrap" data-top-slot="profile"><button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen} aria-label="Open profile and workspace preferences"><span className="avatar">{employeeInitials}</span><span className="profile-name"><strong>{context.employee.displayName}</strong><small>{primaryRole}</small></span><ChevronDown size={16} /></button>
         {profileOpen && <div className="profile-menu"><div className="profile-menu-head"><span className="avatar">{employeeInitials}</span><div className="profile-menu-head-copy"><strong>{context.employee.displayName}</strong><small>{context.employee.email || 'Employee account'}</small></div></div><div className="profile-menu-access"><span>{primaryRole}</span><span>{permissionCount} active permissions</span></div>{companyChoices.length > 1 && <div className="profile-scope"><small>Organization scope</small><div>{companyChoices.map((item) => { const Icon = item.icon; return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.name}</span></button>; })}</div></div>}<strong>Workspace appearance · {themeName}</strong>{themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}<div className="mode-picker"><small>Display mode</small><div><button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Light</button><button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Dark</button><button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button></div></div>{canChangeWeatherUnit && <div className="mode-picker temperature-picker"><small>Weather units · admin control</small><div><button className={temperatureUnit === 'F' ? 'selected' : ''} onClick={() => setTemperatureUnit('F')}>°F</button><button className={temperatureUnit === 'C' ? 'selected' : ''} onClick={() => setTemperatureUnit('C')}>°C</button></div></div>}<button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button><button className="logout-menu" onClick={() => void onLogout()}><span>Sign out</span></button></div>}
       </div>
     </div>
@@ -293,9 +295,9 @@ function HierarchyIcon({ iconKey, size = 14 }: { iconKey: string; size?: number 
 function KpiStrip({ summary, company, context }: Pick<ZipDashboardProps, 'summary' | 'company' | 'context'>) {
   const cards: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }>; tone: string }> = [
     { field: 'employees', label: 'Employees', value: numberValue(summary?.employees), detail: company.id ? company.code : 'All assigned companies', icon: Users, tone: 'blue' },
-    { field: 'present', label: 'Present today', value: numberValue(summary?.present), detail: summary?.workDate || 'Live attendance', icon: CalendarCheck2, tone: 'green' },
-    { field: 'incompleteAttendance', label: 'Needs review', value: numberValue((summary?.incompleteAttendance ?? 0) + (summary?.pendingApprovals ?? 0) + (summary?.overdueRequirements ?? 0)), detail: 'Authorized follow-up items', icon: AlertTriangle, tone: 'amber' },
-    { field: 'securityAlerts', label: 'Security health', value: summary ? (summary.securityAlerts ? 'Review' : 'Good') : '—', detail: summary ? `${summary.securityAlerts} high-risk event(s)` : 'Loading scoped status', icon: ShieldCheck, tone: summary?.securityAlerts ? 'red' : 'violet' },
+    { field: 'present', label: 'Present Today', value: numberValue(summary?.present), detail: summary?.workDate || 'Live Attendance', icon: CalendarCheck2, tone: 'green' },
+    { field: 'incompleteAttendance', label: 'Needs Review', value: numberValue((summary?.incompleteAttendance ?? 0) + (summary?.pendingApprovals ?? 0) + (summary?.overdueRequirements ?? 0)), detail: 'Authorized Follow-Up Items', icon: AlertTriangle, tone: 'amber' },
+    { field: 'securityAlerts', label: 'Security Health', value: summary ? (summary.securityAlerts ? 'Review' : 'Good') : '—', detail: summary ? `${summary.securityAlerts} High-Risk Event(s)` : 'Loading Scoped Status', icon: ShieldCheck, tone: summary?.securityAlerts ? 'red' : 'violet' },
   ];
   const visible = cards.filter((card) => canSeeDashboardField(context, card.field, company.id));
   if (!visible.length) return null;
@@ -311,7 +313,7 @@ function TrendWidget({ summary, refreshSummary }: Pick<ZipDashboardProps, 'summa
   const rate = attendanceRate(summary);
   return <article className="chart-card trend-card">
     <ChartHeader eyebrow="WORKFORCE PULSE" title="Attendance trend" icon={Activity} />
-    <div className="chart-legend"><span><i style={{ background: 'var(--primary)' }} /> Present today</span><span><i style={{ background: 'var(--accent)' }} /> Incomplete</span></div>
+    <div className="chart-legend"><span><i style={{ background: 'var(--primary)' }} /> Present Today</span><span><i style={{ background: 'var(--accent)' }} /> Incomplete</span></div>
     <div className="chart-canvas zip-chart-canvas" role="img" aria-label={summary ? `Attendance completion is ${percentage(rate)}` : 'Attendance trend is unavailable'}>
       <div className="chart-grid-lines"><i /><i /><i /><i /></div>
       <svg viewBox="0 0 600 180" preserveAspectRatio="none" aria-hidden="true">
@@ -440,11 +442,12 @@ function WorkspaceOverviewStrip({
   if (availableModuleIds.has('profile')) quickActions.push({ label: 'My Profile', detail: 'Keep your employee record current', icon: Users, action: () => onOpenModule('profile') });
   if (availableModuleIds.has('employee')) quickActions.push({ label: 'My Workspace', detail: 'Open staff self-service', icon: BriefcaseBusiness, action: () => onOpenModule('employee') });
   if (can(context, 'forms.access', 'view', company.id)) quickActions.push({ label: 'My Forms', detail: 'Review assigned submissions', icon: ClipboardCheck, action: () => onNavigate('forms') });
-  quickActions.push({ label: isManagerial ? 'Tasks & approvals' : 'My workspaces', detail: 'Open authorized workspaces', icon: CheckCircle2, action: onOpenModuleHub });
-  if (can(context, 'ai_guide.access', 'view', company.id)) quickActions.push({ label: 'Help & support', detail: 'Find role-aware guidance', icon: ShieldCheck, action: () => onNavigate('help') });
+  const approvalWorkAllowed = can(context, 'forms.access', 'view', company.id) || can(context, 'users.access', 'view', company.id);
+  quickActions.push({ label: isManagerial ? approvalWorkAllowed ? 'Tasks & Approvals' : 'Authorized Workspaces' : 'My Workspaces', detail: 'Open Authorized Workspaces', icon: CheckCircle2, action: onOpenModuleHub });
+  if (can(context, 'ai_guide.access', 'view', company.id)) quickActions.push({ label: 'Help & Support', detail: 'Find Role-Aware Guidance', icon: ShieldCheck, action: () => onNavigate('help') });
   return <section className={'workspace-overview-grid' + (isManagerial ? '' : ' employee-task-first')} aria-label="Personalized staff workspace overview">
     <article className="profile-summary-card">
-      <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Your profile</h2></div><span className="live-chip"><i /> Personalized home</span></header>
+      <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Your Profile</h2></div><span className="live-chip"><i /> Personalized Home</span></header>
       <div className="profile-summary-body">
         <div className="profile-summary-avatar">{initials(context.employee.displayName)}</div>
         <div><strong>{context.employee.displayName}</strong><span>{context.employee.jobTitle || 'Employee'}{context.employee.department ? ' · ' : ''}{context.employee.department || ''}</span><small>{context.employee.team || 'Assigned team'} · {company.name}</small></div>
@@ -459,7 +462,7 @@ function WorkspaceOverviewStrip({
       </div>
     </article>
     <article className="access-summary-card">
-      <header className="overview-card-header"><div><span className="eyebrow">{isManagerial ? 'ACCESS & RESPONSIBILITIES' : 'YOUR ACCESS'}</span><h2>{isManagerial ? 'Your operating perimeter' : 'Your access'}</h2></div><ShieldCheck size={18} /></header>
+      <header className="overview-card-header"><div><span className="eyebrow">{isManagerial ? 'ACCESS & RESPONSIBILITIES' : 'YOUR ACCESS'}</span><h2>{isManagerial ? 'Your Operating Perimeter' : 'Your Access'}</h2></div><ShieldCheck size={18} /></header>
       {isManagerial ? <div className="access-summary-lines">
         <div><span>Module access</span><strong>{moduleCount}</strong></div>
         <div><span>Approval rights</span><strong>{approvalCount}</strong></div>
@@ -494,14 +497,14 @@ function ErpPulseGrid({
   const groups = getErpNavigation(availableModules);
   if (!groups.length) return null;
   return <section className="erp-pulse-section" aria-label="Authorized ERP pulse">
-    <header className="erp-pulse-header"><div><span className="eyebrow">MULTI-ERP COMMAND LAYER</span><h2>Every workspace, clearly separated</h2><p>Each ERP keeps its own hierarchy, functions, signal cards, and quick actions.</p></div><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open exact hierarchy</button></header>
+    <header className="erp-pulse-header"><div><span className="eyebrow">MULTI-ERP COMMAND LAYER</span><h2>Every Workspace, Clearly Separated</h2><p>Each ERP keeps its own hierarchy, functions, signal cards, and quick actions.</p></div><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open Exact Hierarchy</button></header>
     <div className="erp-pulse-grid">{groups.map((group) => {
       const modules = availableModules.filter((module) => module.erpId === group.id);
       const firstModule = modules[0];
       const isStaff = group.id === 'staff';
       const attendanceAllowed = canSeeDashboardField(context, 'present', company.id);
       const signal = isStaff && attendanceAllowed ? numberValue(summary?.present) : 'Available on open';
-      const signalLabel = isStaff && attendanceAllowed ? 'Present today' : 'Authorized functions';
+      const signalLabel = isStaff && attendanceAllowed ? 'Present Today' : 'Authorized Functions';
       return <article className="erp-pulse-card" key={group.id}>
         <header><span className="erp-pulse-icon"><HierarchyIcon iconKey={group.iconKey} size={16} /></span><div><span className="eyebrow">{group.label}</span><h3>{group.detail}</h3></div></header>
         <div className="erp-pulse-chart" aria-hidden="true"><i /><i /><i /><i /><i /></div>
@@ -522,21 +525,27 @@ function ManagerCommandCenter({
   const managerAccess = context.roles.some((role) => ['manager', 'company_admin', 'group_admin', 'owner'].includes(role.code));
   if (!managerAccess) return null;
   const attendance = attendancePresentation(summary, context, company.id);
+  const approvalFieldAllowed = canSeeDashboardField(context, 'pendingApprovals', company.id);
   const managerTiles: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }> }> = [
-    { field: 'employees', label: 'Team workload', value: numberValue(summary?.employees), detail: 'People in your authorized scope', icon: Users },
-    { field: 'pendingApprovals', label: 'Approvals', value: numberValue(summary?.pendingApprovals), detail: 'Requests awaiting action', icon: ClipboardCheck },
-    { field: 'overdueRequirements', label: 'Overdue work', value: numberValue(summary?.overdueRequirements), detail: 'Requirements to follow through', icon: AlertTriangle },
+    { field: 'employees', label: 'Team Workload', value: numberValue(summary?.employees), detail: 'People In Your Authorized Scope', icon: Users },
+    { field: 'pendingApprovals', label: 'Pending Approvals', value: numberValue(summary?.pendingApprovals), detail: 'Requests Awaiting Action', icon: ClipboardCheck },
+    { field: 'overdueRequirements', label: 'Overdue Work', value: numberValue(summary?.overdueRequirements), detail: 'Requirements To Follow Through', icon: AlertTriangle },
     { field: 'present', label: 'Attendance', value: attendance.value, detail: attendance.detail, icon: CalendarCheck2 },
   ];
   const tiles = managerTiles.filter((tile) => canSeeDashboardField(context, tile.field, company.id));
   const actions = [
-    can(context, 'users.access', 'view', company.id) ? <button key="team" type="button" onClick={() => onNavigate('people')}><Users size={14} /> Review team</button> : null,
-    can(context, 'forms.access', 'view', company.id) ? <button key="forms" type="button" onClick={() => onNavigate('forms')}><ClipboardCheck size={14} /> Open approvals</button> : null,
-    can(context, 'security.access', 'view', company.id) ? <button key="security" type="button" onClick={() => onNavigate('security')}><ShieldCheck size={14} /> Check security signals</button> : null,
+    can(context, 'users.access', 'view', company.id) ? <button key="team" type="button" onClick={() => onNavigate('people')}><Users size={14} /> Review Team</button> : null,
+    can(context, 'forms.access', 'view', company.id) ? <button key="forms" type="button" onClick={() => onNavigate('forms')}><ClipboardCheck size={14} /> Open Approvals</button> : null,
+    can(context, 'security.access', 'view', company.id) ? <button key="security" type="button" onClick={() => onNavigate('security')}><ShieldCheck size={14} /> Check Security Signals</button> : null,
   ].filter(Boolean);
   if (!tiles.length && !actions.length) return null;
+  const managerFocus = approvalFieldAllowed
+    ? 'Prioritized Workload, Approvals And Operational Exceptions For Your Authorized Team Scope.'
+    : canSeeDashboardField(context, 'securityAlerts', company.id)
+      ? 'Prioritized Control Signals And Operational Exceptions For Your Authorized Team Scope.'
+      : 'Prioritized Work And Operational Exceptions For Your Authorized Team Scope.';
   return <section className="manager-command-center" aria-label="Manager home">
-    <header className="manager-command-header"><div><span className="eyebrow">MANAGER HOME</span><h2>Team rhythm, next actions</h2><p>Prioritized workload, approvals and operational exceptions for your authorized team scope.</p></div><button type="button" className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open workspaces</button></header>
+    <header className="manager-command-header"><div><span className="eyebrow">MANAGER HOME</span><h2>Team Rhythm, Next Actions</h2><p>{managerFocus}</p></div><button type="button" className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open Workspaces</button></header>
     {tiles.length > 0 && <div className="manager-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article key={tile.label} data-dashboard-field={tile.field} data-dashboard-value={tile.value}><span className="manager-command-icon"><Icon size={16} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>}
     {actions.length > 0 && <div className="manager-command-actions">{actions}</div>}
   </section>;
@@ -562,7 +571,7 @@ function OwnerCommandCenter({
   ];
   const tiles = ownerTiles.filter((tile) => !tile.field || canSeeDashboardField(context, tile.field, company.id));
   return <section className="owner-command-center" data-owner-command-center="true" aria-label="Owner command center">
-    <header className="owner-command-header"><div><span className="eyebrow">OWNER COMMAND CENTER · BUSINESS HEALTH</span><h2>Financial, operational and control truth</h2><p>Verified business intelligence stays connected to the canonical ERP actions that resolve it.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
+    <header className="owner-command-header"><div><span className="eyebrow">OWNER COMMAND CENTER · BUSINESS HEALTH</span><h2>Financial, Operational And Control Truth</h2><p>Verified business intelligence stays connected to the canonical ERP actions that resolve it.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage Workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
     <div className="owner-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article className="owner-command-tile" key={tile.label}><span className="owner-command-icon"><Icon size={17} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>
   </section>;
 }
@@ -836,7 +845,7 @@ export function ZipDashboard({
 
   const scopedSummary = summary;
 
-  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} style={experienceStyle} data-layout-profile={layoutId} data-layout-density={density} data-layout-motion={motion} data-layout-preview={layoutPreview ? 'true' : 'false'} data-active-erp={activeErpId}>
+  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} style={experienceStyle} data-authenticated-experience="staffportal" data-reference-status="PENDING_EXACT_STAFFPORTAL_REFERENCE_PNG" data-hybrid-navigation="true" data-layout-profile={layoutId} data-layout-contract-id={layoutProfile.id === 'master-detail' ? 'master-detail-workspace' : layoutProfile.id} data-layout-renderer={layoutProfile.structure.rendererId} data-layout-navigation-adapter={layoutProfile.structure.navigationAdapterId} data-layout-navigation-geometry={layoutProfile.structure.navigationGeometry} data-layout-content-mode={layoutProfile.structure.contentMode} data-layout-inspector-mode={layoutProfile.structure.inspectorMode} data-layout-mobile-transform={layoutProfile.structure.mobileTransform} data-layout-motion-personality={layoutProfile.structure.motionPersonality} data-layout-density={density} data-layout-motion={motion} data-layout-preview={layoutPreview ? 'true' : 'false'} data-active-erp={activeErpId}>
     <PostAuthNavigation
       layoutProfile={layoutProfile}
       context={context}
@@ -900,7 +909,7 @@ export function ZipDashboard({
           return <button key={item.code} onClick={() => setCompany(item)} className={company.code === item.code ? 'active' : ''}><Icon size={15} /><span>{item.code}</span></button>;
         })}</div>
         {view === 'overview'
-          ? <PostAuthOverviewComposition
+          ? <><PostAuthContextualNavigation moduleLabel={moduleLabel} canonicalPath={'staff/people/employee-records/Group Overview'} contextKey={homeContext} /><PostAuthLayoutRenderer
             profile={layoutProfile}
             context={context}
             smartContext={getSmartContext(homeContext)}
@@ -908,12 +917,12 @@ export function ZipDashboard({
             pulse={<ErpPulseGrid context={context} company={company} summary={scopedSummary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             loading={<SmartLoadingCard pending={dataStatus === 'loading'} />}
             kpis={<KpiStrip summary={scopedSummary} company={company} context={context} />}
-            widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Personalize the workspace when you are ready</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh data</button></div><DashboardWidgets widgets={initialWidgets} summary={scopedSummary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
+            widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Personalize The Workspace When You Are Ready</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh Data</button></div><DashboardWidgets widgets={initialWidgets} summary={scopedSummary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
             workspace={<WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             owner={context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) ? <OwnerCommandCenter context={context} company={company} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} /> : <ManagerCommandCenter context={context} company={company} summary={scopedSummary} onNavigate={onNavigate} onOpenModuleHub={onOpenModuleHub} />}
-            intelligence={liveIntelligence ? <section className="zip-live-intelligence" data-owner-business-intelligence="true"><div className="zip-section-heading"><span className="eyebrow">OWNER INTELLIGENCE</span><h2>Financial and operational performance</h2></div>{liveIntelligence}</section> : null}
+            intelligence={liveIntelligence ? <section className="zip-live-intelligence" data-owner-business-intelligence="true"><div className="zip-section-heading"><span className="eyebrow">OWNER INTELLIGENCE</span><h2>Financial And Operational Performance</h2></div>{liveIntelligence}</section> : null}
             clocks={<section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>}
-          /> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} contextKey={activeView} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
+          /></> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} contextKey={activeView} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
         <footer className="dashboard-footer"><span>Daenem Business ERP · {activeErpId.toUpperCase()}</span><span>Live D1 data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
       </div>
     </section>

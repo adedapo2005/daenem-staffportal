@@ -33,6 +33,21 @@ export function getMotionTokens(value: unknown): MotionTokens {
 export type NavigationMode = 'expanded-sidebar' | 'icon-rail' | 'operations-rail' | 'top-command' | 'contextual';
 export type ShellMode = 'command-rail' | 'canvas' | 'cockpit' | 'editorial' | 'split-pane' | 'wide-canvas' | 'bento' | 'focus' | 'studio' | 'board';
 
+/**
+ * The authenticated Staff Portal treats layout as a structural contract. These
+ * values are deliberately separate from the theme palette so a layout remains
+ * recognisable when colours, logos and surface treatments are removed.
+ */
+export type LayoutStructuralProfile = {
+  rendererId: string;
+  navigationAdapterId: string;
+  navigationGeometry: string;
+  contentMode: string;
+  inspectorMode: string;
+  mobileTransform: string;
+  motionPersonality: string;
+};
+
 export type LayoutProfile = {
   id: LayoutId;
   name: string;
@@ -50,6 +65,74 @@ export type LayoutProfile = {
   responsiveRules: string;
   supportedZones: string[];
   idealFor: string[];
+  structure: LayoutStructuralProfile;
+};
+
+const STRUCTURAL_PROFILES: Record<LayoutId, LayoutStructuralProfile> = {
+  'executive-command': {
+    rendererId: 'ExecutiveCommandLayout', navigationAdapterId: 'executive-command-sidebar',
+    navigationGeometry: 'sidebar-with-context-rail', contentMode: 'command', inspectorMode: 'right-panel',
+    mobileTransform: 'priority-stack', motionPersonality: 'executive',
+  },
+  'workspace-canvas': {
+    rendererId: 'WorkspaceCanvasLayout', navigationAdapterId: 'workspace-canvas-rail',
+    navigationGeometry: 'icon-rail-with-canvas', contentMode: 'canvas', inspectorMode: 'drawer',
+    mobileTransform: 'card-stream', motionPersonality: 'fluid',
+  },
+  'operational-cockpit': {
+    rendererId: 'OperationalCockpitLayout', navigationAdapterId: 'operational-cockpit-rail',
+    navigationGeometry: 'operations-rail-with-queue-lanes', contentMode: 'cockpit', inspectorMode: 'drawer',
+    mobileTransform: 'priority-stack', motionPersonality: 'operational',
+  },
+  'insight-magazine': {
+    rendererId: 'InsightMagazineLayout', navigationAdapterId: 'insight-magazine-command',
+    navigationGeometry: 'top-command-with-story-rail', contentMode: 'editorial', inspectorMode: 'right-panel',
+    mobileTransform: 'card-stream', motionPersonality: 'editorial',
+  },
+  'master-detail': {
+    rendererId: 'MasterDetailWorkspaceLayout', navigationAdapterId: 'master-detail-navigation',
+    navigationGeometry: 'list-detail-inspector', contentMode: 'master-detail', inspectorMode: 'drawer',
+    mobileTransform: 'sheet-workspace', motionPersonality: 'precision',
+  },
+  'horizon-wide': {
+    rendererId: 'HorizonWideLayout', navigationAdapterId: 'horizon-wide-command',
+    navigationGeometry: 'top-command-wide-canvas', contentMode: 'wide', inspectorMode: 'drawer',
+    mobileTransform: 'card-stream', motionPersonality: 'panoramic',
+  },
+  'adaptive-bento': {
+    rendererId: 'AdaptiveBentoLayout', navigationAdapterId: 'adaptive-bento-sidebar',
+    navigationGeometry: 'sidebar-bento-grid', contentMode: 'bento', inspectorMode: 'right-panel',
+    mobileTransform: 'priority-stack', motionPersonality: 'modular',
+  },
+  'focus-flow': {
+    rendererId: 'FocusFlowLayout', navigationAdapterId: 'contextual',
+    navigationGeometry: 'contextual-task-nav', contentMode: 'focus', inspectorMode: 'sheet',
+    mobileTransform: 'focus-stack', motionPersonality: 'minimal',
+  },
+  'enterprise-studio': {
+    rendererId: 'EnterpriseStudioLayout', navigationAdapterId: 'enterprise-studio-rail',
+    navigationGeometry: 'icon-rail-inspector', contentMode: 'studio', inspectorMode: 'right-panel',
+    mobileTransform: 'sheet-workspace', motionPersonality: 'studio',
+  },
+  'board-pulse': {
+    rendererId: 'BoardPulseLayout', navigationAdapterId: 'board-pulse-operations',
+    navigationGeometry: 'operations-rail-board', contentMode: 'board', inspectorMode: 'drawer',
+    mobileTransform: 'board-stack', motionPersonality: 'pulse',
+  },
+};
+
+/** The existing stored id is kept for backwards compatibility with accepted APIs. */
+export const LAYOUT_CONTRACT_IDS: Record<LayoutId, string> = {
+  'executive-command': 'executive-command',
+  'workspace-canvas': 'workspace-canvas',
+  'operational-cockpit': 'operational-cockpit',
+  'insight-magazine': 'insight-magazine',
+  'master-detail': 'master-detail-workspace',
+  'horizon-wide': 'horizon-wide',
+  'adaptive-bento': 'adaptive-bento',
+  'focus-flow': 'focus-flow',
+  'enterprise-studio': 'enterprise-studio',
+  'board-pulse': 'board-pulse',
 };
 
 const profile = (
@@ -72,7 +155,7 @@ const profile = (
 ): LayoutProfile => ({
   id, name, description, navigationMode, shellMode, dashboardStrategy, featurePageStrategy,
   recordPageStrategy, detailMode, contextualPanelMode, defaultDensity, widgetStrategy,
-  motionPreset, responsiveRules, supportedZones, idealFor,
+  motionPreset, responsiveRules, supportedZones, idealFor, structure: STRUCTURAL_PROFILES[id],
 });
 
 export const LAYOUT_PROFILES: Record<LayoutId, LayoutProfile> = {

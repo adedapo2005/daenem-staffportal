@@ -49,7 +49,7 @@ function LayoutPreviewVisual({ profile, large = false }: { profile: LayoutId; la
   const definition = LAYOUT_PROFILES[profile];
   const topNavigation = definition.navigationMode === 'top-command';
   const inspector = definition.contextualPanelMode !== 'right drawer only when invoked';
-  return <div className={(large ? 'layout-preview-large ' : 'layout-preview ') + 'preview-' + profile} data-preview-navigation={definition.navigationMode} data-preview-shell={definition.shellMode} data-preview-detail={definition.detailMode}>
+  return <div className={(large ? 'layout-preview-large ' : 'layout-preview ') + 'preview-' + profile} data-preview-navigation={definition.navigationMode} data-preview-shell={definition.shellMode} data-preview-detail={definition.detailMode} data-preview-renderer={definition.structure.rendererId} data-preview-content-mode={definition.structure.contentMode} data-preview-mobile-transform={definition.structure.mobileTransform} data-preview-motion-personality={definition.structure.motionPersonality}>
     {topNavigation
       ? <nav className="layout-preview-top-nav"><i /><i /><i /><b /></nav>
       : <aside className="layout-preview-side-nav"><i /><i /><i /><i /><i /></aside>}
