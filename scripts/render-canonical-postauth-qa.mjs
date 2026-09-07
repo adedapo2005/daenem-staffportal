@@ -21,33 +21,26 @@ const layouts = [
   'board-pulse',
 ];
 
-const layoutZones = {
-  'executive-command': ['hero', 'kpis', 'executive-analytics', 'ai-insights', 'weather', 'tasks', 'approvals', 'activity', 'world-time', 'quick-actions', 'status', 'knowledge', 'announcement'],
-  'workspace-canvas': ['hero', 'quick-actions', 'workspace-schedule', 'workspace-projects', 'tasks', 'ai-insights', 'approvals', 'weather', 'world-time', 'status', 'activity', 'knowledge', 'announcement'],
-  'operational-cockpit': ['hero', 'kpis', 'operations-map', 'operations-team', 'ai-insights', 'tasks', 'status', 'approvals', 'executive-analytics', 'weather', 'quick-actions', 'world-time', 'activity', 'announcement'],
-  'insight-magazine': ['hero', 'kpis', 'insight-story', 'ai-insights', 'knowledge', 'world-time', 'weather', 'activity', 'announcement'],
-  'master-detail-workspace': ['master-list', 'master-detail', 'ai-insights', 'approvals', 'activity', 'status', 'knowledge', 'quick-actions', 'world-time', 'announcement'],
-  'horizon-wide': ['hero', 'kpis', 'horizon-global', 'world-time', 'weather', 'ai-insights', 'workspace-projects', 'tasks', 'announcement'],
-  'adaptive-bento': ['hero', 'kpis', 'bento-strategy', 'ai-insights', 'executive-analytics', 'tasks', 'approvals', 'activity', 'weather', 'knowledge', 'quick-actions', 'status', 'announcement'],
-  'focus-flow': ['hero', 'focus-progress', 'focus-priorities', 'ai-insights', 'quick-actions', 'weather', 'tasks', 'approvals', 'world-time', 'activity', 'status', 'knowledge', 'announcement'],
-  'enterprise-studio': ['hero', 'kpis', 'studio-toolbox', 'studio-canvas', 'ai-insights', 'status', 'executive-analytics', 'activity', 'quick-actions', 'world-time', 'knowledge', 'tasks', 'approvals', 'announcement'],
-  'board-pulse': ['hero', 'kpis', 'board-trend', 'board-agenda', 'ai-insights', 'executive-analytics', 'approvals', 'activity', 'world-time', 'weather', 'announcement'],
-};
+const layoutSpecSource = fs.readFileSync(path.join(root, 'src', 'canonical-postauth-v1', 'layout-specs.ts'), 'utf8');
+const layoutSpecStart = layoutSpecSource.indexOf(' = ') + 3;
+const layoutSpecEnd = layoutSpecSource.indexOf(';\n\nexport const CANONICAL_LAYOUT_IDS');
+if (layoutSpecStart < 3 || layoutSpecEnd < 0) throw new Error('CANONICAL_LAYOUT_SPEC_PARSE_FAILED');
+const parsedLayoutSpecs = JSON.parse(layoutSpecSource.slice(layoutSpecStart, layoutSpecEnd));
+const layoutZones = Object.fromEntries(layouts.map((layout) => [layout, parsedLayoutSpecs[layout].zones]));
 
 const coreViewports = [
   [1920, 1080],
-  [3840, 2160],
-  [1024, 1366],
-  [390, 844],
-];
-const executiveViewports = [
   [2560, 1440],
+  [3840, 2160],
   [768, 1024],
+  [1024, 1366],
   [1366, 1024],
   [360, 800],
+  [390, 844],
   [412, 915],
   [430, 932],
 ];
+const executiveViewports = [];
 
 const allCompanies = [
   { id: 'company-printing', code: 'PRINT', name: 'Printing & Technology', primary: true },
@@ -226,6 +219,56 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
       canonicalRoot: Boolean(root),
     };
   }, { requestedLayout, kind, viewport, zones: layoutZones[requestedLayout] });
+  const v3Measurements = await page.evaluate(async ({ expectedLayout, expectedZones }) => {
+  const root = document.querySelector('[data-canonical-staffportal-dashboard]');
+  if (!root) throw new Error('CANONICAL_ROOT_MISSING');
+  await document.fonts.load('500 13px "Inter Variable"');
+  await document.fonts.load('800 18px "Manrope Variable"');
+  await document.fonts.ready;
+  const families = ['Inter Variable', 'Manrope Variable'];
+  const faceList = [...document.fonts].map(f => ({family: f.family.replace(/["']/g, ''), status: f.status, weight: f.weight}));
+  const fonts = Object.fromEntries(families.map(f => [f, {
+    loadedFace: faceList.some(x => x.family === f && x.status === 'loaded'),
+    check: document.fonts.check(`${f === 'Inter Variable' ? 500 : 800} 18px "${f}"`),
+  }]));
+  const round = n => Math.round(n * 100) / 100;
+  const rect = e => {const b=e.getBoundingClientRect();return {x:round(b.x),y:round(b.y),width:round(b.width),height:round(b.height)};};
+  const visible = e => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).display !== 'none';
+  const grid=root.querySelector('.csp-grid'), gridStyle=getComputedStyle(grid);
+  const failures=[],metrics=[],smallText=[],touchTargets=[];
+  if(root.getAttribute('data-layout-id') !== expectedLayout)failures.push('WRONG_LAYOUT');
+  if(innerWidth >= 768 && gridStyle.gridTemplateAreas === 'none')failures.push('INVALID_NAMED_GRID');
+  if(document.documentElement.scrollWidth > innerWidth+1)failures.push('PAGE_HORIZONTAL_OVERFLOW');
+  for(const [family,state] of Object.entries(fonts))if(!state.loadedFace || !state.check)failures.push('FONT_NOT_PROVEN:'+family);
+  const zones=expectedZones.map(zone=>{
+    const nodes=[...root.querySelectorAll('[data-zone]')].filter(e=>e.getAttribute('data-zone') === zone && visible(e));
+    if(nodes.length!==1)failures.push('ZONE_VISIBILITY:'+zone+':'+nodes.length);
+    return {zone,count:nodes.length,box:nodes[0]?rect(nodes[0]):null};
+  });
+  for(const n of root.querySelectorAll('[data-canonical-metric],.csp-analytics-metric>strong')){
+    if(!visible(n))continue;
+    const text=(n.textContent||'').trim(),numeric=/\d/.test(text);
+    const style=getComputedStyle(n),range=document.createRange();range.selectNodeContents(n);
+    const textRect=range.getBoundingClientRect(),card=n.closest('article')||n.parentElement,cardRect=card.getBoundingClientRect();
+    const rows=[...new Set([...range.getClientRects()].filter(r=>r.width>0&&r.height>0).map(r=>Math.round(r.top)))];
+    const clipped=textRect.left<cardRect.left-1||textRect.right>cardRect.right+1;
+    if(numeric&&(rows.length>1||clipped))failures.push('METRIC_WRAP_OR_CLIP:'+text);
+    metrics.push({text,numeric,rows:rows.length,clipped,fontSize:style.fontSize,fontFamily:style.fontFamily,box:rect(n)});
+  }
+  for(const e of root.querySelectorAll('b,strong,small,em,button,label,input,select,p')){
+    if(!visible(e))continue;const style=getComputedStyle(e);
+    if(parseFloat(style.fontSize)<9)smallText.push({text:(e.textContent||'').trim().slice(0,100),fontSize:style.fontSize});
+  }
+  if(smallText.length)failures.push('SUB_9PX_TEXT');
+  for(const e of root.querySelectorAll('button,input:not([type=checkbox]),select')){
+    if(!visible(e))continue;const b=rect(e);touchTargets.push({label:e.getAttribute('aria-label')||(e.textContent||'').trim().slice(0,50),...b});
+  }
+  const thin=touchTargets.filter(x=>x.width<24||x.height<24);
+  // A target-size sample is evidence only; this is not a complete WCAG audit.
+  const h1=root.querySelector('h1');
+  return {layout:expectedLayout,failures,viewport:[innerWidth,innerHeight],fonts,faceList,grid:{display:gridStyle.display,areas:gridStyle.gridTemplateAreas,columns:gridStyle.gridTemplateColumns,rows:gridStyle.gridTemplateRows,gap:gridStyle.gap,box:rect(grid)},zones,metrics,smallText,touchTargets,sub24Targets:thin,heading:h1?{fontFamily:getComputedStyle(h1).fontFamily,fontSize:getComputedStyle(h1).fontSize,weight:getComputedStyle(h1).fontWeight,box:rect(h1)}:null,referenceRuntime:globalThis.__CSP_REFERENCE_RUNTIME__||null};
+}, { expectedLayout: requestedLayout, expectedZones: layoutZones[requestedLayout] });
+  metrics.v3Measurements = v3Measurements;
   await page.screenshot({ path: screenshotPath, fullPage: false });
   page.off('pageerror', onPageError);
   page.off('console', onConsole);
@@ -341,11 +384,14 @@ async function main() {
     let liveLayoutState = 'executive-command';
     await installApiRoutes(livePage, { authenticated: true, getLayoutId: () => liveLayoutState });
     for (const layout of layouts) {
-      liveLayoutState = layout;
-      console.log(`LIVE ${layout} 1920x1080`);
-      const result = await capturePage(livePage, `http://127.0.0.1:4175/?canonicalLayout=${encodeURIComponent(layout)}`, path.join(qaDir, `live-${layout}-1920x1080.png`), layout, 'live-adapter', [1920, 1080]);
-      evidence.liveAdapter.push({ filename: `live-${layout}-1920x1080.png`, ...result.metrics });
-      evidence.errors.push(...result.pageErrors, ...result.consoleErrors, ...result.failedRequests);
+      for (const [width, height] of coreViewports) {
+        liveLayoutState = layout;
+        console.log(`LIVE ${layout} ${width}x${height}`);
+        const filename = `live-${layout}-${width}x${height}.png`;
+        const result = await capturePage(livePage, `http://127.0.0.1:4175/?canonicalLayout=${encodeURIComponent(layout)}`, path.join(qaDir, filename), layout, 'live-adapter', [width, height]);
+        evidence.liveAdapter.push({ filename, ...result.metrics });
+        evidence.errors.push(...result.pageErrors, ...result.consoleErrors, ...result.failedRequests);
+      }
     }
     evidence.errors.push(...await captureSignIn('http://127.0.0.1:4175', browser, evidence.signIn));
     await liveContext.close();
@@ -363,6 +409,8 @@ async function main() {
       missingZoneCount: [...evidence.canonical, ...evidence.runtime, ...evidence.liveAdapter].filter((item) => item.missingZones.length > 0).length,
       liveFixtureSampleLeakCount: evidence.liveAdapter.filter((item) => item.fixtureSampleLeak).length,
       runtimeErrorCount: evidence.errors.length,
+      v3MeasurementFailureCount: [...evidence.canonical, ...evidence.runtime, ...evidence.liveAdapter].reduce((sum, item) => sum + (item.v3Measurements?.failures?.length || 0), 0),
+      v3MeasurementFailures: [...evidence.canonical, ...evidence.runtime, ...evidence.liveAdapter].flatMap((item) => (item.v3Measurements?.failures || []).map((failure) => ({ kind: item.kind, layout: item.requestedLayout, viewport: item.viewport, failure }))),
     };
     fs.writeFileSync(path.join(qaDir, 'comparison.json'), JSON.stringify(evidence, null, 2) + '\n');
     fs.writeFileSync(path.join(qaDir, 'validation-summary.txt'), [
@@ -378,10 +426,12 @@ async function main() {
       `MISSING_ZONE_COUNT=${evidence.summary.missingZoneCount}`,
       `LIVE_FIXTURE_SAMPLE_LEAK_COUNT=${evidence.summary.liveFixtureSampleLeakCount}`,
       `RUNTIME_ERROR_COUNT=${evidence.summary.runtimeErrorCount}`,
+      `V3_MEASUREMENT_FAILURE_COUNT=${evidence.summary.v3MeasurementFailureCount}`,
+      ...evidence.summary.v3MeasurementFailures.map((item) => `V3_FAILURE ${item.kind} ${item.layout} ${item.viewport.width}x${item.viewport.height} ${item.failure}`),
       `STRUCTURAL_COMPARISON=${evidence.structuralComparison}`,
       ...evidence.comparisons.map((item) => `DIFF ${item.layout} ${item.viewport} material=${item.differingPixels} exact=${item.exactDifferingPixels} pixels`),
     ].join('\n') + '\n');
-    if (evidence.summary.materialPixelMismatchCount || evidence.summary.overflowCount || evidence.summary.missingZoneCount || evidence.summary.liveFixtureSampleLeakCount || evidence.summary.runtimeErrorCount) {
+    if (evidence.summary.materialPixelMismatchCount || evidence.summary.overflowCount || evidence.summary.missingZoneCount || evidence.summary.liveFixtureSampleLeakCount || evidence.summary.runtimeErrorCount || evidence.summary.v3MeasurementFailureCount) {
       throw new Error(`Canonical QA failed. See ${path.join(qaDir, 'comparison.json')}`);
     }
     console.log(fs.readFileSync(path.join(qaDir, 'validation-summary.txt'), 'utf8'));
