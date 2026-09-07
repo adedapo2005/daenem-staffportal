@@ -451,6 +451,75 @@
   .csp-layout-select:has(select:focus-visible){outline:3px solid rgba(47,91,231,.34);outline-offset:2px}
 }
 
+/* Owner visual-fidelity batch F: align the real component composition with
+   the approved desktop reference proportions while retaining the V3
+   responsive and data-bound contracts. */
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-root{--csp-topbar:58px;--csp-sidebar:210px;--csp-gap:12px;--csp-page-pad:12px}
+  .csp-topbar{padding:8px 14px;gap:10px}
+  .csp-topbar button,.csp-topbar .csp-layout-select{height:38px}
+  .csp-sidebar{top:var(--csp-topbar);height:calc(100vh - var(--csp-topbar));padding:12px 10px}
+  .csp-sidebar nav button{min-height:38px}
+  .csp-hero{min-height:150px;grid-template-columns:minmax(0,1.05fr) minmax(0,1.35fr) 190px;background:linear-gradient(110deg,#f8fbff 0%,#e9f3ff 42%,#b9ddf6 100%)}
+  .csp-hero-copy{padding:22px 26px;background:linear-gradient(90deg,rgba(248,251,255,.98) 0%,rgba(248,251,255,.88) 62%,rgba(248,251,255,.18) 100%)}
+  .csp-hero h1{font-size:38px}
+  .csp-hero p{font-size:12px}
+  .csp-hero-scene{background:linear-gradient(#76b9eb 0 43%,#dff2ff 44% 63%,#739db1 64% 100%)}
+  .csp-hero-artwork{opacity:1;filter:saturate(1.18) contrast(1.07) brightness(.99)}
+  .csp-hero-scene>span{right:16px;top:20%;width:220px;max-width:220px;white-space:normal;overflow:visible;line-height:1.12}
+  .csp-layout-insight-magazine .csp-hero{min-height:330px;grid-template-columns:minmax(0,1.05fr) minmax(0,1.35fr) 190px}
+  .csp-layout-insight-magazine .csp-hero-copy{padding:28px 30px;background:linear-gradient(90deg,rgba(22,58,116,.78),rgba(22,58,116,.18) 80%,transparent)}
+  .csp-layout-insight-magazine .csp-hero h1{font-size:42px;color:#fff}
+  .csp-layout-insight-magazine .csp-hero p,.csp-layout-insight-magazine .csp-hero small{color:#f3f8ff}
+  .csp-layout-insight-magazine .csp-story{min-height:330px}
+  .csp-layout-insight-magazine .csp-story-grid{grid-template-columns:repeat(2,minmax(0,1fr));height:calc(100% - 30px)}
+  .csp-layout-insight-magazine .csp-story-featured{min-height:210px}
+  .csp-layout-operational-cockpit .csp-map{min-height:390px}
+  .csp-layout-operational-cockpit .csp-map-art{height:286px}
+  .csp-layout-horizon-wide .csp-global-panel{min-height:390px}
+  .csp-layout-adaptive-bento .csp-bento-strategy{min-height:340px}
+  .csp-layout-focus-flow .csp-priority-stream{min-height:450px}
+  .csp-layout-enterprise-studio .csp-studio{min-height:540px}
+  .csp-layout-enterprise-studio .csp-studio-workspace{height:458px}
+  .csp-layout-board-pulse .csp-analytics{min-height:330px}
+}
+
+.csp-detail-lower{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(180px,.78fr) minmax(190px,.72fr);gap:12px;margin-top:14px}
+.csp-detail-lower>section,.csp-detail-inspector{min-width:0;border:1px solid var(--csp-line);border-radius:14px;background:rgba(255,255,255,.76);padding:12px}
+.csp-detail-lower header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.csp-detail-lower header b{font:800 13px/1.2 var(--csp-heading)}
+.csp-detail-lower header button,.csp-detail-lower header span{border:0;background:transparent;color:var(--csp-muted);font-size:9px}
+.csp-detail-progress .csp-chart{height:150px;margin:0}
+.csp-detail-task-status{display:grid;grid-template-columns:82px minmax(0,1fr);align-items:center;gap:10px}
+.csp-detail-task-status header{grid-column:1/-1}
+.csp-task-ring{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--csp-success) 0 42%,var(--csp-cobalt) 42% 82%,var(--csp-coral) 82% 100%);box-shadow:inset 0 0 0 14px #fff,0 8px 20px rgba(47,91,231,.1)}
+.csp-task-ring i{font:800 20px var(--csp-heading);font-style:normal;color:var(--csp-ink)}
+.csp-task-legend{display:grid;gap:8px}
+.csp-task-legend span{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--csp-muted)}
+.csp-task-legend span i{width:8px;height:8px;border-radius:50%;background:var(--csp-success)}
+.csp-task-legend span i.active{background:var(--csp-cobalt)}
+.csp-task-legend span i.risk{background:var(--csp-coral)}
+.csp-task-legend b{margin-left:auto;color:var(--csp-ink)}
+.csp-detail-inspector{display:grid;align-content:start;gap:0}
+.csp-detail-inspector header button{color:var(--csp-cobalt);font-weight:800}
+.csp-detail-inspector>div{display:flex;justify-content:space-between;gap:8px;border-top:1px solid rgba(42,64,112,.08);padding:8px 0}
+.csp-detail-inspector>div span{font-size:9px;color:var(--csp-muted)}
+.csp-detail-inspector>div b{font-size:9px;text-align:right;overflow-wrap:anywhere}
+@media (min-width:2200px){
+  .csp-detail-lower{gap:18px;margin-top:20px}
+  .csp-detail-lower>section,.csp-detail-inspector{padding:18px}
+  .csp-detail-lower header b{font-size:18px}
+  .csp-detail-lower header button,.csp-detail-lower header span,.csp-task-legend span,.csp-detail-inspector>div span,.csp-detail-inspector>div b{font-size:13px}
+  .csp-detail-progress .csp-chart{height:230px}
+  .csp-detail-task-status{grid-template-columns:120px minmax(0,1fr)}
+  .csp-task-ring{width:112px;height:112px}
+  .csp-task-ring i{font-size:28px}
+}
+@media (max-width:767px){
+  .csp-detail-lower{grid-template-columns:minmax(0,1fr);gap:10px}
+  .csp-detail-progress .csp-chart{height:150px}
+}
+
 /* Owner fidelity batch A — Executive Command and Workspace Canvas.
    These are reference-derived surface treatments around existing real
    components. They add depth, layering and readable density without adding
