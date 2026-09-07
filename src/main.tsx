@@ -20,10 +20,12 @@ import './premium-staffportal.css';
 import './signin-experience.css';
 import './postauth-layout.css';
 import './postauth-readiness.css';
+import './canonical-postauth-v1/canonical-dashboard.css';
 import { DEFAULT_LAYOUT_ID, getLayoutProfile, normalizeLayoutPreference, readLocalLayoutPreference, writeLocalLayoutPreference, type LayoutPreference } from './layout-system';
 import './theme-studio-entry';
 import { ZipDashboard, type LiveDataStatus, type ZipDashboardSummary } from './zip-dashboard';
 import { OfflinePlatformProvider } from './offline-sync';
+import { CANONICAL_LAYOUT_IDS, CANONICAL_VISUAL_FIXTURE, CanonicalDashboard, type StaffPortalLayoutId } from './canonical-postauth-v1';
 
 const FormsCenter = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
 const FacilitiesCenter = lazy(() => import('./centers').then((module) => ({ default: module.FacilitiesCenter })));
@@ -586,4 +588,19 @@ function Root() {
   return <OfflinePlatformProvider context={auth.context}><Workspace context={auth.context} onLogout={auth.logout} /></OfflinePlatformProvider>;
 }
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><Root /></React.StrictMode>);
+function CanonicalBaseline() {
+  const [layoutId, setLayoutId] = useState<StaffPortalLayoutId>(() => {
+    const requested = new URLSearchParams(window.location.search).get('layout') as StaffPortalLayoutId | null;
+    return requested && CANONICAL_LAYOUT_IDS.includes(requested) ? requested : 'executive-command';
+  });
+  return <CanonicalDashboard initialLayout={layoutId} fixture={CANONICAL_VISUAL_FIXTURE} onLayoutChange={setLayoutId} />;
+}
+
+function Application() {
+  const baselineMode = import.meta.env.DEV
+    && import.meta.env.VITE_CANONICAL_BASELINE === 'true'
+    && window.location.pathname === '/__canonical_baseline';
+  return baselineMode ? <CanonicalBaseline /> : <React.StrictMode><Root /></React.StrictMode>;
+}
+
+createRoot(document.getElementById('root')!).render(<Application />);
