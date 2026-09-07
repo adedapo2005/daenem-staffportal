@@ -1,3 +1,5 @@
+import './canonical-fonts';
+
 export * from './canonical-types';
 export * from './canonical-fixture';
 export * from './layout-specs';
@@ -12,3 +14,4 @@ export * from './layouts/AdaptiveBentoLayout';
 export * from './layouts/FocusFlowLayout';
 export * from './layouts/EnterpriseStudioLayout';
 export * from './layouts/BoardPulseLayout';
+export * from './display-standards';

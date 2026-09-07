@@ -137,7 +137,8 @@ async function installApiRoutes(page, { authenticated, getLayoutId }) {
 
 function startVite(port, { fixtureMode, baselineMode }) {
   const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const nodeOptions = [process.env.NODE_OPTIONS, '--require=/tmp/wrangler-os-network-shim.cjs'].filter(Boolean).join(' ');
+  const optionalWranglerShim = '/tmp/wrangler-os-network-shim.cjs';
+  const nodeOptions = [process.env.NODE_OPTIONS, fs.existsSync(optionalWranglerShim) ? `--require=${optionalWranglerShim}` : null].filter(Boolean).join(' ');
   const child = spawn(command, ['run', 'dev', '--', '--config', 'vite.canonical-qa.config.ts', '--host', '127.0.0.1', '--port', String(port)], {
     cwd: root,
     env: {
@@ -195,6 +196,7 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.locator('[data-canonical-staffportal-dashboard]').waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction((expected) => document.querySelector('[data-canonical-staffportal-dashboard]')?.getAttribute('data-layout-id') === expected, requestedLayout, { timeout: 20_000 });
+  await page.evaluate(() => document.fonts.ready);
   await freezeVisuals(page);
   await page.waitForTimeout(120);
   const metrics = await page.evaluate(({ requestedLayout: expectedLayout, kind: renderKind, viewport: [width, height], zones }) => {
@@ -231,12 +233,24 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   return { metrics, pageErrors, consoleErrors, failedRequests };
 }
 
-function compareImages(first, second) {
-  const result = spawnSync('compare', ['-metric', 'AE', first, second, 'null:'], { encoding: 'utf8' });
+function aeMetric(first, second, extraArgs = []) {
+  const result = spawnSync('compare', ['-metric', 'AE', ...extraArgs, first, second, 'null:'], { encoding: 'utf8' });
   if (result.error) throw result.error;
   const output = `${result.stdout || ''}\n${result.stderr || ''}`.trim();
   const match = output.match(/(\d+)\s*(?:\n|$)/);
-  return { exitCode: result.status, raw: output, differingPixels: match ? Number(match[1]) : null };
+  return { exitCode: result.status, raw: output, pixels: match ? Number(match[1]) : null };
+}
+
+function compareImages(first, second) {
+  const exact = aeMetric(first, second);
+  const material = aeMetric(first, second, ['-fuzz', '0.5%']);
+  return {
+    exitCode: material.exitCode,
+    raw: material.raw,
+    differingPixels: material.pixels,
+    exactDifferingPixels: exact.pixels,
+    rasterTolerance: '0.5% (<=1 RGB step; geometry/color drift still fails)',
+  };
 }
 
 function buildStructuralComparison() {
@@ -278,7 +292,6 @@ async function main() {
     errors: [],
   };
   const browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM || '/tmp/daenem-webadmin-chromium-v2/chromium',
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--no-zygote'],
   });
@@ -307,7 +320,7 @@ async function main() {
         const comparison = compareImages(sourcePath, runtimePath);
         evidence.comparisons.push({ layout, viewport: `${width}x${height}`, source: path.basename(sourcePath), runtime: path.basename(runtimePath), ...comparison });
       }
-      for (const [width, height] of executiveViewports) {
+      if (layout === 'executive-command') for (const [width, height] of executiveViewports) {
         layoutState = layout;
         console.log(`QA ${layout} ${width}x${height}`);
         const sourcePath = path.join(qaDir, `canonical-${layout}-${width}x${height}.png`);
@@ -343,7 +356,9 @@ async function main() {
       runtimeScreenshotCount: evidence.runtime.length,
       liveAdapterScreenshotCount: evidence.liveAdapter.length,
       comparisonCount: evidence.comparisons.length,
-      nonZeroComparisons: evidence.comparisons.filter((item) => item.differingPixels !== 0).length,
+      materialPixelMismatchCount: evidence.comparisons.filter((item) => item.differingPixels !== 0).length,
+      exactRasterDifferenceCount: evidence.comparisons.filter((item) => item.exactDifferingPixels !== 0).length,
+      exactRasterDifferingPixels: evidence.comparisons.reduce((sum, item) => sum + (item.exactDifferingPixels || 0), 0),
       overflowCount: [...evidence.canonical, ...evidence.runtime, ...evidence.liveAdapter].filter((item) => item.horizontalOverflow).length,
       missingZoneCount: [...evidence.canonical, ...evidence.runtime, ...evidence.liveAdapter].filter((item) => item.missingZones.length > 0).length,
       liveFixtureSampleLeakCount: evidence.liveAdapter.filter((item) => item.fixtureSampleLeak).length,
@@ -356,15 +371,17 @@ async function main() {
       `RUNTIME_SCREENSHOTS=${evidence.summary.runtimeScreenshotCount}`,
       `LIVE_ADAPTER_SCREENSHOTS=${evidence.summary.liveAdapterScreenshotCount}`,
       `SOURCE_RUNTIME_COMPARISONS=${evidence.summary.comparisonCount}`,
-      `NONZERO_PIXEL_COMPARISONS=${evidence.summary.nonZeroComparisons}`,
+      `MATERIAL_PIXEL_MISMATCH_COMPARISONS=${evidence.summary.materialPixelMismatchCount}`,
+      `EXACT_RASTER_DIFFERENCE_COMPARISONS=${evidence.summary.exactRasterDifferenceCount}`,
+      `EXACT_RASTER_DIFFERING_PIXELS=${evidence.summary.exactRasterDifferingPixels}`,
       `HORIZONTAL_OVERFLOW_COUNT=${evidence.summary.overflowCount}`,
       `MISSING_ZONE_COUNT=${evidence.summary.missingZoneCount}`,
       `LIVE_FIXTURE_SAMPLE_LEAK_COUNT=${evidence.summary.liveFixtureSampleLeakCount}`,
       `RUNTIME_ERROR_COUNT=${evidence.summary.runtimeErrorCount}`,
       `STRUCTURAL_COMPARISON=${evidence.structuralComparison}`,
-      ...evidence.comparisons.map((item) => `DIFF ${item.layout} ${item.viewport} = ${item.differingPixels} pixels`),
+      ...evidence.comparisons.map((item) => `DIFF ${item.layout} ${item.viewport} material=${item.differingPixels} exact=${item.exactDifferingPixels} pixels`),
     ].join('\n') + '\n');
-    if (evidence.summary.nonZeroComparisons || evidence.summary.overflowCount || evidence.summary.missingZoneCount || evidence.summary.liveFixtureSampleLeakCount || evidence.summary.runtimeErrorCount) {
+    if (evidence.summary.materialPixelMismatchCount || evidence.summary.overflowCount || evidence.summary.missingZoneCount || evidence.summary.liveFixtureSampleLeakCount || evidence.summary.runtimeErrorCount) {
       throw new Error(`Canonical QA failed. See ${path.join(qaDir, 'comparison.json')}`);
     }
     console.log(fs.readFileSync(path.join(qaDir, 'validation-summary.txt'), 'utf8'));

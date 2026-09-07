@@ -106,7 +106,7 @@ export interface CanonicalDashboardProps {
   onQuickCreate?: () => void;
   onNotifications?: () => void;
   onWorkspace?: () => void;
-  onSearch?: () => void;
+  onSearch?: (query?: string) => void;
   onProfile?: () => void;
   activeNavigationId?: string;
   onLayoutChange?: (layoutId: StaffPortalLayoutId) => void;

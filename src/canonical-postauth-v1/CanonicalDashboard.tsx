@@ -7,6 +7,7 @@ import {
 import type { CanonicalDashboardProps, CanonicalFixture, CanonicalNavigationItem, CanonicalZoneId, StaffPortalLayoutId } from './canonical-types';
 import { CANONICAL_VISUAL_FIXTURE } from './canonical-fixture';
 import { CANONICAL_LAYOUT_IDS, CANONICAL_LAYOUT_SPECS } from './layout-specs';
+import { formatPersonName, formatUiLabel, initialsFromPersonName } from './display-standards';
 import './canonical-dashboard.css';
 
 const nav = [
@@ -26,19 +27,22 @@ const zoneTitles: Partial<Record<CanonicalZoneId, string>> = {
   'quick-actions': 'Quick Actions', status: 'System Status', announcement: 'Latest Announcements',
 };
 
-function TopBar({ fixture, layoutId, onLayoutChange, onAskAi, onQuickCreate, onNotifications, onWorkspace, onSearch, onProfile }: { fixture: CanonicalFixture; layoutId: StaffPortalLayoutId; onLayoutChange: (id: StaffPortalLayoutId) => void; onAskAi?: () => void; onQuickCreate?: () => void; onNotifications?: () => void; onWorkspace?: () => void; onSearch?: () => void; onProfile?: () => void }) {
+function TopBar({ fixture, layoutId, onLayoutChange, onAskAi, onQuickCreate, onNotifications, onWorkspace, onSearch, onProfile }: { fixture: CanonicalFixture; layoutId: StaffPortalLayoutId; onLayoutChange: (id: StaffPortalLayoutId) => void; onAskAi?: () => void; onQuickCreate?: () => void; onNotifications?: () => void; onWorkspace?: () => void; onSearch?: (query?: string) => void; onProfile?: () => void }) {
+  const [query, setQuery] = useState('');
+  const weatherValue = fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`;
   return <header className="csp-topbar" data-canonical-topbar>
     <div className="csp-brand"><span className="csp-brand-mark">D</span><span><b>STAFFPORTAL.DAENEM.COM</b><small>People · Systems · A Stronger Tomorrow</small></span></div>
     <button type="button" className="csp-workspace" onClick={onWorkspace}><BriefcaseBusiness size={16}/><span><b>{fixture.workspace.name}</b><small>{fixture.workspace.subtitle}</small></span></button>
-    <label className="csp-search" onClick={onSearch}><Search size={17}/><input aria-label="Search Staff Portal" placeholder="Search People, Documents, Projects, Anything..." onFocus={onSearch}/><kbd>⌘ K</kbd></label>
+    <form className="csp-search" role="search" onSubmit={(event)=>{event.preventDefault();onSearch?.(query)}}><Search size={17}/><input aria-label="Search Staff Portal" placeholder="Search People, Documents, Projects, Anything..." value={query} onChange={(event)=>setQuery(event.target.value)}/><kbd>⌘ K</kbd></form>
     <div className="csp-top-actions">
-      <button className="csp-ai" onClick={onAskAi}><Sparkles size={16}/> Ask Daenem AI</button>
-      <button className="csp-create" onClick={onQuickCreate}><Plus size={16}/> Quick Create</button>
-      <button className="csp-icon" aria-label="Notifications" onClick={onNotifications}><Bell size={17}/><i>3</i></button>
-      <span className="csp-weather-chip"><CloudSun size={18}/><span><b>{fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`}</b><small>{fixture.weather.city}</small></span></span>
+      <button type="button" className="csp-ai" onClick={onAskAi}><Sparkles size={16}/> Ask Daenem AI</button>
+      <button type="button" className="csp-create" onClick={onQuickCreate}><Plus size={16}/> Quick Create</button>
+      <button type="button" className="csp-icon" aria-label="Notifications" onClick={onNotifications}><Bell size={17}/><i>3</i></button>
+      <span className="csp-weather-chip"><CloudSun size={18}/><span><b>{weatherValue}</b><small>{fixture.weather.city}</small></span></span>
       <span className="csp-sync"><i/><span><b>{fixture.sync.label}</b><small>{fixture.sync.detail}</small></span></span>
+      <span className="csp-release"><b>{fixture.release.version}</b><small>{fixture.release.label}</small></span>
       <label className="csp-layout-select"><Grid3X3 size={16}/><select aria-label="Dashboard Layout" value={layoutId} onChange={(e)=>onLayoutChange(e.target.value as StaffPortalLayoutId)}>{CANONICAL_LAYOUT_IDS.map((id)=><option key={id} value={id}>{CANONICAL_LAYOUT_SPECS[id].name}</option>)}</select></label>
-      <button type="button" className="csp-avatar" aria-label="Open Profile" onClick={onProfile}>{fixture.viewer.initials}</button>
+      <button type="button" className="csp-profile" onClick={onProfile} aria-label={`Open Profile For ${formatPersonName(fixture.viewer.displayName)}`}><span className="csp-avatar">{initialsFromPersonName(fixture.viewer.displayName)}</span><span className="csp-profile-copy"><b>{formatPersonName(fixture.viewer.displayName)}</b><small>{formatUiLabel(fixture.viewer.role)}</small></span></button>
     </div>
   </header>;
 }
@@ -47,20 +51,20 @@ function SideNav({ layoutId, navigation, activeNavigationId }: { layoutId: Staff
   const items: CanonicalNavigationItem[] = navigation?.length ? navigation : nav.map(([label, Icon]) => ({ id: label, label, icon: Icon }));
   return <aside className="csp-sidebar" data-canonical-sidebar>
     <div className="csp-sidebar-title"><Command size={18}/><span><b>{CANONICAL_LAYOUT_SPECS[layoutId].name}</b><small>Selectable Premium Layout</small></span></div>
-      <nav>{items.map((item, index)=>{const Icon = item.icon || LayoutDashboard; const active = activeNavigationId ? item.id === activeNavigationId : index === 0; return <button type="button" key={item.id} className={active?'active':''} onClick={item.onSelect} aria-current={active?'page':undefined}><Icon size={17}/><span>{item.label}</span>{item.badge && <em>{item.badge}</em>}</button>})}</nav>
+      <nav>{items.map((item, index)=>{const Icon = item.icon || LayoutDashboard; const active = activeNavigationId ? item.id === activeNavigationId : index === 0; return <button type="button" key={item.id} className={active?'active':''} onClick={item.onSelect} aria-current={active?'page':undefined}><Icon size={17}/><span>{formatUiLabel(item.label)}</span>{item.badge && <em>{item.badge}</em>}</button>})}</nav>
     <div className="csp-purpose"><span>One Team</span><b>A Brighter Tomorrow</b><small>Build · Empower · Grow</small><ChevronRight size={18}/></div>
   </aside>;
 }
 
 export function CanonicalHero({ fixture, layoutId }: { fixture: CanonicalFixture; layoutId: StaffPortalLayoutId }) {
   const copy: Record<StaffPortalLayoutId, [string,string]> = {
-    'executive-command':[`Good Morning, ${fixture.viewer.displayName}`,'Everything That Matters. In One View.'],
+    'executive-command':[`Good Morning, ${formatPersonName(fixture.viewer.displayName)}`,'Everything That Matters. In One View.'],
     'workspace-canvas':['Workspace Canvas','Your Work, Your Way. Organise. Collaborate. Make An Impact.'],
     'operational-cockpit':['Operational Cockpit','Real-Time Operations. Greater Possibilities.'],
     'insight-magazine':['People Create Brighter Tomorrows','Perspectives. Ideas. People. Progress.'],
     'master-detail-workspace':['Master–Detail Workspace','Browse, Focus And Take Action — All In One Place.'],
     'horizon-wide':['Bigger Horizons','Global Intelligence Across One Panoramic Workspace.'],
-    'adaptive-bento':[`Good Morning, ${fixture.viewer.displayName}`,'Progress Happens When People, Purpose And Possibilities Align.'],
+    'adaptive-bento':[`Good Morning, ${formatPersonName(fixture.viewer.displayName)}`,'Progress Happens When People, Purpose And Possibilities Align.'],
     'focus-flow':['Focus & Flow','Turn Today’s Priorities Into Tomorrow’s Progress.'],
     'enterprise-studio':['Enterprise Studio','Design. Analyse. Automate. A Smarter Organisation Starts Here.'],
     'board-pulse':['Board Pulse','A Clearer Tomorrow, Through Bolder Decisions Today.'],
