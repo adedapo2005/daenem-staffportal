@@ -563,4 +563,56 @@
   .csp-layout-workspace-canvas .project-art{height:86px}
 }
 
+/* Owner fidelity batch B — Operational Cockpit and Insight Magazine. */
+.csp-layout-operational-cockpit .csp-hero{
+  background:linear-gradient(100deg,rgba(231,250,255,.98),rgba(190,231,242,.9) 52%,rgba(62,117,139,.8));
+  border-color:rgba(17,169,199,.24);
+}
+.csp-layout-operational-cockpit .csp-hero-scene:after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(17,98,128,.08),transparent 50%,rgba(17,98,128,.2)),repeating-linear-gradient(0deg,transparent 0 25px,rgba(234,255,255,.16) 26px 27px),linear-gradient(160deg,transparent 0 55%,rgba(26,83,108,.2) 56% 59%,transparent 60%);
+  mix-blend-mode:soft-light;
+}
+.csp-layout-operational-cockpit .csp-hero-artwork{filter:saturate(1.18) contrast(1.08)}
+.csp-layout-operational-cockpit .csp-map{
+  border-color:rgba(17,169,199,.22);
+  background:linear-gradient(145deg,rgba(239,253,255,.99),rgba(225,246,255,.95));
+  box-shadow:0 18px 44px rgba(27,111,145,.13),inset 0 1px rgba(255,255,255,.96);
+}
+.csp-layout-operational-cockpit .csp-map-art{
+  background-image:linear-gradient(135deg,rgba(222,251,255,.16),rgba(16,91,130,.12)),url('/canonical-postauth-v3/shared/world-operations-map.svg');
+  background-size:cover;background-position:center;
+  box-shadow:inset 0 0 44px rgba(17,169,199,.14);
+}
+.csp-layout-operational-cockpit .csp-map-art:after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 52% 42%,rgba(114,242,255,.24),transparent 18%),repeating-linear-gradient(90deg,transparent 0 11%,rgba(47,91,231,.07) 11.1% 11.25%);
+  z-index:0;
+}
+.csp-layout-operational-cockpit .csp-map-art>i{width:14px;height:14px;background:#0e9bb8;box-shadow:0 0 0 6px rgba(14,155,184,.16),0 0 24px rgba(14,155,184,.48)}
+.csp-layout-operational-cockpit .csp-map-art>span{padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.8);box-shadow:0 5px 14px rgba(18,107,138,.12)}
+.csp-layout-operational-cockpit .csp-progress,
+.csp-layout-operational-cockpit .csp-status,
+.csp-layout-operational-cockpit .csp-ai-card{box-shadow:0 14px 34px rgba(37,99,126,.1),inset 0 1px rgba(255,255,255,.9)}
+.csp-layout-operational-cockpit .csp-progress progress{accent-color:var(--csp-cyan);height:9px}
+.csp-layout-insight-magazine .csp-hero{
+  background:linear-gradient(100deg,rgba(19,53,112,.98),rgba(61,78,143,.84) 58%,rgba(227,171,137,.7));
+  border-color:rgba(198,108,112,.3);
+}
+.csp-layout-insight-magazine .csp-hero-artwork{filter:saturate(1.14) contrast(1.05)}
+.csp-layout-insight-magazine .csp-hero-scene:after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(12,35,83,.28),transparent 54%,rgba(249,203,157,.2)),linear-gradient(155deg,transparent 0 58%,rgba(255,243,218,.26) 59% 62%,transparent 63%);
+}
+.csp-layout-insight-magazine .csp-story{
+  background:linear-gradient(150deg,#fff,rgba(255,248,246,.97));
+  border-top:3px solid rgba(198,108,112,.62);
+}
+.csp-layout-insight-magazine .csp-story-item{box-shadow:0 12px 28px rgba(112,67,89,.11),inset 0 1px rgba(255,255,255,.92)}
+.csp-layout-insight-magazine .csp-story-featured{min-height:190px;grid-template-columns:minmax(180px,1.1fr) minmax(0,2fr) 18px}
+.csp-layout-insight-magazine .csp-story-art{filter:saturate(1.1) contrast(1.04)}
+.csp-layout-insight-magazine .csp-story-copy b{font-size:17px;line-height:1.08}
+.csp-layout-insight-magazine .csp-story-copy small{font-size:11px}
+.csp-layout-insight-magazine .csp-analytics{border-color:rgba(198,108,112,.18);background:linear-gradient(145deg,#fff,rgba(255,247,245,.94))}
+
 /* 
