@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="presentation">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8ab8ff"/><stop offset=".5" stop-color="#eef3ff"/><stop offset="1" stop-color="#b1a7e7"/></linearGradient>
+    <linearGradient id="tower" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e7eeff"/><stop offset="1" stop-color="#48558f"/></linearGradient>
+  </defs>
+  <rect width="1600" height="520" fill="url(#sky)"/><circle cx="1250" cy="112" r="65" fill="#fff2bd" opacity=".88"/><path d="M0 260C260 220 480 260 735 225S1230 198 1600 246V520H0Z" fill="#dbe7fb" opacity=".68"/>
+  <g fill="url(#tower)"><path d="M58 386V164h78v-53h74v275Z"/><path d="M235 386V112h54v-43h90v317Z"/><path d="M408 386V198h80v-79h55v267Z"/><path d="M566 386V145h84v-60h58v301Z"/><path d="M728 386V93h72v-31h88v324Z"/><path d="M912 386V173h67v-72h80v285Z"/><path d="M1085 386V127h77v-48h62v307Z"/><path d="M1240 386V184h86v-68h70v270Z"/><path d="M1410 386V145h72v-39h72v280Z"/></g>
+  <path d="M0 398H1600V520H0Z" fill="#3c4b79" opacity=".58"/><path d="M135 427H1470M270 462H1360" stroke="#d9e4ff" stroke-opacity=".55" stroke-width="3"/>
+  <g fill="none" stroke="#fff" stroke-opacity=".62" stroke-width="3"><path d="M320 330C540 215 650 395 850 270S1120 222 1360 330"/><path d="M320 330V216M850 270V150M1360 330V208" stroke-dasharray="8 11"/></g>
+  <g fill="#fff"><circle cx="320" cy="330" r="9"/><circle cx="850" cy="270" r="9"/><circle cx="1360" cy="330" r="9"/></g>
+</svg>

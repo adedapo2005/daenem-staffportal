@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="presentation">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6eafe9"/><stop offset=".42" stop-color="#d9efff"/><stop offset=".72" stop-color="#fff0ce"/><stop offset="1" stop-color="#9bbfe7"/></linearGradient>
+    <linearGradient id="tower" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d5f1ff"/><stop offset=".38" stop-color="#87b9dd"/><stop offset="1" stop-color="#385b82"/></linearGradient>
+    <linearGradient id="towerWarm" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe7b0"/><stop offset=".34" stop-color="#d2a373"/><stop offset="1" stop-color="#4b6180"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6c9fbe" stop-opacity=".62"/><stop offset="1" stop-color="#23466d" stop-opacity=".94"/></linearGradient>
+    <linearGradient id="sunwash" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ffe9a8" stop-opacity="0"/><stop offset=".5" stop-color="#fff2bf" stop-opacity=".76"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></linearGradient>
+    <pattern id="windows" width="22" height="26" patternUnits="userSpaceOnUse"><rect width="7" height="4" rx="1" fill="#f3fbff" opacity=".72"/><rect x="12" y="13" width="6" height="4" rx="1" fill="#bfe3f4" opacity=".62"/></pattern>
+    <filter id="soft" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <rect width="1600" height="520" fill="url(#sky)"/>
+  <g fill="#fff" opacity=".42" filter="url(#soft)"><path d="M30 152c65-55 134-35 177 3 42-37 118-34 149 16H0c0-6 11-13 30-19Z"/><path d="M1042 118c48-44 115-32 145 3 34-29 97-24 126 15h-302c4-7 13-13 31-18Z"/><path d="M1335 226c39-33 88-24 116 4 30-23 74-17 102 15h-246c4-7 13-13 28-19Z"/></g>
+  <circle cx="1180" cy="116" r="63" fill="#fff4bf" opacity=".98"/><circle cx="1180" cy="116" r="133" fill="#fff1b4" opacity=".25"/>
+  <path d="M0 296 C236 245 466 278 704 242 S1172 195 1600 254 V520 H0Z" fill="#eef6ff" opacity=".63"/>
+  <g fill="url(#tower)" opacity=".92"><path d="M42 386V244h58v-48h80v190Z"/><path d="M190 386V157h76v-42h48v271Z"/><path d="M338 386V221h58v-75h73v240Z"/><path d="M480 386V105h68v-28h54v309Z"/><path d="M1128 386V180h67v-61h56v267Z"/><path d="M1280 386V154h83v-34h59v266Z"/><path d="M1435 386V222h62v-56h74v220Z"/></g>
+  <g opacity=".88"><path d="M650 386V128h58l22-65 22 65h53v258Z" fill="url(#towerWarm)"/><path d="M776 386V118h54l21-61 23 61h54v268Z" fill="url(#towerWarm)"/><path d="M902 386V136h52l23-71 22 71h51v250Z" fill="url(#towerWarm)"/><path d="M622 108H1004l-24 18H646Z" fill="#667b91"/><path d="M674 89C752 70 867 70 951 91l37 11H637Z" fill="#eef5fa" opacity=".95"/><path d="M652 112h341" stroke="#fff5d8" stroke-width="10" stroke-linecap="round" opacity=".8"/></g>
+  <g fill="url(#windows)" opacity=".78"><path d="M190 157h124v229H190Z"/><path d="M480 105h122v281H480Z"/><path d="M1128 180h123v206h-123Z"/><path d="M1280 154h142v232h-142Z"/><path d="M650 128h404v258H650Z"/></g>
+  <path d="M0 393 C260 356 481 409 708 377 S1199 348 1600 390 V520 H0Z" fill="url(#water)"/>
+  <path d="M0 400H1600" stroke="#dff7ff" stroke-opacity=".6" stroke-width="3"/><path d="M108 425 C392 397 625 441 862 416 S1260 392 1510 424" fill="none" stroke="#d9f4ff" stroke-opacity=".52" stroke-width="4"/><path d="M198 460 C500 431 732 479 1018 449 S1318 437 1515 464" fill="none" stroke="#91d0e8" stroke-opacity=".58" stroke-width="3"/>
+  <g fill="#316b72" opacity=".85"><path d="M0 401l38-25 26 25 33-35 31 35 35-20 30 20v45H0Z"/><path d="M1035 399l30-28 29 28 37-42 31 42 35-22 28 22v42h-190Z"/></g>
+  <path d="M350 438L510 520h206L555 430Z" fill="url(#sunwash)" opacity=".45"/><path d="M1220 392 A224 224 0 0 1 1544 320" fill="none" stroke="#fff" stroke-opacity=".48" stroke-width="3" stroke-dasharray="8 12"/>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="presentation">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#75cfff"/><stop offset=".52" stop-color="#d5f4ff"/><stop offset="1" stop-color="#82b7c8"/></linearGradient>
+    <linearGradient id="tower" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d7f4ff"/><stop offset="1" stop-color="#356785"/></linearGradient>
+    <pattern id="windows" width="25" height="30" patternUnits="userSpaceOnUse"><rect width="11" height="6" rx="2" fill="#effcff" opacity=".78"/><rect x="14" y="15" width="7" height="5" rx="2" fill="#8fd7e9" opacity=".72"/></pattern>
+  </defs>
+  <rect width="1600" height="520" fill="url(#sky)"/><circle cx="1270" cy="104" r="58" fill="#fff0b3" opacity=".92"/><circle cx="1270" cy="104" r="128" fill="#fff" opacity=".13"/>
+  <path d="M0 250 C220 204 520 250 730 214 S1230 197 1600 240V520H0Z" fill="#d6eff7" opacity=".63"/>
+  <g fill="url(#tower)"><path d="M55 380V181h62v-62h74v261Z"/><path d="M222 380V148h82V76h48v304Z"/><path d="M365 380V205h62v-82h65v257Z"/><path d="M518 380V104h94v-38h43v314Z"/><path d="M701 380V174h62v-48h92v254Z"/><path d="M880 380V118h80v-55h52v317Z"/><path d="M1034 380V192h62v-80h80v268Z"/><path d="M1202 380V146h90v-40h54v274Z"/><path d="M1370 380V198h62v-70h96v252Z"/></g>
+  <g fill="url(#windows)" opacity=".8"><path d="M222 380V148h130v232Z"/><path d="M518 380V104h137v276Z"/><path d="M880 380V118h132v262Z"/><path d="M1202 380V146h144v234Z"/></g>
+  <path d="M0 389H1600V520H0Z" fill="#27536e" opacity=".62"/>
+  <path d="M150 420H1450M270 455H1300" stroke="#a5edf2" stroke-opacity=".58" stroke-width="3"/>
+  <g fill="#1d88a7"><circle cx="280" cy="342" r="8"/><circle cx="530" cy="302" r="8"/><circle cx="810" cy="347" r="8"/><circle cx="1138" cy="281" r="8"/><circle cx="1350" cy="330" r="8"/></g>
+  <g stroke="#eaffff" stroke-opacity=".68" stroke-width="3" fill="none"><path d="M280 342L530 302L810 347L1138 281L1350 330"/><path d="M530 302L640 205M1138 281L1260 188" stroke-dasharray="8 10"/></g>
+</svg>
