@@ -14,6 +14,7 @@ import {
   CANONICAL_LAYOUT_IDS,
   CANONICAL_LAYOUT_SPECS,
   CanonicalDashboard,
+  FreshnessStatus,
   CanonicalHero,
   CanonicalKpis,
   type CanonicalDashboardProps,
@@ -23,6 +24,7 @@ import {
   type CanonicalZoneId,
   type StaffPortalLayoutId,
 } from './index';
+import { initialsFromPersonName } from './display-standards';
 
 type DashboardView = 'overview' | 'people' | 'forms' | 'security' | 'broadcasts' | 'facilities' | 'help';
 type TemperatureUnit = 'F' | 'C';
@@ -65,6 +67,12 @@ export type CanonicalStaffPortalAdapterProps = {
   onOpenLayoutStudio: () => void;
   release: ReleaseInfo;
   setReleaseOpen: (open: boolean) => void;
+  layoutPreview?: boolean;
+  layoutPreviewCanApply?: boolean;
+  layoutPreviewApplying?: boolean;
+  layoutPreviewMessage?: string;
+  onApplyLayoutPreview?: () => void | Promise<void>;
+  onExitLayoutPreview?: () => void;
 };
 
 const CANONICAL_ZONE_IDS: CanonicalZoneId[] = [
@@ -127,7 +135,7 @@ function scopeLabel(context: WorkforceContext, company: ZipCompanyChoice) {
 }
 
 function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'SP';
+  return initialsFromPersonName(name);
 }
 
 function businessDate() {
@@ -252,7 +260,7 @@ function EmptyCard({ zone, title, detail, icon: Icon = FileText, action }: {
 function LiveZoneCard({
   zone, context, company, summary, dataStatus, dataError, online, weather, clock, refreshSummary,
   onNavigate, onOpenModule, onOpenModuleHub, onOpenLayoutStudio, canUseLayoutStudio, release, setReleaseOpen,
-}: {
+ freshness, }: {
   zone: CanonicalZoneId;
   context: WorkforceContext;
   company: ZipCompanyChoice;
@@ -270,7 +278,7 @@ function LiveZoneCard({
   canUseLayoutStudio: boolean;
   release: ReleaseInfo;
   setReleaseOpen: (open: boolean) => void;
-}) {
+ freshness?: CanonicalFixture['sync']; }) {
   const title = ZONE_TITLES[zone] || zone;
   const detail = dataError || (dataStatus === 'loading' ? 'Waiting For Authorized Data.' : 'No Authorized Data Yet.');
   const canApprovals = permission(context, 'forms.access', 'view', company.id);
@@ -310,9 +318,9 @@ function LiveZoneCard({
     ? <EmptyCard zone={zone} title={title} detail="Authorized Knowledge Is Available Through AI Guide" icon={BookOpen} action={{ label: 'Open Knowledge', onClick: () => onNavigate('help') }} />
     : <EmptyCard zone={zone} title={title} detail="Permission Required" icon={BookOpen} />;
   if (zone === 'quick-actions') return <article className="csp-card csp-actions" data-zone={zone}><header><b>{title}</b><button type="button" onClick={onOpenModuleHub}>Open Workspaces</button></header><div><button type="button" onClick={onOpenModuleHub}><Grid3X3 size={17} />Open Workspaces</button>{canUseLayoutStudio && <button type="button" onClick={onOpenLayoutStudio}><LayoutDashboard size={17} />Layout Studio</button>}<button type="button" onClick={refreshSummary}><Activity size={17} />Refresh Data</button><button type="button" onClick={() => onOpenModule('employee')}><Users size={17} />My Workspace</button></div></article>;
-  if (zone === 'status') return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17} /><b>{title}</b></span><em>{online ? 'Online' : 'Offline'}</em></header><div><i /><b>Staff Portal</b><span>{dataStatus === 'ready' ? 'Operational' : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</span></div><div><i /><b>Authorized Data</b><span>{online ? 'Connected' : 'Cached'}</span></div></article>;
+  if (zone === 'status') return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17} /><b>{title}</b></span><em>{online ? 'Online' : 'Offline'}</em></header><div><i /><b>Staff Portal</b><span>{dataStatus === 'ready' ? 'Operational' : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</span></div><div><i /><b>Authorized Data</b><span>{online ? 'Connected' : 'Cached'}</span></div>{freshness && <FreshnessStatus sync={freshness} variant="card" />}</article>;
   if (zone === 'announcement') return <article className="csp-card csp-announcement" data-zone={zone}><Bell size={20} /><div><small>RELEASE · {title}</small><b>Version {release.version}</b><span>Release Details Remain Available Through Staff Portal Controls.</span></div><button type="button" aria-label="Open Release Notes" onClick={() => setReleaseOpen(true)}>›</button></article>;
-  if (zone === 'studio-toolbox') return <article className="csp-card csp-toolbox" data-zone={zone}><header><b>{title}</b><Workflow size={17} /></header><button type="button" onClick={onOpenModuleHub}><span>◫</span>Authorized Workspaces</button><button type="button" onClick={refreshSummary}><span>◆</span>Refresh Live Data</button><button type="button" onClick={onOpenLayoutStudio}><span>◫</span>Layout Studio</button></article>;
+  if (zone === 'studio-toolbox') return <article className="csp-card csp-toolbox" data-zone={zone}><header><b>{title}</b><Workflow size={17} /></header><button type="button" onClick={onOpenModuleHub}><span>◫</span>Authorized Workspaces</button><button type="button" onClick={refreshSummary}><span>◆</span>Refresh Live Data</button>{canUseLayoutStudio && <button type="button" onClick={onOpenLayoutStudio}><span>◫</span>Layout Studio</button>}</article>;
   if (zone === 'studio-canvas') return <EmptyCard zone={zone} title={title} detail="No Configured Canvas Data" icon={Workflow} />;
   return <EmptyCard zone={zone} title={title} detail={detail} icon={FileText} />;
 }
@@ -353,12 +361,17 @@ export function CanonicalStaffPortalAdapter(props: CanonicalStaffPortalAdapterPr
     context, view, company, summary, dataStatus, dataLastSyncedAt, dataError, refreshSummary,
     onNavigate, onOpenModule, onOpenModuleHub, visibleNav, clock, weather, online,
     layoutId, density, motion, canUseLayoutStudio, onOpenLayoutStudio, release, setReleaseOpen,
+    layoutPreview = false, layoutPreviewCanApply = false, layoutPreviewApplying = false,
+    layoutPreviewMessage = '', onApplyLayoutPreview, onExitLayoutPreview,
   } = props;
   const canonicalId = canonicalLayoutId(layoutId);
   const fixtureMode = isFixtureMode();
   const fixture = useMemo(
-    () => liveFixture(context, company, summary, dataStatus, dataError, clock, weather, online, release),
-    [clock, company, context, dataError, dataStatus, online, release, summary, weather],
+    () => {
+      const next = liveFixture(context, company, summary, dataStatus, dataError, clock, weather, online, release);
+      return { ...next, sync: { ...next.sync, updatedAt: dataLastSyncedAt, timeZone: 'Africa/Lagos' } };
+    },
+    [clock, company, context, dataError, dataStatus, dataLastSyncedAt, online, release, summary, weather],
   );
   const navigation = useMemo(
     () => navigationItems(context, company, visibleNav, onNavigate, onOpenModule, onOpenModuleHub),
@@ -369,7 +382,7 @@ export function CanonicalStaffPortalAdapter(props: CanonicalStaffPortalAdapterPr
     for (const zone of CANONICAL_ZONE_IDS) {
       if (zone === 'hero') slots[zone] = <CanonicalHero fixture={fixture} layoutId={canonicalId} />;
       else if (zone === 'kpis') slots[zone] = <CanonicalKpis fixture={fixture} />;
-      else slots[zone] = <LiveZoneCard zone={zone} context={context} company={company} summary={summary} dataStatus={dataStatus} dataError={dataError} online={online} weather={weather} clock={clock} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} onOpenLayoutStudio={onOpenLayoutStudio} canUseLayoutStudio={canUseLayoutStudio} release={release} setReleaseOpen={setReleaseOpen} />;
+      else slots[zone] = <LiveZoneCard zone={zone} freshness={fixture.sync} context={context} company={company} summary={summary} dataStatus={dataStatus} dataError={dataError} online={online} weather={weather} clock={clock} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} onOpenLayoutStudio={onOpenLayoutStudio} canUseLayoutStudio={canUseLayoutStudio} release={release} setReleaseOpen={setReleaseOpen} />;
     }
     return slots;
   }, [canUseLayoutStudio, canonicalId, clock, company, context, dataError, dataStatus, fixture, onNavigate, onOpenLayoutStudio, onOpenModule, onOpenModuleHub, online, refreshSummary, release, setReleaseOpen, summary, weather]);
@@ -392,8 +405,15 @@ export function CanonicalStaffPortalAdapter(props: CanonicalStaffPortalAdapterPr
       onLayoutChange: (next) => window.dispatchEvent(new CustomEvent('daenem:layout-preview', { detail: { layoutId: storedLayoutId(next), density, motion } })),
     };
   return <div className="canonical-postauth-runtime" data-canonical-runtime="true" data-canonical-fixture-mode={fixtureMode ? 'true' : 'false'} data-layout-profile={canonicalId} data-layout-density={density} data-layout-motion={motion} data-data-status={dataStatus}>
+    {layoutPreview && <div className="layout-preview-banner" data-layout-preview-banner="true">
+      <span><strong>Previewing {CANONICAL_LAYOUT_SPECS[canonicalId].name}</strong><small>Your Saved Experience Is Unchanged Until You Apply This Layout.</small></span>
+      <div className="layout-preview-actions">
+        {layoutPreviewCanApply && <button type="button" className="primary-button" disabled={layoutPreviewApplying} onClick={() => void onApplyLayoutPreview?.()}>{layoutPreviewApplying ? 'Applying…' : 'Apply To Me'}</button>}
+        <button type="button" className="secondary-button" onClick={onExitLayoutPreview}>Exit Preview</button>
+      </div>
+      {layoutPreviewMessage && <small className="layout-preview-message" role="status">{layoutPreviewMessage}</small>}
+    </div>}
     <CanonicalDashboard key={canonicalId} {...dashboardProps} />
-    {!fixtureMode && view === 'overview' && dataLastSyncedAt && <span className="canonical-runtime-freshness" data-canonical-freshness="true">Last Updated {new Date(dataLastSyncedAt).toLocaleTimeString()}</span>}
   </div>;
 }
 

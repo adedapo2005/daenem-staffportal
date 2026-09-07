@@ -50,6 +50,7 @@ export interface CanonicalLayoutSpec {
   navMode: LayoutNavMode;
   description: string;
   desktopGridAreas: string[];
+  wideRowMinimums: number[];
   tabletGridAreas: string[];
   mobileOrder: CanonicalZoneId[];
   zones: CanonicalZoneId[];
@@ -79,7 +80,7 @@ export interface CanonicalFixture {
   viewer: { displayName: string; role: string; initials: string };
   workspace: { name: string; subtitle: string };
   release: { version: string; label: string };
-  sync: { label: string; detail: string };
+  sync: { label: string; detail: string; updatedAt?: string | null; timeZone?: string };
   dateTime: { date: string; time: string; zone: string };
   weather: { city: string; tempC: number | null; condition: string; humidity: number; windKph: number; uv: string };
   kpis: CanonicalKpi[];
@@ -88,6 +89,7 @@ export interface CanonicalFixture {
   activity: Array<{ title: string; meta: string }>;
   worldTimes: Array<{ city: string; time: string; date: string }>;
 }
+
 
 export interface CanonicalNavigationItem {
   id: string;
@@ -110,4 +112,5 @@ export interface CanonicalDashboardProps {
   onProfile?: () => void;
   activeNavigationId?: string;
   onLayoutChange?: (layoutId: StaffPortalLayoutId) => void;
+  onZoneAction?: (zone: CanonicalZoneId, action: string) => void;
 }

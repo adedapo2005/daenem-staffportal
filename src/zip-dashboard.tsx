@@ -1,3 +1,4 @@
+import { formatPersonName, initialsFromPersonName } from './canonical-postauth-v1/display-standards';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Bell, BriefcaseBusiness, CalendarCheck2, CheckCircle2,
@@ -124,9 +125,7 @@ function can(context: WorkforceContext, permission: string, minimum: AccessLevel
   return hasWorkforcePermission(context, permission, minimum, companyId);
 }
 
-function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'DG';
-}
+function initials(name: string) { return initialsFromPersonName(name); }
 
 function numberValue(value: number | undefined, fallback = '—') {
   return value === undefined ? fallback : new Intl.NumberFormat('en-NG').format(value);
@@ -202,12 +201,12 @@ function CommandPalette({
   }
   return <div className="command-palette-backdrop" role="presentation" onMouseDown={onClose}>
     <section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-palette-title" onMouseDown={(event) => event.stopPropagation()} data-command-palette="true">
-      <header><div><span className="eyebrow">AUTHORIZED WORKSPACES</span><h2 id="command-palette-title">What do you need next?</h2></div><button type="button" className="icon-button subtle" onClick={onClose} aria-label="Close command palette"><X size={16} /></button></header>
-      <label className="command-palette-input"><Search size={17} aria-hidden="true" /><input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setSelectedIndex(0); }} onKeyDown={handleKeyDown} placeholder="Search authorized functions" aria-label="Search authorized functions" /></label>
-      <div className="command-palette-results" role="listbox" aria-label="Authorized command results">
-        {results.length ? results.map((item, index) => <button type="button" key={item.kind + '-' + item.id} className={index === selectedIndex ? 'selected' : ''} onMouseEnter={() => setSelectedIndex(index)} onClick={() => choose(item)} role="option" aria-selected={index === selectedIndex} data-command-result={item.id}><span className="command-result-icon">{item.kind === 'view' ? <Gauge size={15} /> : <Boxes size={15} />}</span><span><strong>{item.label}</strong><small>{item.detail}</small></span><ChevronRight size={14} /></button>) : <div className="command-palette-empty">No authorized workspace matches that search.</div>}
+      <header><div><span className="eyebrow">AUTHORIZED WORKSPACES</span><h2 id="command-palette-title">What Do You Need Next?</h2></div><button type="button" className="icon-button subtle" onClick={onClose} aria-label="Close Command Palette"><X size={16} /></button></header>
+      <label className="command-palette-input"><Search size={17} aria-hidden="true" /><input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setSelectedIndex(0); }} onKeyDown={handleKeyDown} placeholder="Search Authorized Functions" aria-label="Search Authorized Functions" /></label>
+      <div className="command-palette-results" role="listbox" aria-label="Authorized Command Results">
+        {results.length ? results.map((item, index) => <button type="button" key={item.kind + '-' + item.id} className={index === selectedIndex ? 'selected' : ''} onMouseEnter={() => setSelectedIndex(index)} onClick={() => choose(item)} role="option" aria-selected={index === selectedIndex} data-command-result={item.id}><span className="command-result-icon">{item.kind === 'view' ? <Gauge size={15} /> : <Boxes size={15} />}</span><span><strong>{item.label}</strong><small>{item.detail}</small></span><ChevronRight size={14} /></button>) : <div className="command-palette-empty">No Authorized Workspace Matches That Search.</div>}
       </div>
-      <footer><span>Arrow keys to move · Enter to open · Esc to close</span><button type="button" onClick={() => { onClose(); onOpenModuleHub(); }}><Grid3X3 size={14} /> Open Module Hub</button></footer>
+      <footer><span>Arrow Keys To Move · Enter To Open · Esc To Close</span><button type="button" onClick={() => { onClose(); onOpenModuleHub(); }}><Grid3X3 size={14} /> Open Module Hub</button></footer>
     </section>
   </div>;
 }
@@ -255,24 +254,24 @@ function ZipTopBar({
   ].filter(Boolean) as Array<{ title: string; detail: string; tone: string }>;
   if (!notificationItems.length) notificationItems.push({ title: 'No new authorized signals', detail: 'Your workspace is up to date', tone: 'green' });
   const hasAttentionSignals = notificationItems.some((item) => item.tone !== 'green');
-  return <header className="top-bar" data-command-bar="true" data-hybrid-top-bar="true" aria-label="Staff Portal global navigation">
-    <div className="postauth-top-identity" data-top-slot="workspace-identity" aria-label="Current Staff Portal workspace"><span className="postauth-top-identity-mark"><BriefcaseBusiness size={16} /></span><span><small>DAENEM STAFF PORTAL</small><strong>Workforce Hub</strong><em>{company.name}</em></span></div>
-    <div className="search-wrap" data-top-slot="global-search"><button ref={commandTriggerRef} type="button" className="top-command-trigger" onClick={() => setCommandOpen(true)} aria-label="Open command palette"><Search size={17} aria-hidden="true" /><span>Search Authorized Workspaces</span><span className="search-shortcut">⌘ / Ctrl K</span></button></div>
+  return <header className="top-bar" data-command-bar="true" data-hybrid-top-bar="true" aria-label="Staff Portal Global Navigation">
+    <div className="postauth-top-identity" data-top-slot="workspace-identity" aria-label="Current Staff Portal Workspace"><span className="postauth-top-identity-mark"><BriefcaseBusiness size={16} /></span><span><small>DAENEM STAFF PORTAL</small><strong>Workforce Hub</strong><em>{company.name}</em></span></div>
+    <div className="search-wrap" data-top-slot="global-search"><button ref={commandTriggerRef} type="button" className="top-command-trigger" onClick={() => setCommandOpen(true)} aria-label="Open Command Palette"><Search size={17} aria-hidden="true" /><span>Search Authorized Workspaces</span><span className="search-shortcut">⌘ / Ctrl K</span></button></div>
     <div className="top-actions">
       <span data-top-slot="sync-status" className="postauth-top-slot-sync"><OfflineSyncIndicator /></span>
       {canAsk && <button data-top-slot="ai-command" className="top-action ai-button" onClick={() => onNavigate('help')} aria-label="Ask Daenem AI"><Sparkles size={16} /><span>Ask Daenem AI</span></button>}
       <div className="notification-wrap" data-top-slot="notifications"><button className="icon-button notification-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} /><i className={'alert-dot' + (hasAttentionSignals ? '' : ' quiet')} /></button>
-        {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications"><div className="popover-title"><b>Notifications</b><button className="icon-button subtle" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><X size={15} /></button></div><p>Signals from your authorized workspaces.</p><div className="notification-list">{notificationItems.map((item) => <div className="notification-row" key={item.title}><i className={'notification-dot ' + item.tone} /><span><strong>{item.title}</strong><small>{item.detail}</small></span></div>)}</div></div>}
+        {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Notifications"><div className="popover-title"><b>Notifications</b><button className="icon-button subtle" onClick={() => setNotificationsOpen(false)} aria-label="Close Notifications"><X size={15} /></button></div><p>Signals From Your Authorized Workspaces.</p><div className="notification-list">{notificationItems.map((item) => <div className="notification-row" key={item.title}><i className={'notification-dot ' + item.tone} /><span><strong>{item.title}</strong><small>{item.detail}</small></span></div>)}</div></div>}
       </div>
-      <button data-top-slot="weather" className="weather-mini" onClick={enableLocation} title="Enable location and weather" aria-label="Enable local weather"><CloudSun size={19} /><span><b>{formatWeatherTemperature(weather.temperature, temperatureUnit)}</b><small>{weather.loading ? 'Finding Location…' : weather.description || weather.label}</small></span></button>
-      <div className="top-utilities" data-top-slot="workspace-utilities"><button type="button" className="top-more-button" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen} aria-label="Open workspace utilities"><Menu size={16} /> More</button>
+      <button data-top-slot="weather" className="weather-mini" onClick={enableLocation} title="Enable Location And Weather" aria-label="Enable Local Weather"><CloudSun size={19} /><span><b>{formatWeatherTemperature(weather.temperature, temperatureUnit)}</b><small>{weather.loading ? 'Finding Location…' : weather.description || weather.label}</small></span></button>
+      <div className="top-utilities" data-top-slot="workspace-utilities"><button type="button" className="top-more-button" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen} aria-label="Open Workspace Utilities"><Menu size={16} /> More</button>
         {utilitiesOpen && <div className="top-utilities-menu" role="menu"><button role="menuitem" data-top-slot="quick-create" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Plus size={15} /> Quick Create</button><button role="menuitem" onClick={() => void handleInstallApp()}><Download size={15} /> {installState === 'working' ? 'Installing…' : installState === 'installed' ? 'App Installed' : 'Install App'}</button>{canUseLayoutStudio && <button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenLayoutStudio(); }}><LayoutDashboard size={15} /> Layout Studio</button>}<button role="menuitem" onClick={() => { setUtilitiesOpen(false); setSupportOpen((open) => !open); }}><ShieldCheck size={15} /> Help & Support</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onNavigate('help'); }}><MessageSquareText size={15} /> Messages</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); onOpenModuleHub(); }}><Star size={15} /> Favorites</button><button role="menuitem" onClick={() => { setUtilitiesOpen(false); setReleaseOpen(true); }}><Radio size={15} /> Release Notes</button></div>}
       </div>
-      <div className="profile-wrap" data-top-slot="profile"><button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen} aria-label="Open profile and workspace preferences"><span className="avatar">{employeeInitials}</span><span className="profile-name"><strong>{context.employee.displayName}</strong><small>{primaryRole}</small></span><ChevronDown size={16} /></button>
-        {profileOpen && <div className="profile-menu"><div className="profile-menu-head"><span className="avatar">{employeeInitials}</span><div className="profile-menu-head-copy"><strong>{context.employee.displayName}</strong><small>{context.employee.email || 'Employee account'}</small></div></div><div className="profile-menu-access"><span>{primaryRole}</span><span>{permissionCount} active permissions</span></div>{companyChoices.length > 1 && <div className="profile-scope"><small>Organization scope</small><div>{companyChoices.map((item) => { const Icon = item.icon; return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.name}</span></button>; })}</div></div>}<strong>Workspace appearance · {themeName}</strong>{themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}<div className="mode-picker"><small>Display mode</small><div><button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Light</button><button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Dark</button><button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button></div></div>{canChangeWeatherUnit && <div className="mode-picker temperature-picker"><small>Weather units · admin control</small><div><button className={temperatureUnit === 'F' ? 'selected' : ''} onClick={() => setTemperatureUnit('F')}>°F</button><button className={temperatureUnit === 'C' ? 'selected' : ''} onClick={() => setTemperatureUnit('C')}>°C</button></div></div>}<button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button><button className="logout-menu" onClick={() => void onLogout()}><span>Sign out</span></button></div>}
+      <div className="profile-wrap" data-top-slot="profile"><button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen} aria-label="Open Profile And Workspace Preferences"><span className="avatar">{employeeInitials}</span><span className="profile-name"><strong>{formatPersonName(context.employee.displayName)}</strong><small>{primaryRole}</small></span><ChevronDown size={16} /></button>
+        {profileOpen && <div className="profile-menu"><div className="profile-menu-head"><span className="avatar">{employeeInitials}</span><div className="profile-menu-head-copy"><strong>{formatPersonName(context.employee.displayName)}</strong><small>{context.employee.email || "Employee Account"}</small></div></div><div className="profile-menu-access"><span>{primaryRole}</span><span>{permissionCount} Active Permissions</span></div>{companyChoices.length > 1 && <div className="profile-scope"><small>Organization Scope</small><div>{companyChoices.map((item) => { const Icon = item.icon; return <button key={item.code} className={company.code === item.code ? 'selected' : ''} onClick={() => { setCompany(item); setProfileOpen(false); }}><Icon size={14} /><span>{item.name}</span></button>; })}</div></div>}<strong>Workspace Appearance · {themeName}</strong>{themeList.map((item) => <button key={item.id} onClick={() => { setTheme(item.id); setProfileOpen(false); }} className={theme === item.id ? 'selected' : ''}><Palette size={16} /><span>{item.name}</span></button>)}<div className="mode-picker"><small>Display Mode</small><div><button className={modePreference === 'day' ? 'selected' : ''} onClick={() => setModePreference('day')}><Sun size={14} /> Light</button><button className={modePreference === 'night' ? 'selected' : ''} onClick={() => setModePreference('night')}><Moon size={14} /> Dark</button><button className={modePreference === 'auto' ? 'selected' : ''} onClick={() => setModePreference('auto')}><Sun size={14} /> Auto</button></div></div>{canChangeWeatherUnit && <div className="mode-picker temperature-picker"><small>Weather Units · Admin Control</small><div><button className={temperatureUnit === 'F' ? 'selected' : ''} onClick={() => setTemperatureUnit('F')}>°F</button><button className={temperatureUnit === 'C' ? 'selected' : ''} onClick={() => setTemperatureUnit('C')}>°C</button></div></div>}<button onClick={onOpenAdmin}><Settings2 size={16} /><span>Admin Center</span></button><button className="logout-menu" onClick={() => void onLogout()}><span>Sign Out</span></button></div>}
       </div>
     </div>
-    {supportOpen && <div className="support-popover"><div className="popover-title"><b>Help & Support</b><button className="icon-button subtle" onClick={() => setSupportOpen(false)} aria-label="Close help"><X size={15} /></button></div><p>Find answers, view product guidance, or contact the platform team.</p><div className="support-links"><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Browse FAQs <span>→</span></button><button onClick={() => { setSupportOpen(false); onOpenAdmin(); }}>Read admin docs <span>→</span></button><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Contact support <span>→</span></button></div></div>}
+    {supportOpen && <div className="support-popover"><div className="popover-title"><b>Help & Support</b><button className="icon-button subtle" onClick={() => setSupportOpen(false)} aria-label="Close Help"><X size={15} /></button></div><p>Find Answers, View Product Guidance, Or Contact The Platform Team.</p><div className="support-links"><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Browse FAQs <span>→</span></button><button onClick={() => { setSupportOpen(false); onOpenAdmin(); }}>Read Admin Docs <span>→</span></button><button onClick={() => { setSupportOpen(false); onNavigate('help'); }}>Contact Support <span>→</span></button></div></div>}
     {commandOpen && <CommandPalette context={context} company={company} visibleNav={visibleNav} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} onClose={() => setCommandOpen(false)} />}
   </header>;
 }
@@ -313,7 +312,7 @@ function ChartHeader({ eyebrow, title, icon }: { eyebrow: string; title: string;
 function TrendWidget({ summary, refreshSummary }: Pick<ZipDashboardProps, 'summary' | 'refreshSummary'>) {
   const rate = attendanceRate(summary);
   return <article className="chart-card trend-card">
-    <ChartHeader eyebrow="WORKFORCE PULSE" title="Attendance trend" icon={Activity} />
+    <ChartHeader eyebrow="WORKFORCE PULSE" title="Attendance Trend" icon={Activity} />
     <div className="chart-legend"><span><i style={{ background: 'var(--primary)' }} /> Present Today</span><span><i style={{ background: 'var(--accent)' }} /> Incomplete</span></div>
     <div className="chart-canvas zip-chart-canvas" role="img" aria-label={summary ? `Attendance completion is ${percentage(rate)}` : 'Attendance trend is unavailable'}>
       <div className="chart-grid-lines"><i /><i /><i /><i /></div>
@@ -321,9 +320,9 @@ function TrendWidget({ summary, refreshSummary }: Pick<ZipDashboardProps, 'summa
         <path d={`M0 ${150 - rate * .55} C 90 ${142 - rate * .45}, 130 ${122 - rate * .35}, 205 ${132 - rate * .4} S 330 ${102 - rate * .25}, 405 ${118 - rate * .28} S 520 ${78 - rate * .2}, 600 ${105 - rate * .25}`} />
         <path className="secondary-line" d={`M0 ${164 - (100 - rate) * .18} C 100 ${158 - (100 - rate) * .2}, 180 ${155 - (100 - rate) * .15}, 260 ${160 - (100 - rate) * .18} S 430 ${141 - (100 - rate) * .12}, 600 ${150 - (100 - rate) * .14}`} />
       </svg>
-      {!summary && <div className="chart-empty"><PackageSearch size={18} /><span>Trend data is not available for this scope yet.</span></div>}
+      {!summary && <div className="chart-empty"><PackageSearch size={18} /><span>Trend Data Is Not Available For This Scope Yet.</span></div>}
     </div>
-    <footer className="chart-footer"><span>{summary ? `${percentage(rate)} completion` : 'Scoped trend'}</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh</button></footer>
+    <footer className="chart-footer"><span>{summary ? `${percentage(rate)} completion` : "Scoped Trend"}</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh</button></footer>
   </article>;
 }
 
@@ -333,7 +332,7 @@ function ComparisonWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
     ['Requirements', summary && summary.employees > 0 ? ((summary.employees - summary.overdueRequirements) / summary.employees) * 100 : 0],
     ['Security', summary ? (summary.securityAlerts === 0 ? 100 : Math.max(0, 100 - summary.securityAlerts * 10)) : 0],
   ] as const;
-  return <article className="chart-card comparison-card"><ChartHeader eyebrow="SCOPED COMPARISON" title="Workspace health" icon={ArrowRight} /><div className="comparison-list">{metrics.map(([label, value]) => <div key={label}><div><span>{label}</span><b>{summary ? percentage(value) : '—'}</b></div><i><em style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></i></div>)}</div><p className="widget-note">Values are calculated only from records your current role can access.</p></article>;
+  return <article className="chart-card comparison-card"><ChartHeader eyebrow="SCOPED COMPARISON" title="Workspace Health" icon={ArrowRight} /><div className="comparison-list">{metrics.map(([label, value]) => <div key={label}><div><span>{label}</span><b>{summary ? percentage(value) : '—'}</b></div><i><em style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></i></div>)}</div><p className="widget-note">Values Are Calculated Only From Records Your Current Role Can Access.</p></article>;
 }
 
 function CategoryWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
@@ -344,7 +343,7 @@ function CategoryWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
   const presentDegrees = total ? (present / total) * 360 : 0;
   const incompleteDegrees = total ? (incomplete / total) * 360 : 0;
   const style = { '--category-ring': `conic-gradient(var(--primary) 0deg ${presentDegrees}deg, var(--accent) ${presentDegrees}deg ${presentDegrees + incompleteDegrees}deg, color-mix(in srgb, var(--muted) 18%, transparent) ${presentDegrees + incompleteDegrees}deg 360deg)` } as CSSProperties;
-  return <article className="chart-card category-card"><ChartHeader eyebrow="TODAY'S MIX" title="Attendance categories" icon={CalendarCheck2} /><div className="donut-layout"><div className="donut" style={style}><div className="donut-ring" /><div className="donut-center"><strong>{summary ? percentage(attendanceRate(summary)) : '—'}</strong><span>present</span></div></div><div className="donut-legend"><span><i style={{ background: 'var(--primary)' }} />Present <b>{numberValue(present)}</b></span><span><i style={{ background: 'var(--accent)' }} />Incomplete <b>{numberValue(incomplete)}</b></span><span><i style={{ background: 'var(--muted)' }} />Other <b>{numberValue(absent)}</b></span></div></div></article>;
+  return <article className="chart-card category-card"><ChartHeader eyebrow="TODAY'S MIX" title="Attendance Categories" icon={CalendarCheck2} /><div className="donut-layout"><div className="donut" style={style}><div className="donut-ring" /><div className="donut-center"><strong>{summary ? percentage(attendanceRate(summary)) : '—'}</strong><span>Present</span></div></div><div className="donut-legend"><span><i style={{ background: 'var(--primary)' }} />Present <b>{numberValue(present)}</b></span><span><i style={{ background: 'var(--accent)' }} />Incomplete <b>{numberValue(incomplete)}</b></span><span><i style={{ background: 'var(--muted)' }} />Other <b>{numberValue(absent)}</b></span></div></div></article>;
 }
 
 function ForecastWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
@@ -354,7 +353,7 @@ function ForecastWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
   const readiness = summary && summary.employees > 0
     ? Math.max(0, 100 - (followUps / summary.employees) * 25)
     : 0;
-  return <article className="insight-card forecast-card"><span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">WORKSPACE INSIGHT</span><h3>Make the next action obvious.</h3><p>Use the authorized queue to open the exact record that needs attention. No private or unauthorized data is inferred here.</p><div className="forecast-meter"><span style={{ width: `${readiness}%` }} /></div><div className="insight-foot"><span>{summary ? `${numberValue(followUps)} open follow-up${followUps === 1 ? '' : 's'}` : 'Waiting for live records'}</span><ArrowRight size={15} /></div></article>;
+  return <article className="insight-card forecast-card"><span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">WORKSPACE INSIGHT</span><h3>Make The Next Action Obvious.</h3><p>Use The Authorized Queue To Open The Exact Record That Needs Attention. No Private Or Unauthorized Data Is Inferred Here.</p><div className="forecast-meter"><span style={{ width: `${readiness}%` }} /></div><div className="insight-foot"><span>{summary ? `${numberValue(followUps)} open follow-up${followUps === 1 ? '' : 's'}` : "Waiting For Live Records"}</span><ArrowRight size={15} /></div></article>;
 }
 
 function QueueWidget({ summary, context, company, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'context' | 'company' | 'onNavigate' | 'onOpenModule'>) {
@@ -367,7 +366,7 @@ function QueueWidget({ summary, context, company, onNavigate, onOpenModule }: Pi
   ];
   const queue = queueItems.filter((item) => canSeeDashboardField(context, item.field, company.id));
   if (!queue.length) return null;
-  return <article className="queue-card"><span className="queue-accent" /><ChartHeader eyebrow="ACTION QUEUE" title="Needs your attention" icon={AlertTriangle} /><div className="queue-list">{queue.map((item) => <button key={item.label} onClick={item.action}><span className="queue-number">{String(item.value).padStart(2, '0')}</span><span><b>{item.label}</b><small>{item.detail}</small></span><ArrowRight size={14} /></button>)}</div><div className="queue-footer"><span>Open records remain company-scoped</span><CheckCircle2 size={15} /></div></article>;
+  return <article className="queue-card"><span className="queue-accent" /><ChartHeader eyebrow="ACTION QUEUE" title="Needs Your Attention" icon={AlertTriangle} /><div className="queue-list">{queue.map((item) => <button key={item.label} onClick={item.action}><span className="queue-number">{String(item.value).padStart(2, '0')}</span><span><b>{item.label}</b><small>{item.detail}</small></span><ArrowRight size={14} /></button>)}</div><div className="queue-footer"><span>Open Records Remain Company-Scoped</span><CheckCircle2 size={15} /></div></article>;
 }
 
 function StatusWidget({ online, context, company }: Pick<ZipDashboardProps, 'online' | 'context' | 'company'>) {
@@ -377,7 +376,7 @@ function StatusWidget({ online, context, company }: Pick<ZipDashboardProps, 'onl
     ['Company scope', true, company.id ? company.code : `${context.companies.length} assigned`],
     ['RBAC', true, 'Enforced'],
   ] as const;
-  return <article className="status-card"><ChartHeader eyebrow="SYSTEM STATUS" title="Workspace status" icon={ShieldCheck} /><div className="status-list">{statusRows.map(([label, okay, value]) => <div key={label}><span><i className={okay ? 'status-ok' : 'status-warn'} />{label}</span><b>{value}</b><small>{okay ? 'Ready' : 'Check connection'}</small></div>)}</div><div className="status-footer"><span>Last checked {new Date().toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })}</span><b>{online ? 'Operational' : 'Offline'}</b></div></article>;
+  return <article className="status-card"><ChartHeader eyebrow="SYSTEM STATUS" title="Workspace Status" icon={ShieldCheck} /><div className="status-list">{statusRows.map(([label, okay, value]) => <div key={label}><span><i className={okay ? 'status-ok' : 'status-warn'} />{label}</span><b>{value}</b><small>{okay ? 'Ready' : "Check Connection"}</small></div>)}</div><div className="status-footer"><span>Last Checked {new Date().toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })}</span><b>{online ? 'Operational' : 'Offline'}</b></div></article>;
 }
 
 function NewsWidget({ release }: Pick<ZipDashboardProps, 'release'>) {
@@ -386,11 +385,11 @@ function NewsWidget({ release }: Pick<ZipDashboardProps, 'release'>) {
     { date: 'LIVE', title: 'Company-scoped access', detail: 'Permissions stay inside assigned businesses' },
     { date: 'NOW', title: 'Module loading', detail: 'Open only the ERP workspace you need' },
   ];
-  return <article className="news-card"><ChartHeader eyebrow="PORTAL NOTES" title="Latest updates" icon={PackageSearch} /><div className="news-list">{items.map((item) => <div className="news-item" key={`${item.date}-${item.title}`}><span className="news-date">{item.date}</span><p><b>{item.title}</b><small>{item.detail}</small></p><ArrowRight size={14} /></div>)}</div></article>;
+  return <article className="news-card"><ChartHeader eyebrow="PORTAL NOTES" title="Latest Updates" icon={PackageSearch} /><div className="news-list">{items.map((item) => <div className="news-item" key={`${item.date}-${item.title}`}><span className="news-date">{item.date}</span><p><b>{item.title}</b><small>{item.detail}</small></p><ArrowRight size={14} /></div>)}</div></article>;
 }
 
 function MotivationWidget({ onNavigate, enabled }: { onNavigate: (view: ViewName) => void; enabled: boolean }) {
-  return <article className="motivation-card"><span className="motivation-spark"><Sparkles size={17} /></span><span className="eyebrow">DAILY WORD</span><h3>Small improvements compound.</h3><p>Keep the next task clear, complete the record, and leave the workspace stronger for the next person.</p><div className="motivation-foot"><span>Human-approved communication</span>{enabled ? <button onClick={() => onNavigate('broadcasts')}>Open Broadcasts <ArrowRight size={13} /></button> : <span>Workspace guidance</span>}</div></article>;
+  return <article className="motivation-card"><span className="motivation-spark"><Sparkles size={17} /></span><span className="eyebrow">DAILY WORD</span><h3>Small Improvements Compound.</h3><p>Keep The Next Task Clear, Complete The Record, And Leave The Workspace Stronger For The Next Person.</p><div className="motivation-foot"><span>Human-Approved Communication</span>{enabled ? <button onClick={() => onNavigate('broadcasts')}>Open Broadcasts <ArrowRight size={13} /></button> : <span>Workspace Guidance</span>}</div></article>;
 }
 
 function WidgetActions({
@@ -412,9 +411,9 @@ function WidgetActions({
 }) {
   if (!enabled) return null;
   return <span className="widget-actions" onClick={(event) => event.stopPropagation()} data-customization-controls="true">
-    <button type="button" aria-label="Move card up" disabled={index === 0} onClick={() => onMove(index, -1)}><ArrowUp size={12} /></button>
-    <button type="button" aria-label="Move card down" disabled={index === count - 1} onClick={() => onMove(index, 1)}><ArrowDown size={12} /></button>
-    {canManage && <><button type="button" aria-label="Replace widget" onClick={onReplace}><RefreshCw size={12} /></button><button type="button" aria-label="Remove widget" disabled={count <= 1} onClick={onRemove}><X size={12} /></button></>}
+    <button type="button" aria-label="Move Card Up" disabled={index === 0} onClick={() => onMove(index, -1)}><ArrowUp size={12} /></button>
+    <button type="button" aria-label="Move Card Down" disabled={index === count - 1} onClick={() => onMove(index, 1)}><ArrowDown size={12} /></button>
+    {canManage && <><button type="button" aria-label="Replace Widget" onClick={onReplace}><RefreshCw size={12} /></button><button type="button" aria-label="Remove Widget" disabled={count <= 1} onClick={onRemove}><X size={12} /></button></>}
   </span>;
 }
 
@@ -446,38 +445,38 @@ function WorkspaceOverviewStrip({
   const approvalWorkAllowed = can(context, 'forms.access', 'view', company.id) || can(context, 'users.access', 'view', company.id);
   quickActions.push({ label: isManagerial ? approvalWorkAllowed ? 'Tasks & Approvals' : 'Authorized Workspaces' : 'My Workspaces', detail: 'Open Authorized Workspaces', icon: CheckCircle2, action: onOpenModuleHub });
   if (can(context, 'ai_guide.access', 'view', company.id)) quickActions.push({ label: 'Help & Support', detail: 'Find Role-Aware Guidance', icon: ShieldCheck, action: () => onNavigate('help') });
-  return <section className={'workspace-overview-grid' + (isManagerial ? '' : ' employee-task-first')} aria-label="Personalized staff workspace overview">
+  return <section className={'workspace-overview-grid' + (isManagerial ? '' : ' employee-task-first')} aria-label="Personalized Staff Workspace Overview">
     <article className="profile-summary-card">
       <header className="overview-card-header"><div><span className="eyebrow">MY WORKSPACE · STAFF ERP</span><h2>Your Profile</h2></div><span className="live-chip"><i /> Personalized Home</span></header>
       <div className="profile-summary-body">
         <div className="profile-summary-avatar">{initials(context.employee.displayName)}</div>
-        <div><strong>{context.employee.displayName}</strong><span>{context.employee.jobTitle || 'Employee'}{context.employee.department ? ' · ' : ''}{context.employee.department || ''}</span><small>{context.employee.team || 'Assigned team'} · {company.name}</small></div>
+        <div><strong>{formatPersonName(context.employee.displayName)}</strong><span>{context.employee.jobTitle || 'Employee'}{context.employee.department ? ' · ' : ''}{context.employee.department || ''}</span><small>{context.employee.team || "Assigned Team"} · {company.name}</small></div>
       </div>
       <div className="profile-summary-meta">
-        <span><small>Last login</small><strong>{formatLastLogin(context.employee.lastLoginAt)}</strong></span>
-        <span><small>Account status</small><strong>{context.employee.status === 'provisional' ? 'Provisional access' : 'Active employee'}</strong></span>
+        <span><small>Last Login</small><strong>{formatLastLogin(context.employee.lastLoginAt)}</strong></span>
+        <span><small>Account Status</small><strong>{context.employee.status === 'provisional' ? "Provisional Access" : "Active Employee"}</strong></span>
       </div>
       <div className="profile-summary-stats">
-        <div><small>Assigned roles</small><strong>{roles.length}</strong><span>{roles.slice(0, 2).map((role) => role.name).join(' · ')}{roles.length > 2 ? ' +' : ''}</span></div>
-        <div><small>Permissions</small><strong>{permissionCount}</strong><span>Role-scoped access</span></div>
+        <div><small>Assigned Roles</small><strong>{roles.length}</strong><span>{roles.slice(0, 2).map((role) => role.name).join(' · ')}{roles.length > 2 ? ' +' : ''}</span></div>
+        <div><small>Permissions</small><strong>{permissionCount}</strong><span>Role-Scoped Access</span></div>
       </div>
     </article>
     <article className="access-summary-card">
       <header className="overview-card-header"><div><span className="eyebrow">{isManagerial ? 'ACCESS & RESPONSIBILITIES' : 'YOUR ACCESS'}</span><h2>{isManagerial ? 'Your Operating Perimeter' : 'Your Access'}</h2></div><ShieldCheck size={18} /></header>
       {isManagerial ? <div className="access-summary-lines">
-        <div><span>Module access</span><strong>{moduleCount}</strong></div>
-        <div><span>Approval rights</span><strong>{approvalCount}</strong></div>
-        <div><span>Administrative privileges</span><strong>{adminAccess ? 'Enabled' : 'Role-scoped'}</strong></div>
+        <div><span>Module Access</span><strong>{moduleCount}</strong></div>
+        <div><span>Approval Rights</span><strong>{approvalCount}</strong></div>
+        <div><span>Administrative Privileges</span><strong>{adminAccess ? 'Enabled' : "Role-Scoped"}</strong></div>
       </div> : <div className="access-summary-lines personal-access-lines">
-        <div><span>Assigned workspace</span><strong>{company.name}</strong></div>
-        <div><span>Role access</span><strong>{roles[0]?.name || 'Employee'}</strong></div>
-        <div><span>Guided help</span><strong>{can(context, 'ai_guide.access', 'view', company.id) ? 'Available' : '—'}</strong></div>
+        <div><span>Assigned Workspace</span><strong>{company.name}</strong></div>
+        <div><span>Role Access</span><strong>{roles[0]?.name || 'Employee'}</strong></div>
+        <div><span>Guided Help</span><strong>{can(context, 'ai_guide.access', 'view', company.id) ? 'Available' : '—'}</strong></div>
       </div>}
       <div className="access-role-stack">{roles.slice(0, 4).map((role) => <span className="access-role-pill" key={role.id}>{role.name}</span>)}</div>
-      <small className="access-summary-foot">Page access, role hierarchy, and approval actions remain enforced by server-side RBAC.</small>
+      <small className="access-summary-foot">Page Access, Role Hierarchy, And Approval Actions Remain Enforced By Server-Side RBAC.</small>
     </article>
     <article className="self-service-card">
-      <header className="overview-card-header"><div><span className="eyebrow">SELF-SERVICE · STAFF ERP</span><h2>Commonly used actions</h2></div><Sparkles size={18} /></header>
+      <header className="overview-card-header"><div><span className="eyebrow">SELF-SERVICE · STAFF ERP</span><h2>Commonly Used Actions</h2></div><Sparkles size={18} /></header>
       <div className="self-service-list">{quickActions.map((item) => {
         const Icon = item.icon;
         return <button type="button" key={item.label} onClick={item.action}><span className="self-service-icon"><Icon size={15} /></span><span><strong>{item.label}</strong><small>{item.detail}</small></span><ChevronRight size={14} /></button>;
@@ -497,8 +496,8 @@ function ErpPulseGrid({
   const availableModules = moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code));
   const groups = getErpNavigation(availableModules);
   if (!groups.length) return null;
-  return <section className="erp-pulse-section" aria-label="Authorized ERP pulse">
-    <header className="erp-pulse-header"><div><span className="eyebrow">MULTI-ERP COMMAND LAYER</span><h2>Every Workspace, Clearly Separated</h2><p>Each ERP keeps its own hierarchy, functions, signal cards, and quick actions.</p></div><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open Exact Hierarchy</button></header>
+  return <section className="erp-pulse-section" aria-label="Authorized ERP Pulse">
+    <header className="erp-pulse-header"><div><span className="eyebrow">MULTI-ERP COMMAND LAYER</span><h2>Every Workspace, Clearly Separated</h2><p>Each ERP Keeps Its Own Hierarchy, Functions, Signal Cards, And Quick Actions.</p></div><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open Exact Hierarchy</button></header>
     <div className="erp-pulse-grid">{groups.map((group) => {
       const modules = availableModules.filter((module) => module.erpId === group.id);
       const firstModule = modules[0];
@@ -509,8 +508,8 @@ function ErpPulseGrid({
       return <article className="erp-pulse-card" key={group.id}>
         <header><span className="erp-pulse-icon"><HierarchyIcon iconKey={group.iconKey} size={16} /></span><div><span className="eyebrow">{group.label}</span><h3>{group.detail}</h3></div></header>
         <div className="erp-pulse-chart" aria-hidden="true"><i /><i /><i /><i /><i /></div>
-        <div className="erp-pulse-meta"><span><small>Authorized functions</small><strong>{modules.length}</strong></span><span><small>{signalLabel}</small><strong>{signal}</strong></span></div>
-        <div className="erp-pulse-actions"><button type="button" onClick={() => firstModule ? onOpenModule(firstModule.id) : onOpenModuleHub()}>{firstModule ? 'Open ERP' : 'Open directory'} <ArrowRight size={13} /></button><button type="button" onClick={onOpenModuleHub}>Functions <ChevronRight size={13} /></button></div>
+        <div className="erp-pulse-meta"><span><small>Authorized Functions</small><strong>{modules.length}</strong></span><span><small>{signalLabel}</small><strong>{signal}</strong></span></div>
+        <div className="erp-pulse-actions"><button type="button" onClick={() => firstModule ? onOpenModule(firstModule.id) : onOpenModuleHub()}>{firstModule ? 'Open ERP' : "Open Directory"} <ArrowRight size={13} /></button><button type="button" onClick={onOpenModuleHub}>Functions <ChevronRight size={13} /></button></div>
       </article>;
     })}</div>
   </section>;
@@ -545,7 +544,7 @@ function ManagerCommandCenter({
     : canSeeDashboardField(context, 'securityAlerts', company.id)
       ? 'Prioritized Control Signals And Operational Exceptions For Your Authorized Team Scope.'
       : 'Prioritized Work And Operational Exceptions For Your Authorized Team Scope.';
-  return <section className="manager-command-center" aria-label="Manager home">
+  return <section className="manager-command-center" aria-label="Manager Home">
     <header className="manager-command-header"><div><span className="eyebrow">MANAGER HOME</span><h2>Team Rhythm, Next Actions</h2><p>{managerFocus}</p></div><button type="button" className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Open Workspaces</button></header>
     {tiles.length > 0 && <div className="manager-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article key={tile.label} data-dashboard-field={tile.field} data-dashboard-value={tile.value}><span className="manager-command-icon"><Icon size={16} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>}
     {actions.length > 0 && <div className="manager-command-actions">{actions}</div>}
@@ -571,8 +570,8 @@ function OwnerCommandCenter({
     { field: 'incompleteAttendance', label: 'Open follow-ups', value: numberValue(openFollowUps), detail: 'Authorized items requiring review', icon: Activity },
   ];
   const tiles = ownerTiles.filter((tile) => !tile.field || canSeeDashboardField(context, tile.field, company.id));
-  return <section className="owner-command-center" data-owner-command-center="true" aria-label="Owner command center">
-    <header className="owner-command-header"><div><span className="eyebrow">OWNER COMMAND CENTER · BUSINESS HEALTH</span><h2>Financial, Operational And Control Truth</h2><p>Verified business intelligence stays connected to the canonical ERP actions that resolve it.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage Workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
+  return <section className="owner-command-center" data-owner-command-center="true" aria-label="Owner Command Center">
+    <header className="owner-command-header"><div><span className="eyebrow">OWNER COMMAND CENTER · BUSINESS HEALTH</span><h2>Financial, Operational And Control Truth</h2><p>Verified Business Intelligence Stays Connected To The Canonical ERP Actions That Resolve IT.</p></div><div className="heading-actions"><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Manage Workspaces</button><button className="primary-button" onClick={onOpenAdmin}><Settings2 size={15} /> Open Admin Center</button></div></header>
     <div className="owner-command-grid">{tiles.map((tile) => { const Icon = tile.icon; return <article className="owner-command-tile" key={tile.label}><span className="owner-command-icon"><Icon size={17} /></span><span className="eyebrow">{tile.label}</span><strong>{tile.value}</strong><small>{tile.detail}</small></article>; })}</div>
   </section>;
 }
@@ -588,10 +587,10 @@ function SmartLoadingCard({ pending }: { pending: boolean }) {
     return () => window.clearTimeout(timer);
   }, [pending]);
   if (!visible) return null;
-  return <section className="premium-skeleton-card" aria-live="polite" aria-label="Loading dashboard data">
+  return <section className="premium-skeleton-card" aria-live="polite" aria-label="Loading Dashboard Data">
     <div className="premium-skeleton-lines"><span /><span /><span /></div>
-    <div><strong>Preparing scoped dashboard data</strong><small>Live records are taking longer than expected. Your workspace is still responsive.</small></div>
-    <span className="premium-loading-foot"><i /> Syncing securely</span>
+    <div><strong>Preparing Scoped Dashboard Data</strong><small>Live Records Are Taking Longer Than Expected. Your Workspace Is Still Responsive.</small></div>
+    <span className="premium-loading-foot"><i /> Syncing Securely</span>
   </section>;
 }
 
@@ -737,16 +736,16 @@ function DashboardWidgets({
   }
 
   return <>
-    <div className="widget-customize-toolbar" aria-label="Dashboard customization"><span><Settings2 size={14} /> {customizing ? 'Customize Dashboard' : 'Personal dashboard'}</span><button type="button" className="text-button" onClick={() => setCustomizing((value) => !value)}>{customizing ? 'Done' : 'Customize Dashboard'}</button></div>
-    {customizing && canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator widget controls">
-      <span><Settings2 size={14} /> Admin widget controls</span>
-      <label className="widget-style-control">Widget style<select value={widgetStyle} onChange={(event) => setWidgetStyle(event.target.value as WidgetStyle)} aria-label="Dashboard widget style"><option value="compact">Compact</option><option value="full">Full</option><option value="card">Card</option><option value="strip">Strip</option></select></label>
+    <div className="widget-customize-toolbar" aria-label="Dashboard Customization"><span><Settings2 size={14} /> {customizing ? 'Customize Dashboard' : "Personal Dashboard"}</span><button type="button" className="text-button" onClick={() => setCustomizing((value) => !value)}>{customizing ? 'Done' : 'Customize Dashboard'}</button></div>
+    {customizing && canManageWidgets && <div className="widget-admin-toolbar" aria-label="Administrator Widget Controls">
+      <span><Settings2 size={14} /> Admin Widget Controls</span>
+      <label className="widget-style-control">Widget Style<select value={widgetStyle} onChange={(event) => setWidgetStyle(event.target.value as WidgetStyle)} aria-label="Dashboard Widget Style"><option value="compact">Compact</option><option value="full">Full</option><option value="card">Card</option><option value="strip">Strip</option></select></label>
       {hiddenWidgets.map((widget) => <button type="button" key={widget} onClick={() => addWidget(widget)}>+ {widgetLabels[widget]}</button>)}
       <details className="widget-clock-config">
-        <summary>Global time settings</summary>
+        <summary>Global Time Settings</summary>
         <div className="widget-clock-config-body">
-          <label>Clock style<select value={clockPreferences.style} onChange={(event) => updateClockPreferences({ style: event.target.value as ClockStyle })}><option value="minimal">Minimal</option><option value="detailed">Detailed</option><option value="neon">Neon accent</option><option value="classic">Classic</option></select></label>
-          <label>Find locations<input type="search" value={clockQuery} onChange={(event) => setClockQuery(event.target.value)} placeholder="Search city or country" /></label>
+          <label>Clock Style<select value={clockPreferences.style} onChange={(event) => updateClockPreferences({ style: event.target.value as ClockStyle })}><option value="minimal">Minimal</option><option value="detailed">Detailed</option><option value="neon">Neon Accent</option><option value="classic">Classic</option></select></label>
+          <label>Find Locations<input type="search" value={clockQuery} onChange={(event) => setClockQuery(event.target.value)} placeholder="Search City Or Country" /></label>
           <div className="widget-clock-location-list">{filteredClockLocations.map((item) => { const checked = clockPreferences.visibleZones.includes(item.zone); return <label key={item.zone}><input type="checkbox" checked={checked} onChange={() => { const visibleZones = checked ? clockPreferences.visibleZones.filter((zone) => zone !== item.zone) : [...clockPreferences.visibleZones, item.zone]; if (visibleZones.length) updateClockPreferences({ visibleZones }); }} /><span><strong>{item.name}</strong><small>{item.region}</small></span></label>; })}</div>
         </div>
       </details>
@@ -770,9 +769,9 @@ function DashboardWidgets({
 
 function ReleaseDialog({ release, onClose }: { release: ReleaseInfo; onClose: () => void }) {
   return <div className="release-backdrop" onClick={onClose}><section className="release-panel" role="dialog" aria-modal="true" aria-labelledby="release-title" onClick={(event) => event.stopPropagation()}>
-    <header><div><span className="eyebrow">DAENEM STAFF PORTAL</span><h2 id="release-title">Version {release.version}</h2><p>Prepared {release.date} through the protected release branch.</p></div><button className="icon-button" onClick={onClose} aria-label="Close version details"><X size={20} /></button></header>
-    <div className="release-status"><ShieldCheck size={19} /><span><strong>Protected release</strong><small>Every listed change passes controlled validation before production activation.</small></span></div>
-    <ul><li>ZIP-aligned authenticated dashboard shell and responsive workspace layout.</li><li>Company-scoped modules, controls and permissions remain connected.</li><li>Lazy-loaded ERP workspaces stay available through Module Hub.</li></ul>
+    <header><div><span className="eyebrow">DAENEM STAFF PORTAL</span><h2 id="release-title">Version {release.version}</h2><p>Prepared {release.date} Through The Protected Release Branch.</p></div><button className="icon-button" onClick={onClose} aria-label="Close Version Details"><X size={20} /></button></header>
+    <div className="release-status"><ShieldCheck size={19} /><span><strong>Protected Release</strong><small>Every Listed Change Passes Controlled Validation Before Production Activation.</small></span></div>
+    <ul><li>ZIP-Aligned Authenticated Dashboard Shell And Responsive Workspace Layout.</li><li>Company-Scoped Modules, Controls And Permissions Remain Connected.</li><li>Lazy-Loaded ERP Workspaces Stay Available Through Module Hub.</li></ul>
   </section></div>;
 }
 
@@ -878,6 +877,12 @@ export function ZipDashboard({
       onOpenLayoutStudio={onOpenLayoutStudio}
       release={release}
       setReleaseOpen={setReleaseOpen}
+      layoutPreview={layoutPreview}
+      layoutPreviewCanApply={layoutPreviewCanApply}
+      layoutPreviewApplying={layoutPreviewApplying}
+      layoutPreviewMessage={layoutPreviewMessage}
+      onApplyLayoutPreview={onApplyLayoutPreview}
+      onExitLayoutPreview={onExitLayoutPreview}
     />;
   }
 
@@ -897,13 +902,13 @@ export function ZipDashboard({
       release={release}
       setReleaseOpen={setReleaseOpen}
     />
-    {sidebarOpen && <button className="mobile-backdrop" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
+    {sidebarOpen && <button className="mobile-backdrop" aria-label="Close Navigation" onClick={() => setSidebarOpen(false)} />}
 
     <section className="dashboard-content">
       {layoutPreview && <div className="layout-preview-banner" data-layout-preview-banner="true">
-        <span><strong>Previewing {layoutProfile.name}</strong><small>Your saved experience is unchanged until you apply this layout.</small></span>
+        <span><strong>Previewing {layoutProfile.name}</strong><small>Your Saved Experience Is Unchanged Until You Apply This Layout.</small></span>
         <div className="layout-preview-actions">
-          {layoutPreviewCanApply && <button type="button" className="primary-button" disabled={layoutPreviewApplying} onClick={() => void onApplyLayoutPreview?.()}>{layoutPreviewApplying ? 'Applying…' : 'Apply to Me'}</button>}
+          {layoutPreviewCanApply && <button type="button" className="primary-button" disabled={layoutPreviewApplying} onClick={() => void onApplyLayoutPreview?.()}>{layoutPreviewApplying ? 'Applying…' : "Apply To Me"}</button>}
           <button type="button" className="secondary-button" onClick={onExitLayoutPreview}>Exit Preview</button>
         </div>
         {layoutPreviewMessage && <small className="layout-preview-message" role="status">{layoutPreviewMessage}</small>}
@@ -936,11 +941,11 @@ export function ZipDashboard({
         release={release}
         setReleaseOpen={setReleaseOpen}
       />
-      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
+      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open Navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
       <div className="dashboard-main">
         {view !== 'overview' && <div className="dashboard-module-toolbar"><span className="eyebrow">DAENEM BUSINESS ERP · {moduleLabel}</span><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Module Hub</button></div>}
         <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}{weather.temperature !== undefined ? ` · ${formatWeatherTemperature(weather.temperature, temperatureUnit)}` : ''}</button><span className={`data-sync-chip data-sync-${dataStatus}`} title={liveDataDetail}><i /> {liveDataLabel}{dataLastSyncedAt && dataStatus !== 'loading' ? ` · ${formatLastSyncedAt(dataLastSyncedAt)}` : ''}</span></div>
-        <div className="company-switcher" role="list" aria-label="Company filter">{companyChoices.map((item) => {
+        <div className="company-switcher" role="list" aria-label="Company Filter">{companyChoices.map((item) => {
           const Icon = item.icon;
           return <button key={item.code} onClick={() => setCompany(item)} className={company.code === item.code ? 'active' : ''}><Icon size={15} /><span>{item.code}</span></button>;
         })}</div>
@@ -957,9 +962,9 @@ export function ZipDashboard({
             workspace={<WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
             owner={context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) ? <OwnerCommandCenter context={context} company={company} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} /> : <ManagerCommandCenter context={context} company={company} summary={scopedSummary} onNavigate={onNavigate} onOpenModuleHub={onOpenModuleHub} />}
             intelligence={liveIntelligence ? <section className="zip-live-intelligence" data-owner-business-intelligence="true"><div className="zip-section-heading"><span className="eyebrow">OWNER INTELLIGENCE</span><h2>Financial And Operational Performance</h2></div>{liveIntelligence}</section> : null}
-            clocks={<section className="dashboard-world-clock" aria-label="Global operations world clock"><WorldClocks /></section>}
+            clocks={<section className="dashboard-world-clock" aria-label="Global Operations World Clock"><WorldClocks /></section>}
           /></> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} contextKey={activeView} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
-        <footer className="dashboard-footer"><span>Daenem Business ERP · {activeErpId.toUpperCase()}</span><span>Live D1 data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
+        <footer className="dashboard-footer"><span>Daenem Business ERP · {activeErpId.toUpperCase()}</span><span>Live D1 Data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : "Last Synced") : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
       </div>
     </section>
 

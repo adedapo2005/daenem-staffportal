@@ -37,7 +37,7 @@ must(home.includes('SmartContextPanel') && home.includes('getSmartContext') && !
 must(home.includes('PostAuthFeatureFrame') && home.includes('canonicalPath'), 'shared feature-page frame is missing');
 must(home.includes('postauth-composition-clocks'), 'clock surface must have a dedicated full-width composition region');
 must(home.includes("profile.id === 'workspace-canvas'") && home.includes("profile.id === 'operational-cockpit'") && home.includes("profile.id === 'insight-magazine'") && home.includes("profile.id === 'master-detail'") && home.includes("profile.id === 'horizon-wide'") && home.includes("profile.id === 'adaptive-bento'") && home.includes("profile.id === 'focus-flow'") && home.includes("profile.id === 'enterprise-studio'") && home.includes("profile.id === 'board-pulse'"), 'all ten profiles need explicit dashboard composition adapters');
-must(studio.includes('Layout Studio') && studio.includes('Preview') && studio.includes('Apply to me'), 'Layout Studio gallery is missing');
+must(studio.includes('Layout Studio') && studio.includes('Preview') && /Apply To Me/i.test(studio), 'Layout Studio gallery is missing');
 must(studio.includes('daenem:close-layout-studio') && studio.includes('preview: true') && studio.includes('/api/experience/layout/preference'), 'real non-destructive preview/apply behavior is missing');
 must(main.includes('layoutPreviewPreference') && main.includes('effectiveLayoutPreference') && main.includes('daenem:layout-preview-exit'), 'preview state is not isolated from saved layout');
 must(zip.includes('layoutPreviewCanApply') && zip.includes('onApplyLayoutPreview') && main.includes('applyLayoutPreview') && main.includes('/api/experience/layout/preference'), 'active preview must provide an explicit Apply to Me action');
@@ -74,7 +74,7 @@ must(css.includes('prefers-reduced-motion') && css.includes('postauth-layout-') 
 for (const preset of ['off','calm','balanced','expressive']) must(css.includes('.dashboard-page.postauth-layout.postauth-motion-' + preset), 'motion root selector missing: ' + preset);
 must(css.includes('postauth-composition-clocks') && css.includes('metric-grid article'), 'post-auth visual corrections are not wired');
 must(system.includes('MOTION_TOKENS') && system.includes('getMotionTokens'), 'central motion presets are missing');
-must(studio.includes('CANONICAL_ERP_IDS') && studio.includes('/api/admin/roles') && studio.includes('Read-only legacy record'), 'Layout Studio must derive scope options and protect legacy history');
+must(studio.includes('CANONICAL_ERP_IDS') && studio.includes('/api/admin/roles') && /Read-Only Legacy Record/i.test(studio), 'Layout Studio must derive scope options and protect legacy history');
 must(studio.includes('LayoutPreviewVisual') && studio.includes('data-preview-navigation') && studio.includes('data-preview-shell'), 'Layout Studio previews are too generic');
 must(zip.includes('ManagerCommandCenter') && zip.includes('Team Rhythm, Next Actions'), 'Manager Home is not implemented as a role-specific experience');
 must(ids.every((id) => css.includes('postauth-composition-' + id)), 'each layout profile needs a distinct composition style');

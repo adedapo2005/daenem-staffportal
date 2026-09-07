@@ -1,3 +1,5 @@
+import './canonical-postauth-v1/canonical-fonts';
+import { formatPersonName, initialsFromPersonName } from './canonical-postauth-v1/display-standards';
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -168,9 +170,7 @@ function watNow() {
   }).format(new Date());
 }
 
-function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'DG';
-}
+function initials(name: string) { return initialsFromPersonName(name); }
 
 function useCompanyChoices(context: WorkforceContext): CompanyChoice[] {
   return useMemo(() => {
@@ -190,7 +190,7 @@ function LoadingScreen() {
 }
 
 function ViewLoading() {
-  return <div className="empty-state tall"><span className="mini-loader" /><strong>Opening workspace…</strong></div>;
+  return <div className="empty-state tall"><span className="mini-loader" /><strong>Opening Workspace…</strong></div>;
 }
 
 function PeopleView({ context, companyId }: { context: WorkforceContext; companyId: string | null }) {
@@ -227,7 +227,7 @@ function PeopleView({ context, companyId }: { context: WorkforceContext; company
     setLoading(true);
     try {
       await api('/api/admin/signup-requests/approve', { method: 'POST', body: JSON.stringify({ requestId: request.id, roleId }) });
-      setMessage(`${request.displayName} was approved and assigned the selected role.`);
+      setMessage(`${formatPersonName(request.displayName)} was approved and assigned the selected role.`);
       await loadRequests();
     } catch (error) { setMessage((error as Error).message); }
     finally { setLoading(false); }
@@ -235,16 +235,16 @@ function PeopleView({ context, companyId }: { context: WorkforceContext; company
 
   if (!canView) return null;
   return <div className="view-stack">
-    <div className="view-heading"><div><span className="eyebrow">WORKFORCE CONTROL</span><h2>Approval & payroll workspace</h2><p>Approve employees, assign company-specific roles and keep payroll/HR access separated by permissions.</p></div><button className="text-action" onClick={loadRequests}><RefreshCw size={15} /> Refresh</button></div>
+    <div className="view-heading"><div><span className="eyebrow">WORKFORCE CONTROL</span><h2>Approval & Payroll Workspace</h2><p>Approve Employees, Assign Company-Specific Roles And Keep Payroll/HR Access Separated By Permissions.</p></div><button className="text-action" onClick={loadRequests}><RefreshCw size={15} /> Refresh</button></div>
     <div className="metric-grid compact-metrics">
-      <article><span className="metric-icon"><Users size={19} /></span><div><small>My company access</small><strong>{context.companies.length}</strong><em>Assigned companies</em></div></article>
-      <article><span className="metric-icon"><ClipboardCheck size={19} /></span><div><small>Pending signup</small><strong>{requests.length}</strong><em>Requires authorized approval</em></div></article>
-      <article><span className="metric-icon"><WalletCards size={19} /></span><div><small>Payroll permission</small><strong>{context.permissions['payroll.access'] || 'none'}</strong><em>Current access level</em></div></article>
+      <article><span className="metric-icon"><Users size={19} /></span><div><small>My Company Access</small><strong>{context.companies.length}</strong><em>Assigned Companies</em></div></article>
+      <article><span className="metric-icon"><ClipboardCheck size={19} /></span><div><small>Pending Signup</small><strong>{requests.length}</strong><em>Requires Authorized Approval</em></div></article>
+      <article><span className="metric-icon"><WalletCards size={19} /></span><div><small>Payroll Permission</small><strong>{context.permissions['payroll.access'] || "None"}</strong><em>Current Access Level</em></div></article>
     </div>
     <article className="panel data-panel">
-      <div className="card-heading"><div><span className="eyebrow">EMPLOYEE APPROVAL QUEUE</span><h3>Provisional signups</h3></div>{loading && <span className="mini-loader" />}</div>
+      <div className="card-heading"><div><span className="eyebrow">EMPLOYEE APPROVAL QUEUE</span><h3>Provisional Signups</h3></div>{loading && <span className="mini-loader" />}</div>
       {message && <div className="inline-message">{message}</div>}
-      {!can(context, 'users.access', 'view', companyId) ? <div className="empty-state"><ShieldCheck size={28} /><strong>Not assigned</strong><span>Your current role does not include this employee approval queue.</span></div> : requests.length === 0 ? <div className="empty-state"><Users size={28} /><strong>No pending employee signups</strong><span>New provisional accounts will appear here for authorized review.</span></div> : <div className="approval-list">{requests.filter((request) => !companyId || request.companyId === companyId).map((request) => <div className="approval-row" key={request.id}><div className="approval-person"><div className="avatar">{initials(request.displayName)}</div><div><strong>{request.displayName}</strong><span>{request.companyName} · {request.requestedJobTitle || request.requestedRole || 'Role requested'}</span><small>{request.email || request.phone}</small></div></div><div className="approval-actions"><select value={selection[request.id] || ''} onChange={(e) => setSelection({ ...selection, [request.id]: e.target.value })} disabled={!canManage}><option value="">Select approved role…</option>{(roles[request.companyId] || []).map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select><button className="primary-action small" disabled={!canManage || loading} onClick={() => approve(request)}>Approve</button></div></div>)}</div>}
+      {!can(context, 'users.access', 'view', companyId) ? <div className="empty-state"><ShieldCheck size={28} /><strong>Not Assigned</strong><span>Your Current Role Does Not Include This Employee Approval Queue.</span></div> : requests.length === 0 ? <div className="empty-state"><Users size={28} /><strong>No Pending Employee Signups</strong><span>New Provisional Accounts Will Appear Here For Authorized Review.</span></div> : <div className="approval-list">{requests.filter((request) => !companyId || request.companyId === companyId).map((request) => <div className="approval-row" key={request.id}><div className="approval-person"><div className="avatar">{initials(request.displayName)}</div><div><strong>{formatPersonName(request.displayName)}</strong><span>{request.companyName} · {request.requestedJobTitle || request.requestedRole || "Role Requested"}</span><small>{request.email || request.phone}</small></div></div><div className="approval-actions"><select value={selection[request.id] || ''} onChange={(e) => setSelection({ ...selection, [request.id]: e.target.value })} disabled={!canManage}><option value="">Select Approved Role…</option>{(roles[request.companyId] || []).map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select><button className="primary-action small" disabled={!canManage || loading} onClick={() => approve(request)}>Approve</button></div></div>)}</div>}
     </article>
   </div>;
 }
@@ -262,12 +262,12 @@ function SecurityView({ context, companyId }: { context: WorkforceContext; compa
     } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, [companyId]);
-  return <div className="view-stack"><div className="view-heading"><div><span className="eyebrow">SECURITY CENTER</span><h2>Login, device & access intelligence</h2><p>Security events are kept separate from ordinary business audit logs so suspicious activity is easy to investigate.</p></div><button className="text-action" onClick={load}><RefreshCw size={15} /> Refresh</button></div><article className="panel data-panel"><div className="card-heading"><div><span className="eyebrow">RECENT EVENTS</span><h3>Security log</h3></div>{loading && <span className="mini-loader" />}</div>{events.length === 0 ? <div className="empty-state"><ShieldCheck size={28} /><strong>No security events yet</strong><span>Sign-in, geofence and denied-access activity will appear here.</span></div> : <div className="security-list">{events.map((event) => <div key={event.id} className="security-row"><span className={`severity-dot ${event.severity}`} /><div><strong>{event.eventType.replaceAll('_', ' ')}</strong><span>{event.employeeName || 'Unknown identity'}{event.companyName ? ` · ${event.companyName}` : ''}</span></div><div><strong>{event.severity.toUpperCase()}</strong><span>{event.locationLabel || event.ipAddress || 'Location unavailable'}</span></div><time>{new Date(event.occurredAt).toLocaleString()}</time></div>)}</div>}</article></div>;
+  return <div className="view-stack"><div className="view-heading"><div><span className="eyebrow">SECURITY CENTER</span><h2>Login, Device & Access Intelligence</h2><p>Security Events Are Kept Separate From Ordinary Business Audit Logs So Suspicious Activity Is Easy To Investigate.</p></div><button className="text-action" onClick={load}><RefreshCw size={15} /> Refresh</button></div><article className="panel data-panel"><div className="card-heading"><div><span className="eyebrow">RECENT EVENTS</span><h3>Security Log</h3></div>{loading && <span className="mini-loader" />}</div>{events.length === 0 ? <div className="empty-state"><ShieldCheck size={28} /><strong>No Security Events Yet</strong><span>Sign-In, Geofence And Denied-Access Activity Will Appear Here.</span></div> : <div className="security-list">{events.map((event) => <div key={event.id} className="security-row"><span className={`severity-dot ${event.severity}`} /><div><strong>{event.eventType.replaceAll('_', ' ')}</strong><span>{event.employeeName || "Unknown Identity"}{event.companyName ? ` · ${event.companyName}` : ''}</span></div><div><strong>{event.severity.toUpperCase()}</strong><span>{event.locationLabel || event.ipAddress || "Location Unavailable"}</span></div><time>{new Date(event.occurredAt).toLocaleString()}</time></div>)}</div>}</article></div>;
 }
 
 function PlaceholderView({ view, context }: { view: ViewName; context: WorkforceContext }) {
   const descriptions: Partial<Record<ViewName, string>> = {};
-  return <div className="view-stack"><div className="view-heading"><div><span className="eyebrow">MODULE FOUNDATION</span><p className="view-context-title">{nav.find((item) => item.id === view)?.label}</p><p>{descriptions[view]}</p></div></div><article className="panel empty-state tall"><PackageSearch size={36} /><strong>Authenticated module shell is ready</strong><span>Your current access level is enforced from server-side RBAC. This page will connect to its company-specific records and workflows.</span><small>Assigned permissions: {Object.entries(context.permissions).filter(([, level]) => level !== 'none').length}</small></article></div>;
+  return <div className="view-stack"><div className="view-heading"><div><span className="eyebrow">MODULE FOUNDATION</span><p className="view-context-title">{nav.find((item) => item.id === view)?.label}</p><p>{descriptions[view]}</p></div></div><article className="panel empty-state tall"><PackageSearch size={36} /><strong>Authenticated Module Shell Is Ready</strong><span>Your Current Access Level Is Enforced From Server-Side RBAC. This Page Will Connect To Its Company-Specific Records And Workflows.</span><small>Assigned Permissions: {Object.entries(context.permissions).filter(([, level]) => level !== 'none').length}</small></article></div>;
 }
 
 function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {

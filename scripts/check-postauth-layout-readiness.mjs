@@ -83,7 +83,7 @@ must(readinessCss.includes('@media (max-width: 860px)') && readinessCss.includes
 must(readinessCss.includes('@keyframes sp-postauth-enter') && readinessCss.includes('@keyframes sp-postauth-shimmer') && readinessCss.includes('prefers-reduced-motion'), 'central post-auth motion and reduced-motion strategy is missing');
 must(readinessCss.includes('min-height: 44px') && readinessCss.includes('touch-action: manipulation'), 'accessible touch-target contract is missing');
 
-must(studio.includes('Layout Studio') && studio.includes('Preview') && studio.includes('Apply to me'), 'Layout Studio preview/apply contract is missing');
+must(studio.includes('Layout Studio') && studio.includes('Preview') && /Apply To Me/i.test(studio), 'Layout Studio preview/apply contract is missing');
 must(studio.includes('preview: true') && studio.includes('daenem:close-layout-studio') && studio.includes('/api/experience/layout/preference'), 'preview must remain temporary until explicit apply');
 must(studio.includes('History') && studio.includes('rollback') && /Organization default/i.test(studio) && /Role defaults/i.test(studio), 'Layout Studio defaults/history/rollback controls are incomplete');
 must(experienceWorker.includes('/api/experience/layout') && experienceWorker.includes('/api/experience/layout/preference') && experienceWorker.includes('/api/experience/layout/policy') && experienceWorker.includes('/api/experience/layout/rollback'), 'existing experience preference API seams are not reused');
