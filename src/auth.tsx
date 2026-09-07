@@ -6,6 +6,7 @@ import {
   readThemeId, themeById, type ThemeId,
 } from './theme-system';
 import { SignInExperience } from './signin-experience';
+import { mountSignInLegacyFonts } from './signin-font-loader';
 import { clearOfflineActiveEmployee, readCachedAuthContext, setOfflineActiveEmployee } from './offline-platform';
 import {
   WORLD_CLOCKS, WORLD_CLOCK_CATALOG, readSignInPreferences, readWorldClockPreferences,
@@ -453,6 +454,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const resetChecks = passwordChecks(newPassword, passwordPolicy, authLabels);
   const identityStatus = identifierState(identity);
   const showIdentityStatus = identity.trim().length >= 3 || identityTouched;
+
+  useEffect(() => mountSignInLegacyFonts(), []);
 
   useEffect(() => {
     ensureAppInstallListener();
