@@ -5,6 +5,7 @@ const files = {
   css: 'src/canonical-postauth-v1/canonical-dashboard.css',
   types: 'src/canonical-postauth-v1/canonical-types.ts',
   index: 'src/canonical-postauth-v1/index.ts',
+  qa: 'scripts/render-canonical-postauth-qa.mjs',
 };
 
 function read(path) { return fs.readFileSync(path, 'utf8'); }
@@ -15,6 +16,7 @@ let dashboard = read(files.dashboard);
 let css = read(files.css);
 let types = read(files.types);
 let index = read(files.index);
+let qa = read(files.qa);
 
 if (!dashboard.includes("from './display-standards'")) {
   const anchor = "import { CANONICAL_LAYOUT_IDS, CANONICAL_LAYOUT_SPECS } from './layout-specs';";
@@ -89,15 +91,30 @@ const v2Block = `
 `;
 if (!css.includes('V2 deterministic typography, fit, focus and copy-readability contract.')) css = `${css.trimEnd()}\n${v2Block}`;
 
+// The canonical Staff Portal QA harness must use Playwright's own installed Chromium.
+// Never depend on a browser binary path from another Daenem application or a previous runtime.
+qa = qa.replace(
+  "  const browser = await chromium.launch({\n    executablePath: process.env.PLAYWRIGHT_CHROMIUM || '/tmp/daenem-webadmin-chromium-v2/chromium',\n    headless: true,",
+  "  const browser = await chromium.launch({\n    headless: true,",
+);
+qa = qa.replace(
+  "  const nodeOptions = [process.env.NODE_OPTIONS, '--require=/tmp/wrangler-os-network-shim.cjs'].filter(Boolean).join(' ');",
+  "  const optionalWranglerShim = '/tmp/wrangler-os-network-shim.cjs';\n  const nodeOptions = [process.env.NODE_OPTIONS, fs.existsSync(optionalWranglerShim) ? `--require=${optionalWranglerShim}` : null].filter(Boolean).join(' ');",
+);
+
 must(dashboard.includes('formatPersonName(fixture.viewer.displayName)'), 'person-name display normalization not applied');
 must(dashboard.includes('formatUiLabel(item.label)'), 'navigation label normalization not applied');
 must(dashboard.includes('className="csp-profile"'), 'V2 profile presentation not applied');
 must(!/font-size\s*:\s*8px\b/.test(css), '8px authored UI remains after V2 reconciliation');
 must(css.includes('"Inter Variable"') && css.includes('"Manrope Variable"'), 'variable font tokens missing after reconciliation');
+must(!qa.includes('daenem-webadmin'), 'foreign WebAdmin browser path remains in Staff Portal canonical QA');
+must(!qa.includes("process.env.PLAYWRIGHT_CHROMIUM || '/tmp/"), 'canonical QA still has a hard-coded browser fallback');
 
 write(files.dashboard, dashboard);
 write(files.css, css);
 write(files.types, types);
 write(files.index, index);
+write(files.qa, qa);
 
 console.log('CANONICAL_V2_RECONCILE=PASS');
+console.log('CANONICAL_STAFFPORTAL_QA_BROWSER=PASS');
