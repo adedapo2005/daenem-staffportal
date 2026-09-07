@@ -1,0 +1,33 @@
+{
+  "stage": "owner-final-correction-pass-after-batch-f",
+  "status": "CHECKPOINT_CORRECTION_REQUIRED",
+  "evidence": {
+    "conceptComparisonSheet": "owner-final-evidence/ten-layout-four-panel-after-batch-f.jpg",
+    "runtimeMatrix": "qa-artifacts/canonical-postauth-v1/comparison.json",
+    "matrixSummary": {
+      "canonicalScreenshots": 100,
+      "runtimeScreenshots": 100,
+      "liveAdapterScreenshots": 100,
+      "materialSourceRuntimeMismatches": 22,
+      "exactDifferenceCases": 23,
+      "exactDifferingPixels": 23009,
+      "horizontalOverflow": 0,
+      "missingZones": 0,
+      "fixtureLeakage": 0,
+      "runtimeErrors": 0,
+      "v3MeasurementFailures": 0
+    }
+  },
+  "layouts": [
+    {"id":"executive-command","status":"CORRECTION_REQUIRED","correctionApplied":"Strengthened hero atmosphere, proportions, hierarchy, and executive card treatment.","remaining":"Approved concept still has richer photographic skyline depth, hero layering, and denser above-fold command surfaces than the real component render."},
+    {"id":"workspace-canvas","status":"CORRECTION_REQUIRED","correctionApplied":"Added workspace canvas depth, tile hierarchy, project treatment, and 4K/tablet sizing rules.","remaining":"Approved concept still has richer canvas surfaces, imagery, and workspace-module density than the render."},
+    {"id":"operational-cockpit","status":"CORRECTION_REQUIRED","correctionApplied":"Added cockpit map atmosphere, operational panel depth, routes, and responsive density rules.","remaining":"Approved concept still has materially richer control-room map detail and operational card layering."},
+    {"id":"insight-magazine","status":"CORRECTION_REQUIRED","correctionApplied":"Added editorial hero/story surfaces and preserved the valid rectangular grid.","remaining":"Approved concept still has photographic/editorial treatment and story detail absent from the component render."},
+    {"id":"master-detail-workspace","status":"CORRECTION_REQUIRED","correctionApplied":"Added real lower progress, task-status, and inspector panels with authorized/unavailable states.","remaining":"Approved concept still has richer record imagery, selected-record detail, and inspector density."},
+    {"id":"horizon-wide","status":"CORRECTION_REQUIRED","correctionApplied":"Added wide analytical proportions, panoramic atmosphere, and 4K row sizing.","remaining":"Approved concept still has a richer panoramic/global visual field and analytical surface treatment."},
+    {"id":"adaptive-bento","status":"CORRECTION_REQUIRED","correctionApplied":"Added asymmetric bento artwork layers, tile depth, hierarchy, and responsive transformations.","remaining":"Approved concept still has richer image-led tile composition and supporting surface detail."},
+    {"id":"focus-flow","status":"CORRECTION_REQUIRED","correctionApplied":"Added focus progress halo, priority hierarchy, task surfaces, and responsive depth.","remaining":"Approved concept still has richer focus/project visual context and supporting detail."},
+    {"id":"enterprise-studio","status":"CORRECTION_REQUIRED","correctionApplied":"Added studio canvas depth, toolbox hierarchy, connector treatment, and inspector proportions.","remaining":"Approved concept still has richer workflow-node detail, canvas tooling, and inspector layering."},
+    {"id":"board-pulse","status":"CORRECTION_REQUIRED","correctionApplied":"Added board trend/agenda hierarchy, signal surfaces, and 4K density rules.","remaining":"Approved concept still has richer board trend, risk, agenda, and decision-surface detail."}
+  ]
+}
