@@ -304,6 +304,13 @@
 .project-art.p1{background-image:linear-gradient(180deg,rgba(255,255,255,.04),rgba(21,52,91,.18)),url('/canonical-postauth-v3/shared/project-city.svg')}
 .project-art.p2{background-image:linear-gradient(180deg,rgba(255,255,255,.04),rgba(21,52,91,.18)),url('/canonical-postauth-v3/shared/project-ai.svg')}
 
+/* Operational map and editorial story art are decorative backgrounds only;
+   the map status, metrics, story copy, and controls remain real content. */
+.csp-map-art{background-image:linear-gradient(135deg,rgba(231,250,255,.22),rgba(247,250,255,.36)),url('/canonical-postauth-v3/shared/world-operations-map.svg');background-size:cover;background-position:center}.csp-map-art:before{display:none}
+.csp-story-sunrise .csp-story-art{background-image:linear-gradient(145deg,rgba(255,255,255,.08),rgba(39,47,112,.12)),url('/canonical-postauth-v3/insight-magazine/story-sunrise.svg');background-size:cover;background-position:center}
+.csp-story-violet .csp-story-art{background-image:linear-gradient(145deg,rgba(255,255,255,.04),rgba(31,38,102,.12)),url('/canonical-postauth-v3/insight-magazine/story-violet.svg');background-size:cover;background-position:center}
+.csp-story-cyan .csp-story-art{background-image:linear-gradient(145deg,rgba(255,255,255,.04),rgba(32,62,139,.12)),url('/canonical-postauth-v3/insight-magazine/story-cyan.svg');background-size:cover;background-position:center}
+
 /* At wide desktop widths the approved command-center composition lets the
    atmosphere run behind the full hero while the live copy and clock remain
    independent, readable application content. */
