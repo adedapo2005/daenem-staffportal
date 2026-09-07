@@ -36,6 +36,14 @@ function must(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function sourceHasObjectKey(source, id) {
+  return new RegExp(`["']${id}["']\\s*:`).test(source);
+}
+
+function sourceHasIdProperty(source, id) {
+  return new RegExp(`\\bid\\s*:\\s*["']${id}["']`).test(source);
+}
+
 const required = [
   'canonical-types.ts',
   'canonical-fixture.ts',
@@ -58,25 +66,26 @@ const layoutSystem = read('src/layout-system.ts');
 const dashboardEntry = read('src/zip-dashboard.tsx');
 const main = read('src/main.tsx');
 
-must(types.includes("StaffPortalLayoutId"), 'canonical layout type is missing');
-must(ids.every((id) => types.includes("'" + id + "'")), 'canonical type IDs are incomplete');
-must(ids.every((id) => specs.includes("'" + id + "'")), 'canonical layout specs are incomplete');
-must(ids.every((id) => specs.includes("id: '" + id + "'")), 'canonical layout spec IDs are incomplete');
-must(ids.every((id) => dashboard.includes("'" + id + "'")), 'canonical dashboard layout copy is incomplete');
+must(types.includes('StaffPortalLayoutId'), 'canonical layout type is missing');
+must(ids.every((id) => types.includes("'" + id + "'") || types.includes('"' + id + '"')), 'canonical type IDs are incomplete');
+must(ids.every((id) => sourceHasObjectKey(specs, id)), 'canonical layout specs are incomplete');
+must(ids.every((id) => sourceHasIdProperty(specs, id)), 'canonical layout spec IDs are incomplete');
+must(ids.every((id) => dashboard.includes("'" + id + "'") || dashboard.includes('"' + id + '"')), 'canonical dashboard layout copy is incomplete');
 must(adapter.includes('CANONICAL_LAYOUT_IDS') && adapter.includes('canonicalLayoutId') && adapter.includes('storedLayoutId'), 'canonical adapter does not cover the complete layout selection boundary');
 must(ids.every((id) => index.includes(id === 'master-detail-workspace' ? 'MasterDetailWorkspaceLayout' : id.split('-').map((part) => part[0].toUpperCase() + part.slice(1)).join(''))), 'canonical layout exports are incomplete');
 must(wrappers.every((file) => fs.existsSync(path.join(canonicalRoot, 'layouts', file))), 'canonical layout wrapper is missing');
 
 const structuralProfiles = ids.map((id) => {
-  const match = specs.match(new RegExp("'" + id + "':[\\s\\S]*?zones: \\[[\\s\\S]*?\\]", 'm'));
+  const match = specs.match(new RegExp(`["']${id}["']\\s*:\\s*\\{[\\s\\S]*?zones\\s*:\\s*\\[[\\s\\S]*?\\]`, 'm'));
   return match?.[0] || '';
 });
+must(structuralProfiles.every(Boolean), 'canonical layout structural profile extraction failed');
 must(new Set(structuralProfiles).size === ids.length, 'canonical layout profiles are not structurally unique');
 must(dashboard.includes('CANONICAL_LAYOUT_SPECS[layoutId]'), 'canonical dashboard does not use the supplied layout spec boundary');
 must(dashboard.includes('liveSlots?.hero') && dashboard.includes('liveSlots?.[zone]'), 'live adapter slots do not preserve the canonical zone boundary');
 must(dashboard.includes('navigation') && dashboard.includes('onAskAi') && dashboard.includes('onQuickCreate'), 'canonical chrome integration seams are missing');
 must(fixture.includes('VISUAL QA ONLY') && fixture.includes('Never use this fixture as production business truth'), 'fixture warning is missing');
-must(adapter.includes('import.meta.env.DEV && import.meta.env.VITE_CANONICAL_QA_FIXTURE === \'true\''), 'fixture mode is not development-only');
+must(adapter.includes("import.meta.env.DEV && import.meta.env.VITE_CANONICAL_QA_FIXTURE === 'true'"), 'fixture mode is not development-only');
 must(adapter.includes('liveFixture(') && adapter.includes('liveSlots'), 'real Staff Portal adapter is missing');
 must(adapter.includes("valueFor(context, 'employees'") && adapter.includes("valueFor(context, 'pendingApprovals'"), 'adapter does not map authorized live summary data');
 must(adapter.includes("'Not Available'") && adapter.includes("'Permission Required'"), 'adapter does not provide truthful no-data states');
