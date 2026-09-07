@@ -450,3 +450,117 @@
   .csp-layout-select select{position:absolute;inset:0;z-index:2;width:100%;height:100%;max-width:none;opacity:0;cursor:pointer}
   .csp-layout-select:has(select:focus-visible){outline:3px solid rgba(47,91,231,.34);outline-offset:2px}
 }
+
+/* Owner fidelity batch A — Executive Command and Workspace Canvas.
+   These are reference-derived surface treatments around existing real
+   components. They add depth, layering and readable density without adding
+   business values, replacing controls, or changing the layout contracts. */
+.csp-layout-executive-command .csp-hero{
+  background:
+    linear-gradient(100deg,rgba(247,251,255,.98) 0%,rgba(229,242,255,.9) 43%,rgba(130,181,224,.72) 100%),
+    radial-gradient(circle at 74% 22%,rgba(255,240,184,.7),transparent 19rem);
+  border-color:rgba(47,91,231,.2);
+}
+.csp-layout-executive-command .csp-hero-scene:after,
+.csp-layout-workspace-canvas .csp-hero-scene:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.08),transparent 35%,rgba(38,77,139,.14)),
+    repeating-linear-gradient(0deg,transparent 0 28px,rgba(255,255,255,.16) 29px 30px),
+    linear-gradient(160deg,transparent 0 55%,rgba(30,74,127,.22) 56% 58%,transparent 59%);
+  mix-blend-mode:soft-light;
+}
+.csp-layout-executive-command .csp-hero-artwork{filter:saturate(1.08) contrast(1.05) brightness(.98)}
+.csp-layout-executive-command .csp-hero-scene>span{top:20%;right:11%;text-shadow:0 2px 16px rgba(11,45,93,.52)}
+.csp-layout-executive-command .csp-hero-copy:before,
+.csp-layout-workspace-canvas .csp-hero-copy:before{
+  content:"";
+  position:absolute;
+  left:30px;
+  top:22px;
+  width:74px;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--csp-cyan),var(--csp-cobalt));
+  box-shadow:0 0 20px rgba(17,169,199,.42);
+  opacity:.82;
+}
+.csp-layout-executive-command .csp-kpis article,
+.csp-layout-workspace-canvas .csp-kpis article{
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.99),rgba(246,249,255,.96)),
+    radial-gradient(circle at 100% 0,rgba(47,91,231,.1),transparent 8rem);
+  box-shadow:0 12px 30px rgba(37,58,104,.1),inset 0 1px rgba(255,255,255,.9);
+}
+.csp-layout-executive-command .csp-kpis article:after,
+.csp-layout-workspace-canvas .csp-kpis article:after{
+  content:"";
+  position:absolute;
+  right:-22px;
+  top:-22px;
+  width:78px;
+  height:78px;
+  border:1px solid color-mix(in srgb,currentColor 22%,transparent);
+  border-radius:50%;
+  box-shadow:0 0 0 10px color-mix(in srgb,currentColor 7%,transparent);
+  opacity:.72;
+  pointer-events:none;
+}
+.csp-layout-executive-command .csp-analytics,
+.csp-layout-workspace-canvas .csp-actions,
+.csp-layout-workspace-canvas .csp-projects{
+  border-color:rgba(47,91,231,.16);
+  box-shadow:0 18px 42px rgba(37,58,104,.105),inset 0 1px rgba(255,255,255,.9);
+}
+.csp-layout-executive-command .csp-analytics{border-top:3px solid rgba(47,91,231,.72)}
+.csp-layout-executive-command .csp-trend-visual{
+  background:
+    repeating-linear-gradient(to bottom,rgba(90,82,216,.1) 0 1px,transparent 1px 28px),
+    repeating-linear-gradient(to right,rgba(90,82,216,.045) 0 1px,transparent 1px 68px),
+    linear-gradient(180deg,rgba(247,245,255,.98),rgba(255,255,255,.72));
+}
+.csp-layout-workspace-canvas .csp-actions{
+  background:linear-gradient(145deg,rgba(255,255,255,.99),rgba(239,247,255,.92));
+}
+.csp-layout-workspace-canvas .csp-actions>div button{
+  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(239,246,255,.88));
+  box-shadow:inset 0 1px rgba(255,255,255,.9),0 5px 14px rgba(47,91,231,.05);
+}
+.csp-layout-workspace-canvas .csp-projects section{
+  background:linear-gradient(145deg,#fff,rgba(239,247,255,.88));
+  box-shadow:0 8px 20px rgba(37,58,104,.07),inset 0 1px rgba(255,255,255,.9);
+}
+.csp-layout-workspace-canvas .project-art{height:72px;filter:saturate(1.08) contrast(1.03)}
+.csp-layout-workspace-canvas .csp-projects section:after{
+  content:"";
+  position:absolute;
+  inset:auto 10px 0;
+  height:2px;
+  background:linear-gradient(90deg,var(--csp-cyan),var(--csp-cobalt),transparent);
+  opacity:.48;
+}
+@media (min-width:2200px){
+  .csp-layout-executive-command .csp-hero-copy:before,
+  .csp-layout-workspace-canvas .csp-hero-copy:before{left:42px;top:30px;width:106px}
+  .csp-layout-workspace-canvas .project-art{height:96px}
+}
+@media (min-width:3200px){
+  .csp-layout-executive-command .csp-hero-scene:after,
+  .csp-layout-workspace-canvas .csp-hero-scene:after{background-size:auto,auto,auto}
+  .csp-layout-executive-command .csp-kpis article:after,
+  .csp-layout-workspace-canvas .csp-kpis article:after{width:112px;height:112px;right:-32px;top:-32px}
+  .csp-layout-workspace-canvas .project-art{height:138px}
+}
+@media (max-width:767px){
+  .csp-layout-executive-command .csp-hero-scene:after,
+  .csp-layout-workspace-canvas .csp-hero-scene:after{background:linear-gradient(160deg,transparent 0 54%,rgba(31,72,125,.2) 55% 58%,transparent 59%)}
+  .csp-layout-executive-command .csp-hero-copy:before,
+  .csp-layout-workspace-canvas .csp-hero-copy:before{left:20px;top:14px;width:68px}
+  .csp-layout-workspace-canvas .project-art{height:86px}
+}
+
+/* 

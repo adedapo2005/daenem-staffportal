@@ -1,0 +1,78 @@
+{
+  "product": "staffportal.daenem.com",
+  "checkpointHead": "3c7292bd1a782cdaf6db46d315a939b31bdc5c98",
+  "authority": "approved V3 concept PNGs compared with current real React canonical renders",
+  "status": "BEFORE_CORRECTION",
+  "layouts": [
+    {
+      "id": "executive-command",
+      "approved": "Deep cobalt/cyan command-center hero with a layered skyline, luminous horizon, atmospheric depth, dense KPI strip, analytical center, intelligence rail, and tightly composed task/activity surfaces.",
+      "current": "The real React render has the correct shell and zones but a comparatively light hero scene, simpler KPI internals, flatter chart treatment, and lower above-the-fold information density than the approved reference.",
+      "correction": "Retain all real zones and fixture/live values while adding concept-derived hero depth layers, skyline/horizon light treatment, richer KPI sparkline framing, analytical chart grid/area layering, and tighter card internals/spacing at desktop and 4K; preserve the accepted mobile text/art separation.",
+      "severity": "Major"
+    },
+    {
+      "id": "workspace-canvas",
+      "approved": "A modular workspace canvas with a distinct hero, active quick-command surface, image-led project tiles, schedule/task columns, and layered personal workspace hierarchy.",
+      "current": "The render exposes the correct workspace zones but the tiles are mostly flat white cards with limited image treatment and less contrast between active and supporting work surfaces.",
+      "correction": "Use the supplied project and mountain artwork within real project/quick-action components, strengthen active-canvas surface depth, add concept-derived tile headers and visual separators, and preserve the workspace-specific grid rather than reusing Executive geometry.",
+      "severity": "Major"
+    },
+    {
+      "id": "operational-cockpit",
+      "approved": "A control-room surface centered on a luminous operational map, route/marker texture, team/status rails, compact KPI cards, and dense operational analytics.",
+      "current": "The current map is a sparse line network with a small marker set; the operational and analytics cards have less layered lighting, route texture, and information density than the approved cockpit.",
+      "correction": "Keep geographic content decorative and fixture-safe while adding the supplied world/map atmosphere, layered map grid/route glow, non-data decorative marker halos, stronger cockpit panel framing, and denser real status/list/chart internals.",
+      "severity": "Major"
+    },
+    {
+      "id": "insight-magazine",
+      "approved": "An editorial publication layout with a large photographic-style feature story, secondary story imagery, dark/light editorial layering, and a clearly dominant publication hierarchy.",
+      "current": "The corrected rectangular grid is valid, but story art is predominantly abstract geometric treatment and the feature/story hierarchy is flatter and less photographic/editorial than the approved concept.",
+      "correction": "Preserve the rectangular grid and real story buttons while using all supplied editorial story assets, adding image overlays/captions, stronger feature-story scale, publication-style dividers, and concept-derived editorial contrast without using the screenshot as an image.",
+      "severity": "Major"
+    },
+    {
+      "id": "master-detail-workspace",
+      "approved": "A dense split workspace with a visibly active master list, selected record banner/detail surface, inspector-like metadata hierarchy, and rich selection affordances.",
+      "current": "The list/detail zones exist and are functional, but the master rows, selected-record banner, tabs, and metadata groups are comparatively sparse and visually uniform.",
+      "correction": "Increase real row metadata hierarchy, selected-state edge/glow, detail banner depth using the supplied asset, tab grouping, inspector surface framing, and chart/detail rhythm while retaining the stored/API master-detail alias contract.",
+      "severity": "Major"
+    },
+    {
+      "id": "horizon-wide",
+      "approved": "A panoramic wide-screen composition with a broad global visual field, map imagery, multiple analytical surfaces, and explicit use of horizontal space at 4K.",
+      "current": "The render has the global panel and chart but leaves the wide composition visually lighter, with less panoramic atmosphere and supporting analytical surface depth than the reference.",
+      "correction": "Use the supplied horizon/map atmosphere as a wide backdrop layer, strengthen global map and performance subpanels, increase concept-supported wide row density/minimums, and keep real metrics/data separate from decorative geography.",
+      "severity": "Major"
+    },
+    {
+      "id": "adaptive-bento",
+      "approved": "An asymmetric bento composition with a dominant image-led tile, varied tile proportions, layered artwork, and strong visual rhythm rather than equal cards.",
+      "current": "The bento structure is asymmetric but its tile art and internals remain simple gradients/patterns, reducing the image-rich hierarchy visible in the approved reference.",
+      "correction": "Retain the existing bento grid while applying supplied project artwork to the correct real tiles, adding layered image masks/highlights and stronger featured-tile hierarchy without adding business values or equalizing the grid.",
+      "severity": "Major"
+    },
+    {
+      "id": "focus-flow",
+      "approved": "A focused productivity surface with prominent progress visualization, task/people/project context, calm layered surfaces, and deliberate concentration hierarchy.",
+      "current": "The progress ring and priority stream exist, but supporting visual context, depth, and task/project hierarchy are simpler than the approved Focus & Flow composition.",
+      "correction": "Use the supplied focus atmosphere, strengthen the real progress and priority components with layered progress rings, contextual art panels, state accents, and measured spacing while keeping fixture/live task values authoritative.",
+      "severity": "Major"
+    },
+    {
+      "id": "enterprise-studio",
+      "approved": "A creation-studio layout with a deep workflow canvas, visibly connected nodes, toolbox rail, inspector controls, and a high-detail authoring hierarchy.",
+      "current": "The canvas, toolbox, and inspector are present but have flatter node treatment, lighter canvas depth, and less visual distinction between tool, canvas, and inspector surfaces.",
+      "correction": "Retain real controls and node components while adding concept-derived canvas grid/depth, node headers/status treatments, connector glow layers, toolbox grouping, and inspector surface hierarchy; no fake interactions or invented data.",
+      "severity": "Major"
+    },
+    {
+      "id": "board-pulse",
+      "approved": "A board-level decision surface with strong trend visualization, risk/strategy grouping, agenda/decision density, premium chart surfaces, and deliberate 4K composition.",
+      "current": "The board trend and agenda zones exist but read closer to generic analytics/list cards, with less board-specific visual hierarchy, signal layering, and dense decision surface treatment.",
+      "correction": "Preserve real board trend/agenda data seams while adding supplied board signal artwork, layered trend/chart framing, decision-state badges, board-specific grouping, and wider-screen composition density without inventing governance or financial facts.",
+      "severity": "Major"
+    }
+  ]
+}
