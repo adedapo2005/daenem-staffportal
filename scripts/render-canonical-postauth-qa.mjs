@@ -190,6 +190,7 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   await page.locator('[data-canonical-staffportal-dashboard]').waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction((expected) => document.querySelector('[data-canonical-staffportal-dashboard]')?.getAttribute('data-layout-id') === expected, requestedLayout, { timeout: 20_000 });
   await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => [...document.images].every((image) => image.complete && image.naturalWidth > 0), { timeout: 20_000 });
   // SupportInbox polls once when the authenticated shell mounts. Wait for
   // that bounded API request to settle before tearing down the capture
   // listeners or navigating to the next viewport; otherwise Playwright can
@@ -234,7 +235,8 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   const faceList = [...document.fonts].map(f => ({family: f.family.replace(/["']/g, ''), status: f.status, weight: f.weight}));
   const fonts = Object.fromEntries(families.map(f => [f, {
     loadedFace: faceList.some(x => x.family === f && x.status === 'loaded'),
-    check: document.fonts.check(`${f === 'Inter Variable' ? 500 : 800} 18px "${f}"`),
+    check: document.fonts.check(`${f === 'Inter Variable' ? 500 : 800} ${f === 'Inter Variable' ? 13 : 18}px "${f}"`),
+    requiredCheck: f === 'Inter Variable' ? document.fonts.check('500 13px "Inter Variable"') : document.fonts.check('800 18px "Manrope Variable"'),
   }]));
   const round = n => Math.round(n * 100) / 100;
   const rect = e => {const b=e.getBoundingClientRect();return {x:round(b.x),y:round(b.y),width:round(b.width),height:round(b.height)};};
