@@ -615,4 +615,31 @@
 .csp-layout-insight-magazine .csp-story-copy small{font-size:11px}
 .csp-layout-insight-magazine .csp-analytics{border-color:rgba(198,108,112,.18);background:linear-gradient(145deg,#fff,rgba(255,247,245,.94))}
 
+/* Owner fidelity batch C — Master–Detail Workspace and Horizon Wide. */
+.csp-layout-master-detail-workspace .csp-grid{column-gap:16px}
+.csp-layout-master-detail-workspace .csp-master{
+  border-left:3px solid rgba(47,91,231,.62);
+  box-shadow:0 18px 42px rgba(37,58,104,.12),inset 0 1px rgba(255,255,255,.95);
+}
+.csp-layout-master-detail-workspace .csp-master>button{min-height:58px;border-bottom:1px solid rgba(42,64,112,.08);border-radius:9px}
+.csp-layout-master-detail-workspace .csp-master>button.selected{box-shadow:inset 3px 0 var(--csp-cobalt),0 6px 16px rgba(47,91,231,.1);background:linear-gradient(90deg,#eef4ff,#f8fbff)}
+.csp-layout-master-detail-workspace .csp-master>button em{font:800 12px var(--csp-heading);color:var(--csp-cobalt)}
+.csp-layout-master-detail-workspace .csp-detail{
+  border-top:3px solid rgba(90,82,216,.7);
+  background:linear-gradient(150deg,rgba(255,255,255,.99),rgba(243,241,255,.96));
+  box-shadow:0 20px 48px rgba(74,64,140,.12),inset 0 1px rgba(255,255,255,.95);
+}
+.csp-layout-master-detail-workspace .csp-detail-banner{height:160px;box-shadow:inset 0 0 36px rgba(47,91,231,.12)}
+.csp-layout-master-detail-workspace .csp-detail-tabs{padding:7px 4px 11px;gap:18px}
+.csp-layout-master-detail-workspace .csp-detail-tabs b,.csp-layout-master-detail-workspace .csp-detail-tabs span{padding:6px 8px;border-radius:8px;white-space:nowrap}
+.csp-layout-master-detail-workspace .csp-detail-tabs b{background:#edf3ff}
+.csp-layout-master-detail-workspace .csp-detail-kpis span{background:rgba(255,255,255,.76);box-shadow:0 6px 16px rgba(37,58,104,.06)}
+.csp-layout-horizon-wide .csp-hero{background:linear-gradient(100deg,rgba(227,249,255,.98),rgba(163,219,235,.86) 58%,rgba(74,129,161,.75));border-color:rgba(17,169,199,.22)}
+.csp-layout-horizon-wide .csp-hero-artwork{filter:saturate(1.14) contrast(1.04)}
+.csp-layout-horizon-wide .csp-hero-scene:after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(17,92,127,.1),transparent 46%,rgba(255,255,255,.2)),repeating-linear-gradient(90deg,transparent 0 10%,rgba(255,255,255,.13) 10.1% 10.2%)}
+.csp-layout-horizon-wide .csp-global-panel{border-top:3px solid rgba(17,169,199,.7);box-shadow:0 20px 50px rgba(37,99,126,.13),inset 0 1px rgba(255,255,255,.96)}
+.csp-layout-horizon-wide .csp-global-map-art{box-shadow:inset 0 0 56px rgba(17,169,199,.14),0 10px 24px rgba(37,99,126,.08)}
+.csp-layout-horizon-wide .csp-global-performance{background:linear-gradient(160deg,rgba(248,253,255,.72),rgba(239,247,255,.55));border-radius:14px;padding:14px 14px 0}
+.csp-layout-horizon-wide .csp-global-performance .csp-analytics-visual{background:repeating-linear-gradient(to bottom,rgba(17,169,199,.1) 0 1px,transparent 1px 30px),linear-gradient(180deg,rgba(236,253,255,.9),rgba(255,255,255,.74));border-radius:12px}
+
 /* 
