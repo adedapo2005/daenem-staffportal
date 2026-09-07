@@ -153,6 +153,21 @@ function GlobalOperationsPanel({ fixture }: { fixture: CanonicalFixture }) {
   </article>;
 }
 
+function BentoStrategy({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void }) {
+  const tiles = [
+    { label: fixture.kpis[2]?.label ?? 'Active Projects', value: fixture.kpis[2]?.value ?? 'Not Available', detail: 'Portfolio Momentum', tone: 'violet' },
+    { label: fixture.kpis[0]?.label ?? 'Total Staff', value: fixture.kpis[0]?.value ?? 'Not Available', detail: 'People & Capability', tone: 'blue' },
+    { label: fixture.kpis[1]?.label ?? 'Monthly Revenue', value: fixture.kpis[1]?.value ?? 'Not Available', detail: 'Operational Signal', tone: 'cyan' },
+    { label: fixture.kpis[4]?.label ?? 'System Uptime', value: fixture.kpis[4]?.value ?? 'Not Available', detail: 'Platform Confidence', tone: 'gold' },
+  ];
+  return <article className="csp-card csp-bento-strategy" data-zone="bento-strategy">
+    <header><span><Sparkles size={18}/><b>Strategic Priorities</b></span><button type="button" onClick={()=>onAction?.('bento-strategy','view-all')}>View All</button></header>
+    <div className="csp-bento-grid">{tiles.map((tile,index)=><button type="button" className={`csp-bento-tile csp-bento-${tile.tone} ${index===0?'csp-bento-featured':''}`} key={tile.label} onClick={()=>onAction?.('bento-strategy','open-priority')}>
+      <span className="csp-bento-tile-art" aria-hidden="true"><i/><i/><i/></span><span className="csp-bento-copy"><small>{tile.label}</small><strong data-canonical-metric="true" data-numeric={/\d/.test(tile.value) ? 'true' : 'false'}>{tile.value}</strong><em>{tile.detail}</em></span><ChevronRight size={15} aria-hidden="true"/>
+    </button>)}</div>
+  </article>;
+}
+
 function ZoneCard({ zone, fixture, onAction }: { zone: CanonicalZoneId; fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
   if (zone==='hero') return null;
   if (zone==='kpis') return <CanonicalKpis fixture={fixture}/>;
@@ -176,7 +191,8 @@ function ZoneCard({ zone, fixture, onAction }: { zone: CanonicalZoneId; fixture:
   if (zone==='knowledge') return <article className="csp-card csp-list" data-zone={zone}><header><span><BookOpen size={17}/><b>{title}</b></span><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{['Expense Claims Policy','Onboarding Guide','IT Support & Systems','Project Management Playbook'].map(x=><div key={x}><FileText size={15}/><span><b>{x}</b><small>Updated Reference</small></span><ChevronRight size={14}/></div>)}</article>;
   if (zone==='status') return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17}/><b>{title}</b></span><em>99.98% Uptime</em></header>{['Core Platform','File Storage','Authentication','Email Services'].map(x=><div key={x}><i/><b>{x}</b><span>Operational</span></div>)}</article>;
   if (zone==='announcement') return <article className="csp-card csp-announcement" data-zone={zone}><Bell size={20}/><div><small>NEW · {title}</small><b>Q2 Town Hall Will Be Held On 30 Apr 2025 At 10:00 AM (SGT).</b><span>Join Us For Key Updates And An Exciting Roadmap Ahead.</span></div><ChevronRight size={18}/></article>;
-  if (zone==='operations-team' || zone==='bento-strategy' || zone==='focus-progress') return <article className="csp-card csp-progress" data-zone={zone}><header><b>{title}</b><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{['Project Completion','Team Productivity','Customer Satisfaction','Operational Health'].map((x,i)=><div key={x}><span><b>{x}</b><small>{['92%','+28%','4.8 / 5','99.8%'][i]}</small></span><progress max="100" value={[92,78,88,98][i]}/></div>)}</article>;
+  if (zone==='bento-strategy') return <BentoStrategy fixture={fixture} onAction={onAction}/>;
+  if (zone==='operations-team' || zone==='focus-progress') return <article className="csp-card csp-progress" data-zone={zone}><header><b>{title}</b><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{['Project Completion','Team Productivity','Customer Satisfaction','Operational Health'].map((x,i)=><div key={x}><span><b>{x}</b><small>{['92%','+28%','4.8 / 5','99.8%'][i]}</small></span><progress max="100" value={[92,78,88,98][i]}/></div>)}</article>;
   if (zone==='focus-priorities') return <article className="csp-card csp-priority-stream" data-zone={zone}><header><div><span className="csp-eyebrow">MY PRIORITIES</span><h2>{title}</h2></div><button type="button" className="primary" onClick={()=>onAction?.(zone,"add")}><Plus size={14}/> Add</button></header>{fixture.tasks.map((t,i)=><button type="button" key={t.title} onClick={()=>onAction?.(zone,"open-task")}><span className="csp-check">{i===0?'✓':''}</span><span><b>{t.title}</b><small>{t.meta}</small></span><em className={`priority ${t.priority.toLowerCase()}`}>{t.priority}</em><ChevronRight size={14}/></button>)}</article>;
   if (zone==='studio-toolbox') return <article className="csp-card csp-toolbox" data-zone={zone}><header><b>{title}</b><MoreHorizontal size={17}/></header>{['Data Source','Data Table','Chart / Graph','KPI Card','AI Insights','Live Data','Workflow Step','Condition','Scheduler','Approval','Notification','Integration'].map((x,i)=><button type="button" key={x} onClick={()=>onAction?.(zone,"tool-"+x.toLowerCase().replaceAll(" ","-").replaceAll("/","-"))}><span>{i<6?'◫':'◆'}</span>{x}</button>)}</article>;
   return <article className="csp-card" data-zone={zone}><header><b>{title}</b></header></article>;
