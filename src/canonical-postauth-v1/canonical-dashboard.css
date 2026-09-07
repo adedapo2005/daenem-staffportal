@@ -120,6 +120,93 @@
   .csp-hero h1{overflow-wrap:normal;word-break:normal}
   .csp-status .csp-freshness-card{display:flex}
 }
+
+/* Mobile owner-acceptance correction: keep the control row readable and
+   reserve a clear text region before the decorative hero atmosphere. */
+@media (max-width:767px){
+  .csp-root{--csp-topbar:104px}
+  .csp-topbar{
+    grid-template-columns:36px minmax(0,1fr) auto;
+    grid-template-rows:40px 40px;
+    align-content:center;
+    padding:8px 10px;
+    gap:8px;
+  }
+  .csp-brand{grid-column:1;grid-row:1}
+  .csp-search{grid-column:1/-1;grid-row:2;width:100%;min-width:0}
+  .csp-top-actions{
+    grid-column:2/4;
+    grid-row:1;
+    width:100%;
+    min-width:0;
+    flex-wrap:nowrap;
+    justify-content:flex-end;
+    overflow:visible;
+  }
+  .csp-top-actions .csp-create{
+    display:flex;
+    flex:0 0 40px;
+    width:40px;
+    padding:0!important;
+    justify-content:center;
+    font-size:12px;
+  }
+  .csp-top-actions .csp-create-label{display:none}
+  .csp-top-actions .csp-icon{
+    display:flex;
+    flex:0 0 40px;
+  }
+  .csp-layout-select{
+    display:flex;
+    flex:1 1 166px;
+    width:166px;
+    min-width:154px;
+    max-width:166px;
+    padding:0 6px;
+  }
+  .csp-layout-select>svg{display:none}
+  .csp-layout-select select{
+    width:100%;
+    max-width:none;
+    font-size:16px;
+  }
+  .csp-profile{flex:0 0 34px}
+  .csp-hero{
+    min-height:230px;
+    grid-template-columns:minmax(0,1fr);
+  }
+  .csp-hero-copy{
+    min-width:0;
+    padding:20px 20px 76px;
+    justify-content:flex-start;
+    background:linear-gradient(180deg,rgba(248,251,255,.98) 0%,rgba(248,251,255,.94) 54%,rgba(248,251,255,.38) 100%);
+    z-index:3;
+  }
+  .csp-hero h1{max-width:none;width:100%}
+  .csp-hero p{
+    width:100%;
+    max-width:none;
+    line-height:1.35;
+    white-space:normal;
+  }
+  .csp-hero small{width:100%;max-width:none;line-height:1.3}
+  .csp-hero-scene{
+    inset:92px 0 0 28%;
+    z-index:1;
+    opacity:.58;
+  }
+  .csp-hero-artwork{object-position:62% bottom}
+  .csp-hero-scene>span{
+    right:14px;
+    top:auto;
+    bottom:15px;
+    width:142px;
+    max-width:none;
+    font-size:12px;
+    line-height:1.1;
+    white-space:normal;
+  }
+}
 @media (min-width:3200px){
   .csp-grid{grid-template-rows:var(--csp-wide-rows);align-items:stretch;align-content:start}
   .csp-zone{align-self:stretch}
@@ -346,4 +433,20 @@
   .csp-layout-insight-magazine .csp-hero-copy{background:linear-gradient(90deg,rgba(17,53,113,.90) 0%,rgba(17,53,113,.68) 48%,rgba(17,53,113,0) 100%)}
   .csp-layout-insight-magazine .csp-hero-copy h1,.csp-layout-insight-magazine .csp-hero-copy p,.csp-layout-insight-magazine .csp-hero-copy small{color:#fff}
   .csp-layout-insight-magazine .csp-hero-copy .csp-eyebrow{color:#cce9ff}
+}
+
+/* Keep the mobile slogan as two deliberate phrases; the legacy compact
+   rule above must not reduce it to a glyph-width column. */
+.csp-layout-current,.csp-search-mobile-placeholder{display:none}
+@media (max-width:767px){
+  .csp-hero-scene>span{width:142px;max-width:none}
+  .csp-search{position:relative}
+  .csp-search input::placeholder{color:transparent}
+  .csp-search-mobile-placeholder{display:block;position:absolute;left:39px;top:50%;transform:translateY(-50%);max-width:calc(100% - 78px);color:var(--csp-muted);font-size:16px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:clip;pointer-events:none}
+  .csp-search:has(input:not(:placeholder-shown)) .csp-search-mobile-placeholder{display:none}
+  .csp-layout-select{position:relative;gap:6px;overflow:hidden}
+  .csp-layout-select>svg{display:block;flex:0 0 16px}
+  .csp-layout-current{display:block;min-width:0;flex:1;max-height:25px;font-size:12px;line-height:1.05;font-weight:800;white-space:normal;overflow:visible;overflow-wrap:normal;color:var(--csp-ink)}
+  .csp-layout-select select{position:absolute;inset:0;z-index:2;width:100%;height:100%;max-width:none;opacity:0;cursor:pointer}
+  .csp-layout-select:has(select:focus-visible){outline:3px solid rgba(47,91,231,.34);outline-offset:2px}
 }
