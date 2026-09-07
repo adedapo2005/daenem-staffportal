@@ -190,6 +190,11 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   await page.locator('[data-canonical-staffportal-dashboard]').waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction((expected) => document.querySelector('[data-canonical-staffportal-dashboard]')?.getAttribute('data-layout-id') === expected, requestedLayout, { timeout: 20_000 });
   await page.evaluate(() => document.fonts.ready);
+  // SupportInbox polls once when the authenticated shell mounts. Wait for
+  // that bounded API request to settle before tearing down the capture
+  // listeners or navigating to the next viewport; otherwise Playwright can
+  // report the intentional navigation cancellation as a runtime error.
+  await page.waitForLoadState('networkidle');
   await freezeVisuals(page);
   await page.waitForTimeout(120);
   const metrics = await page.evaluate(({ requestedLayout: expectedLayout, kind: renderKind, viewport: [width, height], zones }) => {
