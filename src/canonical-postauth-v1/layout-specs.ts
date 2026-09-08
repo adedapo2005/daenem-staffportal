@@ -10,8 +10,9 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
       "hero hero hero hero hero hero hero hero hero hero hero hero",
       "kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis",
       "executive-analytics executive-analytics executive-analytics executive-analytics executive-analytics executive-analytics executive-analytics executive-analytics ai-insights ai-insights weather weather",
-      "tasks tasks tasks approvals approvals approvals activity activity activity world-time world-time world-time",
-      "quick-actions quick-actions quick-actions status status status knowledge knowledge knowledge announcement announcement announcement"
+      "activity activity activity approvals approvals approvals tasks tasks . . quick-actions quick-actions",
+      "announcement announcement announcement announcement announcement announcement announcement announcement announcement announcement announcement announcement",
+      "world-time world-time world-time world-time status status status status knowledge knowledge knowledge knowledge"
     ],
     "tabletGridAreas": [
       "hero hero hero hero hero hero hero hero",
@@ -56,6 +57,7 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
       160,
       560,
       420,
+      150,
       330
     ]
   },
