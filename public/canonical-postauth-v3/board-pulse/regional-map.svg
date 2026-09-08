@@ -1,25 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-label="Decorative regional risk topology">
-<defs>
-  <linearGradient id="field" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#edf7ff"/><stop offset=".5" stop-color="#e6e7ff"/><stop offset="1" stop-color="#fff0ed"/></linearGradient>
-  <radialGradient id="hot"><stop stop-color="#ff8d9a" stop-opacity=".85"/><stop offset="1" stop-color="#ff8d9a" stop-opacity="0"/></radialGradient>
-  <radialGradient id="cool"><stop stop-color="#45d9e5" stop-opacity=".7"/><stop offset="1" stop-color="#45d9e5" stop-opacity="0"/></radialGradient>
-  <filter id="soft"><feGaussianBlur stdDeviation="10"/></filter>
-</defs>
-<rect width="760" height="330" rx="18" fill="url(#field)"/>
-<g opacity=".24" stroke="#7f93d0" stroke-width="1"><path d="M0 55H760M0 110H760M0 165H760M0 220H760M0 275H760"/><path d="M76 0V330M152 0V330M228 0V330M304 0V330M380 0V330M456 0V330M532 0V330M608 0V330M684 0V330"/></g>
-<g opacity=".7" filter="url(#soft)"><circle cx="214" cy="135" r="78" fill="url(#cool)"/><circle cx="530" cy="186" r="88" fill="url(#hot)"/><circle cx="645" cy="88" r="55" fill="url(#cool)"/></g>
-<g fill="#b4cbea" stroke="#7286c8" stroke-width="2" opacity=".78">
-  <path d="M92 99l37-30 58 9 27 33 45 18 5 32-39 15-19 38-44-9-26-31-48-15-17-31z"/>
-  <path d="M272 76l43-23 48 13 27 35-19 30-42 4-24 33-40-20-21-35z"/>
-  <path d="M426 97l42-22 48 14 29 37-18 39-35-3-22 35-41-23-20-35z"/>
-  <path d="M576 104l33-25 44 12 24 32 42 12 13 38-30 25-53-4-30 30-38-31 5-35-27-24z"/>
-  <path d="M412 219l36-23 42 16 17 38-24 27-13 35-38 10-24-31 8-37z"/>
-</g>
-<g fill="none" stroke="#5c57d7" stroke-width="3" stroke-linecap="round" opacity=".75">
-  <path d="M128 128C253 66 329 162 430 124S590 68 678 144"/>
-  <path d="M170 270C280 185 352 207 436 243S594 285 692 200"/>
-  <path d="M224 81C300 180 394 211 507 181S615 146 678 144"/>
-</g>
-<g fill="#fff" stroke="#5c57d7" stroke-width="3"><circle cx="128" cy="128" r="7"/><circle cx="282" cy="127" r="7"/><circle cx="430" cy="124" r="7"/><circle cx="542" cy="210" r="7"/><circle cx="678" cy="144" r="7"/><circle cx="692" cy="200" r="7"/></g>
-<g fill="#ff7f8d" opacity=".88"><circle cx="542" cy="210" r="9"/><circle cx="678" cy="144" r="8"/></g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" role="img" aria-label="Decorative world signal field">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7fbff"/><stop offset=".55" stop-color="#eef5ff"/><stop offset="1" stop-color="#fbf7ff"/></linearGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#7fa5d6" stroke-opacity=".12"/></pattern>
+    <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="2.1" fill="#73a7e8" fill-opacity=".48"/></pattern>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="route" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#347cec"/><stop offset=".5" stop-color="#715be0"/><stop offset="1" stop-color="#36bed0"/></linearGradient>
+  </defs>
+  <rect width="960" height="420" rx="22" fill="url(#bg)"/><rect width="960" height="420" rx="22" fill="url(#grid)"/>
+  <g fill="url(#dots)" stroke="#6e9bd5" stroke-opacity=".22" stroke-width="2">
+    <path d="M80 112l38-32 79-20 73 18 41 33-19 27-44 3-24 33-57 17-45-19-22-31-42-9z"/>
+    <path d="M259 169l28 12 26 45-7 50-29 53-19-14 4-46-17-35z"/>
+    <path d="M420 91l36-19 45 7 25 22 28-12 59 9 40 31 54 1 58 27-17 25-52 8-35 29-47-7-21-31-50 12-44-22-39 8-30-24-37-18 12-27z"/>
+    <path d="M524 203l47 4 35 31 5 52-25 62-36-4-28-58-14-47z"/>
+    <path d="M743 264l44-16 55 19 31 34-19 32-59 4-41-22-35-28z"/>
+    <path d="M844 172l22-12 28 11-5 18-36 5z"/>
+  </g>
+  <g fill="none" stroke="url(#route)" stroke-width="4" stroke-linecap="round" opacity=".76"><path d="M171 135C292 38 420 63 514 168S724 238 810 288"/><path d="M171 135C282 197 382 219 514 168S719 101 810 288"/><path d="M514 168C527 226 543 254 563 280"/><path d="M514 168C628 184 714 203 810 288"/></g>
+  <g filter="url(#glow)">
+    <g transform="translate(171 135)"><circle r="19" fill="#347cec" fill-opacity=".18"/><circle r="10" fill="#fff" stroke="#347cec" stroke-width="5"/><circle r="3.5" fill="#347cec"/></g>
+    <g transform="translate(514 168)"><circle r="23" fill="#7258df" fill-opacity=".19"/><circle r="11" fill="#fff" stroke="#7258df" stroke-width="5"/><circle r="4" fill="#7258df"/></g>
+    <g transform="translate(563 280)"><circle r="19" fill="#f0a52b" fill-opacity=".18"/><circle r="10" fill="#fff" stroke="#f0a52b" stroke-width="5"/><circle r="3.5" fill="#f0a52b"/></g>
+    <g transform="translate(810 288)"><circle r="24" fill="#21bfae" fill-opacity=".2"/><circle r="11" fill="#fff" stroke="#21bfae" stroke-width="5"/><circle r="4" fill="#21bfae"/></g>
+  </g>
+  <path d="M34 370H926" stroke="#6f94c8" stroke-opacity=".18"/>
 </svg>
