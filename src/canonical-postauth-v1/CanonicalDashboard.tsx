@@ -12,6 +12,7 @@ import { formatPersonName, formatUiLabel, initialsFromPersonName } from './displ
 import { FreshnessStatus } from './FreshnessStatus';
 import './canonical-fonts';
 import './canonical-dashboard.css';
+import './sol-owner-fidelity.css';
 
 const nav = [
   ['Dashboard', LayoutDashboard], ['People & Teams', Users], ['Operations', Gauge], ['Projects', BriefcaseBusiness],
@@ -59,8 +60,8 @@ const heroPhotoPaths: Record<StaffPortalLayoutId, string> = {
   'insight-magazine': '/reference-images/signin/daylight-glass-skyline.webp',
   'master-detail-workspace': '/reference-images/signin/premium-connected-workspace.webp',
   'horizon-wide': '/canonical-postauth-v3/horizon-wide/singapore-panorama-owner-v1.webp',
-  'adaptive-bento': '/reference-images/signin/daylight-glass-skyline.webp',
-  'focus-flow': '/reference-images/signin/daylight-glass-skyline.webp',
+  'adaptive-bento': '/canonical-postauth-v3/horizon-wide/singapore-panorama-owner-v1.webp',
+  'focus-flow': '/canonical-postauth-v3/horizon-wide/singapore-panorama-owner-v1.webp',
   'enterprise-studio': '/reference-images/signin/daylight-glass-skyline.webp',
   'board-pulse': '/reference-images/signin/daylight-glass-skyline.webp',
 };
@@ -328,11 +329,23 @@ function BentoStrategy({ fixture, onAction }: { fixture: CanonicalFixture; onAct
     { label: fixture.kpis[0]?.label ?? 'Total Staff', value: fixture.kpis[0]?.value ?? 'Not Available', detail: 'People & Capability', tone: 'blue' },
     { label: fixture.kpis[1]?.label ?? 'Monthly Revenue', value: fixture.kpis[1]?.value ?? 'Not Available', detail: 'Operational Signal', tone: 'cyan' },
   ];
-  return <article className="csp-card csp-bento-strategy" data-zone="bento-strategy">
+  return <article className="csp-card csp-bento-strategy csp-adaptive-priorities" data-zone="bento-strategy">
     <header><span><Sparkles size={18}/><b>Strategic Priorities</b></span><button type="button" onClick={()=>onAction?.('bento-strategy','view-all')}>View All</button></header>
-    <div className="csp-bento-grid">{tiles.map((tile,index)=><button type="button" className={`csp-bento-tile csp-bento-${tile.tone} ${index===0?'csp-bento-featured':''}`} key={tile.label} onClick={()=>onAction?.('bento-strategy','open-priority')}>
-      <span className="csp-bento-tile-art" aria-hidden="true"><i/><i/><i/></span><span className="csp-bento-copy"><small>{tile.label}</small><strong data-canonical-metric="true" data-numeric={/\d/.test(tile.value) ? 'true' : 'false'}>{tile.value}</strong><em>{tile.detail}</em></span><ChevronRight size={15} aria-hidden="true"/>
+    <div className="csp-adaptive-priority-list">{tiles.map((tile,index)=><button type="button" className={`csp-adaptive-priority-row tone-${tile.tone}`} key={tile.label} onClick={()=>onAction?.('bento-strategy','open-priority')}>
+      <span className="csp-adaptive-priority-art" aria-hidden="true"><i/><i/><i/></span><span className="csp-adaptive-priority-copy"><b>{tile.label}</b><small>{tile.detail}</small><span className={`csp-decorative-track priority-${index}`}><i className="csp-decorative-fill"/></span></span><strong data-canonical-metric="true" data-numeric={/\d/.test(tile.value) ? 'true' : 'false'}>{tile.value}</strong><ChevronRight size={14} aria-hidden="true"/>
     </button>)}</div>
+  </article>;
+}
+
+function AdaptiveAiForYou({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void }) {
+  const insights = [
+    { title: fixture.tasks[0]?.title ?? 'Not Available', detail: fixture.tasks[0]?.meta ?? 'Authorized Task Unavailable', icon: ListChecks },
+    { title: fixture.approvals[0]?.title ?? 'Not Available', detail: fixture.approvals[0]?.meta ?? 'Authorized Approval Unavailable', icon: CheckCircle2 },
+    { title: fixture.activity[0]?.title ?? 'Not Available', detail: fixture.activity[0]?.meta ?? 'Authorized Activity Unavailable', icon: Activity },
+  ];
+  return <article className="csp-card csp-adaptive-ai-for-you" data-zone="status">
+    <header><span><Sparkles size={17}/><b>AI Insights For You</b></span><button type="button" onClick={()=>onAction?.('status','view-all')}>View All</button></header>
+    <div>{insights.map((insight,index)=>{const Icon=insight.icon;return <button type="button" key={`${insight.title}-${index}`} onClick={()=>onAction?.('status','open-insight')}><i className={`tone-${index}`} aria-hidden="true"><Icon size={14}/></i><span><b>{insight.title}</b><small>{insight.detail}</small></span><ChevronRight size={13}/></button>})}</div>
   </article>;
 }
 
@@ -457,9 +470,50 @@ function FocusMetrics({ fixture }: { fixture: CanonicalFixture }) {
   return <article className="csp-card csp-focus-metrics" data-zone="tasks"><header><span><BarChart3 size={17}/><b>Key Metrics</b></span><em>Authorized</em></header>{metrics.map((metric,index)=><div key={metric.label}><i className={`tone-${metric.tone}`} aria-hidden="true"><KpiIcon label={metric.label}/></i><span><small>{metric.label}</small><strong data-canonical-metric="true" data-numeric={/\d/.test(metric.value)?'true':'false'}>{metric.value}</strong></span><em>{metric.delta}</em><span className={`csp-decorative-track metric-${index}`} aria-hidden="true"><i className="csp-decorative-fill"/></span></div>)}</article>;
 }
 
+function FocusProgress({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const rows = [
+    { label: 'Tasks', value: `${fixture.tasks.length} Authorized`, icon: ListChecks, tone: 'blue' },
+    { label: 'Approvals', value: `${fixture.approvals.length} Authorized`, icon: CheckCircle2, tone: 'violet' },
+    { label: 'Meetings', value: 'Not Available', icon: CalendarDays, tone: 'gold' },
+    { label: 'Documents', value: 'Not Available', icon: FileText, tone: 'cyan' },
+  ];
+  return <article className="csp-card csp-focus-progress-owner" data-zone="focus-progress">
+    <header><b>Today’s Progress</b><button type="button" onClick={()=>onAction?.('focus-progress','view-details')}>View Details <ChevronRight size={13}/></button></header>
+    <div className="csp-focus-progress-lead"><span className="csp-focus-meter" aria-hidden="true"><b>Not Available</b><small>Progress</small></span><span><b>Daily Goals</b><small>Authorized Completion Data Unavailable</small></span></div>
+    <div className="csp-focus-progress-rows">{rows.map((row)=>{const Icon=row.icon;return <button type="button" key={row.label} onClick={()=>onAction?.('focus-progress',`open-${row.label.toLowerCase()}`)}><i className={`tone-${row.tone}`} aria-hidden="true"><Icon size={14}/></i><span><b>{row.label}</b><small>{row.value}</small></span><ChevronRight size={13}/></button>})}</div>
+  </article>;
+}
+
+function FocusQuickLinks({ onAction }: { onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const links = [['New Document', FileText], ['Request Approval', CheckCircle2], ['Open Knowledge', BookOpen]] as const;
+  return <article className="csp-card csp-focus-quick-links" data-zone="quick-actions"><header><b>Quick Links</b><button type="button" onClick={()=>onAction?.('quick-actions','customize')}>Customize</button></header><div>{links.map(([label,Icon])=><button type="button" key={label} onClick={()=>onAction?.('quick-actions',label.toLowerCase().replaceAll(' ','-'))}><Icon size={17}/><span>{label}</span></button>)}</div></article>;
+}
+
+function FocusAi({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const prompts = [
+    `Summarize My ${fixture.approvals.length} Pending Approvals`,
+    `Draft An Update For ${fixture.workspace.name}`,
+    'Show My Authorized Priority Signals',
+    'Create Meeting Notes From Authorized Context',
+  ];
+  return <article className="csp-card csp-focus-ai" data-zone="ai-insights"><header><span><Sparkles size={17}/><b>Daenem AI</b></span><em>BETA</em></header><div className="csp-focus-ai-lead"><i aria-hidden="true"><Sparkles size={14}/></i><b>How Can I Help You Stay In Flow Today?</b></div><div className="csp-focus-ai-prompts">{prompts.map(prompt=><button type="button" key={prompt} onClick={()=>onAction?.('ai-insights','run-prompt')}><Bot size={13}/><span>{prompt}</span></button>)}</div><form onSubmit={(event)=>{event.preventDefault();onAction?.('ai-insights','ask-ai')}}><input aria-label="Ask Daenem AI" placeholder="Ask anything..."/><button type="submit" aria-label="Send"><ChevronRight size={14}/></button></form></article>;
+}
+
 function FocusPriorityStream({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
   const tasks = Array.from({length:8},(_,index)=>fixture.tasks[index] ?? null);
-  return <article className="csp-card csp-priority-stream" data-zone="focus-priorities"><header><div><span className="csp-eyebrow">MY PRIORITIES</span><h2>Today’s Priorities</h2></div><button type="button" className="primary" onClick={()=>onAction?.('focus-priorities','add')}><Plus size={14}/> Add</button></header>{tasks.map((task,index)=><button type="button" key={task?.title ?? `task-unavailable-${index}`} onClick={()=>onAction?.('focus-priorities','open-task')}><span className="csp-check">{index===0?'✓':''}</span><span><b>{task?.title ?? 'Not Available'}</b><small>{task?.meta ?? 'Authorized Task Unavailable'}</small></span><em className={`priority ${task?.priority.toLowerCase() ?? 'low'}`}>{task?.priority ?? 'Not Available'}</em><ChevronRight size={14}/></button>)}</article>;
+  const tabs = [
+    ['My Priorities', fixture.tasks.length],
+    ['Approvals', fixture.approvals.length],
+    ['In Progress', 'Not Available'],
+    ['Upcoming', 'Not Available'],
+    ['Completed', 'Not Available'],
+  ] as const;
+  return <article className="csp-card csp-priority-stream" data-zone="focus-priorities">
+    <nav className="csp-focus-stage-tabs" aria-label="Priority Views">{tabs.map(([label,value],index)=><button type="button" className={index===0?'active':''} key={label} onClick={()=>onAction?.('focus-priorities',`view-${label.toLowerCase().replaceAll(' ','-')}`)}><i>{index+1}</i><span><b>{label}</b><small>{index===0?'Focus For Today':index===1?'Action Required':index===2?'Keep Momentum':index===3?'Next 7 Days':'Authorized Signal'}</small></span>{index===1 && <em>{value}</em>}</button>)}</nav>
+    <form className="csp-focus-add-bar" onSubmit={(event)=>{event.preventDefault();onAction?.('focus-priorities','add')}}><label><Search size={15}/><input aria-label="Add a task" placeholder="Add a new task, approval or note..."/></label><select aria-label="Entry Type"><option>Task</option><option>Approval</option><option>Note</option></select><button type="submit" className="primary">Add</button></form>
+    <header><div><h2>Today’s Priorities</h2><em>{fixture.tasks.length} Items</em></div><nav><button type="button" onClick={()=>onAction?.('focus-priorities','filter-all')}>All Items <ChevronDown size={12}/></button><button type="button" onClick={()=>onAction?.('focus-priorities','filter-priority')}>Priority <ChevronDown size={12}/></button></nav></header>
+    <div className="csp-focus-priority-rows">{tasks.map((task,index)=>{const TaskIcon=[FileText,Users,BriefcaseBusiness,CalendarDays,ShieldCheck][index%5];return <button type="button" key={task?.title ?? `task-unavailable-${index}`} onClick={()=>onAction?.('focus-priorities','open-task')}><span className="csp-check">{index===0?'✓':''}</span><i className={`csp-focus-task-icon tone-${index%4}`} aria-hidden="true"><TaskIcon size={15}/></i><span><b>{task?.title ?? 'Not Available'}</b><small>{task?.meta ?? 'Authorized Task Unavailable'}</small></span><em className={`priority ${task?.priority.toLowerCase() ?? 'low'}`}>{task?.priority ?? 'Not Available'}</em><small className="csp-focus-task-time">{task?.meta.split(' · ')[1] ?? 'Not Available'}</small><i className="csp-focus-task-avatar">DT</i><span className="csp-focus-task-action">Open</span><MoreHorizontal size={14}/></button>})}</div>
+  </article>;
 }
 
 function ExecutiveWeather({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
@@ -682,8 +736,8 @@ function BoardPulseTimeline({ fixture, onAction }: { fixture: CanonicalFixture; 
 function BoardDecisionsSurface({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void }) {
   return <article className="csp-card csp-board-decisions" data-zone="approvals"><header><span><CheckCircle2 size={17}/><b>Decisions</b></span><em>Authorized</em></header>{fixture.approvals.slice(0, 3).map(item => <button type="button" key={item.title} onClick={() => onAction?.('approvals','open-decision')}><span><b>{item.title}</b><small>{item.meta}</small></span><em>{item.status}</em></button>)}</article>;
 }
-function FocusFooter({ onAction, onLayoutChange }: { onAction?: (zone: CanonicalZoneId, action: string) => void; onLayoutChange?: (id: StaffPortalLayoutId) => void }) {
-  return <article className="csp-focus-footer" data-zone="world-time"><span><b>You’re In Focus &amp; Flow</b><small>Switch Layout</small></span><div>{(['executive-command','workspace-canvas','focus-flow'] as StaffPortalLayoutId[]).map(id => <button type="button" key={id} onClick={() => { onAction?.('world-time', `switch-${id}`); onLayoutChange?.(id); }}>{CANONICAL_LAYOUT_SPECS[id].name}</button>)}</div></article>;
+function FocusFooter({ fixture, onAction, onLayoutChange }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void; onLayoutChange?: (id: StaffPortalLayoutId) => void }) {
+  return <article className="csp-focus-footer" data-zone="world-time"><button type="button" className="csp-focus-footer-announcement" onClick={()=>onAction?.('world-time','open-announcement')}><Bell size={16}/><span><b>Latest Announcements</b><small>Latest Update From {fixture.workspace.name}</small></span><ChevronRight size={13}/></button><span className="csp-focus-footer-state"><i><Command size={15}/></i><span><b>You’re In Focus &amp; Flow</b><small>A cleaner way to get things done.</small></span></span><nav><small>Switch Layout:</small>{(['executive-command','workspace-canvas','focus-flow'] as StaffPortalLayoutId[]).map(id => <button type="button" className={id==='focus-flow'?'active':''} key={id} onClick={() => { onAction?.('world-time', `switch-${id}`); onLayoutChange?.(id); }}>{CANONICAL_LAYOUT_SPECS[id].name}</button>)}</nav></article>;
 }
 function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone: CanonicalZoneId; fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void; onLayoutChange?: (id: StaffPortalLayoutId)=>void; layoutId: StaffPortalLayoutId }) {
   if (zone==='hero') return null;
@@ -708,6 +762,7 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
   if (zone==='horizon-global') return <GlobalOperationsPanel fixture={fixture}/>;
   if (zone==='ai-insights' && layoutId==='operational-cockpit') return <OperationalSignals fixture={fixture} onAction={onAction}/>;
   if (zone==='ai-insights' && layoutId==='enterprise-studio') return <StudioInspectorPanel onAction={onAction}/>;
+  if (zone==='ai-insights' && layoutId==='focus-flow') return <FocusAi fixture={fixture} onAction={onAction}/>;
   if (zone==='executive-analytics' && layoutId==='executive-command') return <ExecutiveAnalyticsPair fixture={fixture} onAction={onAction}/>;
   if (layoutId==='operational-cockpit' && zone==='executive-analytics') return <OperationalTelemetrySurface fixture={fixture} onAction={onAction}/>;
   if (layoutId==='insight-magazine' && zone==='executive-analytics') return <InsightDataStorySurface fixture={fixture} onAction={onAction}/>;
@@ -732,7 +787,7 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
   if (zone==='weather' && layoutId==='operational-cockpit') return <OperationalWeather fixture={fixture} onAction={onAction}/>;
   if (zone==='weather' && layoutId==='insight-magazine') return <InsightRightContext fixture={fixture} onAction={onAction}/>;
   if (zone==='weather') return <ContextWeather fixture={fixture} onAction={onAction}/>;
-  if (layoutId==='focus-flow' && zone==='world-time') return <FocusFooter onAction={onAction} onLayoutChange={onLayoutChange}/>;
+  if (layoutId==='focus-flow' && zone==='world-time') return <FocusFooter fixture={fixture} onAction={onAction} onLayoutChange={onLayoutChange}/>;
   if (layoutId==='insight-magazine' && zone==='world-time') return <InsightDateTime fixture={fixture}/>;
   if (zone==='world-time') return <article className="csp-card csp-world" data-zone={zone}><header><span><Globe2 size={17}/><b>{title}</b></span></header><div>{fixture.worldTimes.map(x=><span key={x.city}><small>{x.city}</small><b>{x.time}</b><em>{x.date}</em></span>)}</div></article>;
   if (zone==='tasks' && layoutId==='focus-flow') return <FocusMetrics fixture={fixture}/>;
@@ -745,9 +800,10 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
   if (zone==='activity' && layoutId==='executive-command') return <ExecutiveActivity fixture={fixture} onAction={onAction}/>;
   if (zone==='activity' && layoutId==='insight-magazine') return <InsightPurposeStrip fixture={fixture}/>;
   if (zone==='activity') return <article className="csp-card csp-list" data-zone={zone}><header><span><Activity size={17}/><b>{title}</b></span><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{fixture.activity.map((a,i)=><div key={a.title}><span className="csp-activity-avatar">{i+1}</span><span><b>{a.title}</b><small>{a.meta}</small></span></div>)}</article>;
-  if (zone==='quick-actions') { if (layoutId==='insight-magazine') return <InsightQuickAi onAction={onAction}/>; const actions=[['Create Project',Plus],['Add Staff',Users],['New Document',FileText],['Request Approval',CheckCircle2],['Run Report',BarChart3],['Open Knowledge',BookOpen]] as const; const workspace=layoutId==='workspace-canvas'; return <article className={`csp-card csp-actions${workspace?' csp-workspace-actions':''}`} data-zone={zone}><header><div><b>{workspace?'Quick Command':title}</b>{workspace && <small className="csp-command-subtitle">Get things done, faster.</small>}</div><button type="button" onClick={()=>onAction?.(zone,"customize")}>Customize</button></header>{workspace ? <form className="csp-command-bar" onSubmit={(event)=>{event.preventDefault();onAction?.(zone,'command')}}><div className="csp-command-actions">{actions.map(([x,I])=>{const Icon=I;return <button type="button" key={x} onClick={()=>onAction?.(zone,String(x).toLowerCase().replaceAll(" ","-"))}><Icon size={16}/>{x}</button>})}</div><label><Search size={15}/><input aria-label="Ask or type a command" placeholder="Ask or type a command..."/><button type="submit" aria-label="Run command"><ChevronRight size={15}/></button></label></form> : <div>{actions.map(([x,I])=>{const Icon=I;return <button type="button" key={x} onClick={()=>onAction?.(zone,String(x).toLowerCase().replaceAll(" ","-"))}><Icon size={17}/>{x}</button>})}</div>}</article>; }
+  if (zone==='quick-actions') { if (layoutId==='insight-magazine') return <InsightQuickAi onAction={onAction}/>; if (layoutId==='focus-flow') return <FocusQuickLinks onAction={onAction}/>; const actions=[['Create Project',Plus],['Add Staff',Users],['New Document',FileText],['Request Approval',CheckCircle2],['Run Report',BarChart3],['Open Knowledge',BookOpen]] as const; const workspace=layoutId==='workspace-canvas'; return <article className={`csp-card csp-actions${workspace?' csp-workspace-actions':''}`} data-zone={zone}><header><div><b>{workspace?'Quick Command':title}</b>{workspace && <small className="csp-command-subtitle">Get things done, faster.</small>}</div><button type="button" onClick={()=>onAction?.(zone,"customize")}>Customize</button></header>{workspace ? <form className="csp-command-bar" onSubmit={(event)=>{event.preventDefault();onAction?.(zone,'command')}}><div className="csp-command-actions">{actions.map(([x,I])=>{const Icon=I;return <button type="button" key={x} onClick={()=>onAction?.(zone,String(x).toLowerCase().replaceAll(" ","-"))}><Icon size={16}/>{x}</button>})}</div><label><Search size={15}/><input aria-label="Ask or type a command" placeholder="Ask or type a command..."/><button type="submit" aria-label="Run command"><ChevronRight size={15}/></button></label></form> : <div>{actions.map(([x,I])=>{const Icon=I;return <button type="button" key={x} onClick={()=>onAction?.(zone,String(x).toLowerCase().replaceAll(" ","-"))}><Icon size={17}/>{x}</button>})}</div>}</article>; }
   if (layoutId==='insight-magazine' && zone==='knowledge') return <InsightLatestInsightsSurface fixture={fixture} onAction={onAction}/>;
   if (zone==='knowledge') return <article className="csp-card csp-list" data-zone={zone}><header><span><BookOpen size={17}/><b>{title}</b></span><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{['Expense Claims Policy','Onboarding Guide','IT Support & Systems','Project Management Playbook'].map(x=><div key={x}><FileText size={15}/><span><b>{x}</b><small>Updated Reference</small></span><ChevronRight size={14}/></div>)}</article>;
+  if (zone==='status' && layoutId==='adaptive-bento') return <AdaptiveAiForYou fixture={fixture} onAction={onAction}/>;
   if (zone==='status') return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17}/><b>{title}</b></span><em>{fixture.kpis[4]?.value ?? 'Not Available'} Uptime</em></header>{['Core Platform','File Storage','Authentication','Email Services'].map(x=><div key={x}><i/><b>{x}</b><span>{layoutId==='executive-command'?'Operational':'Not Available'}</span></div>)}</article>;
   if (zone==='announcement' && layoutId==='executive-command') return <ExecutiveFooter fixture={fixture} onAction={onAction} onLayoutChange={onLayoutChange}/>;
   if (zone==='announcement' && layoutId==='operational-cockpit') return <OperationalAiBar onAction={onAction}/>;
@@ -755,7 +811,8 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
   if (zone==='announcement') return <article className="csp-card csp-announcement" data-zone={zone}><Bell size={20}/><div><small>NEW · {title}</small><b>Latest Update From {fixture.workspace.name}</b><span>{fixture.dateTime.date} · {fixture.dateTime.zone}</span></div><ChevronRight size={18}/></article>;
   if (zone==='bento-strategy') return layoutId==='board-pulse' ? <BoardPillarsSurface fixture={fixture} onAction={onAction}/> : <BentoStrategy fixture={fixture} onAction={onAction}/>;
   if (layoutId==='operational-cockpit' && zone==='operations-team') return <OperationalTeamSurface fixture={fixture} onAction={onAction}/>;
-  if (zone==='operations-team' || zone==='focus-progress') { const metrics=[fixture.kpis[2],fixture.kpis[0],null,fixture.kpis[4]]; return <article className="csp-card csp-progress" data-zone={zone}><header><b>{title}</b><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{zone==='focus-progress' && <><div className="csp-focus-context"><b>{fixture.workspace.name}</b><i>·</i><small>{fixture.workspace.subtitle}</small></div><div className="csp-focus-summary"><span className="csp-focus-meter" aria-hidden="true"><b>Not Available</b><small>Progress</small></span><span><b>Focus Progress</b><small>Authorized Progress Data</small></span></div></>}{['Project Completion','Team Productivity','Customer Satisfaction','Operational Health'].map((x,i)=><div key={x}><span><b>{x}</b><small>{metrics[i]?.value ?? 'Not Available'}</small></span><span className={`csp-decorative-track csp-progress-decoration d${i}`} aria-hidden="true"><i className="csp-decorative-fill"/></span></div>)}</article>; }
+  if (zone==='focus-progress') return <FocusProgress fixture={fixture} onAction={onAction}/>;
+  if (zone==='operations-team') { const metrics=[fixture.kpis[2],fixture.kpis[0],null,fixture.kpis[4]]; return <article className="csp-card csp-progress" data-zone={zone}><header><b>{title}</b><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{['Project Completion','Team Productivity','Customer Satisfaction','Operational Health'].map((x,i)=><div key={x}><span><b>{x}</b><small>{metrics[i]?.value ?? 'Not Available'}</small></span><span className={`csp-decorative-track csp-progress-decoration d${i}`} aria-hidden="true"><i className="csp-decorative-fill"/></span></div>)}</article>; }
   if (zone==='focus-priorities') return <FocusPriorityStream fixture={fixture} onAction={onAction}/>;
   if (zone==='studio-toolbox') return <article className="csp-card csp-toolbox" data-zone={zone}><header><div><b>{title}</b><small className="csp-toolbox-subtitle">Build with authorized surfaces</small></div><MoreHorizontal size={17}/></header>{studioToolGroups.map((group)=><section className="csp-toolbox-group" key={group.label}><div className="csp-toolbox-group-label"><span>{group.icon}</span>{group.label}</div><div className="csp-toolbox-items">{group.items.map((x)=><button type="button" key={x} onClick={()=>onAction?.(zone,"tool-"+x.toLowerCase().replaceAll(" ","-").replaceAll("/","-"))}><span>{group.icon}</span>{x}</button>)}</div></section>)}</article>;
   return <article className="csp-card" data-zone={zone}><header><b>{title}</b></header></article>;
