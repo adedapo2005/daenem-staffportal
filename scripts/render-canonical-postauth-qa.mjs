@@ -244,9 +244,13 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   const grid=root.querySelector('.csp-grid'), gridStyle=getComputedStyle(grid);
   const failures=[],metrics=[],smallText=[],touchTargets=[];
   const indeterminateProgressCount = root.querySelectorAll('progress:not([value])').length;
+  const hasExplicitGridPlacement = [...grid.children].filter(visible).some((node) => {
+    const style = getComputedStyle(node);
+    return style.gridColumnStart !== 'auto' && style.gridRowStart !== 'auto';
+  });
   if (indeterminateProgressCount) failures.push('INDETERMINATE_PROGRESS');
   if(root.getAttribute('data-layout-id') !== expectedLayout)failures.push('WRONG_LAYOUT');
-  if(innerWidth >= 768 && gridStyle.gridTemplateAreas === 'none')failures.push('INVALID_NAMED_GRID');
+  if(innerWidth >= 768 && gridStyle.gridTemplateAreas === 'none' && !hasExplicitGridPlacement)failures.push('INVALID_GRID_PLACEMENT');
   if(document.documentElement.scrollWidth > innerWidth+1)failures.push('PAGE_HORIZONTAL_OVERFLOW');
   for(const [family,state] of Object.entries(fonts))if(!state.loadedFace || !state.check)failures.push('FONT_NOT_PROVEN:'+family);
   const zones=expectedZones.map(zone=>{

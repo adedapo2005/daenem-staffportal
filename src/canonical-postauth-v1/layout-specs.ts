@@ -132,8 +132,8 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
     "desktopGridAreas": [
       "hero hero hero hero hero hero hero hero hero hero hero hero",
       "kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis",
-      "operations-map operations-map operations-map operations-map operations-map operations-map operations-map operations-team operations-team operations-team ai-insights ai-insights",
-      "operations-map operations-map operations-map operations-map operations-map operations-map operations-map tasks tasks tasks status status",
+      "operations-map operations-map operations-map operations-map operations-map operations-map operations-team operations-team operations-team ai-insights ai-insights ai-insights",
+      "operations-map operations-map operations-map operations-map operations-map operations-map tasks tasks tasks status status status",
       "approvals approvals approvals executive-analytics executive-analytics executive-analytics executive-analytics weather weather quick-actions quick-actions quick-actions",
       "activity activity activity activity world-time world-time world-time knowledge knowledge announcement announcement announcement"
     ],
@@ -356,11 +356,11 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
     "navMode": "sidebar",
     "description": "Asymmetric interlocking bento composition where size communicates priority.",
     "desktopGridAreas": [
-      "hero hero hero hero hero hero hero hero ai-insights ai-insights ai-insights ai-insights",
-      "kpis kpis kpis kpis kpis kpis kpis kpis ai-insights ai-insights ai-insights ai-insights",
-      "executive-analytics executive-analytics executive-analytics executive-analytics executive-analytics bento-strategy bento-strategy bento-strategy tasks tasks tasks tasks",
-      "activity activity activity approvals approvals approvals knowledge knowledge knowledge weather weather weather",
-      "announcement announcement announcement quick-actions quick-actions quick-actions world-time world-time status status status status"
+      "hero hero hero hero hero hero hero ai-insights ai-insights ai-insights weather weather",
+      "kpis kpis kpis kpis kpis kpis kpis ai-insights ai-insights ai-insights weather weather",
+      "executive-analytics executive-analytics executive-analytics executive-analytics bento-strategy bento-strategy bento-strategy tasks tasks approvals approvals approvals",
+      "activity activity activity knowledge knowledge knowledge announcement announcement announcement status status status",
+      "quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions world-time world-time world-time world-time world-time world-time"
     ],
     "tabletGridAreas": [
       "hero hero hero hero hero hero ai-insights ai-insights",
@@ -412,14 +412,15 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
   "focus-flow": {
     "id": "focus-flow",
     "name": "Focus & Flow",
-    "navMode": "top-led",
+    "navMode": "sidebar",
     "description": "Calm priority-centered workflow with one dominant work stream and supporting context rails.",
     "desktopGridAreas": [
       "hero hero hero hero hero hero hero hero hero hero hero hero",
       "focus-progress focus-progress focus-progress focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities ai-insights ai-insights ai-insights",
-      "quick-actions quick-actions quick-actions focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities weather weather weather",
-      "activity activity activity tasks tasks tasks approvals approvals approvals world-time world-time world-time",
-      "announcement announcement announcement announcement announcement announcement status status status knowledge knowledge knowledge"
+      "tasks tasks tasks focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities weather weather weather",
+      "quick-actions quick-actions quick-actions focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities focus-priorities activity activity activity",
+      "approvals approvals approvals announcement announcement announcement announcement announcement announcement world-time world-time world-time",
+      "status status status knowledge knowledge knowledge . . . . . ."
     ],
     "tabletGridAreas": [
       "hero hero hero hero hero hero hero hero",
@@ -475,8 +476,8 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
       "hero hero hero hero hero hero hero hero hero hero hero hero",
       "kpis kpis kpis kpis kpis kpis kpis kpis kpis weather weather weather",
       "studio-toolbox studio-toolbox studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas ai-insights ai-insights ai-insights",
-      "studio-toolbox studio-toolbox studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas status status status",
-      "executive-analytics executive-analytics executive-analytics executive-analytics activity activity activity quick-actions quick-actions world-time world-time world-time",
+      "studio-toolbox studio-toolbox studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas studio-canvas ai-insights ai-insights ai-insights",
+      "executive-analytics executive-analytics executive-analytics activity activity activity quick-actions quick-actions world-time world-time status status",
       "announcement announcement announcement announcement knowledge knowledge knowledge knowledge tasks tasks approvals approvals"
     ],
     "tabletGridAreas": [
@@ -539,9 +540,9 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
     "description": "Strategic board briefing surface with executive trend, strategy progress, agenda, decisions and pulse timeline.",
     "desktopGridAreas": [
       "hero hero hero hero hero hero hero hero hero hero hero hero",
-      "kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis weather weather",
-      "board-trend board-trend board-trend board-trend board-trend board-trend bento-strategy bento-strategy bento-strategy ai-insights ai-insights ai-insights",
-      "board-agenda board-agenda board-agenda board-agenda approvals approvals approvals executive-analytics executive-analytics activity activity activity",
+      "kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis",
+      "board-trend board-trend board-trend board-trend bento-strategy bento-strategy bento-strategy ai-insights ai-insights ai-insights weather weather",
+      "board-agenda board-agenda board-agenda approvals approvals approvals executive-analytics executive-analytics executive-analytics executive-analytics activity activity",
       "world-time world-time world-time quick-actions quick-actions quick-actions knowledge knowledge status status announcement announcement"
     ],
     "tabletGridAreas": [
