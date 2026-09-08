@@ -64,17 +64,19 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
   "workspace-canvas": {
     "id": "workspace-canvas",
     "name": "Workspace Canvas",
-    "navMode": "slim-rail",
+    "navMode": "sidebar",
     "description": "Flexible modular personal workspace with quick command, schedule, projects and personal work panels.",
     "desktopGridAreas": [
       "hero hero hero hero hero hero hero hero hero hero hero hero",
-      "quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions ai-insights ai-insights ai-insights ai-insights",
-      "workspace-schedule workspace-schedule workspace-schedule workspace-projects workspace-projects workspace-projects workspace-projects workspace-projects workspace-projects tasks tasks tasks",
-      "world-time world-time world-time weather weather weather status status status approvals approvals approvals",
-      "activity activity activity activity activity activity knowledge knowledge knowledge announcement announcement announcement"
+      "quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions quick-actions",
+      "kpis kpis kpis kpis kpis kpis kpis kpis kpis kpis ai-insights ai-insights",
+      "workspace-schedule workspace-schedule workspace-schedule workspace-projects workspace-projects workspace-projects workspace-projects workspace-projects tasks tasks ai-insights ai-insights",
+      "world-time world-time world-time weather weather status status approvals approvals approvals activity activity",
+      "knowledge knowledge knowledge knowledge knowledge announcement announcement announcement announcement announcement activity activity"
     ],
     "tabletGridAreas": [
       "hero hero hero hero hero hero hero hero",
+      "kpis kpis kpis kpis kpis kpis kpis kpis",
       "quick-actions quick-actions quick-actions quick-actions ai-insights ai-insights ai-insights ai-insights",
       "workspace-schedule workspace-schedule workspace-schedule workspace-schedule workspace-projects workspace-projects workspace-projects workspace-projects",
       "tasks tasks tasks tasks approvals approvals approvals approvals",
@@ -84,6 +86,7 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
     "mobileOrder": [
       "hero",
       "quick-actions",
+      "kpis",
       "workspace-schedule",
       "workspace-projects",
       "tasks",
@@ -99,6 +102,7 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
     "zones": [
       "hero",
       "quick-actions",
+      "kpis",
       "workspace-schedule",
       "workspace-projects",
       "tasks",
@@ -112,11 +116,12 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
       "announcement"
     ],
     "wideRowMinimums": [
-      260,
-      300,
-      560,
-      350,
-      330
+      120,
+      64,
+      80,
+      282,
+      205,
+      70
     ]
   },
   "operational-cockpit": {

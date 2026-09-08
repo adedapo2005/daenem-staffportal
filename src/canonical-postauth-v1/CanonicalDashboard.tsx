@@ -19,6 +19,12 @@ const nav = [
   ['AI & Automation', Bot], ['Reports & Analytics', BarChart3], ['Tools & Integrations', Workflow], ['Settings', Settings2],
 ] as const;
 
+const workspaceCanvasNav = [
+  ['Home', LayoutDashboard], ['Workspace', Grid3X3], ['People', Users], ['Projects', BriefcaseBusiness],
+  ['Tasks', ListChecks], ['Approvals', CheckCircle2], ['Documents', FileText], ['Knowledge', BookOpen],
+  ['Apps', Grid3X3], ['Reports', BarChart3], ['More', MoreHorizontal],
+] as const;
+
 const zoneTitles: Partial<Record<CanonicalZoneId, string>> = {
   'executive-analytics': 'Revenue & Operations', 'workspace-schedule': 'My Schedule', 'workspace-projects': 'Featured Projects',
   'operations-map': 'Global Operations Map', 'operations-team': 'Team Operations', 'insight-story': 'Latest Insights',
@@ -80,7 +86,7 @@ function TopBar({ fixture, layoutId, onLayoutChange, onWorkspace, onSearch, onAs
     <form className="csp-search" role="search" onSubmit={(event)=>{event.preventDefault();onSearch?.(query)}}><Search size={17}/><span className="csp-search-mobile-placeholder" aria-hidden="true">Search Staff Portal</span><input aria-label="Search Staff Portal" placeholder="Search People, Documents, Projects, Anything..." value={query} onChange={(event)=>setQuery(event.target.value)}/><kbd>⌘ K</kbd></form>
     <div className="csp-top-actions">
       {onAskAi && <button type="button" className="csp-ai" onClick={onAskAi}><Sparkles size={16}/> Ask Daenem AI</button>}
-      <button type="button" className="csp-create" aria-label="Quick Create" onClick={onQuickCreate}><Plus size={16}/><span className="csp-create-label">Quick Create</span>{layoutId === 'executive-command' && <ChevronDown size={14} aria-hidden="true"/>}</button>
+      <button type="button" className="csp-create" aria-label="Quick Create" onClick={onQuickCreate}><Plus size={16}/><span className="csp-create-label">Quick Create</span>{(layoutId === 'executive-command' || layoutId === 'workspace-canvas') && <ChevronDown size={14} aria-hidden="true"/>}</button>
       <button type="button" className="csp-icon" aria-label="Notifications" onClick={onNotifications}><Bell size={17}/><i>3</i></button>
       <span className="csp-weather-chip"><CloudSun size={18}/><span><b>{layoutId === 'executive-command' ? fixture.weather.city : (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`)}</b><small>{layoutId === 'executive-command' ? (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C · ${fixture.weather.condition}`) : fixture.weather.city}</small></span></span>
       <FreshnessStatus sync={fixture.sync} variant="topbar"/>
@@ -93,11 +99,14 @@ function TopBar({ fixture, layoutId, onLayoutChange, onWorkspace, onSearch, onAs
 
 function SideNav({ layoutId, navigation, activeNavigationId }: { layoutId: StaffPortalLayoutId; navigation?: CanonicalNavigationItem[]; activeNavigationId?: string }) {
   // An explicitly empty authorized navigation list must stay empty.
-  const items: CanonicalNavigationItem[] = navigation !== undefined ? navigation : nav.map(([label, Icon]) => ({ id: label, label, icon: Icon }));
+  const workspace = layoutId === 'workspace-canvas';
+  const defaultItems = workspace ? workspaceCanvasNav : nav;
+  const items: CanonicalNavigationItem[] = navigation !== undefined ? navigation : defaultItems.map(([label, Icon]) => ({ id: label, label, icon: Icon }));
   return <aside className="csp-sidebar" data-canonical-sidebar>
     <div className="csp-sidebar-title"><Command size={18}/><span><b>{CANONICAL_LAYOUT_SPECS[layoutId].name}</b><small>Selectable Premium Layout</small></span></div>
-    <nav>{items.map((item,index)=>{const Icon=item.icon || LayoutDashboard;const active=activeNavigationId ? item.id===activeNavigationId : index===0;return <button type="button" key={item.id} className={active?'active':''} onClick={item.onSelect} aria-label={formatUiLabel(item.label)} aria-current={active?'page':undefined}><Icon size={17}/><span>{formatUiLabel(item.label)}</span>{item.badge && <em>{item.badge}</em>}</button>})}</nav>
-    <div className="csp-purpose"><span>One Team</span><b>A Brighter Tomorrow</b><small>Build · Empower · Grow</small><ChevronRight size={18}/></div>
+    <nav>{items.map((item,index)=>{const Icon=item.icon || LayoutDashboard;const active=activeNavigationId ? item.id===activeNavigationId : workspace && navigation===undefined ? index===1 : index===0;return <button type="button" key={item.id} className={active?'active':''} onClick={item.onSelect} aria-label={formatUiLabel(item.label)} aria-current={active?'page':undefined}><Icon size={17}/><span>{formatUiLabel(item.label)}</span>{item.badge && <em>{item.badge}</em>}</button>})}</nav>
+    <div className="csp-purpose"><span>{workspace ? 'Build' : 'One Team'}</span><b>{workspace ? <>Create<br/>Grow<br/>Together.</> : 'A Brighter Tomorrow'}</b><small>{workspace ? 'Good People · Great Possibilities' : 'Build · Empower · Grow'}</small><ChevronRight size={18}/></div>
+    {workspace && <div className="csp-workspace-side-brand"><Command size={18}/><span><b>Daenem Global</b><small>A Brighter Tomorrow</small></span></div>}
   </aside>;
 }
 
@@ -116,8 +125,30 @@ function ExecutiveHero({ fixture }: { fixture: CanonicalFixture }) {
   </section>;
 }
 
-export function CanonicalHero({ fixture, layoutId }: { fixture: CanonicalFixture; layoutId: StaffPortalLayoutId }) {
+function WorkspaceHero({ fixture, onLayoutChange }: { fixture: CanonicalFixture; onLayoutChange?: (id: StaffPortalLayoutId)=>void }) {
+  const choices: { id: StaffPortalLayoutId; label: string }[] = [
+    { id: 'executive-command', label: 'Executive Command' },
+    { id: 'workspace-canvas', label: 'Workspace Canvas' },
+    { id: 'master-detail-workspace', label: 'Project Hub' },
+    { id: 'insight-magazine', label: 'Analytics Center' },
+  ];
+  return <section className="csp-hero csp-workspace-hero" data-zone="hero">
+    <img className="csp-workspace-hero-image" src="/canonical-postauth-v3/workspace-canvas/hero-panorama-owner-v1.webp" alt="" aria-hidden="true"/>
+    <div className="csp-workspace-hero-wash" aria-hidden="true"/>
+    <div className="csp-workspace-hero-copy"><h1>Workspace Canvas</h1><p>Your Work, Your Way. Organise. Collaborate. Make An Impact.</p></div>
+    <span className="csp-workspace-signal" aria-hidden="true"><b>Good People</b><em>Greater Possibilities</em></span>
+    <div className="csp-workspace-time"><small>{fixture.dateTime.date}</small><strong>{fixture.dateTime.time}</strong><span>{fixture.dateTime.zone}</span></div>
+    <div className="csp-workspace-orbs" aria-hidden="true"><Globe2/><Globe2/><span>A More Connected<br/>Brighter Tomorrow</span></div>
+    <section className="csp-workspace-layout-chooser" aria-label="Dashboard Layout">
+      <header><b>Layout</b></header>
+      <div>{choices.map(({id,label})=><button type="button" className={id==='workspace-canvas'?'active':''} key={id} onClick={()=>onLayoutChange?.(id)} aria-label={`Switch To ${label}`} aria-pressed={id==='workspace-canvas'}><Grid3X3 size={17}/><span>{label}</span></button>)}</div>
+    </section>
+  </section>;
+}
+
+export function CanonicalHero({ fixture, layoutId, onLayoutChange }: { fixture: CanonicalFixture; layoutId: StaffPortalLayoutId; onLayoutChange?: (id: StaffPortalLayoutId)=>void }) {
   if (layoutId === 'executive-command') return <ExecutiveHero fixture={fixture}/>;
+  if (layoutId === 'workspace-canvas') return <WorkspaceHero fixture={fixture} onLayoutChange={onLayoutChange}/>;
   const copy: Record<StaffPortalLayoutId, [string,string]> = {
     'executive-command':['Good Morning, {viewer}','Everything That Matters. In One View.'],
     'workspace-canvas':['Workspace Canvas','Your Work, Your Way. Organise. Collaborate. Make An Impact.'],
@@ -367,8 +398,125 @@ function ExecutiveFooter({ fixture, onAction, onLayoutChange }: { fixture: Canon
   </article>;
 }
 
+function WorkspaceKpis({ fixture }: { fixture: CanonicalFixture }) {
+  const metrics = [fixture.kpis[0], fixture.kpis[2], fixture.kpis[1], fixture.kpis[3]].filter(Boolean);
+  return <section className="csp-kpis csp-workspace-kpis" data-zone="kpis">{metrics.map((metric,index)=><article key={metric.label} className={`tone-${metric.tone}`}>
+    <KpiIcon label={metric.label}/><span className="csp-kpi-label">{metric.label}</span>
+    <strong data-canonical-metric="true" data-numeric={/\d/.test(metric.value) ? 'true' : 'false'}>{metric.value}</strong>
+    <span className="csp-workspace-kpi-trend"><b>{metric.delta}</b><small>{metric.meta}</small></span>
+    <span className={`csp-workspace-kpi-bars bars-${index}`} aria-hidden="true">{[0,1,2,3,4].map((bar)=><i key={bar}/>)}</span>
+  </article>)}</section>;
+}
+
+function WorkspaceQuickCommand({ onAction }: { onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const actions = [
+    ['New Project', Plus], ['New Document', FileText], ['Assign Task', ListChecks],
+    ['Request Approval', CheckCircle2], ['Book Meeting', CalendarDays], ['More Actions', MoreHorizontal],
+  ] as const;
+  return <article className="csp-card csp-workspace-command" data-zone="quick-actions">
+    <header><span className="csp-workspace-command-icon"><Sparkles size={18}/></span><span><b>Quick Command</b><small>Get Things Done, Faster.</small></span></header>
+    <div className="csp-workspace-command-actions">{actions.map(([label,Icon])=><button type="button" key={label} onClick={()=>onAction?.('quick-actions',label.toLowerCase().replaceAll(' ','-'))}><Icon size={14}/>{label}{label==='More Actions' && <ChevronDown size={12}/>}</button>)}</div>
+    <form onSubmit={(event)=>{event.preventDefault();onAction?.('quick-actions','command')}}><Search size={15}/><input aria-label="Ask or type a command" placeholder="Ask or type a command..."/><button type="submit" aria-label="Run Command"><ChevronRight size={15}/></button></form>
+  </article>;
+}
+
+function WorkspaceSchedule({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  return <article className="csp-card csp-workspace-schedule" data-zone="workspace-schedule">
+    <header><span><CalendarDays size={17}/><b>My Schedule</b></span><button type="button" onClick={()=>onAction?.('workspace-schedule','view-calendar')}>View Calendar</button></header>
+    <div className="csp-workspace-schedule-date"><b>{fixture.dateTime.date}</b><span><button type="button" aria-label="Previous Day" onClick={()=>onAction?.('workspace-schedule','previous-day')}><ChevronRight size={13}/></button><button type="button" aria-label="Next Day" onClick={()=>onAction?.('workspace-schedule','next-day')}><ChevronRight size={13}/></button><button type="button" onClick={()=>onAction?.('workspace-schedule','today')}>Today</button></span></div>
+    <div className="csp-workspace-schedule-rows">{fixture.tasks.slice(0,4).map((task,index)=><button type="button" key={task.title} onClick={()=>onAction?.('workspace-schedule','open-item')}><i className={`tone-${index}`}/><small>{task.meta.split(' · ')[1] ?? task.meta}</small><span><b>{task.title}</b><em>{task.meta}</em></span></button>)}</div>
+  </article>;
+}
+
+function WorkspaceProjects({ onAction }: { onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const cards = [
+    { tone: 'mountain', detail: 'Authorized Project Data Unavailable' },
+    { tone: 'campus', detail: 'Authorized Project Data Unavailable' },
+    { tone: 'ai', detail: 'Authorized Project Data Unavailable' },
+  ];
+  return <article className="csp-card csp-workspace-projects" data-zone="workspace-projects">
+    <header><span><BriefcaseBusiness size={17}/><b>Featured Projects</b></span><span><button type="button" onClick={()=>onAction?.('workspace-projects','view-all')}>View All</button><button type="button" aria-label="Previous Projects" onClick={()=>onAction?.('workspace-projects','previous')}><ChevronRight size={13}/></button><button type="button" aria-label="Next Projects" onClick={()=>onAction?.('workspace-projects','next')}><ChevronRight size={13}/></button></span></header>
+    <div className="csp-workspace-project-grid">{cards.map((card)=><section key={card.tone} className={`project-${card.tone}`}>
+      <span className="csp-workspace-project-art" aria-hidden="true"/>
+      <div className="csp-workspace-project-title"><b>Not Available</b><em>Not Available</em></div>
+      <small>{card.detail}</small>
+      <span className="csp-workspace-project-track" aria-hidden="true"><i/></span>
+      <footer><span>Progress <b>Not Available</b></span><button type="button" aria-label="Project Actions" onClick={()=>onAction?.('workspace-projects','project-actions')}><MoreHorizontal size={14}/></button></footer>
+    </section>)}</div>
+  </article>;
+}
+
+function WorkspaceTasks({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const today = fixture.tasks.filter((task)=>task.meta.includes('Today')).length;
+  return <article className="csp-card csp-workspace-tasks" data-zone="tasks">
+    <header><span><ListChecks size={17}/><b>My Tasks</b></span><button type="button" onClick={()=>onAction?.('tasks','view-all')}>View All</button></header>
+    <div className="csp-workspace-task-tabs"><button type="button" className="active" onClick={()=>onAction?.('tasks','all')}>All ({fixture.tasks.length})</button><button type="button" onClick={()=>onAction?.('tasks','today')}>Today ({today})</button><button type="button" onClick={()=>onAction?.('tasks','overdue')}>Overdue (Not Available)</button></div>
+    <div className="csp-workspace-task-rows">{fixture.tasks.map((task)=><label key={task.title}><input type="checkbox" aria-label={task.title}/><span><b>{task.title}</b><small>{task.meta}</small></span><em className={`priority ${task.priority.toLowerCase()}`}>{task.priority}</em></label>)}</div>
+  </article>;
+}
+
+function WorkspaceAi({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const insights = [
+    { title: `${fixture.approvals.length} Approvals Need Your Attention`, detail: 'Authorized Approval Queue', tone: 'violet' },
+    { title: `${fixture.tasks.filter((task)=>task.priority==='High').length} High-Priority Tasks Need Review`, detail: 'Authorized Task Context', tone: 'green' },
+    { title: `${fixture.activity.length} Recent Activity Updates`, detail: 'Authorized Workspace Activity', tone: 'gold' },
+    { title: `System Uptime ${fixture.kpis[4]?.value ?? 'Not Available'}`, detail: fixture.kpis[4]?.meta ?? 'Authorized System Context', tone: 'coral' },
+  ];
+  return <article className="csp-card csp-workspace-ai" data-zone="ai-insights">
+    <header><span><Sparkles size={17}/><b>Daenem AI</b></span><span><em>BETA</em><button type="button" aria-label="AI Options" onClick={()=>onAction?.('ai-insights','options')}><MoreHorizontal size={14}/></button></span></header>
+    <div className="csp-workspace-ai-greeting"><i aria-hidden="true"><Sparkles size={20}/></i><span><b>Good Morning, {formatPersonName(fixture.viewer.displayName)}!</b><small>Here Are Your Authorised Workspace Insights For Today.</small></span></div>
+    <div className="csp-workspace-ai-rows">{insights.map((insight)=><button type="button" key={insight.title} onClick={()=>onAction?.('ai-insights','open-insight')}><i className={insight.tone}><Sparkles size={13}/></i><span><b>{insight.title}</b><small>{insight.detail}</small></span><ChevronRight size={13}/></button>)}</div>
+    <button type="button" className="csp-workspace-ai-footer" onClick={()=>onAction?.('ai-insights','ask-ai')}><Sparkles size={14}/> Ask Daenem AI Anything</button>
+  </article>;
+}
+
+function WorkspaceWorld({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  return <article className="csp-card csp-workspace-world" data-zone="world-time"><header><span><Globe2 size={17}/><b>Global Time</b></span><button type="button" onClick={()=>onAction?.('world-time','view-all')}>View All</button></header><div>{fixture.worldTimes.map((item,index)=><span key={item.city}><i aria-hidden="true">{['SG','GB','US','AU'][index] ?? '—'}</i><small>{item.city}</small><b>{item.time}</b><em>{item.date}</em></span>)}</div></article>;
+}
+
+function WorkspaceWeather({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const temperature = fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`;
+  return <article className="csp-card csp-workspace-weather" data-zone="weather"><header><span><CloudSun size={17}/><b>Weather</b></span><button type="button" onClick={()=>onAction?.('weather','view-more')}>{fixture.weather.city}</button></header><div className="csp-workspace-weather-current"><CloudSun size={42}/><span><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><small>{fixture.weather.condition}</small></span></div><p>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h · UV {fixture.weather.uv}</p><footer>{['Next','Later','Tomorrow','Following'].map((label)=><span key={label}><small>{label}</small><CloudSun size={14}/><b>Not Available</b></span>)}</footer></article>;
+}
+
+function WorkspaceStatus({ fixture }: { fixture: CanonicalFixture }) {
+  return <article className="csp-card csp-workspace-status" data-zone="status"><header><span><ShieldCheck size={17}/><b>System Status</b></span></header><div className="csp-workspace-status-summary"><CheckCircle2 size={19}/><span><small>Authorized Uptime</small><b>{fixture.kpis[4]?.value ?? 'Not Available'}</b></span></div>{['Core Platform','File Storage','Authentication','Email Services'].map((label)=><div className="csp-workspace-status-row" key={label}><i/><b>{label}</b><span>Not Available</span></div>)}</article>;
+}
+
+function WorkspaceApprovals({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  return <article className="csp-card csp-workspace-approvals" data-zone="approvals"><header><span><CheckCircle2 size={17}/><b>Approvals</b><em>{fixture.approvals.length}</em></span><button type="button" onClick={()=>onAction?.('approvals','view-all')}>View All</button></header><div>{fixture.approvals.slice(0,4).map((approval,index)=><section key={approval.title}><i className={`tone-${index}`}><CheckCircle2 size={13}/></i><span><b>{approval.title}</b><small>{approval.meta}</small></span><button type="button" onClick={()=>onAction?.('approvals','approve')}>Approve</button><button type="button" onClick={()=>onAction?.('approvals','decline')}>Decline</button></section>)}</div></article>;
+}
+
+function WorkspaceActivity({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const rows = Array.from({length:5},(_,index)=>fixture.activity[index] ?? null);
+  return <article className="csp-card csp-workspace-activity" data-zone="activity"><header><b>Recent Activity</b><button type="button" onClick={()=>onAction?.('activity','view-all')}>View All</button></header><div>{rows.map((item,index)=><section key={item?.title ?? `unavailable-${index}`}><i className={`tone-${index}`} aria-hidden="true">{index+1}</i><span><b>{item?.title ?? 'Not Available'}</b><small>{item?.meta ?? 'Authorized Activity Unavailable'}</small></span></section>)}</div></article>;
+}
+
+function WorkspaceAbout({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  return <article className="csp-card csp-workspace-about" data-zone="knowledge"><i><Command size={18}/></i><span><b>About This Workspace</b><small>The Workspace Canvas Gives You A Flexible, Modular View Of Your Work. Organise, Focus And Personalise Your Space.</small></span><button type="button" onClick={()=>onAction?.('knowledge','learn-more')}>Learn More</button><em>{fixture.workspace.name}</em></article>;
+}
+
+function WorkspaceQuote() {
+  return <article className="csp-card csp-workspace-quote" data-zone="announcement"><span aria-hidden="true"/><blockquote>“Progress Happens When People, Ideas And Opportunities Come Together.”<b>— The Daenem Way</b></blockquote></article>;
+}
+
 function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone: CanonicalZoneId; fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void; onLayoutChange?: (id: StaffPortalLayoutId)=>void; layoutId: StaffPortalLayoutId }) {
   if (zone==='hero') return null;
+  if (layoutId==='workspace-canvas') {
+    if (zone==='kpis') return <WorkspaceKpis fixture={fixture}/>;
+    if (zone==='quick-actions') return <WorkspaceQuickCommand onAction={onAction}/>;
+    if (zone==='workspace-schedule') return <WorkspaceSchedule fixture={fixture} onAction={onAction}/>;
+    if (zone==='workspace-projects') return <WorkspaceProjects onAction={onAction}/>;
+    if (zone==='tasks') return <WorkspaceTasks fixture={fixture} onAction={onAction}/>;
+    if (zone==='ai-insights') return <WorkspaceAi fixture={fixture} onAction={onAction}/>;
+    if (zone==='world-time') return <WorkspaceWorld fixture={fixture} onAction={onAction}/>;
+    if (zone==='weather') return <WorkspaceWeather fixture={fixture} onAction={onAction}/>;
+    if (zone==='status') return <WorkspaceStatus fixture={fixture}/>;
+    if (zone==='approvals') return <WorkspaceApprovals fixture={fixture} onAction={onAction}/>;
+    if (zone==='activity') return <WorkspaceActivity fixture={fixture} onAction={onAction}/>;
+    if (zone==='knowledge') return <WorkspaceAbout fixture={fixture} onAction={onAction}/>;
+    if (zone==='announcement') return <WorkspaceQuote/>;
+  }
   if (zone==='kpis') return <CanonicalKpis fixture={fixture}/>;
   const title = zoneTitles[zone] || zone;
   if (zone==='insight-story') return <InsightStory onAction={onAction}/>;
@@ -420,7 +568,7 @@ export function CanonicalDashboard({ initialLayout='executive-command', fixture=
     <SideNav layoutId={layoutId} navigation={navigation} activeNavigationId={activeNavigationId}/>
     <main className="csp-content">
       <div className="csp-grid">
-        {spec.zones.includes('hero') && ((liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,'hero')) ? liveSlots.hero : <CanonicalHero fixture={fixture} layoutId={layoutId}/>)}
+        {spec.zones.includes('hero') && ((liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,'hero')) ? liveSlots.hero : <CanonicalHero fixture={fixture} layoutId={layoutId} onLayoutChange={setLayout}/>)}
         {spec.zones.filter(z=>z!=='hero').map(zone=><div className="csp-zone" data-zone-shell={zone} style={{gridArea:zone,order:spec.mobileOrder.indexOf(zone)}} key={zone}>{(liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,zone)) ? liveSlots[zone] : <ZoneCard zone={zone} fixture={fixture} layoutId={layoutId} onAction={onZoneAction} onLayoutChange={setLayout}/>}</div>)}
       </div>
     </main>
