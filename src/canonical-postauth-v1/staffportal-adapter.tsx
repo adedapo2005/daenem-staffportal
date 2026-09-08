@@ -389,6 +389,10 @@ export function CanonicalStaffPortalAdapter(props: CanonicalStaffPortalAdapterPr
   const dashboardProps: CanonicalDashboardProps = fixtureMode
     ? {
       initialLayout: canonicalId,
+      // Keep the visual QA fixture identical to the explicit canonical
+      // baseline. The callback is intentionally inert; it only proves the
+      // approved chrome without granting fixture-mode business behavior.
+      onAskAi: () => undefined,
       onLayoutChange: (next) => window.dispatchEvent(new CustomEvent('daenem:canonical-layout-preview', { detail: next })),
     }
     : {

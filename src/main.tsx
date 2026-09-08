@@ -593,7 +593,7 @@ function CanonicalBaseline() {
     const requested = new URLSearchParams(window.location.search).get('layout') as StaffPortalLayoutId | null;
     return requested && CANONICAL_LAYOUT_IDS.includes(requested) ? requested : 'executive-command';
   });
-  return <CanonicalDashboard initialLayout={layoutId} fixture={CANONICAL_VISUAL_FIXTURE} onLayoutChange={setLayoutId} />;
+  return <CanonicalDashboard initialLayout={layoutId} fixture={CANONICAL_VISUAL_FIXTURE} onLayoutChange={setLayoutId} onAskAi={()=>undefined} />;
 }
 
 function Application() {
