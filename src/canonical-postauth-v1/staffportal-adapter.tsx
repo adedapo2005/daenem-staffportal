@@ -381,7 +381,7 @@ export function CanonicalStaffPortalAdapter(props: CanonicalStaffPortalAdapterPr
     const slots: Partial<Record<CanonicalZoneId, ReactNode>> = {};
     for (const zone of CANONICAL_ZONE_IDS) {
       if (zone === 'hero') slots[zone] = <CanonicalHero fixture={fixture} layoutId={canonicalId} />;
-      else if (zone === 'kpis') slots[zone] = <CanonicalKpis fixture={fixture} />;
+      else if (zone === 'kpis') slots[zone] = <CanonicalKpis fixture={fixture} layoutId={canonicalId} />;
       else slots[zone] = <LiveZoneCard zone={zone} freshness={fixture.sync} context={context} company={company} summary={summary} dataStatus={dataStatus} dataError={dataError} online={online} weather={weather} clock={clock} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} onOpenLayoutStudio={onOpenLayoutStudio} canUseLayoutStudio={canUseLayoutStudio} release={release} setReleaseOpen={setReleaseOpen} />;
     }
     return slots;
