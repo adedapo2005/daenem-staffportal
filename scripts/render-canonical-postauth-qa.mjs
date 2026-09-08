@@ -243,6 +243,8 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   const visible = e => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).display !== 'none';
   const grid=root.querySelector('.csp-grid'), gridStyle=getComputedStyle(grid);
   const failures=[],metrics=[],smallText=[],touchTargets=[];
+  const indeterminateProgressCount = root.querySelectorAll('progress:not([value])').length;
+  if (indeterminateProgressCount) failures.push('INDETERMINATE_PROGRESS');
   if(root.getAttribute('data-layout-id') !== expectedLayout)failures.push('WRONG_LAYOUT');
   if(innerWidth >= 768 && gridStyle.gridTemplateAreas === 'none')failures.push('INVALID_NAMED_GRID');
   if(document.documentElement.scrollWidth > innerWidth+1)failures.push('PAGE_HORIZONTAL_OVERFLOW');
@@ -273,7 +275,7 @@ async function capturePage(page, url, screenshotPath, requestedLayout, kind, vie
   const thin=touchTargets.filter(x=>x.width<24||x.height<24);
   // A target-size sample is evidence only; this is not a complete WCAG audit.
   const h1=root.querySelector('h1');
-  return {layout:expectedLayout,failures,viewport:[innerWidth,innerHeight],fonts,faceList,grid:{display:gridStyle.display,areas:gridStyle.gridTemplateAreas,columns:gridStyle.gridTemplateColumns,rows:gridStyle.gridTemplateRows,gap:gridStyle.gap,box:rect(grid)},zones,metrics,smallText,touchTargets,sub24Targets:thin,heading:h1?{fontFamily:getComputedStyle(h1).fontFamily,fontSize:getComputedStyle(h1).fontSize,weight:getComputedStyle(h1).fontWeight,box:rect(h1)}:null,referenceRuntime:globalThis.__CSP_REFERENCE_RUNTIME__||null};
+  return {layout:expectedLayout,failures,viewport:[innerWidth,innerHeight],fonts,faceList,grid:{display:gridStyle.display,areas:gridStyle.gridTemplateAreas,columns:gridStyle.gridTemplateColumns,rows:gridStyle.gridTemplateRows,gap:gridStyle.gap,box:rect(grid)},zones,metrics,smallText,touchTargets,sub24Targets:thin,indeterminateProgressCount,heading:h1?{fontFamily:getComputedStyle(h1).fontFamily,fontSize:getComputedStyle(h1).fontSize,weight:getComputedStyle(h1).fontWeight,box:rect(h1)}:null,referenceRuntime:globalThis.__CSP_REFERENCE_RUNTIME__||null};
 }, { expectedLayout: requestedLayout, expectedZones: layoutZones[requestedLayout] });
   metrics.v3Measurements = v3Measurements;
   await page.screenshot({ path: screenshotPath, fullPage: false });
