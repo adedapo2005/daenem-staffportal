@@ -5,7 +5,7 @@
 
 @media (min-width:1440px) and (max-width:2199px){
   .csp-layout-operational-cockpit .csp-hero-scene{background-image:linear-gradient(90deg,rgba(237,248,255,.96) 0%,rgba(235,248,255,.72) 30%,rgba(220,242,253,.1) 61%,rgba(222,243,253,.36) 100%),var(--csp-hero-photo)!important;background-size:cover!important;background-position:center 56%!important;filter:saturate(.96) brightness(1.05)}
-  .csp-layout-operational-cockpit .csp-hero-artwork{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:fill!important;opacity:1!important;mix-blend-mode:normal!important;filter:none!important}
+  .csp-layout-operational-cockpit .csp-hero-artwork{display:none!important}
   .csp-layout-operational-cockpit .csp-hero-glass{z-index:2!important;background:linear-gradient(90deg,rgba(255,255,255,.52),rgba(255,255,255,.08) 46%,rgba(226,245,255,.34))!important}
   .csp-layout-operational-cockpit .csp-map-topology{opacity:1!important;mix-blend-mode:normal!important;object-fit:cover!important;filter:saturate(.9) contrast(1.01)!important}
   .csp-layout-operational-cockpit .csp-map-art>span{left:65%!important;top:49%!important;padding:5px 8px!important;border:1px solid rgba(71,121,204,.14)!important;background:rgba(255,255,255,.9)!important;color:#164da2!important;box-shadow:0 5px 15px rgba(31,88,155,.16)!important}
@@ -48,11 +48,21 @@
   .csp-layout-operational-cockpit .csp-map-city-labels>span small{font-size:9px!important;line-height:1.05!important}
 }
 
-
 /* 4K containment: the responsive grid owns the hero scene at ultra-wide sizes. */
 @media (min-width:2200px){
   .csp-layout-operational-cockpit .csp-grid>.csp-hero{position:relative!important;overflow:hidden!important}
   .csp-layout-operational-cockpit .csp-hero-scene{position:absolute!important;inset:0!important;width:auto!important;height:auto!important;display:block!important;background-image:linear-gradient(90deg,rgba(237,248,255,.92) 0%,rgba(235,248,255,.68) 30%,rgba(220,242,253,.08) 61%,rgba(222,243,253,.28) 100%),var(--csp-hero-photo)!important;background-size:cover!important;background-position:center 60%!important}
   .csp-layout-operational-cockpit .csp-hero-artwork{display:none!important}
   .csp-layout-operational-cockpit .csp-hero-copy{position:relative!important;z-index:3!important}
+}
+
+/* Fail-closed integration copy stays inside the approved fixed row geometry. */
+.csp-layout-operational-cockpit .csp-operational-status>div{overflow:hidden!important}
+.csp-layout-operational-cockpit .csp-operational-status>div b,
+.csp-layout-operational-cockpit .csp-operational-status>div span{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+@media (max-width:1439px){
+  .csp-layout-operational-cockpit .csp-operational-status>div{grid-template-columns:11px minmax(0,1fr) minmax(0,88px)!important}
+}
+@media (max-width:767px){
+  .csp-layout-operational-cockpit .csp-operational-status>div{grid-template-columns:11px minmax(0,1fr) minmax(0,120px)!important}
 }
