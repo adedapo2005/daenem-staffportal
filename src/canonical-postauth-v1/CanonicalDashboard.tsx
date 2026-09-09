@@ -10,12 +10,13 @@ import { CANONICAL_VISUAL_FIXTURE } from './canonical-fixture';
 import { CANONICAL_LAYOUT_IDS, CANONICAL_LAYOUT_SPECS } from './layout-specs';
 import { formatPersonName, formatUiLabel, initialsFromPersonName } from './display-standards';
 import { FreshnessStatus } from './FreshnessStatus';
-import { normalizeWeatherCondition, weatherIconKind } from './weather-experience';
+import { normalizeWeatherTruthState, resolveWeatherVisualState, weatherIconKind, type WeatherTruthState } from './weather-experience';
 import './canonical-fonts';
 import './canonical-dashboard.css';
 import './sol-owner-fidelity.css';
 import './operational-owner-fidelity.css';
 import './premium-postauth-motion.css';
+import './batch1-layouts-fidelity.css';
 
 const nav = [
   ['Dashboard', LayoutDashboard], ['People & Teams', Users], ['Operations', Gauge], ['Projects', BriefcaseBusiness],
@@ -40,10 +41,11 @@ const zoneTitles: Partial<Record<CanonicalZoneId, string>> = {
   'quick-actions': 'Quick Actions', status: 'System Status', announcement: 'Latest Announcements',
 };
 
-type WeatherIconProps = { condition?: string | null; size: number; staticMotion?: boolean };
+type WeatherIconProps = { condition?: string | null; size: number; staticMotion?: boolean; truthState?: WeatherTruthState };
 
-function WeatherIcon({ condition, size, staticMotion = false }: WeatherIconProps) {
-  const kind = weatherIconKind(normalizeWeatherCondition(condition));
+function WeatherIcon({ condition, size, staticMotion = false, truthState }: WeatherIconProps) {
+  const visual = resolveWeatherVisualState(condition, truthState ?? normalizeWeatherTruthState(condition));
+  const kind = weatherIconKind(visual.condition);
   const Icon = kind === 'thunderstorm' ? CloudLightning
     : kind === 'heavy-rain' || kind === 'rain' || kind === 'light-rain' ? CloudRain
       : kind === 'snow' ? CloudSnow
@@ -53,7 +55,7 @@ function WeatherIcon({ condition, size, staticMotion = false }: WeatherIconProps
               : kind === 'cloudy' || kind === 'overcast' || kind === 'unknown' || kind === 'unavailable' ? Cloud
                 : kind === 'sunny' ? Sun
                   : CloudSun;
-  return <Icon size={size} className={`csp-weather-icon csp-weather-icon-${kind}${staticMotion ? ' csp-weather-icon--static' : ''}`} aria-hidden="true"/>;
+  return <Icon size={size} className={`csp-weather-icon csp-weather-icon-${kind} csp-weather-state-${visual.state.toLowerCase()}${staticMotion || !visual.state || visual.state !== 'READY' ? ' csp-weather-icon--static' : ''}`} aria-hidden="true" data-weather-state={visual.state}/>;
 }
 
 const heroArtworkPaths: Record<StaffPortalLayoutId, string> = {
@@ -170,7 +172,7 @@ function TopBar({ fixture, layoutId, onLayoutChange, onWorkspace, onSearch, onAs
       selectorRef.current?.querySelector<HTMLButtonElement>('.csp-layout-trigger')?.focus();
     }
   };
-  const operationalSelector = layoutId === 'operational-cockpit';
+  const customSelector = layoutId === 'operational-cockpit' || layoutId === 'insight-magazine' || layoutId === 'master-detail-workspace';
   return <header className="csp-topbar" data-canonical-topbar>
     <div className="csp-brand"><span className="csp-brand-mark"><img src="/brand-assets/logo-mark.svg" alt="" /></span><span><b>STAFFPORTAL.DAENEM.COM</b><small>People · Systems · A Stronger Tomorrow</small></span></div>
     <button type="button" className="csp-workspace" onClick={onWorkspace}><BriefcaseBusiness size={16}/><span><b>{fixture.workspace.name}</b><small>{fixture.workspace.subtitle}</small></span></button>
@@ -182,7 +184,7 @@ function TopBar({ fixture, layoutId, onLayoutChange, onWorkspace, onSearch, onAs
       <span className="csp-weather-chip"><WeatherIcon condition={fixture.weather.condition} size={18}/><span><b>{layoutId === 'executive-command' ? fixture.weather.city : (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`)}</b><small>{layoutId === 'executive-command' ? (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C · ${fixture.weather.condition}`) : fixture.weather.city}</small></span></span>
       <FreshnessStatus sync={fixture.sync} variant="topbar"/>
       <span className="csp-release"><b>{fixture.release.version}</b><small>{fixture.release.label}</small></span>
-      {operationalSelector ? <div className={`csp-layout-select${layoutOpen ? ' is-open' : ''}`} ref={selectorRef}>
+      {customSelector ? <div className={`csp-layout-select${layoutOpen ? ' is-open' : ''}`} ref={selectorRef}>
         <button type="button" className="csp-layout-trigger" aria-haspopup="listbox" aria-expanded={layoutOpen} aria-controls="canonical-layout-options" onClick={()=>layoutOpen ? setLayoutOpen(false) : openLayoutMenu()} onKeyDown={onTriggerKeyDown}>
           <Grid3X3 size={16}/><span className="csp-layout-current">{CANONICAL_LAYOUT_SPECS[layoutId].name}</span><ChevronDown size={13} aria-hidden="true"/>
         </button>
@@ -232,7 +234,10 @@ function LayoutRibbon({ layoutId, onAction }: { layoutId: StaffPortalLayoutId; o
       <label>Type<select aria-label="Record Type" onChange={()=>onAction?.('master-list','filter-type')}><option>All Types</option></select></label>
       <label>Status<select aria-label="Record Status" onChange={()=>onAction?.('master-list','filter-status')}><option>All Statuses</option></select></label>
       <label>Owner<select aria-label="Record Owner" onChange={()=>onAction?.('master-list','filter-owner')}><option>All Owners</option></select></label>
+      <label>Period<select aria-label="Record Period" onChange={()=>onAction?.('master-list','filter-period')}><option>This Month</option></select></label>
       <label className="csp-ribbon-search"><Search size={14}/><input aria-label="Search Authorized Records" placeholder="Search Records" onChange={()=>onAction?.('master-list','search')}/></label>
+      <button type="button" className="csp-ribbon-icon" aria-label="Open Record Filters" onClick={()=>onAction?.('master-list','open-filters')}><Settings2 size={15}/></button>
+      <button type="button" className="csp-ribbon-icon" aria-label="More Record Options" onClick={()=>onAction?.('master-list','more-options')}><MoreHorizontal size={15}/></button>
     </section>;
   }
   if (layoutId === 'adaptive-bento') {
@@ -279,7 +284,7 @@ function WorkspaceHero({ fixture, onLayoutChange }: { fixture: CanonicalFixture;
 }
 
 function InsightHero({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
-  return <section className="csp-hero csp-insight-hero" data-zone="hero"><img src="/reference-images/signin/daylight-glass-skyline.webp" alt="" aria-hidden="true"/><div className="csp-insight-hero-wash" aria-hidden="true"/><div className="csp-insight-hero-copy"><span>Featured Insight</span><h1>People<br/>Create<br/>Brighter<br/>Tomorrows</h1><p>People, projects and technology are shaping a more connected, sustainable and prosperous future.</p><button type="button" onClick={()=>onAction?.('hero','read-story')}>Read The Full Story <ChevronRight size={14}/></button></div><blockquote><b>“</b><span>Progress Happens<br/>When People Believe<br/>Tomorrow Can Be Better<br/>Than Today.</span><i/><small>Daenem Global</small></blockquote><footer><span>01 Our People</span><span>02 Smarter Operations</span><span>03 Sustainable Growth</span><span>04 Global Opportunities</span></footer></section>;
+  return <section className="csp-hero csp-insight-hero" data-zone="hero"><img src="/canonical-postauth-v3/executive-command/hero-skyline-photographic-v2.webp" alt="" aria-hidden="true"/><div className="csp-insight-hero-wash" aria-hidden="true"/><div className="csp-insight-hero-copy"><span>Featured Insight</span><h1>People<br/>Create<br/>Brighter<br/>Tomorrows</h1><p>People, projects and technology are shaping a more connected, sustainable and prosperous future.</p><button type="button" onClick={()=>onAction?.('hero','read-story')}>Read The Full Story <ChevronRight size={14}/></button></div><blockquote><b>“</b><span>Progress Happens<br/>When People Believe<br/>Tomorrow Can Be Better<br/>Than Today.</span><i/><small>Daenem Global</small></blockquote><footer><span>01 Our People</span><span>02 Smarter Operations</span><span>03 Sustainable Growth</span><span>04 Global Opportunities</span></footer></section>;
 }
 
 export function CanonicalHero({ fixture, layoutId, onLayoutChange, onAction }: { fixture: CanonicalFixture; layoutId: StaffPortalLayoutId; onLayoutChange?: (id: StaffPortalLayoutId)=>void; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
@@ -402,7 +407,7 @@ const editorialStories = [
 ] as const;
 
 function InsightStory({ onAction }: { onAction?: (zone: CanonicalZoneId, action: string) => void }) {
-  return <article className="csp-card csp-story csp-insight-spotlight" data-zone="insight-story"><img src="/reference-images/signin/daylight-technology-campus.webp" alt="" aria-hidden="true"/><div className="csp-insight-spotlight-wash" aria-hidden="true"/><section><span>Today’s Spotlight</span><small>A Stronger Tomorrow</small><h2>From Ideas<br/>To Real Impact</h2><p>Cross-functional teams turn bold ideas into meaningful outcomes.</p><button type="button" onClick={()=>onAction?.('insight-story','open-story')}>Explore The Story <ChevronRight size={14}/></button></section><em aria-hidden="true">People<br/>Ideas<br/>Impact</em></article>;
+  return <article className="csp-card csp-story csp-insight-spotlight" data-zone="insight-story"><img src="/canonical-postauth-v3/horizon-wide/singapore-panorama-owner-v1.webp" alt="" aria-hidden="true"/><div className="csp-insight-spotlight-wash" aria-hidden="true"/><section><span>Today’s Spotlight</span><small>A Stronger Tomorrow</small><h2>From Ideas<br/>To Real Impact</h2><p>Cross-functional teams turn bold ideas into meaningful outcomes.</p><button type="button" onClick={()=>onAction?.('insight-story','open-story')}>Explore The Story <ChevronRight size={14}/></button></section><em aria-hidden="true">People<br/>Ideas<br/>Impact</em></article>;
 }
 
 function GlobalOperationsPanel({ fixture }: { fixture: CanonicalFixture }) {
@@ -713,7 +718,7 @@ function MasterDetailSurface({ fixture, onAction }: { fixture: CanonicalFixture;
   ] as const;
   return <article className="csp-card csp-detail csp-master-detail-surface" data-zone="master-detail">
     <section className="csp-detail-banner">
-      <img src="/reference-images/signin/daylight-glass-skyline.webp" alt="" aria-hidden="true"/>
+      <img src="/canonical-postauth-v3/executive-command/hero-skyline-photographic-v2.webp" alt="" aria-hidden="true"/>
       <div className="csp-detail-banner-copy"><i><Monitor size={21}/></i><span className="csp-eyebrow">Selected Record</span><h2>Selected Record</h2><p>{fixture.workspace.subtitle}</p><footer><span>Authorized Scope</span><span>Record Data: Not Available</span><span>{fixture.workspace.name}</span></footer></div>
       <div className="csp-detail-banner-actions"><button type="button" onClick={()=>onAction?.('master-detail','share')}>Share</button><button type="button" onClick={()=>onAction?.('master-detail','edit')}>Edit</button><button type="button" onClick={()=>onAction?.('master-detail','more')}><MoreHorizontal size={14}/> More</button></div>
     </section>
@@ -797,7 +802,7 @@ function InsightRightContext({ fixture, onAction }: { fixture: CanonicalFixture;
   return <article className="csp-insight-right-context" data-zone="weather"><section className="csp-insight-presence"><header><span><Globe2 size={17}/><b>Global Presence</b></span><button type="button" onClick={()=>onAction?.('weather','view-presence')}>View Details</button></header><div><span className="csp-insight-presence-map" aria-hidden="true"><img src="/canonical-postauth-v3/shared/world-operations-map.svg" alt=""/></span><aside>{fixture.worldTimes.map((item,index)=><span key={item.city}><i className={`tone-${index}`}/><b>{item.city}</b><small>{item.time}</small></span>)}</aside></div></section><section className="csp-insight-weather"><header><span><WeatherIcon condition={fixture.weather.condition} size={17}/><b>{fixture.weather.city} Weather</b></span></header><div><WeatherIcon condition={fixture.weather.condition} size={64}/><span><small>{fixture.weather.condition}</small><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><em>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h</em></span></div><footer>{['Fri','Sat','Sun','Mon'].map(day=><span key={day}><small>{day}</small><WeatherIcon condition={fixture.weather.condition} size={17} staticMotion/><b>Not Available</b></span>)}</footer></section></article>;
 }
 function InsightQuickAi({ onAction }: { onAction?: (zone: CanonicalZoneId, action: string) => void }) {
-  const actions = [['Create Project',Plus],['Add Staff',Users],['New Document',FileText],['Request Approval',CheckCircle2]] as const;
+  const actions = [['Create Project',Plus],['New Document',FileText],['Request Approval',CheckCircle2],['Run Report',BarChart3]] as const;
   return <article className="csp-insight-quick-ai" data-zone="quick-actions"><section><header><b>Quick Actions</b><button type="button" onClick={()=>onAction?.('quick-actions','customize')}>Customize</button></header><div>{actions.map(([label,Icon])=><button type="button" key={label} onClick={()=>onAction?.('quick-actions',label.toLowerCase().replaceAll(' ','-'))}><Icon size={15}/><span>{label}</span></button>)}</div></section><section><header><span><Sparkles size={16}/><b>Ask Daenem AI</b></span><em>BETA</em></header><form onSubmit={(event)=>{event.preventDefault();onAction?.('quick-actions','ask-ai')}}><input aria-label="Ask Daenem AI" placeholder="Ask anything about your organisation..."/><button type="submit" aria-label="Send"><ChevronRight size={14}/></button></form></section></article>;
 }
 function InsightPurposeStrip({ fixture }: { fixture: CanonicalFixture }) {
@@ -940,7 +945,12 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
   if (zone==='knowledge') return <article className="csp-card csp-list" data-zone={zone}><header><span><BookOpen size={17}/><b>{title}</b></span><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{['Expense Claims Policy','Onboarding Guide','IT Support & Systems','Project Management Playbook'].map(x=><div key={x}><FileText size={15}/><span><b>{x}</b><small>Updated Reference</small></span><ChevronRight size={14}/></div>)}</article>;
   if (zone==='status' && layoutId==='adaptive-bento') return <AdaptiveAiForYou fixture={fixture} onAction={onAction}/>;
   if (zone==='status' && layoutId==='operational-cockpit') return <OperationalStatusSurface fixture={fixture}/>;
-  if (zone==='status') return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17}/><b>{title}</b></span><em>{fixture.kpis[4]?.value ?? 'Not Available'} Uptime</em></header>{['Core Platform','File Storage','Authentication','Email Services'].map(x=><div key={x}><i/><b>{x}</b><span>{layoutId==='executive-command'?'Operational':'Not Available'}</span></div>)}</article>;
+  if (zone==='status') {
+    const statusEntries = layoutId === 'master-detail-workspace'
+      ? Array.from({length:4},(_,index)=>({key:`unavailable-${index}`,label:'Not Available',state:'Authorized Integration Data Unavailable'}))
+      : ['Core Platform','File Storage','Authentication','Email Services'].map(label=>({key:label,label,state:layoutId==='executive-command'?'Operational':'Not Available'}));
+    return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17}/><b>{title}</b></span><em>{fixture.kpis[4]?.value ?? 'Not Available'} Uptime</em></header>{statusEntries.map(entry=><div key={entry.key}><i/><b>{entry.label}</b><span>{entry.state}</span></div>)}</article>;
+  }
   if (zone==='announcement' && layoutId==='executive-command') return <ExecutiveFooter fixture={fixture} onAction={onAction} onLayoutChange={onLayoutChange}/>;
   if (zone==='announcement' && layoutId==='operational-cockpit') return <OperationalAiBar onAction={onAction}/>;
   if (zone==='announcement' && layoutId==='horizon-wide') return <HorizonPurposeBanner/>;
@@ -957,6 +967,12 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
 export function CanonicalDashboard({ initialLayout='executive-command', fixture=CANONICAL_VISUAL_FIXTURE, liveSlots, onLayoutChange, onWorkspace, onSearch, onAskAi, onQuickCreate, onNotifications, onProfile, navigation, activeNavigationId, onZoneAction }: CanonicalDashboardProps) {
   const [layoutId, setLayoutId] = useState<StaffPortalLayoutId>(initialLayout);
   useEffect(() => { setLayoutId(initialLayout); }, [initialLayout]);
+  const qaWeatherCondition = import.meta.env.DEV && import.meta.env.VITE_CANONICAL_QA_FIXTURE === 'true' && typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('weather')
+    : null;
+  const renderFixture = qaWeatherCondition
+    ? { ...fixture, weather: { ...fixture.weather, condition: qaWeatherCondition } }
+    : fixture;
   const spec = CANONICAL_LAYOUT_SPECS[layoutId];
   const qaFixtureAskAi = import.meta.env.DEV && import.meta.env.VITE_CANONICAL_QA_FIXTURE === 'true' && layoutId === 'operational-cockpit'
     ? () => onZoneAction?.('ai-insights','ask-ai')
@@ -964,13 +980,13 @@ export function CanonicalDashboard({ initialLayout='executive-command', fixture=
   const setLayout = (id: StaffPortalLayoutId) => { setLayoutId(id); onLayoutChange?.(id); };
   const style = useMemo(()=>({ '--csp-wide-rows': spec.wideRowMinimums.map(h=>`minmax(${h}px, auto)`).join(' '), '--csp-desktop-areas': spec.desktopGridAreas.map(x=>`\"${x}\"`).join(' '), '--csp-tablet-areas': spec.tabletGridAreas.map(x=>`\"${x}\"`).join(' ') }) as CSSProperties,[spec]);
   return <div className={`csp-root csp-layout-${layoutId} csp-nav-${spec.navMode}`} data-canonical-staffportal-dashboard data-layout-id={layoutId} style={style}>
-    <TopBar fixture={fixture} layoutId={layoutId} onLayoutChange={setLayout} onWorkspace={onWorkspace} onSearch={onSearch} onAskAi={onAskAi ?? qaFixtureAskAi} onQuickCreate={onQuickCreate} onNotifications={onNotifications} onProfile={onProfile}/>
+    <TopBar fixture={renderFixture} layoutId={layoutId} onLayoutChange={setLayout} onWorkspace={onWorkspace} onSearch={onSearch} onAskAi={onAskAi ?? qaFixtureAskAi} onQuickCreate={onQuickCreate} onNotifications={onNotifications} onProfile={onProfile}/>
     <SideNav layoutId={layoutId} navigation={navigation} activeNavigationId={activeNavigationId}/>
     <main className="csp-content">
       <LayoutRibbon layoutId={layoutId} onAction={onZoneAction}/>
       <div className="csp-grid">
-        {spec.zones.includes('hero') && ((liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,'hero')) ? liveSlots.hero : <CanonicalHero fixture={fixture} layoutId={layoutId} onLayoutChange={setLayout} onAction={onZoneAction}/>)}
-        {spec.zones.filter(z=>z!=='hero').map(zone=><div className="csp-zone" data-zone-shell={zone} style={{gridArea:zone,order:spec.mobileOrder.indexOf(zone)}} key={zone}>{(liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,zone)) ? liveSlots[zone] : <ZoneCard zone={zone} fixture={fixture} layoutId={layoutId} onAction={onZoneAction} onLayoutChange={setLayout}/>}</div>)}
+        {spec.zones.includes('hero') && ((liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,'hero')) ? liveSlots.hero : <CanonicalHero fixture={renderFixture} layoutId={layoutId} onLayoutChange={setLayout} onAction={onZoneAction}/>)}
+        {spec.zones.filter(z=>z!=='hero').map(zone=><div className="csp-zone" data-zone-shell={zone} style={{gridArea:zone,order:spec.mobileOrder.indexOf(zone)}} key={zone}>{(liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,zone)) ? liveSlots[zone] : <ZoneCard zone={zone} fixture={renderFixture} layoutId={layoutId} onAction={onZoneAction} onLayoutChange={setLayout}/>}</div>)}
       </div>
     </main>
   </div>;

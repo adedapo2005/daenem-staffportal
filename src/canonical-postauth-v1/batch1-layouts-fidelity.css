@@ -1,0 +1,216 @@
+/*
+ * Batch 1 visual fidelity layer.
+ *
+ * This file is deliberately limited to Layout 04 and Layout 05.  It owns
+ * editorial/master-detail presentation only; the shared data, permissions,
+ * truth and navigation contracts remain in CanonicalDashboard.
+ */
+
+.csp-layout-insight-magazine .csp-layout-select,
+.csp-layout-master-detail-workspace .csp-layout-select{
+  position:relative;
+  z-index:80;
+  overflow:visible!important;
+  isolation:isolate;
+}
+.csp-layout-insight-magazine .csp-layout-current,
+.csp-layout-master-detail-workspace .csp-layout-current{
+  display:block!important;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.csp-layout-insight-magazine .csp-layout-select{width:184px;min-width:184px}
+.csp-layout-master-detail-workspace .csp-layout-select{width:178px;min-width:178px}
+.csp-layout-insight-magazine .csp-layout-menu,
+.csp-layout-master-detail-workspace .csp-layout-menu{
+  width:196px;
+  max-height:178px;
+  padding:7px;
+  border-radius:10px;
+  box-shadow:0 18px 38px rgba(29,56,111,.18),0 2px 8px rgba(29,56,111,.08);
+}
+.csp-layout-master-detail-workspace .csp-layout-menu{width:214px;max-height:182px}
+.csp-layout-insight-magazine .csp-layout-option,
+.csp-layout-master-detail-workspace .csp-layout-option{height:27px;min-height:27px;font-size:10px}
+
+/* Approved Insight Magazine is a photo-led editorial surface.  The existing
+   Singapore panorama is decorative only; all headlines and actions remain
+   live UI. */
+.csp-layout-insight-magazine .csp-insight-hero>img{
+  object-position:center 50%;
+  filter:saturate(1.08) contrast(1.04) brightness(1.03);
+}
+.csp-layout-insight-magazine .csp-insight-hero-wash{
+  background:
+    linear-gradient(90deg,rgba(17,74,157,.94) 0%,rgba(21,92,176,.72) 33%,rgba(22,83,151,.18) 61%,rgba(247,250,255,.72) 100%),
+    linear-gradient(180deg,rgba(255,255,255,.02),rgba(12,51,111,.18));
+}
+.csp-layout-insight-magazine .csp-insight-hero-copy h1{
+  letter-spacing:-.045em;
+  text-shadow:0 2px 18px rgba(10,44,103,.18);
+}
+.csp-layout-insight-magazine .csp-insight-hero blockquote{
+  text-shadow:0 1px 8px rgba(255,255,255,.18);
+}
+.csp-layout-insight-magazine .csp-insight-spotlight>img{
+  object-position:68% 52%;
+  filter:saturate(1.04) contrast(1.03) brightness(1.04);
+}
+.csp-layout-insight-magazine .csp-insight-spotlight-wash{
+  background:linear-gradient(90deg,rgba(255,255,255,.96) 0 46%,rgba(255,255,255,.2) 72%,rgba(19,62,116,.2));
+}
+.csp-layout-insight-magazine .csp-insight-feature-story>img{
+  object-position:center 46%;
+  filter:saturate(1.03) contrast(1.02);
+}
+.csp-layout-insight-magazine .csp-insight-purpose{
+  background-image:linear-gradient(90deg,rgba(8,36,81,.92),rgba(24,80,142,.52),rgba(112,140,214,.58)),url('/canonical-postauth-v3/workspace-canvas/project-mountain-owner-v1.webp');
+  background-position:center 54%;
+}
+.csp-layout-insight-magazine .csp-insight-data-chart{
+  position:relative;
+  overflow:hidden;
+  border-radius:7px;
+  background:
+    repeating-linear-gradient(to bottom,rgba(47,111,231,.11) 0 1px,transparent 1px 28px),
+    repeating-linear-gradient(to right,rgba(47,111,231,.06) 0 1px,transparent 1px 56px),
+    linear-gradient(180deg,rgba(238,247,255,.42),rgba(255,255,255,.72));
+}
+.csp-layout-insight-magazine .csp-insight-data-chart .csp-chart{color:#2873e9;filter:drop-shadow(0 4px 7px rgba(40,115,233,.15))}
+.csp-layout-insight-magazine .csp-insight-latest-grid{background:linear-gradient(145deg,#fff,#f7fbff)}
+.csp-layout-insight-magazine .csp-insight-brief .csp-brief-lead{background:linear-gradient(135deg,#eeeaff,#eef8ff);box-shadow:inset 0 1px rgba(255,255,255,.92)}
+.csp-layout-insight-magazine .csp-insight-quick-ai>section:first-child>div button{background:linear-gradient(145deg,#f4f8ff,#e7f1ff);box-shadow:inset 0 1px rgba(255,255,255,.9)}
+.csp-layout-insight-magazine .csp-insight-right-context header button,
+.csp-layout-insight-magazine .csp-insight-quick-ai header button,
+.csp-layout-insight-magazine .csp-insight-data-story>header button,
+.csp-layout-insight-magazine .csp-insight-latest>header button,
+.csp-layout-insight-magazine .csp-insight-brief>header button,
+.csp-layout-insight-magazine .csp-insight-brief-highlights header button{
+  appearance:none;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#1764d0!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:2px 0!important;
+  font:700 9px/1 var(--csp-font)!important;
+}
+
+/* Master–Detail keeps the approved two-pane relationship, but uses the
+   authorized scenic asset and a clearer photographic depth treatment. */
+.csp-layout-master-detail-workspace .csp-detail-banner{
+  background-image:none!important;
+  background-color:#dceeff;
+}
+.csp-layout-master-detail-workspace .csp-detail-banner>img{
+  object-position:center 50%;
+  opacity:1!important;
+  mix-blend-mode:normal!important;
+  filter:saturate(1.04) contrast(1.03) brightness(1.03);
+}
+.csp-layout-master-detail-workspace .csp-detail-banner:after{
+  background:linear-gradient(90deg,rgba(245,251,255,.96) 0%,rgba(245,251,255,.78) 28%,rgba(245,251,255,.12) 58%,rgba(24,87,159,.18) 100%)!important;
+}
+.csp-layout-master-detail-workspace .csp-detail-banner-copy h2{
+  letter-spacing:-.035em;
+}
+.csp-layout-master-detail-workspace .csp-master>button.selected{
+  background:linear-gradient(90deg,#e7f1ff,#f9fbff)!important;
+  box-shadow:inset 3px 0 #2d70ee,0 7px 16px rgba(47,91,231,.08)!important;
+}
+.csp-layout-master-detail-workspace .csp-master-record-track>i{background:linear-gradient(90deg,#2476ea,#51b8ef)}
+.csp-layout-master-detail-workspace .csp-master-ribbon .csp-ribbon-icon{
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid rgba(42,64,112,.12);
+  border-radius:8px;
+  background:#fff;
+  color:#4c6da6;
+}
+.csp-layout-master-detail-workspace .csp-master-ribbon label{padding-left:7px}
+.csp-layout-master-detail-workspace .csp-master-ribbon .csp-ribbon-search{width:196px}
+.csp-layout-master-detail-workspace .csp-detail-kpis span{background:linear-gradient(145deg,#fff,#f8fbff)}
+.csp-layout-master-detail-workspace .csp-detail-progress-chart{
+  overflow:hidden;
+  border-radius:8px;
+  background:
+    repeating-linear-gradient(to bottom,rgba(47,91,231,.1) 0 1px,transparent 1px 28px),
+    repeating-linear-gradient(to right,rgba(47,91,231,.055) 0 1px,transparent 1px 58px),
+    rgba(247,250,255,.7);
+}
+
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-insight-magazine .csp-layout-select{height:38px}
+  .csp-layout-master-detail-workspace .csp-layout-select{height:38px}
+  .csp-layout-insight-magazine .csp-layout-menu{top:calc(100% + 7px)}
+  .csp-layout-master-detail-workspace .csp-layout-menu{top:calc(100% + 7px)}
+  .csp-layout-master-detail-workspace .csp-master-ribbon{gap:6px}
+  .csp-layout-master-detail-workspace .csp-master-ribbon label{font-size:9px}
+}
+
+/* A deliberate tablet transformation keeps master and detail readable at
+   768px; the desktop split is retained at larger tablet widths. */
+@media (min-width:768px) and (max-width:860px){
+  .csp-layout-master-detail-workspace .csp-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:
+      "master-list"
+      "master-detail"
+      "activity"
+      "approvals"
+      "ai-insights"
+      "status"
+      "knowledge"
+      "quick-actions"
+      "world-time"
+      "announcement"!important;
+    grid-template-rows:auto!important;
+  }
+  .csp-layout-master-detail-workspace .csp-master{max-height:none;min-height:520px}
+  .csp-layout-master-detail-workspace .csp-detail{min-height:700px!important}
+  .csp-layout-master-detail-workspace .csp-master-ribbon{overflow-x:auto;padding-inline:8px}
+  .csp-layout-master-detail-workspace .csp-master-ribbon>div{margin-right:4px}
+  .csp-layout-master-detail-workspace .csp-master-ribbon label{flex:0 0 auto}
+  .csp-layout-master-detail-workspace .csp-master-ribbon .csp-ribbon-search{width:180px}
+}
+
+@media (min-width:861px) and (max-width:1100px){
+  .csp-layout-master-detail-workspace .csp-master-ribbon{gap:5px;overflow-x:auto}
+  .csp-layout-master-detail-workspace .csp-master-ribbon>div{margin-right:4px}
+  .csp-layout-master-detail-workspace .csp-master-ribbon label{flex:0 0 auto}
+  .csp-layout-master-detail-workspace .csp-master-ribbon .csp-ribbon-search{width:160px}
+}
+
+@media (max-width:767px){
+  .csp-layout-insight-magazine .csp-layout-select,
+  .csp-layout-master-detail-workspace .csp-layout-select{width:132px;min-width:132px}
+  .csp-layout-insight-magazine .csp-layout-trigger,
+  .csp-layout-master-detail-workspace .csp-layout-trigger{font-size:9px;padding-inline:6px}
+  .csp-layout-insight-magazine .csp-layout-menu,
+  .csp-layout-master-detail-workspace .csp-layout-menu{right:-4px;width:190px;max-height:170px}
+  .csp-layout-master-detail-workspace .csp-master-ribbon{height:auto;min-height:48px;align-items:flex-start;padding-block:8px}
+  .csp-layout-master-detail-workspace .csp-master-ribbon>div{margin-right:0}
+  .csp-layout-master-detail-workspace .csp-master-ribbon label,
+  .csp-layout-master-detail-workspace .csp-master-ribbon .csp-ribbon-search,
+  .csp-layout-master-detail-workspace .csp-master-ribbon .csp-ribbon-icon{display:none}
+  .csp-layout-insight-magazine .csp-insight-hero>img{object-position:center 50%}
+  .csp-layout-master-detail-workspace .csp-detail-banner>img{object-position:center 50%}
+}
+
+@media (min-width:3200px){
+  .csp-layout-insight-magazine .csp-insight-hero>img,
+  .csp-layout-master-detail-workspace .csp-detail-banner>img{filter:saturate(1.04) contrast(1.03) brightness(1.04)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .csp-layout-insight-magazine .csp-layout-menu,
+  .csp-layout-master-detail-workspace .csp-layout-menu{animation:none!important}
+}
