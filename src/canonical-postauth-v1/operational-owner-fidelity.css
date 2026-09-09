@@ -66,3 +66,1106 @@
 @media (max-width:767px){
   .csp-layout-operational-cockpit .csp-operational-status>div{grid-template-columns:11px minmax(0,1fr) minmax(0,120px)!important}
 }
+
+/* Cycle 2: interaction, chart and fail-closed row primitives. These remain
+   layout-scoped so the accepted Executive and Workspace surfaces do not
+   inherit any geometry or presentation changes. */
+.csp-layout-operational-cockpit .csp-team-filters{
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  margin:0 0 6px!important;
+  padding:3px!important;
+  border:1px solid #e4ecf7!important;
+  border-radius:9px!important;
+  background:#f7faff!important;
+  overflow:auto hidden!important;
+  scrollbar-width:none;
+}
+.csp-layout-operational-cockpit .csp-team-filters::-webkit-scrollbar{display:none}
+.csp-layout-operational-cockpit .csp-team-filters button{
+  min-width:max-content!important;
+  min-height:27px!important;
+  height:27px!important;
+  padding:0 11px!important;
+  border:1px solid transparent!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:#536a90!important;
+  font:700 9px/1 var(--csp-font)!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-team-filters button.active{
+  border-color:#2f7df0!important;
+  background:linear-gradient(135deg,#2e87f4,#2d70ed)!important;
+  color:#fff!important;
+  box-shadow:0 4px 10px rgba(47,125,240,.22)!important;
+}
+.csp-layout-operational-cockpit .csp-team-head b{
+  min-width:0!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-team-table>button>*{min-width:0!important}
+.csp-layout-operational-cockpit .csp-team-table>button b,
+.csp-layout-operational-cockpit .csp-team-table>button small,
+.csp-layout-operational-cockpit .csp-team-table>button em{
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart{
+  position:relative!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart>svg{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart path{
+  fill:none!important;
+  vector-effect:non-scaling-stroke;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.csp-layout-operational-cockpit .csp-operations-chart path.grid{stroke:#dce7f5!important;stroke-width:1!important}
+.csp-layout-operational-cockpit .csp-operations-chart path.line{stroke:#2479ed!important;stroke-width:2.25!important}
+.csp-layout-operational-cockpit .csp-operations-chart path.tasks{stroke:#7b50dd!important}
+.csp-layout-operational-cockpit .csp-operations-chart path.response{stroke:#f09a25!important}
+.csp-layout-operational-cockpit .csp-operations-chart .points{fill:#fff!important;stroke:#2479ed!important;stroke-width:2!important}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector{
+  position:absolute!important;
+  z-index:8!important;
+  left:54.5%!important;
+  top:22%!important;
+  width:18px!important;
+  height:18px!important;
+  min-height:18px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:transparent!important;
+  color:#fff!important;
+  outline:0!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector>i{
+  width:10px!important;
+  height:10px!important;
+  border:2px solid #fff!important;
+  border-radius:50%!important;
+  background:#28d8ca!important;
+  box-shadow:0 0 0 5px rgba(40,216,202,.22),0 0 12px rgba(40,216,202,.42)!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector>span{
+  position:absolute!important;
+  left:14px!important;
+  top:8px!important;
+  width:154px!important;
+  display:grid!important;
+  gap:4px!important;
+  padding:9px 11px!important;
+  border:1px solid #dbe5f4!important;
+  border-radius:8px!important;
+  background:rgba(255,255,255,.98)!important;
+  color:#314668!important;
+  box-shadow:0 10px 24px rgba(29,58,112,.18)!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  transform:translateY(4px)!important;
+  pointer-events:none!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector:hover>span,
+.csp-layout-operational-cockpit .csp-operations-chart-inspector:focus-visible>span,
+.csp-layout-operational-cockpit.csp-qa-tooltip-open .csp-operations-chart-inspector>span{
+  opacity:1!important;
+  visibility:visible!important;
+  transform:none!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector strong{
+  color:#1c315f!important;
+  font:800 10px/1.15 var(--csp-heading)!important;
+  text-align:left!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector small{
+  display:grid!important;
+  grid-template-columns:7px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:5px!important;
+  color:#667997!important;
+  font:600 9px/1.15 var(--csp-font)!important;
+  text-align:left!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector small>i{
+  width:6px!important;
+  height:6px!important;
+  border-radius:50%!important;
+  background:#2479ed!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector small>i.tasks{background:#7b50dd!important}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector small>i.response{background:#f09a25!important}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector small>b{color:#1d315e!important;font-size:9px!important}
+.csp-layout-operational-cockpit .csp-operational-status>div{
+  grid-template-columns:11px minmax(76px,.72fr) minmax(0,1.28fr)!important;
+  gap:7px!important;
+  overflow:hidden!important;
+}
+.csp-layout-operational-cockpit .csp-operational-status>div b,
+.csp-layout-operational-cockpit .csp-operational-status>div span{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+}
+
+/* Primary authority frame: measured 1672 x 941 composition. */
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-root.csp-layout-operational-cockpit .csp-top-actions{
+    display:grid!important;
+    grid-template-columns:168px 134px 126px 40px 112px minmax(150px,1fr)!important;
+    align-items:center!important;
+    justify-content:stretch!important;
+    gap:7px!important;
+    min-width:0!important;
+  }
+  .csp-layout-operational-cockpit .csp-top-actions>*{min-width:0!important;margin:0!important}
+  .csp-layout-operational-cockpit .csp-layout-select{
+    width:100%!important;
+    height:40px!important;
+    padding:0 10px!important;
+    border:0!important;
+    border-radius:11px!important;
+    background:linear-gradient(135deg,#315cdb,#155fce)!important;
+    color:#fff!important;
+    box-shadow:0 7px 17px rgba(37,77,188,.27)!important;
+  }
+  .csp-layout-operational-cockpit .csp-layout-select>svg{display:block!important;color:#fff!important;flex:0 0 16px!important}
+  .csp-layout-operational-cockpit .csp-layout-select select{width:100%!important;max-width:none!important;color:#fff!important;font-size:10px!important}
+  .csp-layout-operational-cockpit .csp-layout-select select option{color:#183568!important;background:#fff!important}
+  .csp-layout-operational-cockpit .csp-ai{width:100%!important;height:40px!important;padding:0 11px!important;justify-content:center!important;border-radius:11px!important;background:linear-gradient(135deg,#7958eb,#405edf 62%,#2b90df)!important;box-shadow:0 8px 18px rgba(85,72,210,.28)!important;font-size:10px!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-create{width:100%!important;height:40px!important;padding:0 10px!important;justify-content:center!important;border-radius:11px!important;font-size:10px!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-icon{width:40px!important;height:40px!important;border:1px solid #e0e8f4!important;border-radius:11px!important;background:#fff!important}
+  .csp-layout-operational-cockpit .csp-weather-chip{width:112px!important;height:40px!important;display:flex!important;align-items:center!important;padding:0 7px!important;border-left:1px solid #e2eaf5!important;border-right:1px solid #e2eaf5!important}
+  .csp-layout-operational-cockpit .csp-weather-chip>svg{color:#f0aa1e!important}
+  .csp-layout-operational-cockpit .csp-weather-chip b{font-size:11px!important}
+  .csp-layout-operational-cockpit .csp-weather-chip small{font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-profile{width:100%!important;height:40px!important;justify-content:flex-start!important;padding:0 6px!important}
+  .csp-layout-operational-cockpit .csp-avatar{width:34px!important;height:34px!important;flex:0 0 34px!important}
+  .csp-layout-operational-cockpit .csp-profile-copy{display:grid!important;max-width:none!important}
+
+  .csp-layout-operational-cockpit .csp-hero-scene{
+    background-image:linear-gradient(90deg,rgba(239,248,255,.98) 0%,rgba(237,248,255,.9) 25%,rgba(226,244,255,.12) 49%,rgba(224,243,255,.2) 75%,rgba(225,244,255,.52) 100%),var(--csp-hero-photo)!important;
+    background-size:100% auto!important;
+    background-position:43% 76%!important;
+    filter:saturate(1.02) contrast(1.01) brightness(1.035)!important;
+  }
+  .csp-layout-operational-cockpit .csp-hero-glass{background:linear-gradient(90deg,rgba(255,255,255,.44),rgba(255,255,255,.02) 52%,rgba(225,244,255,.36))!important}
+  .csp-layout-operational-cockpit .csp-hero-copy{padding-left:67px!important;padding-right:20px!important}
+  .csp-layout-operational-cockpit .csp-hero-signal{right:365px!important;top:38px!important;width:180px!important;font-size:14px!important;text-align:center!important}
+  .csp-layout-operational-cockpit .csp-clock{right:185px!important;width:165px!important;padding:27px 8px!important}
+  .csp-layout-operational-cockpit .csp-operational-orbs{width:185px!important}
+
+  .csp-layout-operational-cockpit .csp-kpis article{column-gap:13px!important}
+  .csp-layout-operational-cockpit .csp-kpi-icon svg{width:24px!important;height:24px!important;stroke-width:2.2!important}
+  .csp-layout-operational-cockpit .tone-blue .csp-kpi-icon{color:#2379ea!important;background:#e7f1ff!important}
+  .csp-layout-operational-cockpit .tone-violet .csp-kpi-icon{color:#7450e8!important;background:#f0ebff!important}
+  .csp-layout-operational-cockpit .tone-cyan .csp-kpi-icon{color:#0ba6cf!important;background:#e5f8fc!important}
+  .csp-layout-operational-cockpit .tone-coral .csp-kpi-icon{color:#ef5065!important;background:#ffe9ee!important}
+  .csp-layout-operational-cockpit .tone-success .csp-kpi-icon{color:#11a67a!important;background:#e4f8f1!important}
+
+  .csp-layout-operational-cockpit .csp-map{border-radius:11px!important;background:linear-gradient(150deg,#fff,#f8fcff)!important}
+  .csp-layout-operational-cockpit .csp-map-art{background:#b9e4fb!important;box-shadow:inset 0 0 46px rgba(28,104,176,.1)!important}
+  .csp-layout-operational-cockpit .csp-map-topology{width:104%!important;height:104%!important;max-width:none!important;transform:translate(-2%,-2%)!important;filter:saturate(.78) contrast(.97) brightness(1.045)!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail{width:104px!important;background:linear-gradient(180deg,rgba(250,254,255,.94),rgba(245,251,255,.88))!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail span>i{box-shadow:inset 0 0 0 1px rgba(37,110,218,.06)!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed{left:104px!important;width:225px!important;border:1px solid rgba(62,110,181,.1)!important;border-bottom:0!important}
+  .csp-layout-operational-cockpit .csp-map-controls{bottom:43px!important}
+  .csp-layout-operational-cockpit .csp-map-view-all{bottom:7px!important}
+
+  .csp-layout-operational-cockpit .csp-operations-team{border-radius:11px!important;background:linear-gradient(180deg,#fff,#f9fbff)!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>span em{max-width:110px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-team-table>button{border-top-color:#e5ecf6!important}
+  .csp-layout-operational-cockpit .csp-team-avatar{box-shadow:0 4px 9px rgba(62,89,166,.14)!important}
+
+  .csp-layout-operational-cockpit .csp-operations-signals{border-radius:11px!important;border-top:1px solid #ef8b96!important;background:linear-gradient(180deg,#fff,#fffafb)!important}
+  .csp-layout-operational-cockpit .csp-signal-tabs{margin-bottom:2px!important}
+  .csp-layout-operational-cockpit .csp-signal-list>button{padding-inline:2px!important}
+  .csp-layout-operational-cockpit .csp-signal-list b{font-size:10px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+  .csp-layout-operational-cockpit .csp-operations-telemetry{display:flex!important;flex-direction:column!important}
+  .csp-layout-operational-cockpit .csp-operations-telemetry>header{flex:0 0 29px!important;margin-bottom:2px!important}
+  .csp-layout-operational-cockpit .csp-operations-telemetry>footer{order:2!important;flex:0 0 22px!important;align-items:center!important;gap:17px!important}
+  .csp-layout-operational-cockpit .csp-operations-chart{order:3!important;flex:1 1 auto!important;height:auto!important;min-height:0!important;padding-left:30px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>header{margin-bottom:4px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>nav{margin-bottom:1px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>nav button{border:1px solid #e6edf7!important;background:#f6f8fc!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>nav button.active{border-color:#d9e7ff!important;background:#eaf2ff!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div{height:25px!important;min-height:25px!important;grid-template-columns:11px 82px minmax(0,1fr)!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div span{text-align:right!important}
+
+  .csp-layout-operational-cockpit .csp-operational-weather{border-radius:11px!important}
+  .csp-layout-operational-cockpit .csp-operational-weather>div>i{display:grid!important;place-items:center!important;color:#efa81e!important}
+  .csp-layout-operational-cockpit .csp-operational-weather>div>i svg{width:48px!important;height:48px!important;stroke-width:1.7!important}
+  .csp-layout-operational-cockpit [data-zone-shell="activity"] .csp-list>div:nth-of-type(-n+3){display:grid!important;min-height:15px!important;height:15px!important;padding:1px 0!important;grid-template-columns:18px minmax(0,1fr)!important;gap:5px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="activity"] .csp-list>div:nth-of-type(-n+3) .csp-activity-avatar{width:15px!important;height:15px!important;font-size:9px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="activity"] .csp-list>div:nth-of-type(-n+3) small{display:none!important}
+  .csp-layout-operational-cockpit [data-zone-shell="activity"] .csp-list>div:nth-of-type(-n+3) b{font-size:9px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .csp-layout-operational-cockpit .csp-actions>div button{border-color:#dce8f8!important;background:linear-gradient(145deg,#f8fbff,#edf5ff)!important;color:#174caa!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar{background:linear-gradient(110deg,#3927bd,#2552ca 50%,#136fca)!important}
+}
+
+/* Tablet re-composition. The inherited eight-column map/team split is too
+   narrow for operational tables, so both primary surfaces receive full width
+   before the supporting cards form deliberate rows. */
+@media (min-width:768px) and (max-width:1439px){
+  .csp-root.csp-layout-operational-cockpit{--csp-gap:12px!important;--csp-page-pad:12px!important;background:#f3f7fd!important}
+  .csp-layout-operational-cockpit .csp-content{padding:12px!important;max-width:none!important}
+  .csp-layout-operational-cockpit .csp-grid{
+    display:grid!important;
+    position:static!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-areas:none!important;
+    grid-auto-flow:row!important;
+    gap:12px!important;
+    height:auto!important;
+    min-height:0!important;
+    align-items:stretch!important;
+  }
+  .csp-layout-operational-cockpit .csp-grid>.csp-hero,
+  .csp-layout-operational-cockpit .csp-grid>.csp-zone{
+    position:static!important;
+    inset:auto!important;
+    grid-area:auto!important;
+    width:auto!important;
+    height:auto!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+  .csp-layout-operational-cockpit .csp-grid>.csp-hero,
+  .csp-layout-operational-cockpit [data-zone-shell="kpis"],
+  .csp-layout-operational-cockpit [data-zone-shell="operations-map"],
+  .csp-layout-operational-cockpit [data-zone-shell="operations-team"],
+  .csp-layout-operational-cockpit [data-zone-shell="knowledge"]{grid-column:1/-1!important}
+  .csp-layout-operational-cockpit .csp-hero{min-height:220px!important;border-radius:22px!important}
+  .csp-layout-operational-cockpit .csp-hero-copy{padding:25px 30px!important;max-width:58%!important;background:linear-gradient(90deg,rgba(246,251,255,.97),rgba(239,248,255,.82),transparent)!important}
+  .csp-layout-operational-cockpit .csp-hero-scene{position:absolute!important;inset:0!important;background-image:linear-gradient(90deg,rgba(239,249,255,.35),rgba(225,244,255,.08)),var(--csp-hero-photo)!important;background-size:cover!important;background-position:center 58%!important;opacity:1!important}
+  .csp-layout-operational-cockpit .csp-hero h1{max-width:none!important;font-size:34px!important}
+  .csp-layout-operational-cockpit .csp-hero p{max-width:none!important}
+  .csp-layout-operational-cockpit .csp-hero-signal,
+  .csp-layout-operational-cockpit .csp-operational-orbs{display:none!important}
+  .csp-layout-operational-cockpit .csp-kpis{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:10px!important;overflow:visible!important}
+  .csp-layout-operational-cockpit .csp-kpis article{min-height:112px!important;padding:12px!important;grid-template-columns:38px minmax(0,1fr)!important;grid-template-rows:auto auto auto auto!important;column-gap:9px!important}
+  .csp-layout-operational-cockpit .csp-kpi-icon{grid-column:1!important;grid-row:1/3!important;width:38px!important;height:38px!important}
+  .csp-layout-operational-cockpit .csp-kpi-label,
+  .csp-layout-operational-cockpit .csp-kpis article>strong,
+  .csp-layout-operational-cockpit .csp-kpis article>em,
+  .csp-layout-operational-cockpit .csp-kpis article>small{grid-column:2!important;justify-self:start!important}
+  .csp-layout-operational-cockpit [data-zone-shell="operations-map"]{min-height:520px!important}
+  .csp-layout-operational-cockpit .csp-map{height:520px!important;min-height:520px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-map-art{height:466px!important;min-height:0!important;border-radius:13px!important}
+  .csp-layout-operational-cockpit .csp-map-topology{width:100%!important;height:100%!important;object-fit:cover!important;filter:saturate(.82) brightness(1.035)!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail{left:10px!important;top:10px!important;bottom:10px!important;width:126px!important;display:grid!important;align-content:start!important;gap:7px!important;padding:8px!important;border-radius:10px!important;background:rgba(248,253,255,.9)!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail span{grid-template-columns:30px minmax(0,1fr)!important;grid-template-rows:auto auto!important;column-gap:7px!important;padding:8px!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail span>i{grid-row:1/3!important;width:30px!important;height:30px!important;display:grid!important;place-items:center!important;border-radius:8px!important;background:#e8f2ff!important;color:#206fe0!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed{position:absolute!important;z-index:6!important;left:136px!important;bottom:0!important;width:300px!important;min-height:96px!important;display:grid!important;gap:4px!important;padding:9px 11px!important;border-radius:0 10px 0 0!important;background:rgba(255,255,255,.91)!important;box-shadow:0 -5px 16px rgba(34,82,145,.1)!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>b{display:flex!important;align-items:center!important;gap:5px!important;font-size:10px!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>span{display:grid!important;grid-template-columns:7px 72px minmax(0,1fr)!important;align-items:center!important;gap:5px!important;font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>span>i{position:static!important;width:5px!important;height:5px!important;border-radius:50%!important;background:#317ff0!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed em{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-style:normal!important}
+  .csp-layout-operational-cockpit .csp-map-controls{position:absolute!important;right:10px!important;bottom:48px!important;z-index:7!important;display:grid!important;width:34px!important;border-radius:8px!important;background:#fff!important;box-shadow:0 5px 15px rgba(30,87,150,.18)!important}
+  .csp-layout-operational-cockpit .csp-map-controls i{height:30px!important;display:grid!important;place-items:center!important;border-bottom:1px solid #e3ebf6!important;font-style:normal!important;color:#3157ad!important}
+  .csp-layout-operational-cockpit .csp-map-view-all{position:absolute!important;right:10px!important;bottom:10px!important;z-index:7!important;height:30px!important;min-height:30px!important;border:0!important;border-radius:7px!important;background:rgba(255,255,255,.94)!important;color:#2455a5!important;font-size:9px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="operations-team"]{min-height:430px!important}
+  .csp-layout-operational-cockpit .csp-operations-team{height:430px!important;min-height:430px!important;padding:12px 14px!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header{height:34px!important;margin-bottom:5px!important;flex-wrap:nowrap!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>span{display:flex!important;align-items:center!important;gap:7px!important;min-width:0!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>span em{font-size:9px!important;color:#13a57a!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>button{height:32px!important;min-height:32px!important;padding:0 9px!important;border:0!important;background:transparent!important;color:#1f72db!important;font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-team-filters{height:40px!important;margin-bottom:4px!important;padding:4px!important}
+  .csp-layout-operational-cockpit .csp-team-filters button{height:30px!important;min-height:30px!important;padding:0 15px!important}
+  .csp-layout-operational-cockpit .csp-team-table{height:calc(100% - 83px)!important;overflow:hidden!important}
+  .csp-layout-operational-cockpit .csp-team-head,
+  .csp-layout-operational-cockpit .csp-team-table>button{grid-template-columns:minmax(0,1.35fr) minmax(88px,.7fr) minmax(96px,.8fr) 88px!important;gap:9px!important}
+  .csp-layout-operational-cockpit .csp-team-head{height:30px!important;min-height:30px!important;padding:5px 4px!important}
+  .csp-layout-operational-cockpit .csp-team-table>button{height:48px!important;min-height:48px!important;padding:5px 4px!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress{width:66px!important;display:flex!important;gap:5px!important;background:transparent!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i{display:block!important;width:9px!important;height:9px!important;flex:0 0 9px!important;border-radius:50%!important;background:#d6e4f3!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i:first-child{background:#3788e8!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i:nth-child(2){background:#72bce7!important}
+  .csp-layout-operational-cockpit .csp-operations-signals,
+  .csp-layout-operational-cockpit .csp-operational-queue,
+  .csp-layout-operational-cockpit .csp-operations-telemetry,
+  .csp-layout-operational-cockpit .csp-operational-status,
+  .csp-layout-operational-cockpit .csp-operational-weather,
+  .csp-layout-operational-cockpit [data-zone-shell="approvals"]>.csp-card,
+  .csp-layout-operational-cockpit [data-zone-shell="activity"]>.csp-card,
+  .csp-layout-operational-cockpit [data-zone-shell="world-time"]>.csp-card,
+  .csp-layout-operational-cockpit [data-zone-shell="knowledge"]>.csp-card{height:100%!important;min-height:0!important}
+  .csp-layout-operational-cockpit [data-zone-shell="ai-insights"]{min-height:440px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="tasks"],
+  .csp-layout-operational-cockpit [data-zone-shell="status"]{min-height:330px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="executive-analytics"],
+  .csp-layout-operational-cockpit [data-zone-shell="approvals"]{min-height:320px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="weather"],
+  .csp-layout-operational-cockpit [data-zone-shell="activity"]{min-height:230px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="quick-actions"],
+  .csp-layout-operational-cockpit [data-zone-shell="announcement"]{min-height:150px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="world-time"]{min-height:220px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="knowledge"]{min-height:240px!important}
+  .csp-layout-operational-cockpit .csp-operations-signals{padding:12px 14px!important}
+  .csp-layout-operational-cockpit .csp-signal-list>button{min-height:67px!important;height:67px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue{padding:12px 14px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>div>button{height:46px!important;min-height:46px!important}
+  .csp-layout-operational-cockpit .csp-operations-telemetry{padding:12px 14px!important}
+  .csp-layout-operational-cockpit .csp-operations-chart{height:205px!important;padding-left:36px!important}
+  .csp-layout-operational-cockpit .csp-operational-status{padding:12px 14px!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div{height:42px!important;min-height:42px!important;grid-template-columns:11px 96px minmax(0,1fr)!important}
+  .csp-layout-operational-cockpit .csp-operational-weather{padding:12px 14px!important}
+  .csp-layout-operational-cockpit .csp-operational-weather>div{height:170px!important;grid-template-columns:minmax(0,1fr) 62px minmax(0,1fr)!important}
+  .csp-layout-operational-cockpit .csp-actions{height:150px!important;padding:12px!important;display:grid!important;grid-template-columns:1fr!important;grid-template-rows:28px 1fr!important}
+  .csp-layout-operational-cockpit .csp-actions>header{height:28px!important}
+  .csp-layout-operational-cockpit .csp-actions>div{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}
+  .csp-layout-operational-cockpit .csp-actions>div button{min-height:46px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar{height:150px!important;grid-template-columns:42px minmax(0,1fr)!important;grid-template-rows:48px 64px!important;padding:14px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar form{grid-column:1/-1!important;height:54px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar button{height:42px!important;min-height:42px!important}
+}
+
+@media (min-width:768px) and (max-width:899px){
+  .csp-layout-operational-cockpit .csp-grid{grid-template-columns:minmax(0,1fr)!important}
+  .csp-layout-operational-cockpit .csp-grid>.csp-zone{grid-column:1!important}
+  .csp-layout-operational-cockpit .csp-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .csp-layout-operational-cockpit .csp-kpis article:nth-child(n+4){min-height:104px!important}
+  .csp-layout-operational-cockpit .csp-hero-copy{max-width:64%!important;padding:24px 30px!important}
+  .csp-layout-operational-cockpit .csp-hero h1{font-size:32px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="operations-map"]{min-height:500px!important}
+  .csp-layout-operational-cockpit .csp-map{height:500px!important;min-height:500px!important}
+  .csp-layout-operational-cockpit .csp-map-art{height:446px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="ai-insights"]{min-height:430px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="tasks"],
+  .csp-layout-operational-cockpit [data-zone-shell="status"],
+  .csp-layout-operational-cockpit [data-zone-shell="executive-analytics"],
+  .csp-layout-operational-cockpit [data-zone-shell="approvals"]{min-height:310px!important}
+}
+
+/* Mobile full-flow composition. */
+@media (max-width:767px){
+  .csp-layout-operational-cockpit{background:#f3f7fd!important}
+  .csp-layout-operational-cockpit .csp-content{padding:10px!important}
+  .csp-layout-operational-cockpit .csp-grid{gap:12px!important}
+  .csp-layout-operational-cockpit .csp-hero{min-height:205px!important;border-radius:20px!important}
+  .csp-layout-operational-cockpit .csp-hero-copy{max-width:76%!important;padding:20px!important;background:linear-gradient(90deg,rgba(246,251,255,.98),rgba(239,248,255,.84),transparent)!important}
+  .csp-layout-operational-cockpit .csp-hero-scene{position:absolute!important;inset:0!important;background-image:var(--csp-hero-photo)!important;background-size:cover!important;background-position:60% center!important;opacity:.54!important}
+  .csp-layout-operational-cockpit .csp-hero h1{max-width:none!important;font-size:29px!important;line-height:1!important}
+  .csp-layout-operational-cockpit .csp-hero p{max-width:none!important}
+  .csp-layout-operational-cockpit .csp-hero-signal,
+  .csp-layout-operational-cockpit .csp-operational-orbs{display:none!important}
+  .csp-layout-operational-cockpit .csp-kpis{gap:10px!important}
+  .csp-layout-operational-cockpit .csp-kpis article{min-height:112px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-kpi-icon{width:38px!important;height:38px!important}
+  .csp-layout-operational-cockpit .csp-map{height:480px!important;min-height:480px!important;padding:11px!important}
+  .csp-layout-operational-cockpit .csp-map>header{height:38px!important;margin-bottom:6px!important;flex-wrap:nowrap!important}
+  .csp-layout-operational-cockpit .csp-map>header>span{min-width:0!important;display:flex!important;align-items:center!important;gap:6px!important}
+  .csp-layout-operational-cockpit .csp-map>header>span b{font-size:12px!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-map>header>span em{font-size:9px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-map>header>button{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-art{height:414px!important;min-height:414px!important;border-radius:12px!important}
+  .csp-layout-operational-cockpit .csp-map-topology{width:120%!important;height:100%!important;max-width:none!important;object-fit:cover!important;transform:translateX(-10%)!important;filter:saturate(.82) brightness(1.04)!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail{left:8px!important;top:8px!important;width:104px!important;display:grid!important;gap:5px!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail span{padding:6px!important;border-radius:8px!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed{position:absolute!important;z-index:6!important;left:112px!important;right:8px!important;bottom:0!important;width:auto!important;min-height:104px!important;display:grid!important;gap:4px!important;padding:9px!important;border-radius:9px 9px 0 0!important;background:rgba(255,255,255,.92)!important;box-shadow:0 -5px 15px rgba(34,82,145,.1)!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>b{display:flex!important;align-items:center!important;gap:5px!important;font-size:10px!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>span{display:grid!important;grid-template-columns:6px 68px minmax(0,1fr)!important;align-items:center!important;gap:4px!important;font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>span>i{position:static!important;width:4px!important;height:4px!important;border-radius:50%!important;background:#317ff0!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed em{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-style:normal!important}
+  .csp-layout-operational-cockpit .csp-map-controls{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-view-all{position:absolute!important;right:8px!important;bottom:112px!important;z-index:7!important;height:30px!important;min-height:30px!important;border:0!important;border-radius:7px!important;background:rgba(255,255,255,.94)!important;font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-map-city-labels .place-1{left:34%!important;top:27%!important}
+  .csp-layout-operational-cockpit .csp-map-city-labels .place-2{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-city-labels .place-3{right:7%!important;left:auto!important;top:57%!important}
+  .csp-layout-operational-cockpit .csp-operations-team{height:465px!important;min-height:465px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header{height:38px!important;margin-bottom:4px!important;flex-wrap:nowrap!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>span{min-width:0!important;display:flex!important;align-items:center!important;gap:6px!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>span b{white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>span em{max-width:115px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-operations-team>header>button{height:32px!important;min-height:32px!important;padding:0 7px!important;border:0!important;background:transparent!important;color:#1f72db!important;font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-team-filters{height:44px!important;margin-bottom:5px!important;padding:4px!important}
+  .csp-layout-operational-cockpit .csp-team-filters button{height:34px!important;min-height:34px!important;padding:0 14px!important}
+  .csp-layout-operational-cockpit .csp-team-table{height:calc(100% - 91px)!important;overflow:hidden!important}
+  .csp-layout-operational-cockpit .csp-team-head{display:none!important}
+  .csp-layout-operational-cockpit .csp-team-table>button{height:61px!important;min-height:61px!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto!important;gap:3px 9px!important;padding:7px 3px!important}
+  .csp-layout-operational-cockpit .csp-team-table>button>span:first-child{grid-column:1!important;grid-row:1!important;min-width:0!important}
+  .csp-layout-operational-cockpit .csp-team-table>button>small{grid-column:1!important;grid-row:2!important;padding-left:31px!important}
+  .csp-layout-operational-cockpit .csp-team-table>button>em{grid-column:2!important;grid-row:1!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress{grid-column:2!important;grid-row:2!important;width:52px!important;display:flex!important;gap:4px!important;background:transparent!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i{display:block!important;width:8px!important;height:8px!important;flex:0 0 8px!important;border-radius:50%!important;background:#d6e4f3!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i:first-child{background:#3788e8!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i:nth-child(2){background:#72bce7!important}
+  .csp-layout-operational-cockpit .csp-operations-signals{min-height:470px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-signal-list>button{height:72px!important;min-height:72px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue{min-height:365px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>nav{height:42px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>nav button{height:36px!important;min-height:36px!important;padding:0 12px!important;border:1px solid #e1e9f5!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>div>button{height:51px!important;min-height:51px!important}
+  .csp-layout-operational-cockpit .csp-operational-status{min-height:390px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-operational-status>header{height:48px!important;margin-bottom:4px!important;flex-wrap:nowrap!important}
+  .csp-layout-operational-cockpit .csp-operational-status>header>span{min-width:0!important}
+  .csp-layout-operational-cockpit .csp-operational-status>header b{white-space:normal!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div{height:52px!important;min-height:52px!important;grid-template-columns:11px 88px minmax(0,1fr)!important}
+  .csp-layout-operational-cockpit .csp-operations-telemetry{min-height:330px!important;padding:12px!important;display:flex!important;flex-direction:column!important}
+  .csp-layout-operational-cockpit .csp-operations-telemetry>footer{order:2!important;display:flex!important;flex-wrap:wrap!important;gap:9px!important;margin-bottom:5px!important}
+  .csp-layout-operational-cockpit .csp-operations-chart{order:3!important;height:230px!important;padding-left:32px!important}
+  .csp-layout-operational-cockpit .csp-operational-weather{min-height:230px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-operational-weather>div{height:170px!important;grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr)!important}
+  .csp-layout-operational-cockpit .csp-actions{min-height:230px!important;padding:12px!important}
+  .csp-layout-operational-cockpit .csp-actions>div{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .csp-layout-operational-cockpit .csp-actions>div button{min-height:54px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar{height:170px!important;grid-template-columns:38px minmax(0,1fr)!important;grid-template-rows:54px 68px!important;padding:14px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar form{grid-column:1/-1!important;height:54px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar button{height:42px!important;min-height:42px!important}
+}
+
+/* Premium 4K composition and SVG containment. */
+@media (min-width:3200px){
+  .csp-root.csp-layout-operational-cockpit{--csp-topbar:88px!important;--csp-sidebar:280px!important;--csp-gap:22px!important;grid-template-columns:280px minmax(0,1fr)!important;background:#f3f7fc!important}
+  .csp-layout-operational-cockpit .csp-topbar{height:88px!important;grid-template-columns:420px 300px minmax(620px,1fr) minmax(0,auto)!important;gap:14px!important;padding:12px 22px!important}
+  .csp-layout-operational-cockpit .csp-brand-mark{width:58px!important;height:58px!important;border-radius:14px!important;background:#0c327b!important}
+  .csp-layout-operational-cockpit .csp-brand b{font-size:19px!important}.csp-layout-operational-cockpit .csp-brand small{font-size:13px!important}
+  .csp-layout-operational-cockpit .csp-workspace{height:60px!important;padding:0 17px!important}.csp-layout-operational-cockpit .csp-workspace b{font-size:16px!important}.csp-layout-operational-cockpit .csp-workspace small{font-size:13px!important}
+  .csp-layout-operational-cockpit .csp-search{height:60px!important;padding:0 18px!important;border-radius:15px!important}.csp-layout-operational-cockpit .csp-search input{font-size:16px!important}
+  .csp-layout-operational-cockpit .csp-top-actions{display:grid!important;grid-template-columns:250px 210px 190px 58px 170px 205px!important;gap:12px!important;justify-content:end!important}
+  .csp-layout-operational-cockpit .csp-top-actions>*{min-width:0!important;margin:0!important}
+  .csp-layout-operational-cockpit .csp-layout-select,.csp-layout-operational-cockpit .csp-ai,.csp-layout-operational-cockpit .csp-create,.csp-layout-operational-cockpit .csp-icon,.csp-layout-operational-cockpit .csp-profile{height:60px!important;border-radius:15px!important}
+  .csp-layout-operational-cockpit .csp-layout-select{order:-3!important;border:0!important;background:linear-gradient(135deg,#315cdb,#155fce)!important;color:#fff!important;box-shadow:0 10px 24px rgba(37,77,188,.25)!important}.csp-layout-operational-cockpit .csp-layout-select select{max-width:none!important;color:#fff!important;font-size:14px!important}.csp-layout-operational-cockpit .csp-layout-select select option{color:#183568!important;background:#fff!important}
+  .csp-layout-operational-cockpit .csp-ai{order:-2!important;justify-content:center!important;font-size:14px!important}.csp-layout-operational-cockpit .csp-create{order:-1!important;justify-content:center!important;font-size:14px!important}.csp-layout-operational-cockpit .csp-icon{width:58px!important}.csp-layout-operational-cockpit .csp-weather-chip{height:60px!important;padding:0 12px!important}.csp-layout-operational-cockpit .csp-weather-chip b{font-size:15px!important}.csp-layout-operational-cockpit .csp-weather-chip small{font-size:12px!important}.csp-layout-operational-cockpit .csp-profile{width:205px!important}.csp-layout-operational-cockpit .csp-avatar{width:52px!important;height:52px!important;font-size:16px!important}.csp-layout-operational-cockpit .csp-profile-copy{display:grid!important;max-width:140px!important}.csp-layout-operational-cockpit .csp-profile-copy b{font-size:14px!important}.csp-layout-operational-cockpit .csp-profile-copy small{font-size:12px!important}
+  .csp-layout-operational-cockpit .csp-sidebar{top:88px!important;height:calc(100vh - 88px)!important;padding:18px 16px!important}.csp-layout-operational-cockpit .csp-sidebar nav{gap:6px!important}.csp-layout-operational-cockpit .csp-sidebar nav button{height:50px!important;min-height:50px!important;padding:0 16px!important;border-radius:12px!important;font-size:14px!important}.csp-layout-operational-cockpit .csp-purpose{min-height:220px!important;padding:22px!important}
+  .csp-layout-operational-cockpit .csp-content{padding:0 24px 28px!important;max-width:none!important}
+  .csp-layout-operational-cockpit .csp-grid{grid-template-rows:280px 150px 650px 430px 300px 150px!important;gap:22px!important}
+  .csp-layout-operational-cockpit .csp-hero{min-height:280px!important;border-radius:0 0 20px 20px!important}.csp-layout-operational-cockpit .csp-hero-copy{max-width:820px!important;padding:44px 70px!important;background:linear-gradient(90deg,rgba(246,251,255,.97),rgba(239,248,255,.68),transparent)!important}.csp-layout-operational-cockpit .csp-hero h1{font-size:50px!important}.csp-layout-operational-cockpit .csp-hero p{font-size:18px!important}.csp-layout-operational-cockpit .csp-hero-quote{font-size:14px!important}.csp-layout-operational-cockpit .csp-hero-scene{background-position:center 62%!important}.csp-layout-operational-cockpit .csp-hero-signal{right:460px!important;top:90px!important;width:280px!important;font-size:22px!important}.csp-layout-operational-cockpit .csp-clock{display:grid!important;right:230px!important;top:0!important;width:230px!important;height:280px!important;padding:76px 12px!important}.csp-layout-operational-cockpit .csp-clock small,.csp-layout-operational-cockpit .csp-clock span{font-size:14px!important}.csp-layout-operational-cockpit .csp-clock strong{font-size:42px!important}.csp-layout-operational-cockpit .csp-operational-orbs{display:grid!important;width:230px!important;height:280px!important;grid-template-columns:70px 100px!important}.csp-layout-operational-cockpit .csp-operational-orbs svg:first-child{width:68px!important;height:68px!important}.csp-layout-operational-cockpit .csp-operational-orbs svg:nth-child(2){width:98px!important;height:98px!important}.csp-layout-operational-cockpit .csp-operational-orbs span{font-size:13px!important}
+  .csp-layout-operational-cockpit .csp-kpis{gap:22px!important}.csp-layout-operational-cockpit .csp-kpis article{min-height:150px!important;height:150px!important;padding:20px 22px!important;grid-template-columns:78px minmax(0,1fr) auto!important;grid-template-rows:28px 45px 24px!important;column-gap:16px!important;border-radius:20px!important}.csp-layout-operational-cockpit .csp-kpi-icon{grid-row:1/4!important;width:78px!important;height:78px!important;border-radius:18px!important}.csp-layout-operational-cockpit .csp-kpi-icon svg{width:34px!important;height:34px!important}.csp-layout-operational-cockpit .csp-kpi-label{font-size:15px!important}.csp-layout-operational-cockpit .csp-kpis article>strong{font-size:34px!important}.csp-layout-operational-cockpit .csp-kpis article>em,.csp-layout-operational-cockpit .csp-kpis article>small{font-size:13px!important}
+  .csp-layout-operational-cockpit .csp-card{padding:16px 18px!important;border-radius:18px!important}.csp-layout-operational-cockpit .csp-card>header{height:45px!important;margin-bottom:8px!important}.csp-layout-operational-cockpit .csp-card header b{font-size:17px!important}.csp-layout-operational-cockpit .csp-card header button,.csp-layout-operational-cockpit .csp-card>header>em{font-size:12px!important}
+  .csp-layout-operational-cockpit .csp-map-art{height:calc(100% - 54px)!important;border-radius:14px!important}.csp-layout-operational-cockpit .csp-map-topology{width:103%!important;height:103%!important;transform:translate(-1.5%,-1.5%)!important;filter:saturate(.8) brightness(1.04)!important}.csp-layout-operational-cockpit .csp-map-scope-rail{left:0!important;top:0!important;bottom:0!important;width:178px!important;padding:12px!important;gap:10px!important}.csp-layout-operational-cockpit .csp-map-scope-rail span{padding:12px!important}.csp-layout-operational-cockpit .csp-map-scope-rail span>i{width:44px!important;height:44px!important}.csp-layout-operational-cockpit .csp-map-scope-rail b{font-size:19px!important}.csp-layout-operational-cockpit .csp-map-scope-rail small{font-size:12px!important}.csp-layout-operational-cockpit .csp-map-operations-feed{left:178px!important;bottom:0!important;width:430px!important;min-height:150px!important;padding:13px 16px!important;gap:7px!important}.csp-layout-operational-cockpit .csp-map-operations-feed>b{font-size:14px!important}.csp-layout-operational-cockpit .csp-map-operations-feed>span{grid-template-columns:8px 92px minmax(0,1fr)!important;font-size:12px!important}.csp-layout-operational-cockpit .csp-map-controls{right:14px!important;bottom:62px!important;width:46px!important}.csp-layout-operational-cockpit .csp-map-controls i{height:40px!important}.csp-layout-operational-cockpit .csp-map-view-all{right:14px!important;bottom:14px!important;height:38px!important;min-height:38px!important;font-size:12px!important}
+  .csp-layout-operational-cockpit .csp-operations-team{padding:16px 18px!important}.csp-layout-operational-cockpit .csp-operations-team>header{height:45px!important}.csp-layout-operational-cockpit .csp-team-filters{height:46px!important;margin-bottom:7px!important;padding:5px!important}.csp-layout-operational-cockpit .csp-team-filters button{height:34px!important;min-height:34px!important;padding:0 15px!important;font-size:12px!important}.csp-layout-operational-cockpit .csp-team-table{height:calc(100% - 98px)!important}.csp-layout-operational-cockpit .csp-team-head,.csp-layout-operational-cockpit .csp-team-table>button{grid-template-columns:minmax(0,1.25fr) minmax(120px,.75fr) minmax(125px,.8fr) 104px!important;gap:11px!important}.csp-layout-operational-cockpit .csp-team-head{height:36px!important;min-height:36px!important}.csp-layout-operational-cockpit .csp-team-table>button{height:76px!important;min-height:76px!important}.csp-layout-operational-cockpit .csp-team-table>button b,.csp-layout-operational-cockpit .csp-team-table>button small,.csp-layout-operational-cockpit .csp-team-table>button em,.csp-layout-operational-cockpit .csp-team-head b{font-size:12px!important}.csp-layout-operational-cockpit .csp-team-avatar{width:32px!important;height:32px!important}.csp-layout-operational-cockpit .csp-team-decorative-progress{width:90px!important;display:flex!important;gap:7px!important;background:transparent!important}.csp-layout-operational-cockpit .csp-team-decorative-progress>i{display:block!important;width:12px!important;height:12px!important;flex:0 0 12px!important;border-radius:50%!important;background:#d6e4f3!important}.csp-layout-operational-cockpit .csp-team-decorative-progress>i:first-child{background:#3788e8!important}.csp-layout-operational-cockpit .csp-team-decorative-progress>i:nth-child(2){background:#72bce7!important}
+  .csp-layout-operational-cockpit .csp-operations-signals{padding:16px 18px!important}.csp-layout-operational-cockpit .csp-signal-tabs{height:43px!important;padding:5px!important}.csp-layout-operational-cockpit .csp-signal-tabs button{height:31px!important;min-height:31px!important;font-size:12px!important}.csp-layout-operational-cockpit .csp-signal-list>button{height:101px!important;min-height:101px!important;grid-template-columns:44px minmax(0,1fr) 18px!important;gap:12px!important}.csp-layout-operational-cockpit .csp-signal-icon{width:42px!important;height:42px!important}.csp-layout-operational-cockpit .csp-signal-list b{font-size:13px!important}.csp-layout-operational-cockpit .csp-signal-list small,.csp-layout-operational-cockpit .csp-signal-list em{font-size:12px!important}
+  .csp-layout-operational-cockpit .csp-operational-queue>nav{height:46px!important}.csp-layout-operational-cockpit .csp-operational-queue>nav button{height:36px!important;min-height:36px!important;font-size:12px!important}.csp-layout-operational-cockpit .csp-operational-queue>div>button{height:65px!important;min-height:65px!important;grid-template-columns:34px minmax(0,1fr) auto 16px!important;gap:9px!important}.csp-layout-operational-cockpit .csp-operational-queue>div>button>i{width:31px!important;height:31px!important}.csp-layout-operational-cockpit .csp-operational-queue b,.csp-layout-operational-cockpit .csp-operational-queue small,.csp-layout-operational-cockpit .csp-operational-queue em{font-size:12px!important}
+  .csp-layout-operational-cockpit .csp-operations-telemetry{display:flex!important;flex-direction:column!important}.csp-layout-operational-cockpit .csp-operations-telemetry>footer{order:2!important;flex:0 0 34px!important;gap:24px!important}.csp-layout-operational-cockpit .csp-operations-telemetry>footer small,.csp-layout-operational-cockpit .csp-operations-telemetry>footer b{font-size:12px!important}.csp-layout-operational-cockpit .csp-operations-chart{order:3!important;flex:1 1 auto!important;height:auto!important;min-height:0!important;padding-left:48px!important}.csp-layout-operational-cockpit .csp-operations-axis{font-size:12px!important}.csp-layout-operational-cockpit .csp-operations-chart-inspector>span{width:220px!important;padding:13px 15px!important}.csp-layout-operational-cockpit .csp-operations-chart-inspector strong{font-size:14px!important}.csp-layout-operational-cockpit .csp-operations-chart-inspector small,.csp-layout-operational-cockpit .csp-operations-chart-inspector small>b{font-size:12px!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div{height:58px!important;min-height:58px!important;grid-template-columns:13px 125px minmax(0,1fr)!important;gap:10px!important}.csp-layout-operational-cockpit .csp-operational-status>div b,.csp-layout-operational-cockpit .csp-operational-status>div span{font-size:12px!important}.csp-layout-operational-cockpit .csp-operational-status>div i{width:10px!important;height:10px!important}
+  .csp-layout-operational-cockpit .csp-operational-weather>div{height:230px!important;grid-template-columns:minmax(0,1fr) 90px minmax(0,1fr)!important;gap:16px!important}.csp-layout-operational-cockpit .csp-operational-weather>div>section>b,.csp-layout-operational-cockpit .csp-operational-weather aside b,.csp-layout-operational-cockpit .csp-operational-weather aside small,.csp-layout-operational-cockpit .csp-operational-weather>div>section>small,.csp-layout-operational-cockpit .csp-operational-weather>div>section>em{font-size:12px!important}.csp-layout-operational-cockpit .csp-operational-weather>div>section>strong{font-size:42px!important}.csp-layout-operational-cockpit .csp-operational-weather>div>i svg{width:82px!important;height:82px!important}
+  .csp-layout-operational-cockpit .csp-actions{height:100%!important;grid-template-columns:1fr!important;grid-template-rows:42px 1fr!important;padding:16px 18px!important}.csp-layout-operational-cockpit .csp-actions>header{height:42px!important}.csp-layout-operational-cockpit .csp-actions>div{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}.csp-layout-operational-cockpit .csp-actions>div button{height:auto!important;min-height:76px!important;font-size:12px!important}.csp-layout-operational-cockpit .csp-actions>div button svg{width:22px!important;height:22px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar{height:100%!important;grid-template-columns:56px minmax(0,1fr)!important;grid-template-rows:60px 1fr!important;padding:18px!important;border-radius:18px!important}.csp-layout-operational-cockpit .csp-operational-ai-bar>svg{width:34px!important;height:34px!important}.csp-layout-operational-cockpit .csp-operational-ai-bar>span b{font-size:19px!important}.csp-layout-operational-cockpit .csp-operational-ai-bar>span small{font-size:12px!important}.csp-layout-operational-cockpit .csp-operational-ai-bar form{grid-column:1/-1!important;height:70px!important}.csp-layout-operational-cockpit .csp-operational-ai-bar input{font-size:14px!important}.csp-layout-operational-cockpit .csp-operational-ai-bar button{height:54px!important;min-height:54px!important;width:54px!important}
+}
+
+/* Cycle 2 render corrections. Keep containment and full-width intent more
+   specific than the inherited absolute-layout reset above. */
+.csp-layout-operational-cockpit .csp-operations-chart-inspector>span{
+  width:165px!important;
+}
+.csp-layout-operational-cockpit .csp-operations-chart-inspector small{
+  white-space:nowrap!important;
+}
+
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-operational-cockpit .csp-team-filters{
+    height:27px!important;
+    min-height:27px!important;
+    padding:2px!important;
+  }
+  .csp-layout-operational-cockpit .csp-team-filters button{
+    height:21px!important;
+    min-height:21px!important;
+    padding:0 9px!important;
+    font-size:9px!important;
+  }
+}
+
+@media (min-width:768px) and (max-width:1439px){
+  .csp-layout-operational-cockpit .csp-grid>.csp-hero{
+    position:relative!important;
+    inset:auto!important;
+    grid-area:auto!important;
+    grid-column:1/-1!important;
+    overflow:hidden!important;
+  }
+  .csp-layout-operational-cockpit .csp-grid>[data-zone-shell="kpis"],
+  .csp-layout-operational-cockpit .csp-grid>[data-zone-shell="operations-map"],
+  .csp-layout-operational-cockpit .csp-grid>[data-zone-shell="operations-team"],
+  .csp-layout-operational-cockpit .csp-grid>[data-zone-shell="knowledge"]{
+    grid-column:1/-1!important;
+  }
+  .csp-layout-operational-cockpit .csp-hero-artwork{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail{
+    left:10px!important;
+    right:10px!important;
+    top:10px!important;
+    bottom:auto!important;
+    width:auto!important;
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    align-content:stretch!important;
+    gap:6px!important;
+    padding:6px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span{
+    min-width:0!important;
+    min-height:52px!important;
+    grid-template-columns:28px minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    column-gap:6px!important;
+    padding:6px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span>i{
+    grid-row:1/3!important;
+    width:28px!important;
+    height:28px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail b,
+  .csp-layout-operational-cockpit .csp-map-scope-rail small{
+    min-width:0!important;
+    overflow-wrap:normal!important;
+    word-break:normal!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail b{
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-operations-feed{
+    left:10px!important;
+    width:330px!important;
+  }
+}
+
+@media (max-width:767px){
+  .csp-layout-operational-cockpit .csp-grid>.csp-hero{
+    position:relative!important;
+    inset:auto!important;
+    overflow:hidden!important;
+  }
+  .csp-layout-operational-cockpit .csp-hero-artwork{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail{
+    left:8px!important;
+    right:auto!important;
+    top:8px!important;
+    bottom:auto!important;
+    width:210px!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:5px!important;
+    padding:5px!important;
+    background:rgba(248,253,255,.92)!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span{
+    min-width:0!important;
+    min-height:48px!important;
+    display:grid!important;
+    grid-template-columns:26px minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    column-gap:5px!important;
+    padding:5px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span>i{
+    grid-row:1/3!important;
+    width:26px!important;
+    height:26px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail b,
+  .csp-layout-operational-cockpit .csp-map-scope-rail small{
+    min-width:0!important;
+    overflow-wrap:normal!important;
+    word-break:normal!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail b{
+    font-size:9px!important;
+    line-height:1.05!important;
+    white-space:normal!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-operations-feed{
+    left:8px!important;
+    right:8px!important;
+    width:auto!important;
+  }
+}
+
+@media (min-width:3200px){
+  .csp-layout-operational-cockpit .csp-map-scope-rail{
+    left:0!important;
+    right:auto!important;
+    top:0!important;
+    bottom:0!important;
+    width:220px!important;
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+    padding:12px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span{
+    min-width:0!important;
+    grid-template-columns:52px minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    column-gap:10px!important;
+    padding:12px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span>i{
+    grid-row:1/3!important;
+    width:44px!important;
+    height:44px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail b,
+  .csp-layout-operational-cockpit .csp-map-scope-rail small{
+    min-width:0!important;
+    overflow-wrap:normal!important;
+    word-break:normal!important;
+    white-space:nowrap!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-operations-feed{
+    left:220px!important;
+    width:430px!important;
+  }
+  .csp-layout-operational-cockpit .csp-operations-chart-inspector>span{
+    width:220px!important;
+  }
+}
+
+/* Native-control normalization for every responsive Operational rendering.
+   The authority desktop previously supplied these primitives inside a
+   desktop-only query, which left tablet, mobile and 4K using UA defaults. */
+.csp-layout-operational-cockpit .csp-signal-tabs{
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  padding:3px!important;
+  border:1px solid #e3ebf7!important;
+  border-radius:9px!important;
+  background:#f7f9fd!important;
+}
+.csp-layout-operational-cockpit .csp-signal-tabs button{
+  appearance:none!important;
+  flex:1 1 0!important;
+  min-width:0!important;
+  padding:0 8px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:#4f638d!important;
+  font:700 9px/1 var(--csp-font)!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-signal-tabs button.active{
+  background:linear-gradient(135deg,#3387f3,#2b70ea)!important;
+  color:#fff!important;
+  box-shadow:0 4px 10px rgba(47,125,240,.2)!important;
+}
+.csp-layout-operational-cockpit .csp-signal-list{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+}
+.csp-layout-operational-cockpit .csp-signal-list>button{
+  appearance:none!important;
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:30px minmax(0,1fr) 14px!important;
+  align-items:center!important;
+  gap:8px!important;
+  padding:5px 0!important;
+  border:0!important;
+  border-top:1px solid #e7edf6!important;
+  background:transparent!important;
+  color:#1d2f54!important;
+  text-align:left!important;
+}
+.csp-layout-operational-cockpit .csp-signal-icon{
+  width:28px!important;
+  height:28px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:50%!important;
+  background:#2180e7!important;
+  color:#fff!important;
+  font:800 15px/1 var(--csp-font)!important;
+  font-style:normal!important;
+}
+.csp-layout-operational-cockpit .csp-signal-icon.tone-0{background:#ef4b5b!important}
+.csp-layout-operational-cockpit .csp-signal-icon.tone-1,
+.csp-layout-operational-cockpit .csp-signal-icon.tone-2{background:#f2a018!important}
+.csp-layout-operational-cockpit .csp-signal-list>button>span{
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+}
+.csp-layout-operational-cockpit .csp-signal-list b,
+.csp-layout-operational-cockpit .csp-signal-list small,
+.csp-layout-operational-cockpit .csp-signal-list em{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-signal-list em{font-style:normal!important}
+
+.csp-layout-operational-cockpit .csp-operational-queue>nav{
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue>nav button{
+  appearance:none!important;
+  min-width:max-content!important;
+  padding:0 12px!important;
+  border:1px solid #e1e9f5!important;
+  border-radius:999px!important;
+  background:#f3f6fb!important;
+  color:#617393!important;
+  font:700 9px/1 var(--csp-font)!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue>nav button.active{
+  border-color:#d8e7ff!important;
+  background:#e9f2ff!important;
+  color:#2569d8!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue>div{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue>div>button{
+  appearance:none!important;
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:22px minmax(0,1fr) auto 13px!important;
+  align-items:center!important;
+  gap:5px!important;
+  padding:2px 0!important;
+  border:0!important;
+  border-top:1px solid #e7edf6!important;
+  background:transparent!important;
+  color:#1d2f54!important;
+  text-align:left!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue>div>button>i{
+  width:20px!important;
+  height:20px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:6px!important;
+  background:#eaf2ff!important;
+  color:#2372de!important;
+  font-style:normal!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue>div>button>span{
+  min-width:0!important;
+  display:grid!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue b,
+.csp-layout-operational-cockpit .csp-operational-queue small{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-operational-queue em{font-style:normal!important;white-space:nowrap!important}
+
+.csp-layout-operational-cockpit .csp-operations-axis{
+  position:absolute!important;
+  left:0!important;
+  top:0!important;
+  bottom:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:space-between!important;
+  color:#7183a2!important;
+  font-style:normal!important;
+}
+.csp-layout-operational-cockpit .csp-operations-telemetry>footer{
+  display:flex!important;
+  align-items:center!important;
+}
+.csp-layout-operational-cockpit .csp-operations-telemetry>footer span{
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-operations-telemetry>footer i{
+  width:7px!important;
+  height:7px!important;
+  flex:0 0 7px!important;
+  border-radius:50%!important;
+  background:#2479ed!important;
+}
+.csp-layout-operational-cockpit .csp-operations-telemetry>footer i.tasks{background:#7b50dd!important}
+.csp-layout-operational-cockpit .csp-operations-telemetry>footer i.response{background:#f09a25!important}
+
+.csp-layout-operational-cockpit .csp-operational-weather>div{
+  min-width:0!important;
+  display:grid!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+.csp-layout-operational-cockpit .csp-operational-weather>div>section{
+  min-width:0!important;
+  display:grid!important;
+  align-content:center!important;
+  gap:2px!important;
+}
+.csp-layout-operational-cockpit .csp-operational-weather>div>section>*{min-width:0!important}
+.csp-layout-operational-cockpit .csp-operational-weather>div>section>strong{font-family:var(--csp-heading)!important;line-height:1!important}
+.csp-layout-operational-cockpit .csp-operational-weather>div>section>small,
+.csp-layout-operational-cockpit .csp-operational-weather>div>section>em{color:#7182a0!important;font-style:normal!important}
+.csp-layout-operational-cockpit .csp-operational-weather>div>i{
+  display:grid!important;
+  place-items:center!important;
+  color:#efa81e!important;
+  font-style:normal!important;
+}
+.csp-layout-operational-cockpit .csp-operational-weather aside{
+  min-width:0!important;
+  display:grid!important;
+  align-content:center!important;
+  gap:4px!important;
+}
+.csp-layout-operational-cockpit .csp-operational-weather aside>span{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:7px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:5px!important;
+}
+.csp-layout-operational-cockpit .csp-operational-weather aside>span>i{
+  width:6px!important;
+  height:6px!important;
+  border-radius:50%!important;
+  background:#24b88b!important;
+}
+.csp-layout-operational-cockpit .csp-operational-weather aside b,
+.csp-layout-operational-cockpit .csp-operational-weather aside small{
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.csp-layout-operational-cockpit .csp-operational-ai-bar{
+  display:grid!important;
+  align-items:center!important;
+  gap:8px!important;
+  border:1px solid #3261c7!important;
+  background:linear-gradient(110deg,#3928bc,#126bc4)!important;
+  color:#fff!important;
+  box-shadow:0 7px 18px rgba(43,61,178,.24)!important;
+}
+.csp-layout-operational-cockpit .csp-operational-ai-bar>span{min-width:0!important;display:grid!important}
+.csp-layout-operational-cockpit .csp-operational-ai-bar form{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  padding-left:10px!important;
+  border-radius:8px!important;
+  background:#fff!important;
+}
+.csp-layout-operational-cockpit .csp-operational-ai-bar input{
+  min-width:0!important;
+  width:100%!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#314668!important;
+  font-family:var(--csp-font)!important;
+}
+.csp-layout-operational-cockpit .csp-operational-ai-bar button{
+  appearance:none!important;
+  display:grid!important;
+  place-items:center!important;
+  margin-right:4px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:#e6f2ff!important;
+  color:#1d65cf!important;
+}
+
+.csp-layout-operational-cockpit .csp-map-operations-feed{
+  position:absolute!important;
+  z-index:6!important;
+  bottom:0!important;
+  display:grid!important;
+  align-content:start!important;
+  gap:4px!important;
+  border-radius:0 10px 0 0!important;
+  background:rgba(255,255,255,.92)!important;
+  box-shadow:0 -5px 16px rgba(34,82,145,.1)!important;
+  backdrop-filter:blur(12px)!important;
+}
+.csp-layout-operational-cockpit .csp-map-operations-feed>b{
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+}
+.csp-layout-operational-cockpit .csp-map-operations-feed>span{
+  position:static!important;
+  inset:auto!important;
+  left:auto!important;
+  top:auto!important;
+  min-width:0!important;
+  display:grid!important;
+  align-items:center!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+}
+.csp-layout-operational-cockpit .csp-map-operations-feed>span>i{
+  position:static!important;
+  inset:auto!important;
+  width:5px!important;
+  height:5px!important;
+  border-radius:50%!important;
+  background:#317ff0!important;
+  box-shadow:none!important;
+}
+.csp-layout-operational-cockpit .csp-map-scope-rail span>i{
+  position:static!important;
+  inset:auto!important;
+  box-shadow:none!important;
+}
+.csp-layout-operational-cockpit .csp-map-controls{
+  position:absolute!important;
+  z-index:7!important;
+  display:grid!important;
+  overflow:hidden!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  box-shadow:0 5px 15px rgba(30,87,150,.18)!important;
+}
+.csp-layout-operational-cockpit .csp-map-controls i{
+  position:static!important;
+  inset:auto!important;
+  display:grid!important;
+  place-items:center!important;
+  border-bottom:1px solid #e3ebf6!important;
+  background:transparent!important;
+  color:#3157ad!important;
+  box-shadow:none!important;
+  font-style:normal!important;
+}
+.csp-layout-operational-cockpit .csp-map-view-all{
+  appearance:none!important;
+  position:absolute!important;
+  z-index:7!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:rgba(255,255,255,.94)!important;
+  color:#2455a5!important;
+}
+.csp-layout-operational-cockpit .csp-map-operations-feed time,
+.csp-layout-operational-cockpit .csp-map-operations-feed em{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-operational-cockpit .csp-hero-scene{
+    background-size:100% 100%!important;
+    background-position:center!important;
+  }
+}
+
+@media (min-width:3200px){
+  .csp-layout-operational-cockpit .csp-content{padding-bottom:2px!important}
+  .csp-layout-operational-cockpit .csp-grid{
+    grid-template-rows:280px 150px 650px 430px 300px 144px!important;
+  }
+  .csp-layout-operational-cockpit .csp-top-actions{
+    grid-template-columns:250px 210px 190px 58px 170px 110px 205px!important;
+  }
+  .csp-layout-operational-cockpit .csp-release{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-scope-rail span{
+    position:static!important;
+    inset:auto!important;
+    left:auto!important;
+    top:auto!important;
+    display:grid!important;
+    align-items:center!important;
+    align-content:center!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span>i{
+    display:grid!important;
+    place-items:center!important;
+    border-radius:12px!important;
+    background:#e7f1ff!important;
+    color:#196fdc!important;
+    font-style:normal!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail b,
+  .csp-layout-operational-cockpit .csp-map-scope-rail small{
+    position:static!important;
+    inset:auto!important;
+    display:block!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-city-labels{
+    position:absolute!important;
+    inset:0!important;
+    z-index:5!important;
+    pointer-events:none!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-city-labels>span{
+    position:absolute!important;
+    display:grid!important;
+    gap:2px!important;
+    min-width:84px!important;
+    padding:7px 9px!important;
+    border:1px solid rgba(57,104,190,.12)!important;
+    border-radius:8px!important;
+    background:rgba(255,255,255,.9)!important;
+    box-shadow:0 7px 18px rgba(38,91,153,.14)!important;
+    color:#1b4f9d!important;
+    font-size:12px!important;
+    line-height:1.05!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-city-labels>span small{
+    color:#6d7f9e!important;
+    font-size:12px!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-city-labels .place-1{left:19%!important;top:15%!important}
+  .csp-layout-operational-cockpit .csp-map-city-labels .place-2{left:22%!important;top:53%!important}
+  .csp-layout-operational-cockpit .csp-map-city-labels .place-3{left:77%!important;top:58%!important}
+  .csp-layout-operational-cockpit .csp-signal-tabs button,
+  .csp-layout-operational-cockpit .csp-operational-queue>nav button{
+    font-size:12px!important;
+  }
+  .csp-layout-operational-cockpit .csp-signal-icon{
+    width:42px!important;
+    height:42px!important;
+    font-size:20px!important;
+  }
+  .csp-layout-operational-cockpit .csp-signal-list>button{
+    grid-template-columns:44px minmax(0,1fr) 18px!important;
+    gap:12px!important;
+  }
+  .csp-layout-operational-cockpit .csp-operational-queue>div>button>i{
+    width:31px!important;
+    height:31px!important;
+  }
+  .csp-layout-operational-cockpit .csp-operational-weather>div{
+    grid-template-columns:minmax(0,1fr) 90px minmax(0,1fr)!important;
+  }
+  .csp-layout-operational-cockpit .csp-operational-ai-bar{
+    grid-template-columns:56px minmax(0,1fr)!important;
+    grid-template-rows:60px 1fr!important;
+  }
+  .csp-layout-operational-cockpit .csp-operational-ai-bar form{
+    grid-column:1/-1!important;
+  }
+}

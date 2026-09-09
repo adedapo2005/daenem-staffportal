@@ -57,7 +57,7 @@ const heroArtworkPaths: Record<StaffPortalLayoutId, string> = {
 const heroPhotoPaths: Record<StaffPortalLayoutId, string> = {
   'executive-command': '/reference-images/signin/daylight-glass-skyline.webp',
   'workspace-canvas': '/reference-images/signin/future-technology-campus.webp',
-  'operational-cockpit': '/canonical-postauth-v3/executive-command/hero-skyline-photographic-v2.webp',
+  'operational-cockpit': '/canonical-postauth-v3/executive-command/hero-skyline-owner.svg',
   'insight-magazine': '/reference-images/signin/daylight-glass-skyline.webp',
   'master-detail-workspace': '/reference-images/signin/premium-connected-workspace.webp',
   'horizon-wide': '/canonical-postauth-v3/horizon-wide/singapore-panorama-owner-v1.webp',
@@ -706,7 +706,18 @@ function InsightPurposeStrip({ fixture }: { fixture: CanonicalFixture }) {
   return <article className="csp-insight-purpose" data-zone="activity"><span><b>One Team<br/>A Brighter Tomorrow</b><small>Build · Empower · Grow</small></span><blockquote>“Great Organisations Are Built<br/>By Great People.”<small>— Daenem Global</small></blockquote><div>{[fixture.kpis[0],fixture.kpis[2],fixture.kpis[4]].map(metric=><span key={metric?.label ?? 'Unavailable'}><b>{metric?.value ?? 'Not Available'}</b><small>{metric?.label ?? 'Authorized Signal'}</small></span>)}</div></article>;
 }
 function OperationalTelemetrySurface({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void }) {
-  return <article className="csp-card csp-operations-telemetry" data-zone="executive-analytics"><header><span><BarChart3 size={17}/><b>Operational Performance</b></span><button type="button" onClick={() => onAction?.('executive-analytics','change-period')}>Last 24 Hours <ChevronRight size={13}/></button></header><div className="csp-operations-chart" aria-label="Decorative operational telemetry; live series unavailable"><span className="csp-operations-axis" aria-hidden="true"><i>100%</i><i>75%</i><i>50%</i><i>25%</i><i>0%</i></span><svg viewBox="0 0 430 150" aria-hidden="true"><path className="grid" d="M12 16H420M12 48H420M12 80H420M12 112H420M12 144H420"/><path className="line health" d="M14 52C72 52 86 63 129 51S194 48 239 31s94-17 179-19"/><path className="line tasks" d="M14 82C66 77 91 72 132 70s69 8 108-4 94-13 178-8"/><path className="line response" d="M14 110C74 102 88 112 132 105s78-13 111-35 96-3 175-7"/><g className="points">{[[14,52],[129,51],[239,31],[418,12],[14,82],[132,70],[240,66],[418,58],[14,110],[132,105],[243,70],[418,63]].map(([x,y],index)=><circle key={index} cx={x} cy={y} r="3"/>)}</g></svg></div><footer><span><i className="health"/><small>Operations</small><b>{fixture.kpis[0]?.value ?? 'Not Available'}</b></span><span><i className="tasks"/><small>Projects</small><b>{fixture.kpis[2]?.value ?? 'Not Available'}</b></span><span><i className="response"/><small>System Signal</small><b>{fixture.kpis[4]?.value ?? 'Not Available'}</b></span></footer></article>;
+  return <article className="csp-card csp-operations-telemetry" data-zone="executive-analytics">
+    <header><span><BarChart3 size={17}/><b>Operational Performance</b></span><button type="button" onClick={() => onAction?.('executive-analytics','change-period')}>Last 24 Hours <ChevronRight size={13}/></button></header>
+    <div className="csp-operations-chart" aria-label="Decorative operational telemetry; live series unavailable">
+      <span className="csp-operations-axis" aria-hidden="true"><i>100%</i><i>75%</i><i>50%</i><i>25%</i><i>0%</i></span>
+      <svg viewBox="0 0 430 150" preserveAspectRatio="none" aria-hidden="true"><path className="grid" d="M12 16H420M12 48H420M12 80H420M12 112H420M12 144H420"/><path className="line health" d="M14 52C72 52 86 63 129 51S194 48 239 31s94-17 179-19"/><path className="line tasks" d="M14 82C66 77 91 72 132 70s69 8 108-4 94-13 178-8"/><path className="line response" d="M14 110C74 102 88 112 132 105s78-13 111-35 96-3 175-7"/><g className="points">{[[14,52],[129,51],[239,31],[418,12],[14,82],[132,70],[240,66],[418,58],[14,110],[132,105],[243,70],[418,63]].map(([x,y],index)=><circle key={index} cx={x} cy={y} r="3"/>)}</g></svg>
+      <button type="button" className="csp-operations-chart-inspector" aria-label="Inspect authorized operational snapshot" onClick={()=>onAction?.('executive-analytics','inspect-snapshot')}>
+        <i aria-hidden="true"/>
+        <span role="tooltip"><strong>Authorized Snapshot</strong><small><i className="health"/>Operations <b>{fixture.kpis[0]?.value ?? 'Not Available'}</b></small><small><i className="tasks"/>Projects <b>{fixture.kpis[2]?.value ?? 'Not Available'}</b></small><small><i className="response"/>System Signal <b>{fixture.kpis[4]?.value ?? 'Not Available'}</b></small></span>
+      </button>
+    </div>
+    <footer><span><i className="health"/><small>Operations</small><b>{fixture.kpis[0]?.value ?? 'Not Available'}</b></span><span><i className="tasks"/><small>Projects</small><b>{fixture.kpis[2]?.value ?? 'Not Available'}</b></span><span><i className="response"/><small>System Signal</small><b>{fixture.kpis[4]?.value ?? 'Not Available'}</b></span></footer>
+  </article>;
 }
 
 function OperationalQueueSurface({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void }) {
@@ -835,10 +846,13 @@ export function CanonicalDashboard({ initialLayout='executive-command', fixture=
   const [layoutId, setLayoutId] = useState<StaffPortalLayoutId>(initialLayout);
   useEffect(() => { setLayoutId(initialLayout); }, [initialLayout]);
   const spec = CANONICAL_LAYOUT_SPECS[layoutId];
+  const qaFixtureAskAi = import.meta.env.DEV && import.meta.env.VITE_CANONICAL_QA_FIXTURE === 'true' && layoutId === 'operational-cockpit'
+    ? () => onZoneAction?.('ai-insights','ask-ai')
+    : undefined;
   const setLayout = (id: StaffPortalLayoutId) => { setLayoutId(id); onLayoutChange?.(id); };
   const style = useMemo(()=>({ '--csp-wide-rows': spec.wideRowMinimums.map(h=>`minmax(${h}px, auto)`).join(' '), '--csp-desktop-areas': spec.desktopGridAreas.map(x=>`\"${x}\"`).join(' '), '--csp-tablet-areas': spec.tabletGridAreas.map(x=>`\"${x}\"`).join(' ') }) as CSSProperties,[spec]);
   return <div className={`csp-root csp-layout-${layoutId} csp-nav-${spec.navMode}`} data-canonical-staffportal-dashboard data-layout-id={layoutId} style={style}>
-    <TopBar fixture={fixture} layoutId={layoutId} onLayoutChange={setLayout} onWorkspace={onWorkspace} onSearch={onSearch} onAskAi={onAskAi} onQuickCreate={onQuickCreate} onNotifications={onNotifications} onProfile={onProfile}/>
+    <TopBar fixture={fixture} layoutId={layoutId} onLayoutChange={setLayout} onWorkspace={onWorkspace} onSearch={onSearch} onAskAi={onAskAi ?? qaFixtureAskAi} onQuickCreate={onQuickCreate} onNotifications={onNotifications} onProfile={onProfile}/>
     <SideNav layoutId={layoutId} navigation={navigation} activeNavigationId={activeNavigationId}/>
     <main className="csp-content">
       <LayoutRibbon layoutId={layoutId} onAction={onZoneAction}/>
