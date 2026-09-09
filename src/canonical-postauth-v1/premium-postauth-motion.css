@@ -1,0 +1,234 @@
+/*
+ * Staff Portal premium icon / motion / effects layer.
+ *
+ * This file is intentionally scoped to the canonical post-auth dashboard
+ * root. It adds interaction quality and state feedback without changing the
+ * layout contracts, business values, or sign-in surface.
+ */
+
+.csp-root[data-canonical-staffportal-dashboard]{
+  --csp-motion-fast:150ms;
+  --csp-motion-base:220ms;
+  --csp-motion-slow:420ms;
+  --csp-motion-ease:cubic-bezier(.2,.8,.2,1);
+  --csp-focus-ring:0 0 0 3px rgba(47,91,231,.24);
+}
+
+.csp-root[data-canonical-staffportal-dashboard] :where(button,input,select){
+  -webkit-tap-highlight-color:transparent;
+}
+
+.csp-root[data-canonical-staffportal-dashboard] :where(button,input,select):focus-visible{
+  outline:2px solid rgba(47,91,231,.72);
+  outline-offset:2px;
+  box-shadow:var(--csp-focus-ring);
+}
+
+/* Brand mark: layered color depth plus one quiet reflected-light pass. The
+   actual SVG logo stays live and sharp; the effect never rasterizes it. */
+.csp-root[data-canonical-staffportal-dashboard] .csp-brand-mark{
+  position:relative;
+  isolation:isolate;
+  background-image:linear-gradient(116deg,transparent 0 38%,rgba(255,255,255,.34) 47%,transparent 57%),linear-gradient(145deg,#11a9c7,#2f5be7 58%,#8a63ee);
+  background-size:230% 100%,100% 100%;
+  background-position:120% 0,0 0;
+  transition:transform var(--csp-motion-base) var(--csp-motion-ease),box-shadow var(--csp-motion-base) var(--csp-motion-ease),background-position 700ms var(--csp-motion-ease);
+}
+.csp-root[data-canonical-staffportal-dashboard] .csp-brand-mark img{
+  position:relative;
+  z-index:1;
+}
+
+/* Shared focus/press language. Hover is restricted to fine pointers so touch
+   devices do not inherit sticky hover states. */
+@media (hover:hover) and (pointer:fine){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-brand:hover .csp-brand-mark{
+    transform:translateY(-1px) perspective(80px) rotateX(2deg);
+    box-shadow:0 12px 26px rgba(47,91,231,.28),inset 0 1px rgba(255,255,255,.54);
+    background-position:-18% 0,0 0;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] :where(.csp-top-actions>button,.csp-layout-trigger,.csp-layout-option,.csp-layout-ribbon button,.csp-card>header button,.csp-sidebar nav button,.csp-actions>div button,.csp-command-actions>button,.csp-team-filters button,.csp-team-table>button,.csp-context-ai-rows>button,.csp-operational-queue>div>button,.csp-focus-quick-links>div>button,.csp-priority-stream>button:not(.primary)){
+    transition:transform var(--csp-motion-fast) var(--csp-motion-ease),box-shadow var(--csp-motion-fast) var(--csp-motion-ease),border-color var(--csp-motion-fast) ease,background-color var(--csp-motion-fast) ease,color var(--csp-motion-fast) ease;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] :where(.csp-top-actions>button,.csp-layout-trigger,.csp-layout-option,.csp-layout-ribbon button,.csp-card>header button,.csp-sidebar nav button,.csp-actions>div button,.csp-command-actions>button,.csp-team-filters button,.csp-team-table>button,.csp-context-ai-rows>button,.csp-operational-queue>div>button,.csp-focus-quick-links>div>button,.csp-priority-stream>button:not(.primary)):hover:not(:disabled){
+    transform:translateY(-1px);
+    border-color:rgba(47,91,231,.28);
+    box-shadow:0 8px 20px rgba(37,58,104,.10);
+  }
+  .csp-root[data-canonical-staffportal-dashboard] :where(.csp-top-actions>button,.csp-layout-trigger,.csp-layout-option,.csp-layout-ribbon button,.csp-card>header button,.csp-sidebar nav button,.csp-actions>div button,.csp-command-actions>button,.csp-team-filters button,.csp-team-table>button,.csp-context-ai-rows>button,.csp-operational-queue>div>button,.csp-focus-quick-links>div>button,.csp-priority-stream>button:not(.primary)):hover:not(:disabled)>svg{
+    transform:translateX(1px);
+  }
+}
+.csp-root[data-canonical-staffportal-dashboard] :where(button,.csp-layout-select):active:not(:disabled){
+  transform:translateY(0) scale(.985);
+}
+.csp-root[data-canonical-staffportal-dashboard] :where(button,.csp-layout-select):disabled,
+.csp-root[data-canonical-staffportal-dashboard] [aria-disabled="true"]{
+  cursor:not-allowed;
+  filter:saturate(.72);
+}
+
+/* Icon containers gain optical response without changing their idle footprint. */
+.csp-root[data-canonical-staffportal-dashboard] :where(.csp-kpi-icon,.csp-map-scope-rail span>i,.csp-signal-icon,.csp-team-avatar,.csp-studio-node-icon,.csp-context-ai-intro>i,.csp-focus-task-icon,.csp-focus-progress-rows>button>i){
+  transition:transform var(--csp-motion-fast) var(--csp-motion-ease),box-shadow var(--csp-motion-fast) var(--csp-motion-ease),filter var(--csp-motion-fast) ease;
+}
+@media (hover:hover) and (pointer:fine){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-team-table>button:hover:not(:disabled)>.csp-team-avatar,
+  .csp-root[data-canonical-staffportal-dashboard] .csp-signal-list>button:hover:not(:disabled)>.csp-signal-icon,
+  .csp-root[data-canonical-staffportal-dashboard] .csp-context-ai-rows>button:hover:not(:disabled)>i,
+  .csp-root[data-canonical-staffportal-dashboard] .csp-operational-queue>div>button:hover:not(:disabled)>i,
+  .csp-root[data-canonical-staffportal-dashboard] .csp-studio-grid .node:hover:not(:disabled)>.csp-studio-node-icon,
+  .csp-root[data-canonical-staffportal-dashboard] .csp-focus-progress-rows>button:hover:not(:disabled)>i,
+  .csp-root[data-canonical-staffportal-dashboard] .csp-focus-priority-rows>button:hover:not(:disabled)>.csp-focus-task-icon{
+    transform:translateY(-1px) scale(1.03);
+    filter:brightness(1.035);
+  }
+}
+
+/* Accessible selector/popover and tab states. The menu remains closed in the
+   production default; this only refines the open QA/interaction state. */
+.csp-root[data-canonical-staffportal-dashboard] .csp-layout-menu[role="listbox"]{
+  transform-origin:top right;
+}
+.csp-root[data-canonical-staffportal-dashboard] .csp-layout-option[aria-selected="true"]{
+  box-shadow:inset 3px 0 var(--csp-cobalt),0 5px 15px rgba(47,91,231,.08);
+}
+/* Real state hooks only. These selectors do nothing until the application
+   reports the corresponding state through standard attributes. */
+.csp-root[data-canonical-staffportal-dashboard] :where([aria-busy="true"],[data-state="loading"])>svg{
+  animation:csp-icon-spin 900ms linear infinite;
+}
+.csp-root[data-canonical-staffportal-dashboard] :where([data-state="success"])>svg{
+  animation:csp-icon-confirm 360ms var(--csp-motion-ease) both;
+}
+.csp-root[data-canonical-staffportal-dashboard] :where([data-state="warning"])>svg{
+  animation:csp-icon-attention 700ms var(--csp-motion-ease) both;
+}
+.csp-root[data-canonical-staffportal-dashboard] :where([data-state="error"])>svg{
+  animation:csp-icon-error 260ms var(--csp-motion-ease) both;
+}
+.csp-root[data-canonical-staffportal-dashboard] :where([aria-busy="true"],[data-state="loading"]){
+  cursor:progress;
+}
+.csp-root[data-canonical-staffportal-dashboard] :where([aria-busy="true"],[data-state="loading"])::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(105deg,transparent 28%,rgba(255,255,255,.42) 48%,transparent 68%);
+  background-size:220% 100%;
+  animation:csp-loading-sheen 1.35s ease-in-out infinite;
+}
+
+/* Quiet entrance and ambient light. The first frame stays usable; no control
+   is held behind an animation. */
+@media (prefers-reduced-motion:no-preference){
+  .csp-root[data-canonical-staffportal-dashboard]>.csp-topbar,
+  .csp-root[data-canonical-staffportal-dashboard]>.csp-sidebar{
+    animation:csp-shell-in 380ms var(--csp-motion-ease) both;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-hero{
+    animation:csp-surface-in 460ms var(--csp-motion-ease) both;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-kpis{
+    animation:csp-surface-in 460ms var(--csp-motion-ease) 60ms both;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-grid>.csp-zone{
+    animation:csp-surface-in 420ms var(--csp-motion-ease) both;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-grid>.csp-zone:nth-child(3){animation-delay:80ms}
+  .csp-root[data-canonical-staffportal-dashboard] .csp-grid>.csp-zone:nth-child(4){animation-delay:110ms}
+  .csp-root[data-canonical-staffportal-dashboard] .csp-grid>.csp-zone:nth-child(5){animation-delay:140ms}
+  .csp-root[data-canonical-staffportal-dashboard] .csp-grid>.csp-zone:nth-child(n+6){animation-delay:170ms}
+  .csp-root[data-canonical-staffportal-dashboard] .csp-brand-mark{
+    animation:csp-brand-light-sweep 11s ease-in-out 700ms 1 both;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-hero-glass{
+    animation:csp-hero-sheen 10s ease-in-out 1.1s 1 both;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-operational-ai-bar{
+    animation:csp-ai-sheen 9s ease-in-out 1.2s infinite;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-ai-orbit{
+    transform-origin:center;
+    animation:csp-ai-orbit 18s linear infinite;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] :where(.csp-chart,.csp-operations-chart>svg,.csp-board-trend-chart>svg){
+    transform-origin:center;
+    animation:csp-chart-reveal 520ms var(--csp-motion-ease) 180ms both;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-layout-menu[role="listbox"]{
+    animation:csp-popover-in 180ms var(--csp-motion-ease) both;
+  }
+}
+
+/* Weather icon motion belongs to the icon itself. The helper adds the
+   condition class; small forecast glyphs remain static for calm density. */
+.csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon{
+  shape-rendering:geometricPrecision;
+  transform-origin:50% 50%;
+}
+.csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon--small{animation:none!important}
+@media (prefers-reduced-motion:no-preference){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon:not(.csp-weather-icon--small){
+    animation:csp-weather-breathe 5.5s ease-in-out infinite;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-rain:not(.csp-weather-icon--small),
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-heavy-rain:not(.csp-weather-icon--small){
+    animation:csp-weather-rain 1.8s ease-in-out infinite;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-thunderstorm:not(.csp-weather-icon--small){
+    animation:csp-weather-storm 2.8s ease-in-out infinite;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-snow:not(.csp-weather-icon--small){
+    animation:csp-weather-snow 3.4s ease-in-out infinite;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-fog:not(.csp-weather-icon--small),
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-wind:not(.csp-weather-icon--small){
+    animation:csp-weather-drift 4.2s ease-in-out infinite;
+  }
+}
+
+@media (max-width:767px), (prefers-reduced-data:reduce){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-ai-orbit{animation-duration:28s}
+  .csp-root[data-canonical-staffportal-dashboard] .csp-operational-ai-bar{animation:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .csp-root[data-canonical-staffportal-dashboard] *,
+  .csp-root[data-canonical-staffportal-dashboard] *::before,
+  .csp-root[data-canonical-staffportal-dashboard] *::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-brand-mark{
+    background-image:none!important;
+    background-size:auto;
+    background-position:0 0;
+  }
+  .csp-root[data-canonical-staffportal-dashboard] .csp-operational-ai-bar{
+    background-size:100% 100%;
+    background-position:0 0;
+  }
+}
+
+@keyframes csp-shell-in{from{opacity:.92;transform:translateY(-3px)}to{opacity:1;transform:none}}
+@keyframes csp-surface-in{from{opacity:.94;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes csp-brand-light-sweep{0%,58%{background-position:120% 0,0 0}78%,100%{background-position:-18% 0,0 0}}
+@keyframes csp-hero-sheen{0%,42%{opacity:.66;transform:translateX(-4%)}72%,100%{opacity:1;transform:translateX(4%)}}
+@keyframes csp-ai-sheen{0%,64%{background-position:100% 0}84%,100%{background-position:0 0}}
+@keyframes csp-ai-orbit{to{transform:rotate(360deg)}}
+@keyframes csp-chart-reveal{from{opacity:.62;transform:translateY(4px) scale(.995)}to{opacity:1;transform:none}}
+@keyframes csp-popover-in{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes csp-icon-spin{to{transform:rotate(360deg)}}
+@keyframes csp-icon-confirm{0%{transform:scale(.82);opacity:.5}70%{transform:scale(1.1)}100%{transform:none;opacity:1}}
+@keyframes csp-icon-attention{0%,100%{transform:none}35%{transform:translateY(-1px) rotate(-4deg)}70%{transform:translateY(0) rotate(3deg)}}
+@keyframes csp-icon-error{0%,100%{transform:none}35%{transform:translateX(-2px)}70%{transform:translateX(2px)}}
+@keyframes csp-loading-sheen{from{background-position:120% 0}to{background-position:-20% 0}}
+@keyframes csp-weather-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1px) scale(1.018)}}
+@keyframes csp-weather-rain{0%,100%{transform:translateY(0)}50%{transform:translateY(1px)}}
+@keyframes csp-weather-storm{0%,100%{transform:translateY(0);filter:none}48%{transform:translateY(-1px);filter:drop-shadow(0 0 5px rgba(216,155,56,.32))}}
+@keyframes csp-weather-snow{0%,100%{transform:translate(0,0)}50%{transform:translate(1px,2px)}}
+@keyframes csp-weather-drift{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}

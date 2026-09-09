@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, Bell, BookOpen, Bot, BriefcaseBusiness, CalendarDays, CheckCircle2,
-  ChevronDown, ChevronRight, CircleDollarSign, CloudSun, Command, Crown, FileText, Gauge, Globe2, Grid3X3, LayoutDashboard,
-  ListChecks, MapPinned, Menu, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Sparkles, Star, Users, Workflow,
+  ChevronDown, ChevronRight, CircleDollarSign, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Command, Crown, FileText, Gauge, Globe2, Grid3X3, LayoutDashboard,
+  ListChecks, MapPinned, Menu, Moon, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Sparkles, Star, Sun, Users, Wind, Workflow,
 } from 'lucide-react';
 import type { CanonicalDashboardProps, CanonicalFixture, CanonicalNavigationItem, CanonicalZoneId, StaffPortalLayoutId } from './canonical-types';
 import { CANONICAL_VISUAL_FIXTURE } from './canonical-fixture';
@@ -14,6 +14,7 @@ import './canonical-fonts';
 import './canonical-dashboard.css';
 import './sol-owner-fidelity.css';
 import './operational-owner-fidelity.css';
+import './premium-postauth-motion.css';
 
 const nav = [
   ['Dashboard', LayoutDashboard], ['People & Teams', Users], ['Operations', Gauge], ['Projects', BriefcaseBusiness],
@@ -37,6 +38,39 @@ const zoneTitles: Partial<Record<CanonicalZoneId, string>> = {
   tasks: 'My Tasks', approvals: 'Pending Approvals', activity: 'Recent Activity', knowledge: 'Knowledge Hub',
   'quick-actions': 'Quick Actions', status: 'System Status', announcement: 'Latest Announcements',
 };
+
+type WeatherIconProps = { condition?: string | null; size: number };
+
+function WeatherIcon({ condition, size }: WeatherIconProps) {
+  const normalized = (condition ?? '').toLowerCase();
+  const kind = normalized.includes('thunder') || normalized.includes('storm')
+    ? 'thunderstorm'
+    : normalized.includes('heavy rain')
+      ? 'heavy-rain'
+      : normalized.includes('rain') || normalized.includes('shower')
+        ? 'rain'
+        : normalized.includes('snow')
+          ? 'snow'
+          : normalized.includes('fog') || normalized.includes('mist')
+            ? 'fog'
+            : normalized.includes('wind')
+              ? 'wind'
+              : normalized.includes('night') || normalized.includes('clear night')
+                ? 'night'
+                : normalized.includes('cloud') || normalized.includes('overcast')
+                  ? (normalized.includes('partly') ? 'partly-cloudy' : 'cloudy')
+                  : 'sunny';
+  const Icon = kind === 'thunderstorm' ? CloudLightning
+    : kind === 'heavy-rain' || kind === 'rain' ? CloudRain
+      : kind === 'snow' ? CloudSnow
+        : kind === 'fog' ? CloudFog
+          : kind === 'wind' ? Wind
+            : kind === 'night' ? Moon
+              : kind === 'cloudy' ? Cloud
+                : kind === 'sunny' ? Sun
+                  : CloudSun;
+  return <Icon size={size} className={`csp-weather-icon csp-weather-icon-${kind}${size <= 18 ? ' csp-weather-icon--small' : ''}`} aria-hidden="true"/>;
+}
 
 const heroArtworkPaths: Record<StaffPortalLayoutId, string> = {
   'executive-command': '/canonical-postauth-v3/executive-command/hero-atmosphere.svg',
@@ -161,7 +195,7 @@ function TopBar({ fixture, layoutId, onLayoutChange, onWorkspace, onSearch, onAs
       {onAskAi && <button type="button" className="csp-ai" onClick={onAskAi}><Sparkles size={16}/> Ask Daenem AI</button>}
       <button type="button" className="csp-create" aria-label="Quick Create" onClick={onQuickCreate}><Plus size={16}/><span className="csp-create-label">Quick Create</span>{(layoutId === 'executive-command' || layoutId === 'workspace-canvas') && <ChevronDown size={14} aria-hidden="true"/>}</button>
       <button type="button" className="csp-icon" aria-label="Notifications" onClick={onNotifications}><Bell size={17}/><i>3</i></button>
-      <span className="csp-weather-chip"><CloudSun size={18}/><span><b>{layoutId === 'executive-command' ? fixture.weather.city : (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`)}</b><small>{layoutId === 'executive-command' ? (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C · ${fixture.weather.condition}`) : fixture.weather.city}</small></span></span>
+      <span className="csp-weather-chip"><WeatherIcon condition={fixture.weather.condition} size={18}/><span><b>{layoutId === 'executive-command' ? fixture.weather.city : (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`)}</b><small>{layoutId === 'executive-command' ? (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C · ${fixture.weather.condition}`) : fixture.weather.city}</small></span></span>
       <FreshnessStatus sync={fixture.sync} variant="topbar"/>
       <span className="csp-release"><b>{fixture.release.version}</b><small>{fixture.release.label}</small></span>
       {operationalSelector ? <div className={`csp-layout-select${layoutOpen ? ' is-open' : ''}`} ref={selectorRef}>
@@ -532,12 +566,12 @@ function ContextAiInsights({ fixture, layoutId, onAction }: { fixture: Canonical
 
 function ContextWeather({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
   const temperature = fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`;
-  return <article className="csp-card csp-weather csp-context-weather" data-zone="weather"><header><b>{fixture.weather.city}</b><button type="button" onClick={()=>onAction?.('weather','view-more')}>View Forecast <ChevronRight size={13}/></button></header><div className="csp-context-weather-current"><span><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><b>{fixture.weather.condition}</b><small>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h · UV {fixture.weather.uv}</small></span><i aria-hidden="true"><CloudSun size={58}/></i></div><footer>{['Next','Later','Tomorrow','Following'].map((label)=><span key={label}><small>{label}</small><CloudSun size={14}/><b>Not Available</b></span>)}</footer></article>;
+  return <article className="csp-card csp-weather csp-context-weather" data-zone="weather"><header><b>{fixture.weather.city}</b><button type="button" onClick={()=>onAction?.('weather','view-more')}>View Forecast <ChevronRight size={13}/></button></header><div className="csp-context-weather-current"><span><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><b>{fixture.weather.condition}</b><small>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h · UV {fixture.weather.uv}</small></span><i aria-hidden="true"><WeatherIcon condition={fixture.weather.condition} size={58}/></i></div><footer>{['Next','Later','Tomorrow','Following'].map((label)=><span key={label}><small>{label}</small><WeatherIcon condition={fixture.weather.condition} size={14}/><b>Not Available</b></span>)}</footer></article>;
 }
 
 function OperationalWeather({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
   const temperature = fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`;
-  return <article className="csp-card csp-operational-weather" data-zone="weather"><header><span><CloudSun size={16}/><b>Weather &amp; Regional Overview</b></span><button type="button" onClick={()=>onAction?.('weather','view-more')}>View More</button></header><div><section><b>{fixture.weather.city}</b><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><small>{fixture.weather.condition}</small><em>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h</em></section><i aria-hidden="true"><CloudSun size={48}/></i><aside>{fixture.worldTimes.slice(0,4).map((item,index)=><span key={item.city}><i className={`tone-${index}`}/><b>{item.city}</b><small>{item.time}</small></span>)}</aside></div></article>;
+  return <article className="csp-card csp-operational-weather" data-zone="weather"><header><span><WeatherIcon condition={fixture.weather.condition} size={16}/><b>Weather &amp; Regional Overview</b></span><button type="button" onClick={()=>onAction?.('weather','view-more')}>View More</button></header><div><section><b>{fixture.weather.city}</b><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><small>{fixture.weather.condition}</small><em>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h</em></section><i aria-hidden="true"><WeatherIcon condition={fixture.weather.condition} size={48}/></i><aside>{fixture.worldTimes.slice(0,4).map((item,index)=><span key={item.city}><i className={`tone-${index}`}/><b>{item.city}</b><small>{item.time}</small></span>)}</aside></div></article>;
 }
 
 function FocusMetrics({ fixture }: { fixture: CanonicalFixture }) {
@@ -595,9 +629,9 @@ function ExecutiveWeather({ fixture, onAction }: { fixture: CanonicalFixture; on
   const temperature = fixture.weather.tempC === null ? 'Not Available' : fixture.weather.tempC + '°C';
   return <article className="csp-card csp-weather csp-executive-weather" data-zone="weather">
     <header><b>Today’s World</b><button type="button" onClick={()=>onAction?.('weather','view-more')}>View More</button></header>
-    <div className="csp-executive-weather-current"><span><b>{fixture.weather.city}</b><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC === null ? 'false' : 'true'}>{temperature}</strong><small>{fixture.weather.condition}</small></span><i className="csp-executive-weather-art" aria-hidden="true"><CloudSun size={64}/></i></div>
+    <div className="csp-executive-weather-current"><span><b>{fixture.weather.city}</b><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC === null ? 'false' : 'true'}>{temperature}</strong><small>{fixture.weather.condition}</small></span><i className="csp-executive-weather-art" aria-hidden="true"><WeatherIcon condition={fixture.weather.condition} size={64}/></i></div>
     <div className="csp-executive-weather-details"><span>Humidity {fixture.weather.humidity}%</span><span>Wind {fixture.weather.windKph} km/h</span><span>UV {fixture.weather.uv}</span></div>
-    <footer className="csp-executive-forecast">{['Next','Later','Tomorrow','Following'].map((label)=><span key={label}><small>{label}</small><CloudSun size={18} aria-hidden="true"/><b>Not Available</b></span>)}</footer>
+    <footer className="csp-executive-forecast">{['Next','Later','Tomorrow','Following'].map((label)=><span key={label}><small>{label}</small><WeatherIcon condition={fixture.weather.condition} size={18}/><b>Not Available</b></span>)}</footer>
   </article>;
 }
 
@@ -735,7 +769,7 @@ function WorkspaceWorld({ fixture, onAction }: { fixture: CanonicalFixture; onAc
 
 function WorkspaceWeather({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
   const temperature = fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`;
-  return <article className="csp-card csp-workspace-weather" data-zone="weather"><header><span><CloudSun size={17}/><b>Weather</b></span><button type="button" onClick={()=>onAction?.('weather','view-more')}>{fixture.weather.city}</button></header><div className="csp-workspace-weather-current"><CloudSun size={42}/><span><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><small>{fixture.weather.condition}</small></span></div><p>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h · UV {fixture.weather.uv}</p><footer>{['Next','Later','Tomorrow','Following'].map((label)=><span key={label}><small>{label}</small><CloudSun size={14}/><b>Not Available</b></span>)}</footer></article>;
+  return <article className="csp-card csp-workspace-weather" data-zone="weather"><header><span><WeatherIcon condition={fixture.weather.condition} size={17}/><b>Weather</b></span><button type="button" onClick={()=>onAction?.('weather','view-more')}>{fixture.weather.city}</button></header><div className="csp-workspace-weather-current"><WeatherIcon condition={fixture.weather.condition} size={42}/><span><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><small>{fixture.weather.condition}</small></span></div><p>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h · UV {fixture.weather.uv}</p><footer>{['Next','Later','Tomorrow','Following'].map((label)=><span key={label}><small>{label}</small><WeatherIcon condition={fixture.weather.condition} size={14}/><b>Not Available</b></span>)}</footer></article>;
 }
 
 function WorkspaceStatus({ fixture }: { fixture: CanonicalFixture }) {
@@ -776,7 +810,7 @@ function InsightDateTime({ fixture }: { fixture: CanonicalFixture }) {
 }
 function InsightRightContext({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void }) {
   const temperature = fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`;
-  return <article className="csp-insight-right-context" data-zone="weather"><section className="csp-insight-presence"><header><span><Globe2 size={17}/><b>Global Presence</b></span><button type="button" onClick={()=>onAction?.('weather','view-presence')}>View Details</button></header><div><span className="csp-insight-presence-map" aria-hidden="true"><img src="/canonical-postauth-v3/shared/world-operations-map.svg" alt=""/></span><aside>{fixture.worldTimes.map((item,index)=><span key={item.city}><i className={`tone-${index}`}/><b>{item.city}</b><small>{item.time}</small></span>)}</aside></div></section><section className="csp-insight-weather"><header><span><CloudSun size={17}/><b>{fixture.weather.city} Weather</b></span></header><div><CloudSun size={64}/><span><small>{fixture.weather.condition}</small><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><em>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h</em></span></div><footer>{['Fri','Sat','Sun','Mon'].map(day=><span key={day}><small>{day}</small><CloudSun size={17}/><b>Not Available</b></span>)}</footer></section></article>;
+  return <article className="csp-insight-right-context" data-zone="weather"><section className="csp-insight-presence"><header><span><Globe2 size={17}/><b>Global Presence</b></span><button type="button" onClick={()=>onAction?.('weather','view-presence')}>View Details</button></header><div><span className="csp-insight-presence-map" aria-hidden="true"><img src="/canonical-postauth-v3/shared/world-operations-map.svg" alt=""/></span><aside>{fixture.worldTimes.map((item,index)=><span key={item.city}><i className={`tone-${index}`}/><b>{item.city}</b><small>{item.time}</small></span>)}</aside></div></section><section className="csp-insight-weather"><header><span><WeatherIcon condition={fixture.weather.condition} size={17}/><b>{fixture.weather.city} Weather</b></span></header><div><WeatherIcon condition={fixture.weather.condition} size={64}/><span><small>{fixture.weather.condition}</small><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><em>Humidity {fixture.weather.humidity}% · Wind {fixture.weather.windKph} km/h</em></span></div><footer>{['Fri','Sat','Sun','Mon'].map(day=><span key={day}><small>{day}</small><WeatherIcon condition={fixture.weather.condition} size={17}/><b>Not Available</b></span>)}</footer></section></article>;
 }
 function InsightQuickAi({ onAction }: { onAction?: (zone: CanonicalZoneId, action: string) => void }) {
   const actions = [['Create Project',Plus],['Add Staff',Users],['New Document',FileText],['Request Approval',CheckCircle2]] as const;
@@ -827,7 +861,7 @@ function BoardExecutiveTrend({ fixture, onAction }: { fixture: CanonicalFixture;
 }
 function StudioWeather({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
   const temperature = fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`;
-  return <article className="csp-card csp-studio-weather" data-zone="weather"><CloudSun size={38}/><span><small>{fixture.weather.city}</small><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><b>{fixture.weather.condition}</b></span><div><small>Humidity {fixture.weather.humidity}%</small><small>Wind {fixture.weather.windKph} km/h</small></div><button type="button" aria-label="View Forecast" onClick={()=>onAction?.('weather','view-more')}><ChevronRight size={14}/></button></article>;
+  return <article className="csp-card csp-studio-weather" data-zone="weather"><WeatherIcon condition={fixture.weather.condition} size={38}/><span><small>{fixture.weather.city}</small><strong data-canonical-metric="true" data-numeric={fixture.weather.tempC===null?'false':'true'}>{temperature}</strong><b>{fixture.weather.condition}</b></span><div><small>Humidity {fixture.weather.humidity}%</small><small>Wind {fixture.weather.windKph} km/h</small></div><button type="button" aria-label="View Forecast" onClick={()=>onAction?.('weather','view-more')}><ChevronRight size={14}/></button></article>;
 }
 function BoardPulseTimeline({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void }) {
   const rows = Array.from({length:5},(_,index)=>fixture.activity[index] ?? null);
