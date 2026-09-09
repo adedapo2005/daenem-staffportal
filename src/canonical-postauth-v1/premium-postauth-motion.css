@@ -168,25 +168,31 @@
   shape-rendering:geometricPrecision;
   transform-origin:50% 50%;
 }
-.csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon--small{animation:none!important}
+.csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon--static{animation:none!important}
 @media (prefers-reduced-motion:no-preference){
-  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon:not(.csp-weather-icon--small){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon:not(.csp-weather-icon--static){
     animation:csp-weather-breathe 5.5s ease-in-out infinite;
   }
   .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-rain:not(.csp-weather-icon--small),
-  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-heavy-rain:not(.csp-weather-icon--small){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-light-rain:not(.csp-weather-icon--static),
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-heavy-rain:not(.csp-weather-icon--static){
     animation:csp-weather-rain 1.8s ease-in-out infinite;
   }
-  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-thunderstorm:not(.csp-weather-icon--small){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-thunderstorm:not(.csp-weather-icon--static){
     animation:csp-weather-storm 2.8s ease-in-out infinite;
   }
-  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-snow:not(.csp-weather-icon--small){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-snow:not(.csp-weather-icon--static){
     animation:csp-weather-snow 3.4s ease-in-out infinite;
   }
-  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-fog:not(.csp-weather-icon--small),
-  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-wind:not(.csp-weather-icon--small){
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-fog:not(.csp-weather-icon--static),
+  .csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-wind:not(.csp-weather-icon--static){
     animation:csp-weather-drift 4.2s ease-in-out infinite;
   }
+}
+.csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-unknown,
+.csp-root[data-canonical-staffportal-dashboard] .csp-weather-icon-unavailable{
+  color:#8796aa;
+  animation:none!important;
 }
 
 @media (max-width:767px), (prefers-reduced-data:reduce){
