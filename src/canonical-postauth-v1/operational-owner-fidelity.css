@@ -47,3 +47,12 @@
 @media (max-width:1439px){
   .csp-layout-operational-cockpit .csp-map-city-labels>span small{font-size:9px!important;line-height:1.05!important}
 }
+
+
+/* 4K containment: the responsive grid owns the hero scene at ultra-wide sizes. */
+@media (min-width:2200px){
+  .csp-layout-operational-cockpit .csp-grid>.csp-hero{position:relative!important;overflow:hidden!important}
+  .csp-layout-operational-cockpit .csp-hero-scene{position:absolute!important;inset:0!important;width:auto!important;height:auto!important;display:block!important;background-image:linear-gradient(90deg,rgba(237,248,255,.92) 0%,rgba(235,248,255,.68) 30%,rgba(220,242,253,.08) 61%,rgba(222,243,253,.28) 100%),var(--csp-hero-photo)!important;background-size:cover!important;background-position:center 60%!important}
+  .csp-layout-operational-cockpit .csp-hero-artwork{display:none!important}
+  .csp-layout-operational-cockpit .csp-hero-copy{position:relative!important;z-index:3!important}
+}

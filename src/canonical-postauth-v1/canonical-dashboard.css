@@ -2427,3 +2427,15 @@
   .csp-layout-operational-cockpit .csp-map-operations-feed>span,.csp-layout-operational-cockpit .csp-signal-list small,.csp-layout-operational-cockpit .csp-signal-list em,.csp-layout-operational-cockpit .csp-operations-axis,.csp-layout-operational-cockpit .csp-operations-telemetry>footer small,.csp-layout-operational-cockpit .csp-operational-queue small,.csp-layout-operational-cockpit .csp-operational-queue em,.csp-layout-operational-cockpit .csp-operational-ai-bar>span small,.csp-layout-operational-cockpit .csp-actions>div button{font-size:9px!important}
   .csp-layout-operational-cockpit .csp-operational-weather{height:143px;padding:7px 10px}.csp-layout-operational-cockpit .csp-operational-weather>header{height:25px;margin:0 0 3px}.csp-layout-operational-cockpit .csp-operational-weather>header b{font-size:10px}.csp-operational-weather>div{height:101px;display:grid;grid-template-columns:minmax(0,.85fr) 52px minmax(0,1fr);align-items:center;gap:7px}.csp-operational-weather>div>section{display:grid;gap:1px}.csp-operational-weather>div>section>b{font-size:9px}.csp-operational-weather>div>section>strong{font:800 27px/1 var(--csp-heading);color:#13295d}.csp-operational-weather>div>section>small,.csp-operational-weather>div>section>em{font-size:9px;color:#667997;font-style:normal}.csp-operational-weather>div>i{color:#f2aa1d}.csp-operational-weather aside{display:grid;gap:4px}.csp-operational-weather aside span{display:grid;grid-template-columns:7px minmax(0,1fr) auto;gap:4px;align-items:center}.csp-operational-weather aside i{width:6px;height:6px;border-radius:50%;background:#13b37a}.csp-operational-weather aside i.tone-1{background:#f2a51b}.csp-operational-weather aside i.tone-2{background:#2681e9}.csp-operational-weather aside i.tone-3{background:#7e55d9}.csp-operational-weather aside b,.csp-operational-weather aside small{font-size:9px}
 }
+
+
+/* Operational desktop closure: the approved cockpit composition ends at the
+   recent-activity / AI-action baseline. These lower-order zones remain in the
+   layout model for tablet and mobile flows, but must not extend the desktop
+   authority frame below the 1672x941 reference. */
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-operational-cockpit .csp-grid{height:880px!important;min-height:880px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="approvals"],
+  .csp-layout-operational-cockpit [data-zone-shell="world-time"],
+  .csp-layout-operational-cockpit [data-zone-shell="knowledge"]{display:none!important}
+}
