@@ -341,6 +341,104 @@
   .csp-layout-insight-magazine .csp-insight-right-context{display:grid;gap:18px}.csp-layout-insight-magazine .csp-insight-right-context>section,.csp-layout-insight-magazine .csp-insight-datetime,.csp-layout-insight-magazine .csp-insight-quick-ai>section{padding:22px;border:1px solid var(--csp-line);border-radius:18px;background:#fff}.csp-layout-insight-magazine .csp-insight-presence>div{display:grid;grid-template-columns:1fr 220px}.csp-layout-insight-magazine .csp-insight-presence-map img{width:100%;height:300px;object-fit:cover}.csp-layout-insight-magazine .csp-insight-presence aside{display:grid;align-content:center;gap:12px}.csp-layout-insight-magazine .csp-insight-presence aside span{display:grid;grid-template-columns:10px 1fr auto}.csp-layout-insight-magazine .csp-insight-presence aside i{width:9px;height:9px;border-radius:50%;background:#2279e4}.csp-layout-insight-magazine .csp-insight-weather>div{display:flex;align-items:center;gap:22px}.csp-layout-insight-magazine .csp-insight-weather>footer{display:grid;grid-template-columns:repeat(4,1fr)}.csp-layout-insight-magazine .csp-insight-datetime{display:grid;grid-template-columns:1fr 80px 100px;align-items:center}.csp-layout-insight-magazine .csp-insight-data-story>header>span,.csp-layout-insight-magazine .csp-insight-latest>header>span,.csp-layout-insight-magazine .csp-insight-brief>header>span{display:grid}.csp-layout-insight-magazine .csp-insight-latest-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.csp-layout-insight-magazine .csp-insight-feature-story{overflow:hidden}.csp-layout-insight-magazine .csp-insight-feature-story>img{width:100%;height:420px;object-fit:cover}.csp-layout-insight-magazine .csp-insight-latest-grid>section{display:grid;gap:12px}.csp-layout-insight-magazine .csp-insight-latest-grid>section>button{display:grid;grid-template-columns:180px 1fr;overflow:hidden}.csp-layout-insight-magazine .csp-insight-story-photo{height:150px;background-size:cover}.csp-layout-insight-magazine .csp-insight-purpose{display:grid;grid-template-columns:1fr 1fr 1fr}.csp-layout-insight-magazine .csp-insight-quick-ai{display:grid;gap:18px}
 }
 
+/* Operational Cockpit independent-review correction pass.  These rules are
+   intentionally scoped so the accepted Executive Command and Workspace
+   Canvas surfaces remain frozen. */
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-operational-cockpit .csp-hero-scene{
+    background-image:linear-gradient(90deg,rgba(237,248,255,.96) 0%,rgba(235,248,255,.72) 30%,rgba(220,242,253,.1) 61%,rgba(222,243,253,.36) 100%),var(--csp-hero-photo)!important;
+    background-size:cover!important;
+    background-position:center 56%!important;
+    filter:saturate(.96) brightness(1.05);
+  }
+  .csp-layout-operational-cockpit .csp-hero-artwork{
+    display:block!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+    opacity:.98!important;
+    mix-blend-mode:normal!important;
+    filter:saturate(.96) contrast(1.02)!important;
+  }
+  .csp-layout-operational-cockpit .csp-hero-glass{
+    z-index:2!important;
+    background:linear-gradient(90deg,rgba(255,255,255,.52),rgba(255,255,255,.08) 46%,rgba(226,245,255,.34))!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-topology{
+    opacity:1!important;
+    mix-blend-mode:normal!important;
+    object-fit:cover!important;
+    filter:saturate(.94) contrast(1.02)!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-network{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-art>i{display:none!important}
+  .csp-layout-operational-cockpit .csp-map-art>span{
+    left:65%!important;
+    top:49%!important;
+    padding:5px 8px!important;
+    border:1px solid rgba(71,121,204,.14)!important;
+    background:rgba(255,255,255,.9)!important;
+    color:#164da2!important;
+    box-shadow:0 5px 15px rgba(31,88,155,.16)!important;
+  }
+  .csp-layout-operational-cockpit .csp-map-scope-rail span{background:rgba(255,255,255,.86)!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed{width:225px!important;min-height:88px!important;padding:7px 10px!important;gap:3px!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>b{font-size:10px!important}
+  .csp-layout-operational-cockpit .csp-map-operations-feed>span{grid-template-columns:7px 42px minmax(0,1fr)!important;min-height:16px!important}
+  .csp-layout-operational-cockpit .csp-map-controls{right:8px!important;bottom:8px!important}
+  .csp-layout-operational-cockpit .csp-map-view-all{right:8px!important;bottom:7px!important}
+
+  .csp-layout-operational-cockpit .csp-team-table>button{grid-template-columns:minmax(0,1.15fr) minmax(0,.78fr) 70px 50px!important}
+  .csp-layout-operational-cockpit .csp-team-head{grid-template-columns:minmax(0,1.15fr) minmax(0,.78fr) 70px 50px!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress{
+    position:static!important;
+    width:50px!important;
+    height:18px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:4px!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    overflow:visible!important;
+  }
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i,
+  .csp-layout-operational-cockpit .csp-team-decorative-progress.p1>i,
+  .csp-layout-operational-cockpit .csp-team-decorative-progress.p2>i,
+  .csp-layout-operational-cockpit .csp-team-decorative-progress.p3>i,
+  .csp-layout-operational-cockpit .csp-team-decorative-progress.p4>i,
+  .csp-layout-operational-cockpit .csp-team-decorative-progress.p5>i{
+    position:static!important;
+    display:block!important;
+    width:8px!important;
+    height:8px!important;
+    flex:0 0 8px!important;
+    border-radius:50%!important;
+    background:#dce8f5!important;
+    box-shadow:none!important;
+  }
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i:first-child{background:#3788e8!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i:nth-child(2){background:#72bce7!important}
+  .csp-layout-operational-cockpit .csp-team-decorative-progress>i:nth-child(3){background:#c8d9eb!important}
+
+  .csp-layout-operational-cockpit .csp-operations-signals>header{height:31px!important;margin-bottom:5px!important}
+  .csp-layout-operational-cockpit .csp-signal-tabs{height:29px!important}
+  .csp-layout-operational-cockpit .csp-signal-list>button{height:65px!important;min-height:65px!important;grid-template-columns:30px minmax(0,1fr) 14px!important}
+  .csp-layout-operational-cockpit .csp-signal-icon{width:28px!important;height:28px!important}
+
+  .csp-layout-operational-cockpit .csp-operational-status{padding:7px 10px!important}
+  .csp-layout-operational-cockpit .csp-operational-status>header{height:29px!important;margin-bottom:2px!important}
+  .csp-layout-operational-cockpit .csp-operational-status>header b{font-size:10px!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-operational-status>header em{font-size:9px!important;white-space:nowrap!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div{height:25px!important;min-height:25px!important;padding:2px 0!important;grid-template-columns:11px minmax(0,1fr) auto!important;gap:6px!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div i{width:7px!important;height:7px!important;background:#b6c5d8!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div b,.csp-layout-operational-cockpit .csp-operational-status>div span{font-size:9px!important}
+  .csp-layout-operational-cockpit .csp-operational-status>div span{color:#75849c!important}
+}
+
 @media (max-width:1439px){
   .csp-layout-operational-cockpit .csp-operational-orbs,.csp-layout-operational-cockpit .csp-map-operations-feed,.csp-layout-operational-cockpit .csp-team-decorative-progress{display:none!important}
   .csp-layout-operational-cockpit .csp-team-head,.csp-layout-operational-cockpit .csp-team-table>button{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 74px}
