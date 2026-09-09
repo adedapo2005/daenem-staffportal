@@ -214,3 +214,155 @@
   .csp-layout-insight-magazine .csp-layout-menu,
   .csp-layout-master-detail-workspace .csp-layout-menu{animation:none!important}
 }
+
+/* Shared environmental weather scene.  This is intentionally opt-in for
+   Layouts 04/05 so the accepted frozen surfaces keep their existing weather
+   presentation while still sharing the same normalized truth contract. */
+.csp-weather-scene{
+  --csp-weather-scene-size:76px;
+  position:relative;
+  display:inline-grid;
+  place-items:center;
+  width:var(--csp-weather-scene-size);
+  height:var(--csp-weather-scene-size);
+  flex:0 0 auto;
+  overflow:hidden;
+  isolation:isolate;
+  border:1px solid rgba(79,130,208,.16);
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(239,248,255,.92),rgba(222,237,255,.72));
+  box-shadow:inset 0 1px rgba(255,255,255,.92),0 8px 18px rgba(54,100,174,.12);
+}
+.csp-weather-scene--compact{--csp-weather-scene-size:28px;border-radius:9px;border-color:transparent;background:transparent;box-shadow:none}
+.csp-weather-scene--hero{--csp-weather-scene-size:118px;border-radius:28px}
+.csp-weather-scene-atmosphere,
+.csp-weather-scene-light,
+.csp-weather-scene-clouds,
+.csp-weather-scene-precipitation,
+.csp-weather-scene-snow-layer,
+.csp-weather-scene-wind-layer,
+.csp-weather-scene-icon{position:absolute;inset:0;pointer-events:none}
+.csp-weather-scene-atmosphere{z-index:0;background:radial-gradient(circle at 22% 18%,rgba(255,255,255,.86),transparent 42%),linear-gradient(145deg,rgba(108,173,255,.2),rgba(255,255,255,.04))}
+.csp-weather-scene-sunny .csp-weather-scene-atmosphere{background:radial-gradient(circle at 23% 17%,rgba(255,255,255,.94),transparent 38%),radial-gradient(circle at 70% 72%,rgba(255,225,142,.26),transparent 46%),linear-gradient(145deg,rgba(118,187,255,.24),rgba(255,255,255,.08))}
+.csp-weather-scene-night .csp-weather-scene-atmosphere{background:radial-gradient(circle at 72% 24%,rgba(239,247,255,.66),transparent 16%),linear-gradient(145deg,rgba(103,146,211,.34),rgba(218,233,250,.52))}
+.csp-weather-scene-light-rain .csp-weather-scene-atmosphere,.csp-weather-scene-rain .csp-weather-scene-atmosphere,.csp-weather-scene-heavy-rain .csp-weather-scene-atmosphere,.csp-weather-scene-thunderstorm .csp-weather-scene-atmosphere{background:linear-gradient(145deg,rgba(117,169,218,.28),rgba(224,239,251,.62)),radial-gradient(circle at 70% 18%,rgba(255,255,255,.38),transparent 40%)}
+.csp-weather-scene-snow .csp-weather-scene-atmosphere{background:radial-gradient(circle at 28% 20%,rgba(255,255,255,.94),transparent 38%),linear-gradient(145deg,rgba(184,215,243,.4),rgba(246,251,255,.82))}
+.csp-weather-scene-fog .csp-weather-scene-atmosphere,.csp-weather-scene-wind .csp-weather-scene-atmosphere{background:linear-gradient(110deg,rgba(183,210,229,.4),rgba(250,252,255,.82),rgba(185,214,233,.38))}
+.csp-weather-scene-light{z-index:1;inset:-35%;background:conic-gradient(from 210deg at 31% 35%,transparent 0 33%,rgba(255,246,187,.38) 38%,transparent 46% 100%);opacity:0}
+.csp-weather-scene-clouds{z-index:2;opacity:0}
+.csp-weather-scene-clouds i{position:absolute;display:block;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(193,218,244,.78));box-shadow:inset 0 1px rgba(255,255,255,.9),0 4px 10px rgba(72,111,163,.12)}
+.csp-weather-scene-clouds i:nth-child(1){width:58%;height:25%;left:25%;bottom:26%}
+.csp-weather-scene-clouds i:nth-child(2){width:35%;height:28%;left:12%;bottom:31%}
+.csp-weather-scene-clouds i:nth-child(3){width:30%;height:22%;right:7%;bottom:30%}
+.csp-weather-scene-precipitation,.csp-weather-scene-snow-layer,.csp-weather-scene-wind-layer{z-index:3;opacity:0}
+.csp-weather-scene-precipitation i{position:absolute;width:2px;height:18%;top:-22%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(59,146,235,.9));transform:rotate(16deg)}
+.csp-weather-scene-precipitation i:nth-child(1){left:20%;animation-delay:-.45s}.csp-weather-scene-precipitation i:nth-child(2){left:32%;animation-delay:-1.2s}.csp-weather-scene-precipitation i:nth-child(3){left:45%;animation-delay:-.1s}.csp-weather-scene-precipitation i:nth-child(4){left:59%;animation-delay:-1.8s}.csp-weather-scene-precipitation i:nth-child(5){left:72%;animation-delay:-.8s}.csp-weather-scene-precipitation i:nth-child(6){left:84%;animation-delay:-1.45s}
+.csp-weather-scene-snow-layer i{position:absolute;width:6px;height:6px;top:-12%;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 1px 4px rgba(87,134,186,.26);animation:csp-weather-snow-fall 3.8s linear infinite}
+.csp-weather-scene-snow-layer i:nth-child(1){left:18%;animation-delay:-.7s}.csp-weather-scene-snow-layer i:nth-child(2){left:39%;animation-delay:-2.1s}.csp-weather-scene-snow-layer i:nth-child(3){left:63%;animation-delay:-1.35s}.csp-weather-scene-snow-layer i:nth-child(4){left:81%;animation-delay:-3s}
+.csp-weather-scene-wind-layer i{position:absolute;width:52%;height:10%;left:-58%;border-top:2px solid rgba(65,145,225,.5);border-radius:50%;transform:rotate(-8deg)}
+.csp-weather-scene-wind-layer i:nth-child(1){top:37%;animation-delay:-.6s}.csp-weather-scene-wind-layer i:nth-child(2){top:57%;width:40%;animation-delay:-1.8s}
+.csp-weather-scene-icon{z-index:4;display:grid;place-items:center;color:#e0a522;filter:drop-shadow(0 4px 6px rgba(27,75,143,.18))}
+.csp-weather-scene-icon .csp-weather-icon{stroke-width:1.55}
+.csp-weather-scene-partly-cloudy .csp-weather-scene-icon,.csp-weather-scene-cloudy .csp-weather-scene-icon,.csp-weather-scene-overcast .csp-weather-scene-icon{color:#5485bd}
+.csp-weather-scene-night .csp-weather-scene-icon{color:#527ac8}
+.csp-weather-scene-light-rain .csp-weather-scene-icon,.csp-weather-scene-rain .csp-weather-scene-icon,.csp-weather-scene-heavy-rain .csp-weather-scene-icon{color:#3e8fdd}
+.csp-weather-scene-thunderstorm .csp-weather-scene-icon{color:#536ca7}.csp-weather-scene-snow .csp-weather-scene-icon{color:#6d9dce}.csp-weather-scene-fog .csp-weather-scene-icon,.csp-weather-scene-wind .csp-weather-scene-icon{color:#6c93b9}.csp-weather-scene-unknown .csp-weather-scene-icon,.csp-weather-scene-unavailable .csp-weather-scene-icon{color:#7890ab}
+.csp-weather-scene-sunny .csp-weather-scene-light,.csp-weather-scene-partly-cloudy .csp-weather-scene-light{opacity:1;animation:csp-weather-light-sweep 6s ease-in-out infinite}
+.csp-weather-scene-partly-cloudy .csp-weather-scene-clouds,.csp-weather-scene-cloudy .csp-weather-scene-clouds,.csp-weather-scene-overcast .csp-weather-scene-clouds,.csp-weather-scene-light-rain .csp-weather-scene-clouds,.csp-weather-scene-rain .csp-weather-scene-clouds,.csp-weather-scene-heavy-rain .csp-weather-scene-clouds,.csp-weather-scene-thunderstorm .csp-weather-scene-clouds{opacity:1;animation:csp-weather-cloud-drift 8s ease-in-out infinite}
+.csp-weather-scene-light-rain .csp-weather-scene-precipitation,.csp-weather-scene-rain .csp-weather-scene-precipitation,.csp-weather-scene-heavy-rain .csp-weather-scene-precipitation,.csp-weather-scene-thunderstorm .csp-weather-scene-precipitation{opacity:1}.csp-weather-scene-precipitation i{animation:csp-weather-rain-fall 1.35s linear infinite}
+.csp-weather-scene-heavy-rain .csp-weather-scene-precipitation i{height:23%;animation-duration:1s}.csp-weather-scene-light-rain .csp-weather-scene-precipitation i{height:12%;animation-duration:1.8s;opacity:.72}
+.csp-weather-scene-snow .csp-weather-scene-snow-layer{opacity:1}.csp-weather-scene-fog .csp-weather-scene-atmosphere{background:linear-gradient(90deg,rgba(206,226,238,.2),rgba(255,255,255,.78),rgba(195,218,233,.28));animation:csp-weather-fog-drift 9s ease-in-out infinite}.csp-weather-scene-wind .csp-weather-scene-wind-layer{opacity:1}.csp-weather-scene-wind-layer i{animation:csp-weather-wind-flow 2.8s ease-in-out infinite}
+.csp-weather-scene-thunderstorm .csp-weather-scene-light{opacity:.2;background:radial-gradient(circle at 57% 35%,rgba(232,246,255,.9),transparent 16%);animation:csp-weather-lightning 4.8s ease-out infinite}
+.csp-weather-scene--static .csp-weather-scene-light,.csp-weather-scene--static .csp-weather-scene-clouds,.csp-weather-scene--static .csp-weather-scene-precipitation,.csp-weather-scene--static .csp-weather-scene-snow-layer,.csp-weather-scene--static .csp-weather-scene-wind-layer{animation:none!important}.csp-weather-scene-unknown .csp-weather-scene-light,.csp-weather-scene-unknown .csp-weather-scene-clouds,.csp-weather-scene-unknown .csp-weather-scene-precipitation,.csp-weather-scene-unknown .csp-weather-scene-snow-layer,.csp-weather-scene-unknown .csp-weather-scene-wind-layer,.csp-weather-scene-unavailable .csp-weather-scene-light,.csp-weather-scene-unavailable .csp-weather-scene-clouds,.csp-weather-scene-unavailable .csp-weather-scene-precipitation,.csp-weather-scene-unavailable .csp-weather-scene-snow-layer,.csp-weather-scene-unavailable .csp-weather-scene-wind-layer{display:none}
+@keyframes csp-weather-light-sweep{0%,100%{transform:translateX(-9%) rotate(-3deg);opacity:.5}50%{transform:translateX(16%) rotate(4deg);opacity:.86}}
+@keyframes csp-weather-cloud-drift{0%,100%{transform:translateX(-3%)}50%{transform:translateX(5%)}}
+@keyframes csp-weather-rain-fall{0%{transform:translate3d(0,-10%,0) rotate(16deg);opacity:0}14%{opacity:.95}100%{transform:translate3d(-12%,145%,0) rotate(16deg);opacity:0}}
+@keyframes csp-weather-snow-fall{0%{transform:translate3d(0,-10%,0);opacity:0}15%{opacity:.9}55%{transform:translate3d(10px,55%,0);opacity:.9}100%{transform:translate3d(-8px,145%,0);opacity:0}}
+@keyframes csp-weather-fog-drift{0%,100%{transform:translateX(-4%)}50%{transform:translateX(5%)}}
+@keyframes csp-weather-wind-flow{0%{transform:translateX(-5%) scaleX(.8);opacity:0}28%{opacity:.75}100%{transform:translateX(250%) scaleX(1.05);opacity:0}}
+@keyframes csp-weather-lightning{0%,72%,100%{opacity:.08}74%{opacity:.22}76%{opacity:.11}}
+
+/* Insight's approved shell carries a compact time/globe context alongside
+   the real selector.  It is scoped to the editorial layout only. */
+.csp-layout-insight-magazine .csp-insight-topbar-context{display:flex;align-items:center;gap:7px;min-width:202px;color:#4770a6;white-space:nowrap}
+.csp-layout-insight-magazine .csp-insight-topbar-context>span{display:grid;gap:1px;line-height:1}
+.csp-layout-insight-magazine .csp-insight-topbar-context small{font-size:8px;color:#7a92b2}.csp-layout-insight-magazine .csp-insight-topbar-context>span>b{font-size:11px;color:#31598f}.csp-layout-insight-magazine .csp-insight-topbar-context em{font-size:8px;font-style:normal;color:#7a92b2}.csp-layout-insight-magazine .csp-insight-topbar-context>svg{width:18px;height:18px;color:#6f8fbc;opacity:.85}.csp-layout-insight-magazine .csp-insight-topbar-context> b{font-size:8px;line-height:1.15;color:#6d8bb4}
+
+@media (min-width:1440px) and (max-width:2199px){
+  /* Reduce the wash and use a proportional enlargement so the editorial
+     hero keeps photographic landmark geometry instead of looking flattened. */
+  .csp-layout-insight-magazine .csp-insight-hero>img{transform:scale(1.13);transform-origin:53% 48%;object-position:51% 47%;filter:saturate(1.15) contrast(1.06) brightness(1.07)}
+  .csp-layout-insight-magazine .csp-insight-hero-wash{background:linear-gradient(90deg,rgba(17,74,157,.9) 0%,rgba(21,92,176,.57) 34%,rgba(22,83,151,.08) 63%,rgba(247,250,255,.36) 100%),linear-gradient(180deg,rgba(255,255,255,.02),rgba(12,51,111,.1))}
+  .csp-layout-insight-magazine .csp-insight-spotlight>img{transform:scale(1.06);transform-origin:68% 48%;filter:saturate(1.1) contrast(1.05) brightness(1.06)}
+  .csp-layout-insight-magazine .csp-insight-spotlight-wash{background:linear-gradient(90deg,rgba(255,255,255,.9) 0 40%,rgba(255,255,255,.16) 70%,rgba(19,62,116,.16))}
+  .csp-layout-insight-magazine .csp-insight-data-story section,.csp-layout-insight-magazine .csp-insight-latest-grid,.csp-layout-insight-magazine .csp-insight-brief{box-shadow:inset 0 1px rgba(255,255,255,.92),0 8px 18px rgba(46,89,154,.08)}
+  .csp-layout-insight-magazine .csp-insight-weather{background:linear-gradient(145deg,#fafdff,#eef6ff)!important}
+  .csp-layout-insight-magazine .csp-insight-weather>div{gap:10px!important}
+
+  /* Authority-height correction for Master–Detail.  The two-pane contract is
+     unchanged; only desktop tracks and internal density are reduced so the
+     941px authority frame does not spill by ~200px. */
+  .csp-layout-master-detail-workspace .csp-grid{grid-template-rows:190px 190px 155px 30px 168px!important;min-height:0!important}
+  .csp-layout-master-detail-workspace .csp-master-detail-surface{height:388px!important}
+  .csp-layout-master-detail-workspace .csp-detail-banner{height:96px!important}
+  .csp-layout-master-detail-workspace .csp-detail-tabs{height:29px!important;min-height:29px!important}
+  .csp-layout-master-detail-workspace .csp-detail-kpis{height:65px!important;min-height:65px!important;padding:5px 12px!important}
+  .csp-layout-master-detail-workspace .csp-detail-lower{height:182px!important;min-height:182px!important;padding-bottom:7px!important}
+  .csp-layout-master-detail-workspace .csp-detail-progress-chart{height:108px!important}
+  .csp-layout-master-detail-workspace .csp-detail-progress-chart .csp-chart{height:108px!important}
+  .csp-layout-master-detail-workspace .csp-master>button{height:44px!important;min-height:44px!important}
+  .csp-layout-master-detail-workspace .csp-master>header{height:39px!important}
+  .csp-layout-master-detail-workspace .csp-master-tabs{height:35px!important}
+  .csp-layout-master-detail-workspace .csp-master-sort{height:24px!important}
+  .csp-layout-master-detail-workspace .csp-workspace-activity,.csp-layout-master-detail-workspace .csp-workspace-approvals,.csp-layout-master-detail-workspace .csp-workspace-ai{height:155px!important;min-height:155px!important}
+  .csp-layout-master-detail-workspace [data-zone="knowledge"] .csp-list,
+  .csp-layout-master-detail-workspace [data-zone="quick-actions"] .csp-actions,
+  .csp-layout-master-detail-workspace [data-zone="world-time"] .csp-world{height:168px!important;min-height:168px!important;overflow:hidden!important}
+  .csp-layout-master-detail-workspace [data-zone="knowledge"] .csp-list>div{min-height:27px!important;height:27px!important;padding:3px 0!important}
+  .csp-layout-master-detail-workspace [data-zone="quick-actions"] .csp-actions>div{gap:4px!important}
+  .csp-layout-master-detail-workspace [data-zone="quick-actions"] .csp-actions>div button{min-height:31px!important;height:31px!important;padding:0 6px!important;font-size:8px!important}
+  .csp-layout-master-detail-workspace [data-zone="world-time"] .csp-world>div{gap:4px!important}
+  .csp-layout-master-detail-workspace [data-zone="world-time"] .csp-world>div span{padding:5px!important;min-height:47px!important}
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div{min-height:26px!important;height:26px!important;padding:3px 1px!important}
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div b,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div b{font-size:8px!important;line-height:1.05!important}
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div small,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div small,
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div>em,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div>em{font-size:7px!important;line-height:1.05!important}
+  .csp-layout-master-detail-workspace .csp-context-ai-intro{min-height:26px!important;height:26px!important;padding:2px 4px!important}
+  .csp-layout-master-detail-workspace .csp-context-ai-intro>i{width:22px!important;height:22px!important}
+  .csp-layout-master-detail-workspace .csp-context-ai-intro b,.csp-layout-master-detail-workspace .csp-context-ai-intro small{font-size:7px!important}
+  .csp-layout-master-detail-workspace .csp-context-ai-rows>button{min-height:24px!important;height:24px!important;padding:2px 0!important;gap:4px!important}
+  .csp-layout-master-detail-workspace .csp-context-ai-rows>button>i{width:20px!important;height:20px!important}
+  .csp-layout-master-detail-workspace .csp-context-ai-rows>button b,.csp-layout-master-detail-workspace .csp-context-ai-rows>button small{font-size:7px!important;line-height:1.05!important}
+  .csp-layout-master-detail-workspace .csp-ai-footer{min-height:23px!important;height:23px!important;margin-top:2px!important;padding:2px!important;font-size:7px!important}
+  .csp-layout-master-detail-workspace .csp-detail-lower>section,.csp-layout-master-detail-workspace .csp-detail-inspector{padding:6px 8px!important}
+  .csp-layout-master-detail-workspace .csp-detail-lower header{margin-bottom:4px!important}
+  .csp-layout-master-detail-workspace .csp-detail-lower header b{font-size:10px!important}
+  .csp-layout-master-detail-workspace .csp-detail-progress-chart,.csp-layout-master-detail-workspace .csp-detail-progress-chart .csp-chart{height:84px!important}
+  .csp-layout-master-detail-workspace .csp-detail-progress>footer{font-size:7px!important;gap:7px!important}
+  .csp-layout-master-detail-workspace .csp-detail-task-status{grid-template-columns:72px minmax(0,1fr)!important;gap:5px!important}
+  .csp-layout-master-detail-workspace .csp-task-ring{width:62px!important;height:62px!important;box-shadow:inset 0 0 0 13px #fff,0 5px 13px rgba(47,91,231,.09)!important}
+  .csp-layout-master-detail-workspace .csp-task-ring i{font-size:14px!important}
+  .csp-layout-master-detail-workspace .csp-task-ring small{font-size:7px!important}
+  .csp-layout-master-detail-workspace .csp-task-legend{gap:5px!important}
+  .csp-layout-master-detail-workspace .csp-task-legend span{font-size:7px!important}
+  .csp-layout-master-detail-workspace .csp-task-legend b{font-size:7px!important}
+  .csp-layout-master-detail-workspace .csp-detail-inspector>div{min-height:15px!important;padding:1px 0!important}
+  .csp-layout-master-detail-workspace .csp-detail-inspector>div span,.csp-layout-master-detail-workspace .csp-detail-inspector>div b{font-size:7px!important}
+}
+
+@media (max-width:767px){
+  .csp-weather-scene--card{--csp-weather-scene-size:64px;border-radius:17px}.csp-weather-scene--hero{--csp-weather-scene-size:88px;border-radius:20px}
+  .csp-weather-scene-precipitation i{animation-duration:1.7s}.csp-weather-scene-snow-layer i{animation-duration:4.5s}
+  .csp-layout-insight-magazine .csp-insight-topbar-context{display:none}
+  .csp-layout-master-detail-workspace .csp-weather-scene--compact{--csp-weather-scene-size:24px}
+}
+@media (min-width:3200px){
+  .csp-weather-scene--card{--csp-weather-scene-size:104px}.csp-weather-scene--hero{--csp-weather-scene-size:148px}
+}
+@media (prefers-reduced-motion:reduce){
+  .csp-weather-scene *,.csp-weather-scene::before,.csp-weather-scene::after{animation:none!important;transition:none!important}
+}
