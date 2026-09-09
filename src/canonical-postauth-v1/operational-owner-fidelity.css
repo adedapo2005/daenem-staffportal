@@ -1409,6 +1409,7 @@
 /* Final cascade guard: the legacy 4K/desktop blocks above this point contain
    reference-era defaults. These two rules keep the Phase 2 hero asset and
    selector label authoritative in every accepted capture. */
+.csp-layout-operational-cockpit .csp-hero-scene{--csp-hero-photo:url('/canonical-postauth-v3/horizon-wide/singapore-panorama-owner-v1.webp')!important}
 .csp-layout-operational-cockpit .csp-layout-trigger .csp-layout-current{display:block!important;flex:1 1 auto!important;max-height:none!important;color:inherit!important;font-size:inherit!important;line-height:1!important}
 @media (min-width:1440px) and (max-width:2199px){
   .csp-layout-operational-cockpit .csp-hero-scene{
@@ -1448,15 +1449,15 @@
 }
 
 @media (min-width:1440px) and (max-width:2199px){
-  .csp-layout-operational-cockpit .csp-hero-scene{background-size:100% 100%,70% auto,100% 100%!important;background-position:center,52% 37%,center!important}
+  .csp-layout-operational-cockpit .csp-hero-scene{background-size:100% 100%,57% auto,100% 100%!important;background-position:center,14% 8%,center!important}
 }
 
 @media (min-width:1800px) and (max-width:2199px) and (min-height:1000px){
-  .csp-layout-operational-cockpit .csp-hero-scene{background-size:100% 100%,70% auto,100% 100%!important;background-position:center,52% 37%,center!important}
+  .csp-layout-operational-cockpit .csp-hero-scene{background-size:100% 100%,57% auto,100% 100%!important;background-position:center,14% 8%,center!important}
 }
 
 @media (min-width:3200px){
-  .csp-layout-operational-cockpit .csp-hero-scene{background-image:linear-gradient(90deg,rgba(246,251,255,.94) 0%,rgba(241,249,255,.72) 28%,rgba(225,244,254,.07) 58%,rgba(223,243,253,.22) 78%,rgba(231,247,255,.36) 100%),var(--csp-hero-photo),linear-gradient(180deg,#bce9ff 0 54%,#dff5ff 54% 100%)!important;background-repeat:no-repeat!important;background-size:100% 100%,60% auto,100% 100%!important;background-position:center,54% 37%,center!important}
+  .csp-layout-operational-cockpit .csp-hero-scene{background-image:linear-gradient(90deg,rgba(246,251,255,.94) 0%,rgba(241,249,255,.72) 28%,rgba(225,244,254,.07) 58%,rgba(223,243,253,.22) 78%,rgba(231,247,255,.36) 100%),var(--csp-hero-photo),linear-gradient(180deg,#bce9ff 0 54%,#dff5ff 54% 100%)!important;background-repeat:no-repeat!important;background-size:100% 100%,60% auto,100% 100%!important;background-position:center,36% 56%,center!important}
 }
 
 /* The detailed topology and the route network remain separate decorative
