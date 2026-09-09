@@ -57,7 +57,7 @@ const heroArtworkPaths: Record<StaffPortalLayoutId, string> = {
 const heroPhotoPaths: Record<StaffPortalLayoutId, string> = {
   'executive-command': '/reference-images/signin/daylight-glass-skyline.webp',
   'workspace-canvas': '/reference-images/signin/future-technology-campus.webp',
-  'operational-cockpit': '/canonical-postauth-v3/executive-command/hero-skyline-photographic-v2.webp',
+  'operational-cockpit': '/canonical-postauth-v3/operational-cockpit/hero-marina-daylight-v4.webp',
   'insight-magazine': '/reference-images/signin/daylight-glass-skyline.webp',
   'master-detail-workspace': '/reference-images/signin/premium-connected-workspace.webp',
   'horizon-wide': '/canonical-postauth-v3/horizon-wide/singapore-panorama-owner-v1.webp',

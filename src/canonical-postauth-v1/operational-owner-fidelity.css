@@ -1413,3 +1413,83 @@
     filter:saturate(1.02) contrast(1.02) brightness(1.02)!important;
   }
 }
+
+/* Final Sol forensic authority overrides. */
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-operational-cockpit .csp-hero-scene{
+    background-image:linear-gradient(90deg,rgba(246,251,255,.94) 0%,rgba(241,249,255,.72) 28%,rgba(225,244,254,.07) 58%,rgba(223,243,253,.22) 78%,rgba(231,247,255,.36) 100%),var(--csp-hero-photo)!important;
+    background-size:120% auto!important;
+    background-position:100% 58%!important;
+    filter:saturate(1.04) contrast(1.015) brightness(1.055)!important;
+  }
+  .csp-layout-operational-cockpit .csp-hero-glass{background:linear-gradient(90deg,rgba(255,255,255,.42),rgba(255,255,255,.015) 50%,rgba(226,245,255,.2))!important}
+  .csp-layout-operational-cockpit .csp-map-topology{inset:0!important;width:100%!important;height:100%!important;transform:none!important;object-fit:cover!important;object-position:center 48%!important;filter:saturate(.9) contrast(1.01) brightness(1.015)!important}
+  .csp-layout-operational-cockpit .csp-map-art>span{left:61.5%!important;top:48%!important}
+  .csp-layout-operational-cockpit .csp-layout-menu{top:calc(100% + 2px)!important;width:180px!important;max-height:181px!important;gap:1px!important;padding:4px!important;border-radius:8px!important;box-shadow:0 13px 28px rgba(29,56,111,.18),0 2px 5px rgba(29,56,111,.08)!important}
+  .csp-layout-operational-cockpit .csp-layout-option{height:24px!important;min-height:24px!important;padding:0 6px!important}
+}
+
+@media (min-width:1800px) and (max-width:2199px) and (min-height:1000px){
+  .csp-layout-operational-cockpit .csp-hero-scene{background-size:116% auto!important;background-position:100% 59%!important}
+}
+
+@media (min-width:3200px){
+  .csp-layout-operational-cockpit .csp-hero-scene{background-size:cover!important;background-position:center 59%!important;filter:saturate(1.04) contrast(1.015) brightness(1.045)!important}
+  .csp-layout-operational-cockpit .csp-map-topology{width:100%!important;height:100%!important;transform:none!important;object-fit:cover!important;object-position:center!important;filter:saturate(.9) contrast(1.01) brightness(1.015)!important}
+}
+
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-operational-cockpit .csp-hero-scene{background-size:120% 100%!important;background-position:100% 50%!important}
+}
+
+@media (min-width:3200px){
+  .csp-layout-operational-cockpit .csp-hero-scene{background-size:100% 100%!important;background-position:center!important}
+}
+
+/* The detailed topology and the route network remain separate decorative
+   layers so crop correction cannot imply factual location data. */
+.csp-layout-operational-cockpit .csp-map-art{
+  background-image:url('/canonical-postauth-v3/operational-cockpit/operations-map-topology-v4.svg'),linear-gradient(135deg,#e8f8ff,#b9e5f8 54%,#e8f8ff)!important;
+  background-repeat:no-repeat!important;
+  background-size:100% 100%,cover!important;
+  background-position:center,center!important;
+}
+.csp-layout-operational-cockpit .csp-map-topology{
+  z-index:2!important;
+  opacity:.95!important;
+  mix-blend-mode:normal!important;
+}
+.csp-layout-operational-cockpit .csp-map-art>span{left:65%!important;top:48%!important}
+.csp-layout-operational-cockpit .csp-team-table>button>em{
+  justify-self:start!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  min-height:18px!important;
+  padding:0 7px!important;
+  border:1px solid #e1e9f3!important;
+  border-radius:999px!important;
+  background:#f1f5f9!important;
+  color:#71809a!important;
+  font-style:normal!important;
+}
+.csp-layout-operational-cockpit .csp-operations-signals{background:linear-gradient(180deg,#fff,#fffdfd)!important}
+
+@media (min-width:1800px) and (max-width:2199px) and (min-height:1000px){
+  .csp-layout-operational-cockpit [data-zone-shell="ai-insights"]{height:480px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="executive-analytics"],
+  .csp-layout-operational-cockpit [data-zone-shell="tasks"],
+  .csp-layout-operational-cockpit [data-zone-shell="status"]{height:260px!important}
+  .csp-layout-operational-cockpit .csp-operations-telemetry,
+  .csp-layout-operational-cockpit .csp-operational-queue,
+  .csp-layout-operational-cockpit [data-zone="status"]{height:260px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="weather"]{top:663px!important;height:180px!important}
+  .csp-layout-operational-cockpit .csp-context-weather{height:180px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="activity"]{top:851px!important;height:118px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="activity"] .csp-list{height:118px!important}
+  .csp-layout-operational-cockpit [data-zone-shell="quick-actions"],
+  .csp-layout-operational-cockpit [data-zone-shell="announcement"]{top:871px!important;height:98px!important}
+  .csp-layout-operational-cockpit .csp-actions,
+  .csp-layout-operational-cockpit .csp-operational-ai-bar{height:98px!important}
+  .csp-layout-operational-cockpit .csp-actions>div button{height:84px!important;min-height:84px!important}
+  .csp-layout-operational-cockpit .csp-operational-ai-bar form{height:72px!important}
+}
