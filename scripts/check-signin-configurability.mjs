@@ -98,7 +98,7 @@ const WORKER_SIGNIN_BACKGROUND_MATCH = worker.match(/const SIGNIN_BACKGROUND_IDS
 const WORKER_SIGNIN_BACKGROUND_IDS = WORKER_SIGNIN_BACKGROUND_MATCH
   ? [...WORKER_SIGNIN_BACKGROUND_MATCH[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
   : [];
-const DEPLOY_WORKFLOW = read('../.github/workflows/deploy-pages.yml');
+const DEPLOY_WORKFLOW = read('.github/workflows/deploy-pages.yml');
 const BACKGROUND_INTEGRITY = read('scripts/check-signin-background-assets.mjs');
 const ACTIVE_SIGNIN_ASSET_PATHS = ["reference-images/signin/daenem-unified-daylight-4k.webp","reference-images/signin/global-executive-atrium.webp","reference-images/signin/future-technology-campus.webp","reference-images/signin/daylight-glass-skyline.webp","reference-images/signin/premium-connected-workspace.webp","reference-images/signin/bright-executive-global-atrium.webp","reference-images/signin/daylight-technology-campus.webp","reference-images/signin/global-executive-atrium-thumb.webp","reference-images/signin/future-technology-campus-thumb.webp","reference-images/signin/daylight-glass-skyline-thumb.webp","reference-images/signin/premium-connected-workspace-thumb.webp","reference-images/signin/bright-executive-global-atrium-thumb.webp","reference-images/signin/daylight-technology-campus-thumb.webp"];
 
