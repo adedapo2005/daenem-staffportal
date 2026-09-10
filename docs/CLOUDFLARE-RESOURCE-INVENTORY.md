@@ -196,3 +196,38 @@ authorized credential with API Tokens Write or Account API Tokens Write.
 - Worker dry-run passed with `npx --no-install wrangler deploy --dry-run`.
 - GitHub CI run #12 remains the authoritative successful build for this exact
   source SHA.
+
+
+## Phase 2B resume attempt — bootstrap gate recheck
+
+The authorized Remote Desktop Commander device was reachable and the
+credential sources were checked without exposing secret values. The only
+explicit Cloudflare token candidate present was
+`CLOUDFLARE_API_TOKEN`: PRESENT and VALID, but it remains the previously
+underscoped token. No separately named bootstrap, account-bootstrap, admin, or
+provisioner token was present; Windows Credential Manager and PowerShell
+SecretManagement metadata exposed no matching alternate source.
+
+The current token-management probes returned HTTP 403 for both user-token and
+account-token list access. No token with API Tokens Write or Account API Tokens
+Write was verified. No provisioning token was created.
+
+The current harmless capability matrix is:
+
+| Operation | Result |
+|---|---|
+| Account read | PASS — HTTP 200 |
+| `daenem.com` zone read | PASS — HTTP 200 |
+| Workers Scripts read | PASS — HTTP 200 |
+| Queues read | PASS — HTTP 200 |
+| Pages read | FAIL — HTTP 403 |
+| D1 read | FAIL — HTTP 401 |
+| R2 read | FAIL — HTTP 403 |
+| KV read | FAIL — HTTP 401 |
+| Workers Routes read | FAIL — HTTP 403 |
+
+Because the bootstrap gate remains closed, no Pages project, API Worker,
+replacement D1/R2/KV/Queue resource, deployment token, route, DNS record, or
+production binding was created or changed.
+
+**Resume status: `CLOUDFLARE_BOOTSTRAP_TOKEN_REQUIRED`.**
