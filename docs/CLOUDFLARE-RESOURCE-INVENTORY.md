@@ -65,7 +65,7 @@ The staging Worker is separate for Staff Portal purposes:
 
 ## Worker-binding exclusivity evidence
 
-All eight deployed account Workers were inspected through their live settings:
+All nine deployed account Workers were inspected through their live settings:
 `daenem-farms-admin`, `daenem-farms-platform`,
 `daenem-farms-portal`, `daenem-farms-portal-reference-preview`,
 `daenem-printing`, `daenem-printing-admin`, `daenem-webadmin`, and the
