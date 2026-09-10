@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Typecheck and Pages build
+    name: Typecheck, Pages build, and API dry-run
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Staff Portal
@@ -30,11 +30,14 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Validate active infrastructure boundary
+        run: npm run check:infrastructure-boundary
+
       - name: Typecheck
         run: npm run typecheck
 
       - name: Build Pages artifact
-        run: npm run build:pages
+        run: npm run build
 
       - name: Verify Pages output
         shell: bash

@@ -1,16 +1,17 @@
 # Staff Portal infrastructure boundary
 
+Status: Phase 1 source preparation. No production cutover has been performed.
+
 ## Authority and purpose
 
-This repository is the dedicated source authority for the private internal
-Staff Portal at `staffportal.daenem.com`. It is the employee, manager, and
-Owner ERP hub. Public Daenem websites remain separate applications and may
-only be reached through explicit authenticated HTTPS API contracts or approved
-deep links.
+This private repository is the dedicated source authority for the internal
+Staff Portal at `staffportal.daenem.com`. It serves the employee, manager,
+and Owner ERP hub for Printing, Autos, Bakery, Homes & Properties, and
+Logistics through explicit authenticated integrations.
 
-The permanent rule is:
+The permanent deployment boundary is:
 
-ONE DAENEM WEBSITE
+ONE WEBSITE
 =
 ONE GITHUB REPOSITORY
 +
@@ -25,8 +26,8 @@ DEDICATED DEPLOYMENT WORKFLOW
 DEDICATED DATA/STORAGE RESOURCES
 
 No website may deploy through another website's infrastructure, share its
-build output, share its storage/database resources, or own routes under
-another website's hostname.
+build output, share its data/storage resources, or own routes beneath another
+website's hostname.
 
 ## Staff Portal target
 
@@ -34,64 +35,108 @@ another website's hostname.
 |---|---|
 | GitHub repository | `adedapo2005/daenem-staffportal` |
 | Default branch | `main` |
-| Internal hostname | `staffportal.daenem.com` |
+| Private hostname | `staffportal.daenem.com` |
 | Pages project | `daenem-staffportal-pages` |
 | API Worker | `daenem-staffportal-api` |
 | API route | `staffportal.daenem.com/api/*` |
-| Pages build command | `npm ci && npm run build:pages` |
+| Pages build command | `npm ci && npm run build` |
 | Pages output | `dist/client` |
-| D1 target name | `daenem-staffportal-db` (not provisioned in this phase) |
-| R2 target name | `daenem-staffportal-files` (not provisioned in this phase) |
-| KV target name | `daenem-staffportal-cache` (not provisioned in this phase) |
-| Queue target name | `daenem-staffportal-social-jobs` (not provisioned in this phase) |
+| Worker source | `worker/runtime.ts` |
+| Worker assets | None; Pages owns frontend/static requests |
+| D1 target | `daenem-staffportal-db` |
+| R2 target | `daenem-staffportal-files` |
+| KV target | `daenem-staffportal-cache` |
+| Queue target | `daenem-staffportal-social-jobs` |
 
-The Pages build uses `vite.pages.config.ts`, which deliberately excludes
-the Cloudflare Worker plugin and emits only `dist/client`. The API Worker
-configuration has no assets binding and has an explicit non-API 404 guard, so
-it cannot become a second frontend server.
+The Pages build uses `vite.pages.config.ts`, which excludes the Cloudflare
+Worker plugin and emits only the frontend to `dist/client`. The API Worker
+configuration has no assets binding and rejects every request outside
+`/api/*). This prevents the API Worker from becoming a second frontend
+server.
 
-## Data and storage isolation
+## Resource isolation
 
-The current migrated source bindings are retained in `wrangler.jsonc`
-only as source-compatible placeholders pending direct live inventory. Their
-exclusive use by Staff Portal is not verified in this phase. No rename,
-resource creation, data migration, D1 migration, or destructive operation has
-been performed.
+The current migrated Worker bindings are retained in `wrangler.jsonc` as
+source-compatible values for traceability only:
 
-Before production cutover, Cloudflare inventory must prove that every binding
-is Staff-Portal-exclusive or replace it with a dedicated resource. Migration
-0054–0059 must remain a separately controlled release with matching Worker
-compatibility.
+- D1: `daenem-workforce-hub`
+- R2: `daenem-workforce-files`
+- KV namespace binding: `SOCIAL_CACHE`
+- Queue: `daenem-social-jobs`
 
-## Cross-site integrations
+Direct Cloudflare inventory was unavailable in this phase. Their exclusive
+Staff-Portal ownership is therefore **NOT VERIFIED**. No rename, resource
+creation, data copy, deletion, or production migration has been performed.
+Before cutover, each resource must either be proven Staff-Portal-exclusive or
+be replaced by the dedicated target name above. The existing D1 must not be
+discarded solely because its current name is legacy.
 
-Staff Portal may communicate with Printing, Autos, Bakery, Homes, or
-Logistics through authenticated HTTPS APIs, service credentials, or approved
-deep links. It must not import their source, use their Worker/Pages project,
-share their D1/KV/R2/Queues, or share their deployment workflows.
+Migrations 0054 through 0059 are not applied here. Migration 0059 and its
+matching Worker compatibility must be released together in a later,
+explicitly authorized database/API release.
 
-Daenem Farms is permanently excluded. No Farms source, hostname, Worker,
-Pages project, D1, KV, R2, queue, business selector, or business data belongs
-in this repository.
+## Authenticated external integrations
 
-## Route ownership and compatibility gates
+Staff Portal may call Printing, Autos, Bakery, Homes & Properties, or
+Logistics through authenticated HTTPS APIs, service bindings, or approved
+deep links. It must not import their source, deploy through their Pages or
+Worker project, share their D1/KV/R2/Queues, or reuse their deployment
+workflow.
 
-Before final cutover, no non-Staff-Portal Worker may own
-`staffportal.daenem.com/*` or any subroute. The legacy cross-site
-`printing-admin` route conflict must be removed or relocated in the
-Printing-owned infrastructure; that other repository is intentionally not
-modified here.
+## Permanent Farms exclusion
 
-The migrated Staff Portal runtime also contains a legacy dynamic public HTML
-route under `/properties/hostel/*`. Because the target Worker is API-only,
-that route must be intentionally relocated to Pages or converted to an
-approved API-backed route before production cutover. This phase does not
-delete the route's source or change its data contract; it records the
-compatibility requirement rather than silently losing it.
+Daenem Farms is a separate system. No Farms source, employee/customer data,
+business selector, Worker, Pages project, D1, KV, R2, queue, or hostname
+belongs in this repository. The platform's protected-domain denylist is a
+security control, not a Farms integration.
+
+## Route ownership and cutover gates
+
+Before final hostname cutover, no non-Staff-Portal Worker may own
+`staffportal.daenem.com/*) or any subroute. The legacy `printing-admin`
+route conflict must be removed or relocated in the Printing-owned
+infrastructure; that other repository is intentionally not modified here.
+
+Printing ERP functionality inside Staff Portal must be native Staff Portal UI
+calling an authenticated Printing API. It must not rely on an external
+Printing Worker serving the Staff Portal hostname.
+
+The migrated application also contains a legacy dynamic
+`/properties/hostel/*` HTML compatibility route. Because the target Worker
+is API-only, that route must be intentionally relocated to Pages or converted
+to an approved API-backed route before production cutover. This phase records
+the compatibility gate and does not delete its source.
 
 ## Release controls
 
-Production Pages/Worker deployment, DNS/route changes, resource provisioning,
-D1 migrations, and legacy repository cleanup are out of scope for this phase.
-Deployment workflows are manual and separately gated; ordinary pushes to
-`main` do not deploy production.
+- `main) is the canonical production-ready source branch.
+- Pages and API deployment workflows are manual and require an explicit typed
+  confirmation plus their protected GitHub environment.
+- Ordinary commits do not deploy production.
+- Deployment workflows never apply D1 migrations.
+- DNS, hostname cutover, legacy-route cleanup, resource deletion, and database
+  migration remain outside this phase.
+
+## GitHub main protection
+
+Desired main rules are:
+
+- no force pushes;
+- no branch deletion;
+- pull-request review where practical;
+- required CI success before merge;
+- production deployment separated from ordinary source changes.
+
+Current branch-protection enforcement could not be independently read or
+configured through the connected GitHub capability. Status:
+`GITHUB_BRANCH_PROTECTION_CONFIGURATION_REQUIRED`. See
+`docs/GITHUB-BRANCH-PROTECTION.md`; no protection state is claimed here.
+
+## Direct Cloudflare access
+
+No direct authorized Cloudflare inventory/provisioning capability was
+available for this execution. Status:
+`DIRECT_CLOUDFLARE_PROVISIONING_REQUIRED`.
+
+This document describes the target contract only. It does not assert that
+Pages, Worker, DNS, routes, or data resources have been provisioned.

@@ -29,8 +29,14 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Validate active infrastructure boundary
+        run: npm run check:infrastructure-boundary
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Build Pages artifact
-        run: npm run build:pages
+        run: npm run build
 
       - name: Deploy only Staff Portal Pages
         uses: cloudflare/wrangler-action@v3

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "prebuild": "node scripts/check-signin-background-assets.mjs && node scripts/check-signin-configurability.mjs && node scripts/check-postauth-layout.mjs && node scripts/check-postauth-layout-readiness.mjs && node scripts/check-canonical-postauth.mjs && node scripts/check-dashboard-permissions.mjs && node scripts/check-next-phase.mjs && node scripts/check-executive-dashboard.mjs && node scripts/check-guidance-broadcast-center.mjs && node scripts/check-performance-hotfix.mjs && node scripts/check-company-scoped-access.mjs && node scripts/check-owner-support-access.mjs && node scripts/check-smart-help-center.mjs && node scripts/check-platform-center.mjs && node scripts/check-website-consolidation.mjs && node scripts/check-business-website-catalogues.mjs && node scripts/check-properties-owner-investment.mjs && node scripts/check-properties-hostel.mjs && node scripts/check-bakery-accountability.mjs && node scripts/check-offline-sync.mjs && node scripts/check-spend-foundation.mjs",
-    "build": "vite build",
+    "build": "vite --config vite.pages.config.ts build",
     "preview": "npm run build && vite preview",
     "check:next-phase": "node scripts/check-next-phase.mjs",
     "check:executive-dashboard": "node scripts/check-executive-dashboard.mjs",
@@ -24,9 +24,8 @@
     "typecheck": "tsc --noEmit",
     "deploy": "npm run deploy:api",
     "cf-typegen": "wrangler types",
-    "db:migrations:list": "wrangler d1 migrations list daenem-staffportal-db",
-    "db:migrations:apply:local": "wrangler d1 migrations apply daenem-staffportal-db --local",
-    "db:migrations:apply:remote": "wrangler d1 migrations apply daenem-staffportal-db --remote",
+    "db:migrations:list": "wrangler d1 migrations list daenem-workforce-hub --config wrangler.jsonc",
+    "db:migrations:apply:local": "wrangler d1 migrations apply daenem-workforce-hub --local --config wrangler.jsonc",
     "qa:postauth": "node scripts/render-postauth-qa.mjs",
     "qa:canonical-postauth": "node scripts/render-canonical-postauth-qa.mjs",
     "test:postauth-layout-readiness": "node scripts/check-postauth-layout-readiness.mjs",
@@ -41,8 +40,9 @@
     "test:spend-commitment-audit": "node scripts/test-spend-commitment-audit.mjs",
     "test:spend-worker-runtime": "node scripts/test-spend-worker-runtime.mjs",
     "qa:spend-foundation": "node scripts/render-spend-qa.mjs",
-    "build:pages": "vite --config vite.pages.config.ts build",
-    "deploy:api": "wrangler deploy --config wrangler.jsonc"
+    "build:pages": "npm run build",
+    "deploy:api": "wrangler deploy --config wrangler.jsonc",
+    "check:infrastructure-boundary": "node scripts/check-infrastructure-boundary.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.3.0",
