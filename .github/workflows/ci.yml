@@ -1,4 +1,7 @@
 name: Staff Portal CI
+env:
+  STAFFPORTAL_DIFF_BASE: ${{ github.event.pull_request.base.sha || github.sha }}
+
 
 on:
   pull_request:
@@ -20,6 +23,8 @@ jobs:
     steps:
       - name: Checkout Staff Portal
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
