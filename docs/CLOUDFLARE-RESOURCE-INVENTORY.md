@@ -162,3 +162,37 @@ DNS write is not required for this phase.
   API-only cutover.
 - Keep database migration 0059 and the matching Worker release in one later,
   explicitly authorized release.
+
+
+## Phase 2B credential-recovery checkpoint
+
+The authorized Remote Desktop Commander execution plane was reachable for a
+scoped credential probe. The only explicit Cloudflare API-token candidate found
+in the inspected secure sources was the existing named
+`CLOUDFLARE_API_TOKEN`: PRESENT and VALID, but token-management reads returned
+HTTP 403 and no token-write scope was detected. The known Wrangler OAuth
+credential was PRESENT but INVALID for Cloudflare API-token verification. No
+separately named bootstrap or provisioner credential was found in the inspected
+sources.
+
+No token was created, no token value was exposed, and no Cloudflare resource
+provisioning was attempted after this gate. Automated continuation requires an
+authorized credential with API Tokens Write or Account API Tokens Write.
+
+**Phase 2B credential status: `CLOUDFLARE_BOOTSTRAP_TOKEN_REQUIRED`.**
+
+## Clean exact-head validation evidence
+
+- Exact clean checkout verified at `4ce3ff0b51994c5c1712bf7db849fd60ddfe120e`.
+- `npm ci`, infrastructure-boundary validation, and typecheck passed.
+- The Windows checkout used `core.autocrlf=true`; the sign-in assertion
+  expected LF literals and reported one false failure against CRLF content.
+- An isolated LF checkout passed all **107 sign-in configurability assertions**.
+- The full LF checkout then reached the existing
+  `check-spend-foundation.mjs` contract and failed on a Windows-only path
+  resolution error: `C:\\C:\\Temp\\...\\worker\\runtime.ts`.
+  This is an environment-dependent validation failure; no sign-in or
+  application source was changed.
+- Worker dry-run passed with `npx --no-install wrangler deploy --dry-run`.
+- GitHub CI run #12 remains the authoritative successful build for this exact
+  source SHA.
