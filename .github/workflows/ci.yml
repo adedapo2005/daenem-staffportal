@@ -1,0 +1,41 @@
+name: Staff Portal CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staffportal-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Typecheck and Pages build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Staff Portal
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build Pages artifact
+        run: npm run build:pages
+
+      - name: Verify Pages output
+        shell: bash
+        run: test -f dist/client/index.html

@@ -75,6 +75,17 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // Pages owns normal frontend/static requests. This Worker is API-only.
+    if (!url.pathname.startsWith('/api/')) {
+      return new Response(JSON.stringify({ error: 'Staff Portal API route not found.' }), {
+        status: 404,
+        headers: {
+          'cache-control': 'no-store',
+          'content-type': 'application/json; charset=utf-8',
+        },
+      });
+    }
+
     // Legacy theme artwork was removed from the Staff Portal release. Block
     // stale Workers Assets copies so an old theme can never be served again.
     if (url.pathname === '/theme-assets' || url.pathname.startsWith('/theme-assets/')) {

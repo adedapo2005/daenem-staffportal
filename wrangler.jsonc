@@ -1,25 +1,21 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "daenem-workforce-hub",
+  "name": "daenem-staffportal-api",
   "workers_dev": false,
   "preview_urls": true,
   "compatibility_date": "2026-08-18",
   "main": "./worker/runtime.ts",
   "routes": [
     {
-      "pattern": "staffportal.daenem.com",
-      "custom_domain": true
+      "pattern": "staffportal.daenem.com/api/*",
+      "zone_name": "daenem.com"
     }
   ],
   "limits": {
     "cpu_ms": 300000
   },
-  "assets": {
-    "directory": "./dist/client",
-    "binding": "ASSETS",
-    "run_worker_first": true,
-    "not_found_handling": "single-page-application"
-  },
+  // No assets binding: Pages owns normal frontend/static requests.
+  // Existing data bindings remain source-compatible pending live exclusivity verification.
   "d1_databases": [
     {
       "binding": "DB",
@@ -73,9 +69,9 @@
     ]
   },
   "vars": {
-    "APP_NAME": "Daenem Workforce Hub",
+    "APP_NAME": "Daenem Staff Portal",
     "TIMEZONE": "Africa/Lagos",
-    "APP_STAGE": "production",
+    "APP_STAGE": "staging",
     "WORKFORCE_EMAIL_FROM": "portal@daenem.com",
     "META_GRAPH_VERSION": "v24.0"
   }
