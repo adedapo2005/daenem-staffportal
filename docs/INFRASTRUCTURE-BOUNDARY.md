@@ -51,7 +51,7 @@ website's hostname.
 The Pages build uses `vite.pages.config.ts`, which excludes the Cloudflare
 Worker plugin and emits only the frontend to `dist/client`. The API Worker
 configuration has no assets binding and rejects every request outside
-`/api/*). This prevents the API Worker from becoming a second frontend
+`/api/*`. This prevents the API Worker from becoming a second frontend
 server.
 
 ## Resource isolation
@@ -93,7 +93,7 @@ security control, not a Farms integration.
 ## Route ownership and cutover gates
 
 Before final hostname cutover, no non-Staff-Portal Worker may own
-`staffportal.daenem.com/*) or any subroute. The legacy `printing-admin`
+`staffportal.daenem.com/*` or any subroute. The legacy `printing-admin`
 route conflict must be removed or relocated in the Printing-owned
 infrastructure; that other repository is intentionally not modified here.
 
@@ -109,7 +109,7 @@ the compatibility gate and does not delete its source.
 
 ## Release controls
 
-- `main) is the canonical production-ready source branch.
+- `main` is the canonical production-ready source branch.
 - Pages and API deployment workflows are manual and require an explicit typed
   confirmation plus their protected GitHub environment.
 - Ordinary commits do not deploy production.
