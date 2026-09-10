@@ -39,3 +39,6 @@ jobs:
       - name: Verify Pages output
         shell: bash
         run: test -f dist/client/index.html
+
+      - name: Validate API Worker without deployment
+        run: npx wrangler deploy --dry-run --outdir=/tmp/daenem-staffportal-worker-dry-run --config wrangler.jsonc
