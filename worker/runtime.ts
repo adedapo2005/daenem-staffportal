@@ -36,6 +36,7 @@ import { routeThemePreferences } from './theme-preferences';
 import { routeNavigationWorkspace } from './navigation-workspace';
 import { routeExperiencePreferences } from './experience-preferences';
 import { routeHrWorkflows } from './hr-workflows';
+import { routeCommunications } from './communications-service';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
 import { routePlatformCenter, routePublicWebsite } from './platform-center';
@@ -180,6 +181,7 @@ export default {
       url.pathname.startsWith('/api/ai/') ||
       url.pathname.startsWith('/api/platform/') ||
       url.pathname.startsWith('/api/hr/workflows/') ||
+      url.pathname.startsWith('/api/communications/') ||
       url.pathname.startsWith('/api/offline/') ||
       url.pathname.startsWith('/api/procurement/') ||
       url.pathname.startsWith('/api/spend/');
@@ -214,6 +216,12 @@ export default {
         const enhanced = await getEnhancedSessionContext(request, env);
         if (!enhanced) return secure(json({ error: 'Authentication required.' }, 401));
         const response = await routeHrWorkflows(request, env, enhanced);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/communications/')) {
+        const enhanced = await getEnhancedSessionContext(request, env);
+        if (!enhanced) return secure(json({ error: 'Authentication required.' }, 401));
+        const response = await routeCommunications(request, env, enhanced);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/directory/')) {

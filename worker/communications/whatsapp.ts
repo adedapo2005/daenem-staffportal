@@ -136,7 +136,9 @@ export async function verifyWebhookSignature(
     false,
     ['verify'],
   );
-  return crypto.subtle.verify('HMAC', key, bytes, raw);
+  const signatureBytes = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const rawBytes = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer;
+  return crypto.subtle.verify('HMAC', key, signatureBytes, rawBytes);
 }
 
 export interface WebhookInbox {
