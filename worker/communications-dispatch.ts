@@ -328,7 +328,7 @@ export async function dispatchCommunicationOutboxItem(
   const leaseOwner=uid('comm-lease');
   const leased=await env.DB.prepare(`
     UPDATE communication_outbox
-    SET status='sending',attempts=attempts+1,lease_owner=?,
+    SET status='sending',lease_owner=?,
       lease_expires_at=datetime('now','+60 seconds'),updated_at=CURRENT_TIMESTAMP
     WHERE id=? AND status IN ('queued','failed')
       AND (next_attempt_at IS NULL OR datetime(next_attempt_at)<=datetime('now'))
@@ -354,6 +354,13 @@ export async function dispatchCommunicationOutboxItem(
       WHERE id=? AND lease_owner=?
     `).bind(outboxId,leaseOwner).run();
     return {status:'failed',budgetLimited:true};
+  }
+  const attemptRecorded=await env.DB.prepare(`
+    UPDATE communication_outbox SET attempts=attempts+1,updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND lease_owner=? AND status='sending'
+  `).bind(outboxId,leaseOwner).run();
+  if(Number(attemptRecorded.meta?.changes||0)!==1){
+    return {status:'lease_lost'};
   }
 
   let result;
