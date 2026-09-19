@@ -70,6 +70,11 @@ const allowedSettings: Record<string, { type: 'string' | 'number' | 'boolean'; v
   'notifications.role_data_reminders': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
   'notifications.escalate_overdue_to_manager': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
   'ai.smart_exception_detection': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.kill_switch': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.whatsapp_enabled': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.ai_enabled': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.ai_daily_limit': { type: 'number', validate: (value) => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 10000 },
+  'communications.provider_daily_limit': { type: 'number', validate: (value) => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 100000 },
 };
 
 async function getSettings(env: AdminEnv, context: SessionContext) {

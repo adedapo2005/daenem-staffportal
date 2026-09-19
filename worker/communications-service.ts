@@ -74,6 +74,77 @@ function authzAdapter(
   };
 }
 
+const GLOBAL_COMMUNICATION_SETTINGS = [
+  'communications.kill_switch',
+  'communications.whatsapp_enabled',
+  'communications.ai_enabled',
+  'communications.ai_daily_limit',
+  'communications.provider_daily_limit',
+] as const;
+
+async function getGlobalCommunicationSettings(
+  env: Env,
+  context: EnhancedSessionContext,
+) {
+  if (!owner(context)) return json({ error:'Group Owner or Group Admin access is required.' },403);
+  const placeholders=GLOBAL_COMMUNICATION_SETTINGS.map(()=>'?').join(',');
+  const rows=await env.DB.prepare(`
+    SELECT setting_key AS key,setting_value AS value,value_type AS type
+    FROM app_settings WHERE setting_key IN (${placeholders})
+  `).bind(...GLOBAL_COMMUNICATION_SETTINGS).all<{key:string;value:string;type:string}>();
+  const settings:Record<string,unknown>={};
+  for(const row of rows.results||[]){
+    settings[row.key]=row.type==='boolean'
+      ? row.value==='true'
+      : row.type==='number'
+        ? Number(row.value)
+        : row.value;
+  }
+  return json({ settings });
+}
+
+async function saveGlobalCommunicationSettings(
+  request: Request,
+  env: Env,
+  context: EnhancedSessionContext,
+) {
+  if (!owner(context)) return json({ error:'Group Owner or Group Admin access is required.' },403);
+  let body:{settings?:Record<string,unknown>};
+  try{body=await request.json();}catch{return json({error:'Invalid communications settings.'},400);}
+  const allowed:Record<string,{type:'boolean'|'number';valid:(value:unknown)=>boolean}>={
+    'communications.kill_switch':{type:'boolean',valid:value=>typeof value==='boolean'},
+    'communications.whatsapp_enabled':{type:'boolean',valid:value=>typeof value==='boolean'},
+    'communications.ai_enabled':{type:'boolean',valid:value=>typeof value==='boolean'},
+    'communications.ai_daily_limit':{type:'number',valid:value=>Number.isInteger(Number(value))&&Number(value)>=0&&Number(value)<=10000},
+    'communications.provider_daily_limit':{type:'number',valid:value=>Number.isInteger(Number(value))&&Number(value)>=0&&Number(value)<=100000},
+  };
+  const entries=Object.entries(body.settings||{});
+  if(!entries.length)return json({error:'No communications settings were supplied.'},400);
+  const statements:D1PreparedStatement[]=[];
+  const changed:Record<string,unknown>={};
+  for(const [key,value] of entries){
+    const rule=allowed[key];
+    if(!rule||!rule.valid(value))return json({error:`Invalid value for ${key}.`},400);
+    changed[key]=value;
+    statements.push(env.DB.prepare(`
+      INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
+      VALUES(?,?,?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(setting_key) DO UPDATE SET
+        setting_value=excluded.setting_value,value_type=excluded.value_type,
+        updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+    `).bind(key,String(value),rule.type,context.employee.id));
+  }
+  // The release gate is deliberately not writable here:
+  // communications.whatsapp_live_send_enabled remains a deployment/release control.
+  statements.push(env.DB.prepare(`
+    INSERT INTO audit_logs(
+      id,actor_employee_id,module,action,entity_type,entity_id,after_json,source
+    ) VALUES(?,?,'communications','update_global_settings','app_settings','communications',?,'web')
+  `).bind(uid('audit'),context.employee.id,JSON.stringify(changed)));
+  await env.DB.batch(statements);
+  return json({ok:true,settings:changed});
+}
+
 async function getPolicy(
   request: Request,
   env: Env,
@@ -455,6 +526,12 @@ export async function routeCommunications(
   const path = new URL(request.url).pathname;
   const method = request.method;
   try {
+    if (path === '/api/communications/admin/global' && method === 'GET') {
+      return getGlobalCommunicationSettings(env,context);
+    }
+    if (path === '/api/communications/admin/global' && method === 'POST') {
+      return saveGlobalCommunicationSettings(request,env,context);
+    }
     if (path === '/api/communications/admin/policy' && method === 'GET') {
       return getPolicy(request,env,context);
     }
