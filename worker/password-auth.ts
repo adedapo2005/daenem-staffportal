@@ -1,4 +1,6 @@
 import { sessionCookie, type AuthEnv } from './auth';
+import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth';
+import { startPasswordRecoveryWhatsApp, verifyPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 
 interface EmailBinding {
   send(message: {
@@ -483,6 +485,17 @@ async function signupVerify(request: Request, env: PasswordAuthEnv) {
     return json({ error: 'The account could not be completed because the username, email or phone is already in use.' }, 409);
   }
 
+  if (row.phone_verified_at) {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO employee_verified_contacts(
+        id,employee_id,company_id,contact_type,normalized_value,revision,verified_method,verified_at
+      ) VALUES(?,?,?,'phone',?,?, 'whatsapp_signup',?)
+    `).bind(
+      uid('verified-contact'),employeeId,row.company_id,row.phone,
+      Number(row.phone_contact_revision || 1),String(row.phone_verified_at),
+    ).run();
+  }
+
   await logSecurity(env, request, 'signup_verified', {
     employeeId, companyId: String(row.company_id), result: 'verified', details: { username: String(row.username), accountStatus },
   });
@@ -497,10 +510,77 @@ async function signupVerify(request: Request, env: PasswordAuthEnv) {
   });
 }
 
+async function startSignupWhatsApp(request: Request, env: PasswordAuthEnv) {
+  let body: { signupChallengeId?: string };
+  try { body = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
+  const signupChallengeId = String(body.signupChallengeId || '');
+  if (!signupChallengeId) return json({ error: 'Signup verification is required.' }, 400);
+  const row = await env.DB.prepare(`
+    SELECT id,existing_employee_id AS existingEmployeeId,phone,company_id AS companyId,
+      phone_contact_revision AS contactRevision,consumed_at AS consumedAt,expires_at AS expiresAt
+    FROM signup_verifications WHERE id=? LIMIT 1
+  `).bind(signupChallengeId).first<{
+    id:string;existingEmployeeId?:string;phone:string;companyId:string;
+    contactRevision:number;consumedAt?:string;expiresAt:string;
+  }>();
+  if (!row || row.consumedAt || new Date(row.expiresAt).getTime() <= Date.now()) {
+    return json({ error: 'This signup verification is invalid or has expired.' }, 401);
+  }
+  try {
+    const challenge = await startWhatsAppChallenge(env,request,{
+      purpose:'signup_phone',
+      companyId:row.companyId,
+      employeeId:row.existingEmployeeId,
+      signupVerificationId:row.id,
+      phone:row.phone,
+      contactRevision:Number(row.contactRevision || 1),
+      contactAlreadyVerified:false,
+    });
+    return json({
+      ok:true,
+      challengeId:challenge.challengeId,
+      destination:challenge.destination,
+      expiresAt:challenge.expiresAt,
+      message:'We sent a verification code to your WhatsApp number. Email verification is still required to finish signup.',
+    });
+  } catch {
+    return json({ error: 'WhatsApp verification is not available for this signup. Continue with email verification or try again later.' }, 503);
+  }
+}
+
+async function verifySignupWhatsApp(request: Request, env: PasswordAuthEnv) {
+  let body: { challengeId?: string; code?: string };
+  try { body = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
+  try {
+    const verified = await verifyWhatsAppChallenge(
+      env,request,'signup_phone',String(body.challengeId || ''),String(body.code || ''),
+    );
+    const updated = await env.DB.prepare(`
+      UPDATE signup_verifications
+      SET phone_verified_at=CURRENT_TIMESTAMP
+      WHERE id=? AND consumed_at IS NULL AND datetime(expires_at)>datetime('now')
+        AND phone=? AND phone_contact_revision=?
+    `).bind(
+      verified.signupVerificationId || '',verified.phone,verified.contactRevision,
+    ).run();
+    if (Number(updated.meta?.changes || 0) !== 1) {
+      return json({ error: 'The signup contact changed or the signup verification expired.' }, 409);
+    }
+    return json({
+      ok:true,
+      phoneVerified:true,
+      next:'email_verification_required',
+      message:'Your WhatsApp number is verified. Verify the email code to finish creating your login.',
+    });
+  } catch {
+    return json({ error: 'The WhatsApp verification code is invalid, expired, or no longer eligible.' }, 401);
+  }
+}
+
 async function login(request: Request, env: PasswordAuthEnv) {
   let body: {
     identifier?: string; password?: string; deviceFingerprint?: string; deviceName?: string; platform?: string;
-    latitude?: number; longitude?: number; accuracy?: number;
+    latitude?: number; longitude?: number; accuracy?: number; verificationChannel?: 'whatsapp';
   };
   try { body = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
   const identifier = String(body.identifier || '').trim().toLowerCase();
@@ -589,6 +669,69 @@ async function login(request: Request, env: PasswordAuthEnv) {
     return json({ error: location.message, code: location.code }, 403);
   }
 
+  if (body.verificationChannel === 'whatsapp') {
+    const company = location.companyId
+      ? { companyId:location.companyId }
+      : await env.DB.prepare(`
+          SELECT company_id AS companyId
+          FROM employee_company_memberships
+          WHERE employee_id=? AND active=1
+          ORDER BY is_primary DESC
+          LIMIT 1
+        `).bind(row.employeeId).first<{ companyId:string }>();
+    if (!company?.companyId) {
+      return json({ error:'WhatsApp verification is not available for this account.' }, 409);
+    }
+    const contact = await env.DB.prepare(`
+      SELECT normalized_value AS phone,revision
+      FROM employee_verified_contacts
+      WHERE employee_id=? AND company_id=? AND contact_type='phone' AND revoked_at IS NULL
+      ORDER BY verified_at DESC LIMIT 1
+    `).bind(row.employeeId,company.companyId).first<{ phone:string;revision:number }>();
+    if (!contact) {
+      return json({
+        error:'No verified WhatsApp contact is enrolled for this account. Use the standard sign-in flow or contact an administrator.',
+      }, 409);
+    }
+    try {
+      const challenge = await startWhatsAppChallenge(env,request,{
+        purpose:'signin_step_up',
+        companyId:company.companyId,
+        employeeId:row.employeeId,
+        phone:contact.phone,
+        contactRevision:Number(contact.revision || 1),
+        contactAlreadyVerified:true,
+        transactionContext:{
+          deviceFingerprint:body.deviceFingerprint || null,
+          deviceName:body.deviceName || null,
+          platform:body.platform || null,
+          latitude:body.latitude ?? null,
+          longitude:body.longitude ?? null,
+          accuracy:body.accuracy ?? null,
+          locationResult:location.result || 'unknown',
+        },
+      });
+      await logSecurity(env,request,'password_signin_whatsapp_stepup_started',{
+        employeeId:row.employeeId,
+        companyId:company.companyId,
+        result:'pending_verification',
+        details:{ challengeId:challenge.challengeId },
+      });
+      return json({
+        ok:true,
+        stepUpRequired:true,
+        challengeId:challenge.challengeId,
+        destination:challenge.destination,
+        expiresAt:challenge.expiresAt,
+        message:'Password accepted. Enter the verification code sent to your enrolled WhatsApp contact.',
+      });
+    } catch {
+      return json({
+        error:'WhatsApp sign-in verification is temporarily unavailable. Use the standard sign-in flow or try again later.',
+      }, 503);
+    }
+  }
+
   const token = randomToken();
   let tokenHash: string;
   try {
@@ -646,6 +789,92 @@ async function login(request: Request, env: PasswordAuthEnv) {
 
   const cookie = sessionCookie(request, token, hours * 3600);
   return json({ ok: true, message: 'Sign-in successful.' }, 200, { 'set-cookie': cookie });
+}
+
+async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
+  let body: { challengeId?:string; code?:string };
+  try { body = await request.json(); } catch { return json({ error:'Invalid request body.' }, 400); }
+  let verified;
+  try {
+    verified = await verifyWhatsAppChallenge(
+      env,request,'signin_step_up',String(body.challengeId || ''),String(body.code || ''),
+    );
+  } catch {
+    return json({ error:'The WhatsApp verification code is invalid, expired, or no longer eligible.' }, 401);
+  }
+  if (!verified.employeeId) return json({ error:'Sign-in verification is invalid.' }, 401);
+  const employee = await env.DB.prepare(`
+    SELECT c.username,e.email,e.display_name AS displayName,e.employment_status AS status
+    FROM employee_credentials c
+    JOIN employees e ON e.id=c.employee_id
+    WHERE c.employee_id=? LIMIT 1
+  `).bind(verified.employeeId).first<{
+    username:string;email?:string;displayName:string;status:string;
+  }>();
+  if (!employee || !['active','provisional'].includes(employee.status)) {
+    return json({ error:'This employee login is not available.' }, 403);
+  }
+  const tx = verified.transactionContext;
+  const text = (key:string) => typeof tx[key] === 'string' ? String(tx[key]) : undefined;
+  const number = (key:string) => typeof tx[key] === 'number' && Number.isFinite(tx[key])
+    ? Number(tx[key]) : undefined;
+  const token = randomToken();
+  let tokenHash: string;
+  try {
+    tokenHash = await sessionHash(env,token);
+  } catch (error) {
+    return controlledAuthFailure(env,request,'session_creation',error);
+  }
+  const sessionId = uid('session');
+  const hours = Number(await setting(env,'security.session_hours','12')) || 12;
+  const expiresAt = new Date(Date.now() + hours * 60 * 60_000).toISOString();
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO auth_sessions(
+          id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,
+          login_latitude,login_longitude,login_accuracy_m,login_location_label,
+          login_geofence_result,expires_at
+        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `).bind(
+        sessionId,verified.employeeId,token,text('deviceFingerprint') || null,
+        text('deviceName') || null,request.headers.get('user-agent'),requestIp(request) || null,
+        number('latitude') ?? null,number('longitude') ?? null,number('accuracy') ?? null,
+        requestLocationLabel(request) || null,text('locationResult') || 'unknown',expiresAt,
+      ),
+      env.DB.prepare(`
+        UPDATE employee_credentials
+        SET failed_attempts=0,locked_until=NULL,last_login_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
+        WHERE employee_id=?
+      `).bind(verified.employeeId),
+    ]);
+  } catch (error) {
+    return controlledAuthFailure(env,request,'session_creation',error);
+  }
+  const deviceFingerprint = text('deviceFingerprint');
+  if (deviceFingerprint) {
+    await env.DB.prepare(`
+      INSERT INTO employee_devices(id,employee_id,device_fingerprint,device_name,platform,user_agent)
+      VALUES(?,?,?,?,?,?)
+      ON CONFLICT(employee_id,device_fingerprint) DO UPDATE SET
+        device_name=excluded.device_name,platform=excluded.platform,
+        user_agent=excluded.user_agent,last_seen_at=CURRENT_TIMESTAMP
+    `).bind(
+      uid('device'),verified.employeeId,deviceFingerprint,text('deviceName') || null,
+      text('platform') || null,request.headers.get('user-agent'),
+    ).run().catch(() => undefined);
+  }
+  await logSecurity(env,request,'password_signin_whatsapp_stepup_success',{
+    employeeId:verified.employeeId,
+    companyId:verified.companyId,
+    sessionId,
+    result:'success',
+  });
+  return json(
+    { ok:true,message:'Sign-in successful.' },
+    200,
+    { 'set-cookie':sessionCookie(request,token,hours * 3600) },
+  );
 }
 
 async function forgotPassword(request: Request, env: PasswordAuthEnv) {
@@ -816,8 +1045,13 @@ export async function routePasswordAuth(request: Request, env: PasswordAuthEnv):
   if (url.pathname === '/api/auth/login' && request.method === 'POST') return login(request, env);
   if (url.pathname === '/api/auth/signup/start' && request.method === 'POST') return signupStart(request, env);
   if (url.pathname === '/api/auth/signup/verify' && request.method === 'POST') return signupVerify(request, env);
+  if (url.pathname === '/api/auth/signup/whatsapp/start' && request.method === 'POST') return startSignupWhatsApp(request, env);
+  if (url.pathname === '/api/auth/signup/whatsapp/verify' && request.method === 'POST') return verifySignupWhatsApp(request, env);
+  if (url.pathname === '/api/auth/login/verify-whatsapp' && request.method === 'POST') return verifySigninWhatsApp(request, env);
   if (url.pathname === '/api/auth/password/forgot' && request.method === 'POST') return forgotPassword(request, env);
+  if (url.pathname === '/api/auth/password/forgot-whatsapp' && request.method === 'POST') return startPasswordRecoveryWhatsApp(request, env);
   if (url.pathname === '/api/auth/password/verify-reset' && request.method === 'POST') return verifyReset(request, env);
+  if (url.pathname === '/api/auth/password/verify-reset-whatsapp' && request.method === 'POST') return verifyPasswordRecoveryWhatsApp(request, env);
   if (url.pathname === '/api/auth/password/reset' && request.method === 'POST') return resetPassword(request, env);
 
   // Legacy OTP login is intentionally retired. OTP is now reserved for signup verification
