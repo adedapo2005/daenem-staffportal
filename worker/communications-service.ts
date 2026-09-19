@@ -2,6 +2,7 @@ import { type AuthEnv, type AccessLevel } from './auth.js';
 import { hasCompanyPermission, type EnhancedSessionContext } from './auth-context-v2.js';
 import { eventById } from './communications/catalog.js';
 import { generateDraft, workersAiDraftProvider } from './communications/drafts.js';
+import { queueApprovedDraft } from './communications-dispatch.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
 import type { Authorization, Channel, RequestContext } from './communications/types.js';
 import {
@@ -436,6 +437,16 @@ async function approveDraft(
   return json({ ok:true,draftId,status:'approved',approvalId,expiresAt });
 }
 
+async function queueDraftForDelivery(request: Request, env: Env, context: EnhancedSessionContext) {
+  let body:{companyId?:string;draftId?:string};
+  try { body=await request.json(); } catch { return json({error:'Invalid queue request.'},400); }
+  const companyId=String(body.companyId||'');
+  const draftId=String(body.draftId||'');
+  if(!companyId||!draftId||!companyAllowed(context,companyId)) return json({error:'Company and draft are required.'},400);
+  const queued=await queueApprovedDraft(env,{companyId,draftId,requestedBy:context.employee.id});
+  return json({ok:true,outboxId:queued.id,idempotencyKey:queued.idempotencyKey,status:'queued'},201);
+}
+
 export async function routeCommunications(
   request: Request,
   env: Env,
@@ -458,6 +469,9 @@ export async function routeCommunications(
     }
     if (path === '/api/communications/drafts/approve' && method === 'POST') {
       return approveDraft(request,env,context);
+    }
+    if (path === '/api/communications/drafts/queue' && method === 'POST') {
+      return queueDraftForDelivery(request,env,context);
     }
   } catch (error) {
     return json({ error:mapCommunicationError(error) }, 409);
