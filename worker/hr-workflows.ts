@@ -68,7 +68,7 @@ async function leaveDecision(request:Request,env:Env,context:EnhancedSessionCont
   ]);
   await audit(env,context,row.companyId,'leave','review','leave_request',body.id,{decision:body.decision,notes:body.notes||null});
   try {
-    const communication=await createLeaveDecisionCommunicationDraft(env,context.employee.id,row.companyId,body.id);
+    const communication=await createLeaveDecisionCommunicationDraft(env,context.employee.id,row.companyId,body.id,true);
     if(communication.created&&communication.draftId){
       await audit(env,context,row.companyId,'communications','leave_decision_draft_created','communication_draft',communication.draftId,{sourceId:body.id,eventId:'hr.leave.status_ready'});
     }

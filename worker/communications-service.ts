@@ -1,8 +1,9 @@
 import { type AuthEnv, type AccessLevel } from './auth.js';
 import { hasCompanyPermission, type EnhancedSessionContext } from './auth-context-v2.js';
 import { eventById } from './communications/catalog.js';
-import { generateDraft, workersAiDraftProvider } from './communications/drafts.js';
+import { generateDraft, validateTemplateText, workersAiDraftProvider } from './communications/drafts.js';
 import { queueApprovedDraft } from './communications-dispatch.js';
+import { routeCommunicationGovernance } from './communications-governance.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
 import type { Authorization, Channel, RequestContext } from './communications/types.js';
 import {
@@ -17,6 +18,7 @@ import {
 
 interface Env extends AuthEnv {
   AI?: Ai;
+  SOCIAL_AI_MODEL?: string;
 }
 
 const json = (body: Record<string, unknown> | unknown[], status = 200) =>
@@ -31,7 +33,14 @@ const json = (body: Record<string, unknown> | unknown[], status = 200) =>
 
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 const owner = (context: EnhancedSessionContext) =>
-  context.roles.some(role => role.code === 'owner');
+  context.roles.some(role => ['owner','group_admin'].includes(role.code));
+
+async function auditCommunication(env:Env,context:EnhancedSessionContext,companyId:string|undefined,action:string,entityType:string,entityId:string|undefined,after:unknown){
+  await env.DB.prepare(`
+    INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+    VALUES(?,?,?,'communications',?,?,?,?, 'web')
+  `).bind(uid('audit'),context.employee.id,companyId||null,action,entityType,entityId||null,JSON.stringify(after)).run();
+}
 
 function can(
   context: EnhancedSessionContext,
@@ -44,7 +53,10 @@ function can(
 
 function companyAllowed(context: EnhancedSessionContext, companyId: string) {
   assertStaffPortalCompany(companyId);
-  return owner(context) || context.companies.some(company => company.id === companyId);
+  const company=context.companies.find(item=>item.id===companyId);
+  if(!company) return false;
+  if(/farm/i.test(`${company.id} ${company.code} ${company.name}`)) return false;
+  return owner(context) || Boolean(company);
 }
 
 function communicationPermission(
@@ -288,7 +300,7 @@ async function generateOnboardingDraft(
   if (!profile) return json({ error:'No approved HR communication instruction profile is active.' }, 409);
 
   const eventId = 'hr.onboarding.reminder';
-  const policy = await loadPolicySnapshot(env, companyId, eventId);
+  const policy = await loadPolicySnapshot(env, companyId, eventId, [context.employee.id,source.employeeId]);
   const boundary = await communicationBoundary(env, companyId);
   const sourceRevision = String(source.updatedAt);
   const reqContext: RequestContext = {
@@ -362,17 +374,25 @@ async function generateOnboardingDraft(
   }, 201);
 }
 
+async function communicationTriggerEnabled(env:AuthEnv,companyId:string,eventId:string,triggerCode:string){
+  const row=await env.DB.prepare(`
+    SELECT enabled FROM communication_trigger_rules
+    WHERE company_id=? AND event_id=? AND trigger_code=? LIMIT 1
+  `).bind(companyId,eventId,triggerCode).first<{enabled:number}>();
+  return Boolean(row?.enabled);
+}
+
 export async function createLeaveDecisionCommunicationDraft(
   env: AuthEnv,
   actorId: string,
   companyId: string,
   leaveRequestId: string,
+  automatic = false,
 ): Promise<{ created:boolean; draftId?:string; reason?:string }> {
   assertStaffPortalCompany(companyId);
   const eventId = 'hr.leave.status_ready';
-  const policy = await loadPolicySnapshot(env,companyId,eventId);
-  if (!policy.useCase.enabled || !policy.global.enabled) {
-    return { created:false,reason:'disabled' };
+  if(automatic&&!await communicationTriggerEnabled(env,companyId,eventId,'leave_decision')){
+    return {created:false,reason:'trigger_disabled'};
   }
   const source = await env.DB.prepare(`
     SELECT lr.id,lr.updated_at AS updatedAt,lr.employee_id AS employeeId,
@@ -386,6 +406,10 @@ export async function createLeaveDecisionCommunicationDraft(
     id:string;updatedAt:string;employeeId:string;employeeName:string;companyName:string;status:string;
   }>();
   if (!source) return { created:false,reason:'source_not_ready' };
+  const policy = await loadPolicySnapshot(env,companyId,eventId,[actorId,source.employeeId]);
+  if (!policy.useCase.enabled || !policy.global.enabled) {
+    return { created:false,reason:'disabled' };
+  }
   const existing = await env.DB.prepare(`
     SELECT id FROM communication_drafts
     WHERE company_id=? AND event_id=? AND source_id=?
@@ -409,6 +433,58 @@ export async function createLeaveDecisionCommunicationDraft(
     'deterministic',policy.revision,'pending_approval',expiresAt,
   ).run();
   return { created:true,draftId };
+}
+
+async function createAttendanceIncompleteDraft(
+  request: Request,
+  env: Env,
+  context: EnhancedSessionContext,
+) {
+  let body:{companyId?:string;attendanceDayId?:string};
+  try{body=await request.json();}catch{return json({error:'Invalid attendance communication request.'},400);}
+  const companyId=String(body.companyId||'');
+  const attendanceDayId=String(body.attendanceDayId||'');
+  if(!companyId||!attendanceDayId||!companyAllowed(context,companyId)){
+    return json({error:'Company and attendance record are required.'},400);
+  }
+  if(!communicationPermission(context,companyId,'hr','create','create')||
+     !can(context,companyId,'attendance.access','view')){
+    return json({error:'Attendance communication access is not assigned.'},403);
+  }
+  const source=await env.DB.prepare(`
+    SELECT a.id,a.updated_at AS updatedAt,a.employee_id AS employeeId,
+      a.work_date AS workDate,a.status,e.display_name AS employeeName,c.name AS companyName
+    FROM attendance_days a
+    JOIN employees e ON e.id=a.employee_id
+    JOIN companies c ON c.id=a.company_id
+    WHERE a.id=? AND a.company_id=? AND a.status='incomplete'
+    LIMIT 1
+  `).bind(attendanceDayId,companyId).first<{
+    id:string;updatedAt:string;employeeId:string;workDate:string;status:string;
+    employeeName:string;companyName:string;
+  }>();
+  if(!source)return json({error:'Incomplete attendance record not found.'},404);
+  const eventId='hr.attendance.incomplete';
+  const policy=await loadPolicySnapshot(env,companyId,eventId,[context.employee.id,source.employeeId]);
+  if(!policy.useCase.enabled||!policy.global.enabled){
+    return json({error:'Attendance communication is disabled.'},409);
+  }
+  const firstName=source.employeeName.trim().split(/\s+/)[0]||'Employee';
+  const preview=`Hello ${firstName}, an attendance record is incomplete in the Staff Portal. Please review your attendance workspace. This message does not change or determine attendance status.`;
+  const draftId=uid('comm-draft');
+  const expiresAt=new Date(Date.now()+24*60*60_000).toISOString();
+  await env.DB.prepare(`
+    INSERT INTO communication_drafts(
+      id,company_id,event_id,source_type,source_id,source_revision,
+      author_employee_id,recipient_employee_id,channel,language,body,
+      content_origin,policy_revision,status,expires_at
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).bind(
+    draftId,companyId,eventId,'attendance_day',source.id,String(source.updatedAt),
+    context.employee.id,source.employeeId,'whatsapp','en',preview,
+    'deterministic',policy.revision,'pending_approval',expiresAt,
+  ).run();
+  return json({ok:true,draftId,status:'pending_approval',preview},201);
 }
 
 async function createLeaveReadyDraft(
@@ -484,7 +560,7 @@ async function approveDraft(
   if (new Date(String(row.expiresAt)).getTime() <= Date.now()) {
     return json({ error:'This draft has expired.' }, 409);
   }
-  const currentPolicy = await loadPolicySnapshot(env, companyId, String(row.eventId));
+  const currentPolicy = await loadPolicySnapshot(env, companyId, String(row.eventId), [context.employee.id,String(row.authorId||''),String(row.recipientId||'')]);
   if (currentPolicy.revision !== String(row.policyRevision)) {
     return json({ error:'Communication policy changed; regenerate or review the draft again.' }, 409);
   }
@@ -526,6 +602,8 @@ export async function routeCommunications(
   const path = new URL(request.url).pathname;
   const method = request.method;
   try {
+    const governance=await routeCommunicationGovernance(request,env,context);
+    if(governance)return governance;
     if (path === '/api/communications/admin/global' && method === 'GET') {
       return getGlobalCommunicationSettings(env,context);
     }
@@ -543,6 +621,9 @@ export async function routeCommunications(
     }
     if (path === '/api/communications/hr/leave-ready/draft' && method === 'POST') {
       return createLeaveReadyDraft(request,env,context);
+    }
+    if (path === '/api/communications/hr/attendance-incomplete/draft' && method === 'POST') {
+      return createAttendanceIncompleteDraft(request,env,context);
     }
     if (path === '/api/communications/drafts/approve' && method === 'POST') {
       return approveDraft(request,env,context);

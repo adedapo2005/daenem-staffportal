@@ -90,10 +90,47 @@ function rowRule(
   };
 }
 
+async function loadApplicableRestrictions(
+  env:AuthEnv,
+  companyId:string,
+  eventId:string,
+  employeeIds:readonly string[],
+  fallbackChannels:readonly Channel[],
+  fallbackAi:boolean,
+):Promise<PolicyRule[]>{
+  const ids=[...new Set(employeeIds.filter(Boolean))];
+  if(!ids.length)return[];
+  const employeeMarks=ids.map(()=>'?').join(',');
+  const roleRows=await env.DB.prepare(`
+    SELECT DISTINCT role_id AS roleId FROM employee_roles
+    WHERE company_id=? AND employee_id IN (${employeeMarks})
+  `).bind(companyId,...ids).all<{roleId:string}>();
+  const roleIds=(roleRows.results||[]).map(row=>row.roleId).filter(Boolean);
+  const conditions:string[]=[];
+  const binds:unknown[]=[companyId,eventId];
+  conditions.push(`(subject_type='employee' AND subject_id IN (${employeeMarks}))`);
+  binds.push(...ids);
+  if(roleIds.length){
+    const roleMarks=roleIds.map(()=>'?').join(',');
+    conditions.push(`(subject_type='role' AND subject_id IN (${roleMarks}))`);
+    binds.push(...roleIds);
+  }
+  const rows=await env.DB.prepare(`
+    SELECT enabled,ai_enabled AS aiEnabled,auto_generate AS autoGenerate,
+      auto_send AS autoSend,require_human_approval AS requireHumanApproval,
+      channels_json AS channelsJson,languages_json AS languagesJson,
+      max_characters AS maxCharacters
+    FROM communication_policy_restrictions
+    WHERE company_id=? AND event_id=? AND (${conditions.join(' OR ')})
+  `).bind(...binds).all<Record<string,unknown>>();
+  return (rows.results||[]).map(row=>rowRule(row,fallbackChannels,fallbackAi));
+}
+
 export async function loadPolicySnapshot(
   env: AuthEnv,
   companyId: string,
   eventId: string,
+  subjectEmployeeIds: readonly string[] = [],
 ): Promise<PolicySnapshot> {
   assertStaffPortalCompany(companyId);
   const [killSwitchRaw, whatsappRaw, aiRaw, row] = await Promise.all([
@@ -130,6 +167,9 @@ export async function loadPolicySnapshot(
   const revision = row
     ? `company:${companyId}:event:${eventId}:r${String(row.revision || 1)}`
     : `company:${companyId}:event:${eventId}:disabled`;
+  const restrictions=await loadApplicableRestrictions(
+    env,companyId,eventId,subjectEmployeeIds,channels,aiEnabled,
+  );
   return {
     scope: communicationScope(companyId),
     eventId,
@@ -139,7 +179,7 @@ export async function loadPolicySnapshot(
     organization: base,
     module: base,
     useCase,
-    restrictions: [],
+    restrictions,
   };
 }
 

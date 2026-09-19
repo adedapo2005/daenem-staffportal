@@ -251,7 +251,7 @@ export async function startWhatsAppChallenge(
     contactAlreadyVerified = true;
   }
   const eventId = eventByPurpose[input.purpose];
-  const policy = await loadPolicySnapshot(env, input.companyId, eventId);
+  const policy = await loadPolicySnapshot(env, input.companyId, eventId, input.employeeId ? [input.employeeId] : []);
   const boundary = await communicationBoundary(env, input.companyId);
   const capacityReserved = await reserveCapacity(env, {
     companyId:input.companyId,
@@ -368,7 +368,7 @@ export async function verifyWhatsAppChallenge(
   if (Number(row.attempts) >= Number(row.maxAttempts)) {
     throw new Error('WHATSAPP_CHALLENGE_ATTEMPTS_EXCEEDED');
   }
-  const currentPolicy = await loadPolicySnapshot(env,row.companyId,eventByPurpose[purpose]);
+  const currentPolicy = await loadPolicySnapshot(env,row.companyId,eventByPurpose[purpose],row.employeeId ? [row.employeeId] : []);
   const currentBoundary = await communicationBoundary(env,row.companyId);
   checkBoundary(communicationScope(row.companyId),currentBoundary);
   const currentEffective = effectivePolicy(currentPolicy,Date.now());

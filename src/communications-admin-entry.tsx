@@ -24,7 +24,8 @@ function canManage(context:WorkforceContext,companyId:string){
 }
 
 function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose:()=>void}){
- const[companyId,setCompanyId]=useState(context.companies[0]?.id||'');
+ const safeCompanies=context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`));
+ const[companyId,setCompanyId]=useState(safeCompanies[0]?.id||'');
  const[eventId,setEventId]=useState<string>(events[0][0]);
  const[policy,setPolicy]=useState<Policy|null>(null);
  const[globals,setGlobals]=useState<GlobalSettings>({});
@@ -88,7 +89,7 @@ function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose
    </header>
    {message&&<div className="comm-admin-message">{message}</div>}
    <div className="comm-admin-toolbar">
-    <label><span>Company</span><select value={companyId} onChange={event=>setCompanyId(event.target.value)}>{context.companies.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    <label><span>Company</span><select value={companyId} onChange={event=>setCompanyId(event.target.value)}>{safeCompanies.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label><span>Use case</span><select value={eventId} onChange={event=>setEventId(event.target.value)}>{events.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
     <button onClick={()=>void load()} disabled={busy==='load'}><RefreshCw size={16}/>Refresh</button>
    </div>

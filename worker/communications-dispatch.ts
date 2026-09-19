@@ -88,6 +88,12 @@ async function currentSourceRevision(env:AuthEnv,row:DraftRow){
     ).bind(row.sourceId,row.companyId).first<{revision:string}>();
     return source?.revision;
   }
+  if(row.sourceType==='attendance_day'){
+    const source=await env.DB.prepare(
+      'SELECT updated_at AS revision FROM attendance_days WHERE id=? AND company_id=? AND status=\'incomplete\' LIMIT 1'
+    ).bind(row.sourceId,row.companyId).first<{revision:string}>();
+    return source?.revision;
+  }
   return undefined;
 }
 
@@ -215,14 +221,16 @@ export async function dispatchCommunicationOutboxItem(
 
   const row=await loadDraft(env,String(outbox.draftId||''),companyId);
   if(!row||row.status!=='queued')throw new Error('DRAFT_NOT_QUEUEABLE');
-  const policy=await loadPolicySnapshot(env,companyId,row.eventId);
+  const approval=await loadCurrentApproval(env,row.id);
+  if(!approval||new Date(approval.expiresAt).getTime()<=Date.now())throw new Error('APPROVAL_EXPIRED');
+  const policy=await loadPolicySnapshot(env,companyId,row.eventId,[
+    String(outbox.requestedBy||''),row.authorId,row.recipientId,approval.approverId,
+  ]);
   if(!policy.global.enabled||!policy.useCase.enabled)throw new Error('USE_CASE_DISABLED');
   if(policy.revision!==row.policyRevision)throw new Error('POLICY_CHANGED');
   const sourceRevision=await currentSourceRevision(env,row);
   if(!sourceRevision||String(sourceRevision)!==row.sourceRevision)throw new Error('SOURCE_CHANGED');
 
-  const approval=await loadCurrentApproval(env,row.id);
-  if(!approval||new Date(approval.expiresAt).getTime()<=Date.now())throw new Error('APPROVAL_EXPIRED');
   if(approval.contentDigest!==await draftDigest(row))throw new Error('APPROVAL_INVALIDATED');
   const event=eventById(row.eventId);
   const approverLevel=await permissionLevel(env,approval.approverId,companyId,`communications.${event.module}.approve`);
