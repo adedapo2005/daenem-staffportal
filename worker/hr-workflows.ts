@@ -1,5 +1,6 @@
 import { hasPermission, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
 import { hasCompanyPermission, type EnhancedSessionContext } from './auth-context-v2';
+import { createLeaveDecisionCommunicationDraft } from './communications-service';
 
 interface Env extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -66,6 +67,14 @@ async function leaveDecision(request:Request,env:Env,context:EnhancedSessionCont
       VALUES(?,?,?,'leave',?,?,?,'leave_request',?)`).bind(uid('notification'),row.employeeId,row.companyId,body.decision==='approved'?'success':'warning',`Leave request ${body.decision}`,body.decision==='approved'?'Your leave request has been approved.':'Your leave request was not approved. Open Leave to read the review note.',body.id),
   ]);
   await audit(env,context,row.companyId,'leave','review','leave_request',body.id,{decision:body.decision,notes:body.notes||null});
+  try {
+    const communication=await createLeaveDecisionCommunicationDraft(env,context.employee.id,row.companyId,body.id);
+    if(communication.created&&communication.draftId){
+      await audit(env,context,row.companyId,'communications','leave_decision_draft_created','communication_draft',communication.draftId,{sourceId:body.id,eventId:'hr.leave.status_ready'});
+    }
+  }catch{
+    // Communication preparation must never roll back the authoritative HR decision.
+  }
   return json({ok:true,status:body.decision});
 }
 

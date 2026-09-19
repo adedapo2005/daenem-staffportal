@@ -37,6 +37,7 @@ import { routeNavigationWorkspace } from './navigation-workspace';
 import { routeExperiencePreferences } from './experience-preferences';
 import { routeHrWorkflows } from './hr-workflows';
 import { routeCommunications } from './communications-service';
+import { routeCommunicationsWebhook } from './communications-webhook';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
 import { routePlatformCenter, routePublicWebsite } from './platform-center';
@@ -135,6 +136,12 @@ export default {
       const response = await routeWhatsAppWebhook(request, env);
       if (response) return secure(response);
       return secure(json({ error: 'WhatsApp webhook route not found.' }, 404));
+    }
+
+    if (url.pathname === '/api/communications/webhooks/whatsapp') {
+      const response = await routeCommunicationsWebhook(request, env);
+      if (response) return secure(response);
+      return secure(json({ error: 'Communications webhook route not found.' }, 404));
     }
 
     if (url.pathname === '/api/social/webhooks/meta' && request.method === 'POST') {

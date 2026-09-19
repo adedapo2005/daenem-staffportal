@@ -290,6 +290,55 @@ async function generateOnboardingDraft(
   }, 201);
 }
 
+export async function createLeaveDecisionCommunicationDraft(
+  env: AuthEnv,
+  actorId: string,
+  companyId: string,
+  leaveRequestId: string,
+): Promise<{ created:boolean; draftId?:string; reason?:string }> {
+  assertStaffPortalCompany(companyId);
+  const eventId = 'hr.leave.status_ready';
+  const policy = await loadPolicySnapshot(env,companyId,eventId);
+  if (!policy.useCase.enabled || !policy.global.enabled) {
+    return { created:false,reason:'disabled' };
+  }
+  const source = await env.DB.prepare(`
+    SELECT lr.id,lr.updated_at AS updatedAt,lr.employee_id AS employeeId,
+      e.display_name AS employeeName,c.name AS companyName,lr.status
+    FROM leave_requests lr
+    JOIN employees e ON e.id=lr.employee_id
+    JOIN companies c ON c.id=lr.company_id
+    WHERE lr.id=? AND lr.company_id=? AND lr.status IN ('approved','rejected')
+    LIMIT 1
+  `).bind(leaveRequestId,companyId).first<{
+    id:string;updatedAt:string;employeeId:string;employeeName:string;companyName:string;status:string;
+  }>();
+  if (!source) return { created:false,reason:'source_not_ready' };
+  const existing = await env.DB.prepare(`
+    SELECT id FROM communication_drafts
+    WHERE company_id=? AND event_id=? AND source_id=?
+      AND status IN ('draft','pending_approval','approved','queued')
+    ORDER BY created_at DESC LIMIT 1
+  `).bind(companyId,eventId,source.id).first<{id:string}>();
+  if (existing) return { created:false,draftId:existing.id,reason:'already_exists' };
+  const firstName = source.employeeName.trim().split(/\s+/)[0] || 'Employee';
+  const preview = `Hello ${firstName}, your leave request decision is available in the Staff Portal. Open https://staffportal.daenem.com/hr to review it securely.`;
+  const draftId = uid('comm-draft');
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60_000).toISOString();
+  await env.DB.prepare(`
+    INSERT INTO communication_drafts(
+      id,company_id,event_id,source_type,source_id,source_revision,
+      author_employee_id,recipient_employee_id,channel,language,body,
+      content_origin,policy_revision,status,expires_at
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).bind(
+    draftId,companyId,eventId,'leave_request',source.id,String(source.updatedAt),
+    actorId,source.employeeId,'whatsapp','en',preview,
+    'deterministic',policy.revision,'pending_approval',expiresAt,
+  ).run();
+  return { created:true,draftId };
+}
+
 async function createLeaveReadyDraft(
   request: Request,
   env: Env,
@@ -307,37 +356,20 @@ async function createLeaveReadyDraft(
       !can(context, companyId, 'leave.admin', 'view')) {
     return json({ error:'HR communication access is not assigned.' }, 403);
   }
-  const source = await env.DB.prepare(`
-    SELECT lr.id,lr.updated_at AS updatedAt,lr.employee_id AS employeeId,
-      e.display_name AS employeeName,c.name AS companyName,lr.status
-    FROM leave_requests lr
-    JOIN employees e ON e.id=lr.employee_id
-    JOIN companies c ON c.id=lr.company_id
-    WHERE lr.id=? AND lr.company_id=? AND lr.status IN ('approved','rejected')
-    LIMIT 1
-  `).bind(leaveRequestId, companyId).first<{
-    id:string;updatedAt:string;employeeId:string;employeeName:string;companyName:string;status:string;
-  }>();
-  if (!source) return json({ error:'Reviewed leave request not found.' }, 404);
-  const eventId = 'hr.leave.status_ready';
-  const policy = await loadPolicySnapshot(env, companyId, eventId);
-  if (!policy.useCase.enabled) return json({ error:'Leave WhatsApp communication is disabled.' }, 409);
-  const firstName = source.employeeName.trim().split(/\s+/)[0] || 'Employee';
-  const preview = `Hello ${firstName}, your leave request decision is available in the Staff Portal. Open https://staffportal.daenem.com/hr to review it securely.`;
-  const draftId = uid('comm-draft');
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60_000).toISOString();
-  await env.DB.prepare(`
-    INSERT INTO communication_drafts(
-      id,company_id,event_id,source_type,source_id,source_revision,
-      author_employee_id,recipient_employee_id,channel,language,body,
-      content_origin,policy_revision,status,expires_at
-    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  `).bind(
-    draftId,companyId,eventId,'leave_request',source.id,String(source.updatedAt),
-    context.employee.id,source.employeeId,'whatsapp','en',preview,
-    'deterministic',policy.revision,'pending_approval',expiresAt,
-  ).run();
-  return json({ ok:true,draftId,status:'pending_approval',preview }, 201);
+  const result = await createLeaveDecisionCommunicationDraft(
+    env,context.employee.id,companyId,leaveRequestId,
+  );
+  if (!result.created && result.reason === 'disabled') {
+    return json({ error:'Leave WhatsApp communication is disabled.' }, 409);
+  }
+  if (!result.created && result.reason === 'source_not_ready') {
+    return json({ error:'Reviewed leave request not found.' }, 404);
+  }
+  return json({
+    ok:true,
+    draftId:result.draftId,
+    status:result.created ? 'pending_approval' : 'already_exists',
+  }, result.created ? 201 : 200);
 }
 
 async function digestDraft(row: Record<string, unknown>) {
