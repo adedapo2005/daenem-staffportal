@@ -30,7 +30,7 @@ No production deployment, remote D1 migration, live WhatsApp send, production-da
 
 ## Implemented
 
-- migrations 0060–0063 for policy, contacts, consent, drafts, approvals, outbox, webhook inbox, authentication challenges, dispatch metadata and governance
+- migrations 0060–0064 for policy, contacts, consent, drafts, approvals, outbox, webhook inbox, authentication challenges, dispatch metadata, governance, and remediation settings
 - WhatsApp signup phone verification without conflating phone proof with email proof
 - optional post-password WhatsApp sign-in step-up for enrolled verified contacts
 - privacy-safe WhatsApp password-recovery verification
@@ -58,9 +58,9 @@ No production deployment, remote D1 migration, live WhatsApp send, production-da
 
 ### Clean local migrations
 
-A separate local Wrangler persistence directory was created and migrations `0001` through `0063` were replayed from a clean local state.
+A separate local Wrangler persistence directory was created and migrations `0001` through `0064` were replayed from a clean local state.
 
-Result: PASS — all 63 migrations applied locally, including 0060, 0061, 0062 and 0063.
+Result: PASS — all 64 migrations applied locally, including 0060, 0061, 0062, 0063 and 0064.
 
 No `--remote` migration command was used.
 
@@ -130,3 +130,29 @@ Neither unrelated baseline issue was modified as part of this communications clo
 - Deployed: NO
 
 The intended next state is Draft PR review only.
+
+
+## Draft PR #2 remediation pass
+
+A focused review remediation pass was completed after read-only review of Draft PR #2.
+
+Remediated findings:
+- outbox dispatch now uses an atomic lease acquisition before provider delivery, enforces retry due time, clears leases on completion, and prevents direct retry of ambiguous provider outcomes pending reconciliation
+- queued idempotency now returns the persisted outbox identity rather than a newly generated ID that may have been ignored by the uniqueness constraint
+- dispatch now evaluates the complete effective deny-wins policy, including applicable role/employee restrictions and active channel/language eligibility
+- applicable role/employee restrictions are fingerprinted into the policy revision so approval/dispatch detects relevant restriction changes
+- provider-send capacity is re-reserved at dispatch and configured quiet hours are enforced
+- WhatsApp authentication adds a server-side resend cooldown and supersedes prior active challenges for the same purpose/company/phone
+- webhook delivery-state handling is monotonic so late sent/delivered callbacks cannot regress read/delivered state
+- migration 0064 adds the default WhatsApp authentication resend cooldown setting
+
+Remediation validation:
+- clean local migration replay 0001–0064: PASS
+- original communications contracts: 11/11 PASS
+- focused remediation contracts: 10/10 PASS
+- company-scoped access contracts: 21/21 PASS
+- targeted strict Worker/auth/HR TypeScript: PASS
+- targeted Communications Control frontend TypeScript: PASS
+- no remote migration, live Meta send, production-data AI call, merge, or deployment was performed
+
+Provider ambiguity remains intentionally fail-closed for automatic retry: an unknown provider outcome requires reconciliation before another delivery attempt.

@@ -122,8 +122,20 @@ async function loadApplicableRestrictions(
       max_characters AS maxCharacters
     FROM communication_policy_restrictions
     WHERE company_id=? AND event_id=? AND (${conditions.join(' OR ')})
+    ORDER BY subject_type,subject_id
   `).bind(...binds).all<Record<string,unknown>>();
   return (rows.results||[]).map(row=>rowRule(row,fallbackChannels,fallbackAi));
+}
+
+async function restrictionFingerprint(rules:readonly PolicyRule[]){
+  const canonical=JSON.stringify(rules.map(rule=>({
+    enabled:rule.enabled,aiEnabled:rule.aiEnabled,autoGenerate:rule.autoGenerate,
+    autoSend:rule.autoSend,requireHumanApproval:rule.requireHumanApproval,
+    channels:[...rule.channels].sort(),languages:[...rule.languages].sort(),
+    maxCharacters:rule.maxCharacters,
+  })));
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical));
+  return [...new Uint8Array(digest)].slice(0,8).map(value=>value.toString(16).padStart(2,'0')).join('');
 }
 
 export async function loadPolicySnapshot(
@@ -164,12 +176,13 @@ export async function loadPolicySnapshot(
     maxCharacters: 4000,
   };
   const useCase = rowRule(row || null, channels, aiEnabled);
-  const revision = row
-    ? `company:${companyId}:event:${eventId}:r${String(row.revision || 1)}`
-    : `company:${companyId}:event:${eventId}:disabled`;
   const restrictions=await loadApplicableRestrictions(
     env,companyId,eventId,subjectEmployeeIds,channels,aiEnabled,
   );
+  const restrictionRevision=await restrictionFingerprint(restrictions);
+  const revision = (row
+    ? `company:${companyId}:event:${eventId}:r${String(row.revision || 1)}`
+    : `company:${companyId}:event:${eventId}:disabled`) + `:restr:${restrictionRevision}`;
   return {
     scope: communicationScope(companyId),
     eventId,

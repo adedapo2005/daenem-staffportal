@@ -1,6 +1,8 @@
 import type { AuthEnv, AccessLevel } from './auth.js';
-import { assertStaffPortalCompany, loadPolicySnapshot } from './communications-repository.js';
+import { assertStaffPortalCompany, loadPolicySnapshot, reserveCapacity } from './communications-repository.js';
+import { effectivePolicy } from './communications/policy.js';
 import { eventById } from './communications/catalog.js';
+import type { Channel } from './communications/types.js';
 
 type DraftRow = {
   id:string; companyId:string; eventId:string; sourceType:string; sourceId:string;
@@ -32,6 +34,35 @@ const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
 
 function levelAtLeast(value:AccessLevel, minimum:AccessLevel){
   return levels.indexOf(value)>=levels.indexOf(minimum);
+}
+
+export function retryDue(nextAttemptAt: unknown, nowMs = Date.now()) {
+  if (!nextAttemptAt) return true;
+  const next = new Date(String(nextAttemptAt)).getTime();
+  return Number.isFinite(next) && next <= nowMs;
+}
+
+export function quietHoursActive(
+  config: unknown,
+  now = new Date(),
+) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return false;
+  const row = config as Record<string, unknown>;
+  const start = String(row.start || '');
+  const end = String(row.end || '');
+  const offset = Number(row.timezoneOffsetMinutes || 0);
+  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end) || !Number.isFinite(offset)) return false;
+  const toMinutes = (value:string) => {
+    const [h,m]=value.split(':').map(Number);
+    return h>=0&&h<24&&m>=0&&m<60 ? h*60+m : -1;
+  };
+  const startMinutes=toMinutes(start),endMinutes=toMinutes(end);
+  if(startMinutes<0||endMinutes<0||startMinutes===endMinutes)return false;
+  const local = new Date(now.getTime()+offset*60_000);
+  const current=local.getUTCHours()*60+local.getUTCMinutes();
+  return startMinutes<endMinutes
+    ? current>=startMinutes&&current<endMinutes
+    : current>=startMinutes||current<endMinutes;
 }
 
 async function permissionLevel(
@@ -95,6 +126,17 @@ async function currentSourceRevision(env:AuthEnv,row:DraftRow){
     return source?.revision;
   }
   return undefined;
+}
+
+async function quietHoursConfig(env:AuthEnv,companyId:string,eventId:string){
+  const row=await env.DB.prepare(
+    'SELECT quiet_hours_json AS value FROM communication_policy_rules WHERE company_id=? AND event_id=? LIMIT 1'
+  ).bind(companyId,eventId).first<{value:string}>();
+  if(!row?.value)return {};
+  try{
+    const parsed=JSON.parse(row.value);
+    return parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{};
+  }catch{return {};}
 }
 
 async function loadDraft(env:AuthEnv,draftId:string,companyId:string){
@@ -170,25 +212,27 @@ export async function queueApprovedDraft(
   }>();
   if(row.channel==='whatsapp'&&(!consent?.granted||consent.revokedAt))throw new Error('CONSENT_REQUIRED');
 
-  const id=uid('comm-outbox');
+  const proposedId=uid('comm-outbox');
   const idempotencyKey=`comm:${row.companyId}:${row.id}:r1`;
-  await env.DB.batch([
-    env.DB.prepare(`
-      INSERT OR IGNORE INTO communication_outbox(
-        id,company_id,event_id,employee_id,channel,draft_id,template_id,
-        recipient_contact_revision,priority,status,idempotency_key,expires_at,
-        send_requested_by,next_attempt_at
-      ) VALUES(?,?,?,?,?,?,?,?,50,'queued',?,?,?,CURRENT_TIMESTAMP)
-    `).bind(
-      id,row.companyId,row.eventId,row.recipientId,row.channel,row.id,template.id,
-      contact?.revision||null,idempotencyKey,row.expiresAt,input.requestedBy
-    ),
-    env.DB.prepare(`
-      UPDATE communication_drafts SET status='queued',updated_at=CURRENT_TIMESTAMP
-      WHERE id=? AND status='approved'
-    `).bind(row.id),
-  ]);
-  return {id,idempotencyKey};
+  await env.DB.prepare(`
+    INSERT OR IGNORE INTO communication_outbox(
+      id,company_id,event_id,employee_id,channel,draft_id,template_id,
+      recipient_contact_revision,priority,status,idempotency_key,expires_at,
+      send_requested_by,next_attempt_at
+    ) VALUES(?,?,?,?,?,?,?,?,50,'queued',?,?,?,CURRENT_TIMESTAMP)
+  `).bind(
+    proposedId,row.companyId,row.eventId,row.recipientId,row.channel,row.id,template.id,
+    contact?.revision||null,idempotencyKey,row.expiresAt,input.requestedBy
+  ).run();
+  const persisted=await env.DB.prepare(
+    'SELECT id,status FROM communication_outbox WHERE idempotency_key=? LIMIT 1'
+  ).bind(idempotencyKey).first<{id:string;status:string}>();
+  if(!persisted)throw new Error('OUTBOX_PERSIST_FAILED');
+  await env.DB.prepare(`
+    UPDATE communication_drafts SET status='queued',updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND status='approved'
+  `).bind(row.id).run();
+  return {id:persisted.id,idempotencyKey,status:persisted.status};
 }
 
 export async function dispatchCommunicationOutboxItem(
@@ -201,20 +245,27 @@ export async function dispatchCommunicationOutboxItem(
       o.channel,o.draft_id AS draftId,o.template_id AS templateId,
       o.recipient_contact_revision AS contactRevision,o.idempotency_key AS idempotencyKey,
       o.expires_at AS expiresAt,o.send_requested_by AS requestedBy,o.attempts,o.max_attempts AS maxAttempts,
-      o.status
+      o.next_attempt_at AS nextAttemptAt,o.lease_owner AS leaseOwner,o.lease_expires_at AS leaseExpiresAt,
+      o.ambiguity_state AS ambiguityState,o.status
     FROM communication_outbox o WHERE o.id=? LIMIT 1
   `).bind(outboxId).first<Record<string,unknown>>();
   if(!outbox)throw new Error('OUTBOX_NOT_FOUND');
   const companyId=String(outbox.companyId||'');
   assertStaffPortalCompany(companyId);
   if(!['queued','failed'].includes(String(outbox.status)))return {status:String(outbox.status)};
+  if(String(outbox.ambiguityState||'clear')==='provider_unknown'){
+    return {status:'failed',ambiguous:true,awaitingReconciliation:true};
+  }
   if(new Date(String(outbox.expiresAt||0)).getTime()<=Date.now()){
-    await env.DB.prepare("UPDATE communication_outbox SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE id=?")
+    await env.DB.prepare("UPDATE communication_outbox SET status='expired',lease_owner=NULL,lease_expires_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?")
       .bind(outboxId).run();
     return {status:'expired'};
   }
+  if(!retryDue(outbox.nextAttemptAt)){
+    return {status:String(outbox.status),retryDeferred:true};
+  }
   if(Number(outbox.attempts||0)>=Number(outbox.maxAttempts||5)){
-    await env.DB.prepare("UPDATE communication_outbox SET status='failed',last_error_code='MAX_ATTEMPTS',updated_at=CURRENT_TIMESTAMP WHERE id=?")
+    await env.DB.prepare("UPDATE communication_outbox SET status='failed',last_error_code='MAX_ATTEMPTS',lease_owner=NULL,lease_expires_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?")
       .bind(outboxId).run();
     return {status:'failed'};
   }
@@ -226,7 +277,10 @@ export async function dispatchCommunicationOutboxItem(
   const policy=await loadPolicySnapshot(env,companyId,row.eventId,[
     String(outbox.requestedBy||''),row.authorId,row.recipientId,approval.approverId,
   ]);
-  if(!policy.global.enabled||!policy.useCase.enabled)throw new Error('USE_CASE_DISABLED');
+  const effective=effectivePolicy(policy,Date.now());
+  if(!effective.enabled)throw new Error('USE_CASE_DISABLED');
+  if(!effective.channels.includes(row.channel as Channel))throw new Error('CHANNEL_DISABLED');
+  if(!effective.languages.includes(row.language))throw new Error('LANGUAGE_DISABLED');
   if(policy.revision!==row.policyRevision)throw new Error('POLICY_CHANGED');
   const sourceRevision=await currentSourceRevision(env,row);
   if(!sourceRevision||String(sourceRevision)!==row.sourceRevision)throw new Error('SOURCE_CHANGED');
@@ -268,10 +322,39 @@ export async function dispatchCommunicationOutboxItem(
     template.senderCompanyId!==companyId||!template.senderConnectionId
   ))throw new Error('SENDER_OR_TEMPLATE_NOT_READY');
 
-  await env.DB.prepare(`
-    UPDATE communication_outbox SET status='sending',attempts=attempts+1,updated_at=CURRENT_TIMESTAMP
+  const quietConfig=await quietHoursConfig(env,companyId,row.eventId);
+  if(quietHoursActive(quietConfig))throw new Error('QUIET_HOURS_ACTIVE');
+
+  const leaseOwner=uid('comm-lease');
+  const leased=await env.DB.prepare(`
+    UPDATE communication_outbox
+    SET status='sending',attempts=attempts+1,lease_owner=?,
+      lease_expires_at=datetime('now','+60 seconds'),updated_at=CURRENT_TIMESTAMP
     WHERE id=? AND status IN ('queued','failed')
-  `).bind(outboxId).run();
+      AND (next_attempt_at IS NULL OR datetime(next_attempt_at)<=datetime('now'))
+      AND (lease_expires_at IS NULL OR datetime(lease_expires_at)<=datetime('now'))
+      AND ambiguity_state<>'provider_unknown'
+  `).bind(leaseOwner,outboxId).run();
+  if(Number(leased.meta?.changes||0)!==1){
+    return {status:'not_acquired'};
+  }
+
+  const capacityReserved=await reserveCapacity(env,{
+    companyId,
+    actorId:String(outbox.requestedBy||'')||undefined,
+    type:'provider_send',
+    eventId:row.eventId,
+    sourceId:row.sourceId,
+  });
+  if(!capacityReserved){
+    await env.DB.prepare(`
+      UPDATE communication_outbox SET status='failed',last_error_code='PROVIDER_BUDGET_LIMIT',
+        next_attempt_at=datetime('now','+60 minutes'),lease_owner=NULL,lease_expires_at=NULL,
+        updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND lease_owner=?
+    `).bind(outboxId,leaseOwner).run();
+    return {status:'failed',budgetLimited:true};
+  }
 
   let result;
   try{
@@ -294,23 +377,26 @@ export async function dispatchCommunicationOutboxItem(
     await env.DB.prepare(`
       UPDATE communication_outbox SET status='accepted',provider_message_id=?,
         accepted_at=CURRENT_TIMESTAMP,last_provider_response_at=CURRENT_TIMESTAMP,
-        ambiguity_state='clear',updated_at=CURRENT_TIMESTAMP WHERE id=?
-    `).bind(result.providerMessageId,outboxId).run();
+        ambiguity_state='clear',next_attempt_at=NULL,lease_owner=NULL,lease_expires_at=NULL,
+        updated_at=CURRENT_TIMESTAMP WHERE id=? AND lease_owner=?
+    `).bind(result.providerMessageId,outboxId,leaseOwner).run();
     return {status:'accepted',providerMessageId:result.providerMessageId};
   }
   if(result.ambiguous){
     await env.DB.prepare(`
       UPDATE communication_outbox SET status='failed',ambiguity_state='provider_unknown',
-        last_error_code=?,next_attempt_at=datetime('now','+15 minutes'),
-        last_provider_response_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=?
-    `).bind(result.errorCode||'PROVIDER_UNKNOWN',outboxId).run();
-    return {status:'failed',ambiguous:true};
+        last_error_code=?,next_attempt_at=NULL,lease_owner=NULL,lease_expires_at=NULL,
+        last_provider_response_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND lease_owner=?
+    `).bind(result.errorCode||'PROVIDER_UNKNOWN',outboxId,leaseOwner).run();
+    return {status:'failed',ambiguous:true,awaitingReconciliation:true};
   }
   const delay=Math.min(60,Math.max(1,2**Math.min(6,Number(outbox.attempts||0))));
   await env.DB.prepare(`
     UPDATE communication_outbox SET status='failed',last_error_code=?,
-      next_attempt_at=datetime('now',?),
-      last_provider_response_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=?
-  `).bind(result.errorCode||'PROVIDER_REJECTED',`+${delay} minutes`,outboxId).run();
+      next_attempt_at=datetime('now',?),lease_owner=NULL,lease_expires_at=NULL,
+      last_provider_response_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND lease_owner=?
+  `).bind(result.errorCode||'PROVIDER_REJECTED',`+${delay} minutes`,outboxId,leaseOwner).run();
   return {status:'failed'};
 }

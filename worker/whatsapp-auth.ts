@@ -250,6 +250,19 @@ export async function startWhatsAppChallenge(
     if (!verified) throw new Error('ENROLLED_CONTACT_REQUIRED');
     contactAlreadyVerified = true;
   }
+  const resendSecondsRaw=Number(await setting(env,'communications.whatsapp_auth_resend_seconds','60'));
+  const resendSeconds=Number.isFinite(resendSecondsRaw)
+    ? Math.max(15,Math.min(600,Math.floor(resendSecondsRaw)))
+    : 60;
+  const recent=await env.DB.prepare(`
+    SELECT id FROM whatsapp_auth_challenges
+    WHERE purpose=? AND company_id=? AND normalized_phone=? AND consumed_at IS NULL
+      AND datetime(expires_at)>datetime('now')
+      AND datetime(created_at)>datetime('now',?)
+    ORDER BY created_at DESC LIMIT 1
+  `).bind(input.purpose,input.companyId,phone,`-${resendSeconds} seconds`).first<{id:string}>();
+  if(recent)throw new Error('WHATSAPP_AUTH_RESEND_TOO_SOON');
+
   const eventId = eventByPurpose[input.purpose];
   const policy = await loadPolicySnapshot(env, input.companyId, eventId, input.employeeId ? [input.employeeId] : []);
   const boundary = await communicationBoundary(env, input.companyId);
@@ -297,19 +310,27 @@ export async function startWhatsAppChallenge(
     },
   } satisfies AuthenticationDelivery, policy, boundary, Date.now());
 
-  await env.DB.prepare(`
-    INSERT INTO whatsapp_auth_challenges(
-      id,purpose,employee_id,signup_verification_id,company_id,
-      normalized_phone,contact_revision,code_hash,attempts,max_attempts,
-      transaction_context_json,requested_ip,requested_user_agent,expires_at
-    ) VALUES(?,?,?,?,?,?,?,?,0,?,?,?,?,?)
-  `).bind(
-    challengeId,input.purpose,input.employeeId || null,input.signupVerificationId || null,
-    input.companyId,phone,input.contactRevision,digest,maxAttempts,
-    input.transactionContext ? JSON.stringify(input.transactionContext) : null,
-    requestIp(request),request.headers.get('user-agent'),
-    new Date(expiresAtMs).toISOString(),
-  ).run();
+  await env.DB.batch([
+    env.DB.prepare(`
+      UPDATE whatsapp_auth_challenges
+      SET consumed_at=CURRENT_TIMESTAMP
+      WHERE purpose=? AND company_id=? AND normalized_phone=? AND consumed_at IS NULL
+        AND datetime(expires_at)>datetime('now')
+    `).bind(input.purpose,input.companyId,phone),
+    env.DB.prepare(`
+      INSERT INTO whatsapp_auth_challenges(
+        id,purpose,employee_id,signup_verification_id,company_id,
+        normalized_phone,contact_revision,code_hash,attempts,max_attempts,
+        transaction_context_json,requested_ip,requested_user_agent,expires_at
+      ) VALUES(?,?,?,?,?,?,?,?,0,?,?,?,?,?)
+    `).bind(
+      challengeId,input.purpose,input.employeeId || null,input.signupVerificationId || null,
+      input.companyId,phone,input.contactRevision,digest,maxAttempts,
+      input.transactionContext ? JSON.stringify(input.transactionContext) : null,
+      requestIp(request),request.headers.get('user-agent'),
+      new Date(expiresAtMs).toISOString(),
+    ),
+  ]);
 
   try {
     const providerMessageId = await providerSend(env,input.companyId,eventId,payload);

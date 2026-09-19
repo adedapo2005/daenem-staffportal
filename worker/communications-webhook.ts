@@ -109,6 +109,14 @@ function firstProviderEventId(values: Record<string, unknown>[]) {
   return undefined;
 }
 
+export function canAdvanceDeliveryStatus(current:string,next:string){
+  if(current===next)return true;
+  if(['cancelled','expired','read','failed'].includes(current))return false;
+  const rank:Record<string,number>={queued:0,sending:0,accepted:1,delivered:2,read:3};
+  if(next==='failed')return ['sending','accepted','delivered'].includes(current);
+  return (rank[next]??-1)>=(rank[current]??-1);
+}
+
 async function applyStatuses(
   env: CommunicationsWebhookEnv,
   companyId: string,
@@ -135,19 +143,23 @@ async function applyStatuses(
       const errorCode = firstError && typeof firstError === 'object'
         ? String((firstError as Record<string, unknown>).code || '').slice(0,80)
         : null;
+      const current=await env.DB.prepare(`
+        SELECT status FROM communication_outbox
+        WHERE company_id=? AND provider_message_id=? LIMIT 1
+      `).bind(companyId,providerMessageId).first<{status:string}>();
+      if(!current||!canAdvanceDeliveryStatus(current.status,nextStatus))continue;
       const result = await env.DB.prepare(`
         UPDATE communication_outbox
         SET status=?,
-          accepted_at=CASE WHEN ?='accepted' THEN COALESCE(accepted_at,CURRENT_TIMESTAMP) ELSE accepted_at END,
-          delivered_at=CASE WHEN ?='delivered' THEN COALESCE(delivered_at,CURRENT_TIMESTAMP) ELSE delivered_at END,
+          accepted_at=CASE WHEN ? IN ('accepted','delivered','read') THEN COALESCE(accepted_at,CURRENT_TIMESTAMP) ELSE accepted_at END,
+          delivered_at=CASE WHEN ? IN ('delivered','read') THEN COALESCE(delivered_at,CURRENT_TIMESTAMP) ELSE delivered_at END,
           read_at=CASE WHEN ?='read' THEN COALESCE(read_at,CURRENT_TIMESTAMP) ELSE read_at END,
           last_error_code=CASE WHEN ?='failed' THEN ? ELSE last_error_code END,
           updated_at=CURRENT_TIMESTAMP
-        WHERE company_id=? AND provider_message_id=?
-          AND status NOT IN ('cancelled','expired')
+        WHERE company_id=? AND provider_message_id=? AND status=?
       `).bind(
         nextStatus,nextStatus,nextStatus,nextStatus,nextStatus,errorCode,
-        companyId,providerMessageId,
+        companyId,providerMessageId,current.status,
       ).run();
       updates += Number(result.meta?.changes || 0);
     }
