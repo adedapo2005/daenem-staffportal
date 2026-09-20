@@ -4,6 +4,7 @@ import { eventById } from './communications/catalog.js';
 import { generateDraft, validateTemplateText, workersAiDraftProvider } from './communications/drafts.js';
 import { queueApprovedDraft } from './communications-dispatch.js';
 import { routeCommunicationGovernance } from './communications-governance.js';
+import { routeCommunicationsInbox } from './communications-inbox.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
 import type { Authorization, Channel, RequestContext } from './communications/types.js';
 import {
@@ -602,6 +603,8 @@ export async function routeCommunications(
   const path = new URL(request.url).pathname;
   const method = request.method;
   try {
+    const inbox=await routeCommunicationsInbox(request,env,context);
+    if(inbox)return inbox;
     const governance=await routeCommunicationGovernance(request,env,context);
     if(governance)return governance;
     if (path === '/api/communications/admin/global' && method === 'GET') {
