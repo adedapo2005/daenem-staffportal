@@ -9,7 +9,8 @@ type Conversation={id:string;companyId?:string|null;senderId?:string|null;routin
 type Message={id:string;direction:'inbound'|'outbound';providerMessageId?:string|null;messageType:string;body?:string|null;status:string;staffEmployeeId?:string|null;providerTimestamp?:string|null;createdAt:string};
 type Note={id:string;body:string;authorEmployeeId:string;createdAt:string;firstName?:string|null;lastName?:string|null};
 type ReplyPolicy={serviceWindowState:'open'|'closed'|'unavailable';lastCustomerMessageAt?:string|null;serviceWindowExpiresAt?:string|null;composerState:'routing_required'|'send_ready'|'template_required';templateRequired:boolean;liveSend:false};
-type Thread={conversation:Conversation&{connectionId?:string|null};messages:Message[];notes:Note[];replyPolicy:ReplyPolicy};
+type ApprovedTemplate={id:string;name:string;language:string;category:string;bodyTemplate:string;revision:number;providerTemplateId?:string|null};
+type Thread={conversation:Conversation&{connectionId?:string|null};messages:Message[];notes:Note[];approvedTemplates:ApprovedTemplate[];replyPolicy:ReplyPolicy};
 type CompanyOption={id:string;code:string;name:string;label:string;shortLabel:string;uiKey:string;monogram:string;descriptor:string};
 const cleanCompanies=(context:WorkforceContext)=>context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`));
 const companyOption=(company:WorkforceContext['companies'][number]):CompanyOption=>({id:company.id,code:company.code,name:company.name,...resolveCommunicationCompanyUi(company)});
@@ -49,6 +50,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  const[threadLoading,setThreadLoading]=useState(false);
  const[message,setMessage]=useState('');
  const[reply,setReply]=useState('');
+ const[templateId,setTemplateId]=useState('');
  const[note,setNote]=useState('');
  const[routeTarget,setRouteTarget]=useState('');
  const[activity,setActivity]=useState('');
@@ -79,7 +81,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  },[companyId]);
 
  useEffect(()=>{const timer=window.setTimeout(()=>void loadInbox(),180);return()=>window.clearTimeout(timer)},[loadInbox]);
- useEffect(()=>{void loadThread(selectedId);setRouteTarget('')},[selectedId,loadThread]);
+ useEffect(()=>{void loadThread(selectedId);setRouteTarget('');setTemplateId('')},[selectedId,loadThread]);
  useEffect(()=>{
   const timer=window.setInterval(()=>{if(document.visibilityState==='visible'&&navigator.onLine){void loadInbox(true);if(selectedId)void loadThread(selectedId,true)}},15000);
   return()=>window.clearInterval(timer)
@@ -90,7 +92,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
   setActivity(action);setMessage('');
   try{
    await api(`/api/communications/inbox/${encodeURIComponent(selectedId)}/${action}`,{method:'POST',body:JSON.stringify({companyId,...body})});
-   if(action==='reply')setReply('');
+   if(action==='reply'){setReply('');setTemplateId('')}
    if(action==='notes')setNote('');
    await Promise.all([loadInbox(true),loadThread(selectedId,true)]);
   }catch(error){setMessage((error as Error).message)}
@@ -118,6 +120,8 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  const company=companies.find(item=>item.id===companyId);
  const selectedCompany=selected?.companyId?companyOptionById.get(selected.companyId)||null:null;
  const replyPolicy=thread?.replyPolicy||null;
+ const approvedTemplates=thread?.approvedTemplates||[];
+ const selectedTemplate=approvedTemplates.find(item=>item.id===templateId)||null;
  const canRouteSelected=Boolean(selected&&selected.routingMode==='shared_group'&&!selected.companyId&&canRouteFor(companyId)&&routeOptions.length);
  return <div className="wa-backdrop" role="dialog" aria-modal="true" aria-label="WhatsApp Inbox">
   <section className="wa-shell">
@@ -183,12 +187,16 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
         <div><small>REPLY STATE</small><strong>{replyPolicy.composerState==='routing_required'?'Route required':replyPolicy.composerState==='send_ready'?'Service window open':'Template required'}</strong></div>
         <span>{replyPolicy.composerState==='routing_required'?'Route this conversation to a company before drafting a reply.':replyPolicy.composerState==='send_ready'?`Free-form reply eligible until ${dateTime(replyPolicy.serviceWindowExpiresAt)}. Live sending is still disabled.`:'The 24-hour customer service window is closed or unavailable. An approved WhatsApp template will be required for live sending.'}</span>
        </div>}
+       {replyPolicy?.composerState==='template_required'&&<div className="wa-template-compose">
+        <label><span>Approved WhatsApp template</span><select value={templateId} onChange={event=>setTemplateId(event.target.value)}><option value="">Select approved template</option>{approvedTemplates.map(item=><option key={item.id} value={item.id}>{item.name} · {item.language} · {item.category}</option>)}</select><ChevronDown size={14}/></label>
+        {selectedTemplate?<div className="wa-template-preview"><header><strong>{selectedTemplate.name}</strong><span>{selectedTemplate.language} · {selectedTemplate.category} · r{selectedTemplate.revision}</span></header><p>{selectedTemplate.bodyTemplate}</p></div>:<p className="wa-template-empty">{approvedTemplates.length?'Select a template to review the exact approved body before saving the draft.':'No internally and provider-approved WhatsApp templates are available for this company yet.'}</p>}
+       </div>}
        <div className="wa-composer-tools">
         <button className="wa-ai-button" onClick={()=>setMessage('AI reply assistance is reserved for the governed composer and is not active in this staging foundation yet.')}><Sparkles size={15}/>AI assist</button>
         <span>Human review required · live send off</span>
        </div>
-       <textarea value={reply} onChange={event=>setReply(event.target.value)} maxLength={4096} disabled={replyPolicy?.composerState==='routing_required'} placeholder={replyPolicy?.composerState==='routing_required'?'Route this conversation before drafting a reply.':'Write a customer reply…'}/>
-       <footer><span>{reply.length.toLocaleString()} / 4,096</span><button className="wa-send-button" disabled={!reply.trim()||activity==='reply'||replyPolicy?.composerState==='routing_required'} onClick={()=>void mutate('reply',{body:reply})}><Send size={16}/>{activity==='reply'?'Saving…':'Save reply draft'}</button></footer>
+       {replyPolicy?.composerState!=='template_required'&&<textarea value={reply} onChange={event=>setReply(event.target.value)} maxLength={4096} disabled={replyPolicy?.composerState==='routing_required'} placeholder={replyPolicy?.composerState==='routing_required'?'Route this conversation before drafting a reply.':'Write a customer reply…'}/>}
+       <footer><span>{replyPolicy?.composerState==='template_required'?(selectedTemplate?'Approved template selected':'Template selection required'):`${reply.length.toLocaleString()} / 4,096`}</span><button className="wa-send-button" disabled={activity==='reply'||replyPolicy?.composerState==='routing_required'||(replyPolicy?.composerState==='template_required'?!templateId:!reply.trim())} onClick={()=>void mutate('reply',replyPolicy?.composerState==='template_required'?{templateId}:{body:reply})}><Send size={16}/>{activity==='reply'?'Saving…':replyPolicy?.composerState==='template_required'?'Save template draft':'Save reply draft'}</button></footer>
       </section>
      </>}
     </main>

@@ -90,15 +90,20 @@ async function getThread(request:Request,env:Env,context:EnhancedSessionContext,
   const companyId=requiredCompany(new URL(request.url),context);
   if(!can(context,companyId,'communications.support.inbox.view','view'))return json({error:'Permission denied.'},403);
   const item=await conversation(env,companyId,id);if(!item)return json({error:'Conversation not found.'},404);
-  const [messages,notes]=await Promise.all([
+  const [messages,notes,templates]=await Promise.all([
     env.DB.prepare(`SELECT id,direction,provider_message_id AS providerMessageId,message_type AS messageType,body,status,
-      staff_employee_id AS staffEmployeeId,provider_timestamp AS providerTimestamp,created_at AS createdAt
+      reply_mode AS replyMode,template_id AS templateId,template_name AS templateName,template_language AS templateLanguage,
+      template_category AS templateCategory,staff_employee_id AS staffEmployeeId,provider_timestamp AS providerTimestamp,created_at AS createdAt
       FROM communication_inbox_messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT 500`).bind(id).all(),
     env.DB.prepare(`SELECT n.id,n.body,n.author_employee_id AS authorEmployeeId,n.created_at AS createdAt,
       e.first_name AS firstName,e.last_name AS lastName FROM communication_inbox_notes n
-      LEFT JOIN employees e ON e.id=n.author_employee_id WHERE n.conversation_id=? ORDER BY n.created_at ASC LIMIT 200`).bind(id).all()
+      LEFT JOIN employees e ON e.id=n.author_employee_id WHERE n.conversation_id=? ORDER BY n.created_at ASC LIMIT 200`).bind(id).all(),
+    env.DB.prepare(`SELECT id,name,language,category,body_template AS bodyTemplate,revision,provider_template_id AS providerTemplateId
+      FROM communication_templates
+      WHERE company_id=? AND channel='whatsapp' AND internal_status='approved' AND provider_status='approved'
+      ORDER BY name,language,revision DESC LIMIT 100`).bind(String(item.companyId||'')).all()
   ]);
-  return json({conversation:item,messages:messages.results||[],notes:notes.results||[],replyPolicy:replyPolicy(item)});
+  return json({conversation:item,messages:messages.results||[],notes:notes.results||[],approvedTemplates:templates.results||[],replyPolicy:replyPolicy(item)});
 }
 
 async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:string,action:string){
@@ -154,12 +159,30 @@ async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:
   if(action==='reply'){
     if(!can(context,companyId,'communications.support.inbox.reply','create'))return json({error:'Permission denied.'},403);
     if(!item.companyId)return json({error:'Route this shared conversation to a company before drafting a reply.'},409);
+    const policy=replyPolicy(item),messageId=uid('comm-msg');
+    if(policy.templateRequired){
+      const templateId=String(body.templateId||'');
+      if(!templateId)return json({error:'An approved WhatsApp template is required outside the customer service window.'},409);
+      const template=await env.DB.prepare(`SELECT id,name,language,category,body_template AS bodyTemplate
+        FROM communication_templates WHERE id=? AND company_id=? AND channel='whatsapp'
+        AND internal_status='approved' AND provider_status='approved' LIMIT 1`).bind(templateId,companyId).first<Record<string,unknown>>();
+      if(!template)return json({error:'Selected WhatsApp template is not approved for this company.'},400);
+      await env.DB.prepare(`INSERT INTO communication_inbox_messages(
+        id,conversation_id,company_id,direction,message_type,body,status,staff_employee_id,
+        reply_mode,template_id,template_name,template_language,template_category
+      ) VALUES(?,?,?,'outbound','template',?,'draft',?,'template',?,?,?,?,?)`).bind(
+        messageId,id,companyId,String(template.bodyTemplate||''),context.employee.id,templateId,
+        String(template.name||''),String(template.language||''),String(template.category||'')
+      ).run();
+      await env.DB.prepare(`UPDATE communication_inbox_conversations SET status='pending',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(id).run();
+      return json({ok:true,messageId,status:'draft',replyMode:'template',templateId,sendReady:true,liveSend:false},201);
+    }
     const text=safeText(body.body,4096);if(!text)return json({error:'Reply text is required.'},400);
-    const messageId=uid('comm-msg');
-    await env.DB.prepare(`INSERT INTO communication_inbox_messages(id,conversation_id,company_id,direction,message_type,body,status,staff_employee_id)
-      VALUES(?,?,?,'outbound','text',?,'draft',?)`).bind(messageId,id,companyId,text,context.employee.id).run();
+    await env.DB.prepare(`INSERT INTO communication_inbox_messages(
+      id,conversation_id,company_id,direction,message_type,body,status,staff_employee_id,reply_mode
+    ) VALUES(?,?,?,'outbound','text',?,'draft',?,'freeform')`).bind(messageId,id,companyId,text,context.employee.id).run();
     await env.DB.prepare(`UPDATE communication_inbox_conversations SET status='pending',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(id).run();
-    return json({ok:true,messageId,status:'draft',liveSend:false},201);
+    return json({ok:true,messageId,status:'draft',replyMode:'freeform',sendReady:true,liveSend:false},201);
   }
   return null;
 }

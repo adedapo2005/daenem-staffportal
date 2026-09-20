@@ -106,3 +106,15 @@ test('WhatsApp reply policy derives the customer service window and keeps live s
   assert.match(webhookSource,/last_customer_message_at=COALESCE\(\?,CURRENT_TIMESTAMP\)/);
   assert.match(migration,/ADD COLUMN last_customer_message_at TEXT/);
 });
+
+test('WhatsApp template drafts require approved company templates and never live-send',async()=>{
+  const inbox=await readFile(path.join(root,'worker','communications-inbox.ts'),'utf8');
+  const migration=await readFile(path.join(root,'migrations','0068_whatsapp_template_drafts.sql'),'utf8');
+  assert.match(inbox,/internal_status='approved' AND provider_status='approved'/);
+  assert.match(inbox,/An approved WhatsApp template is required outside the customer service window/);
+  assert.match(inbox,/Selected WhatsApp template is not approved for this company/);
+  assert.match(inbox,/reply_mode,template_id,template_name,template_language,template_category/);
+  assert.match(inbox,/replyMode:'template',templateId,sendReady:true,liveSend:false/);
+  assert.match(migration,/ADD COLUMN template_id TEXT REFERENCES communication_templates/);
+  assert.match(migration,/reply_mode TEXT NOT NULL DEFAULT 'freeform'/);
+});
