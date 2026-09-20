@@ -1,15 +1,23 @@
 import React,{useCallback,useEffect,useMemo,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{Archive,ArrowLeft,AtSign,CheckCheck,ChevronDown,Circle,Clock3,Inbox,MessageCircleMore,MoreHorizontal,NotebookPen,RefreshCw,Search,Send,ShieldCheck,Sparkles,UserCheck,X}from'lucide-react';
-import{api,type WorkforceContext}from'./auth';
+import{api,hasWorkforcePermission,type WorkforceContext}from'./auth';
 import'./communications-inbox.css';
 
-type Conversation={id:string;customerWaId:string;customerDisplayName?:string|null;status:'open'|'pending'|'resolved'|'closed';assignedEmployeeId?:string|null;unreadCount:number;lastMessageAt:string;lastMessage?:string|null};
+type Conversation={id:string;companyId?:string|null;senderId?:string|null;routingMode?:'shared_group'|'company_dedicated'|string|null;senderDisplayName?:string|null;customerWaId:string;customerDisplayName?:string|null;status:'open'|'pending'|'resolved'|'closed';assignedEmployeeId?:string|null;unreadCount:number;lastMessageAt:string;lastMessage?:string|null};
 type Message={id:string;direction:'inbound'|'outbound';providerMessageId?:string|null;messageType:string;body?:string|null;status:string;staffEmployeeId?:string|null;providerTimestamp?:string|null;createdAt:string};
 type Note={id:string;body:string;authorEmployeeId:string;createdAt:string;firstName?:string|null;lastName?:string|null};
-type Thread={conversation:Conversation&{connectionId?:string};messages:Message[];notes:Note[]};
-
+type Thread={conversation:Conversation&{connectionId?:string|null};messages:Message[];notes:Note[]};
+type CompanyOption={id:string;code:string;name:string;label:string;shortLabel:string;uiKey:string};
+const COMPANY_ROUTE_UI:Record<string,{label:string;shortLabel:string;uiKey:string}>={
+ 'company-autos':{label:'Daenem Autos',shortLabel:'Autos',uiKey:'autos'},
+ 'company-bakery':{label:'Daenem Bakery',shortLabel:'Bakery',uiKey:'bakery'},
+ 'company-properties':{label:'Daenem Homes & Properties',shortLabel:'Homes & Properties',uiKey:'properties'},
+ 'company-logistics':{label:'Daenem Logistics',shortLabel:'Logistics',uiKey:'logistics'},
+ 'company-printing':{label:'Daenem Printing & Technology',shortLabel:'Printing & Technology',uiKey:'printing'},
+};
 const cleanCompanies=(context:WorkforceContext)=>context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`));
+const companyOption=(company:WorkforceContext['companies'][number]):CompanyOption=>{const ui=COMPANY_ROUTE_UI[company.id];return{id:company.id,code:company.code,name:company.name,label:ui?.label||company.name,shortLabel:ui?.shortLabel||company.name.replace(/^Daenem\s+/i,''),uiKey:ui?.uiKey||company.code||company.id}};
 const displayName=(conversation:Conversation)=>conversation.customerDisplayName?.trim()||`WhatsApp ${conversation.customerWaId.slice(-4)}`;
 const initials=(conversation:Conversation)=>{const name=displayName(conversation);const parts=name.split(/\s+/).filter(Boolean);return(parts[0]?.[0]||'W')+(parts[1]?.[0]||'')};
 const time=(value?:string|null)=>value?new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(value)):'';
@@ -31,6 +39,10 @@ function Pill({children,tone='neutral'}:{children:React.ReactNode;tone?:'neutral
 
 function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>void}){
  const companies=useMemo(()=>cleanCompanies(context),[context]);
+ const companyOptions=useMemo(()=>companies.map(companyOption),[companies]);
+ const isGroupOperator=context.roles.some(role=>['owner','group_admin'].includes(role.code));
+ const canRouteFor=(id:string)=>isGroupOperator||hasWorkforcePermission(context,'communications.support.inbox.assign','edit',id)||hasWorkforcePermission(context,'communications.support.manage','manage',id);
+ const routeOptions=useMemo(()=>companyOptions.filter(item=>canRouteFor(item.id)),[companyOptions,context,isGroupOperator]);
  const[companyId,setCompanyId]=useState(companies[0]?.id||'');
  const[items,setItems]=useState<Conversation[]>([]);
  const[selectedId,setSelectedId]=useState('');
@@ -42,6 +54,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  const[message,setMessage]=useState('');
  const[reply,setReply]=useState('');
  const[note,setNote]=useState('');
+ const[routeTarget,setRouteTarget]=useState('');
  const[activity,setActivity]=useState('');
  const[selectedPanel,setSelectedPanel]=useState<'notes'|'details'>('notes');
  const selected=items.find(item=>item.id===selectedId)||thread?.conversation||null;
@@ -70,7 +83,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  },[companyId]);
 
  useEffect(()=>{const timer=window.setTimeout(()=>void loadInbox(),180);return()=>window.clearTimeout(timer)},[loadInbox]);
- useEffect(()=>{void loadThread(selectedId)},[selectedId,loadThread]);
+ useEffect(()=>{void loadThread(selectedId);setRouteTarget('')},[selectedId,loadThread]);
  useEffect(()=>{
   const timer=window.setInterval(()=>{if(document.visibilityState==='visible'&&navigator.onLine){void loadInbox(true);if(selectedId)void loadThread(selectedId,true)}},15000);
   return()=>window.clearInterval(timer)
@@ -93,7 +106,22 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
   if(!companyId)return;
   try{await api(`/api/communications/inbox/${encodeURIComponent(id)}/read`,{method:'POST',body:JSON.stringify({companyId})});setItems(current=>current.map(item=>item.id===id?{...item,unreadCount:0}:item))}catch{}
  }
+ async function routeConversation(){
+  if(!selectedId||!companyId||!routeTarget||activity==='route')return;
+  setActivity('route');setMessage('');
+  try{
+   await api(`/api/communications/inbox/${encodeURIComponent(selectedId)}/route`,{method:'POST',body:JSON.stringify({companyId,targetCompanyId:routeTarget})});
+   setThread(current=>current?{...current,conversation:{...current.conversation,companyId:routeTarget}}:current);
+   setItems(current=>current.map(item=>item.id===selectedId?{...item,companyId:routeTarget}:item));
+   setCompanyId(routeTarget);
+   setRouteTarget('');
+   setMessage('Conversation routed successfully.');
+  }catch(error){setMessage((error as Error).message)}
+  finally{setActivity('')}
+ }
  const company=companies.find(item=>item.id===companyId);
+ const selectedCompany=selected?.companyId?companyOptions.find(item=>item.id===selected.companyId):null;
+ const canRouteSelected=Boolean(selected&&selected.routingMode==='shared_group'&&!selected.companyId&&canRouteFor(companyId)&&routeOptions.length);
  return <div className="wa-backdrop" role="dialog" aria-modal="true" aria-label="WhatsApp Inbox">
   <section className="wa-shell">
    <header className="wa-topbar">
@@ -120,7 +148,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
      <div className="wa-list-scroll">{!items.length&&!loading?<EmptyState title="No conversations here" detail="New customer WhatsApp messages will appear here after the Meta webhook is connected."/>:items.map(item=>
       <button key={item.id} className={`wa-conversation ${selectedId===item.id?'selected':''}`} onClick={()=>selectConversation(item.id)}>
        <span className="wa-avatar">{initials(item).toUpperCase()}</span>
-       <span className="wa-conversation-copy"><span className="wa-conversation-row"><strong>{displayName(item)}</strong><time>{time(item.lastMessageAt)}</time></span><span className="wa-preview">{item.lastMessage||'Message received'}</span><span className="wa-conversation-meta"><Pill tone={item.status==='open'?'open':item.status==='pending'?'pending':'neutral'}>{item.status}</Pill>{item.assignedEmployeeId===context.employee.id&&<span><UserCheck size={12}/>Assigned to you</span>}</span></span>
+       <span className="wa-conversation-copy"><span className="wa-conversation-row"><strong>{displayName(item)}</strong><time>{time(item.lastMessageAt)}</time></span><span className="wa-preview">{item.lastMessage||'Message received'}</span><span className="wa-conversation-meta"><Pill tone={item.status==='open'?'open':item.status==='pending'?'pending':'neutral'}>{item.status}</Pill>{item.routingMode==='shared_group'&&<span className={item.companyId?'wa-route-meta':'wa-route-meta unrouted'}>{item.companyId?(companyOptions.find(option=>option.id===item.companyId)?.shortLabel||'Routed'):'Unrouted'}</span>}{item.assignedEmployeeId===context.employee.id&&<span><UserCheck size={12}/>Assigned to you</span>}</span></span>
        {item.unreadCount>0&&<span className="wa-unread">{item.unreadCount>99?'99+':item.unreadCount}</span>}
       </button>)}</div>
     </aside>
@@ -136,6 +164,13 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
         <button className="wa-icon-btn"><MoreHorizontal size={18}/></button>
        </div>
       </header>
+      <section data-company={selectedCompany?.uiKey||'unrouted'} className={`wa-route-bar ${selected.routingMode==='shared_group'?(selected.companyId?'routed':'unrouted'):'dedicated'}`}>
+       <div className="wa-route-copy"><small>COMPANY ROUTING</small><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Shared group · unrouted':'Dedicated company')}</strong><span>{selected.routingMode==='shared_group'?(selected.companyId?'This conversation is locked to its routed company.':'Choose the DAENEM company that should own this customer conversation.'):'This sender is dedicated to its configured company.'}</span></div>
+       {selected.routingMode==='shared_group'&&!selected.companyId&&<div className="wa-route-controls">
+        <label><span>{routeTarget?(routeOptions.find(item=>item.id===routeTarget)?.label||'Selected company'):'Select company'}</span><select aria-label="Route conversation to company" value={routeTarget} onChange={event=>setRouteTarget(event.target.value)} disabled={!canRouteSelected||activity==='route'}><option value="">Select company</option>{routeOptions.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
+        <button disabled={!canRouteSelected||!routeTarget||activity==='route'} onClick={()=>void routeConversation()}>{activity==='route'?'Routing…':'Route conversation'}</button>
+       </div>}
+      </section>
       <section className="wa-message-scroll">
        {threadLoading&&!thread?<div className="wa-loading">Loading conversation…</div>:thread?.messages.map((item,index)=><article key={item.id} className={`wa-message ${item.direction}`}>
         <div className="wa-bubble">
@@ -166,6 +201,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
      </>:<div className="wa-details">
       <div><span>WhatsApp identity</span><strong>{selected.customerWaId}</strong></div>
       <div><span>Conversation status</span><strong>{selected.status}</strong></div>
+      <div><span>Company route</span><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Unrouted shared conversation':'Dedicated company')}</strong></div>
       <div><span>Assignment</span><strong>{selected.assignedEmployeeId===context.employee.id?'You':selected.assignedEmployeeId?'Another staff member':'Unassigned'}</strong></div>
       <div><span>Unread</span><strong>{selected.unreadCount||0}</strong></div>
       <div><span>Last activity</span><strong>{dateTime(selected.lastMessageAt)}</strong></div>

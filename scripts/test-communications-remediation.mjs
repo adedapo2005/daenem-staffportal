@@ -83,3 +83,14 @@ test('dispatch evaluates effective deny-wins policy and provider budget',async()
   assert.match(source,/type:'provider_send'/);
   assert.match(source,/QUIET_HOURS_ACTIVE/);
 });
+
+test('shared inbox routing is one-way, permission-gated, sender-scoped and audited',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-inbox.ts'),'utf8');
+  assert.match(source,/routingMode\|\|''\)!=='shared_group'/);
+  assert.match(source,/Conversation is already routed/);
+  assert.match(source,/can\(context,targetCompanyId,'communications\.support\.inbox\.assign','edit'\)/);
+  assert.match(source,/communication_whatsapp_sender_companies WHERE sender_id=\? AND company_id=\? AND enabled=1/);
+  assert.match(source,/WHERE id=\? AND company_id IS NULL/);
+  assert.match(source,/const \[routed,audited\]=await env\.DB\.batch/);
+  assert.match(source,/routeAuditStatement\(env,context,id,targetCompanyId,senderId,auditId,routeAt\)/);
+});

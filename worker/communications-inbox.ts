@@ -24,6 +24,20 @@ function requiredCompany(url:URL,context:EnhancedSessionContext){
   return companyId;
 }
 function safeText(value:unknown,max=4000){const text=String(value||'').trim();return text&&text.length<=max?text:null}
+function routeAuditStatement(env:Env,context:EnhancedSessionContext,id:string,targetCompanyId:string,senderId:string,auditId:string,routeAt:string){
+  return env.DB.prepare(`INSERT INTO audit_logs(
+    id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source
+  )
+  SELECT ?,?,?,'communications','route','communication_inbox_conversation',?,?,?,'web'
+  WHERE EXISTS(
+    SELECT 1 FROM communication_inbox_conversations
+    WHERE id=? AND company_id=? AND updated_at=?
+  )`)
+    .bind(auditId,context.employee.id,targetCompanyId,id,
+      JSON.stringify({companyId:null,senderId}),
+      JSON.stringify({companyId:targetCompanyId,senderId}),
+      id,targetCompanyId,routeAt);
+}
 
 async function conversation(env:Env,companyId:string,id:string){
   return env.DB.prepare(`SELECT c.id,c.company_id AS companyId,c.connection_id AS connectionId,c.sender_id AS senderId,
@@ -99,12 +113,27 @@ async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:
   }
   if(action==='route'){
     if(!can(context,companyId,'communications.support.inbox.assign','edit'))return json({error:'Permission denied.'},403);
+    if(String(item.routingMode||'')!=='shared_group')return json({error:'Only shared-group conversations can be routed.'},409);
+    const previousCompanyId=item.companyId?String(item.companyId):null;
+    if(previousCompanyId)return json({error:'Conversation is already routed. Unroute/re-route is not enabled.'},409);
     const targetCompanyId=String(body.targetCompanyId||'');
     if(!targetCompanyId||!companyAllowed(context,targetCompanyId))return json({error:'Target company is invalid.'},400);
-    const allowed=await env.DB.prepare(`SELECT 1 FROM communication_whatsapp_sender_companies WHERE sender_id=? AND company_id=? AND enabled=1 LIMIT 1`).bind(String(item.senderId||''),targetCompanyId).first();
+    if(!can(context,targetCompanyId,'communications.support.inbox.assign','edit'))return json({error:'Permission denied for target company.'},403);
+    const senderId=String(item.senderId||'');
+    const allowed=await env.DB.prepare(`SELECT 1 FROM communication_whatsapp_sender_companies WHERE sender_id=? AND company_id=? AND enabled=1 LIMIT 1`).bind(senderId,targetCompanyId).first();
     if(!allowed)return json({error:'Sender is not enabled for that company.'},400);
-    await env.DB.prepare(`UPDATE communication_inbox_conversations SET company_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(targetCompanyId,id).run();
-    return json({ok:true,companyId:targetCompanyId});
+    if(item.assignedEmployeeId){
+      const eligible=await env.DB.prepare(`SELECT 1 FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1 LIMIT 1`).bind(String(item.assignedEmployeeId),targetCompanyId).first();
+      if(!eligible)return json({error:'Unassign this conversation before routing it to that company.'},409);
+    }
+    const routeAt=new Date().toISOString(),auditId=uid('audit');
+    const [routed,audited]=await env.DB.batch([
+      env.DB.prepare(`UPDATE communication_inbox_conversations SET company_id=?,updated_at=? WHERE id=? AND company_id IS NULL`).bind(targetCompanyId,routeAt,id),
+      routeAuditStatement(env,context,id,targetCompanyId,senderId,auditId,routeAt),
+    ]);
+    if(Number(routed.meta?.changes||0)!==1)return json({error:'Conversation was routed by another staff member. Refresh and try again.'},409);
+    if(Number(audited.meta?.changes||0)!==1)return json({error:'Conversation route audit was not recorded.'},500);
+    return json({ok:true,companyId:targetCompanyId,routingMode:'shared_group'});
   }
   if(action==='note'){
     if(!can(context,companyId,'communications.support.inbox.note','create'))return json({error:'Permission denied.'},403);
