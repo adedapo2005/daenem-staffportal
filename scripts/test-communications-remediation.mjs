@@ -146,6 +146,17 @@ test('WhatsApp inbox send handoff stays gated, scoped and audited',async()=>{
   assert.match(inbox,/PROVIDER_TRANSPORT_AMBIGUOUS/);
 });
 
+test('Inbox send-readiness UI uses guarded prepare and send handoffs',async()=>{
+  const ui=await readFile(path.join(root,'src','communications-inbox-entry.tsx'),'utf8');
+  assert.match(ui,/\/prepare-send/);
+  assert.match(ui,/\/send`/);
+  assert.match(ui,/Check readiness/);
+  assert.match(ui,/Send to WhatsApp/);
+  assert.match(ui,/Provider send release-gated/);
+  assert.match(ui,/META_SYSTEM_USER_TOKEN_MISSING/);
+  assert.match(ui,/!currentReadiness\?\.ready\|\|!currentReadiness\.liveSend/);
+});
+
 test('Meta credential vault is encrypted, masked, owner-managed and runtime-resolved',async()=>{
   const vault=await readFile(path.join(root,'worker','meta-credentials.ts'),'utf8');
   const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');

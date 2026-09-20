@@ -6,7 +6,8 @@ import{resolveCommunicationCompanyUi}from'./communications-company-ui';
 import'./communications-inbox.css';
 
 type Conversation={id:string;companyId?:string|null;senderId?:string|null;routingMode?:'shared_group'|'company_dedicated'|string|null;senderDisplayName?:string|null;customerWaId:string;customerDisplayName?:string|null;status:'open'|'pending'|'resolved'|'closed';assignedEmployeeId?:string|null;unreadCount:number;lastMessageAt:string;lastMessage?:string|null};
-type Message={id:string;direction:'inbound'|'outbound';providerMessageId?:string|null;messageType:string;body?:string|null;status:string;staffEmployeeId?:string|null;providerTimestamp?:string|null;createdAt:string};
+type Message={id:string;direction:'inbound'|'outbound';providerMessageId?:string|null;messageType:string;body?:string|null;status:string;replyMode?:'freeform'|'template'|string|null;templateName?:string|null;templateLanguage?:string|null;staffEmployeeId?:string|null;providerTimestamp?:string|null;createdAt:string};
+type SendReadiness={messageId:string;ready:boolean;liveSend:boolean;reason?:string|null;tokenConfigured:boolean;idempotencyKey?:string|null};
 type Note={id:string;body:string;authorEmployeeId:string;createdAt:string;firstName?:string|null;lastName?:string|null};
 type ReplyPolicy={serviceWindowState:'open'|'closed'|'unavailable';lastCustomerMessageAt?:string|null;serviceWindowExpiresAt?:string|null;composerState:'routing_required'|'send_ready'|'template_required';templateRequired:boolean;liveSend:false};
 type ApprovedTemplate={id:string;name:string;language:string;category:string;bodyTemplate:string;revision:number;providerTemplateId?:string|null};
@@ -54,6 +55,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  const[note,setNote]=useState('');
  const[routeTarget,setRouteTarget]=useState('');
  const[activity,setActivity]=useState('');
+ const[sendReadiness,setSendReadiness]=useState<SendReadiness|null>(null);
  const[selectedPanel,setSelectedPanel]=useState<'notes'|'details'>('notes');
  const selected=items.find(item=>item.id===selectedId)||thread?.conversation||null;
 
@@ -81,7 +83,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  },[companyId]);
 
  useEffect(()=>{const timer=window.setTimeout(()=>void loadInbox(),180);return()=>window.clearTimeout(timer)},[loadInbox]);
- useEffect(()=>{void loadThread(selectedId);setRouteTarget('');setTemplateId('')},[selectedId,loadThread]);
+ useEffect(()=>{void loadThread(selectedId);setRouteTarget('');setTemplateId('');setSendReadiness(null)},[selectedId,loadThread]);
  useEffect(()=>{
   const timer=window.setInterval(()=>{if(document.visibilityState==='visible'&&navigator.onLine){void loadInbox(true);if(selectedId)void loadThread(selectedId,true)}},15000);
   return()=>window.clearInterval(timer)
@@ -104,6 +106,33 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
   if(!companyId)return;
   try{await api(`/api/communications/inbox/${encodeURIComponent(id)}/read`,{method:'POST',body:JSON.stringify({companyId})});setItems(current=>current.map(item=>item.id===id?{...item,unreadCount:0}:item))}catch{}
  }
+ async function prepareSend(messageId:string){
+  if(!selectedId||!companyId||activity==='prepare-send')return;
+  setActivity('prepare-send');setMessage('');
+  try{
+   const result=await api<Omit<SendReadiness,'messageId'>>(`/api/communications/inbox/${encodeURIComponent(selectedId)}/messages/${encodeURIComponent(messageId)}/prepare-send`,{method:'POST',body:JSON.stringify({companyId})});
+   setSendReadiness({messageId,...result});
+   if(result.ready)setMessage('WhatsApp send readiness confirmed.');
+   else setMessage(result.reason==='LIVE_SEND_DISABLED'?'Draft is valid, but live WhatsApp sending is still release-gated.':result.reason==='META_SYSTEM_USER_TOKEN_MISSING'?'Add the Meta System User Access Token in Communications Control Center before provider sending can become ready.':`WhatsApp send is not ready: ${result.reason||'configuration incomplete'}.`);
+  }catch(error){setSendReadiness(null);setMessage((error as Error).message)}
+  finally{setActivity('')}
+ }
+ async function sendDraft(messageId:string){
+  if(!selectedId||!companyId||activity==='send'||!sendReadiness?.ready||!sendReadiness.liveSend||sendReadiness.messageId!==messageId)return;
+  setActivity('send');setMessage('');
+  try{
+   const result=await api<{accepted:boolean;providerMessageId?:string|null}>(`/api/communications/inbox/${encodeURIComponent(selectedId)}/messages/${encodeURIComponent(messageId)}/send`,{method:'POST',body:JSON.stringify({companyId})});
+   setSendReadiness(null);
+   setMessage(result.accepted?'Message accepted by WhatsApp.':'WhatsApp did not accept the message.');
+   await Promise.all([loadInbox(true),loadThread(selectedId,true)]);
+  }catch(error){setMessage((error as Error).message)}
+  finally{setActivity('')}
+ }
+ function readinessReason(reason?:string|null){
+  if(reason==='LIVE_SEND_DISABLED')return 'Release gate is off';
+  if(reason==='META_SYSTEM_USER_TOKEN_MISSING')return 'Meta System User token is missing';
+  return reason?reason.replaceAll('_',' ').toLowerCase():'Ready';
+ }
  async function routeConversation(){
   if(!selectedId||!companyId||!routeTarget||activity==='route')return;
   setActivity('route');setMessage('');
@@ -122,6 +151,8 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  const replyPolicy=thread?.replyPolicy||null;
  const approvedTemplates=thread?.approvedTemplates||[];
  const selectedTemplate=approvedTemplates.find(item=>item.id===templateId)||null;
+ const latestDraft=thread?.messages.slice().reverse().find(item=>item.direction==='outbound'&&item.status==='draft')||null;
+ const currentReadiness=latestDraft&&sendReadiness?.messageId===latestDraft.id?sendReadiness:null;
  const canRouteSelected=Boolean(selected&&selected.routingMode==='shared_group'&&!selected.companyId&&canRouteFor(companyId)&&routeOptions.length);
  return <div className="wa-backdrop" role="dialog" aria-modal="true" aria-label="WhatsApp Inbox">
   <section className="wa-shell">
@@ -129,7 +160,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
     <div className="wa-title"><span className="wa-brand-icon"><MessageCircleMore size={20}/></span><div><small>STAFF PORTAL · CUSTOMER COMMUNICATIONS</small><h2>WhatsApp Inbox</h2></div></div>
     <div className="wa-top-actions">
      <Pill><ShieldCheck size={13}/>Staff-only</Pill>
-     <Pill tone="pending"><Circle size={9}/>Live send disabled</Pill>
+     <Pill tone="pending"><Circle size={9}/>Provider send release-gated</Pill>
      <button className="wa-icon-btn" onClick={()=>void loadInbox()} aria-label="Refresh inbox"><RefreshCw size={18}/></button>
      <button className="wa-icon-btn" onClick={onClose} aria-label="Close inbox"><X size={19}/></button>
     </div>
@@ -185,15 +216,23 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
       <section className="wa-composer">
        {replyPolicy&&<div className={`wa-reply-policy ${replyPolicy.composerState}`}>
         <div><small>REPLY STATE</small><strong>{replyPolicy.composerState==='routing_required'?'Route required':replyPolicy.composerState==='send_ready'?'Service window open':'Template required'}</strong></div>
-        <span>{replyPolicy.composerState==='routing_required'?'Route this conversation to a company before drafting a reply.':replyPolicy.composerState==='send_ready'?`Free-form reply eligible until ${dateTime(replyPolicy.serviceWindowExpiresAt)}. Live sending is still disabled.`:'The 24-hour customer service window is closed or unavailable. An approved WhatsApp template will be required for live sending.'}</span>
+        <span>{replyPolicy.composerState==='routing_required'?'Route this conversation to a company before drafting a reply.':replyPolicy.composerState==='send_ready'?`Free-form reply eligible until ${dateTime(replyPolicy.serviceWindowExpiresAt)}. Provider sending remains release-gated.`:'The 24-hour customer service window is closed or unavailable. An approved WhatsApp template will be required for live sending.'}</span>
        </div>}
        {replyPolicy?.composerState==='template_required'&&<div className="wa-template-compose">
         <label><span>Approved WhatsApp template</span><select value={templateId} onChange={event=>setTemplateId(event.target.value)}><option value="">Select approved template</option>{approvedTemplates.map(item=><option key={item.id} value={item.id}>{item.name} · {item.language} · {item.category}</option>)}</select><ChevronDown size={14}/></label>
         {selectedTemplate?<div className="wa-template-preview"><header><strong>{selectedTemplate.name}</strong><span>{selectedTemplate.language} · {selectedTemplate.category} · r{selectedTemplate.revision}</span></header><p>{selectedTemplate.bodyTemplate}</p></div>:<p className="wa-template-empty">{approvedTemplates.length?'Select a template to review the exact approved body before saving the draft.':'No internally and provider-approved WhatsApp templates are available for this company yet.'}</p>}
        </div>}
+       {latestDraft&&<div className={`wa-send-readiness ${currentReadiness?.ready?'ready':currentReadiness?'blocked':'unchecked'}`}>
+        <div className="wa-send-readiness-copy"><small>SEND READINESS</small><strong>{currentReadiness?.ready?'Ready for provider handoff':currentReadiness?readinessReason(currentReadiness.reason):'Not checked yet'}</strong><span>{latestDraft.replyMode==='template'?`Approved template draft${latestDraft.templateName?` · ${latestDraft.templateName}`:''}`:'Free-form draft inside the customer service window'} · provider send requires a separate release gate.</span></div>
+        <div className="wa-send-readiness-actions">
+         {currentReadiness&&<span className="wa-readiness-facts"><b>{currentReadiness.tokenConfigured?'Meta token configured':'Meta token missing'}</b><b>{currentReadiness.liveSend?'Live gate on':'Live gate off'}</b></span>}
+         <button className="wa-readiness-check" disabled={activity==='prepare-send'||activity==='send'} onClick={()=>void prepareSend(latestDraft.id)}><ShieldCheck size={15}/>{activity==='prepare-send'?'Checking…':'Check readiness'}</button>
+         <button className="wa-live-send" disabled={!currentReadiness?.ready||!currentReadiness.liveSend||activity==='send'} onClick={()=>void sendDraft(latestDraft.id)}><Send size={15}/>{activity==='send'?'Sending…':'Send to WhatsApp'}</button>
+        </div>
+       </div>}
        <div className="wa-composer-tools">
         <button className="wa-ai-button" onClick={()=>setMessage('AI reply assistance is reserved for the governed composer and is not active in this staging foundation yet.')}><Sparkles size={15}/>AI assist</button>
-        <span>Human review required · live send off</span>
+        <span>Human review required · provider release gate remains separate</span>
        </div>
        {replyPolicy?.composerState!=='template_required'&&<textarea value={reply} onChange={event=>setReply(event.target.value)} maxLength={4096} disabled={replyPolicy?.composerState==='routing_required'} placeholder={replyPolicy?.composerState==='routing_required'?'Route this conversation before drafting a reply.':'Write a customer reply…'}/>}
        <footer><span>{replyPolicy?.composerState==='template_required'?(selectedTemplate?'Approved template selected':'Template selection required'):`${reply.length.toLocaleString()} / 4,096`}</span><button className="wa-send-button" disabled={activity==='reply'||replyPolicy?.composerState==='routing_required'||(replyPolicy?.composerState==='template_required'?!templateId:!reply.trim())} onClick={()=>void mutate('reply',replyPolicy?.composerState==='template_required'?{templateId}:{body:reply})}><Send size={16}/>{activity==='reply'?'Saving…':replyPolicy?.composerState==='template_required'?'Save template draft':'Save reply draft'}</button></footer>
