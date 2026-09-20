@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "daenem-staffportal-api-staging",
+  "workers_dev": true,
+  "preview_urls": true,
+  "compatibility_date": "2026-08-18",
+  "main": "./worker/staffportal-staging.ts",
+  "limits": {
+    "cpu_ms": 300000
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "daenem-staffportal-staging-db",
+      "database_id": "87b3e0dd-76c9-4a29-8185-a5abc34c02f6",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "daenem-staffportal-files-staging"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SOCIAL_CACHE",
+      "id": "268478aaea794bafbf5fd8772e12a19b"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SOCIAL_QUEUE",
+        "queue": "daenem-staffportal-social-staging"
+      }
+    ]
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "APP_NAME": "DAENEM Staff Portal Staging",
+    "TIMEZONE": "Africa/Lagos",
+    "APP_STAGE": "staging",
+    "WORKFORCE_EMAIL_FROM": "portal@daenem.com",
+    "META_GRAPH_VERSION": "v24.0"
+  }
+}
