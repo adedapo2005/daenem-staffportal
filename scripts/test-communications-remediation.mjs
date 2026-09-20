@@ -145,3 +145,31 @@ test('WhatsApp inbox send handoff stays gated, scoped and audited',async()=>{
   assert.match(inbox,/result\.blocked/);
   assert.match(inbox,/PROVIDER_TRANSPORT_AMBIGUOUS/);
 });
+
+test('Meta credential vault is encrypted, masked, owner-managed and runtime-resolved',async()=>{
+  const vault=await readFile(path.join(root,'worker','meta-credentials.ts'),'utf8');
+  const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
+  const webhook=await readFile(path.join(root,'worker','communications-webhook.ts'),'utf8');
+  const outbound=await readFile(path.join(root,'worker','communications-whatsapp-outbound.ts'),'utf8');
+  const oauth=await readFile(path.join(root,'worker','social-oauth.ts'),'utf8');
+  const whatsappAuth=await readFile(path.join(root,'worker','whatsapp-auth.ts'),'utf8');
+  const ui=await readFile(path.join(root,'src','communications-admin-entry.tsx'),'utf8');
+  const migration=await readFile(path.join(root,'migrations','0070_meta_credentials_vault.sql'),'utf8');
+  assert.match(vault,/encryptSocialSecret/);
+  assert.match(vault,/decryptSocialSecret/);
+  assert.match(vault,/SELECT credential_key AS key,updated_at AS updatedAt FROM meta_credentials_vault/);
+  assert.doesNotMatch(vault,/SELECT credential_key AS key,ciphertext/);
+  assert.match(service,/Group Owner or Group Admin access is required/);
+  assert.match(service,/update_meta_credential/);
+  assert.match(service,/delete_meta_credential/);
+  assert.match(webhook,/resolveMetaCredential\(env,'meta_app_secret'\)/);
+  assert.match(webhook,/resolveMetaCredential\(env,'communications_webhook_verify_token'\)/);
+  assert.match(outbound,/resolveMetaCredential\(env,'meta_system_user_token'\)/);
+  assert.match(oauth,/withResolvedMetaCredentials/);
+  assert.match(oauth,/Staff Portal Meta credentials are not available for the Farms brand/);
+  assert.match(whatsappAuth,/resolveMetaCredential\(env,'meta_graph_version'\)/);
+  assert.match(ui,/How To Get This Credential/);
+  assert.match(ui,/type=\{item\.secret\?'password':'text'\}/);
+  assert.match(ui,/Saved values are encrypted server-side and are never returned to this browser/);
+  assert.match(migration,/CREATE TABLE IF NOT EXISTS meta_credentials_vault/);
+});

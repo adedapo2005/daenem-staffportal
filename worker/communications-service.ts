@@ -7,6 +7,7 @@ import { routeCommunicationGovernance } from './communications-governance.js';
 import { routeCommunicationsInbox } from './communications-inbox.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
 import type { Authorization, Channel, RequestContext } from './communications/types.js';
+import { deleteMetaCredential, isMetaCredentialKey, metaCredentialStatuses, saveMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
 import {
   assertStaffPortalCompany,
   communicationBoundary,
@@ -17,7 +18,7 @@ import {
   upsertPolicyRule,
 } from './communications-repository.js';
 
-interface Env extends AuthEnv {
+interface Env extends MetaCredentialEnv {
   AI?: Ai;
   SOCIAL_AI_MODEL?: string;
 }
@@ -156,6 +157,34 @@ async function saveGlobalCommunicationSettings(
   `).bind(uid('audit'),context.employee.id,JSON.stringify(changed)));
   await env.DB.batch(statements);
   return json({ok:true,settings:changed});
+}
+
+async function getMetaCredentials(env:Env,context:EnhancedSessionContext){
+  if(!owner(context))return json({error:'Group Owner or Group Admin access is required.'},403);
+  return json({credentials:await metaCredentialStatuses(env)});
+}
+
+async function saveMetaCredentialSetting(request:Request,env:Env,context:EnhancedSessionContext){
+  if(!owner(context))return json({error:'Group Owner or Group Admin access is required.'},403);
+  let body:{key?:string;value?:string};try{body=await request.json()}catch{return json({error:'Invalid Meta credential request.'},400)}
+  const key=String(body.key||'');
+  if(!isMetaCredentialKey(key))return json({error:'Unsupported Meta credential.'},400);
+  try{
+    await saveMetaCredential(env,key,String(body.value||''),context.employee.id);
+    await auditCommunication(env,context,undefined,'update_meta_credential','meta_credential',key,{key,configured:true});
+    const status=(await metaCredentialStatuses(env)).find(item=>item.key===key);
+    return json({ok:true,credential:status||null});
+  }catch(error){return json({error:(error as Error).message||'Meta credential could not be saved.'},400)}
+}
+
+async function deleteMetaCredentialSetting(request:Request,env:Env,context:EnhancedSessionContext){
+  if(!owner(context))return json({error:'Group Owner or Group Admin access is required.'},403);
+  const key=String(new URL(request.url).searchParams.get('key')||'');
+  if(!isMetaCredentialKey(key))return json({error:'Unsupported Meta credential.'},400);
+  await deleteMetaCredential(env,key);
+  await auditCommunication(env,context,undefined,'delete_meta_credential','meta_credential',key,{key,configured:false});
+  const status=(await metaCredentialStatuses(env)).find(item=>item.key===key);
+  return json({ok:true,credential:status||null});
 }
 
 async function getPolicy(
@@ -612,6 +641,15 @@ export async function routeCommunications(
     }
     if (path === '/api/communications/admin/global' && method === 'POST') {
       return saveGlobalCommunicationSettings(request,env,context);
+    }
+    if (path === '/api/communications/admin/meta-credentials' && method === 'GET') {
+      return getMetaCredentials(env,context);
+    }
+    if (path === '/api/communications/admin/meta-credentials' && method === 'POST') {
+      return saveMetaCredentialSetting(request,env,context);
+    }
+    if (path === '/api/communications/admin/meta-credentials' && method === 'DELETE') {
+      return deleteMetaCredentialSetting(request,env,context);
     }
     if (path === '/api/communications/admin/policy' && method === 'GET') {
       return getPolicy(request,env,context);

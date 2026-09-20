@@ -1,11 +1,8 @@
-import type { AuthEnv } from './auth.js';
 import { verifyWebhookSignature } from './communications/whatsapp.js';
 import { assertStaffPortalCompany } from './communications-repository.js';
+import { resolveMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
 
-export interface CommunicationsWebhookEnv extends AuthEnv {
-  META_APP_SECRET?: string;
-  COMMUNICATIONS_WEBHOOK_VERIFY_TOKEN?: string;
-}
+export interface CommunicationsWebhookEnv extends MetaCredentialEnv {}
 
 const encoder = new TextEncoder();
 const json = (body: Record<string, unknown>, status = 200) =>
@@ -206,7 +203,7 @@ export async function routeCommunicationsWebhook(
   if (url.pathname !== '/api/communications/webhooks/whatsapp') return null;
 
   if (request.method === 'GET') {
-    const expected = String(env.COMMUNICATIONS_WEBHOOK_VERIFY_TOKEN || '');
+    const expected = await resolveMetaCredential(env,'communications_webhook_verify_token');
     const valid =
       url.searchParams.get('hub.mode') === 'subscribe' &&
       expected &&
@@ -219,7 +216,7 @@ export async function routeCommunicationsWebhook(
       : json({ error:'Webhook verification failed.' },403);
   }
   if (request.method !== 'POST') return json({ error:'Method not allowed.' },405);
-  const secret = String(env.META_APP_SECRET || '');
+  const secret = await resolveMetaCredential(env,'meta_app_secret');
   if (!secret) return json({ error:'Webhook authentication is unavailable.' },503);
 
   const rawBuffer = await request.arrayBuffer();

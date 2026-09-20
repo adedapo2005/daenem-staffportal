@@ -1,9 +1,7 @@
-import type { AuthEnv } from './auth.js';
 import { assertStaffPortalCompany } from './communications-repository.js';
+import { resolveMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
 
-export interface WhatsAppOutboundEnv extends AuthEnv {
-  META_SYSTEM_USER_TOKEN?: string;
-  META_GRAPH_VERSION?: string;
+export interface WhatsAppOutboundEnv extends MetaCredentialEnv {
   COMMUNICATIONS_WHATSAPP_LIVE_SEND?: string;
 }
 
@@ -113,9 +111,9 @@ export async function prepareWhatsAppInboxSend(
   if(!normalizeRecipient(row.customerWaId))throw new Error('WHATSAPP_RECIPIENT_INVALID');
   const idempotencyKey=await ensureIdempotencyKey(env,row);
   const payload=buildPayload(row);
-  const version=String(env.META_GRAPH_VERSION||'v24.0');
+  const version=(await resolveMetaCredential(env,'meta_graph_version'))||'v24.0';
   const endpoint=`https://graph.facebook.com/${version}/${encodeURIComponent(row.phoneNumberId)}/messages`;
-  const tokenConfigured=Boolean(env.META_SYSTEM_USER_TOKEN);
+  const tokenConfigured=Boolean(await resolveMetaCredential(env,'meta_system_user_token'));
   const liveSend=await liveEnabled(env);
   const reason=!liveSend?'LIVE_SEND_DISABLED':!tokenConfigured?'META_SYSTEM_USER_TOKEN_MISSING':undefined;
   return {
@@ -130,6 +128,8 @@ export async function sendWhatsAppInboxMessage(
   const prepared=await prepareWhatsAppInboxSend(env,input);
   if(!prepared.liveSend)return {accepted:false,blocked:true,errorCode:'LIVE_SEND_DISABLED'};
   if(!prepared.tokenConfigured)return {accepted:false,blocked:true,errorCode:'META_SYSTEM_USER_TOKEN_MISSING'};
+  const token=await resolveMetaCredential(env,'meta_system_user_token');
+  if(!token)return {accepted:false,blocked:true,errorCode:'META_SYSTEM_USER_TOKEN_MISSING'};
   await env.DB.prepare(`
     UPDATE communication_inbox_messages
     SET send_requested_at=COALESCE(send_requested_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
@@ -139,7 +139,7 @@ export async function sendWhatsAppInboxMessage(
   try{
     response=await fetch(prepared.endpoint!,{
       method:'POST',
-      headers:{Authorization:`Bearer ${env.META_SYSTEM_USER_TOKEN}`,'content-type':'application/json'},
+      headers:{Authorization:`Bearer ${token}`,'content-type':'application/json'},
       body:JSON.stringify(prepared.payload),
     });
   }catch{

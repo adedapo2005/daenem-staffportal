@@ -1,5 +1,6 @@
 import type { AuthEnv } from './auth.js';
 import { decryptSocialSecret, type SocialCryptoEnv } from './social-crypto.js';
+import { resolveMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
 import {
   authenticationPayload,
   type AuthenticationDelivery,
@@ -12,9 +13,7 @@ import {
   reserveCapacity,
 } from './communications-repository.js';
 
-export interface WhatsAppAuthEnv extends AuthEnv, SocialCryptoEnv {
-  META_GRAPH_VERSION?: string;
-}
+export interface WhatsAppAuthEnv extends AuthEnv, SocialCryptoEnv, MetaCredentialEnv {}
 
 export type WhatsAppAuthPurpose =
   | 'signup_phone'
@@ -194,7 +193,7 @@ async function providerSend(
     throw new Error('WHATSAPP_AUTH_SENDER_NOT_READY');
   }
   const token = await decryptSocialSecret(env, template.accessTokenCiphertext);
-  const graphVersion = String(env.META_GRAPH_VERSION || 'v24.0');
+  const graphVersion = (await resolveMetaCredential(env,'meta_graph_version')) || 'v24.0';
   const response = await fetch(
     `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(template.phoneNumberId)}/messages`,
     {
