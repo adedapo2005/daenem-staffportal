@@ -135,3 +135,13 @@ test('WhatsApp outbound adapter is idempotent, scoped, audited and double-gated'
   assert.match(migration,/UNIQUE INDEX IF NOT EXISTS uq_comm_inbox_message_idempotency/);
   assert.match(migration,/communications\.whatsapp_live_send','false'/);
 });
+
+test('WhatsApp inbox send handoff stays gated, scoped and audited',async()=>{
+  const inbox=await readFile(path.join(root,'worker','communications-inbox.ts'),'utf8');
+  assert.match(inbox,/sendWhatsAppInboxMessage/);
+  assert.match(inbox,/messages\\\/\(\[\^\/\]\+\)\\\/send/);
+  assert.match(inbox,/'communications','send_attempt','communication_inbox_message'/);
+  assert.match(inbox,/Conversation must be routed to this company first/);
+  assert.match(inbox,/result\.blocked/);
+  assert.match(inbox,/PROVIDER_TRANSPORT_AMBIGUOUS/);
+});

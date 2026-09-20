@@ -1,7 +1,7 @@
 import { hasCompanyPermission, type EnhancedSessionContext } from './auth-context-v2.js';
 import type { AccessLevel } from './auth.js';
 import { assertStaffPortalCompany } from './communications-repository.js';
-import { prepareWhatsAppInboxSend, type WhatsAppOutboundEnv } from './communications-whatsapp-outbound.js';
+import { prepareWhatsAppInboxSend, sendWhatsAppInboxMessage, type WhatsAppOutboundEnv } from './communications-whatsapp-outbound.js';
 
 interface Env extends WhatsAppOutboundEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
@@ -219,12 +219,55 @@ async function prepareInboxSend(
   }
 }
 
+async function sendInboxDraft(
+  request:Request,env:Env,context:EnhancedSessionContext,conversationId:string,messageId:string,
+){
+  let body:Record<string,unknown>;try{body=await request.json()}catch{return json({error:'Invalid request.'},400)}
+  const companyId=String(body.companyId||'');
+  if(!companyId||!companyAllowed(context,companyId))return json({error:'Company is required.'},400);
+  if(!can(context,companyId,'communications.support.inbox.reply','create'))return json({error:'Permission denied.'},403);
+  const item=await conversation(env,companyId,conversationId);
+  if(!item)return json({error:'Conversation not found.'},404);
+  if(String(item.companyId||'')!==companyId)return json({error:'Conversation must be routed to this company first.'},409);
+  try{
+    const result=await sendWhatsAppInboxMessage(env,{companyId,conversationId,messageId});
+    await env.DB.prepare(`INSERT INTO audit_logs(
+      id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source
+    ) VALUES(?,?,?,'communications','send_attempt','communication_inbox_message',?,?,'web')`)
+      .bind(uid('audit'),context.employee.id,companyId,messageId,JSON.stringify({
+        conversationId,
+        accepted:Boolean(result.accepted),
+        blocked:Boolean('blocked' in result&&result.blocked),
+        ambiguous:Boolean('ambiguous' in result&&result.ambiguous),
+        errorCode:'errorCode' in result?result.errorCode||null:null,
+        providerMessageId:'providerMessageId' in result?result.providerMessageId||null:null,
+      })).run();
+    if(result.accepted)return json({ok:true,accepted:true,messageId,providerMessageId:result.providerMessageId||null},202);
+    if('blocked' in result&&result.blocked)return json({ok:false,accepted:false,blocked:true,error:result.errorCode||'SEND_BLOCKED'},409);
+    if('ambiguous' in result&&result.ambiguous)return json({ok:false,accepted:false,ambiguous:true,error:result.errorCode||'PROVIDER_TRANSPORT_AMBIGUOUS'},502);
+    return json({ok:false,accepted:false,error:'errorCode' in result?result.errorCode||'META_REJECTED':'META_REJECTED'},502);
+  }catch(error){
+    const code=(error as Error).message||'SEND_FAILED';
+    await env.DB.prepare(`INSERT INTO audit_logs(
+      id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source
+    ) VALUES(?,?,?,'communications','send_attempt','communication_inbox_message',?,?,'web')`)
+      .bind(uid('audit'),context.employee.id,companyId,messageId,JSON.stringify({
+        conversationId,accepted:false,blocked:true,errorCode:code,
+      })).run();
+    return json({ok:false,accepted:false,blocked:true,error:code},409);
+  }
+}
+
 export async function routeCommunicationsInbox(request:Request,env:Env,context:EnhancedSessionContext):Promise<Response|null>{
   const path=new URL(request.url).pathname,method=request.method;
   if(path==='/api/communications/inbox'&&method==='GET')return listInbox(request,env,context);
   const prepareMatch=path.match(/^\/api\/communications\/inbox\/([^/]+)\/messages\/([^/]+)\/prepare-send$/);
   if(prepareMatch&&method==='POST'){
     return prepareInboxSend(request,env,context,decodeURIComponent(prepareMatch[1]),decodeURIComponent(prepareMatch[2]));
+  }
+  const sendMatch=path.match(/^\/api\/communications\/inbox\/([^/]+)\/messages\/([^/]+)\/send$/);
+  if(sendMatch&&method==='POST'){
+    return sendInboxDraft(request,env,context,decodeURIComponent(sendMatch[1]),decodeURIComponent(sendMatch[2]));
   }
   const match=path.match(/^\/api\/communications\/inbox\/([^/]+)(?:\/(read|assign|route|notes|reply))?$/);
   if(!match)return null;
