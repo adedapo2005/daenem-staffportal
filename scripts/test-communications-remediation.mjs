@@ -118,3 +118,20 @@ test('WhatsApp template drafts require approved company templates and never live
   assert.match(migration,/ADD COLUMN template_id TEXT REFERENCES communication_templates/);
   assert.match(migration,/reply_mode TEXT NOT NULL DEFAULT 'freeform'/);
 });
+
+test('WhatsApp outbound adapter is idempotent, scoped, audited and double-gated',async()=>{
+  const adapter=await readFile(path.join(root,'worker','communications-whatsapp-outbound.ts'),'utf8');
+  const inbox=await readFile(path.join(root,'worker','communications-inbox.ts'),'utf8');
+  const migration=await readFile(path.join(root,'migrations','0069_whatsapp_outbound_adapter.sql'),'utf8');
+  assert.match(adapter,/wa-inbox:\$\{row\.companyId\}:\$\{row\.messageId\}:v1/);
+  assert.match(adapter,/communications\.whatsapp_live_send/);
+  assert.match(adapter,/COMMUNICATIONS_WHATSAPP_LIVE_SEND/);
+  assert.match(adapter,/META_SYSTEM_USER_TOKEN_MISSING/);
+  assert.match(adapter,/WHATSAPP_TEMPLATE_REQUIRED/);
+  assert.match(adapter,/WHATSAPP_TEMPLATE_NOT_APPROVED/);
+  assert.match(adapter,/PROVIDER_TRANSPORT_AMBIGUOUS/);
+  assert.match(inbox,/'prepare_send'/);
+  assert.match(inbox,/prepare-send/);
+  assert.match(migration,/UNIQUE INDEX IF NOT EXISTS uq_comm_inbox_message_idempotency/);
+  assert.match(migration,/communications\.whatsapp_live_send','false'/);
+});

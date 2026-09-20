@@ -1,8 +1,9 @@
 import { hasCompanyPermission, type EnhancedSessionContext } from './auth-context-v2.js';
-import type { AuthEnv, AccessLevel } from './auth.js';
+import type { AccessLevel } from './auth.js';
 import { assertStaffPortalCompany } from './communications-repository.js';
+import { prepareWhatsAppInboxSend, type WhatsAppOutboundEnv } from './communications-whatsapp-outbound.js';
 
-interface Env extends AuthEnv {}
+interface Env extends WhatsAppOutboundEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
 const levels:AccessLevel[]=['none','view','create','edit','approve','manage'];
@@ -187,9 +188,44 @@ async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:
   return null;
 }
 
+
+async function prepareInboxSend(
+  request:Request,env:Env,context:EnhancedSessionContext,conversationId:string,messageId:string,
+){
+  let body:Record<string,unknown>;try{body=await request.json()}catch{return json({error:'Invalid request.'},400)}
+  const companyId=String(body.companyId||'');
+  if(!companyId||!companyAllowed(context,companyId))return json({error:'Company is required.'},400);
+  if(!can(context,companyId,'communications.support.inbox.reply','create'))return json({error:'Permission denied.'},403);
+  const item=await conversation(env,companyId,conversationId);
+  if(!item)return json({error:'Conversation not found.'},404);
+  if(String(item.companyId||'')!==companyId)return json({error:'Conversation must be routed to this company first.'},409);
+  try{
+    const prepared=await prepareWhatsAppInboxSend(env,{companyId,conversationId,messageId});
+    await env.DB.prepare(`INSERT INTO audit_logs(
+      id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source
+    ) VALUES(?,?,?,'communications','prepare_send','communication_inbox_message',?,?,'web')`)
+      .bind(uid('audit'),context.employee.id,companyId,messageId,JSON.stringify({
+        conversationId,liveSend:prepared.liveSend,ready:prepared.ready,reason:prepared.reason||null,
+        phoneNumberId:prepared.phoneNumberId,
+      })).run();
+    return json({
+      ok:true,messageId,ready:prepared.ready,liveSend:prepared.liveSend,
+      reason:prepared.reason||null,tokenConfigured:prepared.tokenConfigured,
+      idempotencyKey:prepared.idempotencyKey,
+    });
+  }catch(error){
+    const code=(error as Error).message||'SEND_PREPARATION_FAILED';
+    return json({error:code},409);
+  }
+}
+
 export async function routeCommunicationsInbox(request:Request,env:Env,context:EnhancedSessionContext):Promise<Response|null>{
   const path=new URL(request.url).pathname,method=request.method;
   if(path==='/api/communications/inbox'&&method==='GET')return listInbox(request,env,context);
+  const prepareMatch=path.match(/^\/api\/communications\/inbox\/([^/]+)\/messages\/([^/]+)\/prepare-send$/);
+  if(prepareMatch&&method==='POST'){
+    return prepareInboxSend(request,env,context,decodeURIComponent(prepareMatch[1]),decodeURIComponent(prepareMatch[2]));
+  }
   const match=path.match(/^\/api\/communications\/inbox\/([^/]+)(?:\/(read|assign|route|notes|reply))?$/);
   if(!match)return null;
   const id=decodeURIComponent(match[1]),action=match[2]||'';
