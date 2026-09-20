@@ -58,3 +58,20 @@
 .admin-view-only { margin: 15px 0 4px; display: flex; gap: 8px; align-items: center; padding: 11px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); color: var(--muted); font-size: 9px; }
 @media (max-width: 760px) { .admin-setup-shell { width: 100%; border-left: 0; padding: 18px 13px 32px; } .admin-setup-stats { grid-template-columns: 1fr 1fr; } .admin-policy-grid { grid-template-columns: 1fr 1fr; } .admin-coordinate-grid { grid-template-columns: 1fr 1fr; } .admin-coordinate-grid label:last-child { grid-column: 1 / -1; } }
 @media (max-width: 480px) { .admin-policy-grid, .admin-setup-stats, .admin-coordinate-grid { grid-template-columns: 1fr; } .admin-coordinate-grid label:last-child { grid-column: auto; } .admin-location-actions { display: grid; } .admin-location-actions button { justify-content: center; } }
+
+.admin-multi-policy{display:grid;gap:16px}
+.admin-scope-summary{display:grid;gap:5px;padding:14px;border:1px solid rgba(35,68,96,.15);border-radius:14px;background:rgba(247,250,253,.86)}
+.admin-scope-summary span{font-size:11px;font-weight:800;color:#5c7184;text-transform:uppercase;letter-spacing:.06em}
+.admin-scope-summary strong{font-size:14px;color:#173958}
+.admin-scope-summary small{font-size:11px;color:#6b7f91}
+.admin-company-targets{display:grid;gap:10px}
+.admin-company-targets-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.admin-company-targets-head label{display:flex;gap:10px;align-items:center}
+.admin-company-targets-head label span{display:grid;gap:2px}
+.admin-company-targets-head small{color:#6b7f91;font-size:10px}
+.admin-company-target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
+.admin-company-target{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;border:1px solid rgba(35,68,96,.12);border-radius:12px;background:rgba(255,255,255,.72)}
+.admin-company-target span{display:grid;gap:2px}
+.admin-company-target small{font-size:10px;color:#728395}
+.admin-company-target em{font-style:normal;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:5px 7px;border-radius:999px;background:rgba(34,74,110,.08);color:#355a78}
+.admin-company-target em.company{background:rgba(226,150,36,.12);color:#8a5a10}

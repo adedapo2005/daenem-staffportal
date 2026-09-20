@@ -25,6 +25,13 @@ type LocationRecord = {
 };
 
 type SettingsMap = Record<string, unknown>;
+type RecoveryPolicy='email'|'whatsapp'|'email_whatsapp';
+type ScopedRecoverySettings={
+  settingKey:string;
+  global:{value:RecoveryPolicy;source:'global'};
+  companies:Array<{id:string;code:string;name:string;value:RecoveryPolicy;source:'company'|'inherited'}>;
+  canSetGlobal:boolean;
+};
 
 type EditLocation = {
   latitude: string;
@@ -72,6 +79,9 @@ function editFrom(record: LocationRecord): EditLocation {
 export function AdminSetup({ context, onClose }: { context: WorkforceContext; onClose: () => void }) {
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [settings, setSettings] = useState<SettingsMap>({});
+  const [recoveryPolicy, setRecoveryPolicy] = useState<ScopedRecoverySettings | null>(null);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [recoveryValue, setRecoveryValue] = useState<RecoveryPolicy>('email');
   const [edits, setEdits] = useState<Record<string, EditLocation>>({});
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState<{ type: 'error' | 'success' | 'info'; text: string } | null>(null);
@@ -81,13 +91,17 @@ export function AdminSetup({ context, onClose }: { context: WorkforceContext; on
     setBusy('load');
     setMessage(null);
     try {
-      const [locationResult, settingsResult] = await Promise.all([
+      const [locationResult, settingsResult, scopedResult] = await Promise.all([
         api<{ locations: LocationRecord[] }>('/api/admin/locations'),
         api<{ settings: SettingsMap }>('/api/admin/settings'),
+        api<ScopedRecoverySettings>('/api/admin/scoped-settings'),
       ]);
       setLocations(locationResult.locations || []);
       setEdits(Object.fromEntries((locationResult.locations || []).map((location) => [location.id, editFrom(location)])));
       setSettings(settingsResult.settings || {});
+      setRecoveryPolicy(scopedResult);
+      setRecoveryValue(scopedResult.global.value);
+      setSelectedCompanies((current) => current.filter((id) => scopedResult.companies.some((company) => company.id === id)));
     } catch (error) {
       setMessage({ type: 'error', text: (error as Error).message });
     } finally { setBusy(''); }
@@ -144,6 +158,38 @@ export function AdminSetup({ context, onClose }: { context: WorkforceContext; on
     finally { setBusy(''); }
   }
 
+  async function saveRecoveryPolicy(scope:'global'|'companies',inherit=false){
+    if(!manage||!recoveryPolicy)return;
+    setBusy('recovery-policy');setMessage(null);
+    try{
+      const result=await api<ScopedRecoverySettings>('/api/admin/scoped-settings',{
+        method:'POST',
+        body:JSON.stringify({
+          settingKey:'security.password_recovery_methods',
+          value:recoveryValue,
+          scope,
+          companyIds:scope==='companies'?selectedCompanies:undefined,
+          inherit:scope==='companies'?inherit:undefined,
+        }),
+      });
+      setRecoveryPolicy(result);
+      setMessage({type:'success',text:scope==='global'
+        ? 'Global password recovery policy saved. Companies without an override now inherit it.'
+        : inherit
+          ? 'Selected companies now inherit the global recovery policy.'
+          : 'Password recovery policy applied to the selected companies.'});
+    }catch(error){setMessage({type:'error',text:(error as Error).message})}
+    finally{setBusy('')}
+  }
+
+  const allRecoverySelected=Boolean(recoveryPolicy?.companies.length)&&selectedCompanies.length===recoveryPolicy?.companies.length;
+  function toggleRecoveryCompany(id:string){
+    setSelectedCompanies(current=>current.includes(id)?current.filter(item=>item!==id):[...current,id]);
+  }
+  function toggleAllRecoveryCompanies(){
+    setSelectedCompanies(allRecoverySelected?[]:(recoveryPolicy?.companies.map(company=>company.id)||[]));
+  }
+
   const configuredCount = useMemo(() => locations.filter((location) => location.configured).length, [locations]);
 
   return <div className="admin-setup-backdrop" onClick={onClose}>
@@ -172,6 +218,34 @@ export function AdminSetup({ context, onClose }: { context: WorkforceContext; on
           <label className="admin-toggle"><input type="checkbox" checked={Boolean(settings['notifications.role_data_reminders'] ?? true)} disabled={!manage || busy === 'settings'} onChange={(event) => saveSettings({ 'notifications.role_data_reminders': event.target.checked })} /><span><b>Role-data reminders</b><small>Prompt employees to complete assigned operational data.</small></span></label>
           <label className="admin-toggle"><input type="checkbox" checked={Boolean(settings['ai.smart_exception_detection'] ?? true)} disabled={!manage || busy === 'settings'} onChange={(event) => saveSettings({ 'ai.smart_exception_detection': event.target.checked })} /><span><b>Smart exception detection</b><small>Allow AI-assisted anomaly and missing-data detection.</small></span></label>
         </div>
+      </section>
+
+      <section className="admin-setup-section">
+        <div className="admin-section-title"><ShieldCheck size={20} /><div><h3>Password recovery methods</h3><p>Use the same multi-company targeting pattern for settings that can apply globally, to selected companies, or to one company.</p></div></div>
+        {recoveryPolicy && <div className="admin-multi-policy">
+          <div className="admin-policy-grid">
+            <label><span>Recovery method</span><select value={recoveryValue} disabled={!manage||busy==='recovery-policy'} onChange={(event)=>setRecoveryValue(event.target.value as RecoveryPolicy)}><option value="email">Email Only</option><option value="whatsapp">WhatsApp Only</option><option value="email_whatsapp">Email + WhatsApp</option></select><small>WhatsApp requires an enrolled, previously verified contact and valid Meta configuration.</small></label>
+            <div className="admin-scope-summary"><span>Global policy</span><strong>{recoveryPolicy.global.value==='email'?'Email Only':recoveryPolicy.global.value==='whatsapp'?'WhatsApp Only':'Email + WhatsApp'}</strong><small>Companies without their own override inherit this value.</small></div>
+          </div>
+          <div className="admin-company-targets">
+            <div className="admin-company-targets-head">
+              <label><input type="checkbox" checked={allRecoverySelected} onChange={toggleAllRecoveryCompanies} disabled={!manage}/><span><b>Select All</b><small>Apply to all companies you are authorized to manage.</small></span></label>
+              <span>{selectedCompanies.length} of {recoveryPolicy.companies.length} selected</span>
+            </div>
+            <div className="admin-company-target-grid">
+              {recoveryPolicy.companies.map(company=><label key={company.id} className="admin-company-target">
+                <input type="checkbox" checked={selectedCompanies.includes(company.id)} onChange={()=>toggleRecoveryCompany(company.id)} disabled={!manage}/>
+                <span><b>{company.name}</b><small>{company.code}</small></span>
+                <em className={company.source}>{company.source==='company'?'Individually configured':'Inherited'}</em>
+              </label>)}
+            </div>
+          </div>
+          <div className="admin-location-actions">
+            {recoveryPolicy.canSetGlobal && <button className="admin-secondary" disabled={!manage||busy==='recovery-policy'} onClick={()=>saveRecoveryPolicy('global')}><Save size={16}/> Save as global</button>}
+            <button className="admin-primary" disabled={!manage||busy==='recovery-policy'||!selectedCompanies.length} onClick={()=>saveRecoveryPolicy('companies')}><Save size={16}/> Apply to selected</button>
+            <button className="admin-secondary" disabled={!manage||busy==='recovery-policy'||!selectedCompanies.length} onClick={()=>saveRecoveryPolicy('companies',true)}>Use inherited value</button>
+          </div>
+        </div>}
       </section>
 
       <section className="admin-setup-section">

@@ -1,4 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { RECOVERY_SETTING_KEY, resolveScopedSetting, validRecoveryPolicy } from './scoped-settings';
 
 interface AdminEnv extends AuthEnv {}
 
@@ -123,6 +124,73 @@ async function updateSettings(request: Request, env: AdminEnv, context: SessionC
   return json({ ok: true, settings: changed });
 }
 
+function isGroupAdmin(context:SessionContext){
+  return context.roles.some(role=>['owner','group_admin'].includes(role.code));
+}
+
+function allowedCompanies(context:SessionContext){
+  return context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`));
+}
+
+async function getScopedSettings(env:AdminEnv,context:SessionContext){
+  if(!canView(context))return json({error:'Admin setup access is not assigned.'},403);
+  const companies=allowedCompanies(context);
+  const global=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,null,'email');
+  const rows=await env.DB.prepare(`
+    SELECT scope_id AS companyId,setting_value AS value
+    FROM admin_scoped_settings
+    WHERE setting_key=? AND scope_type='company'
+  `).bind(RECOVERY_SETTING_KEY).all<{companyId:string;value:string}>();
+  const overrides=new Map((rows.results||[]).map(row=>[row.companyId,row.value]));
+  return json({
+    settingKey:RECOVERY_SETTING_KEY,
+    global:{value:global.value,source:'global'},
+    companies:companies.map(company=>({
+      id:company.id,code:company.code,name:company.name,
+      value:overrides.get(company.id)||global.value,
+      source:overrides.has(company.id)?'company':'inherited',
+    })),
+    canSetGlobal:isGroupAdmin(context),
+  });
+}
+
+async function saveScopedSettings(request:Request,env:AdminEnv,context:SessionContext){
+  if(!canManage(context))return json({error:'Manage Settings permission is required.'},403);
+  let body:{settingKey?:string;value?:string;scope?:'global'|'companies';companyIds?:string[];inherit?:boolean};
+  try{body=await request.json()}catch{return json({error:'Invalid scoped settings request.'},400)}
+  if(body.settingKey!==RECOVERY_SETTING_KEY||!validRecoveryPolicy(body.value))return json({error:'Invalid password recovery policy.'},400);
+  if(body.scope==='global'){
+    if(!isGroupAdmin(context))return json({error:'Group Owner or Group Admin access is required for global policy.'},403);
+    await env.DB.prepare(`
+      INSERT INTO admin_scoped_settings(id,setting_key,scope_type,scope_id,setting_value,value_type,updated_by,updated_at)
+      VALUES(?,?,'global','__global__',?,'string',?,CURRENT_TIMESTAMP)
+      ON CONFLICT(setting_key,scope_type,scope_id) DO UPDATE SET
+        setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+    `).bind(uid('scoped-setting'),RECOVERY_SETTING_KEY,body.value,context.employee.id).run();
+  }else{
+    const allowed=new Set(allowedCompanies(context).map(company=>company.id));
+    const companyIds=[...new Set((body.companyIds||[]).map(String))].filter(id=>allowed.has(id));
+    if(!companyIds.length)return json({error:'Select at least one company.'},400);
+    if(body.inherit){
+      const marks=companyIds.map(()=>'?').join(',');
+      await env.DB.prepare(`DELETE FROM admin_scoped_settings WHERE setting_key=? AND scope_type='company' AND scope_id IN (${marks})`)
+        .bind(RECOVERY_SETTING_KEY,...companyIds).run();
+    }else{
+      await env.DB.batch(companyIds.map(companyId=>env.DB.prepare(`
+        INSERT INTO admin_scoped_settings(id,setting_key,scope_type,scope_id,setting_value,value_type,updated_by,updated_at)
+        VALUES(?,?,'company',?,?,'string',?,CURRENT_TIMESTAMP)
+        ON CONFLICT(setting_key,scope_type,scope_id) DO UPDATE SET
+          setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+      `).bind(uid('scoped-setting'),RECOVERY_SETTING_KEY,companyId,body.value,context.employee.id)));
+    }
+  }
+  await env.DB.prepare(`
+    INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+    VALUES(?,?,'settings','update_scoped_setting','admin_scoped_setting',?,?, 'web')
+  `).bind(uid('audit'),context.employee.id,RECOVERY_SETTING_KEY,JSON.stringify(body)).run();
+  return getScopedSettings(env,context);
+}
+
 async function listLocations(env: AdminEnv, context: SessionContext) {
   if (!canView(context)) return json({ error: 'Location administration access is not assigned.' }, 403);
   const result = await env.DB.prepare(`
@@ -229,6 +297,8 @@ export async function routeAdmin(request: Request, env: AdminEnv, context: Sessi
   const url = new URL(request.url);
   if (url.pathname === '/api/admin/settings' && request.method === 'GET') return getSettings(env, context);
   if (url.pathname === '/api/admin/settings' && request.method === 'POST') return updateSettings(request, env, context);
+  if (url.pathname === '/api/admin/scoped-settings' && request.method === 'GET') return getScopedSettings(env, context);
+  if (url.pathname === '/api/admin/scoped-settings' && request.method === 'POST') return saveScopedSettings(request, env, context);
   if (url.pathname === '/api/admin/locations' && request.method === 'GET') return listLocations(env, context);
   if (url.pathname === '/api/admin/locations/configure' && request.method === 'POST') return configureLocation(request, env, context);
   return null;

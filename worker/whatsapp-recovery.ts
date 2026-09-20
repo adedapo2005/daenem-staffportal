@@ -1,6 +1,7 @@
 import type { AuthEnv } from './auth.js';
 import type { SocialCryptoEnv } from './social-crypto.js';
 import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth.js';
+import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings.js';
 
 export interface WhatsAppRecoveryEnv extends AuthEnv, SocialCryptoEnv {
   META_GRAPH_VERSION?: string;
@@ -83,11 +84,19 @@ export async function startPasswordRecoveryWhatsApp(
   request: Request,
   env: WhatsAppRecoveryEnv,
 ) {
-  let body: { identifier?:string };
+  let body: { identifier?:string; companyCode?:string };
   try { body = await request.json(); }
   catch { return json({ error:'Invalid request body.' }, 400); }
   const identifier = String(body.identifier || '').trim().toLowerCase();
+  const companyCode = String(body.companyCode || '').trim();
   if (!identifier) return json({ error:'Enter your username or email address.' }, 400);
+  const company = await env.DB.prepare("SELECT id,code,name FROM companies WHERE active=1 AND lower(code)=lower(?) AND lower(name) NOT LIKE '%farm%' LIMIT 1")
+    .bind(companyCode).first<{id:string;code:string;name:string}>();
+  if(!company)return json({error:'Select a valid company.'},400);
+  const policy=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,company.id,'email');
+  if(!recoveryMethods(policy.value as RecoveryMethodPolicy).includes('whatsapp')){
+    return json({error:'WhatsApp password recovery is not enabled for this company.',code:'RECOVERY_METHOD_NOT_ALLOWED'},409);
+  }
   const publicChallengeId = uid('wa-auth');
   let challengeId = publicChallengeId;
   const row = await env.DB.prepare(`
@@ -95,7 +104,7 @@ export async function startPasswordRecoveryWhatsApp(
       vc.normalized_value AS phone,vc.revision
     FROM employee_credentials c
     JOIN employees e ON e.id=c.employee_id
-    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
+    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1
     JOIN employee_verified_contacts vc
       ON vc.employee_id=e.id AND vc.company_id=m.company_id
       AND vc.contact_type='phone' AND vc.revoked_at IS NULL
@@ -103,7 +112,7 @@ export async function startPasswordRecoveryWhatsApp(
       AND e.employment_status IN ('active','provisional')
     ORDER BY m.is_primary DESC,vc.verified_at DESC
     LIMIT 1
-  `).bind(identifier,identifier).first<{
+  `).bind(company.id,identifier,identifier).first<{
     employeeId:string;companyId:string;phone:string;revision:number;
   }>();
   if (row) {

@@ -1,6 +1,7 @@
 import { sessionCookie, type AuthEnv } from './auth';
 import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth';
 import { startPasswordRecoveryWhatsApp, verifyPasswordRecoveryWhatsApp } from './whatsapp-recovery';
+import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings';
 
 interface EmailBinding {
   send(message: {
@@ -877,11 +878,39 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
   );
 }
 
+async function recoveryPolicyForCompany(env:PasswordAuthEnv,companyCode:string){
+  const company=await env.DB.prepare(
+    "SELECT id,code,name FROM companies WHERE active=1 AND lower(code)=lower(?) AND lower(name) NOT LIKE '%farm%' LIMIT 1",
+  ).bind(companyCode).first<{id:string;code:string;name:string}>();
+  if(!company)return null;
+  const resolved=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,company.id,'email');
+  return {company,policy:resolved.value as RecoveryMethodPolicy,source:resolved.source};
+}
+
+async function recoveryOptions(request:Request,env:PasswordAuthEnv){
+  const companyCode=String(new URL(request.url).searchParams.get('company')||'').trim();
+  if(!companyCode)return json({error:'Select your company.'},400);
+  const resolved=await recoveryPolicyForCompany(env,companyCode);
+  if(!resolved)return json({error:'Select a valid company.'},400);
+  return json({
+    company:{code:resolved.company.code,name:resolved.company.name},
+    methods:recoveryMethods(resolved.policy),
+    policy:resolved.policy,
+    source:resolved.source,
+  });
+}
+
 async function forgotPassword(request: Request, env: PasswordAuthEnv) {
-  let body: { identifier?: string };
+  let body: { identifier?: string; companyCode?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
   const identifier = String(body.identifier || '').trim().toLowerCase();
+  const companyCode = String(body.companyCode || '').trim();
   if (!identifier) return json({ error: 'Enter your username or email address.' }, 400);
+  const recoveryPolicy = await recoveryPolicyForCompany(env, companyCode);
+  if (!recoveryPolicy) return json({ error: 'Select a valid company.' }, 400);
+  if (!recoveryMethods(recoveryPolicy.policy).includes('email')) {
+    return json({ error: 'Email password recovery is not enabled for this company.', code: 'RECOVERY_METHOD_NOT_ALLOWED' }, 409);
+  }
   const pepperFailure = await requireProductionPepper(env, request, 'configuration');
   if (pepperFailure) return pepperFailure;
   if ((!env.EMAIL || typeof env.EMAIL.send !== 'function') && env.APP_STAGE !== 'bootstrap') {
@@ -898,11 +927,13 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
   const challengeId = uid('password-reset');
   const employee = await env.DB.prepare(`
     SELECT e.id, e.email, e.display_name AS displayName
-    FROM employee_credentials c JOIN employees e ON e.id = c.employee_id
+    FROM employee_credentials c
+    JOIN employees e ON e.id = c.employee_id
+    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1
     WHERE (LOWER(c.username) = LOWER(?) OR LOWER(e.email) = LOWER(?))
       AND e.employment_status IN ('active','provisional')
     LIMIT 1
-  `).bind(identifier, identifier).first<{ id: string; email?: string; displayName: string }>();
+  `).bind(recoveryPolicy.company.id, identifier, identifier).first<{ id: string; email?: string; displayName: string }>();
 
   if (employee?.email) {
     const code = randomCode();
@@ -1048,6 +1079,7 @@ export async function routePasswordAuth(request: Request, env: PasswordAuthEnv):
   if (url.pathname === '/api/auth/signup/whatsapp/start' && request.method === 'POST') return startSignupWhatsApp(request, env);
   if (url.pathname === '/api/auth/signup/whatsapp/verify' && request.method === 'POST') return verifySignupWhatsApp(request, env);
   if (url.pathname === '/api/auth/login/verify-whatsapp' && request.method === 'POST') return verifySigninWhatsApp(request, env);
+  if (url.pathname === '/api/auth/password/recovery-options' && request.method === 'GET') return recoveryOptions(request, env);
   if (url.pathname === '/api/auth/password/forgot' && request.method === 'POST') return forgotPassword(request, env);
   if (url.pathname === '/api/auth/password/forgot-whatsapp' && request.method === 'POST') return startPasswordRecoveryWhatsApp(request, env);
   if (url.pathname === '/api/auth/password/verify-reset' && request.method === 'POST') return verifyReset(request, env);

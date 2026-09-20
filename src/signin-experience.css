@@ -5281,3 +5281,15 @@ html[data-mode="night"] .usp-social-buttons button {
     transform-origin: 50% 14px;
   }
 }
+
+.usp-recovery-company{display:grid;gap:6px}
+.usp-recovery-company>span{font-size:10px;font-weight:800;color:#405b73}
+.usp-recovery-company select{width:100%;min-height:42px;border:1px solid rgba(48,78,105,.18);border-radius:12px;background:rgba(255,255,255,.9);color:#183956;padding:0 12px;font:inherit}
+.usp-recovery-company small{font-size:9px;line-height:1.4;color:#718497}
+.usp-recovery-methods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.usp-recovery-methods button{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:center;text-align:left;padding:10px 11px;border:1px solid rgba(48,78,105,.15);border-radius:12px;background:rgba(250,252,255,.86);color:#23445f;font:inherit;cursor:pointer}
+.usp-recovery-methods button.active{border-color:rgba(45,94,137,.42);box-shadow:0 0 0 3px rgba(45,94,137,.07);background:rgba(244,249,254,.98)}
+.usp-recovery-methods button span{display:grid;gap:2px}
+.usp-recovery-methods button b{font-size:11px}
+.usp-recovery-methods button small{font-size:9px;line-height:1.35;color:#6f8294}
+@media(max-width:520px){.usp-recovery-methods{grid-template-columns:1fr}}

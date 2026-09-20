@@ -451,6 +451,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const [recoveryStep, setRecoveryStep] = useState<'identity' | 'verify' | 'reset'>('identity');
   const [recoveryIdentity, setRecoveryIdentity] = useState('');
+  const [recoveryCompanies, setRecoveryCompanies] = useState<Array<{code:string;name:string}>>([]);
+  const [recoveryCompanyCode, setRecoveryCompanyCode] = useState('');
+  const [recoveryMethods, setRecoveryMethods] = useState<Array<'email'|'whatsapp'>>([]);
+  const [recoveryMethod, setRecoveryMethod] = useState<'email'|'whatsapp'>('email');
   const [recoveryChallenge, setRecoveryChallenge] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryBootstrapCode, setRecoveryBootstrapCode] = useState('');
@@ -486,6 +490,31 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }).catch(() => undefined);
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active=true;
+    api<{companies:Array<{code:string;name:string}>}>('/api/auth/companies').then((result)=>{
+      if(!active)return;
+      const companies=(result.companies||[]).filter(company=>!/farm/i.test(`${company.code} ${company.name}`));
+      setRecoveryCompanies(companies);
+      setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:(companies[0]?.code||''));
+    }).catch(()=>undefined);
+    return()=>{active=false};
+  },[]);
+
+  useEffect(()=>{
+    if(mode!=='forgot'||!recoveryCompanyCode){setRecoveryMethods([]);return}
+    let active=true;
+    api<{methods:Array<'email'|'whatsapp'>}>(`/api/auth/password/recovery-options?company=${encodeURIComponent(recoveryCompanyCode)}`)
+      .then((result)=>{
+        if(!active)return;
+        const methods=result.methods||[];
+        setRecoveryMethods(methods);
+        setRecoveryMethod(current=>methods.includes(current)?current:(methods[0]||'email'));
+      })
+      .catch(()=>{if(active)setRecoveryMethods([])});
+    return()=>{active=false};
+  },[mode,recoveryCompanyCode]);
 
   useEffect(() => {
     const onSignInPreferences = (event: Event) => {
@@ -735,8 +764,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setBusy(true);
     setMessage(null);
     try {
-      const result = await api<{ challengeId: string; bootstrapCode?: string; message: string }>('/api/auth/password/forgot', {
-        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity }),
+      if (!recoveryCompanyCode || !recoveryMethods.includes(recoveryMethod)) throw new Error('Select an available recovery method.');
+      const endpoint=recoveryMethod==='whatsapp'?'/api/auth/password/forgot-whatsapp':'/api/auth/password/forgot';
+      const result = await api<{ challengeId: string; bootstrapCode?: string; message: string }>(endpoint, {
+        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity, companyCode: recoveryCompanyCode }),
       });
       setRecoveryChallenge(result.challengeId);
       setRecoveryBootstrapCode(result.bootstrapCode || '');
@@ -755,7 +786,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setBusy(true);
     setMessage(null);
     try {
-      const result = await api<{ resetToken: string; message: string }>('/api/auth/password/verify-reset', {
+      const endpoint=recoveryMethod==='whatsapp'?'/api/auth/password/verify-reset-whatsapp':'/api/auth/password/verify-reset';
+      const result = await api<{ resetToken: string; message: string }>(endpoint, {
         method: 'POST', body: JSON.stringify({ challengeId: recoveryChallenge, code: recoveryCode }),
       });
       setResetToken(result.resetToken);
@@ -928,12 +960,17 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
       {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" autoComplete="off" onSubmit={startRecovery}>
         <TextField label={authLabels.emailOrUsername} value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="off" />
-        <div className="usp-positive-note"><Mail size={16} /><span>{authLabels.recoveryIdentityNote}</span></div>
-        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
+        <label className="usp-recovery-company"><span>Company</span><select value={recoveryCompanyCode} onChange={(event)=>setRecoveryCompanyCode(event.target.value)} required><option value="">Select company</option>{recoveryCompanies.map(company=><option key={company.code} value={company.code}>{company.name}</option>)}</select><small>Recovery methods follow the selected company's administrator policy.</small></label>
+        {recoveryMethods.length > 0 && <div className="usp-recovery-methods" role="radiogroup" aria-label="Password recovery method">
+          {recoveryMethods.includes('email') && <button type="button" className={recoveryMethod==='email'?'active':''} aria-pressed={recoveryMethod==='email'} onClick={()=>setRecoveryMethod('email')}><Mail size={17}/><span><b>Email</b><small>Send the verification code to your email on file.</small></span></button>}
+          {recoveryMethods.includes('whatsapp') && <button type="button" className={recoveryMethod==='whatsapp'?'active':''} aria-pressed={recoveryMethod==='whatsapp'} onClick={()=>setRecoveryMethod('whatsapp')}><WhatsAppMark size={18}/><span><b>WhatsApp</b><small>Send the code to your enrolled verified WhatsApp contact.</small></span></button>}
+        </div>}
+        <div className="usp-positive-note">{recoveryMethod==='whatsapp'?<WhatsAppMark size={16}/>:<Mail size={16} />}<span>{authLabels.recoveryIdentityNote}</span></div>
+        <button className="usp-primary-button" disabled={busy||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
       </form>}
 
       {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifyRecovery}>
-        <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationCodeSent}</span></div>
+        <div className="usp-auth-destination">{recoveryMethod==='whatsapp'?<WhatsAppMark size={18}/>:<Mail size={18} />}<span>{recoveryMethod==='whatsapp'?'Verification code sent to your enrolled WhatsApp contact.':authLabels.verificationCodeSent}</span></div>
         {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{recoveryBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
         <TextField label={authLabels.verificationCode} value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
         <button className="usp-primary-button" disabled={busy || recoveryCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyIdentity}<CheckCircle2 size={17} /></button>
