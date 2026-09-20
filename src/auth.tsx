@@ -109,6 +109,13 @@ export function clearPortalAuthCache() {
   authMeRequest = null;
 }
 
+function WhatsAppMark({ size = 20 }: { size?: number }) {
+  return <svg viewBox="0 0 32 32" width={size} height={size} fill="none" aria-hidden="true" focusable="false">
+    <path d="M16 3.2c-7 0-12.7 5.6-12.7 12.6 0 2.2.6 4.4 1.7 6.2l-1.8 6.8 7-1.8c1.8 1 3.8 1.5 5.8 1.5 7 0 12.7-5.6 12.7-12.6S23 3.2 16 3.2Z" fill="#25D366" />
+    <path d="M22.2 18.6c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.8.2-.2.3-.9 1-1.1 1.2-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-1-1.6-2.1-1.8-2.4-.2-.3 0-.5.1-.7.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2.1-.4 0-.6-.1-.2-.8-1.8-1-2.5-.2-.6-.5-.5-.8-.5h-.7c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7 0 1.6 1.2 3.2 1.3 3.4.2.2 2.3 3.5 5.6 4.8.8.3 1.4.5 1.9.6.8.3 1.6.2 2.2.1.7-.1 1.9-.8 2.1-1.6.3-.8.3-1.5.2-1.6-.1-.1-.3-.2-.6-.4Z" fill="white" />
+  </svg>;
+}
+
 export function isNetworkTransportFailure(error: unknown) {
   const status = typeof error === 'object' && error !== null && 'status' in error
     ? (error as { status?: unknown }).status
@@ -861,12 +868,13 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button className="usp-primary-button" disabled={busy} type="submit">
           {busy ? authLabels.signingIn : authLabels.signIn}<ArrowRight size={17} />
         </button>
-        <button className="usp-secondary-button" disabled={busy || !identity.trim() || !password} type="button" onClick={() => void startWhatsAppSignIn()}>
-          <ShieldCheck size={17} /> Verify sign-in with WhatsApp
+        <button className="usp-whatsapp-button" disabled={busy || !identity.trim() || !password} type="button" onClick={() => void startWhatsAppSignIn()}>
+          <span className="usp-whatsapp-button-icon"><WhatsAppMark size={20} /></span>
+          <span className="usp-whatsapp-button-copy"><strong>Verify sign-in with WhatsApp</strong><small>Use your enrolled WhatsApp contact for secure step-up verification</small></span>
         </button>
-        <small className="usp-whatsapp-auth-note">Requires an enrolled and previously verified WhatsApp contact. Your password is still required.</small>
+        <small className="usp-whatsapp-auth-note">Your password is still required. WhatsApp verification is available only for an enrolled and previously verified contact.</small>
         {whatsAppSignInChallenge && <div className="usp-whatsapp-stepup">
-          <div className="usp-auth-destination"><ShieldCheck size={18} /><span>Verification sent to <b>{whatsAppSignInDestination}</b></span></div>
+          <div className="usp-auth-destination usp-whatsapp-destination"><span className="usp-whatsapp-button-icon compact"><WhatsAppMark size={17} /></span><span>Verification sent to <b>{whatsAppSignInDestination}</b></span></div>
           <TextField label="WhatsApp verification code" value={whatsAppSignInCode} onChange={(value) => setWhatsAppSignInCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
           <button className="usp-primary-button" disabled={busy || whatsAppSignInCode.length !== 6} type="button" onClick={() => void verifyWhatsAppSignIn()}>
             {busy ? 'Verifying…' : 'Verify WhatsApp code'}<ArrowRight size={17} />
