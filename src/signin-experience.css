@@ -540,6 +540,33 @@
   gap: 13px;
 }
 
+.usp-whatsapp-auth-note {
+  display: block;
+  margin-top: -5px;
+  color: #6b7f91;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.usp-whatsapp-stepup {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(18, 98, 173, .16);
+  border-radius: 14px;
+  background: rgba(239, 248, 255, .72);
+}
+
+.usp-auth-panel[data-auth-mode^="signup"] {
+  max-height: none;
+  overflow: visible;
+}
+
+.usp-stage:has(.usp-auth-panel[data-auth-mode^="signup"]) {
+  align-items: start;
+}
+
 .usp-field {
   min-width: 0;
   display: grid;

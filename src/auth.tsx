@@ -417,6 +417,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [whatsAppSignInChallenge, setWhatsAppSignInChallenge] = useState('');
+  const [whatsAppSignInDestination, setWhatsAppSignInDestination] = useState('');
+  const [whatsAppSignInCode, setWhatsAppSignInCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [themeId] = useState<ThemeId>(() => readThemeId());
@@ -554,6 +557,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setPassword('');
     setShowPassword(false);
     setRemember(false);
+    setWhatsAppSignInChallenge('');
+    setWhatsAppSignInDestination('');
+    setWhatsAppSignInCode('');
     setSignup((current) => ({ ...current, password: '', confirmPassword: '' }));
     if (next === 'signup') { setIdentity(''); setIdentityTouched(false); setSignupStep('identity'); setSignupCode(''); }
     if (next === 'forgot') {
@@ -621,6 +627,46 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       } else {
         setMessage({ type: 'error', text: authError.message });
       }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startWhatsAppSignIn() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await api<{stepUpRequired:boolean;challengeId:string;destination:string;message:string}>('/api/auth/login', {
+        method: 'POST', body: JSON.stringify({ identifier: identity, password, verificationChannel: 'whatsapp', ...deviceIdentity() }),
+      });
+      if (!result.stepUpRequired || !result.challengeId) throw new Error('WhatsApp verification could not be started.');
+      setWhatsAppSignInChallenge(result.challengeId);
+      setWhatsAppSignInDestination(result.destination || 'your enrolled WhatsApp contact');
+      setWhatsAppSignInCode('');
+      setMessage({ type: 'info', text: result.message });
+    } catch (error) {
+      setMessage({ type: 'error', text: (error as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyWhatsAppSignIn() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await api('/api/auth/login/verify-whatsapp', {
+        method: 'POST', body: JSON.stringify({ challengeId: whatsAppSignInChallenge, code: whatsAppSignInCode }),
+      });
+      const me = await api<{ authenticated: boolean; context?: WorkforceContext }>('/api/auth/me');
+      if (!me.authenticated || !me.context) throw new Error('Your sign-in session could not be established. Please try again.');
+      setPassword('');
+      setWhatsAppSignInChallenge('');
+      setWhatsAppSignInDestination('');
+      setWhatsAppSignInCode('');
+      onAuthenticated(me.context);
+    } catch (error) {
+      setMessage({ type: 'error', text: (error as Error).message });
     } finally {
       setBusy(false);
     }
@@ -815,6 +861,17 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button className="usp-primary-button" disabled={busy} type="submit">
           {busy ? authLabels.signingIn : authLabels.signIn}<ArrowRight size={17} />
         </button>
+        <button className="usp-secondary-button" disabled={busy || !identity.trim() || !password} type="button" onClick={() => void startWhatsAppSignIn()}>
+          <ShieldCheck size={17} /> Verify sign-in with WhatsApp
+        </button>
+        <small className="usp-whatsapp-auth-note">Requires an enrolled and previously verified WhatsApp contact. Your password is still required.</small>
+        {whatsAppSignInChallenge && <div className="usp-whatsapp-stepup">
+          <div className="usp-auth-destination"><ShieldCheck size={18} /><span>Verification sent to <b>{whatsAppSignInDestination}</b></span></div>
+          <TextField label="WhatsApp verification code" value={whatsAppSignInCode} onChange={(value) => setWhatsAppSignInCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+          <button className="usp-primary-button" disabled={busy || whatsAppSignInCode.length !== 6} type="button" onClick={() => void verifyWhatsAppSignIn()}>
+            {busy ? 'Verifying…' : 'Verify WhatsApp code'}<ArrowRight size={17} />
+          </button>
+        </div>}
       </form>}
 
       {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={continueSignupIdentity}>
