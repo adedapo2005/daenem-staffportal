@@ -2,22 +2,16 @@ import React,{useCallback,useEffect,useMemo,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{Archive,ArrowLeft,AtSign,CheckCheck,ChevronDown,Circle,Clock3,Inbox,MessageCircleMore,MoreHorizontal,NotebookPen,RefreshCw,Search,Send,ShieldCheck,Sparkles,UserCheck,X}from'lucide-react';
 import{api,hasWorkforcePermission,type WorkforceContext}from'./auth';
+import{resolveCommunicationCompanyUi}from'./communications-company-ui';
 import'./communications-inbox.css';
 
 type Conversation={id:string;companyId?:string|null;senderId?:string|null;routingMode?:'shared_group'|'company_dedicated'|string|null;senderDisplayName?:string|null;customerWaId:string;customerDisplayName?:string|null;status:'open'|'pending'|'resolved'|'closed';assignedEmployeeId?:string|null;unreadCount:number;lastMessageAt:string;lastMessage?:string|null};
 type Message={id:string;direction:'inbound'|'outbound';providerMessageId?:string|null;messageType:string;body?:string|null;status:string;staffEmployeeId?:string|null;providerTimestamp?:string|null;createdAt:string};
 type Note={id:string;body:string;authorEmployeeId:string;createdAt:string;firstName?:string|null;lastName?:string|null};
 type Thread={conversation:Conversation&{connectionId?:string|null};messages:Message[];notes:Note[]};
-type CompanyOption={id:string;code:string;name:string;label:string;shortLabel:string;uiKey:string};
-const COMPANY_ROUTE_UI:Record<string,{label:string;shortLabel:string;uiKey:string}>={
- 'company-autos':{label:'Daenem Autos',shortLabel:'Autos',uiKey:'autos'},
- 'company-bakery':{label:'Daenem Bakery',shortLabel:'Bakery',uiKey:'bakery'},
- 'company-properties':{label:'Daenem Homes & Properties',shortLabel:'Homes & Properties',uiKey:'properties'},
- 'company-logistics':{label:'Daenem Logistics',shortLabel:'Logistics',uiKey:'logistics'},
- 'company-printing':{label:'Daenem Printing & Technology',shortLabel:'Printing & Technology',uiKey:'printing'},
-};
+type CompanyOption={id:string;code:string;name:string;label:string;shortLabel:string;uiKey:string;monogram:string;descriptor:string};
 const cleanCompanies=(context:WorkforceContext)=>context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`));
-const companyOption=(company:WorkforceContext['companies'][number]):CompanyOption=>{const ui=COMPANY_ROUTE_UI[company.id];return{id:company.id,code:company.code,name:company.name,label:ui?.label||company.name,shortLabel:ui?.shortLabel||company.name.replace(/^Daenem\s+/i,''),uiKey:ui?.uiKey||company.code||company.id}};
+const companyOption=(company:WorkforceContext['companies'][number]):CompanyOption=>({id:company.id,code:company.code,name:company.name,...resolveCommunicationCompanyUi(company)});
 const displayName=(conversation:Conversation)=>conversation.customerDisplayName?.trim()||`WhatsApp ${conversation.customerWaId.slice(-4)}`;
 const initials=(conversation:Conversation)=>{const name=displayName(conversation);const parts=name.split(/\s+/).filter(Boolean);return(parts[0]?.[0]||'W')+(parts[1]?.[0]||'')};
 const time=(value?:string|null)=>value?new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(value)):'';
@@ -40,6 +34,7 @@ function Pill({children,tone='neutral'}:{children:React.ReactNode;tone?:'neutral
 function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>void}){
  const companies=useMemo(()=>cleanCompanies(context),[context]);
  const companyOptions=useMemo(()=>companies.map(companyOption),[companies]);
+ const companyOptionById=useMemo(()=>new Map(companyOptions.map(item=>[item.id,item])),[companyOptions]);
  const isGroupOperator=context.roles.some(role=>['owner','group_admin'].includes(role.code));
  const canRouteFor=(id:string)=>isGroupOperator||hasWorkforcePermission(context,'communications.support.inbox.assign','edit',id)||hasWorkforcePermission(context,'communications.support.manage','manage',id);
  const routeOptions=useMemo(()=>companyOptions.filter(item=>canRouteFor(item.id)),[companyOptions,context,isGroupOperator]);
@@ -120,7 +115,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
   finally{setActivity('')}
  }
  const company=companies.find(item=>item.id===companyId);
- const selectedCompany=selected?.companyId?companyOptions.find(item=>item.id===selected.companyId):null;
+ const selectedCompany=selected?.companyId?companyOptionById.get(selected.companyId)||null:null;
  const canRouteSelected=Boolean(selected&&selected.routingMode==='shared_group'&&!selected.companyId&&canRouteFor(companyId)&&routeOptions.length);
  return <div className="wa-backdrop" role="dialog" aria-modal="true" aria-label="WhatsApp Inbox">
   <section className="wa-shell">
@@ -145,12 +140,11 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
    <div className="wa-layout">
     <aside className="wa-conversation-list">
      <div className="wa-list-heading"><div><strong>Conversations</strong><span>{items.length}</span></div><small>{loading?'Refreshing…':'Newest activity first'}</small></div>
-     <div className="wa-list-scroll">{!items.length&&!loading?<EmptyState title="No conversations here" detail="New customer WhatsApp messages will appear here after the Meta webhook is connected."/>:items.map(item=>
-      <button key={item.id} className={`wa-conversation ${selectedId===item.id?'selected':''}`} onClick={()=>selectConversation(item.id)}>
+     <div className="wa-list-scroll">{!items.length&&!loading?<EmptyState title="No conversations here" detail="New customer WhatsApp messages will appear here after the Meta webhook is connected."/>:items.map(item=>{const routedCompany=item.companyId?companyOptionById.get(item.companyId)||null:null;return <button key={item.id} className={`wa-conversation ${selectedId===item.id?'selected':''}`} onClick={()=>selectConversation(item.id)}>
        <span className="wa-avatar">{initials(item).toUpperCase()}</span>
-       <span className="wa-conversation-copy"><span className="wa-conversation-row"><strong>{displayName(item)}</strong><time>{time(item.lastMessageAt)}</time></span><span className="wa-preview">{item.lastMessage||'Message received'}</span><span className="wa-conversation-meta"><Pill tone={item.status==='open'?'open':item.status==='pending'?'pending':'neutral'}>{item.status}</Pill>{item.routingMode==='shared_group'&&<span className={item.companyId?'wa-route-meta':'wa-route-meta unrouted'}>{item.companyId?(companyOptions.find(option=>option.id===item.companyId)?.shortLabel||'Routed'):'Unrouted'}</span>}{item.assignedEmployeeId===context.employee.id&&<span><UserCheck size={12}/>Assigned to you</span>}</span></span>
+       <span className="wa-conversation-copy"><span className="wa-conversation-row"><strong>{displayName(item)}</strong><time>{time(item.lastMessageAt)}</time></span><span className="wa-preview">{item.lastMessage||'Message received'}</span><span className="wa-conversation-meta"><Pill tone={item.status==='open'?'open':item.status==='pending'?'pending':'neutral'}>{item.status}</Pill>{item.routingMode==='shared_group'&&(routedCompany?<span data-company={routedCompany.uiKey} className="wa-company-chip compact"><b>{routedCompany.monogram}</b>{routedCompany.shortLabel}</span>:<span className="wa-route-meta unrouted">Unrouted</span>)}{item.assignedEmployeeId===context.employee.id&&<span><UserCheck size={12}/>Assigned to you</span>}</span></span>
        {item.unreadCount>0&&<span className="wa-unread">{item.unreadCount>99?'99+':item.unreadCount}</span>}
-      </button>)}</div>
+      </button>})}</div>
     </aside>
 
     <main className="wa-thread">
@@ -158,14 +152,14 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
       <header className="wa-thread-header">
        <button className="wa-mobile-back" onClick={()=>setSelectedId('')}><ArrowLeft size={18}/></button>
        <span className="wa-avatar large">{initials(selected).toUpperCase()}</span>
-       <div><strong>{displayName(selected)}</strong><span><AtSign size={12}/>{selected.customerWaId}</span></div>
+       <div className="wa-thread-identity"><strong>{displayName(selected)}</strong><span><AtSign size={12}/>{selected.customerWaId}</span>{selectedCompany&&<span data-company={selectedCompany.uiKey} className="wa-company-chip"><b>{selectedCompany.monogram}</b>{selectedCompany.label}</span>}</div>
        <div className="wa-thread-actions">
         {selected.assignedEmployeeId===context.employee.id?<button onClick={()=>void mutate('assign',{employeeId:null})} disabled={activity==='assign'}>Unassign</button>:<button onClick={()=>void mutate('assign',{employeeId:context.employee.id})} disabled={activity==='assign'}><UserCheck size={15}/>Assign to me</button>}
         <button className="wa-icon-btn"><MoreHorizontal size={18}/></button>
        </div>
       </header>
       <section data-company={selectedCompany?.uiKey||'unrouted'} className={`wa-route-bar ${selected.routingMode==='shared_group'?(selected.companyId?'routed':'unrouted'):'dedicated'}`}>
-       <div className="wa-route-copy"><small>COMPANY ROUTING</small><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Shared group · unrouted':'Dedicated company')}</strong><span>{selected.routingMode==='shared_group'?(selected.companyId?'This conversation is locked to its routed company.':'Choose the DAENEM company that should own this customer conversation.'):'This sender is dedicated to its configured company.'}</span></div>
+       <div className="wa-route-copy"><small>COMPANY ROUTING</small><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Shared group · unrouted':'Dedicated company')}</strong>{selectedCompany?<><span className="wa-route-trail">DAENEM Group <b>→</b> {selectedCompany.shortLabel}</span><span>{selectedCompany.descriptor}</span></>:<span>{selected.routingMode==='shared_group'?'Choose the DAENEM company that should own this customer conversation.':'This sender is dedicated to its configured company.'}</span>}</div>
        {selected.routingMode==='shared_group'&&!selected.companyId&&<div className="wa-route-controls">
         <label><span>{routeTarget?(routeOptions.find(item=>item.id===routeTarget)?.label||'Selected company'):'Select company'}</span><select aria-label="Route conversation to company" value={routeTarget} onChange={event=>setRouteTarget(event.target.value)} disabled={!canRouteSelected||activity==='route'}><option value="">Select company</option>{routeOptions.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
         <button disabled={!canRouteSelected||!routeTarget||activity==='route'} onClick={()=>void routeConversation()}>{activity==='route'?'Routing…':'Route conversation'}</button>
@@ -201,7 +195,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
      </>:<div className="wa-details">
       <div><span>WhatsApp identity</span><strong>{selected.customerWaId}</strong></div>
       <div><span>Conversation status</span><strong>{selected.status}</strong></div>
-      <div><span>Company route</span><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Unrouted shared conversation':'Dedicated company')}</strong></div>
+      <div><span>Company route</span><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Unrouted shared conversation':'Dedicated company')}</strong>{selectedCompany&&<small className="wa-company-descriptor">{selectedCompany.descriptor}</small>}</div>
       <div><span>Assignment</span><strong>{selected.assignedEmployeeId===context.employee.id?'You':selected.assignedEmployeeId?'Another staff member':'Unassigned'}</strong></div>
       <div><span>Unread</span><strong>{selected.unreadCount||0}</strong></div>
       <div><span>Last activity</span><strong>{dateTime(selected.lastMessageAt)}</strong></div>
