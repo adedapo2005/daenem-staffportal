@@ -6,6 +6,7 @@ interface Env extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
 const levels:AccessLevel[]=['none','view','create','edit','approve','manage'];
+const WHATSAPP_SERVICE_WINDOW_MS=24*60*60*1000;
 
 function owner(context:EnhancedSessionContext){return context.roles.some(role=>['owner','group_admin'].includes(role.code))}
 function companyAllowed(context:EnhancedSessionContext,companyId:string){
@@ -24,6 +25,14 @@ function requiredCompany(url:URL,context:EnhancedSessionContext){
   return companyId;
 }
 function safeText(value:unknown,max=4000){const text=String(value||'').trim();return text&&text.length<=max?text:null}
+function replyPolicy(item:Record<string,unknown>,now=Date.now()){
+  const lastCustomerMessageAt=item.lastCustomerMessageAt?String(item.lastCustomerMessageAt):null;
+  const lastMs=lastCustomerMessageAt?Date.parse(lastCustomerMessageAt):NaN;
+  const expiresAt=Number.isFinite(lastMs)?new Date(lastMs+WHATSAPP_SERVICE_WINDOW_MS).toISOString():null;
+  const serviceWindowState=!Number.isFinite(lastMs)?'unavailable':now<(lastMs+WHATSAPP_SERVICE_WINDOW_MS)?'open':'closed';
+  const composerState=!item.companyId?'routing_required':serviceWindowState==='open'?'send_ready':'template_required';
+  return {serviceWindowState,lastCustomerMessageAt,serviceWindowExpiresAt:expiresAt,composerState,templateRequired:composerState==='template_required',liveSend:false};
+}
 function routeAuditStatement(env:Env,context:EnhancedSessionContext,id:string,targetCompanyId:string,senderId:string,auditId:string,routeAt:string){
   return env.DB.prepare(`INSERT INTO audit_logs(
     id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source
@@ -43,7 +52,7 @@ async function conversation(env:Env,companyId:string,id:string){
   return env.DB.prepare(`SELECT c.id,c.company_id AS companyId,c.connection_id AS connectionId,c.sender_id AS senderId,
     c.customer_wa_id AS customerWaId,c.customer_display_name AS customerDisplayName,c.status,
     c.assigned_employee_id AS assignedEmployeeId,c.unread_count AS unreadCount,c.last_message_at AS lastMessageAt,
-    c.created_at AS createdAt,c.updated_at AS updatedAt,s.routing_mode AS routingMode,s.display_name AS senderDisplayName
+    c.last_customer_message_at AS lastCustomerMessageAt,c.created_at AS createdAt,c.updated_at AS updatedAt,s.routing_mode AS routingMode,s.display_name AS senderDisplayName
     FROM communication_inbox_conversations c
     LEFT JOIN communication_whatsapp_senders s ON s.id=c.sender_id
     WHERE c.id=? AND (
@@ -62,7 +71,7 @@ async function listInbox(request:Request,env:Env,context:EnhancedSessionContext)
   const limit=Math.min(Math.max(Number(url.searchParams.get('limit')||50),1),100);
   const result=await env.DB.prepare(`SELECT c.id,c.company_id AS companyId,c.sender_id AS senderId,c.customer_wa_id AS customerWaId,
     c.customer_display_name AS customerDisplayName,c.status,c.assigned_employee_id AS assignedEmployeeId,
-    c.unread_count AS unreadCount,c.last_message_at AS lastMessageAt,s.routing_mode AS routingMode,
+    c.unread_count AS unreadCount,c.last_message_at AS lastMessageAt,c.last_customer_message_at AS lastCustomerMessageAt,s.routing_mode AS routingMode,
     s.display_name AS senderDisplayName,
     (SELECT m.body FROM communication_inbox_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS lastMessage
     FROM communication_inbox_conversations c
@@ -89,7 +98,7 @@ async function getThread(request:Request,env:Env,context:EnhancedSessionContext,
       e.first_name AS firstName,e.last_name AS lastName FROM communication_inbox_notes n
       LEFT JOIN employees e ON e.id=n.author_employee_id WHERE n.conversation_id=? ORDER BY n.created_at ASC LIMIT 200`).bind(id).all()
   ]);
-  return json({conversation:item,messages:messages.results||[],notes:notes.results||[]});
+  return json({conversation:item,messages:messages.results||[],notes:notes.results||[],replyPolicy:replyPolicy(item)});
 }
 
 async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:string,action:string){
@@ -144,6 +153,7 @@ async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:
   }
   if(action==='reply'){
     if(!can(context,companyId,'communications.support.inbox.reply','create'))return json({error:'Permission denied.'},403);
+    if(!item.companyId)return json({error:'Route this shared conversation to a company before drafting a reply.'},409);
     const text=safeText(body.body,4096);if(!text)return json({error:'Reply text is required.'},400);
     const messageId=uid('comm-msg');
     await env.DB.prepare(`INSERT INTO communication_inbox_messages(id,conversation_id,company_id,direction,message_type,body,status,staff_employee_id)

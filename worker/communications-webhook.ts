@@ -151,8 +151,9 @@ async function persistInboundMessages(
         inserted++;
         await env.DB.prepare(`UPDATE communication_inbox_conversations SET
           customer_display_name=COALESCE(?,customer_display_name),status='open',
-          unread_count=unread_count+1,last_message_at=COALESCE(?,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
-          WHERE id=?`).bind(contactNames.get(from)||null,providerTimestamp,thread.id).run();
+          unread_count=unread_count+1,last_message_at=COALESCE(?,CURRENT_TIMESTAMP),
+          last_customer_message_at=COALESCE(?,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
+          WHERE id=?`).bind(contactNames.get(from)||null,providerTimestamp,providerTimestamp,thread.id).run();
       }
     }
   }

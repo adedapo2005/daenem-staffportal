@@ -94,3 +94,15 @@ test('shared inbox routing is one-way, permission-gated, sender-scoped and audit
   assert.match(source,/const \[routed,audited\]=await env\.DB\.batch/);
   assert.match(source,/routeAuditStatement\(env,context,id,targetCompanyId,senderId,auditId,routeAt\)/);
 });
+
+test('WhatsApp reply policy derives the customer service window and keeps live send disabled',async()=>{
+  const inbox=await readFile(path.join(root,'worker','communications-inbox.ts'),'utf8');
+  const webhookSource=await readFile(path.join(root,'worker','communications-webhook.ts'),'utf8');
+  const migration=await readFile(path.join(root,'migrations','0067_whatsapp_reply_state.sql'),'utf8');
+  assert.match(inbox,/WHATSAPP_SERVICE_WINDOW_MS=24\*60\*60\*1000/);
+  assert.match(inbox,/composerState=!item\.companyId\?'routing_required':serviceWindowState==='open'\?'send_ready':'template_required'/);
+  assert.match(inbox,/liveSend:false/);
+  assert.match(inbox,/Route this shared conversation to a company before drafting a reply/);
+  assert.match(webhookSource,/last_customer_message_at=COALESCE\(\?,CURRENT_TIMESTAMP\)/);
+  assert.match(migration,/ADD COLUMN last_customer_message_at TEXT/);
+});
