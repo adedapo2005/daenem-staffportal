@@ -1,4 +1,4 @@
-import React,{useEffect,useState}from'react';
+import React,{useEffect,useRef,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{ExternalLink,KeyRound,MessageSquare,RefreshCw,Save,ShieldCheck,Trash2,X}from'lucide-react';
 import{api,type WorkforceContext}from'./auth';
@@ -40,28 +40,36 @@ function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose
  const[metaValues,setMetaValues]=useState<Record<string,string>>({});
  const[busy,setBusy]=useState('');
  const[message,setMessage]=useState('');
+ const loadRequestRef=useRef(0);
  const globalAdmin=owner(context);
  const manageable=canManage(context,companyId);
  async function load(){
   if(!companyId)return;
+  const requestId=++loadRequestRef.current;
+  const requestedScopedKey=scopedKey;
   setBusy('load');setMessage('');
   try{
    const policyResult=await api<Policy>(`/api/communications/admin/policy?companyId=${encodeURIComponent(companyId)}&eventId=${encodeURIComponent(eventId)}`);
+   if(requestId!==loadRequestRef.current)return;
    setPolicy(policyResult);
    if(globalAdmin){
     const [globalResult,metaResult,scopedResult]=await Promise.all([
      api<{settings:GlobalSettings}>('/api/communications/admin/global'),
      api<{credentials:MetaCredential[]}>('/api/communications/admin/meta-credentials'),
-     api<ScopedCommConfig>(`/api/admin/scoped-settings?settingKey=${encodeURIComponent(scopedKey)}`),
+     api<ScopedCommConfig>(`/api/admin/scoped-settings?settingKey=${encodeURIComponent(requestedScopedKey)}`),
     ]);
+    if(requestId!==loadRequestRef.current)return;
     setGlobals(globalResult.settings||{});
     setMetaCredentials(metaResult.credentials||[]);
     setScopedConfig(scopedResult);
     setScopedValue(scopedResult.global.value);
     setSelectedScopedCompanies(current=>current.filter(id=>scopedResult.companies.some(company=>company.id===id)));
    }
-  }catch(error){setMessage((error as Error).message)}
-  finally{setBusy('')}
+  }catch(error){
+   if(requestId===loadRequestRef.current)setMessage((error as Error).message);
+  }finally{
+   if(requestId===loadRequestRef.current)setBusy('');
+  }
  }
  useEffect(()=>{void load()},[companyId,eventId,scopedKey]);
 
