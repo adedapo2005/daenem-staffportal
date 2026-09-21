@@ -1,14 +1,14 @@
 {
   "project": "DAENEM Staff Portal",
   "sitesProjectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
-  "retainedSitesVersion": "V43",
-  "retainedSitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f911a3c51bc8819185c23128ecce9a69",
-  "retainedSitesSource": "437f600f071eb62d532559c767f00647f1a4aa42",
-  "sitesStatus": "partial_integration_unverified",
+  "retainedSitesVersion": "V45",
+  "retainedSitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
+  "retainedSitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
+  "sitesStatus": "v45_saved_non_deployed_browser_qa_pass_api_runtime_unverified",
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "9a1022e1c0432064d25353673b28f7268a4cbf7c",
+  "branchHead": "fdce4a009ee0e9fc61d6e5f3f51c8696ef9d0341",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
   "pullRequestState": "open_draft",
@@ -27,14 +27,11 @@
     "githubWorkerD1IsBackendAuthority": true
   },
   "activeClosure": {
-    "name": "V44 backend truth and permission integration closure",
+    "name": "V44/V45 scoped settings integration closure",
     "blockers": [
-      "canonical backend setting keys",
-      "backend truth before render",
-      "retained Sites API integration path",
-      "authorized company projection",
-      "delegated communications administration",
-      "rendered visual acceptance"
+      "authenticated runtime API origin/session handoff against the staging Worker",
+      "authenticated backend response rendering and delegated-manager acceptance",
+      "Owner acceptance before any production pointer change"
     ]
   },
   "backlogFamilies": [
@@ -43,14 +40,21 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "9a1022e1c0432064d25353673b28f7268a4cbf7c",
+    "commit": "fdce4a009ee0e9fc61d6e5f3f51c8696ef9d0341",
+    "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
     "companyAccessContracts": "21/21 PASS",
     "communicationsContracts": "11/11 PASS",
     "communicationsRemediation": "17/17 PASS",
     "signInConfigurability": "107/107 PASS",
-    "build": "PASS",
-    "typecheck": "PASS",
+    "backendTypecheck": "PASS",
+    "backendCiRun14": "PASS",
+    "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
+    "sitesVersion": "V45 saved without deployment",
+    "sitesStaticContract": "12/12 PASS",
+    "sitesTypecheck": "PASS",
+    "sitesBuild": "PASS",
+    "managedLinuxBrowserQA": "PASS: V44 route, no internal dereference, no local fallback",
     "scope": "non-production only"
   },
   "updatedBy": "Staff Portal Work controller"
