@@ -8,6 +8,8 @@ type Rule={enabled:boolean;aiEnabled:boolean;autoGenerate:boolean;autoSend:boole
 type Policy={companyId:string;eventId:string;revision:string;global:Rule;useCase:Rule};
 type GlobalSettings=Record<string,unknown>;
 type MetaCredential={key:string;label:string;secret:boolean;requiredFor:string[];helpUrl:string;helpSteps:string[];placeholder:string;configured:boolean;source:'ui'|'environment'|'database'|'missing';updatedAt?:string|null};
+type ScopedCommKey='communications.whatsapp_enabled'|'communications.ai_enabled'|'communications.ai_daily_limit'|'communications.provider_daily_limit';
+type ScopedCommConfig={settingKey:ScopedCommKey;valueType:'boolean'|'number';global:{value:boolean|number;source:'global'};companies:Array<{id:string;code:string;name:string;value:boolean|number;source:'company'|'inherited'}>;canSetGlobal:boolean};
 const events=[
  ['hr.onboarding.reminder','Onboarding reminder'],
  ['hr.training.due','Training due reminder'],
@@ -30,6 +32,10 @@ function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose
  const[eventId,setEventId]=useState<string>(events[0][0]);
  const[policy,setPolicy]=useState<Policy|null>(null);
  const[globals,setGlobals]=useState<GlobalSettings>({});
+ const[scopedKey,setScopedKey]=useState<ScopedCommKey>('communications.whatsapp_enabled');
+ const[scopedConfig,setScopedConfig]=useState<ScopedCommConfig|null>(null);
+ const[selectedScopedCompanies,setSelectedScopedCompanies]=useState<string[]>([]);
+ const[scopedValue,setScopedValue]=useState<boolean|number>(false);
  const[metaCredentials,setMetaCredentials]=useState<MetaCredential[]>([]);
  const[metaValues,setMetaValues]=useState<Record<string,string>>({});
  const[busy,setBusy]=useState('');
@@ -43,17 +49,21 @@ function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose
    const policyResult=await api<Policy>(`/api/communications/admin/policy?companyId=${encodeURIComponent(companyId)}&eventId=${encodeURIComponent(eventId)}`);
    setPolicy(policyResult);
    if(globalAdmin){
-    const [globalResult,metaResult]=await Promise.all([
+    const [globalResult,metaResult,scopedResult]=await Promise.all([
      api<{settings:GlobalSettings}>('/api/communications/admin/global'),
      api<{credentials:MetaCredential[]}>('/api/communications/admin/meta-credentials'),
+     api<ScopedCommConfig>(`/api/admin/scoped-settings?settingKey=${encodeURIComponent(scopedKey)}`),
     ]);
     setGlobals(globalResult.settings||{});
     setMetaCredentials(metaResult.credentials||[]);
+    setScopedConfig(scopedResult);
+    setScopedValue(scopedResult.global.value);
+    setSelectedScopedCompanies(current=>current.filter(id=>scopedResult.companies.some(company=>company.id===id)));
    }
   }catch(error){setMessage((error as Error).message)}
   finally{setBusy('')}
  }
- useEffect(()=>{void load()},[companyId,eventId]);
+ useEffect(()=>{void load()},[companyId,eventId,scopedKey]);
 
  async function savePolicy(){
   if(!policy||!manageable)return;
@@ -86,6 +96,35 @@ function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose
   }catch(error){setMessage((error as Error).message)}
   finally{setBusy('')}
  }
+ async function saveScoped(scope:'global'|'companies',inherit=false){
+  if(!globalAdmin||!scopedConfig)return;
+  setBusy('scoped');setMessage('');
+  try{
+   const result=await api<ScopedCommConfig>('/api/admin/scoped-settings',{method:'POST',body:JSON.stringify({
+    settingKey:scopedKey,
+    value:scopedValue,
+    scope,
+    companyIds:scope==='companies'?selectedScopedCompanies:undefined,
+    inherit:scope==='companies'?inherit:undefined,
+   })});
+   setScopedConfig(result);
+   setMessage(scope==='global'
+    ? 'Global default saved. Companies without overrides inherit it.'
+    : inherit
+      ? 'Selected companies now inherit the global default.'
+      : 'Scoped communications setting applied to the selected companies.');
+   await load();
+  }catch(error){setMessage((error as Error).message)}
+  finally{setBusy('')}
+ }
+ const allScopedSelected=Boolean(scopedConfig?.companies.length)&&selectedScopedCompanies.length===scopedConfig?.companies.length;
+ function toggleScopedCompany(id:string){
+  setSelectedScopedCompanies(current=>current.includes(id)?current.filter(item=>item!==id):[...current,id]);
+ }
+ function toggleAllScoped(){
+  setSelectedScopedCompanies(allScopedSelected?[]:(scopedConfig?.companies.map(company=>company.id)||[]));
+ }
+
  async function saveMetaCredential(key:string){
   const value=(metaValues[key]||'').trim();
   if(!value){setMessage('Enter the credential value before saving.');return}
@@ -124,15 +163,40 @@ function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose
    </div>
 
    {globalAdmin&&<section className="comm-admin-card">
-    <div className="comm-admin-title"><ShieldCheck size={19}/><div><h3>Global controls</h3><p>These can narrow eligibility. The live-send release gate is not editable here.</p></div></div>
+    <div className="comm-admin-title"><ShieldCheck size={19}/><div><h3>Global safety control</h3><p>This is intentionally global-only. Company overrides can never bypass it.</p></div></div>
     <div className="comm-admin-grid">
-     <label className="comm-toggle"><input type="checkbox" checked={Boolean(globals['communications.kill_switch']??true)} onChange={event=>void saveGlobal({'communications.kill_switch':event.target.checked})}/><span><b>Emergency kill switch</b><small>Keep enabled to stop communication processing.</small></span></label>
-     <label className="comm-toggle"><input type="checkbox" checked={Boolean(globals['communications.whatsapp_enabled']??false)} onChange={event=>void saveGlobal({'communications.whatsapp_enabled':event.target.checked})}/><span><b>WhatsApp eligible</b><small>Eligibility only; this does not activate provider sending.</small></span></label>
-     <label className="comm-toggle"><input type="checkbox" checked={Boolean(globals['communications.ai_enabled']??false)} onChange={event=>void saveGlobal({'communications.ai_enabled':event.target.checked})}/><span><b>AI drafting eligible</b><small>AI remains draft-only and human reviewed.</small></span></label>
-     <label><span>Daily AI draft limit</span><input type="number" min={0} max={10000} value={Number(globals['communications.ai_daily_limit']??25)} onChange={event=>void saveGlobal({'communications.ai_daily_limit':Number(event.target.value)})}/></label>
-     <label><span>Daily provider-send budget</span><input type="number" min={0} max={100000} value={Number(globals['communications.provider_daily_limit']??250)} onChange={event=>void saveGlobal({'communications.provider_daily_limit':Number(event.target.value)})}/></label>
+     <label className="comm-toggle"><input type="checkbox" checked={Boolean(globals['communications.kill_switch']??true)} onChange={event=>void saveGlobal({'communications.kill_switch':event.target.checked})}/><span><b>Emergency kill switch</b><small>Keep enabled to stop communication processing across the Staff Portal.</small></span></label>
     </div>
     <div className="comm-release-note">Live Meta provider gate remains release-controlled and defaults off.</div>
+   </section>}
+   {globalAdmin&&scopedConfig&&<section className="comm-admin-card">
+    <div className="comm-admin-title"><ShieldCheck size={19}/><div><h3>Multi-company communication settings</h3><p>Choose a global default, apply an override to selected companies, or return selected companies to inherited behavior.</p></div></div>
+    <div className="comm-scoped-toolbar">
+     <label><span>Setting</span><select value={scopedKey} onChange={event=>setScopedKey(event.target.value as ScopedCommKey)}>
+      <option value="communications.whatsapp_enabled">WhatsApp eligibility</option>
+      <option value="communications.ai_enabled">AI drafting eligibility</option>
+      <option value="communications.ai_daily_limit">Daily AI draft limit</option>
+      <option value="communications.provider_daily_limit">Daily provider-send budget</option>
+     </select></label>
+     {scopedConfig.valueType==='boolean'
+      ?<label className="comm-toggle"><input type="checkbox" checked={Boolean(scopedValue)} onChange={event=>setScopedValue(event.target.checked)}/><span><b>{Boolean(scopedValue)?'Enabled':'Disabled'}</b><small>Value to save for the selected scope.</small></span></label>
+      :<label><span>Value</span><input type="number" min={0} max={scopedKey==='communications.ai_daily_limit'?10000:100000} value={Number(scopedValue)} onChange={event=>setScopedValue(Number(event.target.value))}/></label>}
+     <div className="comm-scope-summary"><span>Global default</span><strong>{String(scopedConfig.global.value)}</strong><small>Inherited by companies without an override.</small></div>
+    </div>
+    <div className="comm-company-targets">
+     <label className="comm-select-all"><input type="checkbox" checked={allScopedSelected} onChange={toggleAllScoped}/><span><b>Select All</b><small>All companies you are authorized to manage.</small></span></label>
+     <span>{selectedScopedCompanies.length} of {scopedConfig.companies.length} selected</span>
+    </div>
+    <div className="comm-company-target-grid">{scopedConfig.companies.map(item=><label key={item.id} className="comm-company-target">
+     <input type="checkbox" checked={selectedScopedCompanies.includes(item.id)} onChange={()=>toggleScopedCompany(item.id)}/>
+     <span><b>{item.name}</b><small>{item.code} · {String(item.value)}</small></span>
+     <em className={item.source}>{item.source==='company'?'Individually configured':'Inherited'}</em>
+    </label>)}</div>
+    <div className="comm-scoped-actions">
+     <button onClick={()=>void saveScoped('global')} disabled={busy==='scoped'}><Save size={15}/>Save as global default</button>
+     <button onClick={()=>void saveScoped('companies')} disabled={busy==='scoped'||!selectedScopedCompanies.length}><Save size={15}/>Apply to selected</button>
+     <button onClick={()=>void saveScoped('companies',true)} disabled={busy==='scoped'||!selectedScopedCompanies.length}>Use inherited value</button>
+    </div>
    </section>}
    {globalAdmin&&<section className="comm-admin-card meta-vault-card">
     <div className="comm-admin-title"><KeyRound size={19}/><div><h3>Meta credentials</h3><p>Encrypted Staff Portal credential vault for Meta-dependent features. Local sign-in and non-Meta website functions remain available when these values are missing.</p></div></div>

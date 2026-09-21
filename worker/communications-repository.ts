@@ -3,6 +3,7 @@ import type {
   Channel, EnvironmentBoundary, PolicyRule, PolicySnapshot, Scope,
 } from './communications/types.js';
 import type { AuthEnv } from './auth.js';
+import { resolveTypedScopedSetting } from './scoped-settings.js';
 
 const ORGANIZATION_ID = 'daenem-group';
 
@@ -145,10 +146,10 @@ export async function loadPolicySnapshot(
   subjectEmployeeIds: readonly string[] = [],
 ): Promise<PolicySnapshot> {
   assertStaffPortalCompany(companyId);
-  const [killSwitchRaw, whatsappRaw, aiRaw, row] = await Promise.all([
+  const [killSwitchRaw, whatsappScoped, aiScoped, row] = await Promise.all([
     setting(env, 'communications.kill_switch'),
-    setting(env, 'communications.whatsapp_enabled'),
-    setting(env, 'communications.ai_enabled'),
+    resolveTypedScopedSetting(env, 'communications.whatsapp_enabled', companyId),
+    resolveTypedScopedSetting(env, 'communications.ai_enabled', companyId),
     env.DB.prepare(`
       SELECT enabled, ai_enabled AS aiEnabled, auto_generate AS autoGenerate,
         auto_send AS autoSend, require_human_approval AS requireHumanApproval,
@@ -160,8 +161,8 @@ export async function loadPolicySnapshot(
     `).bind(companyId, eventId).first<Record<string, unknown>>(),
   ]);
   const killSwitch = bool(killSwitchRaw, true);
-  const whatsappEnabled = bool(whatsappRaw, false);
-  const aiEnabled = bool(aiRaw, false);
+  const whatsappEnabled = Boolean(whatsappScoped.value);
+  const aiEnabled = Boolean(aiScoped.value);
   const channels: Channel[] = whatsappEnabled
     ? ['in_app','email','whatsapp']
     : ['in_app','email'];
@@ -257,9 +258,9 @@ export async function reserveCapacity(
 ): Promise<boolean> {
   assertStaffPortalCompany(input.companyId);
   const settingKey = input.type === 'ai_generation'
-    ? 'communications.ai_daily_limit'
-    : 'communications.provider_daily_limit';
-  const configured = Number(await setting(env, settingKey));
+    ? 'communications.ai_daily_limit' as const
+    : 'communications.provider_daily_limit' as const;
+  const configured = Number((await resolveTypedScopedSetting(env, settingKey, input.companyId)).value);
   const limit = Number.isInteger(configured) && configured >= 0 ? configured : 0;
   if (limit < 1) return false;
   const id = `comm-capacity-${crypto.randomUUID()}`;
