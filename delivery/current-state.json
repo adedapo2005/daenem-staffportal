@@ -1,0 +1,46 @@
+{
+  "project": "DAENEM Staff Portal",
+  "sitesProjectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "retainedSitesVersion": "V43",
+  "retainedSitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f911a3c51bc8819185c23128ecce9a69",
+  "retainedSitesSource": "437f600f071eb62d532559c767f00647f1a4aa42",
+  "sitesStatus": "partial_integration_unverified",
+  "productionPointer": "V16",
+  "repository": "adedapo2005/daenem-staffportal",
+  "branch": "feature/staffportal-whatsapp-ai-communications-01",
+  "branchHead": "846c0202fcd6fd0d10a8c0f48c66a7b7fde58b66",
+  "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
+  "pullRequest": 2,
+  "pullRequestState": "open_draft",
+  "latestMigration": "0072_scoped_communications_settings.sql",
+  "productionReady": false,
+  "productionDeployAuthorized": false,
+  "productionMigrationAuthorized": false,
+  "liveMetaAuthorized": false,
+  "farmsAccessAllowed": false,
+  "hardRules": {
+    "zeroDisclosure": true,
+    "twelveHourTime": true,
+    "greenSemanticOnly": true,
+    "reducedMotion": true,
+    "sitesIsFrontendAuthority": true,
+    "githubWorkerD1IsBackendAuthority": true
+  },
+  "activeClosure": {
+    "name": "V44 backend truth and permission integration closure",
+    "blockers": [
+      "canonical backend setting keys",
+      "backend truth before render",
+      "retained Sites API integration path",
+      "authorized company projection",
+      "delegated communications administration",
+      "rendered visual acceptance"
+    ]
+  },
+  "backlogFamilies": [
+    "Master V3 SP-V3-000..139",
+    "HOME-SECURITY-001 and HOME-001..038",
+    "SMART-INPUT-001..052"
+  ],
+  "updatedBy": "Staff Portal Work controller"
+}
