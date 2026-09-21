@@ -11,11 +11,12 @@ const repositoryConfig = path.join(root, 'wrangler.jsonc');
 const testConfig = path.join(root, '.wrangler-offline-runtime-test.jsonc');
 const databaseName = 'daenem-offline-runtime-test';
 const pepper = 'offline-runtime-test-pepper';
-const wrangler = path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'wrangler.cmd' : 'wrangler');
+const wranglerScript = path.join(root, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
+const wrangler = process.platform === 'win32' ? process.execPath : path.join(root, 'node_modules', '.bin', 'wrangler');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const requestTimeoutMs = 10_000;
 const readinessTimeoutMs = 1_000;
-const wranglerTimeoutMs = 30_000;
+const wranglerTimeoutMs = 120_000;
 
 function quote(value) {
   return "'" + String(value).replaceAll("'", "''") + "'";
@@ -27,10 +28,11 @@ function sha256(value) {
 
 function runWrangler(args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(wrangler, args, {
+    const child = spawn(wrangler, process.platform === 'win32' ? [wranglerScript, ...args] : args, {
       cwd: root,
       env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
       stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
       ...options,
     });
     let stdout = '';
@@ -232,10 +234,13 @@ async function main() {
     await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', seed]);
     console.log('offline runtime test: starting actual Worker runtime');
 
-    runtime = spawn(wrangler, ['dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], {
+    runtime = spawn(wrangler, process.platform === 'win32'
+      ? [wranglerScript, 'dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)]
+      : ['dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], {
       cwd: root,
       env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
       stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
       detached: process.platform !== 'win32',
     });
     let runtimeOutput = '';
