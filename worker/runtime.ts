@@ -37,6 +37,7 @@ import { routeNavigationWorkspace } from './navigation-workspace';
 import { routeExperiencePreferences } from './experience-preferences';
 import { routeHrWorkflows } from './hr-workflows';
 import { routeCommunications } from './communications-service';
+import { routeAdmin } from './admin';
 import { routeCommunicationsWebhook } from './communications-webhook';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
@@ -189,6 +190,7 @@ export default {
       url.pathname.startsWith('/api/platform/') ||
       url.pathname.startsWith('/api/hr/workflows/') ||
       url.pathname.startsWith('/api/communications/') ||
+      url.pathname.startsWith('/api/admin/') ||
       url.pathname.startsWith('/api/offline/') ||
       url.pathname.startsWith('/api/procurement/') ||
       url.pathname.startsWith('/api/spend/');
@@ -229,6 +231,10 @@ export default {
         const enhanced = await getEnhancedSessionContext(request, env);
         if (!enhanced) return secure(json({ error: 'Authentication required.' }, 401));
         const response = await routeCommunications(request, env, enhanced);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/admin/')) {
+        const response = await routeAdmin(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/directory/')) {
