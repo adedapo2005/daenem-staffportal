@@ -1,4 +1,4 @@
-import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { hasPermission, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
 import { RECOVERY_SETTING_KEY, SCOPED_SETTING_DEFINITIONS, decodeScopedValue, encodeScopedValue, resolveScopedSetting, type ScopedSettingKey } from './scoped-settings';
 
 interface AdminEnv extends AuthEnv {}
@@ -128,12 +128,27 @@ function isGroupAdmin(context:SessionContext){
   return context.roles.some(role=>['owner','group_admin'].includes(role.code));
 }
 
+function hasDelegatedCommunicationsAccess(context:SessionContext,companyId:string,minimum:AccessLevel='view'){
+  return hasPermission(context,'communications.hr.manage',minimum,companyId);
+}
+
+function canViewScopedSettings(context:SessionContext){
+  return canView(context)||context.companies.some(company=>hasDelegatedCommunicationsAccess(context,company.id,'view'));
+}
+
+function canManageScopedCompany(context:SessionContext,companyId:string){
+  return canManage(context)||hasDelegatedCommunicationsAccess(context,companyId,'manage');
+}
+
 function allowedCompanies(context:SessionContext){
-  return context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`));
+  return context.companies.filter(company=>
+    !/farm/i.test(`${company.id} ${company.code} ${company.name}`)&&
+    (canView(context)||hasDelegatedCommunicationsAccess(context,company.id,'view')),
+  );
 }
 
 async function getScopedSettings(request:Request,env:AdminEnv,context:SessionContext){
-  if(!canView(context))return json({error:'Admin setup access is not assigned.'},403);
+  if(!canViewScopedSettings(context))return json({error:'Scoped communications administration access is not assigned.'},403);
   const requested=String(new URL(request.url).searchParams.get('settingKey')||RECOVERY_SETTING_KEY) as ScopedSettingKey;
   const definition=SCOPED_SETTING_DEFINITIONS[requested];
   if(!definition)return json({error:'Unsupported scoped setting.'},400);
@@ -156,13 +171,17 @@ async function getScopedSettings(request:Request,env:AdminEnv,context:SessionCon
       source:overrides.has(company.id)?'company':'inherited',
     })),
     canSetGlobal:isGroupAdmin(context),
+    canManage:canManage(context)||companies.some(company=>hasDelegatedCommunicationsAccess(context,company.id,'manage')),
+    canManageCompanyIds:companies.filter(company=>canManageScopedCompany(context,company.id)).map(company=>company.id),
   });
 }
 
 async function saveScopedSettings(request:Request,env:AdminEnv,context:SessionContext){
-  if(!canManage(context))return json({error:'Manage Settings permission is required.'},403);
   let body:{settingKey?:string;value?:unknown;scope?:'global'|'companies';companyIds?:string[];inherit?:boolean};
   try{body=await request.json()}catch{return json({error:'Invalid scoped settings request.'},400)}
+  const requestedCompanyIds=[...new Set((body.companyIds||[]).map(String).filter(Boolean))];
+  if(body.scope!=='global'&&body.scope!=='companies')return json({error:'A valid scoped settings target is required.'},400);
+  if(body.scope==='global'&&!canManage(context))return json({error:'Global policy administration access is required.'},403);
   const settingKey=String(body.settingKey||'') as ScopedSettingKey;
   const definition=SCOPED_SETTING_DEFINITIONS[settingKey];
   if(!definition||!definition.validate(body.value))return json({error:'Invalid scoped setting value.'},400);
@@ -177,8 +196,10 @@ async function saveScopedSettings(request:Request,env:AdminEnv,context:SessionCo
     `).bind(uid('scoped-setting'),settingKey,encoded,definition.type,context.employee.id).run();
   }else{
     const allowed=new Set(allowedCompanies(context).map(company=>company.id));
-    const companyIds=[...new Set((body.companyIds||[]).map(String))].filter(id=>allowed.has(id));
-    if(!companyIds.length)return json({error:'Select at least one company.'},400);
+    const companyIds=requestedCompanyIds.filter(id=>allowed.has(id));
+    if(!companyIds.length)return json({error:'Select at least one authorized company.'},400);
+    if(companyIds.length!==requestedCompanyIds.length)return json({error:'One or more selected companies are not in your authorized scope.'},403);
+    if(!canManage(context)&&companyIds.some(companyId=>!canManageScopedCompany(context,companyId)))return json({error:'Company-scoped communications administration access is not assigned.'},403);
     if(body.inherit){
       const marks=companyIds.map(()=>'?').join(',');
       await env.DB.prepare(`DELETE FROM admin_scoped_settings WHERE setting_key=? AND scope_type='company' AND scope_id IN (${marks})`)

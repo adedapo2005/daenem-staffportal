@@ -1,4 +1,6 @@
+import { getSessionContext } from './auth.js';
 import { getEnhancedSessionContext } from './auth-context-v2.js';
+import { routeAdmin } from './admin.js';
 import { routeCommunications } from './communications-service.js';
 import { routeCommunicationsWebhook, type CommunicationsWebhookEnv } from './communications-webhook.js';
 
@@ -35,6 +37,13 @@ export default {
     if(url.pathname==='/api/communications/webhooks/whatsapp'){
       const response=await routeCommunicationsWebhook(request,env);
       return secure(response||json({error:'Webhook route not found.'},404));
+    }
+
+    if(url.pathname.startsWith('/api/admin/')){
+      const context=await getSessionContext(request,env);
+      if(!context)return secure(json({error:'Authentication required.'},401));
+      const response=await routeAdmin(request,env,context);
+      return secure(response||json({error:'Admin route not found.'},404));
     }
 
     if(url.pathname.startsWith('/api/communications/')){

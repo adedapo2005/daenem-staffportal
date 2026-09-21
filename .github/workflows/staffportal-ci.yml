@@ -45,6 +45,9 @@ jobs:
       - name: Company-scoped access contract
         run: npm run check:company-scoped-access
 
+      - name: V44 scoped settings contract
+        run: node scripts/check-v44-scoped-settings.mjs
+
       - name: Build communications contract fixtures
         run: npx tsc worker/communications/index.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --types @cloudflare/workers-types --outDir .tmp-communications-test --rootDir . --noEmit false
 
