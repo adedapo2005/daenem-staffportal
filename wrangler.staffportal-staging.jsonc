@@ -44,6 +44,7 @@
     "TIMEZONE": "Africa/Lagos",
     "APP_STAGE": "staging",
     "WORKFORCE_EMAIL_FROM": "portal@daenem.com",
-    "META_GRAPH_VERSION": "v24.0"
+    "META_GRAPH_VERSION": "v24.0",
+    "STAFF_PORTAL_FRONTEND_ORIGIN": "https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site"
   }
 }
