@@ -5,9 +5,9 @@ const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf
 const staging = read('worker/staffportal-staging.ts');
 const wrangler = read('wrangler.staffportal-staging.jsonc');
 const checks = [
-  ['password authentication routes are delegated', staging.includes("import { routePasswordAuth }") && staging.includes('routePasswordAuth(request,env)')],
-  ['session and public auth routes are delegated', staging.includes("import { getSessionContext, routeAuth }") && staging.includes('routeAuth(request,env)')],
-  ['preflight is handled before authenticated routes', staging.includes("request.method==='OPTIONS'") && staging.includes('return preflight(request,env)')],
+  ['password authentication routes are delegated', /import\s*\{\s*routePasswordAuth\b/.test(staging) && /routePasswordAuth\(request,\s*env\)/.test(staging)],
+  ['session and public auth routes are delegated', /import\s*\{\s*getSessionContext\s*,\s*routeAuth\b/.test(staging) && /routeAuth\(request,\s*env\)/.test(staging)],
+  ['preflight is handled before authenticated routes', staging.includes("request.method==='OPTIONS'") && /return preflight\(request,\s*env\)/.test(staging)],
   ['CORS credentials are enabled', staging.includes("'access-control-allow-credentials','true'")],
   ['CORS origin is exact and not wildcarded', staging.includes('origin===allowed') && !staging.includes("'access-control-allow-origin','*'")],
   ['retained Sites origin is explicit', staging.includes('https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site')],
