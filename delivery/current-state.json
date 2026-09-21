@@ -4,11 +4,11 @@
   "retainedSitesVersion": "V45",
   "retainedSitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
   "retainedSitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
-  "sitesStatus": "v45_saved_non_deployed_browser_qa_pass_api_runtime_unverified",
+  "sitesStatus": "v45_saved_non_deployed_staging_worker_deployed_runtime_probe_pass_browser_qa_pending",
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "fdce4a009ee0e9fc61d6e5f3f51c8696ef9d0341",
+  "branchHead": "82db8b8640878ee3ee7549aec58650b2d2f5afad",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
   "pullRequestState": "open_draft",
@@ -29,7 +29,6 @@
   "activeClosure": {
     "name": "V44/V45 scoped settings integration closure",
     "blockers": [
-      "authenticated runtime API origin/session handoff against the staging Worker",
       "authenticated backend response rendering and delegated-manager acceptance",
       "Owner acceptance before any production pointer change"
     ]
@@ -40,7 +39,7 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "fdce4a009ee0e9fc61d6e5f3f51c8696ef9d0341",
+    "commit": "82db8b8640878ee3ee7549aec58650b2d2f5afad",
     "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
     "companyAccessContracts": "21/21 PASS",
@@ -49,6 +48,10 @@
     "signInConfigurability": "107/107 PASS",
     "backendTypecheck": "PASS",
     "backendCiRun14": "PASS",
+    "stagingIntegrationContract": "10/10 PASS",
+    "stagingWorkerDeployment": "PASS: non-production version 0bb85b93-329d-48ae-b25f-9f2d811df78e uploaded",
+    "stagingRemoteRuntimeProbe": "PASS: health 200; auth-me 401; admin protected 401; allowed preflight 204; rejected preflight 403; invalid login 400; exact-origin CORS",
+    "githubCiRun20": "PASS: all non-production verification steps",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
     "sitesVersion": "V45 saved without deployment",
     "sitesStaticContract": "12/12 PASS",
