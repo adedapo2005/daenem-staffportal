@@ -68,6 +68,16 @@ Everything else should continue without asking for copy/paste handoffs.
 - If local or remote HEAD changes unexpectedly, stop writes and re-verify.
 - Preserve unrelated untracked acceptance artifacts unless proven disposable.
 
+## Idle-prevention and autonomous continuation
+
+- A successful commit, CI pass, Sites version, Reviewer pass, or milestone is a checkpoint, not the end of the task.
+- After every checkpoint, immediately reread the cumulative requirement register and start the next safe unfinished requirement without waiting for Owner input.
+- If one workstream is blocked, record the blocker and continue another safe unfinished workstream when available.
+- If Sites is required for frontend work, explicitly invoke/recover Sites before declaring it unavailable.
+- Do not treat a quiet terminal or completed test process as project completion while safe non-production backlog remains.
+- Stop only at a genuine Owner approval gate, a required authentication/credential gate, or when no safe unfinished non-production requirement remains.
+- Persist enough state after each bounded change for another Work room to recover and continue without manual prompt relay.
+
 ## Recovery rule
 
 Chat history is not authority. Durable Sites/GitHub/runtime evidence wins.
