@@ -180,6 +180,18 @@ test('Webhook rejects any value without canonical sender metadata',async()=>{
   assert.doesNotMatch(source,/if\(!phoneNumberId\)continue/);
 });
 
+test('Webhook processing failures are durably claimable and provider-retryable',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-webhook.ts'),'utf8');
+  assert.match(source,/processing_status AS processingStatus,last_error_code AS lastErrorCode/);
+  assert.match(source,/SET processing_status='received',last_error_code='PROCESSING_IN_PROGRESS'/);
+  assert.match(source,/processing_status IN \('received','failed'\)/);
+  assert.match(source,/Number\(processingClaim\.meta\?\.changes\|\|0\)!==1/);
+  assert.match(source,/processing_status='processed',processed_at=CURRENT_TIMESTAMP,last_error_code=NULL/);
+  assert.match(source,/WHERE id=\? AND last_error_code='PROCESSING_IN_PROGRESS'/);
+  assert.match(source,/return json\(\{ received:false,processingDeferred:true \},503\)/);
+  assert.doesNotMatch(source,/return 200 so Meta does not create an uncontrolled retry storm/);
+});
+
 test('Meta credential vault is encrypted, masked, owner-managed and runtime-resolved',async()=>{
   const vault=await readFile(path.join(root,'worker','meta-credentials.ts'),'utf8');
   const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');

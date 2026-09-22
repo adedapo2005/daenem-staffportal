@@ -74,15 +74,18 @@ async function persistInbox(
         id,provider,connection_ref,provider_event_id,body_sha256,processing_status
       ) VALUES(?,'meta_whatsapp',?,?,?,'received')
     `).bind(id,connectionId,providerEventId || null,bodyHash).run();
-    return { id, duplicate:false };
+    return { id, duplicate:false, processingStatus:'received', lastErrorCode:null };
   } catch {
     const existing = await env.DB.prepare(`
-      SELECT id FROM communication_webhook_inbox
+      SELECT id,processing_status AS processingStatus,last_error_code AS lastErrorCode
+      FROM communication_webhook_inbox
       WHERE provider='meta_whatsapp'
         AND (body_sha256=? OR (? IS NOT NULL AND provider_event_id=?))
       LIMIT 1
-    `).bind(bodyHash,providerEventId || null,providerEventId || null).first<{id:string}>();
-    if (existing) return { id:existing.id,duplicate:true };
+    `).bind(bodyHash,providerEventId || null,providerEventId || null).first<{
+      id:string;processingStatus:string;lastErrorCode?:string|null;
+    }>();
+    if (existing) return { id:existing.id,duplicate:true,processingStatus:existing.processingStatus,lastErrorCode:existing.lastErrorCode||null };
     throw new Error('WEBHOOK_INBOX_PERSIST_FAILED');
   }
 }
@@ -272,30 +275,44 @@ export async function routeCommunicationsWebhook(
 
   const bodyHash=await sha256(raw);
   const providerEventId=firstProviderEventId(values);
-  let receipt:{id:string;duplicate:boolean};
+  let receipt:{
+    id:string;duplicate:boolean;processingStatus:string;lastErrorCode:string|null;
+  };
   try{
     receipt=await persistInbox(env,bodyHash,mapping.senderId,providerEventId);
   }catch{
     return json({error:'Webhook receipt could not be stored.'},503);
   }
-  if(receipt.duplicate)return json({received:true,duplicate:true});
+  if(receipt.duplicate&&['processed','ignored'].includes(receipt.processingStatus)){
+    return json({received:true,duplicate:true});
+  }
+  const processingClaim=await env.DB.prepare(`
+    UPDATE communication_webhook_inbox
+    SET processing_status='received',last_error_code='PROCESSING_IN_PROGRESS'
+    WHERE id=? AND processing_status IN ('received','failed')
+      AND (last_error_code IS NULL OR last_error_code='STATUS_PROCESSING_FAILED')
+  `).bind(receipt.id).run();
+  if(Number(processingClaim.meta?.changes||0)!==1){
+    return json({received:true,duplicate:receipt.duplicate,processing:true});
+  }
 
   try {
     const statusUpdates=await applyStatuses(env,mapping,values);
     const inboundMessages=await persistInboundMessages(env,mapping,values);
-    await env.DB.prepare(`
+    const completed=await env.DB.prepare(`
       UPDATE communication_webhook_inbox
-      SET processing_status='processed',processed_at=CURRENT_TIMESTAMP
-      WHERE id=?
+      SET processing_status='processed',processed_at=CURRENT_TIMESTAMP,last_error_code=NULL
+      WHERE id=? AND last_error_code='PROCESSING_IN_PROGRESS'
     `).bind(receipt.id).run();
+    if(Number(completed.meta?.changes||0)!==1)throw new Error('WEBHOOK_RECEIPT_COMPLETION_FAILED');
     return json({ received:true,statusUpdates,inboundMessages });
   } catch {
     await env.DB.prepare(`
       UPDATE communication_webhook_inbox
       SET processing_status='failed',last_error_code='STATUS_PROCESSING_FAILED'
-      WHERE id=?
+      WHERE id=? AND last_error_code='PROCESSING_IN_PROGRESS'
     `).bind(receipt.id).run().catch(() => undefined);
-    // Durable receipt already exists; return 200 so Meta does not create an uncontrolled retry storm.
-    return json({ received:true,processingDeferred:true });
+    // A durable, atomically claimable receipt makes the provider retry safe and bounded.
+    return json({ received:false,processingDeferred:true },503);
   }
 }
