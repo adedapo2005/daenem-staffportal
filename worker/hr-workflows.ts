@@ -137,7 +137,10 @@ async function caseList(request:Request,env:Env,context:EnhancedSessionContext){
   const companyId=requiredCompany(request,context,'hr.cases');if(!companyId)return json({error:'HR Cases access is not assigned for this company.'},403);
   const rows=await env.DB.prepare(`SELECT h.id,h.employee_id employeeId,e.display_name employeeName,e.employee_no employeeNo,h.case_type caseType,h.title,h.summary,h.severity,h.status,
     opener.display_name openedByName,assignee.display_name assignedToName,h.resolution,h.closed_at closedAt,h.created_at createdAt,h.updated_at updatedAt
-    FROM hr_cases h JOIN employees e ON e.id=h.employee_id JOIN employees opener ON opener.id=h.opened_by LEFT JOIN employees assignee ON assignee.id=h.assigned_to
+    FROM hr_cases h
+    JOIN employees e ON e.id=h.employee_id
+    JOIN employee_company_memberships subject_scope ON subject_scope.employee_id=h.employee_id AND subject_scope.company_id=h.company_id
+    JOIN employees opener ON opener.id=h.opened_by LEFT JOIN employees assignee ON assignee.id=h.assigned_to
     WHERE h.company_id=? ORDER BY CASE h.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,h.created_at DESC LIMIT 300`).bind(companyId).all<Record<string,unknown>>();
   return json({cases:rows.results||[]});
 }
@@ -190,8 +193,11 @@ async function lifecycleList(request:Request,env:Env,context:EnhancedSessionCont
   const rows=await env.DB.prepare(`SELECT p.id,p.employee_id employeeId,e.display_name employeeName,e.employee_no employeeNo,p.process_type processType,p.status,
     p.start_date startDate,p.target_date targetDate,p.completed_at completedAt,p.reason,p.notes,owner.display_name ownerName,
     COUNT(t.id) taskCount,SUM(CASE WHEN t.status='completed' OR t.status='not_applicable' THEN 1 ELSE 0 END) completedTasks,p.created_at createdAt
-    FROM hr_lifecycle_processes p JOIN employees e ON e.id=p.employee_id LEFT JOIN employees owner ON owner.id=p.owner_employee_id LEFT JOIN hr_lifecycle_tasks t ON t.process_id=p.id
-    WHERE p.company_id=? GROUP BY p.id ORDER BY CASE p.status WHEN 'blocked' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'planned' THEN 2 ELSE 3 END,p.start_date DESC`).bind(companyId).all<Record<string,unknown>>();
+    FROM hr_lifecycle_processes p
+    JOIN employees e ON e.id=p.employee_id
+    JOIN employee_company_memberships subject_scope ON subject_scope.employee_id=p.employee_id AND subject_scope.company_id=p.company_id
+    LEFT JOIN employees owner ON owner.id=p.owner_employee_id LEFT JOIN hr_lifecycle_tasks t ON t.process_id=p.id
+    WHERE p.company_id=? GROUP BY p.id ORDER BY CASE p.status WHEN 'blocked' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'planned' THEN 2 ELSE 3 END,p.start_date DESC LIMIT 300`).bind(companyId).all<Record<string,unknown>>();
   const processId=String(new URL(request.url).searchParams.get('processId')||'');let tasks:Record<string,unknown>[]=[];
   if(processId){const process=(rows.results||[]).find((row)=>String(row.id)===processId);if(!process)return json({error:'Lifecycle process not found.'},404);const result=await env.DB.prepare(`SELECT t.id,t.task_key taskKey,t.title,t.description,t.status,t.due_date dueDate,t.completion_note completionNote,t.completed_at completedAt,e.display_name assignedToName FROM hr_lifecycle_tasks t LEFT JOIN employees e ON e.id=t.assigned_to WHERE t.process_id=? ORDER BY t.sort_order,t.created_at`).bind(processId).all<Record<string,unknown>>();tasks=result.results||[]}
   return json({processes:rows.results||[],tasks});

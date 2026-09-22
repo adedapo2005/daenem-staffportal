@@ -16,6 +16,8 @@ check('Shared reviews cannot be reassigned without notice', source.includes("exi
 check('Review sharing notification is emitted only on transition', source.includes("notifyEmployee=body.shareNow===true&&existing.status!=='shared'"));
 check('Case updates validate the assignee in the case company', source.includes("activeCompanyMember(env,assignedTo,existing.companyId)"));
 check('Case creation validates the assignee in the target company', source.includes("activeCompanyMember(env,assignedTo,companyId)"));
+check('Case list requires a matching subject membership in the case company', source.includes("subject_scope.employee_id=h.employee_id AND subject_scope.company_id=h.company_id"));
+check('Lifecycle list requires a matching subject membership and a bounded result', source.includes("subject_scope.employee_id=p.employee_id AND subject_scope.company_id=p.company_id") && source.includes("p.start_date DESC LIMIT 300"));
 check('Case mutation repeats authoritative company and source state', source.includes("WHERE id=? AND company_id=? AND status=?") && source.includes("if(!update.meta.changes)return json({error:'HR case changed before this update could be applied.'},409)"));
 check('Case transitions are explicit and terminal guarded', source.includes("resolved:['closed'],closed:[]") && source.includes("That case transition is not available for the current status."));
 check('Resolved and closed cases require durable resolution evidence', source.includes("['resolved','closed'].includes(status)&&!nextResolution"));
