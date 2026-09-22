@@ -8,8 +8,8 @@
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "118ff728f9f8484068175809c594b89262586289",
-  "codeCheckpoint": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
+  "branchHead": "4f40e0309398bc96d1d166cb2e0d64c6aa08d7f6",
+  "codeCheckpoint": "4f40e0309398bc96d1d166cb2e0d64c6aa08d7f6",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
   "pullRequestState": "open_draft",
@@ -40,8 +40,8 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "118ff728f9f8484068175809c594b89262586289",
-    "codeCheckpoint": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
+    "commit": "4f40e0309398bc96d1d166cb2e0d64c6aa08d7f6",
+    "codeCheckpoint": "4f40e0309398bc96d1d166cb2e0d64c6aa08d7f6",
     "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
     "companyAccessContracts": "21/21 PASS",
@@ -58,7 +58,7 @@
     "githubCiRun20": "PASS: all non-production verification steps",
     "githubCiRun26": "PASS: all non-production verification steps including build, diff hygiene and safety assertion",
     "githubCiRun30": "PASS: Staff Portal CI on a4309cc9",
-    "postPushHead": "118ff728f9f8484068175809c594b89262586289",
+    "postPushHead": "4f40e0309398bc96d1d166cb2e0d64c6aa08d7f6",
     "offlineRuntimeWindowsHarness": "BLOCKED: reproduced; local Wrangler D1 replay hangs after applying migrations begins; test process terminated; no remote migration was run",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
     "sitesVersion": "V45 saved without deployment; private non-production deployment attempted and rejected before start because project access_mode is public",
@@ -72,8 +72,8 @@
     "scope": "non-production only"
   },
   "checkpoint": {
-    "githubHead": "118ff728f9f8484068175809c594b89262586289",
-    "codeCheckpoint": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
+    "githubHead": "4f40e0309398bc96d1d166cb2e0d64c6aa08d7f6",
+    "codeCheckpoint": "4f40e0309398bc96d1d166cb2e0d64c6aa08d7f6",
     "branch": "feature/staffportal-whatsapp-ai-communications-01",
     "pullRequest": "2 OPEN / DRAFT",
     "sitesVersion": "V45",
