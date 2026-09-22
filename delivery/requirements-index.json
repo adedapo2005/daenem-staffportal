@@ -1,13 +1,13 @@
 {
   "project": "DAENEM Staff Portal",
   "policy": "delivery/AUTONOMOUS-DELIVERY-CONTROLLER.md",
-  "statusValues": ["not_started","partial","implemented","tested","accepted","blocked","deferred"],
+  "statusValues": ["VERIFIED COMPLETE","IMPLEMENTED — AWAITING QA","PARTIAL","MISSING","BLOCKED","SUPERSEDED","PRODUCTION-GATED"],
   "priorityValues": ["P0","P1","P2","P3"],
   "families": [
     {
       "id": "V44-CLOSURE",
       "priority": "P0",
-      "status": "partial",
+      "status": "PARTIAL",
       "description": "Close recovered V43 backend-truth, API, company projection, delegated admin and rendered acceptance blockers.",
       "evidence": "Backend/static contracts pass; rendered owner/delegated-manager/unauthorized acceptance remains blocked by the absence of a supported non-production V45 Sites URL.",
       "requirements": [
@@ -22,67 +22,67 @@
     {
       "id": "SECURITY-ZERO-DISCLOSURE",
       "priority": "P0",
-      "status": "partial",
+      "status": "IMPLEMENTED — AWAITING QA",
       "description": "No permission means no disclosure across UI, API, search, AI, counts, routes, notifications, favorites, recents and breadcrumbs.",
-      "evidence": "Static acceptance PASS: dashboard permissions; post-auth layout; canonical data boundary; company access 21/21; owner support 15/15; Smart Help 22/22; Platform Center 31/31. Authenticated browser leakage checks remain pending."
+      "evidence": "Static acceptance PASS: zero-disclosure contract; dashboard permissions; post-auth layout; canonical data boundary; company access 21/21; owner support 15/15; Smart Help 22/22; Platform Center 31/31. Authenticated browser leakage checks remain pending."
     },
     {
       "id": "RELEASE-INTEGRITY",
       "priority": "P0",
-      "status": "partial",
+      "status": "PARTIAL",
       "description": "Global typecheck, build, migration validation, runtime integration, staging, rollback and release evidence.",
       "evidence": "Global typecheck/build and staging probes PASS; offline Windows Wrangler D1 replay remains BLOCKED after migration start; no remote migration was run."
     },
     {
       "id": "MASTER-V3",
       "priority": "P1",
-      "status": "partial",
+      "status": "PARTIAL",
       "range": "SP-V3-000..139",
       "description": "Authoritative Master Product / Experience / Architecture Contract V3 requirements."
     },
     {
       "id": "HOME",
       "priority": "P1",
-      "status": "not_started",
+      "status": "PARTIAL",
       "range": "HOME-SECURITY-001, HOME-001..038",
       "description": "Permission-composed personalized Home, My Day, Action Center, business widgets, Owner Command Center, Ask DAENEM and contextual work surfaces."
     },
     {
       "id": "SMART-INPUT",
       "priority": "P1",
-      "status": "not_started",
+      "status": "MISSING",
       "range": "SMART-INPUT-001..052",
       "description": "DAENEM Smart Input Enhancement System with secure predictive typing, correction, smart compose and zero-disclosure context."
     },
     {
       "id": "ERP-COMPLETION",
       "priority": "P1",
-      "status": "partial",
+      "status": "PARTIAL",
       "description": "Complete Staff, Printing, Bakery, Autos, Logistics, Properties, Finance, Spend, Procurement, Inventory and supporting ERP workflows."
     },
     {
       "id": "ADMIN-BUILDERS",
       "priority": "P2",
-      "status": "partial",
+      "status": "PARTIAL",
       "description": "Complete governed Forms, Workflow, Report, Widget and Theme builders plus enterprise configuration."
     },
     {
       "id": "COMMUNICATIONS-META",
       "priority": "P1",
-      "status": "partial",
+      "status": "PARTIAL",
       "description": "Complete WhatsApp, AI drafting, Inbox, Meta vault, scoped governance, delegated administration and provider release readiness."
     },
     {
       "id": "ACCESSIBILITY-RESPONSIVE",
       "priority": "P1",
-      "status": "partial",
+      "status": "IMPLEMENTED — AWAITING QA",
       "description": "Complete accessibility, reduced-motion and representative mobile/tablet/desktop/4K acceptance.",
       "evidence": "Responsive/reduced-motion static contract PASS; required 390–3840 authenticated viewport matrix remains unverified until a supported V45 browser URL exists."
     },
     {
       "id": "PRODUCTION-ACTIVATION",
       "priority": "P0",
-      "status": "blocked",
+      "status": "PRODUCTION-GATED",
       "blockedBy": "Explicit Owner approval after all release gates pass.",
       "description": "Production deployment, production migrations, public pointer, live Meta/WhatsApp and final merge."
     }

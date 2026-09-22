@@ -66,7 +66,8 @@
     "sitesTypecheck": "PASS",
     "sitesBuild": "PASS",
     "sitesPrivatePreviewAttempt": "REJECTED_BEFORE_START: Sites private deploy requires owner-only access; public deploy is production-gated and was not used",
-    "securityStaticAcceptance": "PASS: dashboard permissions; post-auth layout; responsive/reduced-motion; canonical data-boundary; company access 21/21; owner support 15/15; Smart Help 22/22; Platform Center 31/31",
+    "securityStaticAcceptance": "PASS: zero-disclosure contract; dashboard permissions; post-auth layout; responsive/reduced-motion; canonical data-boundary; company access 21/21; owner support 15/15; Smart Help 22/22; Platform Center 31/31",
+    "zeroDisclosureContract": "PASS: module-route-search-api-home-smart-help; authenticated browser leakage checks remain pending",
     "managedLinuxBrowserQA": "PASS: V44 route, no internal dereference, no local fallback",
     "scope": "non-production only"
   },
