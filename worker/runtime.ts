@@ -37,6 +37,7 @@ import { routeNavigationWorkspace } from './navigation-workspace';
 import { routeExperiencePreferences } from './experience-preferences';
 import { routeHrWorkflows } from './hr-workflows';
 import { routeCommunications } from './communications-service';
+import { dispatchDueCommunications } from './communications-dispatch-orchestrator';
 import { routeAdmin } from './admin';
 import { routeCommunicationsWebhook } from './communications-webhook';
 import { dispatchDueBroadcasts } from './broadcasts';
@@ -337,17 +338,18 @@ export default {
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil((async () => {
       try {
-        const [socialDispatch, socialProviderSync, broadcastDispatch] = await Promise.all([
+        const [socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch] = await Promise.all([
           dispatchDueSocialJobs(env),
           scheduledSocialProviderSync(env),
           dispatchDueBroadcasts(env),
+          dispatchDueCommunications(env),
         ]);
         const minute = new Date(controller.scheduledTime).getUTCMinutes();
         const hourly = minute === 0;
         const [reminders, financeSales] = hourly
           ? await Promise.all([runSmartReminders(env), reconcileFulfilledSalesOrders(env, 75)])
           : [{ skipped: true, reason: 'hourly_cadence' }, { skipped: true, reason: 'hourly_cadence' }];
-        console.log('Daenem Workforce scheduled services', JSON.stringify({ reminders, financeSales, socialDispatch, socialProviderSync, broadcastDispatch }));
+        console.log('Daenem Workforce scheduled services', JSON.stringify({ reminders, financeSales, socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch }));
       } catch (error) {
         console.error('Daenem Workforce scheduled service failure', error);
       }

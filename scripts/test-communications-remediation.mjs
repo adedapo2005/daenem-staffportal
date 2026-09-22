@@ -355,3 +355,29 @@ test('Outbox actions remain fail-closed, neutral and never invoke provider deliv
   assert.match(source,/provider_accepted/);
   assert.doesNotMatch(source,/provider\.send|dispatchCommunicationOutboxItem/);
 });
+
+
+test('Communications dispatch scheduler is release-gated and provider-explicit',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-dispatch-orchestrator.ts'),'utf8');
+  const runtime=await readFile(path.join(root,'worker','runtime.ts'),'utf8');
+  assert.ok(source.indexOf('communicationsDispatchReleaseState(env)')<source.indexOf('communication_outbox'));
+  assert.ok(source.indexOf("if (!options.provider) return emptySummary('provider_adapter_unavailable')")<source.indexOf('communication_outbox'));
+  assert.match(source,/COMMUNICATIONS_WHATSAPP_LIVE_SEND/);
+  assert.match(source,/communications\.kill_switch/);
+  assert.match(source,/communications\.whatsapp_live_send/);
+  assert.match(source,/resolveMetaCredential\(env, 'meta_system_user_token'\)/);
+  assert.match(runtime,/dispatchDueCommunications\(env\)/);
+  assert.doesNotMatch(runtime,/dispatchDueCommunications\(env,\s*\{[\s\S]{0,120}provider/);
+});
+
+test('Communications dispatch discovery is bounded, due-only and ambiguity-safe',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-dispatch-orchestrator.ts'),'utf8');
+  assert.match(source,/Math\.max\(1, Math\.min\(25,/);
+  assert.match(source,/status IN \('queued','failed'\)/);
+  assert.match(source,/COALESCE\(ambiguity_state,'clear'\)<>'provider_unknown'/);
+  assert.match(source,/datetime\(next_attempt_at\)<=datetime\('now'\)/);
+  assert.match(source,/datetime\(lease_expires_at\)<=datetime\('now'\)/);
+  assert.match(source,/datetime\(expires_at\)>datetime\('now'\)/);
+  assert.match(source,/ORDER BY priority DESC,created_at ASC[\s\S]*LIMIT \?/);
+  assert.doesNotMatch(source,/fetch\(|graph\.facebook\.com/);
+});
