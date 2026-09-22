@@ -1,0 +1,32 @@
+{
+  "review": "DAENEM Staff Portal ERP company-scope authorization review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/finance.ts",
+    "worker/inventory.ts",
+    "scripts/check-company-scoped-access.mjs"
+  ],
+  "finding": {
+    "severity": "P1",
+    "status": "FIXED",
+    "summary": "Inventory and Finance authenticated routes accepted merged cross-company permissions after membership checks, allowing a permission granted in one assigned company to be reused in another assigned company.",
+    "correction": "Every affected permission decision now passes the authoritative target company ID. Journal posting and receivable payment return neutral 404 responses when the record is absent or outside the caller's company permission scope."
+  },
+  "verification": {
+    "typecheck": "PASS",
+    "companyAccess": "24/24 PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for this bounded backend authorization change; authenticated V45 browser acceptance remains separately pending."
+  },
+  "checkpoint": "77f8675a5fa66b22240d7c283c25297a61359806",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}
