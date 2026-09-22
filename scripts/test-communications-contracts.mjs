@@ -8,6 +8,7 @@ const {
   effectivePolicy,
   authorize,
   generateDraft,
+  workersAiDraftProvider,
   approveIntent,
   assertDispatchAllowed,
   authenticationPayload,
@@ -129,6 +130,22 @@ test('AI model sees placeholders rather than employee values', async () => {
   assert.equal(result.status,'needs_human_review');
   assert.match(captured,/first_name/);
   assert.doesNotMatch(captured,/Alice|Daenem Group|staffportal\.daenem\.com/);
+});
+
+test('AI provider failures are neutral and retryable', async () => {
+  const provider=workersAiDraftProvider({
+    async run(){ throw new Error('provider-internal-sensitive-detail'); },
+  },['mock']);
+  await assert.rejects(
+    () => provider.generate({
+      model:'mock',
+      messages:[{role:'system',content:'approved'}],
+      maxTokens:50,
+    }),
+    error => error instanceof CommunicationError &&
+      error.code === 'AI_PROVIDER_UNAVAILABLE' &&
+      !error.message.includes('provider-internal-sensitive-detail'),
+  );
 });
 
 test('self approval is denied', async () => {

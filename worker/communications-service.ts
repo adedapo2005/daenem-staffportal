@@ -71,6 +71,25 @@ function communicationPermission(
   return can(context, companyId, `communications.${module}.${action}`, minimum);
 }
 
+function managedEvent(
+  context: EnhancedSessionContext,
+  companyId: string,
+  eventId: string,
+  minimum: AccessLevel,
+) {
+  try {
+    const event = eventById(eventId);
+    return communicationPermission(context, companyId, event.module, 'manage', minimum) ? event : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeLanguageTag(value: unknown): string | null {
+  const language = String(value || 'en');
+  return /^[a-z]{2}(?:-[A-Z]{2})?$/.test(language) ? language : null;
+}
+
 function authzAdapter(
   context: EnhancedSessionContext,
   sourceId: string,
@@ -198,12 +217,11 @@ async function getPolicy(
   if (!companyId || !eventId || !companyAllowed(context, companyId)) {
     return json({ error:'Company and use case are required.' }, 400);
   }
-  const event = eventById(eventId);
-  if (!communicationPermission(context, companyId, event.module, 'manage', 'view') &&
-      !can(context, companyId, 'settings.access', 'view')) {
+  const event = managedEvent(context, companyId, eventId, 'view');
+  if (!event) {
     return json({ error:'Communication administration access is not assigned.' }, 403);
   }
-  const policy = await loadPolicySnapshot(env, companyId, eventId);
+  const policy = await loadPolicySnapshot(env, companyId, event.id);
   return json({
     companyId,
     eventId,
@@ -239,8 +257,8 @@ async function savePolicy(
   if (!companyId || !eventId || !companyAllowed(context, companyId)) {
     return json({ error:'Company and use case are required.' }, 400);
   }
-  const event = eventById(eventId);
-  if (!communicationPermission(context, companyId, event.module, 'manage', 'manage')) {
+  const event = managedEvent(context, companyId, eventId, 'manage');
+  if (!event) {
     return json({ error:'Manage Communications permission is required.' }, 403);
   }
   const channels = Array.isArray(body.channels)
@@ -293,13 +311,13 @@ async function resolveOnboardingSource(
   }>();
 }
 
-async function instructionProfile(env: Env, companyId: string) {
+async function instructionProfile(env: Env, companyId: string, language: string) {
   return env.DB.prepare(`
     SELECT id,version,tone,instructions,model
     FROM communication_instruction_profiles
-    WHERE company_id=? AND module='hr' AND active=1
+    WHERE company_id=? AND module='hr' AND language=? AND active=1
     ORDER BY version DESC LIMIT 1
-  `).bind(companyId).first<{
+  `).bind(companyId,language).first<{
     id:string; version:number; tone:'professional'|'warm'|'concise';
     instructions:string; model:string;
   }>();
@@ -315,8 +333,9 @@ async function generateOnboardingDraft(
   catch { return json({ error:'Invalid draft request.' }, 400); }
   const companyId = String(body.companyId || '');
   const sourceId = String(body.sourceId || '');
-  if (!companyId || !sourceId || !companyAllowed(context, companyId)) {
-    return json({ error:'Company and onboarding task are required.' }, 400);
+  const language = normalizeLanguageTag(body.language);
+  if (!companyId || !sourceId || !language || !companyAllowed(context, companyId)) {
+    return json({ error:'Company, onboarding task and language are required.' }, 400);
   }
   if (!communicationPermission(context, companyId, 'hr', 'generate', 'create') ||
       !can(context, companyId, 'hr.lifecycle', 'view')) {
@@ -326,8 +345,8 @@ async function generateOnboardingDraft(
 
   const source = await resolveOnboardingSource(env, companyId, sourceId);
   if (!source) return json({ error:'Onboarding task not found.' }, 404);
-  const profile = await instructionProfile(env, companyId);
-  if (!profile) return json({ error:'No approved HR communication instruction profile is active.' }, 409);
+  const profile = await instructionProfile(env, companyId, language);
+  if (!profile) return json({ error:'No approved HR communication instruction profile is active for this language.' }, 409);
 
   const eventId = 'hr.onboarding.reminder';
   const policy = await loadPolicySnapshot(env, companyId, eventId, [context.employee.id,source.employeeId]);
@@ -338,7 +357,7 @@ async function generateOnboardingDraft(
     actorId:context.employee.id,
     eventId,
     channel:'whatsapp',
-    language:String(body.language || 'en'),
+    language,
     sourceRecordId:source.id,
     sourceRevision,
   };
@@ -373,7 +392,8 @@ async function generateOnboardingDraft(
       nowMs:Date.now(),
     }, workersAiDraftProvider(env.AI, [profile.model]));
   } catch (error) {
-    return json({ error:mapCommunicationError(error) }, 409);
+    const code = mapCommunicationError(error);
+    return json({ error:code }, code === 'AI_PROVIDER_UNAVAILABLE' ? 503 : 409);
   }
   const firstName = source.employeeName.trim().split(/\s+/)[0] || 'Employee';
   const preview = renderPlaceholders(eventId, result.body, {

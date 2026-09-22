@@ -19,9 +19,12 @@ function can(context:EnhancedSessionContext,companyId:string,code:string,minimum
  return owner(context)||hasCompanyPermission(context,companyId,code,minimum);
 }
 function canManageEvent(context:EnhancedSessionContext,companyId:string,eventId:string,minimum:AccessLevel='view'){
- const event=eventById(eventId);
- return can(context,companyId,`communications.${event.module}.manage`,minimum)||
-   can(context,companyId,'settings.access',minimum);
+ try{
+  const event=eventById(eventId);
+  return can(context,companyId,`communications.${event.module}.manage`,minimum);
+ }catch{
+  return false;
+ }
 }
 async function audit(env:GovernanceEnv,context:EnhancedSessionContext,companyId:string,action:string,entityType:string,entityId:string,after:unknown){
  await env.DB.prepare(`
@@ -46,12 +49,14 @@ async function overview(request:Request,env:GovernanceEnv,context:EnhancedSessio
    internal_status AS internalStatus,provider_status AS providerStatus,
    sender_connection_id AS senderConnectionId,created_by AS createdBy,approved_by AS approvedBy
   FROM communication_templates WHERE company_id=? AND event_id=? ORDER BY revision DESC
+  LIMIT 200
  `).bind(companyId,eventId).all<Record<string,unknown>>();
  const profiles=await env.DB.prepare(`
   SELECT id,module,version,tone,language,instructions,model,active,
    created_by AS createdBy,approved_by AS approvedBy,created_at AS createdAt
   FROM communication_instruction_profiles
   WHERE company_id=? AND module=? ORDER BY version DESC
+  LIMIT 200
  `).bind(companyId,eventById(eventId).module).all<Record<string,unknown>>();
  const restrictions=await env.DB.prepare(`
   SELECT id,subject_type AS subjectType,subject_id AS subjectId,enabled,
@@ -60,10 +65,12 @@ async function overview(request:Request,env:GovernanceEnv,context:EnhancedSessio
    languages_json AS languagesJson,max_characters AS maxCharacters,revision
   FROM communication_policy_restrictions WHERE company_id=? AND event_id=?
   ORDER BY subject_type,subject_id
+  LIMIT 200
  `).bind(companyId,eventId).all<Record<string,unknown>>();
  const triggers=await env.DB.prepare(`
   SELECT id,trigger_code AS triggerCode,enabled,mode,config_json AS configJson,revision
   FROM communication_trigger_rules WHERE company_id=? AND event_id=? ORDER BY trigger_code
+  LIMIT 200
  `).bind(companyId,eventId).all<Record<string,unknown>>();
  return json({
   companyId,eventId,
@@ -233,13 +240,13 @@ async function approveInstructionProfile(request:Request,env:GovernanceEnv,conte
  if(!canManageEvent(context,companyId,eventId,'manage'))return json({error:'Manage Communications permission is required.'},403);
  const event=eventById(eventId);
  const row=await env.DB.prepare(`
-  SELECT id,module,created_by AS createdBy,version FROM communication_instruction_profiles
+  SELECT id,module,language,created_by AS createdBy,version FROM communication_instruction_profiles
   WHERE id=? AND company_id=? LIMIT 1
- `).bind(profileId,companyId).first<{id:string;module:string;createdBy?:string;version:number}>();
+ `).bind(profileId,companyId).first<{id:string;module:string;language:string;createdBy?:string;version:number}>();
  if(!row||row.module!==event.module)return json({error:'Instruction profile not found for this module.'},404);
  if(row.createdBy===context.employee.id)return json({error:'Instruction profile creator cannot approve the same version.'},409);
  await env.DB.batch([
-  env.DB.prepare('UPDATE communication_instruction_profiles SET active=0 WHERE company_id=? AND module=?').bind(companyId,event.module),
+  env.DB.prepare('UPDATE communication_instruction_profiles SET active=0 WHERE company_id=? AND module=? AND language=?').bind(companyId,event.module,row.language),
   env.DB.prepare('UPDATE communication_instruction_profiles SET active=1,approved_by=? WHERE id=? AND company_id=?').bind(context.employee.id,profileId,companyId),
  ]);
  await audit(env,context,companyId,'approve_ai_instruction_profile','communication_instruction_profile',profileId,{module:event.module,version:row.version});

@@ -1,6 +1,6 @@
 import { authorize } from './policy.js';
 import { eventById } from './catalog.js';
-import { requireCondition } from './types.js';
+import { CommunicationError, requireCondition } from './types.js';
 import type { Authorization, EnvironmentBoundary, PolicySnapshot, RequestContext } from './types.js';
 
 export type DraftOperation = 'generate' | 'refine' | 'shorten' | 'translate' | 'personalize';
@@ -140,10 +140,15 @@ export function workersAiDraftProvider(binding: WorkersAiBinding, approvedModels
   return {
     async generate(request) {
       requireCondition(approvedModels.includes(request.model), 'MODEL_NOT_APPROVED');
-      const response = await binding.run(request.model, {
-        messages:request.messages,
-        max_tokens:request.maxTokens,
-      });
+      let response: unknown;
+      try {
+        response = await binding.run(request.model, {
+          messages:request.messages,
+          max_tokens:request.maxTokens,
+        });
+      } catch {
+        throw new CommunicationError('AI_PROVIDER_UNAVAILABLE');
+      }
       if (response && typeof response === 'object' && 'response' in response) {
         return (response as { response: unknown }).response;
       }

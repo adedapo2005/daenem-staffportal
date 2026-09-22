@@ -192,6 +192,39 @@ test('Webhook processing failures are durably claimable and provider-retryable',
   assert.doesNotMatch(source,/return 200 so Meta does not create an uncontrolled retry storm/);
 });
 
+test('AI draft requests normalize language and use exact-language approved profiles',async()=>{
+  const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
+  assert.match(service,/function normalizeLanguageTag/);
+  assert.match(service,/WHERE company_id=\? AND module='hr' AND language=\? AND active=1/);
+  assert.match(service,/instructionProfile\(env, companyId, language\)/);
+  assert.match(service,/language,\s*sourceRecordId/);
+});
+
+test('AI provider failures remain neutral, retryable and do not create a draft',async()=>{
+  const drafts=await readFile(path.join(root,'worker','communications','drafts.ts'),'utf8');
+  const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
+  assert.match(drafts,/throw new CommunicationError\('AI_PROVIDER_UNAVAILABLE'\)/);
+  assert.match(service,/code === 'AI_PROVIDER_UNAVAILABLE' \? 503 : 409/);
+  assert.ok(service.indexOf("code === 'AI_PROVIDER_UNAVAILABLE' ? 503 : 409") < service.indexOf('INSERT INTO communication_drafts'));
+});
+
+test('Communications governance requires module-specific authority and neutralizes unknown events',async()=>{
+  const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
+  const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
+  assert.match(governance,/try\{\s*const event=eventById\(eventId\)/);
+  assert.doesNotMatch(governance,/can\(context,companyId,'settings\.access'/);
+  assert.match(service,/function managedEvent/);
+  assert.doesNotMatch(service,/!can\(context, companyId, 'settings\.access', 'view'\)/);
+});
+
+test('Communications administrative projections are bounded and language-scoped',async()=>{
+  const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
+  assert.ok((governance.match(/LIMIT 200/g)||[]).length>=4);
+  assert.match(governance,/SELECT id,module,language,created_by AS createdBy,version/);
+  assert.match(governance,/SET active=0 WHERE company_id=\? AND module=\? AND language=\?/);
+  assert.match(governance,/bind\(companyId,event\.module,row\.language\)/);
+});
+
 test('Meta credential vault is encrypted, masked, owner-managed and runtime-resolved',async()=>{
   const vault=await readFile(path.join(root,'worker','meta-credentials.ts'),'utf8');
   const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
