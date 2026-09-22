@@ -34,6 +34,20 @@ function canPrint(context: SessionContext, minimum: 'view' | 'create' | 'edit' |
   return hasPermission(context, 'printing.access', minimum, companyId);
 }
 
+function canViewPrintFinancials(context: SessionContext) {
+  return canPrint(context, 'approve') || hasPermission(context, 'finance.access', 'view', companyId);
+}
+
+const printingFinancialFields = new Set([
+  'basePriceKobo', 'balanceKobo', 'quotedKobo', 'invoicedKobo', 'materialCostKobo',
+  'labourCostKobo', 'finishingCostKobo', 'otherCostKobo', 'grossProfitKobo', 'marginBasisPoints',
+  'costKobo', 'unitCostKobo',
+]);
+
+function withoutPrintingFinancials<T extends Record<string, unknown>>(row: T): T {
+  return Object.fromEntries(Object.entries(row).filter(([key]) => !printingFinancialFields.has(key))) as T;
+}
+
 function numberValue(value: unknown, fallback = 0) {
   const result = Number(value);
   return Number.isFinite(result) ? result : fallback;
@@ -76,7 +90,7 @@ async function dashboard(env: PrintingEnv, context: SessionContext) {
     env.DB.prepare(`SELECT COUNT(*) AS count FROM customers WHERE company_id = ? AND active = 1`).bind(companyId).first<{ count: number }>(),
     env.DB.prepare(`
       SELECT COUNT(*) AS count FROM stock_balances sb
-      JOIN inventory_items i ON i.id = sb.item_id
+      JOIN inventory_items i ON i.id = sb.item_id AND i.company_id = sb.company_id
       WHERE sb.company_id = ? AND i.active = 1 AND (sb.quantity - sb.reserved_quantity) <= i.reorder_level
     `).bind(companyId).first<{ count: number }>(),
   ]);
@@ -92,28 +106,33 @@ async function dashboard(env: PrintingEnv, context: SessionContext) {
            pj.due_at AS dueAt, pj.quoted_kobo AS quotedKobo, pj.gross_profit_kobo AS grossProfitKobo,
            c.name AS customerName, ps.name AS serviceName
     FROM print_jobs pj
-    LEFT JOIN customers c ON c.id = pj.customer_id
-    LEFT JOIN printing_services ps ON ps.id = pj.service_id
+    LEFT JOIN customers c ON c.id = pj.customer_id AND c.company_id = pj.company_id
+    LEFT JOIN printing_services ps ON ps.id = pj.service_id AND ps.company_id = pj.company_id
     WHERE pj.company_id = ?
     ORDER BY pj.created_at DESC LIMIT 8
   `).bind(companyId).all<Record<string, unknown>>();
+  const canViewFinancials = canViewPrintFinancials(context);
   return json({
     date: today,
     month,
     metrics: {
       openJobs: Number(jobs?.count || 0), overdueJobs: Number(overdue?.count || 0), readyJobs: Number(ready?.count || 0),
       customers: Number(customers?.count || 0), lowStockItems: Number(stockAlerts?.count || 0),
-      revenueKobo: revenue, costKobo: cost, grossProfitKobo: revenue - cost,
-      marginBasisPoints: revenue > 0 ? Math.round(((revenue - cost) / revenue) * 10000) : 0,
+      ...(canViewFinancials ? {
+        revenueKobo: revenue, costKobo: cost, grossProfitKobo: revenue - cost,
+        marginBasisPoints: revenue > 0 ? Math.round(((revenue - cost) / revenue) * 10000) : 0,
+      } : {}),
     },
-    pipeline: pipeline.results || [], recentJobs: recent.results || [],
+    pipeline: pipeline.results || [],
+    recentJobs: canViewFinancials ? (recent.results || []) : (recent.results || []).map(withoutPrintingFinancials),
   });
 }
 
 async function services(env: PrintingEnv, context: SessionContext) {
   if (!canPrint(context)) return json({ error: 'Daenem Printing access is not assigned.' }, 403);
   const result = await env.DB.prepare(`SELECT id, code, name, category, description, pricing_unit AS pricingUnit, base_price_kobo AS basePriceKobo, requires_artwork AS requiresArtwork, requires_proof AS requiresProof FROM printing_services WHERE company_id = ? AND active = 1 ORDER BY category, name`).bind(companyId).all<Record<string, unknown>>();
-  return json({ services: result.results || [] });
+  const rows = result.results || [];
+  return json({ services: canViewPrintFinancials(context) ? rows : rows.map(withoutPrintingFinancials) });
 }
 
 async function customers(env: PrintingEnv, context: SessionContext, search: string) {
@@ -124,7 +143,8 @@ async function customers(env: PrintingEnv, context: SessionContext, search: stri
     FROM customers WHERE company_id = ? AND active = 1 AND (? = '%%' OR name LIKE ? OR business_name LIKE ? OR phone LIKE ? OR email LIKE ?)
     ORDER BY name LIMIT 100
   `).bind(companyId, pattern, pattern, pattern, pattern, pattern).all<Record<string, unknown>>();
-  return json({ customers: result.results || [] });
+  const rows = result.results || [];
+  return json({ customers: canViewPrintFinancials(context) ? rows : rows.map(withoutPrintingFinancials) });
 }
 
 async function createCustomer(request: Request, env: PrintingEnv, context: SessionContext) {
@@ -160,10 +180,12 @@ async function listJobs(request: Request, env: PrintingEnv, context: SessionCont
            designer.display_name AS designerName, operator.display_name AS operatorName,
            pj.created_at AS createdAt, pj.updated_at AS updatedAt
     FROM print_jobs pj
-    LEFT JOIN customers c ON c.id = pj.customer_id
-    LEFT JOIN printing_services ps ON ps.id = pj.service_id
-    LEFT JOIN employees designer ON designer.id = pj.assigned_designer_id
-    LEFT JOIN employees operator ON operator.id = pj.assigned_operator_id
+    LEFT JOIN customers c ON c.id = pj.customer_id AND c.company_id = pj.company_id
+    LEFT JOIN printing_services ps ON ps.id = pj.service_id AND ps.company_id = pj.company_id
+    LEFT JOIN employee_company_memberships designer_membership ON designer_membership.employee_id = pj.assigned_designer_id AND designer_membership.company_id = pj.company_id AND designer_membership.active = 1
+    LEFT JOIN employees designer ON designer.id = designer_membership.employee_id
+    LEFT JOIN employee_company_memberships operator_membership ON operator_membership.employee_id = pj.assigned_operator_id AND operator_membership.company_id = pj.company_id AND operator_membership.active = 1
+    LEFT JOIN employees operator ON operator.id = operator_membership.employee_id
     WHERE pj.company_id = ?
       AND (? = '' OR pj.production_status = ?)
       AND (? = '%%' OR pj.job_no LIKE ? OR pj.title LIKE ? OR c.name LIKE ? OR c.business_name LIKE ?)
@@ -171,7 +193,8 @@ async function listJobs(request: Request, env: PrintingEnv, context: SessionCont
              COALESCE(pj.due_at, '9999-12-31'), pj.created_at DESC
     LIMIT 200
   `).bind(companyId, status, status, search, search, search, search, search).all<Record<string, unknown>>();
-  return json({ jobs: result.results || [] });
+  const rows = result.results || [];
+  return json({ jobs: canViewPrintFinancials(context) ? rows : rows.map(withoutPrintingFinancials) });
 }
 
 async function createJob(request: Request, env: PrintingEnv, context: SessionContext) {
@@ -192,6 +215,22 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
     const service = await env.DB.prepare(`SELECT id FROM printing_services WHERE id = ? AND company_id = ? AND active = 1`).bind(body.serviceId, companyId).first();
     if (!service) return json({ error: 'Selected Printing service was not found.' }, 400);
   }
+  if (koboFromNaira(body.quotedNaira) > 0 && !canViewPrintFinancials(context)) {
+    return json({ error: 'Printing approval or Finance view permission is required to set quoted value.' }, 403);
+  }
+  const locationId = String(body.locationId || 'location-printing-hq');
+  const location = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(locationId, companyId).first();
+  if (!location) return json({ error: 'Selected Printing location was not found.' }, 400);
+  for (const [employeeId, label] of [[body.designerId, 'designer'], [body.operatorId, 'operator']] as const) {
+    if (!employeeId) continue;
+    const employee = await env.DB.prepare(`
+      SELECT e.id FROM employees e
+      JOIN employee_company_memberships m ON m.employee_id = e.id
+      WHERE e.id = ? AND m.company_id = ? AND m.active = 1 AND e.employment_status = 'active'
+      LIMIT 1
+    `).bind(employeeId, companyId).first();
+    if (!employee) return json({ error: `Selected Printing ${label} is not an active company employee.` }, 400);
+  }
   const jobNo = await nextNumber(env, 'DP', 'print_jobs', 'job_no');
   const id = uid('print-job');
   const quotedKobo = koboFromNaira(body.quotedNaira);
@@ -202,11 +241,11 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
         quantity, unit, size_spec, color_spec, finishing_spec, priority, due_at,
         quoted_kobo, assigned_designer_id, assigned_operator_id, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(id, companyId, body.locationId || 'location-printing-hq', body.customerId || null, body.serviceId || null, jobNo, title, body.description || null, Math.max(1, numberValue(body.quantity, 1)), body.unit || 'job', body.sizeSpec || null, body.colorSpec || null, body.finishingSpec || null, body.priority || 'normal', body.dueAt || null, quotedKobo, body.designerId || null, body.operatorId || null, context.employee.id),
+    `).bind(id, companyId, locationId, body.customerId || null, body.serviceId || null, jobNo, title, body.description || null, Math.max(1, numberValue(body.quantity, 1)), body.unit || 'job', body.sizeSpec || null, body.colorSpec || null, body.finishingSpec || null, body.priority || 'normal', body.dueAt || null, quotedKobo, body.designerId || null, body.operatorId || null, context.employee.id),
     env.DB.prepare(`INSERT INTO print_job_status_events (id, print_job_id, from_status, to_status, changed_by, note) VALUES (?, ?, NULL, 'enquiry', ?, 'Print job created')`).bind(uid('print-event'), id, context.employee.id),
     env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'printing', 'create_job', 'print_job', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, id, JSON.stringify({ jobNo, title, quotedKobo })),
   ]);
-  return json({ ok: true, job: { id, jobNo, title, status: 'enquiry', quotedKobo } }, 201);
+  return json({ ok: true, job: { id, jobNo, title, status: 'enquiry', ...(canViewPrintFinancials(context) ? { quotedKobo } : {}) } }, 201);
 }
 
 async function recalculateJob(env: PrintingEnv, jobId: string) {
@@ -228,14 +267,19 @@ async function addMaterial(request: Request, env: PrintingEnv, context: SessionC
   const actual = Math.max(0, numberValue(body.actualQuantity));
   const waste = Math.max(0, numberValue(body.wasteQuantity));
   if (!body.jobId || !body.itemId || actual + waste <= 0) return json({ error: 'Job, stock item and quantity used/wasted are required.' }, 400);
+  if (koboFromNaira(body.unitCostNaira) > 0 && !canViewPrintFinancials(context)) {
+    return json({ error: 'Printing approval or Finance view permission is required to override material cost.' }, 403);
+  }
   const [job, item] = await Promise.all([
     env.DB.prepare(`SELECT id, production_status AS status FROM print_jobs WHERE id = ? AND company_id = ?`).bind(body.jobId, companyId).first<{ id: string; status: string }>(),
     env.DB.prepare(`SELECT id, name, unit_cost_kobo AS unitCostKobo FROM inventory_items WHERE id = ? AND company_id = ? AND active = 1`).bind(body.itemId, companyId).first<{ id: string; name: string; unitCostKobo: number }>(),
   ]);
   if (!job || !item) return json({ error: 'Print job or Printing inventory item was not found.' }, 404);
   if (['completed','cancelled'].includes(job.status)) return json({ error: 'Materials cannot be added to a completed or cancelled job.' }, 409);
-  const locationId = body.locationId || 'location-printing-hq';
-  const balance = await env.DB.prepare(`SELECT id, quantity, reserved_quantity AS reservedQuantity FROM stock_balances WHERE location_id = ? AND item_id = ?`).bind(locationId, body.itemId).first<{ id: string; quantity: number; reservedQuantity: number }>();
+  const locationId = String(body.locationId || 'location-printing-hq');
+  const location = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(locationId, companyId).first();
+  if (!location) return json({ error: 'Selected Printing stock location was not found.' }, 400);
+  const balance = await env.DB.prepare(`SELECT id, quantity, reserved_quantity AS reservedQuantity FROM stock_balances WHERE company_id = ? AND location_id = ? AND item_id = ?`).bind(companyId, locationId, body.itemId).first<{ id: string; quantity: number; reservedQuantity: number }>();
   const required = actual + waste;
   if (!balance || Number(balance.quantity) - Number(balance.reservedQuantity || 0) < required) {
     return json({ error: `Insufficient stock for ${item.name}. Available quantity is ${Math.max(0, Number(balance?.quantity || 0) - Number(balance?.reservedQuantity || 0))}.` }, 409);
@@ -253,16 +297,19 @@ async function addMaterial(request: Request, env: PrintingEnv, context: SessionC
 
 async function transitionJob(request: Request, env: PrintingEnv, context: SessionContext) {
   if (!canPrint(context, 'edit')) return json({ error: 'Edit Printing Job permission is required.' }, 403);
-  let body: { jobId?: string; toStatus?: PrintStatus; note?: string; artworkStatus?: string; proofStatus?: string };
+  let body: { jobId?: string; toStatus?: PrintStatus; note?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid job status request.' }, 400); }
   if (!body.jobId || !body.toStatus) return json({ error: 'Job and destination status are required.' }, 400);
   const job = await env.DB.prepare(`SELECT id, production_status AS status, assigned_operator_id AS operatorId, service_id AS serviceId FROM print_jobs WHERE id = ? AND company_id = ?`).bind(body.jobId, companyId).first<{ id: string; status: PrintStatus; operatorId?: string; serviceId?: string }>();
   if (!job) return json({ error: 'Print job not found.' }, 404);
   const allowed = forwardTransitions[job.status] || [];
   if (!allowed.includes(body.toStatus)) return json({ error: `A print job cannot move directly from ${job.status} to ${body.toStatus}.` }, 409);
+  if (['customer_approved', 'completed', 'cancelled'].includes(body.toStatus) && !canPrint(context, 'approve')) {
+    return json({ error: 'Printing approval permission is required for this commercial or terminal status.' }, 403);
+  }
 
   if (body.toStatus === 'queued') {
-    const service = job.serviceId ? await env.DB.prepare(`SELECT requires_artwork AS requiresArtwork, requires_proof AS requiresProof FROM printing_services WHERE id = ?`).bind(job.serviceId).first<{ requiresArtwork: number; requiresProof: number }>() : null;
+    const service = job.serviceId ? await env.DB.prepare(`SELECT requires_artwork AS requiresArtwork, requires_proof AS requiresProof FROM printing_services WHERE id = ? AND company_id = ?`).bind(job.serviceId, companyId).first<{ requiresArtwork: number; requiresProof: number }>() : null;
     const detail = await env.DB.prepare(`SELECT artwork_status AS artworkStatus, proof_status AS proofStatus FROM print_jobs WHERE id = ?`).bind(job.id).first<{ artworkStatus: string; proofStatus: string }>();
     if (service?.requiresArtwork && detail?.artworkStatus !== 'approved') return json({ error: 'Artwork must be approved before this job can enter the production queue.' }, 409);
     if (service?.requiresProof && detail?.proofStatus !== 'approved') return json({ error: 'Customer proof approval is required before this job can enter the production queue.' }, 409);
@@ -281,8 +328,6 @@ async function transitionJob(request: Request, env: PrintingEnv, context: Sessio
 
   const updates: string[] = ['production_status = ?', 'updated_at = CURRENT_TIMESTAMP'];
   const bindings: unknown[] = [body.toStatus];
-  if (body.artworkStatus) { updates.push('artwork_status = ?'); bindings.push(body.artworkStatus); }
-  if (body.proofStatus) { updates.push('proof_status = ?'); bindings.push(body.proofStatus); }
   if (body.toStatus === 'printing') updates.push(`started_at = COALESCE(started_at, CURRENT_TIMESTAMP)`);
   if (body.toStatus === 'ready') updates.push(`ready_at = CURRENT_TIMESTAMP`);
   if (body.toStatus === 'completed') updates.push(`completed_at = CURRENT_TIMESTAMP`);
