@@ -1,0 +1,44 @@
+{
+  "review": "Communications provider runtime concurrency and webhook integrity",
+  "date": "2026-09-22",
+  "scope": "non-production WhatsApp provider handoff and signed webhook processing",
+  "codeCheckpoints": [
+    "594c0c08296beb53c4e5cc853827f6e97609d194",
+    "243be2e290a96d668073882d7cfa18d1fd1a7ce1",
+    "2afa849cd84e239406a27f6975085e20cc1fdf31"
+  ],
+  "correctedFindings": [
+    {
+      "severity": "P1",
+      "summary": "Concurrent send requests could both reach provider transport because the persisted idempotency key was not paired with an atomic draft claim.",
+      "correction": "Provider transport now requires a compare-and-set draft-to-sending claim bound to the idempotency key; losing requests fail closed."
+    },
+    {
+      "severity": "P1",
+      "summary": "Webhook delivery callbacks matched inbox messages by provider ID without canonical sender proof, and values missing sender metadata could be processed beside a valid value.",
+      "correction": "Inbox status reads and writes now bind the resolved sender and company scope; every webhook value must resolve canonical sender metadata."
+    },
+    {
+      "severity": "P1",
+      "summary": "Webhook failures were marked deferred but returned 200 without any replay worker, so failed post-receipt processing could remain permanently unprocessed.",
+      "correction": "Durable receipts now use an atomic processing claim, completed duplicates stay idempotent, failed receipts are reclaimable, and post-receipt failure returns 503 for bounded provider retry."
+    }
+  ],
+  "verification": {
+    "communicationsRemediation": "21/21 PASS",
+    "typecheck": "PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffHygiene": "PASS",
+    "githubCi": "runs 154, 156 and 158 PASS"
+  },
+  "findingsAfterCorrection": {
+    "P0": [],
+    "P1": [],
+    "P2": []
+  },
+  "liveProviderSend": false,
+  "productionActions": false,
+  "remoteMigrationApplied": false,
+  "farmsAccess": false
+}

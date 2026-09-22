@@ -75,7 +75,7 @@
       "priority": "P1",
       "status": "PARTIAL",
       "description": "Complete WhatsApp, AI drafting, Inbox, Meta vault, scoped governance, delegated administration and provider release readiness.",
-      "evidence": "Safety contracts PASS: communications 11/11; remediation 17/17; staging integration 10/10; zero-disclosure contract PASS. Family remains PARTIAL pending broader provider/runtime acceptance and authenticated V45 rendering."
+      "evidence": "Safety contracts PASS: communications 11/11; remediation 21/21; staging integration 10/10; zero-disclosure contract PASS. WhatsApp inbox provider transport atomically claims one idempotency-bound send; webhook status updates bind canonical sender/company scope; every webhook value requires sender metadata; durable receipts use an atomic processing claim and 503 provider retry after post-receipt failure. Checkpoints 594c0c0, 243be2e and 2afa849 passed CI runs 154, 156 and 158; no live message was sent. Family remains PARTIAL pending broader AI/provider runtime acceptance and authenticated V45 rendering."
     },
     {
       "id": "ACCESSIBILITY-RESPONSIVE",
