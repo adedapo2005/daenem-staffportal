@@ -16,7 +16,9 @@ check('Shared reviews cannot be reassigned without notice', source.includes("exi
 check('Review sharing notification is emitted only on transition', source.includes("notifyEmployee=body.shareNow===true&&existing.status!=='shared'"));
 check('Case updates validate the assignee in the case company', source.includes("activeCompanyMember(env,assignedTo,existing.companyId)"));
 check('Case creation validates the assignee in the target company', source.includes("activeCompanyMember(env,assignedTo,companyId)"));
-check('Case mutation repeats authoritative company scope', source.includes("WHERE id=? AND company_id=?`).bind(assignedTo||null,status"));
+check('Case mutation repeats authoritative company and source state', source.includes("WHERE id=? AND company_id=? AND status=?") && source.includes("if(!update.meta.changes)return json({error:'HR case changed before this update could be applied.'},409)"));
+check('Case transitions are explicit and terminal guarded', source.includes("resolved:['closed'],closed:[]") && source.includes("That case transition is not available for the current status."));
+check('Resolved and closed cases require durable resolution evidence', source.includes("['resolved','closed'].includes(status)&&!nextResolution"));
 check('Case status changes preserve an existing assignee when omitted', source.includes("assigned_to=COALESCE(?,assigned_to)"));
 check('Lifecycle owner assignment is company scoped', source.includes("activeCompanyMember(env,requestedOwner,companyId)"));
 check('Lifecycle task assignment is company scoped', source.includes("activeCompanyMember(env,assignedTo,row.companyId)"));
