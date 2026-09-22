@@ -16,6 +16,8 @@ check('Profile reminders carry company notification and audit scope', profile.in
 check('Login access audits carry managed company scope', profile.includes("company_id,module,action,entity_type,entity_id,after_json") && profile.includes("'create_login_access'"));
 check('Employee creation validates an active target company', profile.includes('SELECT id FROM companies WHERE id=? AND active=1'));
 check('Profile responses disable caching', profile.includes("'cache-control':'no-store'"));
+check('Profile responses do not disclose workplace coordinates', profile.includes('const workplace=place?{locationName:place.locationName') && !profile.includes('workplace:place||null'));
+check('Self profile edits preserve authoritative employment fields', profile.includes("let b:{firstName?:string;lastName?:string;phone?:string};") && profile.includes("jobTitle=String(current.jobTitle??'').trim()") && profile.includes("phone=NULLIF(?,''),profile_completion_percent=?"));
 
 check('Self-service company selection requires assignment', ess.includes("const companyAllowed=(c:SessionContext,id:string)=>c.companies.some"));
 check('Self-service permission composition evaluates each company', ess.includes('hasPermission(c,permission,level,company.id)'));
