@@ -10,6 +10,9 @@ const must = (condition, message) => {
 const moduleHub = read('src/module-hub.tsx');
 const worker = read('worker/runtime.ts');
 const dashboardWorker = read('worker/index.ts');
+const workerEntry = read('worker/entry.ts');
+const aiGuide = read('worker/ai-guide.ts');
+const employeeSelfService = read('worker/employee-self-service.ts');
 const main = read('src/main.tsx');
 const postAuth = read('src/post-auth-experience.tsx');
 const smartHelp = read('src/guidance-center.tsx');
@@ -23,6 +26,9 @@ must(dashboardWorker.includes('permittedDashboardCompanyIds'), 'dashboard API mu
 must(dashboardWorker.includes('DASHBOARD_FIELD_PERMISSIONS'), 'dashboard API must constrain field scope');
 must(worker.includes('getEnhancedSessionContext'), 'protected routes must use the enhanced session context');
 must(worker.includes('routeAdmin'), 'admin routes must remain behind the protected route boundary');
+must(workerEntry.includes('routeSmartSearch') && workerEntry.includes("url.pathname==='/api/search/suggest'"), 'search suggestions must remain behind the protected route boundary');
+must(aiGuide.includes('visibleFunctions') && aiGuide.includes('selectedCompany') && aiGuide.includes('AUTHORIZED FUNCTION CATALOG'), 'AI Guide must be permission and company scoped');
+must(employeeSelfService.includes('employee_id=?') && employeeSelfService.includes('routeEmployeeSelfService'), 'notifications and Self Service must remain employee scoped');
 
 must(main.includes('hasWorkforcePermission'), 'primary navigation must use effective permissions');
 must(postAuth.includes('canSeeDashboardField'), 'Home must use field-level dashboard authorization');
