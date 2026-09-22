@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "prebuild": "node scripts/check-zero-disclosure.mjs && node scripts/check-signin-background-assets.mjs && node scripts/check-signin-configurability.mjs && node scripts/check-postauth-layout.mjs && node scripts/check-postauth-layout-readiness.mjs && node scripts/check-canonical-postauth.mjs && node scripts/check-dashboard-permissions.mjs && node scripts/check-next-phase.mjs && node scripts/check-executive-dashboard.mjs && node scripts/check-guidance-broadcast-center.mjs && node scripts/check-performance-hotfix.mjs && node scripts/check-company-scoped-access.mjs && node scripts/check-autos-logistics-boundaries.mjs && node scripts/check-owner-support-access.mjs && node scripts/check-smart-help-center.mjs && node scripts/check-platform-center.mjs && node scripts/check-website-consolidation.mjs && node scripts/check-business-website-catalogues.mjs && node scripts/check-properties-owner-investment.mjs && node scripts/check-properties-hostel.mjs && node scripts/check-bakery-accountability.mjs && node scripts/check-offline-sync.mjs && node scripts/check-spend-foundation.mjs",
+    "prebuild": "node scripts/check-zero-disclosure.mjs && node scripts/check-signin-background-assets.mjs && node scripts/check-signin-configurability.mjs && node scripts/check-postauth-layout.mjs && node scripts/check-postauth-layout-readiness.mjs && node scripts/check-canonical-postauth.mjs && node scripts/check-dashboard-permissions.mjs && node scripts/check-next-phase.mjs && node scripts/check-executive-dashboard.mjs && node scripts/check-guidance-broadcast-center.mjs && node scripts/check-performance-hotfix.mjs && node scripts/check-company-scoped-access.mjs && node scripts/check-autos-logistics-boundaries.mjs && node scripts/check-forms-builder-boundaries.mjs && node scripts/check-owner-support-access.mjs && node scripts/check-smart-help-center.mjs && node scripts/check-platform-center.mjs && node scripts/check-website-consolidation.mjs && node scripts/check-business-website-catalogues.mjs && node scripts/check-properties-owner-investment.mjs && node scripts/check-properties-hostel.mjs && node scripts/check-bakery-accountability.mjs && node scripts/check-offline-sync.mjs && node scripts/check-spend-foundation.mjs",
     "build": "vite build",
     "preview": "npm run build && vite preview",
     "check:next-phase": "node scripts/check-next-phase.mjs",
@@ -14,6 +14,7 @@
     "check:performance-hotfix": "node scripts/check-performance-hotfix.mjs",
     "check:company-scoped-access": "node scripts/check-company-scoped-access.mjs",
     "check:autos-logistics-boundaries": "node scripts/check-autos-logistics-boundaries.mjs",
+    "check:forms-builder-boundaries": "node scripts/check-forms-builder-boundaries.mjs",
     "check:owner-support": "node scripts/check-owner-support-access.mjs",
     "check:smart-help": "node scripts/check-smart-help-center.mjs",
     "check:platform-center": "node scripts/check-platform-center.mjs",
