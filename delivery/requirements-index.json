@@ -24,7 +24,7 @@
       "priority": "P0",
       "status": "IMPLEMENTED — AWAITING QA",
       "description": "No permission means no disclosure across UI, API, search, AI, counts, routes, notifications, favorites, recents and breadcrumbs.",
-      "evidence": "Static acceptance PASS: zero-disclosure contract; dashboard permissions; post-auth layout; canonical data boundary; company access 24/24, including target-company permission enforcement for Inventory and Finance; owner support 15/15; Smart Help 22/22; Platform Center 31/31. One P1 cross-company permission-reuse defect was fixed and bounded re-review has no open P0/P1/P2. Authenticated browser leakage checks remain pending."
+      "evidence": "Static acceptance PASS: zero-disclosure contract; dashboard permissions; post-auth layout; canonical data boundary; company access 26/26, including target-company permission enforcement for Inventory/Finance and neutral, company-scoped Procurement denial/idempotency behavior; owner support 15/15; Smart Help 22/22; Platform Center 31/31. Two reviewed P1 authorization/disclosure classes were fixed and bounded re-review has no open P0/P1/P2. Authenticated browser leakage checks remain pending."
     },
     {
       "id": "RELEASE-INTEGRITY",
@@ -61,7 +61,7 @@
       "priority": "P1",
       "status": "PARTIAL",
       "description": "Complete Staff, Printing, Bakery, Autos, Logistics, Properties, Finance, Spend, Procurement, Inventory and supporting ERP workflows.",
-      "evidence": "Targeted contract evidence PASS: next-phase 37/37; business website catalogue 32/32; Properties owner/investment 17/17; Properties hostel 26/26; Bakery accountability 68/68; Spend foundation, commitment audit and recovery contracts PASS; company access 24/24. Inventory and Finance now enforce permissions in the authoritative target-company scope at checkpoint 77f8675, closing a reviewed P1 cross-company permission-reuse path. Spend runtime remains BLOCKED at the existing local D1 migration replay timeout; no remote migration was run. Overall ERP remains PARTIAL because Autos, Logistics, Procurement, broader functional acceptance, and authenticated rendering still require closure."
+      "evidence": "Targeted contract evidence PASS: next-phase 37/37; business website catalogue 32/32; Properties owner/investment 17/17; Properties hostel 26/26; Bakery accountability 68/68; Spend foundation, commitment audit and recovery contracts PASS; company access 26/26. Inventory and Finance enforce authoritative target-company permissions; Procurement now conceals records outside approval scope and scopes idempotency evidence to the canonical company through checkpoint 804a395. Spend runtime remains BLOCKED at the existing local D1 migration replay timeout; no remote migration was run. Overall ERP remains PARTIAL because Autos, Logistics, broader functional acceptance, and authenticated rendering still require closure."
     },
     {
       "id": "ADMIN-BUILDERS",
