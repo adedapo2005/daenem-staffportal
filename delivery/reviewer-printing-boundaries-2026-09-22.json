@@ -1,0 +1,49 @@
+{
+  "review": "DAENEM Staff Portal Printing workflow boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/printing.ts",
+    "worker/printing-production.ts",
+    "scripts/check-printing-boundaries.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Printing relationships and attached file retrieval could trust cross-company or cross-job references, exposing mismatched customer, service, employee, location, inventory, or file metadata.",
+      "correction": "All affected reads and writes now repeat the authoritative Printing company or print-job relationship, active employee membership, active location, file category, job key, and R2 metadata boundaries; invalid references fail neutrally."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Operational Printing viewers could receive or write commercial fields including prices, balances, quotes, material costs, finishing costs, profit, and finance notes.",
+      "correction": "Commercial responses and writes are permission-composed from Printing approval or company-scoped Finance view authority; ordinary operational viewers receive no protected financial fields or finance notes."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "Edit-level users could approve artwork, enter commercial or terminal job states, or rewrite artwork/proof status through a generic transition.",
+      "correction": "Approval-sensitive actions now require Printing approval authority, and the generic status transition no longer accepts artwork/proof state overrides."
+    }
+  ],
+  "verification": {
+    "printingBoundaries": "29/29 PASS",
+    "companyAccess": "26/26 PASS",
+    "zeroDisclosure": "PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun108": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Printing authorization, relationship-integrity, financial-disclosure, file-binding, and transition-governance change; authenticated V45 browser acceptance remains pending."
+  },
+  "checkpoint": "2fea5b19e815da62917e86cc0f94e98ef0cc4970",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}
