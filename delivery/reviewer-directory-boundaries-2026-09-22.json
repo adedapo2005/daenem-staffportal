@@ -1,0 +1,36 @@
+{
+  "review": "DAENEM Staff Portal Staff directory company-boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/directory.ts",
+    "scripts/check-directory-boundaries.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Directory authority from one assigned company could be reused to read employee or role metadata from another assigned company, and a manage permission could bypass assignment on an explicit company request.",
+      "correction": "Employee and role directory access now evaluates every qualifying permission against the target company, filters unscoped results to authorized assigned companies, removes the cross-company manage bypass, and returns empty collections when no company is authorized."
+    }
+  ],
+  "verification": {
+    "directoryBoundaries": "14/14 PASS",
+    "companyAccess": "26/26 PASS",
+    "zeroDisclosure": "PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun104": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Staff directory authorization change; broader Staff and Printing functional scenario coverage remains partial, and authenticated V45 browser acceptance remains pending."
+  },
+  "checkpoint": "67c2f9f632f2c9555913e30c26cecd47c012e3af",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

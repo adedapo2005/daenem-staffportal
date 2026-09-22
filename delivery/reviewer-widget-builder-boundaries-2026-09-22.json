@@ -1,0 +1,41 @@
+{
+  "review": "DAENEM Staff Portal Widget governance boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/theme-preferences.ts",
+    "src/signin-preferences.ts",
+    "src/zip-dashboard.tsx",
+    "src/theme-studio-entry.ts",
+    "scripts/check-widget-builder-boundaries.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "An authorized sign-in settings caller could submit and persist an unbounded widget-instance array, creating avoidable configuration-size and rendering pressure.",
+      "correction": "Backend and shared client normalization now cap sign-in widget instances at 20 before validation, storage or rendering."
+    }
+  ],
+  "verification": {
+    "widgetBuilderBoundaries": "22/22 PASS",
+    "signInConfigurability": "107/107 PASS",
+    "themeBuilderBoundaries": "15/15 PASS",
+    "dashboardPermissions": "PASS",
+    "zeroDisclosure": "PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun102": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Widget governance change; authenticated V45 browser acceptance remains pending and the generic Report Builder remains blocked by the absent durable contract."
+  },
+  "checkpoint": "379b905267d1c85383b020474e220b94096e8fe2",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}
