@@ -32,6 +32,11 @@ check('Worker routes wired',runtime.includes('routeNavigationWorkspace')&&runtim
 check('client entries wired on demand',moduleHub.includes("import('./navigation-studio-entry')")&&moduleHub.includes("import('./hr-workflows-entry')")&&!html.includes('/src/navigation-studio-entry.tsx')&&!html.includes('/src/hr-workflows-entry.tsx'));
 check('authorization refresh is light',interfaceCode.includes('120000')&&hrInterface.includes('120000'));
 check('PAYE remains honest',workflows.includes("calculationStatus:'configuration_only'")&&hrInterface.includes('not a tax advice engine'));
+check('statutory save requires an explicit valid mode',workflows.includes("mode=String(body.mode||'')")&&!workflows.includes("mode=String(body.mode||'draft')"));
+check('statutory flags reject ambiguous truthy values',workflows.includes("const flag=(key:string)=>body[key]===true||body[key]===1?1:body[key]===false||body[key]===0?0:null")&&workflows.includes("Statutory enablement values must be explicit booleans."));
+check('statutory text inputs are bounded',workflows.includes('payeRuleVersion.length>120||notes.length>2000'));
+check('statutory persistence uses normalized flags',workflows.includes('payeEnabled,pensionEnabled,pensionEmployee,pensionEmployer,nhfEnabled,nhf,nsitfEnabled,nsitf,itfEnabled,itf,payeRuleVersion'));
+
 check('no credential literals',![navigation,workflows,interfaceCode,hrInterface].some((source)=>/BEGIN (RSA|OPENSSH) PRIVATE KEY|api[_-]?key\s*[:=]\s*['\"][^'\"]+/i.test(source)));
 
 for(const result of assertions)console.log(`${result.ok?'✓':'✗'} ${result.name}`);
