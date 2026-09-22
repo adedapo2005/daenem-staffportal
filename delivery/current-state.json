@@ -8,7 +8,7 @@
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
+  "branchHead": "cd50ea6dddc8e0c3fab196c1a2d5be9764bbb468",
   "codeCheckpoint": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
@@ -40,7 +40,7 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
+    "commit": "cd50ea6dddc8e0c3fab196c1a2d5be9764bbb468",
     "codeCheckpoint": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
     "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
@@ -115,9 +115,9 @@
     "spendCommitmentAuditContract": "PASS",
     "spendRecoveryContracts": "PASS: dedicated repo-local manual QA workflow and portable path validated",
     "spendRuntimePortability": "FIXED: Wrangler JavaScript CLI now launches cross-platform; BLOCKED after launch by the existing local D1 migration replay timeout; no remote migration was run",
-    "postPushHead": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
-    "latestGitHubHead": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
-    "latestCommitCi": "PASS: Staff Portal CI run 180 on outbox administration checkpoint 016a374",
+    "postPushHead": "cd50ea6dddc8e0c3fab196c1a2d5be9764bbb468",
+    "latestGitHubHead": "cd50ea6dddc8e0c3fab196c1a2d5be9764bbb468",
+    "latestCommitCi": "PASS: Staff Portal CI run 182 on durable outbox review checkpoint cd50ea6",
     "offlineRuntimeWindowsHarness": "BLOCKED: reproduced; local Wrangler D1 replay hangs after applying migrations begins; test process terminated; no remote migration was run",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
     "sitesVersion": "V45 saved without deployment; private non-production deployment attempted and rejected before start because project access_mode is public",
@@ -137,14 +137,14 @@
     "scope": "non-production only"
   },
   "checkpoint": {
-    "githubHead": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
+    "githubHead": "cd50ea6dddc8e0c3fab196c1a2d5be9764bbb468",
     "codeCheckpoint": "016a37430432014e5d90f4b5e4a7ffafabdbda35",
     "branch": "feature/staffportal-whatsapp-ai-communications-01",
     "pullRequest": "2 OPEN / DRAFT",
     "sitesVersion": "V45",
     "sitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
     "sitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
-    "ci": "PASS: Staff Portal CI run 180 on outbox administration checkpoint 016a374; production and merge gates remain closed",
+    "ci": "PASS: Staff Portal CI runs 180 and 182 on code checkpoint 016a374 and durable review checkpoint cd50ea6; production and merge gates remain closed",
     "staging": "PASS: non-production runtime probe and exact-origin CORS checks",
     "tests": {
       "v44ScopedSettings": "10/10 PASS",
