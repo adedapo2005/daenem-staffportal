@@ -24,7 +24,7 @@ check('support module loads on demand',moduleHub.includes("load: () => import('.
 check('general roles require dedicated permission',access.includes("roles.general','manage'")&&access.includes("scope==='general'"));
 check('business assignments require dedicated permission',access.includes("users.business_assignments','manage'")&&access.includes('/api/access-control/business-assignment'));
 check('new admin-created employees are provisional',profile.includes("'provisional',?,CASE")&&profile.includes("'role-provisional'"));
-check('employee administration list is company scoped',profile.includes('m.company_id IN (${placeholders})')&&profile.includes("hasPermission(c,'users.access','view',company.id)"));
+check('employee administration list is company scoped and manage-only',profile.includes('m.company_id IN (${placeholders})')&&profile.includes("hasPermission(c,'users.access','manage',company.id)"));
 check('runtime protects support routes with authentication',runtime.includes("url.pathname.startsWith('/api/support/')")&&runtime.includes('routeOwnerSupport(request, env, context)'));
 check('every remote action has a plain description',client.includes('Remove only cached Daenem Staff Portal files')&&client.includes('Immediately revoke every active Staff Portal session'));
 
