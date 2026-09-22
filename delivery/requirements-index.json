@@ -51,9 +51,10 @@
     {
       "id": "SMART-INPUT",
       "priority": "P1",
-      "status": "MISSING",
+      "status": "BLOCKED",
       "range": "SMART-INPUT-001..052",
-      "description": "DAENEM Smart Input Enhancement System with secure predictive typing, correction, smart compose and zero-disclosure context."
+      "description": "DAENEM Smart Input Enhancement System with secure predictive typing, correction, smart compose and zero-disclosure context.",
+      "evidence": "BLOCKED: durable repository contains no SMART-INPUT-001..052 contract, detailed acceptance specification or fixture. Existing protected Smart Search/Smart Help cannot be repurposed by inference without risking unauthorized context disclosure."
     },
     {
       "id": "ERP-COMPLETION",

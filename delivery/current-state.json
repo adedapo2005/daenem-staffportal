@@ -122,9 +122,10 @@
       "authenticated backend-response rendering and delegated-manager acceptance",
       "Sites connector exposes no non-production preview for a public project; private V45 deployment rejected before start; public deploy is production-gated",
       "Owner approval remains required before production pointer, production migration, live Meta/WhatsApp, or merge",
+      "SMART-INPUT-001..052 has no detailed durable contract or acceptance fixture; implementation is blocked to avoid guessing secure context behavior",
       "Local Wrangler D1 migration replay hangs after migration start; no remote migration was run"
     ],
-    "nextWorkstream": "Continue P0 security and release evidence, then inspect and implement SMART-INPUT-001..052; retain V45 browser QA as pending until a supported V45 non-production route exists."
+    "nextWorkstream": "SMART-INPUT is recorded BLOCKED pending a durable contract; continue with safe ERP-COMPLETION inspection and targeted permission/runtime evidence, while retaining V45 browser QA as pending until a supported V45 non-production route exists."
   },
   "updatedBy": "Staff Portal Work controller"
 }
