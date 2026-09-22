@@ -131,7 +131,7 @@
     "sitesGoogleProviderQA": "PASS: configured provider required; no account connection or production action performed",
     "stagingWorkerURL": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev",
     "stagingUnauthorizedQA": "PASS: health 200; auth-me/admin/communications 401; exact allowed-origin GET 401 and OPTIONS 204; rejected-origin OPTIONS 403",
-    "staffPortalRuntime": "PRESERVED: existing local Staff Portal Wrangler runtime on port 8896 remained active; no process was terminated, restarted or duplicated",
+    "staffPortalRuntime": "NOT DETECTED at final reconciliation: an earlier local Staff Portal Wrangler runtime ended without intervention; no process was terminated, restarted or duplicated",
     "reviewerEvidence": "PARTIAL: bounded reviews fixed P1/P2 authorization, disclosure, provider retry, data minimization, stale-write, approval, queue, governance concurrency, canonical audit identity and atomic audit defects; current bounded re-review has no open P0/P1/P2; V45 authenticated acceptance remains unavailable; latest evidence is delivery/reviewer-communications-governance-audit-2026-09-22.json",
     "scope": "non-production only"
   },
