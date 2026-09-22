@@ -20,6 +20,11 @@ function requiredCompany(request:Request,context:EnhancedSessionContext,permissi
   return companyId&&companyAllowed(context,companyId)&&can(context,permission,minimum,companyId)?companyId:'';
 }
 
+async function activeCompanyMember(env:Env,employeeId:string,companyId:string){
+  if(!employeeId)return false;
+  return Boolean(await env.DB.prepare('SELECT 1 ok FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1').bind(employeeId,companyId).first());
+}
+
 async function overview(request:Request,env:Env,context:EnhancedSessionContext){
   const companyId=requiredCompany(request,context,'hr.access');if(!companyId)return json({error:'HR access is not assigned for this company.'},403);
   const [employees,leave,reviews,cases,lifecycle]=await Promise.all([
@@ -93,18 +98,19 @@ async function saveReview(request:Request,env:Env,context:EnhancedSessionContext
   let body:{id?:string;companyId?:string;employeeId?:string;periodStart?:string;periodEnd?:string;reviewType?:string;rating?:number;strengths?:string;improvementAreas?:string;goals?:string;managerComments?:string;shareNow?:boolean};try{body=await request.json()}catch{return json({error:'Invalid performance review.'},400)}
   const companyId=String(body.companyId||''),employeeId=String(body.employeeId||''),start=String(body.periodStart||''),end=String(body.periodEnd||'');
   if(!companyId||!companyAllowed(context,companyId)||!can(context,'reviews.admin','edit',companyId)||!employeeId||!datePattern.test(start)||!datePattern.test(end)||end<start)return json({error:'Company, employee, edit access and a valid review period are required.'},400);
-  const member=await env.DB.prepare('SELECT 1 ok FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1').bind(employeeId,companyId).first();if(!member)return json({error:'Employee is not active in this company.'},404);
+  if(!await activeCompanyMember(env,employeeId,companyId))return json({error:'Employee is not active in this company.'},404);
   const reviewType=['performance','probation','promotion','corrective','recognition','other'].includes(String(body.reviewType))?String(body.reviewType):'performance';
   const rating=body.rating===undefined||body.rating===null?null:Number(body.rating);if(rating!==null&&(rating<0||rating>5))return json({error:'Rating must be between 0 and 5.'},400);
-  const id=String(body.id||uid('review')),status=body.shareNow?'shared':'draft';
+  const id=String(body.id||uid('review'));let status=body.shareNow?'shared':'draft',notifyEmployee=status==='shared';
   if(body.id){
-    const existing=await env.DB.prepare('SELECT company_id companyId,status FROM employee_reviews WHERE id=?').bind(id).first<{companyId:string;status:string}>();if(!existing||!companyAllowed(context,existing.companyId))return json({error:'Review not found.'},404);if(['acknowledged','closed'].includes(existing.status))return json({error:'Acknowledged or closed reviews cannot be rewritten.'},409);
-    await env.DB.prepare(`UPDATE employee_reviews SET employee_id=?,review_period_start=?,review_period_end=?,reviewer_employee_id=?,review_type=?,rating=?,strengths=?,improvement_areas=?,goals=?,manager_comments=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(employeeId,start,end,context.employee.id,reviewType,rating,body.strengths||null,body.improvementAreas||null,body.goals||null,body.managerComments||null,status,id).run();
+    const existing=await env.DB.prepare('SELECT employee_id employeeId,status FROM employee_reviews WHERE id=? AND company_id=?').bind(id,companyId).first<{employeeId:string;status:string}>();if(!existing)return json({error:'Review not found.'},404);if(['acknowledged','closed'].includes(existing.status))return json({error:'Acknowledged or closed reviews cannot be rewritten.'},409);if(existing.status==='shared'&&existing.employeeId!==employeeId)return json({error:'A shared review cannot be reassigned.'},409);
+    status=existing.status==='shared'?'shared':status;notifyEmployee=body.shareNow===true&&existing.status!=='shared';
+    await env.DB.prepare(`UPDATE employee_reviews SET employee_id=?,review_period_start=?,review_period_end=?,reviewer_employee_id=?,review_type=?,rating=?,strengths=?,improvement_areas=?,goals=?,manager_comments=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(employeeId,start,end,context.employee.id,reviewType,rating,body.strengths||null,body.improvementAreas||null,body.goals||null,body.managerComments||null,status,id,companyId).run();
   }else{
     await env.DB.prepare(`INSERT INTO employee_reviews(id,employee_id,company_id,review_period_start,review_period_end,reviewer_employee_id,review_type,rating,strengths,improvement_areas,goals,manager_comments,status)
       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,employeeId,companyId,start,end,context.employee.id,reviewType,rating,body.strengths||null,body.improvementAreas||null,body.goals||null,body.managerComments||null,status).run();
   }
-  if(status==='shared')await env.DB.prepare(`INSERT INTO employee_notifications(id,employee_id,company_id,category,severity,title,body,source_type,source_id)
+  if(notifyEmployee)await env.DB.prepare(`INSERT INTO employee_notifications(id,employee_id,company_id,category,severity,title,body,source_type,source_id)
     VALUES(?,?,?,'review','info','Performance review available','A performance review is ready for you to read and acknowledge.','employee_review',?)`).bind(uid('notification'),employeeId,companyId,id).run();
   await audit(env,context,companyId,'reviews',body.id?'update':'create','employee_review',id,{employeeId,reviewType,status,periodStart:start,periodEnd:end,rating});
   return json({ok:true,id,status},body.id?200:201);
@@ -134,14 +140,16 @@ async function saveCase(request:Request,env:Env,context:EnhancedSessionContext){
   const types=['disciplinary','grievance','commendation','performance_improvement','incident','other'],severities=['low','normal','high','critical'],statuses=['open','investigating','action_required','resolved','closed'];
   if(body.id){
     const existing=await env.DB.prepare('SELECT company_id companyId FROM hr_cases WHERE id=?').bind(body.id).first<{companyId:string}>();if(!existing||!companyAllowed(context,existing.companyId)||!can(context,'hr.cases','edit',existing.companyId))return json({error:'HR case not found or edit access is not assigned.'},404);
+    const assignedTo=String(body.assignedTo||'');if(assignedTo&&!await activeCompanyMember(env,assignedTo,existing.companyId))return json({error:'Assigned employee was not found.'},404);
     const status=statuses.includes(String(body.status))?String(body.status):'open';
-    await env.DB.prepare(`UPDATE hr_cases SET assigned_to=?,status=?,resolution=?,closed_at=CASE WHEN ? IN ('resolved','closed') THEN COALESCE(closed_at,CURRENT_TIMESTAMP) ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.assignedTo||null,status,body.resolution||null,status,body.id).run();
-    await audit(env,context,existing.companyId,'hr','update_case','hr_case',body.id,{status,assignedTo:body.assignedTo||null,hasResolution:Boolean(body.resolution)});return json({ok:true,id:body.id,status});
+    await env.DB.prepare(`UPDATE hr_cases SET assigned_to=COALESCE(?,assigned_to),status=?,resolution=?,closed_at=CASE WHEN ? IN ('resolved','closed') THEN COALESCE(closed_at,CURRENT_TIMESTAMP) ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(assignedTo||null,status,body.resolution||null,status,body.id,existing.companyId).run();
+    await audit(env,context,existing.companyId,'hr','update_case','hr_case',body.id,{status,assigneeChanged:Boolean(assignedTo),assignedTo:assignedTo||null,hasResolution:Boolean(body.resolution)});return json({ok:true,id:body.id,status});
   }
   const companyId=String(body.companyId||''),employeeId=String(body.employeeId||''),title=String(body.title||'').trim();if(!companyId||!companyAllowed(context,companyId)||!can(context,'hr.cases','edit',companyId)||!employeeId||title.length<3)return json({error:'Company, employee, edit access and case title are required.'},400);
-  const member=await env.DB.prepare('SELECT 1 ok FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1').bind(employeeId,companyId).first();if(!member)return json({error:'Employee is not active in this company.'},404);
+  if(!await activeCompanyMember(env,employeeId,companyId))return json({error:'Employee is not active in this company.'},404);
+  const assignedTo=String(body.assignedTo||'');if(assignedTo&&!await activeCompanyMember(env,assignedTo,companyId))return json({error:'Assigned employee was not found.'},404);
   const id=uid('hr-case'),caseType=types.includes(String(body.caseType))?String(body.caseType):'other',severity=severities.includes(String(body.severity))?String(body.severity):'normal';
-  await env.DB.prepare(`INSERT INTO hr_cases(id,employee_id,company_id,case_type,title,summary,severity,status,opened_by,assigned_to) VALUES(?,?,?,?,?,?,?,'open',?,?)`).bind(id,employeeId,companyId,caseType,title,body.summary||null,severity,context.employee.id,body.assignedTo||null).run();
+  await env.DB.prepare(`INSERT INTO hr_cases(id,employee_id,company_id,case_type,title,summary,severity,status,opened_by,assigned_to) VALUES(?,?,?,?,?,?,?,'open',?,?)`).bind(id,employeeId,companyId,caseType,title,body.summary||null,severity,context.employee.id,assignedTo||null).run();
   await audit(env,context,companyId,'hr','open_case','hr_case',id,{employeeId,caseType,title,severity});return json({ok:true,id,status:'open'},201);
 }
 
@@ -181,9 +189,11 @@ async function createLifecycle(request:Request,env:Env,context:EnhancedSessionCo
   const companyId=String(body.companyId||''),employeeId=String(body.employeeId||''),start=String(body.startDate||''),type=body.processType;
   if(!companyId||!companyAllowed(context,companyId)||!can(context,'hr.lifecycle','edit',companyId)||!employeeId||!type||!['onboarding','offboarding'].includes(type)||!datePattern.test(start)||(body.targetDate&&!datePattern.test(body.targetDate)))return json({error:'Company, employee, edit access, process type and valid dates are required.'},400);
   const member=await env.DB.prepare('SELECT 1 ok FROM employee_company_memberships WHERE employee_id=? AND company_id=?').bind(employeeId,companyId).first();if(!member)return json({error:'Employee is not assigned to this company.'},404);
+  const requestedOwner=String(body.ownerEmployeeId||'');if(requestedOwner&&!await activeCompanyMember(env,requestedOwner,companyId))return json({error:'Lifecycle owner was not found.'},404);
+  const processOwner=requestedOwner||context.employee.id;
   const open=await env.DB.prepare(`SELECT id FROM hr_lifecycle_processes WHERE employee_id=? AND company_id=? AND process_type=? AND status IN ('planned','in_progress','blocked') LIMIT 1`).bind(employeeId,companyId,type).first();if(open)return json({error:`An active ${type} process already exists for this employee.`},409);
-  const id=uid('lifecycle'),tasks=type==='onboarding'?onboardingTasks:offboardingTasks,statements:D1PreparedStatement[]=[env.DB.prepare(`INSERT INTO hr_lifecycle_processes(id,employee_id,company_id,process_type,status,owner_employee_id,start_date,target_date,reason,notes,created_by) VALUES(?,?,?,?,'in_progress',?,?,?,?,?,?)`).bind(id,employeeId,companyId,type,body.ownerEmployeeId||context.employee.id,start,body.targetDate||null,body.reason||null,body.notes||null,context.employee.id)];
-  tasks.forEach(([key,title,description],index)=>statements.push(env.DB.prepare(`INSERT INTO hr_lifecycle_tasks(id,process_id,task_key,title,description,assigned_to,due_date,sort_order) VALUES(?,?,?,?,?,?,?,?)`).bind(uid('lifecycle-task'),id,key,title,description,body.ownerEmployeeId||context.employee.id,body.targetDate||null,index+1)));
+  const id=uid('lifecycle'),tasks=type==='onboarding'?onboardingTasks:offboardingTasks,statements:D1PreparedStatement[]=[env.DB.prepare(`INSERT INTO hr_lifecycle_processes(id,employee_id,company_id,process_type,status,owner_employee_id,start_date,target_date,reason,notes,created_by) VALUES(?,?,?,?,'in_progress',?,?,?,?,?,?)`).bind(id,employeeId,companyId,type,processOwner,start,body.targetDate||null,body.reason||null,body.notes||null,context.employee.id)];
+  tasks.forEach(([key,title,description],index)=>statements.push(env.DB.prepare(`INSERT INTO hr_lifecycle_tasks(id,process_id,task_key,title,description,assigned_to,due_date,sort_order) VALUES(?,?,?,?,?,?,?,?)`).bind(uid('lifecycle-task'),id,key,title,description,processOwner,body.targetDate||null,index+1)));
   await env.DB.batch(statements);await audit(env,context,companyId,'hr','start_lifecycle','hr_lifecycle_process',id,{employeeId,processType:type,taskCount:tasks.length,startDate:start,targetDate:body.targetDate||null});return json({ok:true,id,status:'in_progress',taskCount:tasks.length},201);
 }
 
@@ -191,7 +201,8 @@ async function updateLifecycleTask(request:Request,env:Env,context:EnhancedSessi
   let body:{taskId?:string;status?:string;completionNote?:string;assignedTo?:string};try{body=await request.json()}catch{return json({error:'Invalid lifecycle task.'},400)}
   const statuses=['pending','in_progress','blocked','completed','not_applicable'];if(!body.taskId||!statuses.includes(String(body.status)))return json({error:'Task and valid status are required.'},400);
   const row=await env.DB.prepare(`SELECT t.process_id processId,p.company_id companyId FROM hr_lifecycle_tasks t JOIN hr_lifecycle_processes p ON p.id=t.process_id WHERE t.id=?`).bind(body.taskId).first<{processId:string;companyId:string}>();if(!row||!companyAllowed(context,row.companyId)||!can(context,'hr.lifecycle','edit',row.companyId))return json({error:'Lifecycle task not found or edit access is not assigned.'},404);
-  await env.DB.prepare(`UPDATE hr_lifecycle_tasks SET status=?,completion_note=?,assigned_to=COALESCE(?,assigned_to),completed_by=CASE WHEN ? IN ('completed','not_applicable') THEN ? ELSE NULL END,completed_at=CASE WHEN ? IN ('completed','not_applicable') THEN CURRENT_TIMESTAMP ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.status,body.completionNote||null,body.assignedTo||null,body.status,context.employee.id,body.status,body.taskId).run();
+  const assignedTo=String(body.assignedTo||'');if(assignedTo&&!await activeCompanyMember(env,assignedTo,row.companyId))return json({error:'Assigned employee was not found.'},404);
+  await env.DB.prepare(`UPDATE hr_lifecycle_tasks SET status=?,completion_note=?,assigned_to=COALESCE(?,assigned_to),completed_by=CASE WHEN ? IN ('completed','not_applicable') THEN ? ELSE NULL END,completed_at=CASE WHEN ? IN ('completed','not_applicable') THEN CURRENT_TIMESTAMP ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE id=? AND process_id=?`).bind(body.status,body.completionNote||null,assignedTo||null,body.status,context.employee.id,body.status,body.taskId,row.processId).run();
   const remaining=await env.DB.prepare(`SELECT COUNT(*) n FROM hr_lifecycle_tasks WHERE process_id=? AND status NOT IN ('completed','not_applicable')`).bind(row.processId).first<{n:number}>();const blocked=await env.DB.prepare(`SELECT COUNT(*) n FROM hr_lifecycle_tasks WHERE process_id=? AND status='blocked'`).bind(row.processId).first<{n:number}>();const processStatus=Number(remaining?.n||0)===0?'completed':Number(blocked?.n||0)>0?'blocked':'in_progress';
   await env.DB.prepare(`UPDATE hr_lifecycle_processes SET status=?,completed_at=CASE WHEN ?='completed' THEN CURRENT_TIMESTAMP ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(processStatus,processStatus,row.processId).run();
   await audit(env,context,row.companyId,'hr','update_lifecycle_task','hr_lifecycle_task',body.taskId,{status:body.status,processStatus});return json({ok:true,status:body.status,processStatus});
