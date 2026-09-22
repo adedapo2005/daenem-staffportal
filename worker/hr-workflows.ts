@@ -29,10 +29,10 @@ async function overview(request:Request,env:Env,context:EnhancedSessionContext){
   const companyId=requiredCompany(request,context,'hr.access');if(!companyId)return json({error:'HR access is not assigned for this company.'},403);
   const [employees,leave,reviews,cases,lifecycle]=await Promise.all([
     env.DB.prepare(`SELECT COUNT(DISTINCT m.employee_id) n FROM employee_company_memberships m JOIN employees e ON e.id=m.employee_id WHERE m.company_id=? AND m.active=1 AND e.employment_status='active'`).bind(companyId).first<{n:number}>(),
-    env.DB.prepare(`SELECT COUNT(*) n FROM leave_requests WHERE company_id=? AND status='pending'`).bind(companyId).first<{n:number}>(),
-    env.DB.prepare(`SELECT COUNT(*) n FROM employee_reviews WHERE company_id=? AND status IN ('draft','shared')`).bind(companyId).first<{n:number}>(),
-    env.DB.prepare(`SELECT COUNT(*) n FROM hr_cases WHERE company_id=? AND status NOT IN ('resolved','closed')`).bind(companyId).first<{n:number}>(),
-    env.DB.prepare(`SELECT COUNT(*) n FROM hr_lifecycle_processes WHERE company_id=? AND status IN ('planned','in_progress','blocked')`).bind(companyId).first<{n:number}>(),
+    env.DB.prepare(`SELECT COUNT(*) n FROM leave_requests lr JOIN employee_company_memberships m ON m.employee_id=lr.employee_id AND m.company_id=lr.company_id WHERE lr.company_id=? AND lr.status='pending'`).bind(companyId).first<{n:number}>(),
+    env.DB.prepare(`SELECT COUNT(*) n FROM employee_reviews r JOIN employee_company_memberships m ON m.employee_id=r.employee_id AND m.company_id=r.company_id WHERE r.company_id=? AND r.status IN ('draft','shared')`).bind(companyId).first<{n:number}>(),
+    env.DB.prepare(`SELECT COUNT(*) n FROM hr_cases h JOIN employee_company_memberships m ON m.employee_id=h.employee_id AND m.company_id=h.company_id WHERE h.company_id=? AND h.status NOT IN ('resolved','closed')`).bind(companyId).first<{n:number}>(),
+    env.DB.prepare(`SELECT COUNT(*) n FROM hr_lifecycle_processes p JOIN employee_company_memberships m ON m.employee_id=p.employee_id AND m.company_id=p.company_id WHERE p.company_id=? AND p.status IN ('planned','in_progress','blocked')`).bind(companyId).first<{n:number}>(),
   ]);
   return json({companyId,employees:Number(employees?.n||0),pendingLeave:Number(leave?.n||0),openReviews:Number(reviews?.n||0),openCases:Number(cases?.n||0),activeLifecycle:Number(lifecycle?.n||0)});
 }

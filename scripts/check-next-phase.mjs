@@ -23,6 +23,7 @@ check('owner role protected',navigation.includes("role.code === 'owner'")&&navig
 check('employee owner protected',navigation.includes('if (employee.isOwner)'));
 check('company-scoped menu enforcement',navigation.includes('companyPermissions')&&navigation.includes('hasAnyCompanyPermission'));
 check('company-scoped HR enforcement',workflows.includes('EnhancedSessionContext')&&workflows.includes('hasCompanyPermission'));
+check('HR overview protected counts require canonical subject-company membership',['lr','r','h','p'].every((alias)=>workflows.includes(`m.employee_id=${alias}.employee_id AND m.company_id=${alias}.company_id`)));
 check('lifecycle creation requires active target-company membership',workflows.includes("if(!await activeCompanyMember(env,employeeId,companyId))return json({error:'Employee is not assigned to this company.'},404)"));
 check('lifecycle active process uniqueness is database enforced',lifecycleIntegrityMigration.includes('CREATE UNIQUE INDEX IF NOT EXISTS uq_hr_lifecycle_active_process')&&lifecycleIntegrityMigration.includes("WHERE status IN ('planned', 'in_progress', 'blocked')"));
 check('lifecycle task mutation is compare-and-set and terminal guarded',workflows.includes("t.status taskStatus")&&workflows.includes("['completed','cancelled'].includes(row.processStatus)")&&workflows.includes("WHERE id=? AND process_id=? AND status=? AND EXISTS"));

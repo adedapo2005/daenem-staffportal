@@ -9,6 +9,7 @@ function check(name, condition) {
 
 check('Workflow company selection repeats company permission truth', source.includes("can(context,permission,minimum,companyId)"));
 check('Workflow assignees use active company membership truth', source.includes('async function activeCompanyMember') && source.includes("company_id=? AND active=1"));
+check('HR overview counts require canonical subject-company membership', ['lr','r','h','p'].every((alias) => source.includes(`m.employee_id=${alias}.employee_id AND m.company_id=${alias}.company_id`)));
 check('Leave list requires a matching subject membership in the request company', source.includes("subject_scope.employee_id=lr.employee_id AND subject_scope.company_id=lr.company_id"));
 check('Review list requires a matching subject membership in the review company', source.includes("subject_scope.employee_id=r.employee_id AND subject_scope.company_id=r.company_id"));
 check('Review edits bind lookup to the authorized company', source.includes("FROM employee_reviews WHERE id=? AND company_id=?"));
