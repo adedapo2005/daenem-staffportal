@@ -257,8 +257,8 @@ test('Instruction activation is claimed once and database-enforced per language'
   const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
   const migration=await readFile(path.join(root,'migrations','0074_communications_governance_concurrency.sql'),'utf8');
   assert.match(governance,/SET approved_by=\?[\s\S]*active=0 AND approved_by IS NULL/);
-  assert.match(governance,/const \[claimed,,activated\]=await env\.DB\.batch/);
-  assert.match(governance,/claimed\.meta\?\.changes[\s\S]*activated\.meta\?\.changes/);
+  assert.match(governance,/const \[claimed,,activated,audited\]=await env\.DB\.batch/);
+  assert.match(governance,/claimed\.meta\?\.changes[\s\S]*activated\.meta\?\.changes[\s\S]*audited\.meta\?\.changes/);
   assert.match(migration,/CREATE UNIQUE INDEX IF NOT EXISTS[\s\S]*company_id,module,language[\s\S]*WHERE active=1/);
 });
 
@@ -269,6 +269,16 @@ test('Governance upserts atomically audit the canonical persisted identity',asyn
   assert.match(governance,/upsert_trigger[\s\S]*FROM communication_trigger_rules[\s\S]*company_id=\? AND event_id=\? AND trigger_code=\?/);
   assert.equal((governance.match(/saved\.meta\?\.changes[\s\S]{0,80}audited\.meta\?\.changes/g)||[]).length,2);
   assert.doesNotMatch(governance,/await audit\(env,context,companyId,'upsert_(restriction|trigger)'/);
+});
+
+test('Template and instruction governance writes persist audit evidence atomically',async()=>{
+  const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
+  assert.equal((governance.match(/const \[created,audited\]=await env\.DB\.batch\(\[/g)||[]).length,2);
+  assert.match(governance,/const \[approved,audited\]=await env\.DB\.batch\(\[/);
+  assert.match(governance,/const \[claimed,,activated,audited\]=await env\.DB\.batch\(\[/);
+  assert.equal((governance.match(/changes\(\)=1/g)||[]).length,2);
+  assert.doesNotMatch(governance,/async function audit\(/);
+  assert.doesNotMatch(governance,/await audit\(/);
 });
 
 test('Draft queue authorization precedes lookup and readiness failures are neutral',async()=>{

@@ -26,12 +26,6 @@ function canManageEvent(context:EnhancedSessionContext,companyId:string,eventId:
   return false;
  }
 }
-async function audit(env:GovernanceEnv,context:EnhancedSessionContext,companyId:string,action:string,entityType:string,entityId:string,after:unknown){
- await env.DB.prepare(`
-  INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
-  VALUES(?,?,?,'communications',?,?,?,?, 'web')
- `).bind(uid('audit'),context.employee.id,companyId,action,entityType,entityId,JSON.stringify(after)).run();
-}
 function channels(value:unknown):Channel[]{
  return Array.isArray(value)?value.filter(item=>['whatsapp','email','in_app','push'].includes(String(item))) as Channel[]:[];
 }
@@ -168,25 +162,35 @@ async function createTemplate(request:Request,env:GovernanceEnv,context:Enhanced
   if(!sender)return json({error:'Sender connection is not owned by this company.'},400);
  }
  const id=uid('comm-template');
- await env.DB.prepare(`
-  INSERT INTO communication_templates(
-   id,company_id,event_id,channel,name,language,category,body_template,revision,
-   internal_status,provider_status,sender_connection_id,created_by
-  )
-  SELECT ?,?,?,?,?,?,?,?,COALESCE(MAX(revision),0)+1,'draft','not_submitted',?,?
-  FROM communication_templates
-  WHERE company_id=? AND event_id=? AND channel=? AND language=?
- `).bind(
-  id,companyId,eventId,channel,name,language,event.category,bodyTemplate,
-  senderConnectionId||null,context.employee.id,
-  companyId,eventId,channel,language,
- ).run();
- const created=await env.DB.prepare(
+ const [created,audited]=await env.DB.batch([
+  env.DB.prepare(`
+   INSERT INTO communication_templates(
+    id,company_id,event_id,channel,name,language,category,body_template,revision,
+    internal_status,provider_status,sender_connection_id,created_by
+   )
+   SELECT ?,?,?,?,?,?,?,?,COALESCE(MAX(revision),0)+1,'draft','not_submitted',?,?
+   FROM communication_templates
+   WHERE company_id=? AND event_id=? AND channel=? AND language=?
+  `).bind(
+   id,companyId,eventId,channel,name,language,event.category,bodyTemplate,
+   senderConnectionId||null,context.employee.id,
+   companyId,eventId,channel,language,
+  ),
+  env.DB.prepare(`
+   INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','create_template_version','communication_template',id,
+    json_object('eventId',event_id,'channel',channel,'revision',revision),'web'
+   FROM communication_templates WHERE id=? AND company_id=? LIMIT 1
+  `).bind(uid('audit'),context.employee.id,companyId,id,companyId),
+ ]);
+ if(Number(created.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1){
+  return json({error:'Template version could not be created.'},409);
+ }
+ const stored=await env.DB.prepare(
   'SELECT revision FROM communication_templates WHERE id=? AND company_id=? LIMIT 1'
  ).bind(id,companyId).first<{revision:number}>();
- if(!created)return json({error:'Template version could not be created.'},409);
- const revision=Number(created.revision);
- await audit(env,context,companyId,'create_template_version','communication_template',id,{eventId,channel,revision});
+ if(!stored)return json({error:'Template version could not be created.'},409);
+ const revision=Number(stored.revision);
  return json({ok:true,id,revision,status:'draft'},201);
 }
 
@@ -213,14 +217,26 @@ async function approveTemplate(request:Request,env:GovernanceEnv,context:Enhance
  if(row.channel==='whatsapp'&&(!row.senderConnectionId||row.connectionStatus!=='connected'||row.senderCompanyId!==companyId)){
   return json({error:'A connected company-owned sender is required before internal approval.'},409);
  }
- const approved=await env.DB.prepare(`
-  UPDATE communication_templates SET internal_status='approved',approved_by=?,updated_at=CURRENT_TIMESTAMP
-  WHERE id=? AND company_id=? AND internal_status='draft' AND approved_by IS NULL
- `).bind(context.employee.id,templateId,companyId).run();
- if(Number(approved.meta?.changes||0)!==1){
+ const [approved,audited]=await env.DB.batch([
+  env.DB.prepare(`
+   UPDATE communication_templates SET internal_status='approved',approved_by=?,updated_at=CURRENT_TIMESTAMP
+   WHERE id=? AND company_id=? AND internal_status='draft' AND approved_by IS NULL
+  `).bind(context.employee.id,templateId,companyId),
+  env.DB.prepare(`
+   INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','approve_template','communication_template',id,?,'web'
+   FROM communication_templates
+   WHERE id=? AND company_id=? AND internal_status='approved' AND approved_by=? AND changes()=1
+   LIMIT 1
+  `).bind(
+   uid('audit'),context.employee.id,companyId,
+   JSON.stringify({eventId:row.eventId,providerApprovalUnchanged:true}),
+   templateId,companyId,context.employee.id,
+  ),
+ ]);
+ if(Number(approved.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1){
   return json({error:'This template was already reviewed or changed. Refresh and try again.'},409);
  }
- await audit(env,context,companyId,'approve_template','communication_template',templateId,{eventId:row.eventId,providerApprovalUnchanged:true});
  return json({ok:true,id:templateId,internalStatus:'approved',providerApproval:'unchanged'});
 }
 
@@ -243,23 +259,33 @@ async function createInstructionProfile(request:Request,env:GovernanceEnv,contex
  }
  if(model!==approvedModel)return json({error:'Requested AI model is not on the approved server allowlist.'},400);
  const id=uid('comm-instructions');
- await env.DB.prepare(`
-  INSERT INTO communication_instruction_profiles(
-   id,company_id,module,version,tone,language,instructions,model,active,created_by
-  )
-  SELECT ?,?,?,COALESCE(MAX(version),0)+1,?,?,?,?,0,?
-  FROM communication_instruction_profiles
-  WHERE company_id=? AND module=?
- `).bind(
-  id,companyId,event.module,tone,language,instructions,model,context.employee.id,
-  companyId,event.module,
- ).run();
- const created=await env.DB.prepare(
+ const [created,audited]=await env.DB.batch([
+  env.DB.prepare(`
+   INSERT INTO communication_instruction_profiles(
+    id,company_id,module,version,tone,language,instructions,model,active,created_by
+   )
+   SELECT ?,?,?,COALESCE(MAX(version),0)+1,?,?,?,?,0,?
+   FROM communication_instruction_profiles
+   WHERE company_id=? AND module=?
+  `).bind(
+   id,companyId,event.module,tone,language,instructions,model,context.employee.id,
+   companyId,event.module,
+  ),
+  env.DB.prepare(`
+   INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','create_ai_instruction_profile','communication_instruction_profile',id,
+    json_object('module',module,'version',version,'tone',tone,'language',language,'model',model),'web'
+   FROM communication_instruction_profiles WHERE id=? AND company_id=? LIMIT 1
+  `).bind(uid('audit'),context.employee.id,companyId,id,companyId),
+ ]);
+ if(Number(created.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1){
+  return json({error:'Instruction profile version could not be created.'},409);
+ }
+ const stored=await env.DB.prepare(
   'SELECT version FROM communication_instruction_profiles WHERE id=? AND company_id=? LIMIT 1'
  ).bind(id,companyId).first<{version:number}>();
- if(!created)return json({error:'Instruction profile version could not be created.'},409);
- const version=Number(created.version);
- await audit(env,context,companyId,'create_ai_instruction_profile','communication_instruction_profile',id,{module:event.module,version,tone,language,model});
+ if(!stored)return json({error:'Instruction profile version could not be created.'},409);
+ const version=Number(stored.version);
  return json({ok:true,id,version,status:'pending_approval'},201);
 }
 
@@ -282,7 +308,7 @@ async function approveInstructionProfile(request:Request,env:GovernanceEnv,conte
  if(row.approvedBy||row.active){
   return json({error:'This instruction profile was already reviewed or changed. Refresh and try again.'},409);
  }
- const [claimed,,activated]=await env.DB.batch([
+ const [claimed,,activated,audited]=await env.DB.batch([
   env.DB.prepare(`
    UPDATE communication_instruction_profiles SET approved_by=?
    WHERE id=? AND company_id=? AND module=? AND language=?
@@ -303,11 +329,23 @@ async function approveInstructionProfile(request:Request,env:GovernanceEnv,conte
    UPDATE communication_instruction_profiles SET active=1
    WHERE id=? AND company_id=? AND approved_by=? AND active=0
   `).bind(profileId,companyId,context.employee.id),
+  env.DB.prepare(`
+   INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','approve_ai_instruction_profile','communication_instruction_profile',id,?,'web'
+   FROM communication_instruction_profiles
+   WHERE id=? AND company_id=? AND approved_by=? AND active=1 AND changes()=1
+   LIMIT 1
+  `).bind(
+   uid('audit'),context.employee.id,companyId,
+   JSON.stringify({module:event.module,version:row.version}),
+   profileId,companyId,context.employee.id,
+  ),
  ]);
- if(Number(claimed.meta?.changes||0)!==1||Number(activated.meta?.changes||0)!==1){
+ if(Number(claimed.meta?.changes||0)!==1||
+    Number(activated.meta?.changes||0)!==1||
+    Number(audited.meta?.changes||0)!==1){
   return json({error:'This instruction profile was already reviewed or changed. Refresh and try again.'},409);
  }
- await audit(env,context,companyId,'approve_ai_instruction_profile','communication_instruction_profile',profileId,{module:event.module,version:row.version});
  return json({ok:true,id:profileId,active:true});
 }
 
