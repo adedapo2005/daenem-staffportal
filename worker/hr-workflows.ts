@@ -53,7 +53,10 @@ async function leaveList(request:Request,env:Env,context:EnhancedSessionContext)
   const rows=await env.DB.prepare(`SELECT lr.id,lr.employee_id employeeId,e.display_name employeeName,e.employee_no employeeNo,lt.name leaveType,
     lr.start_date startDate,lr.end_date endDate,lr.days_requested daysRequested,lr.reason,lr.status,lr.review_notes reviewNotes,
     reviewer.display_name reviewerName,lr.reviewed_at reviewedAt,lr.created_at createdAt
-    FROM leave_requests lr JOIN employees e ON e.id=lr.employee_id LEFT JOIN leave_types lt ON lt.id=lr.leave_type_id
+    FROM leave_requests lr
+    JOIN employees e ON e.id=lr.employee_id
+    JOIN employee_company_memberships subject_scope ON subject_scope.employee_id=lr.employee_id AND subject_scope.company_id=lr.company_id
+    LEFT JOIN leave_types lt ON lt.id=lr.leave_type_id
     LEFT JOIN employees reviewer ON reviewer.id=lr.reviewed_by
     WHERE lr.company_id=? AND (?='all' OR lr.status=?) ORDER BY CASE lr.status WHEN 'pending' THEN 0 ELSE 1 END,lr.created_at DESC LIMIT 300`)
     .bind(companyId,status,status).all<Record<string,unknown>>();
@@ -89,7 +92,10 @@ async function reviewList(request:Request,env:Env,context:EnhancedSessionContext
     r.review_period_end periodEnd,r.review_type reviewType,r.rating,r.strengths,r.improvement_areas improvementAreas,r.goals,
     r.manager_comments managerComments,r.employee_comments employeeComments,r.employee_acknowledged_at acknowledgedAt,r.status,
     reviewer.display_name reviewerName,r.created_at createdAt
-    FROM employee_reviews r JOIN employees e ON e.id=r.employee_id LEFT JOIN employees reviewer ON reviewer.id=r.reviewer_employee_id
+    FROM employee_reviews r
+    JOIN employees e ON e.id=r.employee_id
+    JOIN employee_company_memberships subject_scope ON subject_scope.employee_id=r.employee_id AND subject_scope.company_id=r.company_id
+    LEFT JOIN employees reviewer ON reviewer.id=r.reviewer_employee_id
     WHERE r.company_id=? ORDER BY r.review_period_end DESC,r.created_at DESC LIMIT 300`).bind(companyId).all<Record<string,unknown>>();
   return json({reviews:rows.results||[]});
 }
