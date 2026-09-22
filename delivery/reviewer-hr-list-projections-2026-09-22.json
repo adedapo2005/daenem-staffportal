@@ -1,0 +1,33 @@
+{
+  "review": "HR list and protected-count canonical company relationship integrity",
+  "date": "2026-09-22",
+  "scope": "non-production Worker/API static boundary review",
+  "codeCheckpoints": [
+    "2df28fe654ee7f114a42807983ce461d42fef2d5",
+    "189441229c4890c9486d2e22d2b3ab1fbfdaac51",
+    "eafd10e0834559ccb4abe0acd6046bd69803ab1b"
+  ],
+  "findingsAfterCorrection": {
+    "P0": [],
+    "P1": [],
+    "P2": []
+  },
+  "corrections": [
+    "HR case and lifecycle lists require canonical subject-company membership",
+    "HR lifecycle list is bounded to 300 rows",
+    "Leave and performance-review lists require canonical subject-company membership",
+    "Protected leave, review, case and lifecycle overview counts require canonical subject-company membership"
+  ],
+  "verification": {
+    "nextPhase": "57/57 PASS",
+    "workflowGovernance": "22/22 PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "zeroDisclosure": "PASS",
+    "diffHygiene": "PASS",
+    "githubCi": "run 144 PASS; run 146 PASS; run 148 PASS"
+  },
+  "productionActions": false,
+  "remoteMigrationApplied": false,
+  "farmsAccess": false
+}
