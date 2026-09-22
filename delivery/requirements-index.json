@@ -45,7 +45,8 @@
       "priority": "P1",
       "status": "PARTIAL",
       "range": "HOME-SECURITY-001, HOME-001..038",
-      "description": "Permission-composed personalized Home, My Day, Action Center, business widgets, Owner Command Center, Ask DAENEM and contextual work surfaces."
+      "description": "Permission-composed personalized Home, My Day, Action Center, business widgets, Owner Command Center, Ask DAENEM and contextual work surfaces.",
+      "evidence": "Static permission-composed Home contract PASS for owner, manager, employee and My Day/data-boundary surfaces; authenticated browser rendering and the required viewport matrix remain pending."
     },
     {
       "id": "SMART-INPUT",

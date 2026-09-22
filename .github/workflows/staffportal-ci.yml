@@ -38,6 +38,9 @@ jobs:
       - name: Validate delivery controller
         run: node scripts/check-delivery-controller.mjs
 
+      - name: Permission-composed Home contract
+        run: node scripts/check-home-contract.mjs
+
       - name: Dashboard permission contract
         run: npm run check:dashboard-permissions
 
