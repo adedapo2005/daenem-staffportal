@@ -166,6 +166,20 @@ test('Inbox send-readiness UI uses guarded prepare and send handoffs',async()=>{
   assert.match(ui,/!currentReadiness\?\.ready\|\|!currentReadiness\.liveSend/);
 });
 
+test('Webhook status updates are bound to the resolved canonical sender',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-webhook.ts'),'utf8');
+  assert.match(source,/JOIN communication_inbox_conversations c ON c\.id=m\.conversation_id/);
+  assert.match(source,/m\.provider_message_id=\? AND c\.sender_id=\?/);
+  assert.match(source,/c\.id=communication_inbox_messages\.conversation_id AND c\.sender_id=\?/);
+  assert.match(source,/applyStatuses\(env,mapping,values\)/);
+});
+
+test('Webhook rejects any value without canonical sender metadata',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-webhook.ts'),'utf8');
+  assert.match(source,/if\(!phoneNumberId\)return json\(\{error:'Communications sender mapping is required\.'\},403\)/);
+  assert.doesNotMatch(source,/if\(!phoneNumberId\)continue/);
+});
+
 test('Meta credential vault is encrypted, masked, owner-managed and runtime-resolved',async()=>{
   const vault=await readFile(path.join(root,'worker','meta-credentials.ts'),'utf8');
   const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');

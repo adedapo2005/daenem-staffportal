@@ -165,7 +165,7 @@ export function canAdvanceDeliveryStatus(current:string,next:string){
   return (rank[next]??-1)>=(rank[current]??-1);
 }
 
-async function applyStatuses(env:CommunicationsWebhookEnv,companyId:string|null,values:Record<string,unknown>[]){
+async function applyStatuses(env:CommunicationsWebhookEnv,mapping:SenderMapping,values:Record<string,unknown>[]){
   let updates=0;
   for(const value of values){
     const statuses=Array.isArray(value.statuses)?value.statuses as Array<Record<string,unknown>>:[];
@@ -175,20 +175,37 @@ async function applyStatuses(env:CommunicationsWebhookEnv,companyId:string|null,
       const nextStatus=providerStatus==='delivered'?'delivered':providerStatus==='read'?'read':providerStatus==='failed'?'failed':providerStatus==='sent'?'accepted':'';
       if(!nextStatus)continue;
       const inboxStatus=nextStatus==='accepted'?'sent':nextStatus;
-      const inboxCurrent=await env.DB.prepare(`SELECT status FROM communication_inbox_messages WHERE provider_message_id=? LIMIT 1`).bind(providerMessageId).first<{status:string}>();
+      const inboxCurrent=await env.DB.prepare(`
+        SELECT m.status FROM communication_inbox_messages m
+        JOIN communication_inbox_conversations c ON c.id=m.conversation_id
+        WHERE m.provider_message_id=? AND c.sender_id=?
+          AND (? IS NULL OR m.company_id=?)
+        LIMIT 1
+      `).bind(providerMessageId,mapping.senderId,mapping.companyId,mapping.companyId).first<{status:string}>();
       if(inboxCurrent&&canAdvanceDeliveryStatus(inboxCurrent.status,inboxStatus)){
-        const result=await env.DB.prepare(`UPDATE communication_inbox_messages SET status=?,updated_at=CURRENT_TIMESTAMP WHERE provider_message_id=? AND status=?`).bind(inboxStatus,providerMessageId,inboxCurrent.status).run();
+        const result=await env.DB.prepare(`
+          UPDATE communication_inbox_messages SET status=?,updated_at=CURRENT_TIMESTAMP
+          WHERE provider_message_id=? AND status=?
+            AND (? IS NULL OR company_id=?)
+            AND EXISTS(
+              SELECT 1 FROM communication_inbox_conversations c
+              WHERE c.id=communication_inbox_messages.conversation_id AND c.sender_id=?
+            )
+        `).bind(
+          inboxStatus,providerMessageId,inboxCurrent.status,
+          mapping.companyId,mapping.companyId,mapping.senderId
+        ).run();
         updates+=Number(result.meta?.changes||0);
       }
-      if(!companyId)continue;
-      const current=await env.DB.prepare(`SELECT status FROM communication_outbox WHERE company_id=? AND provider_message_id=? LIMIT 1`).bind(companyId,providerMessageId).first<{status:string}>();
+      if(!mapping.companyId)continue;
+      const current=await env.DB.prepare(`SELECT status FROM communication_outbox WHERE company_id=? AND provider_message_id=? LIMIT 1`).bind(mapping.companyId,providerMessageId).first<{status:string}>();
       if(!current||!canAdvanceDeliveryStatus(current.status,nextStatus))continue;
       const result=await env.DB.prepare(`UPDATE communication_outbox SET status=?,
         accepted_at=CASE WHEN ? IN ('accepted','delivered','read') THEN COALESCE(accepted_at,CURRENT_TIMESTAMP) ELSE accepted_at END,
         delivered_at=CASE WHEN ? IN ('delivered','read') THEN COALESCE(delivered_at,CURRENT_TIMESTAMP) ELSE delivered_at END,
         read_at=CASE WHEN ?='read' THEN COALESCE(read_at,CURRENT_TIMESTAMP) ELSE read_at END,
         updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND provider_message_id=? AND status=?`)
-        .bind(nextStatus,nextStatus,nextStatus,nextStatus,companyId,providerMessageId,current.status).run();
+        .bind(nextStatus,nextStatus,nextStatus,nextStatus,mapping.companyId,providerMessageId,current.status).run();
       updates+=Number(result.meta?.changes||0);
     }
   }
@@ -243,7 +260,7 @@ export async function routeCommunicationsWebhook(
   for (const value of values) {
     const metadata=value.metadata&&typeof value.metadata==='object'?value.metadata as Record<string,unknown>:{};
     const phoneNumberId=String(metadata.phone_number_id||'');
-    if(!phoneNumberId)continue;
+    if(!phoneNumberId)return json({error:'Communications sender mapping is required.'},403);
     const mapping=await resolveSenderScope(env,phoneNumberId);
     if(!mapping)return json({error:'Unknown communications sender.'},403);
     senderMappings.set(phoneNumberId,mapping);
@@ -264,7 +281,7 @@ export async function routeCommunicationsWebhook(
   if(receipt.duplicate)return json({received:true,duplicate:true});
 
   try {
-    const statusUpdates=await applyStatuses(env,mapping.companyId,values);
+    const statusUpdates=await applyStatuses(env,mapping,values);
     const inboundMessages=await persistInboundMessages(env,mapping,values);
     await env.DB.prepare(`
       UPDATE communication_webhook_inbox
