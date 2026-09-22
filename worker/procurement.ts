@@ -171,7 +171,7 @@ async function findPurchaseOrder(env: ProcurementEnv, id: string) {
   `).bind(id).first<PurchaseOrderRow>();
 }
 
-async function findEventByIdempotencyKey(env: ProcurementEnv, key: string) {
+async function findEventByIdempotencyKey(env: ProcurementEnv, key: string, companyId: string) {
   return env.DB.prepare(`
     SELECT id,
            purchase_order_id AS purchaseOrderId,
@@ -193,9 +193,9 @@ async function findEventByIdempotencyKey(env: ProcurementEnv, key: string) {
            captured_at AS capturedAt,
            server_received_at AS serverReceivedAt
     FROM purchase_order_status_events
-    WHERE idempotency_key=?
+    WHERE idempotency_key=? AND company_id=?
     LIMIT 1
-  `).bind(key).first<StatusEventRow>();
+  `).bind(key, companyId).first<StatusEventRow>();
 }
 
 async function findSavedTransition(env: ProcurementEnv, eventId: string) {
@@ -260,10 +260,8 @@ export async function routeProcurement(request: Request, env: ProcurementEnv, co
   }
 
   const purchaseOrder = await findPurchaseOrder(env, purchaseOrderId);
-  if (!purchaseOrder) return json({ error: 'Purchase Order not found.' }, 404);
-  if (!member(context, purchaseOrder.companyId)) return json({ error: 'Purchase Order not found.' }, 404);
-  if (!owner(context) && !hasPermission(context, 'procurement.access', 'approve', purchaseOrder.companyId)) {
-    return json({ error: 'Procurement approval permission is required.' }, 403);
+  if (!purchaseOrder || !member(context, purchaseOrder.companyId) || (!owner(context) && !hasPermission(context, 'procurement.access', 'approve', purchaseOrder.companyId))) {
+    return json({ error: 'Purchase Order not found.' }, 404);
   }
   if (!purchaseOrder.spendExpenseRequestId) {
     return json({ error: 'This transition boundary only supports Spend-linked Purchase Orders.' }, 409);
@@ -271,7 +269,7 @@ export async function routeProcurement(request: Request, env: ProcurementEnv, co
 
   // Idempotency is checked before the current-state matrix so a response-loss
   // retry can safely return the original result after the PO has advanced.
-  const existing = await findEventByIdempotencyKey(env, idempotencyKey);
+  const existing = await findEventByIdempotencyKey(env, idempotencyKey, purchaseOrder.companyId);
   if (existing) {
     if (!sameIdempotentTransition(existing, purchaseOrder, target)) {
       return json({ error: 'This idempotency key is already bound to a different Purchase Order transition.', errorCategory: 'idempotency-conflict' }, 409);
@@ -411,7 +409,7 @@ export async function routeProcurement(request: Request, env: ProcurementEnv, co
       return json({ error: 'Purchase Order transition audit evidence was incomplete.', errorCategory: 'transition-audit-incomplete' }, 409);
     }
   } catch {
-    const retry = await findEventByIdempotencyKey(env, idempotencyKey);
+    const retry = await findEventByIdempotencyKey(env, idempotencyKey, purchaseOrder.companyId);
     if (retry && sameIdempotentTransition(retry, purchaseOrder, target)) {
       const savedRetry = await findSavedTransition(env, retry.id);
       if (savedRetry) return json(transitionResponse(savedRetry, savedRetry.purchaseOrderStatus, true));

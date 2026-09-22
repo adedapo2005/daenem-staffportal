@@ -15,6 +15,7 @@ const businessWorkers = {
   logistics: `${read('worker/logistics.ts')}\n${read('worker/logistics-v2.ts')}`,
   inventory: read('worker/inventory.ts'),
   finance: read('worker/finance.ts'),
+  procurement: read('worker/procurement.ts'),
   properties: `${read('worker/properties.ts')}\n${read('worker/properties-v2.ts')}`,
 };
 
@@ -52,6 +53,8 @@ check('Inventory APIs enforce per-company permission scope', businessWorkers.inv
 const unscopedFinancePermission = /can\(context,\s*'finance\.[^']+'(?:,\s*'(?:view|create|edit|approve|manage)')?\)/;
 check('Finance APIs enforce per-company permission scope', businessWorkers.finance.includes('hasPermission(c,p,l,companyId)') && !unscopedFinancePermission.test(businessWorkers.finance));
 check('Finance state transitions fail closed outside company scope', businessWorkers.finance.includes("!can(context,'finance.journal','approve',String(entry.companyId))") && businessWorkers.finance.includes("!can(context,'finance.receivables','edit',row.companyId)"));
+check('Procurement transitions conceal records outside permission scope', businessWorkers.procurement.includes("!purchaseOrder || !member(context, purchaseOrder.companyId) || (!owner(context) && !hasPermission(context, 'procurement.access', 'approve', purchaseOrder.companyId))") && !businessWorkers.procurement.includes("Procurement approval permission is required."));
+check('Procurement idempotency evidence is company scoped', businessWorkers.procurement.includes('WHERE idempotency_key=? AND company_id=?') && businessWorkers.procurement.includes('findEventByIdempotencyKey(env, idempotencyKey, purchaseOrder.companyId)'));
 check('Properties APIs enforce Properties-company access', businessWorkers.properties.includes("'properties.access', level, COMPANY") && businessWorkers.properties.includes("'properties.access', 'approve', COMPANY"));
 
 for (const result of assertions) console.log(`${result.ok ? '✓' : '✗'} ${result.name}`);
