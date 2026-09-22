@@ -43,5 +43,5 @@
     "closure": "PARTIAL: V45 authenticated owner/delegated-manager/unauthorized browser acceptance still unavailable",
     "remaining": ["V44-CLOSURE", "SECURITY-ZERO-DISCLOSURE", "RELEASE-INTEGRITY", "HOME", "SMART-INPUT", "ERP-COMPLETION", "ADMIN-BUILDERS", "COMMUNICATIONS-META", "ACCESSIBILITY-RESPONSIVE"]
   },
-  "nextSafeWorkstream": "Continue P0 security/release evidence, then inspect and implement SMART-INPUT-001..052 without changing Sites audience or production."
+  "nextSafeWorkstream": "SMART-INPUT-001..052 is blocked pending a durable contract; continue safe ERP-COMPLETION inspection and targeted permission/runtime evidence without changing Sites audience or production."
 }
