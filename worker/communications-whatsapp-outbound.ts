@@ -130,11 +130,15 @@ export async function sendWhatsAppInboxMessage(
   if(!prepared.tokenConfigured)return {accepted:false,blocked:true,errorCode:'META_SYSTEM_USER_TOKEN_MISSING'};
   const token=await resolveMetaCredential(env,'meta_system_user_token');
   if(!token)return {accepted:false,blocked:true,errorCode:'META_SYSTEM_USER_TOKEN_MISSING'};
-  await env.DB.prepare(`
+  const claim=await env.DB.prepare(`
     UPDATE communication_inbox_messages
-    SET send_requested_at=COALESCE(send_requested_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
-    WHERE id=? AND status='draft'
-  `).bind(prepared.messageId).run();
+    SET status='sending',send_requested_at=COALESCE(send_requested_at,CURRENT_TIMESTAMP),
+      updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND status='draft' AND idempotency_key=?
+  `).bind(prepared.messageId,prepared.idempotencyKey).run();
+  if(Number(claim.meta?.changes||0)!==1){
+    return {accepted:false,blocked:true,errorCode:'SEND_ALREADY_CLAIMED'};
+  }
   let response:Response;
   try{
     response=await fetch(prepared.endpoint!,{
@@ -146,7 +150,7 @@ export async function sendWhatsAppInboxMessage(
     await env.DB.prepare(`
       UPDATE communication_inbox_messages
       SET status='failed',last_error_code='PROVIDER_TRANSPORT_AMBIGUOUS',updated_at=CURRENT_TIMESTAMP
-      WHERE id=? AND status='draft'
+      WHERE id=? AND status='sending'
     `).bind(prepared.messageId).run();
     return {accepted:false,ambiguous:true,errorCode:'PROVIDER_TRANSPORT_AMBIGUOUS'};
   }
@@ -159,7 +163,7 @@ export async function sendWhatsAppInboxMessage(
       UPDATE communication_inbox_messages
       SET status='sent',provider_message_id=?,send_requested_at=COALESCE(send_requested_at,CURRENT_TIMESTAMP),
         last_error_code=NULL,updated_at=CURRENT_TIMESTAMP
-      WHERE id=? AND status='draft'
+      WHERE id=? AND status='sending'
     `).bind(providerMessageId,prepared.messageId).run();
     return {accepted:true,providerMessageId};
   }
@@ -172,7 +176,7 @@ export async function sendWhatsAppInboxMessage(
     UPDATE communication_inbox_messages
     SET status='failed',last_error_code=?,send_requested_at=COALESCE(send_requested_at,CURRENT_TIMESTAMP),
       updated_at=CURRENT_TIMESTAMP
-    WHERE id=? AND status='draft'
+    WHERE id=? AND status='sending'
   `).bind(errorCode,prepared.messageId).run();
   return {accepted:false,errorCode};
 }
