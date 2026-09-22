@@ -24,7 +24,7 @@
       "priority": "P0",
       "status": "IMPLEMENTED — AWAITING QA",
       "description": "No permission means no disclosure across UI, API, search, AI, counts, routes, notifications, favorites, recents and breadcrumbs.",
-      "evidence": "Static acceptance PASS: zero-disclosure contract; dashboard permissions; post-auth layout; canonical data boundary; company access 26/26; Autos/Logistics boundaries 21/21 with permission-composed dashboards, delegated-driver assignment scope, financial-field withholding and neutral denials; target-company permission enforcement for Inventory/Finance; neutral, company-scoped Procurement denial/idempotency behavior; owner support 15/15; Smart Help 22/22; Platform Center 31/31. Reviewed P1 authorization/disclosure defects were fixed and bounded re-review has no open P0/P1/P2. Authenticated browser leakage checks remain pending."
+      "evidence": "Static acceptance PASS: zero-disclosure contract; dashboard permissions; post-auth layout; canonical data boundary; company access 26/26; Autos/Logistics boundaries 21/21; Forms builder boundaries 19/19 with company-scoped listing, creation, assignment, personal/review queues and assignment-scoped idempotency; target-company permission enforcement for Inventory/Finance; neutral, company-scoped Procurement denial/idempotency behavior; owner support 15/15; Smart Help 22/22; Platform Center 31/31. Reviewed P1 authorization/disclosure defects were fixed and bounded re-review has no open P0/P1/P2. Authenticated browser leakage checks remain pending."
     },
     {
       "id": "RELEASE-INTEGRITY",
@@ -67,7 +67,8 @@
       "id": "ADMIN-BUILDERS",
       "priority": "P2",
       "status": "PARTIAL",
-      "description": "Complete governed Forms, Workflow, Report, Widget and Theme builders plus enterprise configuration."
+      "description": "Complete governed Forms, Workflow, Report, Widget and Theme builders plus enterprise configuration.",
+      "evidence": "Forms builder security closure PASS at 90ce191: 19/19 boundary assertions, TypeScript, zero-disclosure, 26/26 company access, full build and CI run 90 PASS; P1 cross-company listing, assignment, review and replay defects fixed with no open bounded P0/P1/P2. Family remains PARTIAL pending Workflow, Report, Widget and Theme builder inspection plus authenticated rendered acceptance."
     },
     {
       "id": "COMMUNICATIONS-META",
