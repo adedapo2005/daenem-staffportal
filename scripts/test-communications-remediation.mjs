@@ -220,9 +220,46 @@ test('Communications governance requires module-specific authority and neutraliz
 test('Communications administrative projections are bounded and language-scoped',async()=>{
   const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
   assert.ok((governance.match(/LIMIT 200/g)||[]).length>=4);
-  assert.match(governance,/SELECT id,module,language,created_by AS createdBy,version/);
-  assert.match(governance,/SET active=0 WHERE company_id=\? AND module=\? AND language=\?/);
-  assert.match(governance,/bind\(companyId,event\.module,row\.language\)/);
+  assert.match(governance,/SELECT id,module,version,tone,language,instructions,model,active/);
+  assert.match(governance,/SET active=0[\s\S]*company_id=\? AND module=\? AND language=\?/);
+  assert.match(governance,/companyId,event\.module,row\.language/);
+});
+
+test('Draft approval is compare-and-set and creates one current approval',async()=>{
+  const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
+  assert.match(service,/INSERT INTO communication_approvals[\s\S]*WHERE EXISTS\([\s\S]*status='pending_approval'/);
+  assert.match(service,/WHERE id=\? AND company_id=\? AND status='pending_approval'[\s\S]*communication_approvals/);
+  assert.match(service,/approvalCreated\.meta\?\.changes[\s\S]*draftApproved\.meta\?\.changes/);
+});
+
+test('Draft queue persistence and state transition share one atomic batch',async()=>{
+  const dispatch=await readFile(path.join(root,'worker','communications-dispatch.ts'),'utf8');
+  assert.match(dispatch,/await env\.DB\.batch\(\[[\s\S]*INSERT OR IGNORE INTO communication_outbox[\s\S]*UPDATE communication_drafts/);
+  assert.match(dispatch,/WHERE id=\? AND company_id=\? AND status='approved'/);
+  assert.match(dispatch,/idempotency_key=\? AND company_id=\? AND draft_id=\?/);
+  assert.match(dispatch,/DRAFT_QUEUE_CONFLICT/);
+});
+
+test('Governance version allocation occurs inside the insert statement',async()=>{
+  const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
+  assert.match(governance,/INSERT INTO communication_templates[\s\S]*COALESCE\(MAX\(revision\),0\)\+1/);
+  assert.match(governance,/INSERT INTO communication_instruction_profiles[\s\S]*COALESCE\(MAX\(version\),0\)\+1/);
+  assert.doesNotMatch(governance,/const current=await env\.DB\.prepare\([\s\S]{0,200}MAX\((revision|version)\)/);
+});
+
+test('Template approval uses a stale-write guard',async()=>{
+  const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
+  assert.match(governance,/internal_status='draft' AND approved_by IS NULL/);
+  assert.match(governance,/approved\.meta\?\.changes[\s\S]*already reviewed or changed/);
+});
+
+test('Instruction activation is claimed once and database-enforced per language',async()=>{
+  const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
+  const migration=await readFile(path.join(root,'migrations','0074_communications_governance_concurrency.sql'),'utf8');
+  assert.match(governance,/SET approved_by=\?[\s\S]*active=0 AND approved_by IS NULL/);
+  assert.match(governance,/const \[claimed,,activated\]=await env\.DB\.batch/);
+  assert.match(governance,/claimed\.meta\?\.changes[\s\S]*activated\.meta\?\.changes/);
+  assert.match(migration,/CREATE UNIQUE INDEX IF NOT EXISTS[\s\S]*company_id,module,language[\s\S]*WHERE active=1/);
 });
 
 test('Meta credential vault is encrypted, masked, owner-managed and runtime-resolved',async()=>{

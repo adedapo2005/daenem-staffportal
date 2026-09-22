@@ -214,24 +214,36 @@ export async function queueApprovedDraft(
 
   const proposedId=uid('comm-outbox');
   const idempotencyKey=`comm:${row.companyId}:${row.id}:r1`;
-  await env.DB.prepare(`
-    INSERT OR IGNORE INTO communication_outbox(
-      id,company_id,event_id,employee_id,channel,draft_id,template_id,
-      recipient_contact_revision,priority,status,idempotency_key,expires_at,
-      send_requested_by,next_attempt_at
-    ) VALUES(?,?,?,?,?,?,?,?,50,'queued',?,?,?,CURRENT_TIMESTAMP)
-  `).bind(
-    proposedId,row.companyId,row.eventId,row.recipientId,row.channel,row.id,template.id,
-    contact?.revision||null,idempotencyKey,row.expiresAt,input.requestedBy
-  ).run();
+  await env.DB.batch([
+    env.DB.prepare(`
+      INSERT OR IGNORE INTO communication_outbox(
+        id,company_id,event_id,employee_id,channel,draft_id,template_id,
+        recipient_contact_revision,priority,status,idempotency_key,expires_at,
+        send_requested_by,next_attempt_at
+      )
+      SELECT ?,?,?,?,?,?,?,?,50,'queued',?,?,?,CURRENT_TIMESTAMP
+      WHERE EXISTS(
+        SELECT 1 FROM communication_drafts
+        WHERE id=? AND company_id=? AND status='approved'
+      )
+    `).bind(
+      proposedId,row.companyId,row.eventId,row.recipientId,row.channel,row.id,template.id,
+      contact?.revision||null,idempotencyKey,row.expiresAt,input.requestedBy,
+      row.id,row.companyId,
+    ),
+    env.DB.prepare(`
+      UPDATE communication_drafts SET status='queued',updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND company_id=? AND status='approved'
+        AND EXISTS(
+          SELECT 1 FROM communication_outbox
+          WHERE idempotency_key=? AND draft_id=?
+        )
+    `).bind(row.id,row.companyId,idempotencyKey,row.id),
+  ]);
   const persisted=await env.DB.prepare(
-    'SELECT id,status FROM communication_outbox WHERE idempotency_key=? LIMIT 1'
-  ).bind(idempotencyKey).first<{id:string;status:string}>();
-  if(!persisted)throw new Error('OUTBOX_PERSIST_FAILED');
-  await env.DB.prepare(`
-    UPDATE communication_drafts SET status='queued',updated_at=CURRENT_TIMESTAMP
-    WHERE id=? AND status='approved'
-  `).bind(row.id).run();
+    'SELECT id,status FROM communication_outbox WHERE idempotency_key=? AND company_id=? AND draft_id=? LIMIT 1'
+  ).bind(idempotencyKey,row.companyId,row.id).first<{id:string;status:string}>();
+  if(!persisted)throw new Error('DRAFT_QUEUE_CONFLICT');
   return {id:persisted.id,idempotencyKey,status:persisted.status};
 }
 

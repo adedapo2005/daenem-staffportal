@@ -620,17 +620,34 @@ async function approveDraft(
     new Date(String(row.expiresAt)).getTime(),
     Date.now() + 24 * 60 * 60_000,
   )).toISOString();
-  await env.DB.batch([
+  const [approvalCreated,draftApproved] = await env.DB.batch([
     env.DB.prepare(`
       INSERT INTO communication_approvals(
         id,draft_id,approver_employee_id,content_digest,policy_revision,expires_at
-      ) VALUES(?,?,?,?,?,?)
-    `).bind(approvalId,draftId,context.employee.id,digest,currentPolicy.revision,expiresAt),
+      )
+      SELECT ?,?,?,?,?,?
+      WHERE EXISTS(
+        SELECT 1 FROM communication_drafts
+        WHERE id=? AND company_id=? AND status='pending_approval'
+      )
+    `).bind(
+      approvalId,draftId,context.employee.id,digest,currentPolicy.revision,expiresAt,
+      draftId,companyId,
+    ),
     env.DB.prepare(`
       UPDATE communication_drafts
-      SET status='approved',updated_at=CURRENT_TIMESTAMP WHERE id=?
-    `).bind(draftId),
+      SET status='approved',updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND company_id=? AND status='pending_approval'
+        AND EXISTS(
+          SELECT 1 FROM communication_approvals
+          WHERE id=? AND draft_id=?
+        )
+    `).bind(draftId,companyId,approvalId,draftId),
   ]);
+  if (Number(approvalCreated.meta?.changes || 0) !== 1 ||
+      Number(draftApproved.meta?.changes || 0) !== 1) {
+    return json({ error:'This draft was already reviewed or changed. Refresh and try again.' }, 409);
+  }
   return json({ ok:true,draftId,status:'approved',approvalId,expiresAt });
 }
 
