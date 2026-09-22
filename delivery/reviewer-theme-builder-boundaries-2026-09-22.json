@@ -1,0 +1,48 @@
+{
+  "review": "DAENEM Staff Portal Theme and Sign-In Studio governance review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/theme-preferences.ts",
+    "scripts/check-theme-builder-boundaries.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Aggregate Settings permission allowed a company-scoped administrator to mutate Group-wide theme and sign-in configuration.",
+      "correction": "Global Theme and Sign-In Studio mutations now require an explicit Owner or Group Admin role plus Settings manage permission."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "Personal theme, sign-in configuration, AI copy generation and Group theme policy actions lacked complete audit evidence.",
+      "correction": "Each state-changing or governed AI action now records bounded audit metadata without prompt or credential content."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "Group theme policy writes and their audit evidence were not atomic.",
+      "correction": "The normalized planned policy and its audit record now persist in the same D1 batch."
+    }
+  ],
+  "verification": {
+    "typecheck": "PASS",
+    "themeBuilderBoundaries": "15/15 PASS",
+    "signInConfigurability": "107/107 PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun94": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Theme and Sign-In Studio governance change; Workflow and Report builders plus authenticated V45 browser acceptance remain pending."
+  },
+  "checkpoint": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}
