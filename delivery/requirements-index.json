@@ -73,7 +73,8 @@
       "id": "COMMUNICATIONS-META",
       "priority": "P1",
       "status": "PARTIAL",
-      "description": "Complete WhatsApp, AI drafting, Inbox, Meta vault, scoped governance, delegated administration and provider release readiness."
+      "description": "Complete WhatsApp, AI drafting, Inbox, Meta vault, scoped governance, delegated administration and provider release readiness.",
+      "evidence": "Safety contracts PASS: communications 11/11; remediation 17/17; staging integration 10/10; zero-disclosure contract PASS. Family remains PARTIAL pending broader provider/runtime acceptance and authenticated V45 rendering."
     },
     {
       "id": "ACCESSIBILITY-RESPONSIVE",
