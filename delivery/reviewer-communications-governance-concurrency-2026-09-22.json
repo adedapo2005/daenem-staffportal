@@ -1,0 +1,29 @@
+{
+  "review": "Communications approval, queue and governance concurrency closure",
+  "date": "2026-09-22",
+  "scope": "Non-production backend contracts and migration only; no provider send",
+  "codeCheckpoint": "7426c39d0574a1ed999105e2f2d8e45cb8ac8fb0",
+  "correctedFindings": [
+    {"severity":"P1","finding":"Concurrent draft approvals could create multiple live approvals","resolution":"Approval creation and pending-to-approved transition now use one guarded atomic batch with change-count verification"},
+    {"severity":"P1","finding":"Outbox insertion and draft queue transition could separate on interruption or stale state","resolution":"Idempotent outbox insertion and approved-to-queued transition now share one guarded batch"},
+    {"severity":"P1","finding":"Concurrent instruction-profile approvals could overwrite review authority or leave multiple active profiles","resolution":"Approval uses a single-winner claim, guarded activation batch and one-active-profile-per-language database index"},
+    {"severity":"P2","finding":"Template approval returned success after a stale concurrent write","resolution":"Approval is compare-and-set and only audits a successful state transition"},
+    {"severity":"P2","finding":"Template and instruction versions used read-then-write numbering","resolution":"Version allocation now occurs atomically inside each insert statement"}
+  ],
+  "verification": {
+    "communicationsContracts": "12/12 PASS",
+    "communicationsRemediation": "30/30 PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "zeroDisclosure": "PASS",
+    "deliveryController": "PASS",
+    "diffHygiene": "PASS",
+    "githubCiRun168": "PASS"
+  },
+  "reviewerResult": "No open P0/P1/P2 in the bounded change",
+  "migration": "0074 committed; not remotely applied",
+  "productionActions": false,
+  "remoteMigrationApplied": false,
+  "liveMessaging": false,
+  "farmsAccess": false
+}

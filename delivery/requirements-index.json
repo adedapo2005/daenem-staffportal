@@ -75,7 +75,7 @@
       "priority": "P1",
       "status": "PARTIAL",
       "description": "Complete WhatsApp, AI drafting, Inbox, Meta vault, scoped governance, delegated administration and provider release readiness.",
-      "evidence": "Safety contracts PASS: communications 12/12; remediation 25/25; staging integration 10/10; zero-disclosure contract PASS. WhatsApp transport retains atomic idempotency and sender/company scope. AI provider failures are neutral/retryable and occur before draft persistence; language tags and active instruction profiles are exact-language scoped; governance requires module-specific authority, neutralizes unknown events and caps administrative projections. Checkpoint f745cdb passed CI run 164; no live message was sent. Family remains PARTIAL pending draft approval/queue concurrency, broader provider runtime acceptance and authenticated V45 rendering."
+      "evidence": "Safety contracts PASS: communications 12/12; remediation 30/30; staging integration 10/10; zero-disclosure contract PASS. Draft approval and queue creation use guarded atomic batches; template approval is stale-write safe; template and instruction versions allocate inside inserts; instruction approval uses a single-winner claim and migration 0074 enforces one active profile per company/module/language. Checkpoint 7426c39 passed CI run 168; migration 0074 was not remotely applied and no live message was sent. Family remains PARTIAL pending governance-upsert audit atomicity, broader provider runtime acceptance and authenticated V45 rendering."
     },
     {
       "id": "ACCESSIBILITY-RESPONSIVE",
