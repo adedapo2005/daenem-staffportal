@@ -1,0 +1,50 @@
+{
+  "review": "DAENEM Staff Portal Autos and Logistics authorization-boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/autos-v2.ts",
+    "worker/autos-v3.ts",
+    "worker/logistics.ts",
+    "worker/logistics-v2.ts",
+    "scripts/check-autos-logistics-boundaries.mjs"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Granular Autos and Logistics dashboards delegated to broad base dashboards, exposing sibling-submodule counts and financial metrics.",
+      "correction": "Dashboards are permission-composed and query only authorized submodules."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Delegated Logistics drivers could enumerate unassigned company trips and shipments, receive trip and shipment financial fields, and target unassigned records for trip writes.",
+      "correction": "Driver reads are assignment scoped, financial fields are withheld, POD/expense/fuel/trip mutations require the assigned trip, and denials are neutral."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Autos and Logistics references, joins and follow-up mutations did not consistently repeat authoritative company predicates.",
+      "correction": "Referenced vehicles, leads, customers, drivers, shipments and trips are validated inside the module company; joins and follow-up mutations repeat company scope."
+    }
+  ],
+  "verification": {
+    "typecheck": "PASS",
+    "autosLogisticsBoundaries": "21/21 PASS",
+    "companyAccess": "26/26 PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun86": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Autos and Logistics security change; authenticated V45 browser acceptance remains separately pending."
+  },
+  "checkpoint": "85507ceb67d4052a0217558395793f1b5a923c32",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}
