@@ -68,7 +68,7 @@
       "priority": "P2",
       "status": "PARTIAL",
       "description": "Complete governed Forms, Workflow, Report, Widget and Theme builders plus enterprise configuration.",
-      "evidence": "Forms builder security closure PASS at 90ce191: 19/19 boundary assertions and CI run 90 PASS. Theme/Sign-In Studio governance closure PASS at fb489f3: 15/15 boundaries, 107/107 sign-in configurability, TypeScript, zero-disclosure, full build and CI run 94 PASS; P1 aggregate-authority and P2 audit consistency defects fixed with no open bounded P0/P1/P2. Family remains PARTIAL pending Workflow and Report builder implementation/evidence plus authenticated rendered acceptance."
+      "evidence": "Forms builder security closure PASS at 90ce191: 19/19 boundary assertions and CI run 90 PASS. Theme/Sign-In Studio governance closure PASS at fb489f3: 15/15 boundaries, 107/107 sign-in configurability and CI run 94 PASS. Workflow governance closure PASS at 62545a3: 15/15 boundaries, company-scoped review edits and assignees, coherent shared-review transitions, preserved case assignment, TypeScript, zero-disclosure, full build and CI run 98 PASS; bounded re-review has no open P0/P1/P2. Family remains PARTIAL pending Widget evidence, authenticated rendered acceptance and a generic Report Builder; Report Builder is BLOCKED because no detailed durable contract, fixture or implementation was recovered."
     },
     {
       "id": "COMMUNICATIONS-META",

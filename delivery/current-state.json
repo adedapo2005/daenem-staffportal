@@ -8,8 +8,8 @@
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
-  "codeCheckpoint": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
+  "branchHead": "62545a39c3ce4e5d15df1491af8f39708535306f",
+  "codeCheckpoint": "62545a39c3ce4e5d15df1491af8f39708535306f",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
   "pullRequestState": "open_draft",
@@ -40,8 +40,8 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
-    "codeCheckpoint": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
+    "commit": "62545a39c3ce4e5d15df1491af8f39708535306f",
+    "codeCheckpoint": "62545a39c3ce4e5d15df1491af8f39708535306f",
     "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
     "companyAccessContracts": "26/26 PASS: Inventory and Finance permissions use target-company scope; Procurement conceals unauthorized records and scopes idempotency evidence",
@@ -67,6 +67,8 @@
     "githubCiRun86": "PASS: Staff Portal CI run 86 on 85507ce",
     "githubCiRun90": "PASS: Staff Portal CI run 90 on 90ce191",
     "githubCiRun94": "PASS: Staff Portal CI run 94 on fb489f3",
+    "githubCiRun98": "PASS: Staff Portal CI run 98 on 62545a3",
+    "workflowBuilderBoundaries": "PASS: 15/15 bounded assertions; review edits bind target-company authority, assignees require active company membership, shared-review transitions remain coherent and case assignments are preserved",
     "themeBuilderBoundaries": "PASS: 15/15 bounded assertions; Group-role plus Settings-manage authority, normalized configuration, bounded AI generation and atomic audit evidence",
     "formsBuilderBoundaries": "PASS: 19/19 bounded assertions; company-scoped Forms listing, creation, assignment, personal queues, review queues, review writes, and assignment-scoped idempotency with neutral denials",
     "procurementZeroDisclosure": "PASS: P1 record-existence and cross-company idempotency metadata disclosure closed; typecheck, 26/26 company access, Spend audit/recovery, zero-disclosure and global build PASS",
@@ -79,9 +81,9 @@
     "spendCommitmentAuditContract": "PASS",
     "spendRecoveryContracts": "PASS: dedicated repo-local manual QA workflow and portable path validated",
     "spendRuntimePortability": "FIXED: Wrangler JavaScript CLI now launches cross-platform; BLOCKED after launch by the existing local D1 migration replay timeout; no remote migration was run",
-    "postPushHead": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
-    "latestGitHubHead": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
-    "latestCommitCi": "PASS: Staff Portal CI run 94 on Theme/Widget governance checkpoint fb489f3",
+    "postPushHead": "62545a39c3ce4e5d15df1491af8f39708535306f",
+    "latestGitHubHead": "62545a39c3ce4e5d15df1491af8f39708535306f",
+    "latestCommitCi": "PASS: Staff Portal CI run 98 on Workflow governance checkpoint 62545a3",
     "offlineRuntimeWindowsHarness": "BLOCKED: reproduced; local Wrangler D1 replay hangs after applying migrations begins; test process terminated; no remote migration was run",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
     "sitesVersion": "V45 saved without deployment; private non-production deployment attempted and rejected before start because project access_mode is public",
@@ -89,7 +91,7 @@
     "sitesTypecheck": "PASS",
     "sitesBuild": "PASS",
     "sitesPrivatePreviewAttempt": "REJECTED_BEFORE_START: Sites private deploy requires owner-only access; public deploy is production-gated and was not used",
-    "securityStaticAcceptance": "PASS: zero-disclosure contract; dashboard permissions; post-auth layout; responsive/reduced-motion; canonical data-boundary; company access 26/26; Autos/Logistics boundaries 21/21; Forms builder boundaries 19/19; Theme builder boundaries 15/15; Inventory/Finance target-company scope; Procurement neutral denial/idempotency scope; owner support 15/15; Smart Help 22/22; Platform Center 31/31",
+    "securityStaticAcceptance": "PASS: zero-disclosure contract; dashboard permissions; post-auth layout; responsive/reduced-motion; canonical data-boundary; company access 26/26; Autos/Logistics boundaries 21/21; Forms builder boundaries 19/19; Workflow builder boundaries 15/15; Theme builder boundaries 15/15; Inventory/Finance target-company scope; Procurement neutral denial/idempotency scope; owner support 15/15; Smart Help 22/22; Platform Center 31/31",
     "zeroDisclosureContract": "PASS: module-route-search-api-home-smart-help; authenticated browser leakage checks remain pending",
     "managedLinuxBrowserQA": "PASS: V44 route, no internal dereference, no local fallback",
     "sitesPublicBaselineQA": "PASS: current live route is V15 public sign-in shell; no protected navigation, records, search, AI, favorites, recents or notifications exposed; visible clocks use 12-hour format with AM/PM",
@@ -97,18 +99,18 @@
     "stagingWorkerURL": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev",
     "stagingUnauthorizedQA": "PASS: health 200; auth-me/admin/communications 401; exact allowed-origin GET 401 and OPTIONS 204; rejected-origin OPTIONS 403",
     "staffPortalRuntime": "PRESERVED: existing non-production wrangler dev --remote process remains active with wrangler.staffportal-staging.jsonc; no process was terminated or duplicated",
-    "reviewerEvidence": "PARTIAL: bounded reviews automatically fixed P1/P2 authorization, disclosure and audit defects across Inventory, Finance, Procurement, Autos, Logistics, Forms and Theme/Sign-In Studio; Theme re-review has no open P0/P1/P2; V45 authenticated acceptance remains unavailable; see delivery/reviewer-theme-builder-boundaries-2026-09-22.json",
+    "reviewerEvidence": "PARTIAL: bounded reviews automatically fixed P1/P2 authorization, disclosure, assignment-integrity and audit defects across Inventory, Finance, Procurement, Autos, Logistics, Forms, Workflow and Theme/Sign-In Studio; Workflow re-review has no open P0/P1/P2; V45 authenticated acceptance remains unavailable; see delivery/reviewer-workflow-builder-boundaries-2026-09-22.json",
     "scope": "non-production only"
   },
   "checkpoint": {
-    "githubHead": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
-    "codeCheckpoint": "fb489f36726ce6bcd377b161316e36fe7d6c607f",
+    "githubHead": "62545a39c3ce4e5d15df1491af8f39708535306f",
+    "codeCheckpoint": "62545a39c3ce4e5d15df1491af8f39708535306f",
     "branch": "feature/staffportal-whatsapp-ai-communications-01",
     "pullRequest": "2 OPEN / DRAFT",
     "sitesVersion": "V45",
     "sitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
     "sitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
-    "ci": "PASS: Staff Portal CI run 94 on fb489f3; production and merge gates remain closed",
+    "ci": "PASS: Staff Portal CI run 98 on 62545a3; production and merge gates remain closed",
     "staging": "PASS: non-production runtime probe and exact-origin CORS checks",
     "tests": {
       "v44ScopedSettings": "10/10 PASS",
@@ -116,6 +118,7 @@
       "companyAccess": "26/26 PASS",
       "autosLogisticsBoundaries": "21/21 PASS",
       "formsBuilderBoundaries": "19/19 PASS",
+      "workflowBuilderBoundaries": "15/15 PASS",
       "themeBuilderBoundaries": "15/15 PASS",
       "communications": "11/11 PASS",
       "communicationsRemediation": "17/17 PASS",
@@ -137,7 +140,7 @@
       "offlineRuntimeHarness": "BLOCKED: local D1 replay hangs after migration start; no remote migration was run"
     },
     "browserQa": "PARTIAL: current Sites live route is browser-accessible V15 public sign-in only; staging Worker browser route is not frontend V45; V45 authenticated owner/delegated-manager/unauthorized render and required viewport matrix remain unverified",
-    "reviewer": "PARTIAL: bounded reviews fixed P1/P2 authorization, disclosure and audit defects across Inventory, Finance, Procurement, Autos, Logistics, Forms and Theme/Sign-In Studio; re-review found no open P0/P1/P2; Workflow/Report builders and V45 authenticated closure remain pending",
+    "reviewer": "PARTIAL: bounded reviews fixed P1/P2 authorization, disclosure, assignment-integrity and audit defects across Inventory, Finance, Procurement, Autos, Logistics, Forms, Workflow and Theme/Sign-In Studio; re-review found no open P0/P1/P2; a generic Report Builder has no recovered durable contract and V45 authenticated closure remains pending",
     "closedRequirementIds": [],
     "remainingRequirementIds": [
       "V44-CLOSURE",
@@ -156,9 +159,10 @@
       "Sites connector exposes no non-production preview for a public project; private V45 deployment rejected before start; public deploy is production-gated",
       "Owner approval remains required before production pointer, production migration, live Meta/WhatsApp, or merge",
       "SMART-INPUT-001..052 has no detailed durable contract or acceptance fixture; implementation is blocked to avoid guessing secure context behavior",
+      "A generic Report Builder has no detailed durable contract, acceptance fixture or recovered implementation; implementation is blocked to avoid inventing report authority, sources or disclosure rules",
       "Local Wrangler D1 migration replay hangs after migration start; no remote migration was run"
     ],
-    "nextWorkstream": "SMART-INPUT remains BLOCKED pending a durable contract; Forms and Theme/Sign-In Studio bounded findings are fixed through fb489f3 and CI run 94. Continue ADMIN-BUILDERS by reconciling Workflow and Report builder implementation/evidence, then the next safe ERP requirement, while retaining V45 browser QA pending a supported non-production route."
+    "nextWorkstream": "SMART-INPUT and generic Report Builder remain BLOCKED pending durable contracts. Workflow governance is fixed through 62545a3 and CI run 98. Continue ADMIN-BUILDERS by reconciling Widget builder governance evidence, then the next safe ERP requirement, while retaining V45 browser QA pending a supported non-production route."
   },
   "updatedBy": "Staff Portal Work controller"
 }
