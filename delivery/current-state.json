@@ -4,11 +4,11 @@
   "retainedSitesVersion": "V45",
   "retainedSitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
   "retainedSitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
-  "sitesStatus": "v45_saved_non_deployed_private_preview_rejected_public_audience_staging_worker_deployed_runtime_probe_pass_browser_qa_pending",
+  "sitesStatus": "v45_saved_non_deployed_private_preview_rejected_public_audience_live_v15_route_verified_staging_worker_deployed_runtime_probe_pass_v45_browser_qa_pending",
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "49ff7c2626e8207b123fcf6967c45677e8e5d532",
+  "branchHead": "6efcbfeba8a5f26103014431560566d1392af642",
   "codeCheckpoint": "49ff7c2626e8207b123fcf6967c45677e8e5d532",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
@@ -73,10 +73,15 @@
     "securityStaticAcceptance": "PASS: zero-disclosure contract; dashboard permissions; post-auth layout; responsive/reduced-motion; canonical data-boundary; company access 21/21; owner support 15/15; Smart Help 22/22; Platform Center 31/31",
     "zeroDisclosureContract": "PASS: module-route-search-api-home-smart-help; authenticated browser leakage checks remain pending",
     "managedLinuxBrowserQA": "PASS: V44 route, no internal dereference, no local fallback",
+    "sitesPublicBaselineQA": "PASS: current live route is V15 public sign-in shell; no protected navigation, records, search, AI, favorites, recents or notifications exposed; visible clocks use 12-hour format with AM/PM",
+    "sitesGoogleProviderQA": "PASS: configured provider required; no account connection or production action performed",
+    "stagingWorkerURL": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev",
+    "stagingUnauthorizedQA": "PASS: health 200; auth-me/admin/communications 401; exact allowed-origin GET 401 and OPTIONS 204; rejected-origin OPTIONS 403",
+    "reviewerEvidence": "PARTIAL: no newly discovered P0/P1/P2 defect; V45 authenticated owner/delegated-manager/unauthorized browser acceptance remains unavailable; see delivery/reviewer-preview-closure-2026-09-22.json",
     "scope": "non-production only"
   },
   "checkpoint": {
-    "githubHead": "49ff7c2626e8207b123fcf6967c45677e8e5d532",
+    "githubHead": "6efcbfeba8a5f26103014431560566d1392af642",
     "codeCheckpoint": "49ff7c2626e8207b123fcf6967c45677e8e5d532",
     "branch": "feature/staffportal-whatsapp-ai-communications-01",
     "pullRequest": "2 OPEN / DRAFT",
@@ -98,8 +103,8 @@
       "globalBuild": "PASS",
       "offlineRuntimeHarness": "BLOCKED: local D1 replay hangs after migration start; no remote migration was run"
     },
-    "browserQa": "BLOCKED: retained Sites V45 has no preview URL; private deploy rejected before start because Sites project is public; authenticated owner/delegated-manager/unauthorized render and required viewport matrix remain unverified",
-    "reviewer": "PENDING: closure Reviewer evidence not yet recorded",
+    "browserQa": "PARTIAL: current Sites live route is browser-accessible V15 public sign-in only; staging Worker browser route is not frontend V45; V45 authenticated owner/delegated-manager/unauthorized render and required viewport matrix remain unverified",
+    "reviewer": "PARTIAL: evidence recorded in delivery/reviewer-preview-closure-2026-09-22.json; no newly discovered P0/P1/P2 defect; V45 authenticated closure remains pending",
     "closedRequirementIds": [],
     "remainingRequirementIds": [
       "V44-CLOSURE",
@@ -119,7 +124,7 @@
       "Owner approval remains required before production pointer, production migration, live Meta/WhatsApp, or merge",
       "Local Wrangler D1 migration replay hangs after migration start; no remote migration was run"
     ],
-    "nextWorkstream": "Continue safe backend/security requirement closure and local role/permission evidence; retry retained-Sites preview only when a supported non-production route is available."
+    "nextWorkstream": "Continue P0 security and release evidence, then inspect and implement SMART-INPUT-001..052; retain V45 browser QA as pending until a supported V45 non-production route exists."
   },
   "updatedBy": "Staff Portal Work controller"
 }
