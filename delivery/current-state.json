@@ -8,8 +8,8 @@
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
-  "codeCheckpoint": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
+  "branchHead": "82659641c58a4b79ec08704216e62234d90064eb",
+  "codeCheckpoint": "82659641c58a4b79ec08704216e62234d90064eb",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
   "pullRequestState": "open_draft",
@@ -40,8 +40,8 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
-    "codeCheckpoint": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
+    "commit": "82659641c58a4b79ec08704216e62234d90064eb",
+    "codeCheckpoint": "82659641c58a4b79ec08704216e62234d90064eb",
     "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
     "companyAccessContracts": "26/26 PASS: Inventory and Finance permissions use target-company scope; Procurement conceals unauthorized records and scopes idempotency evidence",
@@ -72,12 +72,14 @@
     "githubCiRun104": "PASS: Staff Portal CI run 104 on 67c2f9f",
     "githubCiRun108": "PASS: Staff Portal CI run 108 on Printing boundary checkpoint 2fea5b1",
     "githubCiRun112": "PASS: Staff Portal CI run 112 on workforce boundary checkpoint 8fd18b7",
+    "githubCiRun116": "PASS: Staff Portal CI run 116 on Staff profile/self-service checkpoint 8265964",
     "workflowBuilderBoundaries": "PASS: 15/15 bounded assertions; review edits bind target-company authority, assignees require active company membership, shared-review transitions remain coherent and case assignments are preserved",
     "themeBuilderBoundaries": "PASS: 15/15 bounded assertions; Group-role plus Settings-manage authority, normalized configuration, bounded AI generation and atomic audit evidence",
     "widgetBuilderBoundaries": "PASS: 22/22 bounded assertions; explicit Group authority, normalized allowlists, bounded identifiers and labels, permission-composed dashboard fields, and a 20-instance safety ceiling at both trust boundaries",
     "directoryBoundaries": "PASS: 14/14 bounded assertions; target-company permission composition for employee and role directories, authorized-company filtering, neutral empty results and no cross-company manage bypass",
     "printingBoundaries": "PASS: 29/29 bounded assertions; authoritative Printing company relationships, active employee/location references, permission-composed commercial fields, same-job file binding, and approval-gated transitions",
     "workforceBoundaries": "PASS: 12/12 bounded assertions; target-company Attendance/Payroll authority, active compensation membership, neutral Payroll denial, and company-scoped Attendance evidence",
+    "staffSelfServiceBoundaries": "PASS: 35/35 bounded assertions; target-company profile administration, permission-composed My Day, leave/payslip/review/document/notification/chat scope, neutral denials, stale-review protection and authoritative Payroll item schema",
     "formsBuilderBoundaries": "PASS: 19/19 bounded assertions; company-scoped Forms listing, creation, assignment, personal queues, review queues, review writes, and assignment-scoped idempotency with neutral denials",
     "procurementZeroDisclosure": "PASS: P1 record-existence and cross-company idempotency metadata disclosure closed; typecheck, 26/26 company access, Spend audit/recovery, zero-disclosure and global build PASS",
     "autosLogisticsBoundaries": "PASS: 21/21 bounded assertions; permission-composed dashboards, company-scoped references/mutations, delegated-driver assignment scope, financial-field withholding and neutral denials",
@@ -89,9 +91,9 @@
     "spendCommitmentAuditContract": "PASS",
     "spendRecoveryContracts": "PASS: dedicated repo-local manual QA workflow and portable path validated",
     "spendRuntimePortability": "FIXED: Wrangler JavaScript CLI now launches cross-platform; BLOCKED after launch by the existing local D1 migration replay timeout; no remote migration was run",
-    "postPushHead": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
-    "latestGitHubHead": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
-    "latestCommitCi": "PASS: Staff Portal CI run 112 on workforce boundary checkpoint 8fd18b7",
+    "postPushHead": "82659641c58a4b79ec08704216e62234d90064eb",
+    "latestGitHubHead": "82659641c58a4b79ec08704216e62234d90064eb",
+    "latestCommitCi": "PASS: Staff Portal CI run 116 on Staff profile/self-service checkpoint 8265964",
     "offlineRuntimeWindowsHarness": "BLOCKED: reproduced; local Wrangler D1 replay hangs after applying migrations begins; test process terminated; no remote migration was run",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
     "sitesVersion": "V45 saved without deployment; private non-production deployment attempted and rejected before start because project access_mode is public",
@@ -107,18 +109,18 @@
     "stagingWorkerURL": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev",
     "stagingUnauthorizedQA": "PASS: health 200; auth-me/admin/communications 401; exact allowed-origin GET 401 and OPTIONS 204; rejected-origin OPTIONS 403",
     "staffPortalRuntime": "PRESERVED: existing non-production wrangler dev --remote process remains active with wrangler.staffportal-staging.jsonc; no process was terminated or duplicated",
-    "reviewerEvidence": "PARTIAL: bounded reviews automatically fixed P1/P2 authorization, disclosure, relationship-integrity, file-binding, assignment-integrity, audit and configuration-bounds defects across Inventory, Finance, Procurement, Autos, Logistics, Staff Directory, Attendance, Payroll, Printing, Forms, Workflow, Theme/Sign-In Studio and Widget governance; workforce re-review has no open P0/P1/P2; V45 authenticated acceptance remains unavailable; see delivery/reviewer-workforce-boundaries-2026-09-22.json",
+    "reviewerEvidence": "PARTIAL: bounded reviews automatically fixed P1/P2 authorization, disclosure, relationship-integrity, file-binding, assignment-integrity, audit and configuration-bounds defects across Inventory, Finance, Procurement, Autos, Logistics, Staff Directory, Staff profile/self-service, Attendance, Payroll, Printing, Forms, Workflow, Theme/Sign-In Studio and Widget governance; Staff self-service re-review has no open P0/P1/P2; V45 authenticated acceptance remains unavailable; see delivery/reviewer-staff-self-service-boundaries-2026-09-22.json",
     "scope": "non-production only"
   },
   "checkpoint": {
-    "githubHead": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
-    "codeCheckpoint": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
+    "githubHead": "82659641c58a4b79ec08704216e62234d90064eb",
+    "codeCheckpoint": "82659641c58a4b79ec08704216e62234d90064eb",
     "branch": "feature/staffportal-whatsapp-ai-communications-01",
     "pullRequest": "2 OPEN / DRAFT",
     "sitesVersion": "V45",
     "sitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
     "sitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
-    "ci": "PASS: Staff Portal CI run 112 on 8fd18b7; production and merge gates remain closed",
+    "ci": "PASS: Staff Portal CI run 116 on 8265964; production and merge gates remain closed",
     "staging": "PASS: non-production runtime probe and exact-origin CORS checks",
     "tests": {
       "v44ScopedSettings": "10/10 PASS",
@@ -127,6 +129,7 @@
       "directoryBoundaries": "14/14 PASS",
       "printingBoundaries": "29/29 PASS",
       "workforceBoundaries": "12/12 PASS",
+      "staffSelfServiceBoundaries": "35/35 PASS",
       "autosLogisticsBoundaries": "21/21 PASS",
       "formsBuilderBoundaries": "19/19 PASS",
       "workflowBuilderBoundaries": "15/15 PASS",
@@ -152,7 +155,7 @@
       "offlineRuntimeHarness": "BLOCKED: local D1 replay hangs after migration start; no remote migration was run"
     },
     "browserQa": "PARTIAL: current Sites live route is browser-accessible V15 public sign-in only; staging Worker browser route is not frontend V45; V45 authenticated owner/delegated-manager/unauthorized render and required viewport matrix remain unverified",
-    "reviewer": "PARTIAL: bounded reviews fixed P1/P2 authorization, disclosure, relationship-integrity, file-binding, assignment-integrity, audit and configuration-bounds defects across Inventory, Finance, Procurement, Autos, Logistics, Staff Directory, Attendance, Payroll, Printing, Forms, Workflow, Theme/Sign-In Studio and Widget governance; re-review found no open P0/P1/P2; a generic Report Builder has no recovered durable contract and V45 authenticated closure remains pending",
+    "reviewer": "PARTIAL: bounded reviews fixed P1/P2 authorization, disclosure, relationship-integrity, file-binding, assignment-integrity, audit and configuration-bounds defects across Inventory, Finance, Procurement, Autos, Logistics, Staff Directory, Staff profile/self-service, Attendance, Payroll, Printing, Forms, Workflow, Theme/Sign-In Studio and Widget governance; Staff self-service re-review found no open P0/P1/P2; a generic Report Builder has no recovered durable contract and V45 authenticated closure remains pending",
     "closedRequirementIds": [],
     "remainingRequirementIds": [
       "V44-CLOSURE",
@@ -174,7 +177,7 @@
       "A generic Report Builder has no detailed durable contract, acceptance fixture or recovered implementation; implementation is blocked to avoid inventing report authority, sources or disclosure rules",
       "Local Wrangler D1 migration replay hangs after migration start; no remote migration was run"
     ],
-    "nextWorkstream": "SMART-INPUT and generic Report Builder remain BLOCKED pending durable contracts. Attendance and Payroll company-boundary closure is fixed through 8fd18b7/CI 112 with 12/12 checks and no open P0/P1/P2. Continue ERP-COMPLETION with Staff profile and employee self-service boundaries, beginning with manager target-company authority, profile/login actions, leave/review/document/chat company scope, sensitive-field disclosure and neutral denials; retain V45 browser QA pending a supported non-production route."
+    "nextWorkstream": "SMART-INPUT and generic Report Builder remain BLOCKED pending durable contracts. Staff profile and employee self-service boundaries are fixed through 8265964/CI 116 with 35/35 checks and no open P0/P1/P2. Continue ERP-COMPLETION with the next unfinished Staff operations boundary, beginning with employee notification/action integrity and lifecycle/profile-sensitive-field authority not already covered by the bounded self-service contract; retain V45 browser QA pending a supported non-production route."
   },
   "updatedBy": "Staff Portal Work controller"
 }
