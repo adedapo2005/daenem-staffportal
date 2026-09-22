@@ -20,7 +20,7 @@ check('Case mutation repeats authoritative company scope', source.includes("WHER
 check('Case status changes preserve an existing assignee when omitted', source.includes("assigned_to=COALESCE(?,assigned_to)"));
 check('Lifecycle owner assignment is company scoped', source.includes("activeCompanyMember(env,requestedOwner,companyId)"));
 check('Lifecycle task assignment is company scoped', source.includes("activeCompanyMember(env,assignedTo,row.companyId)"));
-check('Lifecycle task mutation repeats the authorized process relation', source.includes("WHERE id=? AND process_id=?`).bind(body.status"));
+check('Lifecycle task mutation repeats the authorized process relation', source.includes("WHERE id=? AND process_id=? AND status=? AND EXISTS") && source.includes("p.id=? AND p.company_id=? AND p.status IN ('planned','in_progress','blocked')"));
 check('Cross-scope assignment denials do not disclose employee details', source.includes("error:'Assigned employee was not found.'") && source.includes("error:'Lifecycle owner was not found.'"));
 
 for (const result of assertions) console.log(`${result.ok ? '✓' : '✗'} ${result.name}`);

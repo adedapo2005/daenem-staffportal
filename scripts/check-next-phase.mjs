@@ -1,6 +1,7 @@
 import{readFileSync}from'node:fs';
 const read=(path)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const migration=read('migrations/0037_navigation_hr_workflows.sql');
+const lifecycleIntegrityMigration=read('migrations/0073_hr_lifecycle_active_uniqueness.sql');
 const navigation=read('worker/navigation-workspace.ts');
 const workflows=read('worker/hr-workflows.ts');
 const runtime=read('worker/runtime.ts');
@@ -23,6 +24,10 @@ check('employee owner protected',navigation.includes('if (employee.isOwner)'));
 check('company-scoped menu enforcement',navigation.includes('companyPermissions')&&navigation.includes('hasAnyCompanyPermission'));
 check('company-scoped HR enforcement',workflows.includes('EnhancedSessionContext')&&workflows.includes('hasCompanyPermission'));
 check('lifecycle creation requires active target-company membership',workflows.includes("if(!await activeCompanyMember(env,employeeId,companyId))return json({error:'Employee is not assigned to this company.'},404)"));
+check('lifecycle active process uniqueness is database enforced',lifecycleIntegrityMigration.includes('CREATE UNIQUE INDEX IF NOT EXISTS uq_hr_lifecycle_active_process')&&lifecycleIntegrityMigration.includes("WHERE status IN ('planned', 'in_progress', 'blocked')"));
+check('lifecycle task mutation is compare-and-set and terminal guarded',workflows.includes("t.status taskStatus")&&workflows.includes("['completed','cancelled'].includes(row.processStatus)")&&workflows.includes("WHERE id=? AND process_id=? AND status=? AND EXISTS"));
+check('lifecycle process status derives from authoritative task state',workflows.includes("WHEN EXISTS (SELECT 1 FROM hr_lifecycle_tasks t WHERE t.process_id=? AND t.status='blocked')")&&workflows.includes("WHEN NOT EXISTS (SELECT 1 FROM hr_lifecycle_tasks t WHERE t.process_id=? AND t.status NOT IN ('completed','not_applicable'))"));
+check('HR free-text inputs are normalized and bounded',workflows.includes("notes.length>2000")&&workflows.includes("value.length>4000")&&workflows.includes("title.length>160||summary.length>4000")&&workflows.includes("reason.length>1000||notes.length>4000")&&workflows.includes("completionNote.length>2000"));
 check('leave decisions guard company and pending state before notification',workflows.includes("WHERE id=? AND company_id=? AND status='pending'")&&workflows.includes("if(!update.meta.changes)return json({error:'Only pending leave can be reviewed.'},409)"));
 check('review edits cannot race past terminal state',workflows.includes("WHERE id=? AND company_id=? AND status NOT IN ('acknowledged','closed')")&&workflows.includes("if(!update.meta.changes)return json({error:'Acknowledged or closed reviews cannot be rewritten.'},409)"));
 check('review share and close actions guard company and source state',workflows.includes("WHERE id=? AND company_id=? AND status='draft'")&&workflows.includes("WHERE id=? AND company_id=? AND status IN ('shared','acknowledged')"));
