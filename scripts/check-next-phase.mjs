@@ -22,6 +22,7 @@ check('owner role protected',navigation.includes("role.code === 'owner'")&&navig
 check('employee owner protected',navigation.includes('if (employee.isOwner)'));
 check('company-scoped menu enforcement',navigation.includes('companyPermissions')&&navigation.includes('hasAnyCompanyPermission'));
 check('company-scoped HR enforcement',workflows.includes('EnhancedSessionContext')&&workflows.includes('hasCompanyPermission'));
+check('lifecycle creation requires active target-company membership',workflows.includes("if(!await activeCompanyMember(env,employeeId,companyId))return json({error:'Employee is not assigned to this company.'},404)"));
 check('legacy shell override compatibility',migration.includes('INSERT INTO employee_permission_overrides(')&&navigation.includes("DELETE FROM employee_permission_overrides WHERE"));
 check('Worker routes wired',runtime.includes('routeNavigationWorkspace')&&runtime.includes('routeHrWorkflows'));
 check('client entries wired on demand',moduleHub.includes("import('./navigation-studio-entry')")&&moduleHub.includes("import('./hr-workflows-entry')")&&!html.includes('/src/navigation-studio-entry.tsx')&&!html.includes('/src/hr-workflows-entry.tsx'));
