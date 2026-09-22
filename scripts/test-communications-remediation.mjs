@@ -262,6 +262,26 @@ test('Instruction activation is claimed once and database-enforced per language'
   assert.match(migration,/CREATE UNIQUE INDEX IF NOT EXISTS[\s\S]*company_id,module,language[\s\S]*WHERE active=1/);
 });
 
+test('Governance upserts atomically audit the canonical persisted identity',async()=>{
+  const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
+  assert.equal((governance.match(/const \[saved,audited\]=await env\.DB\.batch\(\[/g)||[]).length,2);
+  assert.match(governance,/upsert_restriction[\s\S]*FROM communication_policy_restrictions[\s\S]*company_id=\? AND event_id=\? AND subject_type=\? AND subject_id=\?/);
+  assert.match(governance,/upsert_trigger[\s\S]*FROM communication_trigger_rules[\s\S]*company_id=\? AND event_id=\? AND trigger_code=\?/);
+  assert.equal((governance.match(/saved\.meta\?\.changes[\s\S]{0,80}audited\.meta\?\.changes/g)||[]).length,2);
+  assert.doesNotMatch(governance,/await audit\(env,context,companyId,'upsert_(restriction|trigger)'/);
+});
+
+test('Draft queue authorization precedes lookup and readiness failures are neutral',async()=>{
+  const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
+  const start=service.indexOf('async function queueDraftForDelivery');
+  const end=service.indexOf('\n}\n\nexport async function routeCommunications',start)+2;
+  const queue=service.slice(start,end);
+  assert.ok(queue.indexOf("communicationPermission(context,companyId,'hr','send','create')")<queue.indexOf('queueApprovedDraft(env'));
+  assert.match(queue,/Send HR Communications permission is required\./);
+  assert.match(queue,/catch\{[\s\S]*Draft is not ready for delivery\./);
+  assert.doesNotMatch(queue,/mapCommunicationError/);
+});
+
 test('Meta credential vault is encrypted, masked, owner-managed and runtime-resolved',async()=>{
   const vault=await readFile(path.join(root,'worker','meta-credentials.ts'),'utf8');
   const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');

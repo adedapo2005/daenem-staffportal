@@ -106,25 +106,39 @@ async function saveRestriction(request:Request,env:GovernanceEnv,context:Enhance
   return json({error:'Valid channels, languages and message limit are required.'},400);
  }
  const id=uid('comm-restriction');
- await env.DB.prepare(`
-  INSERT INTO communication_policy_restrictions(
-   id,company_id,event_id,subject_type,subject_id,enabled,ai_enabled,auto_generate,auto_send,
-   require_human_approval,channels_json,languages_json,max_characters,updated_by
-  ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  ON CONFLICT(company_id,event_id,subject_type,subject_id) DO UPDATE SET
-   enabled=excluded.enabled,ai_enabled=excluded.ai_enabled,auto_generate=excluded.auto_generate,
-   auto_send=excluded.auto_send,require_human_approval=excluded.require_human_approval,
-   channels_json=excluded.channels_json,languages_json=excluded.languages_json,
-   max_characters=excluded.max_characters,revision=communication_policy_restrictions.revision+1,
-   updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
- `).bind(
-  id,companyId,eventId,subjectType,subjectId,
-  body.enabled===false?0:1,body.aiEnabled===false?0:1,
-  body.autoGenerate===false?0:1,body.autoSend===false?0:1,
-  body.requireHumanApproval?1:0,JSON.stringify(selectedChannels),
-  JSON.stringify(selectedLanguages),maxCharacters,context.employee.id,
- ).run();
- await audit(env,context,companyId,'upsert_restriction','communication_policy_restriction',id,{eventId,subjectType,subjectId});
+ const [saved,audited]=await env.DB.batch([
+  env.DB.prepare(`
+   INSERT INTO communication_policy_restrictions(
+    id,company_id,event_id,subject_type,subject_id,enabled,ai_enabled,auto_generate,auto_send,
+    require_human_approval,channels_json,languages_json,max_characters,updated_by
+   ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+   ON CONFLICT(company_id,event_id,subject_type,subject_id) DO UPDATE SET
+    enabled=excluded.enabled,ai_enabled=excluded.ai_enabled,auto_generate=excluded.auto_generate,
+    auto_send=excluded.auto_send,require_human_approval=excluded.require_human_approval,
+    channels_json=excluded.channels_json,languages_json=excluded.languages_json,
+    max_characters=excluded.max_characters,revision=communication_policy_restrictions.revision+1,
+    updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+  `).bind(
+   id,companyId,eventId,subjectType,subjectId,
+   body.enabled===false?0:1,body.aiEnabled===false?0:1,
+   body.autoGenerate===false?0:1,body.autoSend===false?0:1,
+   body.requireHumanApproval?1:0,JSON.stringify(selectedChannels),
+   JSON.stringify(selectedLanguages),maxCharacters,context.employee.id,
+  ),
+  env.DB.prepare(`
+   INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','upsert_restriction','communication_policy_restriction',id,?,'web'
+   FROM communication_policy_restrictions
+   WHERE company_id=? AND event_id=? AND subject_type=? AND subject_id=?
+   LIMIT 1
+  `).bind(
+   uid('audit'),context.employee.id,companyId,JSON.stringify({eventId,subjectType,subjectId}),
+   companyId,eventId,subjectType,subjectId,
+  ),
+ ]);
+ if(Number(saved.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1){
+  return json({error:'Restriction could not be saved.'},409);
+ }
  return json({ok:true});
 }
 
@@ -311,14 +325,28 @@ async function saveTrigger(request:Request,env:GovernanceEnv,context:EnhancedSes
  const configText=JSON.stringify(config);
  if(configText.length>2000)return json({error:'Trigger configuration is too large.'},400);
  const id=uid('comm-trigger');
- await env.DB.prepare(`
-  INSERT INTO communication_trigger_rules(id,company_id,event_id,trigger_code,enabled,mode,config_json,updated_by)
-  VALUES(?,?,?,?,?,?,?,?)
-  ON CONFLICT(company_id,event_id,trigger_code) DO UPDATE SET
-   enabled=excluded.enabled,mode=excluded.mode,config_json=excluded.config_json,
-   revision=communication_trigger_rules.revision+1,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
- `).bind(id,companyId,eventId,triggerCode,body.enabled?1:0,mode,configText,context.employee.id).run();
- await audit(env,context,companyId,'upsert_trigger','communication_trigger_rule',id,{eventId,triggerCode,enabled:Boolean(body.enabled),mode});
+ const [saved,audited]=await env.DB.batch([
+  env.DB.prepare(`
+   INSERT INTO communication_trigger_rules(id,company_id,event_id,trigger_code,enabled,mode,config_json,updated_by)
+   VALUES(?,?,?,?,?,?,?,?)
+   ON CONFLICT(company_id,event_id,trigger_code) DO UPDATE SET
+    enabled=excluded.enabled,mode=excluded.mode,config_json=excluded.config_json,
+    revision=communication_trigger_rules.revision+1,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+  `).bind(id,companyId,eventId,triggerCode,body.enabled?1:0,mode,configText,context.employee.id),
+  env.DB.prepare(`
+   INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','upsert_trigger','communication_trigger_rule',id,?,'web'
+   FROM communication_trigger_rules
+   WHERE company_id=? AND event_id=? AND trigger_code=?
+   LIMIT 1
+  `).bind(
+   uid('audit'),context.employee.id,companyId,JSON.stringify({eventId,triggerCode,enabled:Boolean(body.enabled),mode}),
+   companyId,eventId,triggerCode,
+  ),
+ ]);
+ if(Number(saved.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1){
+  return json({error:'Trigger could not be saved.'},409);
+ }
  return json({ok:true});
 }
 

@@ -657,8 +657,15 @@ async function queueDraftForDelivery(request: Request, env: Env, context: Enhanc
   const companyId=String(body.companyId||'');
   const draftId=String(body.draftId||'');
   if(!companyId||!draftId||!companyAllowed(context,companyId)) return json({error:'Company and draft are required.'},400);
-  const queued=await queueApprovedDraft(env,{companyId,draftId,requestedBy:context.employee.id});
-  return json({ok:true,outboxId:queued.id,idempotencyKey:queued.idempotencyKey,status:'queued'},201);
+  if(!communicationPermission(context,companyId,'hr','send','create')){
+    return json({error:'Send HR Communications permission is required.'},403);
+  }
+  try{
+    const queued=await queueApprovedDraft(env,{companyId,draftId,requestedBy:context.employee.id});
+    return json({ok:true,outboxId:queued.id,idempotencyKey:queued.idempotencyKey,status:'queued'},201);
+  }catch{
+    return json({error:'Draft is not ready for delivery.'},409);
+  }
 }
 
 export async function routeCommunications(
