@@ -1,0 +1,48 @@
+{
+  "review": "DAENEM Staff Portal HR leave and review transition review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/hr-workflows.ts",
+    "scripts/check-next-phase.mjs",
+    "scripts/check-workflow-builder-boundaries.mjs"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Concurrent leave decisions could both pass the initial status read and emit duplicate or contradictory notifications.",
+      "correction": "The authoritative update now repeats company and pending state, and notification, audit, and communication side effects proceed only after the guarded update changes a row."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "A performance review edit could race with employee acknowledgement or administrative closure and rewrite a terminal review.",
+      "correction": "Review mutations now exclude acknowledged and closed source states in SQL and reject stale updates when no row changes."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Concurrent review share or close actions could transition stale state and create duplicate review notifications.",
+      "correction": "Share and close updates now bind the authorized company and exact source states, with notifications emitted only after a successful transition."
+    }
+  ],
+  "verification": {
+    "nextPhaseContracts": "42/42 PASS",
+    "workflowBuilderBoundaries": "15/15 PASS",
+    "typecheck": "PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun128": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded HR leave and performance-review transition change; authenticated rendered V45 browser acceptance remains pending because the retained public Sites project has no non-production preview URL."
+  },
+  "checkpoint": "04cb08daec8c0e056c419ed8fa45332c031e24ed",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}
