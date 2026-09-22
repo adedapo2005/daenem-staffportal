@@ -100,23 +100,14 @@ Coverage includes:
 - Farms references in this branch are rejection/filter guards only
 - `git diff --check` used as closeout gate
 
-## Known repository baseline blockers
+## Rechecked release gates
 
-Global `npm run typecheck` remains blocked by the pre-existing file:
+The previously recorded global typecheck/build blockers were re-run on the current checkout and are no longer present:
 
-`src/canonical-postauth-v1/CanonicalDashboard.tsx`
+- `npm run typecheck`: PASS, exit code 0.
+- `npm run build`: PASS, exit code 0 after all prebuild contracts.
 
-Observed errors include:
-- TS1490: file appears to be binary
-- parse errors on the same file
-
-Global `npm run build` reaches the existing sign-in configurability precheck and fails because it looks for:
-
-`C:\Users\Daenem Group\Documents\.github\workflows\deploy-staffportal-premium-v1.yml`
-
-outside the repository checkout.
-
-Neither unrelated baseline issue was modified as part of this communications closeout.
+The local offline runtime harness remains blocked independently. It prints `offline runtime test: applying D1 migrations` and then makes no further progress; the Staff Portal-specific test process was terminated after the repeatable hang. No remote migration was run.
 
 ## Release state
 

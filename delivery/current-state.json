@@ -47,6 +47,8 @@
     "communicationsRemediation": "17/17 PASS",
     "signInConfigurability": "107/107 PASS",
     "backendTypecheck": "PASS",
+    "globalTypecheck": "PASS: npm run typecheck exit 0",
+    "globalBuild": "PASS: npm run build exit 0",
     "backendCiRun14": "PASS",
     "stagingIntegrationContract": "10/10 PASS",
     "stagingWorkerDeployment": "PASS: non-production version 0bb85b93-329d-48ae-b25f-9f2d811df78e uploaded",
@@ -54,7 +56,7 @@
     "githubCiRun20": "PASS: all non-production verification steps",
     "githubCiRun26": "PASS: all non-production verification steps including build, diff hygiene and safety assertion",
     "githubCiRun30": "PASS: Staff Portal CI on a4309cc9",
-    "offlineRuntimeWindowsHarness": "BLOCKED: local 72-migration Wrangler replay hung after migration start; no remote migration was run",
+    "offlineRuntimeWindowsHarness": "BLOCKED: reproduced; local Wrangler D1 replay hangs after applying migrations begins; test process terminated; no remote migration was run",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
     "sitesVersion": "V45 saved without deployment",
     "sitesStaticContract": "12/12 PASS",
@@ -79,7 +81,10 @@
       "communications": "11/11 PASS",
       "communicationsRemediation": "17/17 PASS",
       "deliveryController": "PASS",
-      "diffCheck": "PASS"
+      "diffCheck": "PASS",
+      "globalTypecheck": "PASS",
+      "globalBuild": "PASS",
+      "offlineRuntimeHarness": "BLOCKED: local D1 replay hangs after migration start; no remote migration was run"
     },
     "browserQa": "PENDING: retained Sites V45 has no preview URL; authenticated delegated-manager render not verified",
     "reviewer": "PENDING: closure Reviewer evidence not yet recorded",
@@ -98,7 +103,8 @@
     ],
     "blockers": [
       "authenticated backend-response rendering and delegated-manager acceptance",
-      "Owner approval remains required before production pointer, production migration, live Meta/WhatsApp, or merge"
+      "Owner approval remains required before production pointer, production migration, live Meta/WhatsApp, or merge",
+      "Local Wrangler D1 migration replay hangs after migration start; no remote migration was run"
     ],
     "nextWorkstream": "Obtain a safe non-production Sites V45 preview or equivalent retained-Sites render path, then run owner/manager/employee permission and responsive acceptance."
   },
