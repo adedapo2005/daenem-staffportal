@@ -60,7 +60,8 @@
       "id": "ERP-COMPLETION",
       "priority": "P1",
       "status": "PARTIAL",
-      "description": "Complete Staff, Printing, Bakery, Autos, Logistics, Properties, Finance, Spend, Procurement, Inventory and supporting ERP workflows."
+      "description": "Complete Staff, Printing, Bakery, Autos, Logistics, Properties, Finance, Spend, Procurement, Inventory and supporting ERP workflows.",
+      "evidence": "Targeted contract evidence PASS: next-phase 37/37; business website catalogue 32/32; Properties owner/investment 17/17; Bakery accountability 68/68. Overall ERP remains PARTIAL because the family still includes broader workflow completion and authenticated rendered acceptance."
     },
     {
       "id": "ADMIN-BUILDERS",
