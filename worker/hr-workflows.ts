@@ -66,11 +66,10 @@ async function leaveDecision(request:Request,env:Env,context:EnhancedSessionCont
   const row=await env.DB.prepare('SELECT employee_id employeeId,company_id companyId,status FROM leave_requests WHERE id=?').bind(body.id).first<{employeeId:string;companyId:string;status:string}>();
   if(!row||!companyAllowed(context,row.companyId)||!can(context,'leave.admin','approve',row.companyId))return json({error:'Leave request not found or approval is not assigned.'},404);
   if(row.status!=='pending')return json({error:'Only pending leave can be reviewed.'},409);
-  await env.DB.batch([
-    env.DB.prepare(`UPDATE leave_requests SET status=?,reviewed_by=?,reviewed_at=CURRENT_TIMESTAMP,review_notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.decision,context.employee.id,String(body.notes||'').trim()||null,body.id),
-    env.DB.prepare(`INSERT INTO employee_notifications(id,employee_id,company_id,category,severity,title,body,source_type,source_id)
-      VALUES(?,?,?,'leave',?,?,?,'leave_request',?)`).bind(uid('notification'),row.employeeId,row.companyId,body.decision==='approved'?'success':'warning',`Leave request ${body.decision}`,body.decision==='approved'?'Your leave request has been approved.':'Your leave request was not approved. Open Leave to read the review note.',body.id),
-  ]);
+  const update=await env.DB.prepare(`UPDATE leave_requests SET status=?,reviewed_by=?,reviewed_at=CURRENT_TIMESTAMP,review_notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status='pending'`).bind(body.decision,context.employee.id,String(body.notes||'').trim()||null,body.id,row.companyId).run();
+  if(!update.meta.changes)return json({error:'Only pending leave can be reviewed.'},409);
+  await env.DB.prepare(`INSERT INTO employee_notifications(id,employee_id,company_id,category,severity,title,body,source_type,source_id)
+    VALUES(?,?,?,'leave',?,?,?,'leave_request',?)`).bind(uid('notification'),row.employeeId,row.companyId,body.decision==='approved'?'success':'warning',`Leave request ${body.decision}`,body.decision==='approved'?'Your leave request has been approved.':'Your leave request was not approved. Open Leave to read the review note.',body.id).run();
   await audit(env,context,row.companyId,'leave','review','leave_request',body.id,{decision:body.decision,notes:body.notes||null});
   try {
     const communication=await createLeaveDecisionCommunicationDraft(env,context.employee.id,row.companyId,body.id,true);
@@ -105,7 +104,8 @@ async function saveReview(request:Request,env:Env,context:EnhancedSessionContext
   if(body.id){
     const existing=await env.DB.prepare('SELECT employee_id employeeId,status FROM employee_reviews WHERE id=? AND company_id=?').bind(id,companyId).first<{employeeId:string;status:string}>();if(!existing)return json({error:'Review not found.'},404);if(['acknowledged','closed'].includes(existing.status))return json({error:'Acknowledged or closed reviews cannot be rewritten.'},409);if(existing.status==='shared'&&existing.employeeId!==employeeId)return json({error:'A shared review cannot be reassigned.'},409);
     status=existing.status==='shared'?'shared':status;notifyEmployee=body.shareNow===true&&existing.status!=='shared';
-    await env.DB.prepare(`UPDATE employee_reviews SET employee_id=?,review_period_start=?,review_period_end=?,reviewer_employee_id=?,review_type=?,rating=?,strengths=?,improvement_areas=?,goals=?,manager_comments=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(employeeId,start,end,context.employee.id,reviewType,rating,body.strengths||null,body.improvementAreas||null,body.goals||null,body.managerComments||null,status,id,companyId).run();
+    const update=await env.DB.prepare(`UPDATE employee_reviews SET employee_id=?,review_period_start=?,review_period_end=?,reviewer_employee_id=?,review_type=?,rating=?,strengths=?,improvement_areas=?,goals=?,manager_comments=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status NOT IN ('acknowledged','closed')`).bind(employeeId,start,end,context.employee.id,reviewType,rating,body.strengths||null,body.improvementAreas||null,body.goals||null,body.managerComments||null,status,id,companyId).run();
+    if(!update.meta.changes)return json({error:'Acknowledged or closed reviews cannot be rewritten.'},409);
   }else{
     await env.DB.prepare(`INSERT INTO employee_reviews(id,employee_id,company_id,review_period_start,review_period_end,reviewer_employee_id,review_type,rating,strengths,improvement_areas,goals,manager_comments,status)
       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,employeeId,companyId,start,end,context.employee.id,reviewType,rating,body.strengths||null,body.improvementAreas||null,body.goals||null,body.managerComments||null,status).run();
@@ -120,9 +120,13 @@ async function reviewAction(request:Request,env:Env,context:EnhancedSessionConte
   let body:{id?:string;action?:'share'|'close'};try{body=await request.json()}catch{return json({error:'Invalid review action.'},400)}
   const row=await env.DB.prepare('SELECT employee_id employeeId,company_id companyId,status FROM employee_reviews WHERE id=?').bind(String(body.id||'')).first<{employeeId:string;companyId:string;status:string}>();if(!row||!companyAllowed(context,row.companyId)||!can(context,'reviews.admin','edit',row.companyId))return json({error:'Review not found or edit access is not assigned.'},404);
   if(body.action==='share'&&row.status==='draft'){
-    await env.DB.batch([env.DB.prepare(`UPDATE employee_reviews SET status='shared',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.id),env.DB.prepare(`INSERT INTO employee_notifications(id,employee_id,company_id,category,severity,title,body,source_type,source_id) VALUES(?,?,?,'review','info','Performance review available','A performance review is ready for you to read and acknowledge.','employee_review',?)`).bind(uid('notification'),row.employeeId,row.companyId,body.id)]);
-  }else if(body.action==='close'&&['shared','acknowledged'].includes(row.status))await env.DB.prepare(`UPDATE employee_reviews SET status='closed',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.id).run();
-  else return json({error:'That review action is not available for the current status.'},409);
+    const update=await env.DB.prepare(`UPDATE employee_reviews SET status='shared',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status='draft'`).bind(body.id,row.companyId).run();
+    if(!update.meta.changes)return json({error:'That review action is not available for the current status.'},409);
+    await env.DB.prepare(`INSERT INTO employee_notifications(id,employee_id,company_id,category,severity,title,body,source_type,source_id) VALUES(?,?,?,'review','info','Performance review available','A performance review is ready for you to read and acknowledge.','employee_review',?)`).bind(uid('notification'),row.employeeId,row.companyId,body.id).run();
+  }else if(body.action==='close'&&['shared','acknowledged'].includes(row.status)){
+    const update=await env.DB.prepare(`UPDATE employee_reviews SET status='closed',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status IN ('shared','acknowledged')`).bind(body.id,row.companyId).run();
+    if(!update.meta.changes)return json({error:'That review action is not available for the current status.'},409);
+  }else return json({error:'That review action is not available for the current status.'},409);
   await audit(env,context,row.companyId,'reviews',String(body.action),'employee_review',String(body.id),{before:row.status});return json({ok:true,action:body.action});
 }
 

@@ -10,7 +10,7 @@ function check(name, condition) {
 check('Workflow company selection repeats company permission truth', source.includes("can(context,permission,minimum,companyId)"));
 check('Workflow assignees use active company membership truth', source.includes('async function activeCompanyMember') && source.includes("company_id=? AND active=1"));
 check('Review edits bind lookup to the authorized company', source.includes("FROM employee_reviews WHERE id=? AND company_id=?"));
-check('Review edits repeat company scope in the mutation', source.includes("WHERE id=? AND company_id=?`).bind(employeeId,start,end"));
+check('Review edits repeat company scope in the mutation', source.includes("WHERE id=? AND company_id=? AND status NOT IN ('acknowledged','closed')`).bind(employeeId,start,end")&&source.includes("if(!update.meta.changes)return json({error:'Acknowledged or closed reviews cannot be rewritten.'},409)"));
 check('Shared reviews cannot be silently reverted to draft', source.includes("existing.status==='shared'?'shared':status"));
 check('Shared reviews cannot be reassigned without notice', source.includes("existing.status==='shared'&&existing.employeeId!==employeeId"));
 check('Review sharing notification is emitted only on transition', source.includes("notifyEmployee=body.shareNow===true&&existing.status!=='shared'"));
