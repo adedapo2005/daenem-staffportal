@@ -45,17 +45,30 @@
       "status": "FIXED",
       "summary": "Provisional employee creation accepted inactive or missing company references.",
       "correction": "Employee creation now validates the selected company is active before membership, role, signup, and audit writes."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Self-service profile updates accepted authoritative job title and department changes from the employee client.",
+      "correction": "Self-service updates now accept only name and phone fields; job title and department remain authoritative server-side employment data."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "The self-profile response disclosed assigned workplace latitude and longitude metadata that the client did not require.",
+      "correction": "The response now exposes only the workplace display fields while coordinates remain server-side inputs for weather resolution."
     }
   ],
   "verification": {
-    "staffSelfServiceBoundaries": "35/35 PASS",
+    "staffSelfServiceBoundaries": "37/37 PASS",
     "companyAccess": "26/26 PASS",
     "ownerSupport": "15/15 PASS",
     "zeroDisclosure": "PASS",
     "typecheck": "PASS",
     "globalBuild": "PASS",
     "diffCheck": "PASS",
-    "githubCiRun116": "PASS"
+    "githubCiRun116": "PASS",
+    "githubCiRun120": "PASS"
   },
   "reviewer": {
     "p0Open": 0,
@@ -63,7 +76,7 @@
     "p2Open": 0,
     "result": "PASS for the bounded Staff profile, employee self-service, My Day, notification, chat, and Payroll-schema change; authenticated rendered V45 browser acceptance remains pending because the retained public Sites project has no non-production preview URL."
   },
-  "checkpoint": "82659641c58a4b79ec08704216e62234d90064eb",
+  "checkpoint": "d2245c70f895f362a6601d7cf7f2b68cfff8ab9c",
   "productionChanges": false,
   "sitesChanges": false,
   "remoteMigrations": false
