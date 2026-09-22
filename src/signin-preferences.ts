@@ -299,6 +299,7 @@ export type PublicSignInContext = {
 const WORLD_CLOCK_PREFS_KEY = 'daenem-world-clock-preferences';
 const SIGNIN_PREFS_KEY = 'daenem-signin-experience-v2';
 const ALL_WIDGETS: SignInWidgetId[] = ['weather', 'inspiration', 'motivation', 'news', 'status'];
+export const MAX_SIGNIN_WIDGET_INSTANCES = 20;
 const ALL_CLOCK_STYLES: ClockStyle[] = ['minimal', 'detailed', 'neon', 'classic'];
 const ALL_LOGO_POSITIONS: LogoPosition[] = ['left', 'center', 'right'];
 const ALL_LOGO_SIZES: LogoSizePreset[] = ['compact', 'standard', 'prominent'];
@@ -601,7 +602,7 @@ function normalizeWidgetVariant(kind: SignInWidgetId, value: unknown): SignInWid
 
 function normalizeInstances(value: unknown, hiddenWidgets: SignInWidgetId[], labels: SignInLabels, legacyOrder: SignInWidgetId[]): SignInWidgetInstance[] {
   const supplied = Array.isArray(value);
-  const source = supplied ? value as Array<unknown> : legacyOrder.map((kind) => ({ kind }));
+  const source = (supplied ? value as Array<unknown> : legacyOrder.map((kind) => ({ kind }))).slice(0, MAX_SIGNIN_WIDGET_INSTANCES);
   const instances: SignInWidgetInstance[] = [];
   const usedIds = new Set<string>();
   source.forEach((item, index) => {

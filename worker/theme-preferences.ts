@@ -24,6 +24,7 @@ const aliases: Record<string, string> = {
 };
 
 const SIGNIN_WIDGET_KINDS = ['weather', 'inspiration', 'motivation', 'news', 'status'] as const;
+const MAX_SIGNIN_WIDGET_INSTANCES = 20;
 const SIGNIN_ZONES = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'] as const;
 const SIGNIN_BACKGROUND_IDS = ['unified-daylight', 'global-executive-atrium', 'future-technology-campus', 'daylight-glass-skyline', 'premium-connected-workspace', 'bright-executive-global-atrium', 'daylight-technology-campus'] as const;
 const CLOCK_ZONES = [
@@ -233,7 +234,7 @@ function variant(kind: string, value: unknown) {
   return available.includes(String(value)) ? String(value) : available[0] || 'standard';
 }
 function cleanInstances(value: unknown, hidden: string[], labels: ReturnType<typeof normalizeLabels>, legacyOrder: string[]) {
-  const source = Array.isArray(value) ? value : legacyOrder.map((kind) => ({ kind }));
+  const source = (Array.isArray(value) ? value : legacyOrder.map((kind) => ({ kind }))).slice(0, MAX_SIGNIN_WIDGET_INSTANCES);
   const result: Array<Record<string, unknown>> = [];
   source.forEach((item, index) => {
     const raw = record(item);
