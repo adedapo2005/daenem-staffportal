@@ -40,7 +40,7 @@ for (const id of requiredFamilies) {
 }
 
 const production = requirements.families.find((family) => family.id === 'PRODUCTION-ACTIVATION');
-assert(production?.status === 'blocked', 'Production activation must remain blocked pending Owner approval.');
+assert(production?.status === 'PRODUCTION-GATED', 'Production activation must remain blocked pending Owner approval.');
 
 if (errors.length) {
   console.error('Staff Portal delivery-controller validation FAILED');
