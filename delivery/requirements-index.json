@@ -9,6 +9,7 @@
       "priority": "P0",
       "status": "partial",
       "description": "Close recovered V43 backend-truth, API, company projection, delegated admin and rendered acceptance blockers.",
+      "evidence": "Backend/static contracts pass; rendered owner/delegated-manager/unauthorized acceptance remains blocked by the absence of a supported non-production V45 Sites URL.",
       "requirements": [
         "canonical backend setting keys",
         "backend truth before render",
@@ -22,13 +23,15 @@
       "id": "SECURITY-ZERO-DISCLOSURE",
       "priority": "P0",
       "status": "partial",
-      "description": "No permission means no disclosure across UI, API, search, AI, counts, routes, notifications, favorites, recents and breadcrumbs."
+      "description": "No permission means no disclosure across UI, API, search, AI, counts, routes, notifications, favorites, recents and breadcrumbs.",
+      "evidence": "Static acceptance PASS: dashboard permissions; post-auth layout; canonical data boundary; company access 21/21; owner support 15/15; Smart Help 22/22; Platform Center 31/31. Authenticated browser leakage checks remain pending."
     },
     {
       "id": "RELEASE-INTEGRITY",
       "priority": "P0",
       "status": "partial",
-      "description": "Global typecheck, build, migration validation, runtime integration, staging, rollback and release evidence."
+      "description": "Global typecheck, build, migration validation, runtime integration, staging, rollback and release evidence.",
+      "evidence": "Global typecheck/build and staging probes PASS; offline Windows Wrangler D1 replay remains BLOCKED after migration start; no remote migration was run."
     },
     {
       "id": "MASTER-V3",
@@ -73,7 +76,8 @@
       "id": "ACCESSIBILITY-RESPONSIVE",
       "priority": "P1",
       "status": "partial",
-      "description": "Complete accessibility, reduced-motion and representative mobile/tablet/desktop/4K acceptance."
+      "description": "Complete accessibility, reduced-motion and representative mobile/tablet/desktop/4K acceptance.",
+      "evidence": "Responsive/reduced-motion static contract PASS; required 390–3840 authenticated viewport matrix remains unverified until a supported V45 browser URL exists."
     },
     {
       "id": "PRODUCTION-ACTIVATION",

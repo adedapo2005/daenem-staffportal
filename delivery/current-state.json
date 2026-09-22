@@ -4,11 +4,12 @@
   "retainedSitesVersion": "V45",
   "retainedSitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
   "retainedSitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
-  "sitesStatus": "v45_saved_non_deployed_staging_worker_deployed_runtime_probe_pass_browser_qa_pending",
+  "sitesStatus": "v45_saved_non_deployed_private_preview_rejected_public_audience_staging_worker_deployed_runtime_probe_pass_browser_qa_pending",
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
+  "branchHead": "118ff728f9f8484068175809c594b89262586289",
+  "codeCheckpoint": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
   "pullRequestState": "open_draft",
@@ -39,7 +40,8 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
+    "commit": "118ff728f9f8484068175809c594b89262586289",
+    "codeCheckpoint": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
     "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
     "companyAccessContracts": "21/21 PASS",
@@ -56,18 +58,21 @@
     "githubCiRun20": "PASS: all non-production verification steps",
     "githubCiRun26": "PASS: all non-production verification steps including build, diff hygiene and safety assertion",
     "githubCiRun30": "PASS: Staff Portal CI on a4309cc9",
-    "postPushHead": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
+    "postPushHead": "118ff728f9f8484068175809c594b89262586289",
     "offlineRuntimeWindowsHarness": "BLOCKED: reproduced; local Wrangler D1 replay hangs after applying migrations begins; test process terminated; no remote migration was run",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
-    "sitesVersion": "V45 saved without deployment",
+    "sitesVersion": "V45 saved without deployment; private non-production deployment attempted and rejected before start because project access_mode is public",
     "sitesStaticContract": "12/12 PASS",
     "sitesTypecheck": "PASS",
     "sitesBuild": "PASS",
+    "sitesPrivatePreviewAttempt": "REJECTED_BEFORE_START: Sites private deploy requires owner-only access; public deploy is production-gated and was not used",
+    "securityStaticAcceptance": "PASS: dashboard permissions; post-auth layout; responsive/reduced-motion; canonical data-boundary; company access 21/21; owner support 15/15; Smart Help 22/22; Platform Center 31/31",
     "managedLinuxBrowserQA": "PASS: V44 route, no internal dereference, no local fallback",
     "scope": "non-production only"
   },
   "checkpoint": {
-    "githubHead": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
+    "githubHead": "118ff728f9f8484068175809c594b89262586289",
+    "codeCheckpoint": "5f369b7f5ff1913fc28b21ac91f64bcd5b7a1d45",
     "branch": "feature/staffportal-whatsapp-ai-communications-01",
     "pullRequest": "2 OPEN / DRAFT",
     "sitesVersion": "V45",
@@ -87,7 +92,7 @@
       "globalBuild": "PASS",
       "offlineRuntimeHarness": "BLOCKED: local D1 replay hangs after migration start; no remote migration was run"
     },
-    "browserQa": "PENDING: retained Sites V45 has no preview URL; authenticated delegated-manager render not verified",
+    "browserQa": "BLOCKED: retained Sites V45 has no preview URL; private deploy rejected before start because Sites project is public; authenticated owner/delegated-manager/unauthorized render and required viewport matrix remain unverified",
     "reviewer": "PENDING: closure Reviewer evidence not yet recorded",
     "closedRequirementIds": [],
     "remainingRequirementIds": [
@@ -104,10 +109,11 @@
     ],
     "blockers": [
       "authenticated backend-response rendering and delegated-manager acceptance",
+      "Sites connector exposes no non-production preview for a public project; private V45 deployment rejected before start; public deploy is production-gated",
       "Owner approval remains required before production pointer, production migration, live Meta/WhatsApp, or merge",
       "Local Wrangler D1 migration replay hangs after migration start; no remote migration was run"
     ],
-    "nextWorkstream": "Obtain a safe non-production Sites V45 preview or equivalent retained-Sites render path, then run owner/manager/employee permission and responsive acceptance."
+    "nextWorkstream": "Continue safe backend/security requirement closure and local role/permission evidence; retry retained-Sites preview only when a supported non-production route is available."
   },
   "updatedBy": "Staff Portal Work controller"
 }
