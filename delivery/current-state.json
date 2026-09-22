@@ -8,7 +8,7 @@
   "productionPointer": "V16",
   "repository": "adedapo2005/daenem-staffportal",
   "branch": "feature/staffportal-whatsapp-ai-communications-01",
-  "branchHead": "8091e3bb3665e698cc2c9e2e0c944be2ea3e15fd",
+  "branchHead": "a4309cc9b84357796acc585f4d4ac29f87389077",
   "mainHead": "839dc56a0a593fc08cc3f806daa3aa6fb0c0548f",
   "pullRequest": 2,
   "pullRequestState": "open_draft",
@@ -39,7 +39,7 @@
     "SMART-INPUT-001..052"
   ],
   "lastVerification": {
-    "commit": "8091e3bb3665e698cc2c9e2e0c944be2ea3e15fd",
+    "commit": "a4309cc9b84357796acc585f4d4ac29f87389077",
     "v44ScopedSettingsContract": "10/10 PASS",
     "deliveryController": "PASS",
     "companyAccessContracts": "21/21 PASS",
@@ -53,6 +53,7 @@
     "stagingRemoteRuntimeProbe": "PASS: health 200; auth-me 401; admin protected 401; allowed preflight 204; rejected preflight 403; invalid login 400; exact-origin CORS",
     "githubCiRun20": "PASS: all non-production verification steps",
     "githubCiRun26": "PASS: all non-production verification steps including build, diff hygiene and safety assertion",
+    "githubCiRun30": "PASS: Staff Portal CI on a4309cc9",
     "offlineRuntimeWindowsHarness": "BLOCKED: local 72-migration Wrangler replay hung after migration start; no remote migration was run",
     "sitesSourceCommit": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
     "sitesVersion": "V45 saved without deployment",
@@ -61,6 +62,45 @@
     "sitesBuild": "PASS",
     "managedLinuxBrowserQA": "PASS: V44 route, no internal dereference, no local fallback",
     "scope": "non-production only"
+  },
+  "checkpoint": {
+    "githubHead": "a4309cc9b84357796acc585f4d4ac29f87389077",
+    "branch": "feature/staffportal-whatsapp-ai-communications-01",
+    "pullRequest": "2 OPEN / DRAFT",
+    "sitesVersion": "V45",
+    "sitesVersionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
+    "sitesSource": "3c189ada2483c00c1fb649f7472e19bab84ac4c8",
+    "ci": "PASS: Staff Portal CI run 30",
+    "staging": "PASS: non-production runtime probe and exact-origin CORS checks",
+    "tests": {
+      "v44ScopedSettings": "10/10 PASS",
+      "stagingIntegration": "10/10 PASS",
+      "companyAccess": "21/21 PASS",
+      "communications": "11/11 PASS",
+      "communicationsRemediation": "17/17 PASS",
+      "deliveryController": "PASS",
+      "diffCheck": "PASS"
+    },
+    "browserQa": "PENDING: retained Sites V45 has no preview URL; authenticated delegated-manager render not verified",
+    "reviewer": "PENDING: closure Reviewer evidence not yet recorded",
+    "closedRequirementIds": [],
+    "remainingRequirementIds": [
+      "V44-CLOSURE",
+      "SECURITY-ZERO-DISCLOSURE",
+      "RELEASE-INTEGRITY",
+      "MASTER-V3",
+      "HOME",
+      "SMART-INPUT",
+      "ERP-COMPLETION",
+      "ADMIN-BUILDERS",
+      "COMMUNICATIONS-META",
+      "ACCESSIBILITY-RESPONSIVE"
+    ],
+    "blockers": [
+      "authenticated backend-response rendering and delegated-manager acceptance",
+      "Owner approval remains required before production pointer, production migration, live Meta/WhatsApp, or merge"
+    ],
+    "nextWorkstream": "Obtain a safe non-production Sites V45 preview or equivalent retained-Sites render path, then run owner/manager/employee permission and responsive acceptance."
   },
   "updatedBy": "Staff Portal Work controller"
 }
