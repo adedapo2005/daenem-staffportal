@@ -3,6 +3,7 @@ import { hasCompanyPermission, type EnhancedSessionContext } from './auth-contex
 import { eventById } from './communications/catalog.js';
 import { generateDraft, validateTemplateText, workersAiDraftProvider } from './communications/drafts.js';
 import { queueApprovedDraft } from './communications-dispatch.js';
+import { routeCommunicationOutboxAdmin } from './communications-outbox-admin.js';
 import { routeCommunicationGovernance } from './communications-governance.js';
 import { routeCommunicationsInbox } from './communications-inbox.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
@@ -678,6 +679,8 @@ export async function routeCommunications(
   try {
     const inbox=await routeCommunicationsInbox(request,env,context);
     if(inbox)return inbox;
+    const outboxAdmin=await routeCommunicationOutboxAdmin(request,env,context);
+    if(outboxAdmin)return outboxAdmin;
     const governance=await routeCommunicationGovernance(request,env,context);
     if(governance)return governance;
     if (path === '/api/communications/admin/global' && method === 'GET') {

@@ -319,3 +319,39 @@ test('Meta credential vault is encrypted, masked, owner-managed and runtime-reso
   assert.match(ui,/Saved values are encrypted server-side and are never returned to this browser/);
   assert.match(migration,/CREATE TABLE IF NOT EXISTS meta_credentials_vault/);
 });
+
+
+test('Outbox administration is company/use-case authorized with a bounded projection',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-outbox-admin.ts'),'utf8');
+  const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
+  const list=source.slice(source.indexOf('async function listOutbox'),source.indexOf('type AdminAction'));
+  assert.ok(list.indexOf('companyAllowed(context,companyId)')<list.indexOf('env.DB.prepare'));
+  assert.ok(list.indexOf("canManageEvent(context,companyId,eventId,'view')")<list.indexOf('env.DB.prepare'));
+  assert.match(list,/Math\.min\(100,requested\)/);
+  assert.match(list,/WHERE company_id=\? AND event_id=\?/);
+  assert.match(list,/LIMIT \?/);
+  assert.doesNotMatch(list,/employee_id AS/);
+  assert.doesNotMatch(list,/provider_message_id AS/);
+  assert.match(service,/routeCommunicationOutboxAdmin/);
+});
+
+test('Outbox reconciliation requires manage authority and atomically records audit evidence',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-outbox-admin.ts'),'utf8');
+  const apply=source.slice(source.indexOf('async function applyOutboxAction'),source.indexOf('export async function routeCommunicationOutboxAdmin'));
+  assert.ok(apply.indexOf("canManageEvent(context,companyId,eventId,'manage')")<apply.indexOf('env.DB.batch'));
+  assert.match(apply,/const \[audited,updated\]=await env\.DB\.batch/);
+  assert.match(apply,/actionAudit\(env,input\)[\s\S]*actionUpdate\(env,input\)/);
+  assert.match(source,/FROM audit_logs a[\s\S]*a\.id=\?/);
+  assert.match(source,/status='failed' AND ambiguity_state='provider_unknown'/);
+  assert.match(source,/audited\.meta\?\.changes[\s\S]*updated\.meta\?\.changes/);
+});
+
+test('Outbox actions remain fail-closed, neutral and never invoke provider delivery',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-outbox-admin.ts'),'utf8');
+  assert.match(source,/Outbox action could not be applied\./);
+  assert.doesNotMatch(source,/OUTBOX_NOT_FOUND/);
+  assert.match(source,/ambiguity_state<>'provider_unknown'/);
+  assert.match(source,/provider_not_sent/);
+  assert.match(source,/provider_accepted/);
+  assert.doesNotMatch(source,/provider\.send|dispatchCommunicationOutboxItem/);
+});
