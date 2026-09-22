@@ -61,7 +61,7 @@
       "priority": "P1",
       "status": "PARTIAL",
       "description": "Complete Staff, Printing, Bakery, Autos, Logistics, Properties, Finance, Spend, Procurement, Inventory and supporting ERP workflows.",
-      "evidence": "Targeted contract evidence PASS: next-phase 37/37; business website catalogue 32/32; Properties owner/investment 17/17; Bakery accountability 68/68; Spend foundation, commitment audit and recovery contracts PASS. Spend runtime launch is now cross-platform but remains BLOCKED at the existing local D1 migration replay timeout; no remote migration was run. Overall ERP remains PARTIAL because Autos, Logistics, Inventory, Finance, Procurement and authenticated rendered acceptance still require broader closure."
+      "evidence": "Targeted contract evidence PASS: next-phase 37/37; business website catalogue 32/32; Properties owner/investment 17/17; Properties hostel 26/26; Bakery accountability 68/68; Spend foundation, commitment audit and recovery contracts PASS. Spend runtime launch is now cross-platform but remains BLOCKED at the existing local D1 migration replay timeout; no remote migration was run. Overall ERP remains PARTIAL because Autos, Logistics, Inventory, Finance, Procurement and authenticated rendered acceptance still require broader closure."
     },
     {
       "id": "ADMIN-BUILDERS",
