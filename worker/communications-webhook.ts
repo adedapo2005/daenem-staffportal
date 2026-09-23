@@ -140,12 +140,11 @@ async function persistInboundMessages(
       const type=String(message.type||'unknown').slice(0,40);
       const text=message.text&&typeof message.text==='object'?message.text as Record<string,unknown>:{};
       const body=type==='text'?String(text.body||'').slice(0,4096):null;
-      const rawTs=String(message.timestamp||'');
-      const providerTimestamp=/^\d+$/.test(rawTs)?new Date(Number(rawTs)*1000).toISOString():null;
+      const messageTimestamp=providerTimestamp(message.timestamp);
       const result=await env.DB.prepare(`INSERT OR IGNORE INTO communication_inbox_messages(
         id,conversation_id,company_id,direction,provider_message_id,message_type,body,status,provider_timestamp
       ) VALUES(?,?,?,'inbound',?,?,?,'received',?)`).bind(
-        `comm-msg-${crypto.randomUUID()}`,thread.id,mapping.companyId,providerId,type,body,providerTimestamp
+        `comm-msg-${crypto.randomUUID()}`,thread.id,mapping.companyId,providerId,type,body,messageTimestamp
       ).run();
       if(Number(result.meta?.changes||0)>0){
         inserted++;
@@ -153,11 +152,20 @@ async function persistInboundMessages(
           customer_display_name=COALESCE(?,customer_display_name),status='open',
           unread_count=unread_count+1,last_message_at=COALESCE(?,CURRENT_TIMESTAMP),
           last_customer_message_at=COALESCE(?,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
-          WHERE id=?`).bind(contactNames.get(from)||null,providerTimestamp,providerTimestamp,thread.id).run();
+          WHERE id=?`).bind(contactNames.get(from)||null,messageTimestamp,messageTimestamp,thread.id).run();
       }
     }
   }
   return inserted;
+}
+
+export function providerTimestamp(value:unknown):string|null{
+  const raw=String(value||'');
+  if(!/^\d{1,13}$/.test(raw))return null;
+  const milliseconds=Number(raw)*1000;
+  if(!Number.isSafeInteger(milliseconds))return null;
+  const date=new Date(milliseconds);
+  return Number.isNaN(date.getTime())?null:date.toISOString();
 }
 
 export function canAdvanceDeliveryStatus(current:string,next:string){

@@ -24,6 +24,13 @@ test('quiet hours handle daytime and overnight windows',()=>{
   assert.equal(dispatch.quietHoursActive(overnight,new Date('2026-09-19T08:00:00Z')),false);
 });
 
+test('invalid provider timestamps are ignored without aborting webhook processing',()=>{
+  assert.equal(webhook.providerTimestamp('1790000000'),'2026-09-21T14:13:20.000Z');
+  assert.equal(webhook.providerTimestamp('not-a-time'),null);
+  assert.equal(webhook.providerTimestamp('9999999999999'),null);
+  assert.equal(webhook.providerTimestamp(''),null);
+});
+
 test('webhook delivery states advance monotonically',()=>{
   assert.equal(webhook.canAdvanceDeliveryStatus('accepted','delivered'),true);
   assert.equal(webhook.canAdvanceDeliveryStatus('accepted','read'),true);

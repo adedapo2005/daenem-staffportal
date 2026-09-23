@@ -1,0 +1,22 @@
+{
+  "review": "Communications outbox terminal dispatch transitions",
+  "date": "2026-09-23",
+  "checkpoint": "8671b3fededdfcc1f28d0ae8774e513f9d5dd902",
+  "scope": [
+    "worker/communications-dispatch.ts",
+    "scripts/test-communications-remediation.mjs"
+  ],
+  "result": "PASS",
+  "openFindings": [],
+  "verifiedControls": [
+    "Expiry writes compare-and-set queued/failed status, actual expiry, non-ambiguous state and expired-or-absent lease; a stale write returns not_acquired.",
+    "Maximum-attempt terminal writes compare-and-set queued/failed status, exhausted attempts, due-or-absent retry time, non-ambiguous state and expired-or-absent lease; a stale write returns not_acquired.",
+    "Dispatch claims and provider-result writes remain lease-owner guarded; ambiguous provider outcomes remain excluded from automatic retry."
+  ],
+  "verification": {
+    "communicationsRemediation": "39/39 PASS",
+    "globalTypecheck": "PASS: npm run typecheck exit 0",
+    "globalBuild": "BLOCKED: prebuild checks passed through Bakery accountability; scripts/check-offline-sync.mjs failed because sandbox denied spawnSync git with EPERM while running git diff --name-only 40a96e1cbd89f5570197a8e7c0c5380ba4b2479b...HEAD",
+    "productionImpact": "NONE"
+  }
+}

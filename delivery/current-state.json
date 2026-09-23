@@ -46,7 +46,7 @@
     "deliveryController": "PASS",
     "companyAccessContracts": "26/26 PASS: Inventory and Finance permissions use target-company scope; Procurement conceals unauthorized records and scopes idempotency evidence",
     "communicationsContracts": "12/12 PASS",
-    "communicationsRemediation": "38/38 PASS: prior communications boundaries plus fail-closed, provider-explicit, bounded dispatch orchestration that isolates release-check failures from unrelated scheduled services",
+    "communicationsRemediation": "39/39 PASS: prior communications boundaries, fail-closed provider-explicit dispatch orchestration, and terminal-write compare-and-set behavior",
     "signInConfigurability": "107/107 PASS",
     "backendTypecheck": "PASS",
     "globalTypecheck": "PASS: npm run typecheck exit 0",
@@ -111,7 +111,7 @@
     "erpCompanyScopeSecurity": "PASS: reviewed P1 cross-company permission reuse closed for Inventory and Finance; reviewed P1 record-existence/idempotency disclosure closed for Procurement; no open P0/P1/P2 in bounded re-review",
     "homeContract": "PASS: owner-manager-employee-My Day permission-composed Home static contract",
     "erpTargetedContracts": "PASS: next-phase 57/57; business website catalogue 32/32; Properties owner/investment 17/17; Properties hostel 26/26; Bakery accountability 68/68",
-    "communicationsSafetyContracts": "PASS: communications 12/12; remediation 38/38; staging integration 10/10; bounded fail-closed dispatch scheduling; no provider adapter attached; zero-disclosure contract PASS",
+    "communicationsSafetyContracts": "PASS: communications 12/12; remediation 39/39; staging integration 10/10; bounded fail-closed dispatch scheduling and terminal-write compare-and-set; no provider adapter attached; zero-disclosure contract PASS",
     "spendFoundationContract": "PASS",
     "spendCommitmentAuditContract": "PASS",
     "spendRecoveryContracts": "PASS: dedicated repo-local manual QA workflow and portable path validated",
@@ -134,7 +134,9 @@
     "stagingWorkerURL": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev",
     "stagingUnauthorizedQA": "PASS: health 200; auth-me/admin/communications 401; exact allowed-origin GET 401 and OPTIONS 204; rejected-origin OPTIONS 403",
     "staffPortalRuntime": "NOT DETECTED at final reconciliation: an earlier local Staff Portal Wrangler runtime ended without intervention; no process was terminated, restarted or duplicated",
-    "reviewerEvidence": "PARTIAL: dispatch orchestration re-review fixed the P1 shared-scheduler isolation defect; no open P0/P1/P2 remains in the bounded change; V45 authenticated acceptance remains unavailable; latest evidence is delivery/reviewer-communications-dispatch-orchestration-2026-09-22.json",
+    "reviewerEvidence": "PARTIAL: terminal expiry and max-attempt writes compare-and-set retryable status, timing, ambiguity and lease; malformed webhook timestamps fail closed to database time without aborting receipt processing; no open P0/P1/P2 remains in bounded changes; latest evidence is delivery/reviewer-communications-webhook-timestamp-2026-09-23.json",
+    "communicationsTerminalCas": "PASS: expiry and max-attempt writes compare-and-set retryable status, timing, ambiguity and lease; see delivery/reviewer-communications-terminal-cas-2026-09-23.json",
+    "communicationsWebhookTimestamp": "PASS: valid provider epoch timestamps are preserved; malformed, out-of-range and absent timestamps no longer throw during receipt processing; 40/40 remediation tests and global typecheck PASS; build prebuild blocked by Windows sandbox spawnSync git EPERM; evidence delivery/reviewer-communications-webhook-timestamp-2026-09-23.json",
     "scope": "non-production only"
   },
   "checkpoint": {
@@ -162,8 +164,8 @@
       "themeBuilderBoundaries": "15/15 PASS",
       "widgetBuilderBoundaries": "22/22 PASS",
       "communications": "12/12 PASS",
-      "communicationsRemediation": "38/38 PASS",
-      "communicationsSafety": "12/12 communications + 38/38 remediation + 10/10 staging integration + fail-closed bounded provider-explicit orchestration + zero-disclosure PASS",
+      "communicationsRemediation": "40/40 PASS",
+      "communicationsSafety": "12/12 communications + 40/40 remediation + 10/10 staging integration + fail-closed bounded provider-explicit orchestration, terminal CAS and malformed timestamp handling + zero-disclosure PASS",
       "homeContract": "PASS",
       "erpNextPhase": "57/57 PASS",
       "erpBusinessCatalogue": "32/32 PASS",
@@ -204,7 +206,7 @@
       "Local Wrangler D1 migration replay hangs after migration start; no remote migration was run",
       "Provider adapter remains unattached because no authoritative approved-template component/variable mapping contract was recovered; live delivery remains production-gated"
     ],
-    "nextWorkstream": "SMART-INPUT, generic Report Builder, and the WhatsApp provider-template component mapping remain BLOCKED pending authoritative contracts. Dispatch orchestration is closed through 6b60177 with 12/12 core, 38/38 remediation and CI run 186; no provider adapter or live send path is attached. Continue COMMUNICATIONS-META by auditing preflight failure persistence, terminal-write compare-and-set behavior, and provider-capacity reservation accounting; retain V45 browser QA pending a supported non-production route."
+    "nextWorkstream": "Preflight failure persistence and provider-capacity quota accounting remain BLOCKED by missing authoritative retry and expired-reservation policies; provider-template mapping remains BLOCKED pending the approved component/variable contract. Continue by inspecting the next safe implementable non-Communications backlog item from requirements-index.json; retain V45 browser QA pending a supported non-production route."
   },
   "updatedBy": "Staff Portal Work controller"
 }
