@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
@@ -45,6 +45,20 @@ test('dispatcher source contains atomic lease and due-time gates',async()=>{
   assert.match(source,/lease_expires_at=datetime\('now','\+60 seconds'\)/);
   assert.match(source,/next_attempt_at IS NULL OR datetime\(next_attempt_at\)<=datetime\('now'\)/);
   assert.match(source,/Number\(leased\.meta\?\.changes\|\|0\)!==1/);
+});
+
+test('terminal outbox writes compare-and-set the observed retryable state',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-dispatch.ts'),'utf8');
+  const expiry=source.slice(source.indexOf("const expired=await env.DB.prepare"),source.indexOf("if(Number(expired.meta"));
+  assert.match(expiry,/WHERE id=\? AND status IN \('queued','failed'\)/);
+  assert.match(expiry,/datetime\(expires_at\)<=datetime\('now'\)/);
+  assert.match(expiry,/datetime\(lease_expires_at\)<=datetime\('now'\)/);
+  assert.match(source,/if\(Number\(expired\.meta\?\.changes\|\|0\)!==1\)return \{status:'not_acquired'\}/);
+  const terminal=source.slice(source.indexOf("const terminal=await env.DB.prepare"),source.indexOf("if(Number(terminal.meta"));
+  assert.match(terminal,/WHERE id=\? AND status IN \('queued','failed'\) AND attempts>=max_attempts/);
+  assert.match(terminal,/datetime\(next_attempt_at\)<=datetime\('now'\)/);
+  assert.match(terminal,/datetime\(lease_expires_at\)<=datetime\('now'\)/);
+  assert.match(source,/if\(Number\(terminal\.meta\?\.changes\|\|0\)!==1\)return \{status:'not_acquired'\}/);
 });
 
 test('ambiguous provider outcomes require reconciliation instead of automatic retry',async()=>{
@@ -283,9 +297,10 @@ test('Template and instruction governance writes persist audit evidence atomical
 
 test('Draft queue authorization precedes lookup and readiness failures are neutral',async()=>{
   const service=await readFile(path.join(root,'worker','communications-service.ts'),'utf8');
-  const start=service.indexOf('async function queueDraftForDelivery');
-  const end=service.indexOf('\n}\n\nexport async function routeCommunications',start)+2;
-  const queue=service.slice(start,end);
+  const normalizedService=service.replaceAll('\r\n','\n');
+  const start=normalizedService.indexOf('async function queueDraftForDelivery');
+  const end=normalizedService.indexOf('\n}\n\nexport async function routeCommunications',start)+2;
+  const queue=normalizedService.slice(start,end);
   assert.ok(queue.indexOf("communicationPermission(context,companyId,'hr','send','create')")<queue.indexOf('queueApprovedDraft(env'));
   assert.match(queue,/Send HR Communications permission is required\./);
   assert.match(queue,/catch\{[\s\S]*Draft is not ready for delivery\./);

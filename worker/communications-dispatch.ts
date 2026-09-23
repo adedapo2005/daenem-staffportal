@@ -269,16 +269,32 @@ export async function dispatchCommunicationOutboxItem(
     return {status:'failed',ambiguous:true,awaitingReconciliation:true};
   }
   if(new Date(String(outbox.expiresAt||0)).getTime()<=Date.now()){
-    await env.DB.prepare("UPDATE communication_outbox SET status='expired',lease_owner=NULL,lease_expires_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+    const expired=await env.DB.prepare(`
+      UPDATE communication_outbox SET status='expired',lease_owner=NULL,lease_expires_at=NULL,
+        updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND status IN ('queued','failed')
+        AND datetime(expires_at)<=datetime('now')
+        AND ambiguity_state<>'provider_unknown'
+        AND (lease_expires_at IS NULL OR datetime(lease_expires_at)<=datetime('now'))
+    `)
       .bind(outboxId).run();
+    if(Number(expired.meta?.changes||0)!==1)return {status:'not_acquired'};
     return {status:'expired'};
   }
   if(!retryDue(outbox.nextAttemptAt)){
     return {status:String(outbox.status),retryDeferred:true};
   }
   if(Number(outbox.attempts||0)>=Number(outbox.maxAttempts||5)){
-    await env.DB.prepare("UPDATE communication_outbox SET status='failed',last_error_code='MAX_ATTEMPTS',lease_owner=NULL,lease_expires_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+    const terminal=await env.DB.prepare(`
+      UPDATE communication_outbox SET status='failed',last_error_code='MAX_ATTEMPTS',
+        lease_owner=NULL,lease_expires_at=NULL,updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND status IN ('queued','failed') AND attempts>=max_attempts
+        AND (next_attempt_at IS NULL OR datetime(next_attempt_at)<=datetime('now'))
+        AND ambiguity_state<>'provider_unknown'
+        AND (lease_expires_at IS NULL OR datetime(lease_expires_at)<=datetime('now'))
+    `)
       .bind(outboxId).run();
+    if(Number(terminal.meta?.changes||0)!==1)return {status:'not_acquired'};
     return {status:'failed'};
   }
 
