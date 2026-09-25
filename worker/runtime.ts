@@ -46,6 +46,7 @@ import { routePlatformCenter, routePublicWebsite } from './platform-center';
 import { routeOffline } from './offline';
 import { routeSpend } from './spend';
 import { routeProcurement } from './procurement';
+import { routeAlerting } from './alerting';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -194,6 +195,7 @@ export default {
       url.pathname.startsWith('/api/admin/') ||
       url.pathname.startsWith('/api/offline/') ||
       url.pathname.startsWith('/api/procurement/') ||
+      url.pathname.startsWith('/api/alerting/') ||
       url.pathname.startsWith('/api/spend/');
 
     if (specialized) {
@@ -202,6 +204,10 @@ export default {
 
       if (url.pathname.startsWith('/api/offline/')) {
         const response = await routeOffline(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/alerting/')) {
+        const response = await routeAlerting(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/spend/')) {
