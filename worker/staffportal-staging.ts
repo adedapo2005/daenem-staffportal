@@ -24,8 +24,11 @@ const DEFAULT_FRONTEND_ORIGIN='https://daenem-staffportal-premium-lab.daenem-gro
 
 function corsOrigin(request:Request,env:Env){
   const origin=request.headers.get('origin');
-  const allowed=env.STAFF_PORTAL_FRONTEND_ORIGIN||DEFAULT_FRONTEND_ORIGIN;
-  return origin&&origin===allowed?origin:null;
+  const allowed=(env.STAFF_PORTAL_FRONTEND_ORIGIN||DEFAULT_FRONTEND_ORIGIN)
+    .split(',')
+    .map(value=>value.trim())
+    .filter(Boolean);
+  return origin&&allowed.includes(origin)?origin:null;
 }
 
 function secure(response:Response,request:Request,env:Env){
