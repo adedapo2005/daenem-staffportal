@@ -189,6 +189,7 @@ async function saveMetaCredentialSetting(request:Request,env:Env,context:Enhance
   let body:{key?:string;value?:string};try{body=await request.json()}catch{return json({error:'Invalid Meta credential request.'},400)}
   const key=String(body.key||'');
   if(!isMetaCredentialKey(key))return json({error:'Unsupported Meta credential.'},400);
+  if(key==='google_weather_api_key')return json({error:'Use the weather credential endpoint for this provider.'},400);
   try{
     await saveMetaCredential(env,key,String(body.value||''),context.employee.id);
     await auditCommunication(env,context,undefined,'update_meta_credential','meta_credential',key,{key,configured:true});
@@ -201,10 +202,33 @@ async function deleteMetaCredentialSetting(request:Request,env:Env,context:Enhan
   if(!owner(context))return json({error:'Group Owner or Group Admin access is required.'},403);
   const key=String(new URL(request.url).searchParams.get('key')||'');
   if(!isMetaCredentialKey(key))return json({error:'Unsupported Meta credential.'},400);
+  if(key==='google_weather_api_key')return json({error:'Use the weather credential endpoint for this provider.'},400);
   await deleteMetaCredential(env,key);
   await auditCommunication(env,context,undefined,'delete_meta_credential','meta_credential',key,{key,configured:false});
   const status=(await metaCredentialStatuses(env)).find(item=>item.key===key);
   return json({ok:true,credential:status||null});
+}
+
+async function weatherCredentialSetting(request:Request,env:Env,context:EnhancedSessionContext){
+  if(!owner(context))return json({error:'Group Owner or Group Admin access is required.'},403);
+  const key='google_weather_api_key' as const;
+  if(request.method==='GET'){
+    const credential=(await metaCredentialStatuses(env)).find(item=>item.key===key);
+    return json({credential:credential?{key:credential.key,label:credential.label,configured:credential.configured,source:credential.source,updatedAt:credential.updatedAt}:null});
+  }
+  if(request.method==='POST'){
+    let body:{value?:string};try{body=await request.json()}catch{return json({error:'Invalid weather credential request.'},400)}
+    if(!body||typeof body!=='object'||typeof body.value!=='string')return json({error:'A weather credential value is required.'},400);
+    try{
+      await saveMetaCredential(env,key,body.value,context.employee.id);
+      await auditCommunication(env,context,undefined,'replace_weather_provider_credential','weather_credential',key,{key,configured:true});
+    }catch(error){return json({error:(error as Error).message||'Weather credential could not be saved.'},400)}
+  }else if(request.method==='DELETE'){
+    await deleteMetaCredential(env,key);
+    await auditCommunication(env,context,undefined,'revoke_weather_provider_credential','weather_credential',key,{key,configured:false});
+  }else return null;
+  const credential=(await metaCredentialStatuses(env)).find(item=>item.key===key);
+  return json({ok:true,credential:credential?{key:credential.key,label:credential.label,configured:credential.configured,source:credential.source,updatedAt:credential.updatedAt}:null});
 }
 
 async function getPolicy(
@@ -697,6 +721,9 @@ export async function routeCommunications(
     }
     if (path === '/api/communications/admin/meta-credentials' && method === 'DELETE') {
       return deleteMetaCredentialSetting(request,env,context);
+    }
+    if (path === '/api/communications/admin/weather-credential' && ['GET','POST','DELETE'].includes(method)) {
+      return weatherCredentialSetting(request,env,context);
     }
     if (path === '/api/communications/admin/policy' && method === 'GET') {
       return getPolicy(request,env,context);

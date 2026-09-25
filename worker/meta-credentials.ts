@@ -10,7 +10,8 @@ export type MetaCredentialKey=
   |'communications_webhook_verify_token'
   |'meta_graph_version'
   |'whatsapp_waba_id'
-  |'whatsapp_phone_number_id';
+  |'whatsapp_phone_number_id'
+  |'google_weather_api_key';
 
 export interface MetaCredentialEnv extends AuthEnv,SocialCryptoEnv{
   META_APP_ID?:string;
@@ -37,6 +38,7 @@ export const META_CREDENTIAL_DEFINITIONS:Definition[]=[
   {key:'meta_graph_version',label:'Meta Graph API Version',secret:false,requiredFor:['Meta API requests'],placeholder:'Example: v24.0',helpUrl:'https://developers.facebook.com/docs/graph-api/overview',helpSteps:['Use the Graph API version supported by the Staff Portal Meta app and the product documentation you are configuring.','If left blank, the application uses its code-level compatibility default. Review Meta upgrade notices before changing this value.']},
   {key:'whatsapp_waba_id',label:'WhatsApp Business Account ID (WABA ID)',secret:false,requiredFor:['WhatsApp management'],placeholder:'Numeric WABA ID',helpUrl:'https://developers.facebook.com/docs/whatsapp/cloud-api/get-started',helpSteps:['Open the Staff Portal Meta app and go to the WhatsApp use case → API Setup.','Connect or select the Staff Portal WhatsApp Business account. Meta’s current guide says the WhatsApp Business account ID is displayed in the API Setup panel once connected.','Copy that WABA ID here and confirm it belongs to the Staff Portal WhatsApp account.']},
   {key:'whatsapp_phone_number_id',label:'WhatsApp Phone Number ID',secret:false,requiredFor:['WhatsApp Cloud API sending'],placeholder:'Numeric Phone Number ID',helpUrl:'https://developers.facebook.com/docs/whatsapp/cloud-api/get-started',helpSteps:['Open the Staff Portal Meta app and go to the WhatsApp use case → API Setup.','Select the From phone number used by the Staff Portal. Meta’s current guide instructs you to retain the business phone number ID shown by API Setup.','Copy that Phone Number ID here. It is the Meta asset ID, not the visible telephone number.']},
+  {key:'google_weather_api_key',label:'Google Weather API Key',secret:true,requiredFor:['Authenticated Staff Portal weather'],placeholder:'Google Weather API key',helpUrl:'https://developers.google.com/maps/documentation/weather',helpSteps:['Create or select the approved Staff Portal Google Cloud project.','Restrict the key to the Weather API and approved server-side usage.','Save the key here. It is encrypted at rest and is never returned after saving.']},
 ];
 
 const envMap:Record<MetaCredentialKey,keyof MetaCredentialEnv|undefined>={
@@ -49,6 +51,7 @@ const envMap:Record<MetaCredentialKey,keyof MetaCredentialEnv|undefined>={
   meta_graph_version:'META_GRAPH_VERSION',
   whatsapp_waba_id:undefined,
   whatsapp_phone_number_id:undefined,
+  google_weather_api_key:undefined,
 };
 
 export function isMetaCredentialKey(value:string):value is MetaCredentialKey{
