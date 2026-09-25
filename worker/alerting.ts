@@ -123,13 +123,27 @@ async function listAttention(env: AlertingEnv, context: SessionContext) {
     SELECT a.id,a.alert_no alertNo,a.company_id companyId,a.module,a.event_type eventType,a.severity,
       a.title,a.summary,a.related_path relatedPath,a.acknowledgement_required acknowledgementRequired,
       a.status,a.occurrence_count occurrenceCount,a.first_seen_at firstSeenAt,a.last_seen_at lastSeenAt,
-      a.acknowledged_at acknowledgedAt,a.actioned_at actionedAt
+      a.acknowledged_at acknowledgedAt,a.actioned_at actionedAt,
+      ar.delivered_at deliveredAt,ar.viewed_at viewedAt,
+      ar.acknowledged_at recipientAcknowledgedAt,ar.actioned_at recipientActionedAt,
+      COALESCE(ds.deliveryCount,0) deliveryCount,COALESCE(ds.deliveredCount,0) deliveredCount,
+      COALESCE(ds.failedCount,0) failedCount,ds.lastDeliveryUpdateAt
     FROM platform_alerts a
+    LEFT JOIN platform_alert_recipients ar ON ar.alert_id=a.id AND ar.employee_id=?
+    LEFT JOIN (
+      SELECT recipient_id,COUNT(*) deliveryCount,
+        SUM(CASE WHEN status IN ('delivered','viewed') THEN 1 ELSE 0 END) deliveredCount,
+        SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) failedCount,
+        MAX(COALESCE(delivered_at,sent_at,updated_at)) lastDeliveryUpdateAt
+      FROM platform_alert_deliveries
+      WHERE recipient_id IN (SELECT id FROM platform_alert_recipients WHERE employee_id=?)
+      GROUP BY recipient_id
+    ) ds ON ds.recipient_id=ar.id
     WHERE a.status IN ('open','acknowledged','reopened')${scope.sql}${recipientClause}
     ORDER BY CASE a.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
       a.last_seen_at DESC
     LIMIT 200
-  `).bind(...scope.values, ...recipientValues).all<Record<string, unknown>>();
+  `).bind(context.employee.id, context.employee.id, ...scope.values, ...recipientValues).all<Record<string, unknown>>();
   return json({ alerts: rows.results || [] });
 }
 
