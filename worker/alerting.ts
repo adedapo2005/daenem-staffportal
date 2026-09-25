@@ -175,6 +175,7 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
     SELECT id,company_id companyId,status FROM platform_alerts WHERE id=?
   `).bind(alertId).first<{ id: string; companyId?: string; status: string }>();
   if (!alert) return json({ error: 'Alert not found.' }, 404);
+  if (alert.status === 'resolved') return json({ error: 'Resolved alerts cannot be updated.' }, 409);
 
   if (!canManage(context)) {
     const assigned = await env.DB.prepare('SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?')
@@ -183,23 +184,27 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
   }
 
   const now = new Date().toISOString();
+  let writes: D1Result[];
   if (action === 'acknowledge') {
-    await env.DB.batch([
+    writes = await env.DB.batch([
       env.DB.prepare(`UPDATE platform_alerts SET status=CASE WHEN status IN ('open','reopened') THEN 'acknowledged' ELSE status END,
-        acknowledged_at=COALESCE(acknowledged_at,?),updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(now, alertId),
+        acknowledged_at=COALESCE(acknowledged_at,?),updated_at=CURRENT_TIMESTAMP WHERE id=? AND status<>'resolved'`).bind(now, alertId),
       env.DB.prepare(`UPDATE platform_alert_recipients SET viewed_at=COALESCE(viewed_at,?),acknowledged_at=COALESCE(acknowledged_at,?)
-        WHERE alert_id=? AND employee_id=?`).bind(now, now, alertId, context.employee.id),
+        WHERE alert_id=? AND employee_id=? AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`).bind(now, now, alertId, context.employee.id, alertId),
     ]);
   } else {
-    await env.DB.batch([
+    writes = await env.DB.batch([
       env.DB.prepare(`UPDATE platform_alerts SET status='actioned',actioned_at=COALESCE(actioned_at,?),
         acknowledged_at=COALESCE(acknowledged_at,?),updated_at=CURRENT_TIMESTAMP WHERE id=? AND status<>'resolved'`).bind(now, now, alertId),
       env.DB.prepare(`UPDATE platform_alert_recipients SET viewed_at=COALESCE(viewed_at,?),acknowledged_at=COALESCE(acknowledged_at,?),
-        actioned_at=COALESCE(actioned_at,?) WHERE alert_id=? AND employee_id=?`).bind(now, now, now, alertId, context.employee.id),
+        actioned_at=COALESCE(actioned_at,?) WHERE alert_id=? AND employee_id=?
+        AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`).bind(now, now, now, alertId, context.employee.id, alertId),
     ]);
   }
+  if (Number(writes[0]?.meta?.changes || 0) !== 1) return json({ error: 'Resolved alerts cannot be updated.' }, 409);
+  const resultingStatus = action === 'action' ? 'actioned' : ['open', 'reopened'].includes(alert.status) ? 'acknowledged' : alert.status;
   await audit(env, context, action, alertId, alert.companyId || null, { previousStatus: alert.status });
-  return json({ ok: true, alertId, status: action === 'acknowledge' ? 'acknowledged' : 'actioned' });
+  return json({ ok: true, alertId, status: resultingStatus });
 }
 async function listRules(env: AlertingEnv, context: SessionContext) {
   if (!canRules(context)) return json({ error: 'Alert rule management is not assigned.' }, 403);
