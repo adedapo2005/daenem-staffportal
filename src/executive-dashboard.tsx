@@ -4,6 +4,7 @@ import{
   CircleDollarSign,Factory,Gauge,Home,PackageSearch,RefreshCw,Store,Truck,Users,WalletCards,
 }from'lucide-react';
 import{api}from'./auth';
+import{OperatingSignals,PerformanceComparison}from'./analytics-command-widgets';
 import'./executive-dashboard.css';
 
 type PeriodKey='current_month'|'previous_month'|'current_quarter'|'year_to_date'|'last_12_months';
@@ -62,6 +63,13 @@ export function GroupExecutiveDashboard({companyId}:{companyId:string|null}){
   const rows=useMemo(()=>data?companyMeta.filter((company)=>!companyId||company.id===companyId).map((company)=>({...company,...companyNumbers(data,company.key),shared:data.companies[company.key]})):[],[data,companyId]);
   const maxRevenue=Math.max(1,...rows.map((row)=>row.revenue));
   const growth=data?percent(data.group.revenueKobo,data.group.previousRevenueKobo):0;
+  const comparisonRows=rows.map((row)=>({key:row.key,name:row.code,current:row.revenue,previous:row.previous}));
+  const operatingSignals=data?[
+    {label:'Overdue Receivables',value:String(data.finance.overdueReceivables),detail:moneyFull(data.finance.outstandingReceivablesKobo)+' outstanding',state:data.finance.overdueReceivables?'critical':'healthy' as const},
+    {label:'Low Stock',value:String(data.group.lowStock),detail:'Inventory items requiring review',state:data.group.lowStock?'attention':'healthy' as const},
+    {label:'Attendance Exceptions',value:String(data.group.incompleteAttendance),detail:`${data.group.present}/${data.group.employees} workforce present`,state:data.group.incompleteAttendance?'attention':'healthy' as const},
+    {label:'Construction Milestones',value:String(data.construction.overdueMilestones),detail:moneyFull(data.construction.remainingKobo)+' budget remaining',state:data.construction.overdueMilestones?'critical':'healthy' as const},
+  ]:[];
   return <section className="xed-shell" aria-label="Group Executive Dashboard">
     <header className="xed-toolbar"><div><span>LIVE GROUP ERP</span><h2>Executive Performance Dashboard</h2><p>{data?.scope.companyName||'Daenem Group'} · recorded transactions and operational exceptions</p></div><aside><label><CalendarRange size={16}/><select value={period} onChange={(event)=>setPeriod(event.target.value as PeriodKey)}>{periods.map((item)=><option value={item.key} key={item.key}>{item.label}</option>)}</select></label><button onClick={load} disabled={busy}><RefreshCw size={16} className={busy?'spin':''}/><span>{busy?'Refreshing':'Refresh'}</span></button></aside></header>
     {message&&<div className="xed-message"><AlertTriangle size={17}/><span>{message}</span></div>}
@@ -80,12 +88,16 @@ export function GroupExecutiveDashboard({companyId}:{companyId:string|null}){
         <article className="xed-panel xed-performance"><header><div><span>COMPANY PERFORMANCE</span><h3>Recorded Revenue And Collections</h3></div><Building2 size={20}/></header><div className="xed-bars">{rows.map((row)=>{const Icon=row.icon;const change=percent(row.revenue,row.previous);return <button key={row.key} onClick={()=>openWorkspace(row.module)}><div className="xed-bar-title"><span><i><Icon size={16}/></i><b>{row.name}</b></span><strong>{moneyFull(row.revenue)}</strong></div><div className="xed-track"><i style={{width:`${Math.max(row.revenue?4:0,row.revenue/maxRevenue*100)}%`}}/></div><div className="xed-bar-meta"><span>{row.primary} · {row.secondary}</span><em className={change<0?'down':'up'}>{change>=0?'+':''}{change.toFixed(1)}%</em></div></button>})}</div></article>
         <article className="xed-panel xed-alerts"><header><div><span>OWNER ACTION CENTER</span><h3>Needs Review</h3></div><AlertTriangle size={20}/></header>{!data.alerts.length?<div className="xed-clear"><CheckCircle2 size={28}/><b>No Exception Alerts</b><span>No configured Group threshold currently requires review.</span></div>:<div className="xed-alert-list">{data.alerts.slice(0,8).map((alert)=><button key={alert.code} className={alert.severity} onClick={()=>openWorkspace(alert.action)}><i><AlertTriangle size={15}/></i><span><b>{alert.title}</b><small>{alert.company?`${alert.company} · `:''}{alert.detail}</small></span>{alert.action&&<ArrowRight size={14}/>}</button>)}</div>}</article>
       </div>
+      <div className="xed-analytics-upgrade" aria-label="Executive Analytics">
+        <PerformanceComparison rows={comparisonRows} title="Company Performance Movement" subtitle={`Current recorded performance compared with ${data.period.comparisonLabel}.`} valueFormatter={money}/>
+        <OperatingSignals signals={operatingSignals}/>
+      </div>
       <div className="xed-lower">
         <button onClick={()=>openWorkspace('construction')}><Building2/><span><small>CONSTRUCTION & PROJECTS</small><b>{moneyFull(data.construction.spentKobo)} recorded spend</b><em>{moneyFull(data.construction.budgetKobo)} budget · {data.construction.overdueMilestones} overdue milestone(s)</em></span><ArrowRight/></button>
         <button onClick={()=>openWorkspace('finance')}><CircleDollarSign/><span><small>FINANCE CONTROL</small><b>{moneyFull(data.finance.outstandingReceivablesKobo)} receivable balance</b><em>{moneyFull(data.finance.operatingExpenseKobo)} approved/paid expenses in period</em></span><ArrowRight/></button>
         <button onClick={()=>openWorkspace('owner-intelligence')}><Gauge/><span><small>DAENEM AI INTELLIGENCE</small><b>Open full Owner Intelligence</b><em>Compare companies and ask questions using recorded ERP data</em></span><ArrowRight/></button>
       </div>
-      <footer className="xed-foot"><PackageSearch size={14}/><span>Last refreshed {new Date(data.generatedAt).toLocaleString('en-NG')} · {data.period.label} ({data.period.start} to {data.period.end})</span></footer>
+      <footer className="xed-foot"><PackageSearch size={14}/><span>Last refreshed {new Date(data.generatedAt).toLocaleString('en-NG',{hour12:true})} · {data.period.label} ({data.period.start} to {data.period.end})</span></footer>
     </>}
   </section>;
 }

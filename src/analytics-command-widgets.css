@@ -1,0 +1,23 @@
+.acw-panel{border:1px solid var(--border,#dde3eb);border-radius:17px;background:var(--panel,#fff);box-shadow:var(--shadow);padding:15px;min-width:0}
+.acw-panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.acw-panel-head span{font-size:9px;font-weight:900;letter-spacing:.12em;opacity:.58}
+.acw-panel-head h3{font-size:17px;margin:2px 0 0}
+.acw-panel-head p{font-size:10px;color:var(--muted,#6f7b8d);margin:4px 0 0}
+.acw-chart-wrap{min-height:250px}
+.acw-change-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:8px}
+.acw-change{border:1px solid var(--border,#dde3eb);border-radius:10px;padding:8px;background:rgba(110,120,140,.04);min-width:0}
+.acw-change span,.acw-change b{display:block}
+.acw-change span{font-size:8px;font-weight:800;color:var(--muted,#6f7b8d);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acw-change b{font-size:11px;margin-top:3px;display:flex;align-items:center;gap:3px}
+.acw-change b.up{color:#315aa7}.acw-change b.down{color:#b53535}.acw-change b.flat{color:var(--muted,#6f7b8d)}
+.acw-signal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.acw-signal{position:relative;border:1px solid var(--border,#dde3eb);border-radius:12px;padding:11px 12px;background:rgba(110,120,140,.04);overflow:hidden}
+.acw-signal:before{content:'';position:absolute;inset:0 auto 0 0;width:3px;background:#708098}
+.acw-signal small,.acw-signal strong,.acw-signal span{display:block}
+.acw-signal small{font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#6f7b8d)}
+.acw-signal strong{font-size:20px;margin:5px 0 3px}
+.acw-signal span{font-size:9px;color:var(--muted,#6f7b8d);line-height:1.35}
+.acw-signal.state-attention:before{background:#b77716}.acw-signal.state-critical:before{background:#b53535}.acw-signal.state-healthy:before{background:#188264}
+@media(max-width:1100px){.acw-change-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.acw-change-grid{grid-template-columns:1fr 1fr}.acw-signal-grid{grid-template-columns:1fr}.acw-panel{padding:12px}}
+@media(prefers-reduced-motion:reduce){.acw-panel *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
