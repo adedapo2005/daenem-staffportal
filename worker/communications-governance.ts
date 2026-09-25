@@ -388,11 +388,48 @@ async function saveTrigger(request:Request,env:GovernanceEnv,context:EnhancedSes
  return json({ok:true});
 }
 
+async function listTemplateMappings(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
+ const companyId=String(new URL(request.url).searchParams.get('companyId')||'');
+ const useCaseId=String(new URL(request.url).searchParams.get('useCaseId')||'');
+ if(!companyId||!useCaseId||!companyAllowed(context,companyId))return json({error:'Company and use case are required.'},400);
+ if(!canManageEvent(context,companyId,useCaseId,'view'))return json({error:'Communications administration access is not assigned.'},403);
+ const mappings=await env.DB.prepare(`
+  SELECT id,template_id AS templateId,company_id AS companyId,use_case_id AS useCaseId,
+   provider_template_name AS providerTemplateName,language,category,owning_module AS owningModule,
+   provider_template_id AS providerTemplateId,enabled,status,revision,updated_at AS updatedAt
+  FROM communication_template_mappings
+  WHERE company_id=? AND use_case_id=?
+  ORDER BY language,revision DESC
+  LIMIT 100
+ `).bind(companyId,useCaseId).all<Record<string,unknown>&{id:string}>();
+ const rows=mappings.results||[];
+ if(!rows.length)return json({companyId,useCaseId,mappings:[]});
+ const placeholders=rows.map(()=>'?').join(',');
+ const variables=await env.DB.prepare(`
+  SELECT mapping_id AS mappingId,component,component_name AS componentName,position,
+   variable_name AS variableName,source_field AS sourceField,source_module AS sourceModule,
+   data_type AS dataType,required,formatter,max_length AS maxLength,
+   fallback_policy AS fallbackPolicy,sensitivity
+  FROM communication_template_variable_mappings
+  WHERE mapping_id IN (${placeholders})
+  ORDER BY mapping_id,component,component_name,position
+ `).bind(...rows.map(row=>row.id)).all<Record<string,unknown>&{mappingId:string}>();
+ const variablesByMapping=new Map<string,Record<string,unknown>[]>();
+ for(const variable of variables.results||[]){
+  const list=variablesByMapping.get(variable.mappingId)||[];
+  list.push(variable);variablesByMapping.set(variable.mappingId,list);
+ }
+ return json({companyId,useCaseId,mappings:rows.map(row=>({
+  ...row,enabled:row.enabled===1,variables:variablesByMapping.get(row.id)||[],
+ }))});
+}
+
 export async function routeCommunicationGovernance(
  request:Request,env:GovernanceEnv,context:EnhancedSessionContext,
 ):Promise<Response|null>{
  const path=new URL(request.url).pathname,method=request.method;
  if(path==='/api/communications/admin/governance'&&method==='GET')return overview(request,env,context);
+ if(path==='/api/communications/admin/template-mappings'&&method==='GET')return listTemplateMappings(request,env,context);
  if(path==='/api/communications/admin/restrictions'&&method==='POST')return saveRestriction(request,env,context);
  if(path==='/api/communications/admin/templates'&&method==='POST')return createTemplate(request,env,context);
  if(path==='/api/communications/admin/templates/approve'&&method==='POST')return approveTemplate(request,env,context);
