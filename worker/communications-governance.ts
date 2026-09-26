@@ -503,6 +503,10 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
  if(row.providerStatus!=='approved')blockers.push('PROVIDER_TEMPLATE_NOT_APPROVED');
  if(Number(row.variableCount)<1)blockers.push('VARIABLE_MAPPINGS_REQUIRED');
  if(Number(row.invalidVariableCount)>0)blockers.push('VARIABLE_FALLBACK_POLICY_INVALID');
+ // Mapping records are governed and auditable, but the runtime source-field
+ // resolver is intentionally not attached yet. Keep the readiness projection
+ // truthful until approved values can be resolved and validated at send time.
+ if(Number(row.variableCount)>0)blockers.push('VARIABLE_RESOLUTION_UNAVAILABLE');
  return json({
   mappingId:row.id,
   useCaseId:row.useCaseId,
