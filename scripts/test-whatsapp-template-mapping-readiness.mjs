@@ -13,6 +13,8 @@ assert.match(endpoint, /row\.status!=='approved'/);
 assert.match(endpoint, /row\.enabled!==1/);
 assert.match(endpoint, /row\.internalStatus!=='approved'/);
 assert.match(endpoint, /row\.providerStatus!=='approved'/);
+assert.match(endpoint, /variableCount:number/);
+assert.match(endpoint, /VARIABLE_MAPPINGS_REQUIRED/);
 assert.match(endpoint, /templatePrerequisitesSatisfied:blockers\.length===0/);
 assert.match(endpoint, /liveSend:false/);
 assert.doesNotMatch(endpoint, /UPDATE |INSERT INTO|fetch\(/);

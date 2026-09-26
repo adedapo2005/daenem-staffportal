@@ -483,12 +483,13 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
  if(!companyId||!mappingId||!companyAllowed(context,companyId))return json({error:'Company and template mapping are required.'},400);
  const row=await env.DB.prepare(`
   SELECT m.id,m.use_case_id AS useCaseId,m.enabled,m.status,
-   t.internal_status AS internalStatus,t.provider_status AS providerStatus
+   t.internal_status AS internalStatus,t.provider_status AS providerStatus,
+   (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id) AS variableCount
   FROM communication_template_mappings m
   JOIN communication_templates t ON t.id=m.template_id AND t.company_id=m.company_id
   WHERE m.id=? AND m.company_id=? LIMIT 1
  `).bind(mappingId,companyId).first<{
-  id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;
+  id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;variableCount:number;
  }>();
  if(!row)return json({error:'Template mapping was not found.'},404);
  if(!canManageEvent(context,companyId,row.useCaseId,'view'))return json({error:'Communications management access is not assigned.'},403);
@@ -497,6 +498,7 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
  if(row.enabled!==1)blockers.push('MAPPING_DISABLED');
  if(row.internalStatus!=='approved')blockers.push('INTERNAL_TEMPLATE_NOT_APPROVED');
  if(row.providerStatus!=='approved')blockers.push('PROVIDER_TEMPLATE_NOT_APPROVED');
+ if(Number(row.variableCount)<1)blockers.push('VARIABLE_MAPPINGS_REQUIRED');
  return json({
   mappingId:row.id,
   useCaseId:row.useCaseId,
