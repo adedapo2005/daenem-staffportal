@@ -32,6 +32,7 @@ assert.match(provider, /providerStatus: 'cached'/);
 assert.match(provider, /providerStatus: 'provider_required'/);
 assert.doesNotMatch(provider, /console\.(log|warn|error)|X-Goog-Api-Key.*cache\.put/);
 assert.match(endpoint, /Math\.abs\(lat\) > 90 \|\| Math\.abs\(lon\) > 180/);
+assert.match(endpoint, /rawLat === null \|\| rawLon === null \|\| !rawLat\.trim\(\) \|\| !rawLon\.trim\(\)/);
 assert.match(endpoint, /providerStatus: 'provider_required'/);
 assert.doesNotMatch(endpoint, /open-meteo|apiKey|credentialKey/);
 assert.doesNotMatch(source, /api\.open-meteo\.com/);

@@ -39,8 +39,13 @@ async function weather(request: Request, env: Env) {
     return json({ available: false, providerStatus: 'provider_required' });
   }
   const url = new URL(request.url);
-  const lat = Number(url.searchParams.get('lat'));
-  const lon = Number(url.searchParams.get('lon'));
+  const rawLat = url.searchParams.get('lat');
+  const rawLon = url.searchParams.get('lon');
+  if (rawLat === null || rawLon === null || !rawLat.trim() || !rawLon.trim()) {
+    return json({ error: 'Valid latitude and longitude are required.' }, 400);
+  }
+  const lat = Number(rawLat);
+  const lon = Number(rawLon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     return json({ error: 'Valid latitude and longitude are required.' }, 400);
   }
