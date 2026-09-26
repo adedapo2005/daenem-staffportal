@@ -1036,9 +1036,18 @@ async function uploadAttachment(request: Request, env: OfflineEnv, context: Sess
   if (!bytes.byteLength || bytes.byteLength > policy.attachmentMaxBytes) return json({ error: 'This attachment is larger than the configured limit.' }, 413);
   const digest = await sha256(bytes);
   if (claimedSha && (!/^[a-f0-9]{64}$/.test(claimedSha) || claimedSha !== digest)) return json({ error: 'This attachment failed its integrity check.' }, 400);
-  const existing = await env.DB.prepare(`SELECT id,r2_key AS r2Key,sha256,mime_type AS mimeType,size_bytes AS sizeBytes,status FROM offline_attachments WHERE id=? AND employee_id=?`).bind(attachmentId, context.employee.id).first<Record<string, unknown>>();
+  const existing = await env.DB.prepare(`SELECT id,r2_key AS r2Key,sha256,mime_type AS mimeType,size_bytes AS sizeBytes,status,company_id AS companyId FROM offline_attachments WHERE id=? AND employee_id=?`).bind(attachmentId, context.employee.id).first<Record<string, unknown>>();
+  if(existing&&existing.companyId!==companyId)return json({error:'Attachment scope conflicts with its existing record.'},409);
   if (existing && existing.sha256 === digest && existing.mimeType === mimeType && Number(existing.sizeBytes) === bytes.byteLength) {
-    return json({ ok: true, attachment: { id: existing.id, status: existing.status, sha256: existing.sha256, sizeBytes: existing.sizeBytes }, deduplicated: true });
+    await env.DB.prepare(`INSERT OR IGNORE INTO storage_mirror_jobs(
+      id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status
+    ) SELECT ?, 'microsoft_onedrive','offline',id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,?,'provider_required'
+      FROM offline_attachments WHERE id=? AND employee_id=? AND company_id=? AND sha256=?`)
+      .bind('storage-mirror-offline-' + attachmentId + '-' + digest,
+        'microsoft_onedrive:offline:' + attachmentId + ':' + digest,
+        attachmentId,context.employee.id,companyId,digest).run();
+    const mirror = await env.DB.prepare(`SELECT status FROM storage_mirror_jobs WHERE provider='microsoft_onedrive' AND source_module='offline' AND source_id=? AND sha256=? LIMIT 1`).bind(attachmentId,digest).first<{status:string}>();
+    return json({ ok: true, attachment: { id: existing.id, status: existing.status, backupStatus: mirror?.status||'provider_required', sha256: existing.sha256, sizeBytes: existing.sizeBytes }, deduplicated: true });
   }
   const key = 'offline/' + context.employee.id + '/' + operationId + '/' + attachmentId + '-' + digest;
   await env.FILES.put(key, bytes, {
@@ -1046,13 +1055,23 @@ async function uploadAttachment(request: Request, env: OfflineEnv, context: Sess
     customMetadata: { employeeId: context.employee.id, companyId, operationId, sha256: digest },
   });
   try {
-    await env.DB.prepare(`
+    await env.DB.batch([env.DB.prepare(`
       INSERT INTO offline_attachments(id,employee_id,company_id,operation_id,r2_key,original_name,mime_type,size_bytes,sha256)
       VALUES(?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET r2_key=excluded.r2_key,original_name=excluded.original_name,
         mime_type=excluded.mime_type,size_bytes=excluded.size_bytes,sha256=excluded.sha256,
+        company_id=excluded.company_id,operation_id=excluded.operation_id,
         status='uploaded',uploaded_at=CURRENT_TIMESTAMP
-    `).bind(attachmentId, context.employee.id, companyId, operationId, key, name, mimeType, bytes.byteLength, digest).run();
+    `).bind(attachmentId, context.employee.id, companyId, operationId, key, name, mimeType, bytes.byteLength, digest), env.DB.prepare(`
+      INSERT OR IGNORE INTO storage_mirror_jobs(
+        id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,
+        size_bytes,sha256,idempotency_key,status
+      ) SELECT ?, 'microsoft_onedrive','offline',id,company_id,r2_key,original_name,mime_type,
+        size_bytes,sha256,?,'provider_required'
+        FROM offline_attachments WHERE id=? AND employee_id=? AND sha256=?
+    `).bind('storage-mirror-offline-' + attachmentId + '-' + digest,
+      'microsoft_onedrive:offline:' + attachmentId + ':' + digest,
+      attachmentId, context.employee.id, digest)]);
   } catch (error) {
     await env.FILES.delete(key);
     throw error;
@@ -1065,7 +1084,7 @@ async function uploadAttachment(request: Request, env: OfflineEnv, context: Sess
     sha256: digest,
     operationId,
   }, companyId);
-  return json({ ok: true, attachment: { id: attachmentId, operationId, originalName: name, mimeType, sizeBytes: bytes.byteLength, sha256: digest, status: 'uploaded' } }, 201);
+  return json({ ok: true, attachment: { id: attachmentId, operationId, originalName: name, mimeType, sizeBytes: bytes.byteLength, sha256: digest, status: 'uploaded', backupStatus:'provider_required' } }, 201);
 }
 
 export async function routeOffline(request: Request, env: OfflineEnv, context: SessionContext): Promise<Response | null> {
