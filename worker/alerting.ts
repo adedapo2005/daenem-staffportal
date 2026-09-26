@@ -96,6 +96,9 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
 }
 
 async function createRecipientDeliveries(env: AlertingEnv, alertId: string, employeeIds: string[], channels: string[]) {
+  const alert = await env.DB.prepare('SELECT company_id companyId,title,summary FROM platform_alerts WHERE id=?')
+    .bind(alertId).first<{ companyId: string | null; title: string; summary: string | null }>();
+  if (!alert) return;
   for (const employeeId of employeeIds) {
     const recipientId = uid('alert-recipient');
     await env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_recipients(id,alert_id,employee_id,recipient_reason)
@@ -104,8 +107,19 @@ async function createRecipientDeliveries(env: AlertingEnv, alertId: string, empl
       .bind(alertId, employeeId).first<{ id: string }>();
     if (!recipient) continue;
     for (const channel of channels) {
+      const deliveryId = uid('alert-delivery');
       await env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_deliveries(id,alert_id,recipient_id,channel,status)
-        VALUES(?,?,?,?,'queued')`).bind(uid('alert-delivery'), alertId, recipient.id, channel).run();
+        VALUES(?,?,?,?,'queued')`).bind(deliveryId, alertId, recipient.id, channel).run();
+      const delivery = await env.DB.prepare(`SELECT id,status FROM platform_alert_deliveries
+        WHERE alert_id=? AND recipient_id=? AND channel=?`).bind(alertId, recipient.id, channel)
+        .first<{ id: string; status: string }>();
+      if (delivery?.status === 'queued' && channel === 'in_app') {
+        await env.DB.prepare(`INSERT OR IGNORE INTO notification_outbox
+          (id,employee_id,company_id,source_type,source_id,channel,title,message,priority,status)
+          VALUES(?,?,?,'platform_alert',?,'in_app',?,?,?,'queued')`)
+          .bind(delivery.id, employeeId, alert.companyId, alertId, alert.title,
+            alert.summary || alert.title, 'normal').run();
+      }
     }
   }
 }
