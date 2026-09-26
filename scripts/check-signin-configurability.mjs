@@ -113,19 +113,19 @@ check('live layout governor measures actual columns without polling', signin.inc
 check('layout governor exposes measured fit diagnostics', signin.includes('data-auth-required-height') && signin.includes('data-auth-available-height') && signin.includes('data-live-required-height') && signin.includes('data-live-available-height'));
 check('comfortable default capacity shows all five widgets', signin.includes("today: 3") && signin.includes("'live-context': 2") && signin.includes("? { 'workspace-spotlight': 1"));
 check('900px class reduces TODAY capacity without hiding widgets', signin.includes("density === 'compact'") && signin.includes('today: 2') && signin.includes('instances.length > capacity'));
-check('weather API requests expanded current hourly and daily fields', workerIndex.includes('apparent_temperature') && workerIndex.includes('relative_humidity_2m') && workerIndex.includes('wind_direction_10m') && workerIndex.includes('precipitation_probability') && workerIndex.includes('temperature_2m_max') && workerIndex.includes('sunrise') && workerIndex.includes('sunset'));
-check('weather payload normalizes missing fields and unknown codes', workerIndex.includes('numberValue') && workerIndex.includes('Current conditions') && workerIndex.includes('temperature: numberValue(current.temperature_2m)'));
+check('weather requests Google current conditions in the approved default unit', workerIndex.includes('weather.googleapis.com/v1/currentConditions:lookup') && workerIndex.includes("api.searchParams.set('unitsSystem', 'IMPERIAL')"));
+check('weather payload normalizes the Google response and missing fields', workerIndex.includes('temperature: number(data.temperature)') && workerIndex.includes('apparentTemperature: number(data.feelsLikeTemperature)') && workerIndex.includes("typeof condition === 'string' ? condition : 'Current conditions'"));
 check('weather retains cached data on refresh failure', signin.includes("reading.state === 'unavailable' && previous?.state === 'ready'") && signin.includes('setInterval(refreshWeather, 300_000)'));
 check('weather administration exposes safe detail and animation controls', studio.includes("['showFeelsLike','Feels like']") && studio.includes("['showSunriseSunset','Sunrise / sunset']") && studio.includes('globalOperations.weatherStyle') && studio.includes('globalOperations.weatherAnimation') && prefs.includes('weatherAnimation'));
 check('seven clock cards have independent weather readings and paging', signin.includes('weather={weather[location.zone]}') && signin.includes('visibleLocations') && signin.includes('Previous locations') && signin.includes('clockCapacity'));
 check('clock typography stays readable on desktop', css.includes('.usp-clock-location strong { font-size: 12px; }') && css.includes('.usp-clock-copy > b { font-size: 14px; }') && css.includes('.usp-clock-weather > small,') && !/font-size:\s*[0-8](?:\.[0-9]+)?px/.test(css));
 check('weather reduced motion is static and pointer independent', css.includes('.usp-weather-animation-none') && css.includes('usp-weather-animation-') && signin.includes('CloudSnow') && signin.includes('Moon') && !signin.includes('pointermove') && !signin.includes('mousemove'));
 const weatherFixtures = [
-  { current: { temperature_2m: 28, apparent_temperature: 31, relative_humidity_2m: 74, weather_code: 2, wind_speed_10m: 12, wind_direction_10m: 180 }, daily: { temperature_2m_max: [32], temperature_2m_min: [24], sunrise: ['06:00'], sunset: ['18:30'] } },
-  { current: { temperature_2m: 28 }, daily: {} },
-  { current: { temperature_2m: 28, weather_code: 999 } },
+  { temperature: { degrees: 28 }, feelsLikeTemperature: { degrees: 31 }, relativeHumidity: 74, weatherCondition: { description: { text: 'Partly cloudy' } } },
+  { temperature: { degrees: 28 } },
+  { weatherCondition: { description: { text: 'Unknown condition' } } },
 ];
-check('weather contract fixtures tolerate complete, missing and unknown data', weatherFixtures.every((fixture) => typeof fixture.current.temperature_2m === 'number') && workerIndex.includes('current.apparent_temperature') && workerIndex.includes('current.relative_humidity_2m') && workerIndex.includes('current.wind_gusts_10m'));
+check('Google weather contract fixtures cover complete and partial responses', weatherFixtures[0].temperature.degrees === 28 && weatherFixtures[1].feelsLikeTemperature === undefined && weatherFixtures[2].weatherCondition.description.text === 'Unknown condition' && workerIndex.includes('data.currentConditionsHistory') && workerIndex.includes('providerStatus: \'fresh\''));
 
 // Deterministic fit accounting for the compact desktop composition. These
 // values are derived from the final CSS control heights, gaps, panel padding,
