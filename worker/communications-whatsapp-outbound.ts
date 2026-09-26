@@ -107,6 +107,21 @@ export async function prepareWhatsAppInboxSend(
       LIMIT 1
     `).bind(String(row.templateId||''),row.companyId).first();
     if(!current)throw new Error('WHATSAPP_TEMPLATE_NOT_APPROVED');
+    const mapping=await env.DB.prepare(`
+      SELECT t.id AS templateId,m.id AS mappingId
+      FROM communication_templates t
+      JOIN communication_template_mappings m
+        ON m.template_id=t.id AND m.company_id=t.company_id
+      WHERE t.id=? AND t.company_id=? AND t.channel='whatsapp'
+        AND t.internal_status='approved' AND t.provider_status='approved'
+        AND m.provider_template_name=? AND m.language=?
+        AND m.enabled=1 AND m.status='approved'
+      LIMIT 1
+    `).bind(String(row.templateId||''),row.companyId,String(row.templateName||''),String(row.templateLanguage||'')).first();
+    if(!mapping)throw new Error('WHATSAPP_TEMPLATE_MAPPING_NOT_READY');
+    // The Inbox adapter does not yet resolve approved source fields into Meta
+    // component parameters. Never send a template payload with missing values.
+    throw new Error('WHATSAPP_TEMPLATE_VARIABLE_RESOLUTION_UNAVAILABLE');
   }
   if(!normalizeRecipient(row.customerWaId))throw new Error('WHATSAPP_RECIPIENT_INVALID');
   const idempotencyKey=await ensureIdempotencyKey(env,row);

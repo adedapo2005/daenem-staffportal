@@ -150,6 +150,10 @@ test('WhatsApp outbound adapter is idempotent, scoped, audited and double-gated'
   assert.match(adapter,/META_SYSTEM_USER_TOKEN_MISSING/);
   assert.match(adapter,/WHATSAPP_TEMPLATE_REQUIRED/);
   assert.match(adapter,/WHATSAPP_TEMPLATE_NOT_APPROVED/);
+  assert.match(adapter,/communication_template_mappings/);
+  assert.match(adapter,/m\.enabled=1 AND m\.status='approved'/);
+  assert.match(adapter,/WHATSAPP_TEMPLATE_MAPPING_NOT_READY/);
+  assert.match(adapter,/WHATSAPP_TEMPLATE_VARIABLE_RESOLUTION_UNAVAILABLE/);
   assert.match(adapter,/PROVIDER_TRANSPORT_AMBIGUOUS/);
   assert.match(inbox,/'prepare_send'/);
   assert.match(inbox,/prepare-send/);
@@ -285,19 +289,19 @@ test('Instruction activation is claimed once and database-enforced per language'
 
 test('Governance upserts atomically audit the canonical persisted identity',async()=>{
   const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
-  assert.equal((governance.match(/const \[saved,audited\]=await env\.DB\.batch\(\[/g)||[]).length,2);
+  assert.equal((governance.match(/const \[saved,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
   assert.match(governance,/upsert_restriction[\s\S]*FROM communication_policy_restrictions[\s\S]*company_id=\? AND event_id=\? AND subject_type=\? AND subject_id=\?/);
   assert.match(governance,/upsert_trigger[\s\S]*FROM communication_trigger_rules[\s\S]*company_id=\? AND event_id=\? AND trigger_code=\?/);
-  assert.equal((governance.match(/saved\.meta\?\.changes[\s\S]{0,80}audited\.meta\?\.changes/g)||[]).length,2);
+  assert.equal((governance.match(/saved\.meta\?\.changes[\s\S]{0,80}audited\.meta\?\.changes/g)||[]).length,3);
   assert.doesNotMatch(governance,/await audit\(env,context,companyId,'upsert_(restriction|trigger)'/);
 });
 
 test('Template and instruction governance writes persist audit evidence atomically',async()=>{
   const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
-  assert.equal((governance.match(/const \[created,audited\]=await env\.DB\.batch\(\[/g)||[]).length,2);
+  assert.equal((governance.match(/const \[created,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
   assert.match(governance,/const \[approved,audited\]=await env\.DB\.batch\(\[/);
   assert.match(governance,/const \[claimed,,activated,audited\]=await env\.DB\.batch\(\[/);
-  assert.equal((governance.match(/changes\(\)=1/g)||[]).length,2);
+  assert.equal((governance.match(/changes\(\)=1/g)||[]).length,4);
   assert.doesNotMatch(governance,/async function audit\(/);
   assert.doesNotMatch(governance,/await audit\(/);
 });
