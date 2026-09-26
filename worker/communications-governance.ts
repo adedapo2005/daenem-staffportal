@@ -527,9 +527,13 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
  const fallbackPolicy=String(body.fallbackPolicy||'none');
  const fallbackValue=body.fallbackValue==null?null:String(body.fallbackValue);
  const required=body.required!==false;
+ const sourceFieldTokens=sourceField.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+ const prohibitedSourceField=sourceFieldTokens.some(token=>[
+  'password','passwd','passcode','otp','mfa','secret','token','credential','recovery',
+ ].includes(token));
  if(!mappingId||!['header','body','footer','button'].includes(component)||
     !Number.isInteger(position)||position<1||position>100||componentName.length>128||variableName.length>128||
-    !sourceField||sourceField.length>160||!sourceModule||sourceModule.length>80||
+    !sourceField||sourceField.length>160||prohibitedSourceField||!sourceModule||sourceModule.length>80||
     !['text','number','date','currency','url'].includes(dataType)||formatter.length>40||
     !Number.isInteger(maxLength)||maxLength<1||maxLength>4096||
     (body.exampleValue!=null&&String(body.exampleValue).length>maxLength)||
