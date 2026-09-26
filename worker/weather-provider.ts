@@ -18,6 +18,13 @@ export async function readGoogleWeather(
   longitude: number,
   unitsSystem: 'IMPERIAL' | 'METRIC' = 'IMPERIAL',
 ): Promise<GoogleWeatherResult> {
+  // Keep this trust boundary defensive even when callers validate coordinates.
+  // Invalid values must not become cache keys or provider requests.
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+      !Number.isFinite(longitude) || longitude < -180 || longitude > 180 ||
+      (unitsSystem !== 'IMPERIAL' && unitsSystem !== 'METRIC')) {
+    return { data: null, providerStatus: 'provider_unavailable' };
+  }
   const cache = env.SOCIAL_CACHE;
   if (!cache) return { data: null, providerStatus: 'cache_unavailable' };
 
