@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const source = await readFile(new URL('../worker/communications-governance.ts', import.meta.url), 'utf8');
+const start = source.indexOf('async function templateMappingReadiness');
+const end = source.indexOf('async function saveTemplateVariableMapping', start);
+const endpoint = source.slice(start, end);
+assert.ok(start >= 0 && end > start);
+assert.match(endpoint, /companyAllowed\(context,companyId\)/);
+assert.match(endpoint, /WHERE m\.id=\? AND m\.company_id=\?/);
+assert.match(endpoint, /canManageEvent\(context,companyId,row\.useCaseId,'view'\)/);
+assert.match(endpoint, /row\.status!=='approved'/);
+assert.match(endpoint, /row\.enabled!==1/);
+assert.match(endpoint, /row\.internalStatus!=='approved'/);
+assert.match(endpoint, /row\.providerStatus!=='approved'/);
+assert.match(endpoint, /templatePrerequisitesSatisfied:blockers\.length===0/);
+assert.match(endpoint, /liveSend:false/);
+assert.doesNotMatch(endpoint, /UPDATE |INSERT INTO|fetch\(/);
+assert.match(source, /template-mappings\/readiness'&&method==='GET'\)return templateMappingReadiness/);
+console.log('WhatsApp template mapping readiness read boundary: 11/11 PASS');

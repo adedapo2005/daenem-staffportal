@@ -476,6 +476,40 @@ async function createTemplateMapping(request:Request,env:GovernanceEnv,context:E
  return json({ok:true,id,revision:Number(saved.revision),enabled:false,status:'draft'},201);
 }
 
+async function templateMappingReadiness(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
+ const url=new URL(request.url);
+ const companyId=String(url.searchParams.get('companyId')||'');
+ const mappingId=String(url.searchParams.get('mappingId')||'');
+ if(!companyId||!mappingId||!companyAllowed(context,companyId))return json({error:'Company and template mapping are required.'},400);
+ const row=await env.DB.prepare(`
+  SELECT m.id,m.use_case_id AS useCaseId,m.enabled,m.status,
+   t.internal_status AS internalStatus,t.provider_status AS providerStatus
+  FROM communication_template_mappings m
+  JOIN communication_templates t ON t.id=m.template_id AND t.company_id=m.company_id
+  WHERE m.id=? AND m.company_id=? LIMIT 1
+ `).bind(mappingId,companyId).first<{
+  id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;
+ }>();
+ if(!row)return json({error:'Template mapping was not found.'},404);
+ if(!canManageEvent(context,companyId,row.useCaseId,'view'))return json({error:'Communications management access is not assigned.'},403);
+ const blockers:string[]=[];
+ if(row.status!=='approved')blockers.push('MAPPING_NOT_APPROVED');
+ if(row.enabled!==1)blockers.push('MAPPING_DISABLED');
+ if(row.internalStatus!=='approved')blockers.push('INTERNAL_TEMPLATE_NOT_APPROVED');
+ if(row.providerStatus!=='approved')blockers.push('PROVIDER_TEMPLATE_NOT_APPROVED');
+ return json({
+  mappingId:row.id,
+  useCaseId:row.useCaseId,
+  status:row.status,
+  enabled:row.enabled===1,
+  internalTemplateApproved:row.internalStatus==='approved',
+  providerTemplateApproved:row.providerStatus==='approved',
+  templatePrerequisitesSatisfied:blockers.length===0,
+  blockers,
+  liveSend:false,
+ });
+}
+
 async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
  let body:Record<string,unknown>;
  try{body=await request.json();}catch{return json({error:'Invalid template variable mapping.'},400)}
@@ -530,6 +564,7 @@ export async function routeCommunicationGovernance(
  const path=new URL(request.url).pathname,method=request.method;
  if(path==='/api/communications/admin/governance'&&method==='GET')return overview(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='GET')return listTemplateMappings(request,env,context);
+ if(path==='/api/communications/admin/template-mappings/readiness'&&method==='GET')return templateMappingReadiness(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='POST')return createTemplateMapping(request,env,context);
  if(path==='/api/communications/admin/template-variable-mappings'&&method==='POST')return saveTemplateVariableMapping(request,env,context);
  if(path==='/api/communications/admin/restrictions'&&method==='POST')return saveRestriction(request,env,context);
