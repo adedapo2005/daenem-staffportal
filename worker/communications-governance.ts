@@ -559,6 +559,39 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
  return json({ok:true,id,mappingId},201);
 }
 
+async function approveTemplateMapping(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
+ let body:{companyId?:string;mappingId?:string};
+ try{body=await request.json();}catch{return json({error:'Invalid template mapping approval.'},400)}
+ const companyId=String(body.companyId||''),mappingId=String(body.mappingId||'');
+ if(!companyId||!mappingId||!companyAllowed(context,companyId))return json({error:'Company and template mapping are required.'},400);
+ const mapping=await env.DB.prepare(`
+  SELECT m.id,m.use_case_id AS useCaseId,m.enabled,m.status,
+   t.internal_status AS internalStatus,t.provider_status AS providerStatus,t.channel
+  FROM communication_template_mappings m
+  JOIN communication_templates t ON t.id=m.template_id AND t.company_id=m.company_id
+  WHERE m.id=? AND m.company_id=? LIMIT 1
+ `).bind(mappingId,companyId).first<{id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;channel:string}>();
+ if(!mapping)return json({error:'Template mapping was not found.'},404);
+ if(!canManageEvent(context,companyId,mapping.useCaseId,'manage'))return json({error:'Manage Communications permission is required.'},403);
+ if(mapping.enabled!==0||mapping.status!=='draft'||mapping.channel!=='whatsapp'||
+    mapping.internalStatus!=='approved'||mapping.providerStatus!=='approved'){
+  return json({error:'A disabled draft mapping for an internally and provider-approved WhatsApp template is required.'},409);
+ }
+ const variables=await env.DB.prepare(`SELECT COUNT(*) AS count FROM communication_template_variable_mappings WHERE mapping_id=?`)
+  .bind(mappingId).first<{count:number}>();
+ if(Number(variables?.count||0)<1)return json({error:'At least one explicit component variable mapping is required.'},409);
+ const [updated,audited]=await env.DB.batch([
+  env.DB.prepare(`UPDATE communication_template_mappings SET status='approved',updated_by=?,updated_at=CURRENT_TIMESTAMP
+   WHERE id=? AND company_id=? AND enabled=0 AND status='draft'`).bind(context.employee.id,mappingId,companyId),
+  env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','approve_template_mapping','communication_template_mapping',id,?,'web'
+   FROM communication_template_mappings WHERE id=? AND company_id=? AND status='approved' AND enabled=0 AND changes()=1`)
+   .bind(uid('audit'),context.employee.id,companyId,JSON.stringify({useCaseId:mapping.useCaseId,enabled:false,liveSend:false}),mappingId,companyId),
+ ]);
+ if(Number(updated.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1)return json({error:'Template mapping was already reviewed or changed. Refresh and try again.'},409);
+ return json({ok:true,id:mappingId,status:'approved',enabled:false,liveSend:false});
+}
+
 export async function routeCommunicationGovernance(
  request:Request,env:GovernanceEnv,context:EnhancedSessionContext,
 ):Promise<Response|null>{
@@ -567,6 +600,7 @@ export async function routeCommunicationGovernance(
  if(path==='/api/communications/admin/template-mappings'&&method==='GET')return listTemplateMappings(request,env,context);
  if(path==='/api/communications/admin/template-mappings/readiness'&&method==='GET')return templateMappingReadiness(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='POST')return createTemplateMapping(request,env,context);
+ if(path==='/api/communications/admin/template-mappings/approve'&&method==='POST')return approveTemplateMapping(request,env,context);
  if(path==='/api/communications/admin/template-variable-mappings'&&method==='POST')return saveTemplateVariableMapping(request,env,context);
  if(path==='/api/communications/admin/restrictions'&&method==='POST')return saveRestriction(request,env,context);
  if(path==='/api/communications/admin/templates'&&method==='POST')return createTemplate(request,env,context);
