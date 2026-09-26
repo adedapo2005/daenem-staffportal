@@ -270,6 +270,13 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
         acknowledged_at=COALESCE(acknowledged_at,?),updated_at=CURRENT_TIMESTAMP WHERE id=? AND status<>'resolved'`).bind(now, alertId),
       env.DB.prepare(`UPDATE platform_alert_recipients SET viewed_at=COALESCE(viewed_at,?),acknowledged_at=COALESCE(acknowledged_at,?)
         WHERE alert_id=? AND employee_id=? AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`).bind(now, now, alertId, context.employee.id, alertId),
+      env.DB.prepare(`UPDATE platform_alert_deliveries SET status='viewed',delivered_at=COALESCE(delivered_at,?),
+        viewed_at=COALESCE(viewed_at,?),updated_at=CURRENT_TIMESTAMP
+        WHERE alert_id=? AND channel='in_app' AND recipient_id IN
+          (SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?)
+          AND status IN ('queued','sent','delivered','viewed')
+          AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`)
+        .bind(now, now, alertId, alertId, context.employee.id, alertId),
     ]);
   } else {
     writes = await env.DB.batch([
@@ -278,6 +285,13 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
       env.DB.prepare(`UPDATE platform_alert_recipients SET viewed_at=COALESCE(viewed_at,?),acknowledged_at=COALESCE(acknowledged_at,?),
         actioned_at=COALESCE(actioned_at,?) WHERE alert_id=? AND employee_id=?
         AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`).bind(now, now, now, alertId, context.employee.id, alertId),
+      env.DB.prepare(`UPDATE platform_alert_deliveries SET status='viewed',delivered_at=COALESCE(delivered_at,?),
+        viewed_at=COALESCE(viewed_at,?),updated_at=CURRENT_TIMESTAMP
+        WHERE alert_id=? AND channel='in_app' AND recipient_id IN
+          (SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?)
+          AND status IN ('queued','sent','delivered','viewed')
+          AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`)
+        .bind(now, now, alertId, alertId, context.employee.id, alertId),
     ]);
   }
   if (Number(writes[0]?.meta?.changes || 0) !== 1) return json({ error: 'Resolved alerts cannot be updated.' }, 409);
