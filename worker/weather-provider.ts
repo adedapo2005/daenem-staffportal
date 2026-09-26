@@ -5,6 +5,7 @@ export interface WeatherProviderEnv extends MetaCredentialEnv {
 }
 
 const CACHE_TTL_SECONDS = 300;
+const PROVIDER_TIMEOUT_MS = 8_000;
 const inFlightWeather = new Map<string, Promise<GoogleWeatherResult>>();
 
 export type GoogleWeatherResult =
@@ -72,7 +73,10 @@ async function fetchAndCacheWeather(
   url.searchParams.set('location.longitude', String(longitude));
   url.searchParams.set('unitsSystem', unitsSystem);
   try {
-    const response = await fetch(url.toString(), { headers: { 'X-Goog-Api-Key': key } });
+    const response = await fetch(url.toString(), {
+      headers: { 'X-Goog-Api-Key': key },
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    });
     if (!response.ok) return { data: null, providerStatus: 'provider_unavailable' };
     const data: unknown = await response.json();
     if (!data || typeof data !== 'object' || Array.isArray(data)) return { data: null, providerStatus: 'provider_unavailable' };

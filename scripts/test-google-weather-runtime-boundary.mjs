@@ -20,6 +20,8 @@ assert.match(provider, /unitsSystem !== 'IMPERIAL' && unitsSystem !== 'METRIC'/)
 assert.ok(provider.indexOf('Invalid values must not become cache keys or provider requests.') < provider.indexOf('const cache = env.SOCIAL_CACHE;'));
 assert.match(provider, /https:\/\/weather\.googleapis\.com\/v1\/currentConditions:lookup/);
 assert.match(provider, /headers: \{ 'X-Goog-Api-Key': key \}/);
+assert.match(provider, /const PROVIDER_TIMEOUT_MS = 8_000/);
+assert.match(provider, /signal: AbortSignal\.timeout\(PROVIDER_TIMEOUT_MS\)/);
 assert.doesNotMatch(provider, /searchParams\.set\(['"]key['"]/);
 assert.match(provider, /expirationTtl: CACHE_TTL_SECONDS/);
 assert.match(provider, /const CACHE_TTL_SECONDS = 300/);
