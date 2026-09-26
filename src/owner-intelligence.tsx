@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState}from'react';
 import{AlertTriangle,BarChart3,Bot,BriefcaseBusiness,Building2,Factory,Gauge,Home,RefreshCw,Sparkles,Store,Truck,WalletCards,X}from'lucide-react';
 import{api,type WorkforceContext}from'./auth';
-import{OperatingSignals}from'./analytics-command-widgets';
+import{OperatingSignals,type Signal}from'./analytics-command-widgets';
 import'./owner-intelligence.css';
 
 type Shared={inventory:{valueKobo:number;lowStock:number};workforce:{employees:number;present:number;incomplete:number};payroll:{runs:number;grossKobo:number;netKobo:number};maintenance:{open:number;urgent:number;costKobo:number}};
@@ -16,7 +16,7 @@ export function OwnerIntelligence({context,onClose}:{context:WorkforceContext;on
  async function load(){setBusy(true);setMessage('');try{setData(await api<Intelligence>('/api/owner/intelligence'))}catch(e){setMessage((e as Error).message)}finally{setBusy(false)}}useEffect(()=>{load()},[]);
  async function ask(prompt?:string){const text=(prompt||question).trim();setBusy(true);setAnswer('');try{const r=await api<{answer:string}>('/api/owner/ai',{method:'POST',body:JSON.stringify({question:text,mode:text?'question':'brief'})});setAnswer(r.answer);if(prompt)setQuestion(prompt)}catch(e){setMessage((e as Error).message)}finally{setBusy(false)}}
  const maxRevenue=useMemo(()=>data?Math.max(data.companies.printing.current.revenueKobo,data.companies.bakery.current.revenueKobo,data.companies.autos.revenueKobo,data.companies.logistics.revenueKobo,data.companies.properties.rentCollectedKobo,1):1,[data]);
- const groupSignals=data?[
+ const groupSignals:Signal[]=data?[
   {label:'Inventory Attention',value:String(data.group.lowStock),detail:'Low-stock item(s) across authorized companies',state:data.group.lowStock?'attention':'healthy' as const},
   {label:'Attendance Exceptions',value:String(data.group.incompleteAttendance),detail:'Incomplete attendance requiring follow-up',state:data.group.incompleteAttendance?'attention':'healthy' as const},
   {label:'Security Review',value:String(data.group.highRiskSecurity),detail:'High-risk security item(s) not yet reviewed',state:data.group.highRiskSecurity?'critical':'healthy' as const},

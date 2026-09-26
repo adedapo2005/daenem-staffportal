@@ -4,7 +4,7 @@ import {Activity,ArrowUpRight,ArrowDownRight,Minus,ShieldAlert} from 'lucide-rea
 import './analytics-command-widgets.css';
 
 type ComparisonRow={key:string;name:string;current:number;previous:number};
-type Signal={label:string;value:string;detail:string;state?:'neutral'|'attention'|'critical'|'healthy'};
+export type Signal={label:string;value:string;detail:string;state?:'neutral'|'attention'|'critical'|'healthy'};
 const percent=(current:number,previous:number)=>previous<=0?(current>0?100:0):(current-previous)/previous*100;
 
 export function PerformanceComparison({rows,title='Current Vs Previous Period',subtitle='Recorded performance by company',valueFormatter}:{rows:ComparisonRow[];title?:string;subtitle?:string;valueFormatter:(value:number)=>string}){

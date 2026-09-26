@@ -4,7 +4,7 @@ import{
   CircleDollarSign,Factory,Gauge,Home,PackageSearch,RefreshCw,Store,Truck,Users,WalletCards,
 }from'lucide-react';
 import{api}from'./auth';
-import{OperatingSignals,PerformanceComparison}from'./analytics-command-widgets';
+import{OperatingSignals,PerformanceComparison,type Signal}from'./analytics-command-widgets';
 import'./executive-dashboard.css';
 
 type PeriodKey='current_month'|'previous_month'|'current_quarter'|'year_to_date'|'last_12_months';
@@ -64,7 +64,7 @@ export function GroupExecutiveDashboard({companyId}:{companyId:string|null}){
   const maxRevenue=Math.max(1,...rows.map((row)=>row.revenue));
   const growth=data?percent(data.group.revenueKobo,data.group.previousRevenueKobo):0;
   const comparisonRows=rows.map((row)=>({key:row.key,name:row.code,current:row.revenue,previous:row.previous}));
-  const operatingSignals=data?[
+  const operatingSignals:Signal[]=data?[
     {label:'Overdue Receivables',value:String(data.finance.overdueReceivables),detail:moneyFull(data.finance.outstandingReceivablesKobo)+' outstanding',state:data.finance.overdueReceivables?'critical':'healthy' as const},
     {label:'Low Stock',value:String(data.group.lowStock),detail:'Inventory items requiring review',state:data.group.lowStock?'attention':'healthy' as const},
     {label:'Attendance Exceptions',value:String(data.group.incompleteAttendance),detail:`${data.group.present}/${data.group.employees} workforce present`,state:data.group.incompleteAttendance?'attention':'healthy' as const},
