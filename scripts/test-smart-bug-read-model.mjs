@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const source = await readFile(new URL('../worker/smart-bug-management.ts', import.meta.url), 'utf8');
+const runtime = await readFile(new URL('../worker/runtime.ts', import.meta.url), 'utf8');
+assert.match(source, /role\.code === 'owner' \|\| role\.code === 'group_admin'/);
+assert.match(source, /if \(!groupRole\(context\)\) return json\(\{ error: 'Smart Bug Management access is not assigned\.' \}, 403\)/);
+assert.match(source, /company_id IN \(\$\{companyIds\.map\(\(\) => '\?'\)\.join\(','\)\}\)/);
+assert.doesNotMatch(source, /company_id IS NULL OR company_id IN/);
+assert.match(source, /Number\.isInteger\(limit\).*limit > 100/);
+assert.match(source, /const allowedStatuses = \['DETECTED'.*'SUPPRESSED_BY_POLICY'\]/);
+assert.match(source, /GROUP BY status,severity/);
+assert.match(source, /mode: 'observe_only', autoRemediationEnabled: false/);
+assert.match(source, /sanitized_summary,/);
+assert.match(source, /ORDER BY CASE severity WHEN 'P0' THEN 0 WHEN 'P1' THEN 1/);
+assert.match(runtime, /import \{ routeSmartBugManagement \} from '\.\/smart-bug-management'/);
+assert.match(runtime, /routeSmartBugManagement\(request, env, context\)/);
+console.log('PASS 12 Smart Bug Management read-model boundary assertions');

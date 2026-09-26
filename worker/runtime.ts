@@ -47,6 +47,7 @@ import { routeOffline } from './offline';
 import { routeSpend } from './spend';
 import { routeProcurement } from './procurement';
 import { routeAlerting } from './alerting';
+import { routeSmartBugManagement } from './smart-bug-management';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -238,6 +239,10 @@ export default {
         const enhanced = await getEnhancedSessionContext(request, env);
         if (!enhanced) return secure(json({ error: 'Authentication required.' }, 401));
         const response = await routeCommunications(request, env, enhanced);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/admin/smart-bugs/')) {
+        const response = await routeSmartBugManagement(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/admin/')) {
