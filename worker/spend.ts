@@ -1255,6 +1255,26 @@ async function sha256(bytes: Uint8Array) {
   return Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, '0')).join('');
 }
 
+function spendMirrorJob(evidenceId: string, digest: string) {
+  return `INSERT OR IGNORE INTO storage_mirror_jobs(
+    id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,
+    size_bytes,sha256,idempotency_key,status
+  ) SELECT ?, 'microsoft_onedrive','spend',id,company_id,r2_key,original_name,mime_type,
+    size_bytes,sha256,?,'provider_required'
+    FROM spend_expense_evidence WHERE id=? AND sha256=?`;
+}
+
+async function spendMirrorStatus(env: SpendEnv, evidenceId: string, digest: string) {
+  await env.DB.prepare(spendMirrorJob(evidenceId, digest)).bind(
+    `storage-mirror-spend-${evidenceId}-${digest}`,
+    `microsoft_onedrive:spend:${evidenceId}:${digest}`,
+    evidenceId,
+    digest,
+  ).run();
+  const row = await env.DB.prepare(`SELECT status FROM storage_mirror_jobs WHERE provider='microsoft_onedrive' AND source_module='spend' AND source_id=? AND sha256=? LIMIT 1`).bind(evidenceId, digest).first<{ status: string }>();
+  return row?.status || 'provider_required';
+}
+
 async function uploadEvidence(request: Request, env: SpendEnv, context: SessionContext, evidenceId: string) {
   if (!env.FILES) return error('Secure evidence storage is not configured.', 503);
   const requestEntityId = safeText(request.headers.get('x-expense-request-id'), 180);
@@ -1275,24 +1295,35 @@ async function uploadEvidence(request: Request, env: SpendEnv, context: SessionC
   const existingById = await env.DB.prepare(`SELECT id,expense_request_id AS expenseRequestId,employee_id AS employeeId,company_id AS companyId,r2_key AS r2Key,sha256,mime_type AS mimeType,size_bytes AS sizeBytes,status FROM spend_expense_evidence WHERE id=?`).bind(evidenceId).first<Record<string, unknown>>();
   if (existingById && (String(existingById.expenseRequestId) !== requestEntityId || String(existingById.companyId) !== companyId || String(existingById.employeeId) !== String(current.requesterEmployeeId))) return error('This evidence identifier is already bound to another expense scope.', 409, { errorCategory: 'idempotency-mismatch' });
   const existing = existingById;
-  if (existing && existing.sha256 === digest && existing.mimeType === mimeType && Number(existing.sizeBytes) === bytes.byteLength) return json({ ok: true, evidence: { id: evidenceId, status: existing.status, sha256: digest, sizeBytes: bytes.byteLength }, deduplicated: true });
+  if (existing && existing.sha256 === digest && existing.mimeType === mimeType && Number(existing.sizeBytes) === bytes.byteLength) {
+    const backupStatus = await spendMirrorStatus(env, evidenceId, digest);
+    return json({ ok: true, evidence: { id: evidenceId, status: existing.status, sha256: digest, sizeBytes: bytes.byteLength, backupStatus }, deduplicated: true });
+  }
   if (existing) return error('This evidence identifier is already bound to different content. Preserve the original evidence and use a new identifier.', 409, { errorCategory: 'idempotency-mismatch' });
   const key = `spend/${companyId}/${requestEntityId}/${evidenceId}-${digest}`;
   await env.FILES.put(key, bytes, { httpMetadata: { contentType: mimeType, cacheControl: 'private, no-store' }, customMetadata: { employeeId: context.employee.id, companyId, expenseRequestId: requestEntityId, sha256: digest } });
   try {
-    await env.DB.prepare(`
+    await env.DB.batch([env.DB.prepare(`
       INSERT INTO spend_expense_evidence(id,expense_request_id,employee_id,company_id,evidence_type,original_name,mime_type,size_bytes,sha256,r2_key,status,captured_at,client_timezone,uploaded_at)
       VALUES(?,?,?,?,?,?,?,?,?,?, 'uploaded',?,?,CURRENT_TIMESTAMP)
-    `).bind(evidenceId, requestEntityId, String(current.requesterEmployeeId), companyId, ['receipt','invoice','quote','delivery_note','payment_evidence','other'].includes(safeText(request.headers.get('x-evidence-type'), 40)) ? safeText(request.headers.get('x-evidence-type'), 40) : 'receipt', safeFileName(safeText(request.headers.get('x-evidence-name'), 160)), mimeType, bytes.byteLength, digest, key, parseIso(request.headers.get('x-evidence-captured-at')) || null, safeText(request.headers.get('x-evidence-timezone'), 80) || null).run();
+    `).bind(evidenceId, requestEntityId, String(current.requesterEmployeeId), companyId, ['receipt','invoice','quote','delivery_note','payment_evidence','other'].includes(safeText(request.headers.get('x-evidence-type'), 40)) ? safeText(request.headers.get('x-evidence-type'), 40) : 'receipt', safeFileName(safeText(request.headers.get('x-evidence-name'), 160)), mimeType, bytes.byteLength, digest, key, parseIso(request.headers.get('x-evidence-captured-at')) || null, safeText(request.headers.get('x-evidence-timezone'), 80) || null), env.DB.prepare(spendMirrorJob(evidenceId, digest)).bind(
+      `storage-mirror-spend-${evidenceId}-${digest}`,
+      `microsoft_onedrive:spend:${evidenceId}:${digest}`,
+      evidenceId,
+      digest,
+    )]);
   } catch (cause) {
-    await env.FILES.delete(key);
     const winner = await env.DB.prepare(`SELECT id,status,sha256,mime_type AS mimeType,size_bytes AS sizeBytes FROM spend_expense_evidence WHERE id=?`).bind(evidenceId).first<Record<string, unknown>>();
-    if (winner && winner.sha256 === digest && winner.mimeType === mimeType && Number(winner.sizeBytes) === bytes.byteLength) return json({ ok: true, evidence: { id: evidenceId, status: winner.status, sha256: digest, sizeBytes: bytes.byteLength }, deduplicated: true });
+    if (winner && winner.sha256 === digest && winner.mimeType === mimeType && Number(winner.sizeBytes) === bytes.byteLength) {
+      const backupStatus = await spendMirrorStatus(env, evidenceId, digest);
+      return json({ ok: true, evidence: { id: evidenceId, status: winner.status, sha256: digest, sizeBytes: bytes.byteLength, backupStatus }, deduplicated: true });
+    }
+    await env.FILES.delete(key);
     if (winner) return error('This evidence identifier is already bound to different content. Preserve the original evidence and use a new identifier.', 409, { errorCategory: 'idempotency-mismatch' });
     throw cause;
   }
   await audit(env, request, context, 'expense_evidence_uploaded', 'expense_evidence', evidenceId, companyId, { outcome: 'uploaded', mimeType, sizeBytes: bytes.byteLength, sha256: digest, capturedAt: request.headers.get('x-evidence-captured-at'), clientTimezone: request.headers.get('x-evidence-timezone') });
-  return json({ ok: true, evidence: { id: evidenceId, expenseRequestId: requestEntityId, mimeType, sizeBytes: bytes.byteLength, sha256: digest, status: 'uploaded' } }, 201);
+  return json({ ok: true, evidence: { id: evidenceId, expenseRequestId: requestEntityId, mimeType, sizeBytes: bytes.byteLength, sha256: digest, status: 'uploaded', backupStatus: 'provider_required' } }, 201);
 }
 
 export async function handleOfflineSpendOperation(request: Request, env: SpendEnv, context: SessionContext, kind: string, payload: Record<string, unknown>) {

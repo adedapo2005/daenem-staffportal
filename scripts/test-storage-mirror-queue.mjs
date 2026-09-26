@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const migration = await readFile(new URL('../migrations/0077_storage_mirror_queue.sql', import.meta.url), 'utf8');
 const source = await readFile(new URL('../worker/offline.ts', import.meta.url), 'utf8');
+const spend = await readFile(new URL('../worker/spend.ts', import.meta.url), 'utf8');
 assert.match(migration, /provider TEXT NOT NULL CHECK \(provider = 'microsoft_onedrive'\)/);
 assert.match(migration, /'pending','syncing','mirrored','retrying','failed','disabled','provider_required'/);
 assert.match(migration, /idempotency_key TEXT NOT NULL UNIQUE/);
@@ -16,4 +17,11 @@ assert.match(upload, /await env\.DB\.batch\(\[env\.DB\.prepare\([\s\S]*?INSERT O
 assert.match(upload, /'microsoft_onedrive','offline',id,company_id,r2_key,original_name/);
 assert.match(upload, /backupStatus:'provider_required'/);
 assert.doesNotMatch(upload, /graph\.microsoft|graph\.microsoft\.com|Authorization.*Bearer/);
+const spendUpload = spend.slice(spend.indexOf('async function uploadEvidence'), spend.indexOf('\nexport async function handleOfflineSpendOperation'));
+assert.match(spend, /await env\.DB\.batch\(\[env\.DB\.prepare\([\s\S]*?spendMirrorJob\(evidenceId, digest\)/);
+assert.match(spend, /'microsoft_onedrive','spend',id,company_id,r2_key,original_name/);
+assert.match(spend, /microsoft_onedrive:spend:/);
+assert.match(spendUpload, /backupStatus: 'provider_required'/);
+assert.match(spendUpload, /const winner = await env\.DB\.prepare[\s\S]*?if \(winner && winner\.sha256 === digest[\s\S]*?await env\.FILES\.delete\(key\)/);
+assert.doesNotMatch(spendUpload, /graph\.microsoft|graph\.microsoft\.com|Authorization.*Bearer/);
 console.log('OneDrive mirror queue boundary: PASS');
