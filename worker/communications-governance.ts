@@ -529,6 +529,7 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
     (body.exampleValue!=null&&String(body.exampleValue).length>maxLength)||
     !['public','internal','personal','sensitive'].includes(sensitivity)||
     !['none','approved_value'].includes(fallbackPolicy)||
+    (!required&&fallbackPolicy!=='approved_value')||
     (fallbackPolicy==='approved_value'&&(!fallbackValue||fallbackValue.length>maxLength))||
     (fallbackPolicy==='none'&&fallbackValue!==null)){
   return json({error:'Valid component, source and bounded variable policy are required.'},400);

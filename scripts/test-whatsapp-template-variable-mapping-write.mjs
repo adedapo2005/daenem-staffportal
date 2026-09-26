@@ -13,6 +13,7 @@ assert.match(endpoint, /\['header','body','footer','button'\]/);
 assert.match(endpoint, /maxLength<1\|\|maxLength>4096/);
 assert.match(endpoint, /\['public','internal','personal','sensitive'\]/);
 assert.match(endpoint, /fallbackPolicy==='approved_value'.*!fallbackValue/s);
+assert.match(endpoint, /!required&&fallbackPolicy!=='approved_value'/);
 assert.match(endpoint, /'map_template_variable'/);
 assert.match(source, /template-variable-mappings'&&method==='POST'\)return saveTemplateVariableMapping/);
 console.log('WhatsApp template variable mapping write boundary: 10/10 PASS');
