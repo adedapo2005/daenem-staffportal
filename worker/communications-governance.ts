@@ -530,6 +530,8 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
  const sourceFieldTokens=sourceField.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
  const prohibitedSourceField=sourceFieldTokens.some(token=>[
   'password','passwd','passcode','otp','mfa','secret','token','credential','recovery',
+  'api','key','access','refresh','private','auth','authorization','bearer','cookie',
+  'session','signing','encryption',
  ].includes(token));
  if(!mappingId||!['header','body','footer','button'].includes(component)||
     !Number.isInteger(position)||position<1||position>100||componentName.length>128||variableName.length>128||
