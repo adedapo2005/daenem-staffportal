@@ -33,6 +33,7 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
       WHERE provider='microsoft_onedrive' AND status='failed' AND id IN (${placeholders})${scopeSql}`)
       .bind(...body.jobIds, ...(isOwner ? [] : companyIds)).all<{ id: string; companyId: string | null }>();
     const jobs = eligible.results || [];
+    let queuedForRetry = 0;
     if (jobs.length) {
       const statements = jobs.flatMap((job) => [
         env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
@@ -44,9 +45,15 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
           last_error_code=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND provider='microsoft_onedrive' AND status='failed'`)
           .bind(job.id),
       ]);
-      await env.DB.batch(statements);
+      const results = await env.DB.batch(statements);
+      // Each job contributes an audit insert followed by a compare-and-set update.
+      // Count only updates that actually transitioned failed -> pending so a
+      // concurrent retry cannot inflate the admin's success summary.
+      for (let index = 1; index < results.length; index += 2) {
+        if (Number(results[index]?.meta?.changes) > 0) queuedForRetry += 1;
+      }
     }
-    return json({ ok: true, queuedForRetry: jobs.length, unavailableOrOutOfScope: body.jobIds.length - jobs.length });
+    return json({ ok: true, queuedForRetry, unavailableOrOutOfScope: body.jobIds.length - queuedForRetry });
   }
   if (url.pathname !== '/api/admin/storage/mirror-health' || request.method !== 'GET') return null;
   if (!authorized(context)) return json({ error: 'Storage administration access is not assigned.' }, 403);

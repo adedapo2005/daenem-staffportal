@@ -63,6 +63,9 @@ assert.match(retry, /company_id IN \(\$\{companyIds\.map\(\(\) => '\?'\)\.join\(
 assert.match(retry, /SET status='pending',next_attempt_at=CURRENT_TIMESTAMP/);
 assert.match(retry, /WHERE id=\? AND provider='microsoft_onedrive' AND status='failed'/);
 assert.match(retry, /mirror_retry_requested/);
+assert.match(retry, /const results = await env\.DB\.batch\(statements\)/);
+assert.match(retry, /results\[index\]\?\.meta\?\.changes/);
+assert.match(retry, /unavailableOrOutOfScope: body\.jobIds\.length - queuedForRetry/);
 assert.match(retry, /unavailableOrOutOfScope/);
 assert.doesNotMatch(retry, /graph\.microsoft|fetch\(/);
 assert.match(entry, /routeStorageMirror\(request,env,context\)/);
