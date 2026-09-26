@@ -13,6 +13,33 @@ function authorized(context: SessionContext) {
 
 export async function routeStorageMirror(request: Request, env: StorageMirrorEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
+  if (url.pathname === '/api/admin/storage/mirror-jobs' && request.method === 'GET') {
+    if (!authorized(context)) return json({ error: 'Storage administration access is not assigned.' }, 403);
+    const status = url.searchParams.get('status') || '';
+    const allowedStatuses = ['pending', 'syncing', 'mirrored', 'retrying', 'failed', 'disabled', 'provider_required'];
+    if (status && !allowedStatuses.includes(status)) return json({ error: 'Choose a valid mirror status.' }, 400);
+    const rawLimit = url.searchParams.get('limit');
+    const limit = rawLimit === null ? 50 : Number(rawLimit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) return json({ error: 'Choose between 1 and 100 mirror jobs.' }, 400);
+
+    const isOwner = context.roles.some((role) => role.code === 'owner');
+    const companyIds = [...new Set(context.companies.map((company) => company.id))];
+    if (!isOwner && companyIds.length === 0) return json({ jobs: [] });
+    const scopeSql = isOwner ? '' : ` AND company_id IN (${companyIds.map(() => '?').join(',')})`;
+    const statusSql = status ? ' AND status=?' : '';
+    const rows = await env.DB.prepare(`
+      SELECT id,source_module AS sourceModule,status,attempt_count AS attemptCount,
+        last_error_code AS lastErrorCode,created_at AS createdAt,updated_at AS updatedAt,
+        synced_at AS syncedAt
+      FROM storage_mirror_jobs
+      WHERE provider='microsoft_onedrive'${scopeSql}${statusSql}
+      ORDER BY CASE status WHEN 'failed' THEN 0 WHEN 'retrying' THEN 1 WHEN 'pending' THEN 2 ELSE 3 END,
+        updated_at DESC,id ASC
+      LIMIT ?
+    `).bind(...(isOwner ? [] : companyIds), ...(status ? [status] : []), limit)
+      .all<Record<string, unknown>>();
+    return json({ jobs: rows.results || [], limit, status: status || null });
+  }
   if (url.pathname === '/api/admin/storage/mirror-retry' && request.method === 'POST') {
     if (!authorized(context)) return json({ error: 'Storage administration access is not assigned.' }, 403);
     let body: { jobIds?: unknown };
