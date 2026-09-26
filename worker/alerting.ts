@@ -49,7 +49,11 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
     if (Array.isArray(parsed)) channels = parsed.filter((item): item is string => typeof item === 'string' && ['in_app', 'screen_popup', 'email', 'whatsapp', 'web_push'].includes(item));
   } catch { channels = []; }
   if (!rule) selectors = [{ type: 'all_authorized' }];
-  const employees = new Set<string>();
+  const employees = new Map<string, string>();
+  const addRecipients = (ids: string[], selector: AlertRecipientSelector, scopeCompany: string | null) => {
+    const reason = JSON.stringify({ selector: selector.type, scope: selector.type === 'site' ? selector.id : scopeCompany });
+    for (const id of ids) if (!employees.has(id)) employees.set(id, reason);
+  };
   for (const selector of selectors) {
     const scopeCompany = typeof rule?.companyId === 'string' ? rule.companyId : companyId;
     if (selector.type === 'user' && selector.id) {
@@ -59,7 +63,7 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
           JOIN permissions p ON p.id=rp.permission_id WHERE er.employee_id=e.id AND er.company_id=m.company_id
           AND p.code='alerting.access' AND rp.access_level<>'none')`)
         .bind(selector.id, scopeCompany, scopeCompany).first<{ id: string }>();
-      if (row) employees.add(row.id);
+      if (row) addRecipients([row.id], selector, scopeCompany);
     } else if (selector.type === 'role' && selector.id) {
       const rows = await env.DB.prepare(`SELECT DISTINCT e.id FROM employees e
         JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
@@ -70,7 +74,7 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
           JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
           AND p.code='alerting.access' AND rp.access_level<>'none')`)
         .bind(selector.id, scopeCompany, scopeCompany).all<{ id: string }>();
-      for (const row of rows.results || []) employees.add(row.id);
+      addRecipients((rows.results || []).map((row) => row.id), selector, scopeCompany);
     } else if (selector.type === 'department' && selector.id) {
       const rows = await env.DB.prepare(`SELECT DISTINCT e.id FROM employees e JOIN employee_company_memberships m ON m.employee_id=e.id
         WHERE e.employment_status='active' AND m.active=1 AND e.department=? AND (? IS NULL OR m.company_id=?)
@@ -78,7 +82,7 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
           JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
           AND p.code='alerting.access' AND rp.access_level<>'none')`)
         .bind(selector.id, scopeCompany, scopeCompany).all<{ id: string }>();
-      for (const row of rows.results || []) employees.add(row.id);
+      addRecipients((rows.results || []).map((row) => row.id), selector, scopeCompany);
     } else if (selector.type === 'business' || selector.type === 'site' || selector.type === 'all_authorized') {
       const targetCompany = selector.type === 'business' && selector.id ? selector.id : scopeCompany;
       if (companyId && targetCompany !== companyId) continue;
@@ -89,20 +93,20 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
           JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
           AND p.code='alerting.access' AND rp.access_level<>'none')`)
         .bind(targetCompany, targetCompany, ...(locationClause ? [selector.id as string] : [])).all<{ id: string }>();
-      for (const row of rows.results || []) employees.add(row.id);
+      addRecipients((rows.results || []).map((row) => row.id), selector, scopeCompany);
     }
   }
-  return { employeeIds: [...employees], channels: [...new Set(channels)] };
+  return { employeeIds: [...employees.keys()], recipientReasons: employees, channels: [...new Set(channels)] };
 }
 
-async function createRecipientDeliveries(env: AlertingEnv, alertId: string, employeeIds: string[], channels: string[]) {
+async function createRecipientDeliveries(env: AlertingEnv, alertId: string, employeeIds: string[], channels: string[], recipientReasons: Map<string, string>) {
   const alert = await env.DB.prepare('SELECT company_id companyId,title,summary FROM platform_alerts WHERE id=?')
     .bind(alertId).first<{ companyId: string | null; title: string; summary: string | null }>();
   if (!alert) return;
   for (const employeeId of employeeIds) {
     const recipientId = uid('alert-recipient');
     await env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_recipients(id,alert_id,employee_id,recipient_reason)
-      VALUES(?,?,?,'matched_alert_rule')`).bind(recipientId, alertId, employeeId).run();
+      VALUES(?,?,?,?)`).bind(recipientId, alertId, employeeId, recipientReasons.get(employeeId) || '{"selector":"matched_rule"}').run();
     const recipient = await env.DB.prepare('SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?')
       .bind(alertId, employeeId).first<{ id: string }>();
     if (!recipient) continue;
@@ -187,7 +191,7 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
         summary=COALESCE(?,summary),related_path=COALESCE(?,related_path),updated_at=CURRENT_TIMESTAMP
       WHERE id=?
     `).bind(occurredAt, severity, input.summary || null, input.relatedPath || null, existing.id).run();
-    await createRecipientDeliveries(env, String(existing.id), recipientPlan.employeeIds, recipientPlan.channels);
+    await createRecipientDeliveries(env, String(existing.id), recipientPlan.employeeIds, recipientPlan.channels, recipientPlan.recipientReasons);
     return { alertId: String(existing.id), alertNo: String(existing.alertNo), deduplicated: true };
   }
   const alertId = uid('alert');
@@ -202,7 +206,7 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
     fingerprint, severity, input.title, input.summary || null, input.relatedPath || null,
     Number(rule?.acknowledgementRequired || 0), occurredAt, occurredAt,
   ).run();
-  await createRecipientDeliveries(env, alertId, recipientPlan.employeeIds, recipientPlan.channels);
+  await createRecipientDeliveries(env, alertId, recipientPlan.employeeIds, recipientPlan.channels, recipientPlan.recipientReasons);
   return { alertId, alertNo, deduplicated: false };
 }
 
