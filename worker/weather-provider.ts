@@ -5,6 +5,7 @@ export interface WeatherProviderEnv extends MetaCredentialEnv {
 }
 
 const CACHE_TTL_SECONDS = 300;
+const inFlightWeather = new Map<string, Promise<GoogleWeatherResult>>();
 
 export type GoogleWeatherResult =
   | { data: Record<string, unknown>; providerStatus: 'fresh' | 'cached' }
@@ -35,6 +36,25 @@ export async function readGoogleWeather(
     // A cache read failure must not expose credentials or fail the portal request.
   }
 
+  const existingRequest = inFlightWeather.get(cacheKey);
+  if (existingRequest) return existingRequest;
+
+  const request = fetchAndCacheWeather(env, latitude, longitude, unitsSystem, cacheKey, cache);
+  inFlightWeather.set(cacheKey, request);
+  try { return await request; }
+  finally {
+    if (inFlightWeather.get(cacheKey) === request) inFlightWeather.delete(cacheKey);
+  }
+}
+
+async function fetchAndCacheWeather(
+  env: WeatherProviderEnv,
+  latitude: number,
+  longitude: number,
+  unitsSystem: 'IMPERIAL' | 'METRIC',
+  cacheKey: string,
+  cache: KVNamespace,
+): Promise<GoogleWeatherResult> {
   let key: string;
   try { key = await resolveMetaCredential(env, 'google_weather_api_key'); }
   catch { return { data: null, providerStatus: 'provider_unavailable' }; }
