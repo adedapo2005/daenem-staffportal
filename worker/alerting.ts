@@ -125,7 +125,10 @@ async function createRecipientDeliveries(env: AlertingEnv, alertId: string, empl
 }
 
 function companyScope(context: SessionContext) {
-  if (canManage(context)) return { sql: '', values: [] as string[] };
+  // Alert management authority does not imply cross-company visibility.
+  // Only the Owner role has group-wide scope; everyone else stays within
+  // their canonical company memberships, including delegated managers.
+  if (owner(context)) return { sql: '', values: [] as string[] };
   const ids = context.companies.map((company) => company.id);
   if (!ids.length) return { sql: ' AND 1=0', values: [] as string[] };
   return { sql: ` AND a.company_id IN (${ids.map(() => '?').join(',')})`, values: ids };
