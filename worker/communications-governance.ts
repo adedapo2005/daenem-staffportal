@@ -476,6 +476,54 @@ async function createTemplateMapping(request:Request,env:GovernanceEnv,context:E
  return json({ok:true,id,revision:Number(saved.revision),enabled:false,status:'draft'},201);
 }
 
+async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
+ let body:Record<string,unknown>;
+ try{body=await request.json();}catch{return json({error:'Invalid template variable mapping.'},400)}
+ const mappingId=String(body.mappingId||''),component=String(body.component||''),componentName=String(body.componentName||'');
+ const position=Number(body.position),variableName=String(body.variableName||'').trim();
+ const sourceField=String(body.sourceField||'').trim(),sourceModule=String(body.sourceModule||'').trim();
+ const dataType=String(body.dataType||''),formatter=String(body.formatter||'none');
+ const maxLength=Number(body.maxLength),sensitivity=String(body.sensitivity||'');
+ const fallbackPolicy=String(body.fallbackPolicy||'none');
+ const fallbackValue=body.fallbackValue==null?null:String(body.fallbackValue);
+ const required=body.required!==false;
+ if(!mappingId||!['header','body','footer','button'].includes(component)||
+    !Number.isInteger(position)||position<1||position>100||componentName.length>128||variableName.length>128||
+    !sourceField||sourceField.length>160||!sourceModule||sourceModule.length>80||
+    !['text','number','date','currency','url'].includes(dataType)||formatter.length>40||
+    !Number.isInteger(maxLength)||maxLength<1||maxLength>4096||
+    (body.exampleValue!=null&&String(body.exampleValue).length>maxLength)||
+    !['public','internal','personal','sensitive'].includes(sensitivity)||
+    !['none','approved_value'].includes(fallbackPolicy)||
+    (fallbackPolicy==='approved_value'&&(!fallbackValue||fallbackValue.length>maxLength))||
+    (fallbackPolicy==='none'&&fallbackValue!==null)){
+  return json({error:'Valid component, source and bounded variable policy are required.'},400);
+ }
+ const mapping=await env.DB.prepare(`
+  SELECT id,company_id AS companyId,use_case_id AS useCaseId,enabled,status
+  FROM communication_template_mappings WHERE id=? LIMIT 1
+ `).bind(mappingId).first<{id:string;companyId:string;useCaseId:string;enabled:number;status:string}>();
+ if(!mapping||!companyAllowed(context,mapping.companyId))return json({error:'Template mapping not found.'},404);
+ if(!canManageEvent(context,mapping.companyId,mapping.useCaseId,'manage'))return json({error:'Manage Communications permission is required.'},403);
+ if(mapping.enabled!==0||mapping.status!=='draft')return json({error:'Only disabled draft mappings can be edited.'},409);
+ const id=uid('comm-template-variable');
+ const [saved,audited]=await env.DB.batch([
+  env.DB.prepare(`INSERT INTO communication_template_variable_mappings(
+   id,mapping_id,component,component_name,position,variable_name,source_field,source_module,
+   data_type,required,formatter,max_length,fallback_policy,fallback_value,sensitivity,example_value
+  ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
+   id,mappingId,component,componentName,position,variableName,sourceField,sourceModule,dataType,
+   required?1:0,formatter,maxLength,fallbackPolicy,fallbackValue,sensitivity,
+   body.exampleValue==null?null:String(body.exampleValue),
+  ),
+  env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   VALUES(?,?,?,'communications','map_template_variable','communication_template_variable_mapping',?,?,'web')`)
+   .bind(uid('audit'),context.employee.id,mapping.companyId,id,JSON.stringify({mappingId,component,position,sourceModule,dataType,required,sensitivity})),
+ ]);
+ if(Number(saved.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1)return json({error:'Variable mapping could not be saved.'},409);
+ return json({ok:true,id,mappingId},201);
+}
+
 export async function routeCommunicationGovernance(
  request:Request,env:GovernanceEnv,context:EnhancedSessionContext,
 ):Promise<Response|null>{
@@ -483,6 +531,7 @@ export async function routeCommunicationGovernance(
  if(path==='/api/communications/admin/governance'&&method==='GET')return overview(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='GET')return listTemplateMappings(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='POST')return createTemplateMapping(request,env,context);
+ if(path==='/api/communications/admin/template-variable-mappings'&&method==='POST')return saveTemplateVariableMapping(request,env,context);
  if(path==='/api/communications/admin/restrictions'&&method==='POST')return saveRestriction(request,env,context);
  if(path==='/api/communications/admin/templates'&&method==='POST')return createTemplate(request,env,context);
  if(path==='/api/communications/admin/templates/approve'&&method==='POST')return approveTemplate(request,env,context);
