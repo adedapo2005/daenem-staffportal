@@ -424,12 +424,65 @@ async function listTemplateMappings(request:Request,env:GovernanceEnv,context:En
  }))});
 }
 
+async function createTemplateMapping(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
+ let body:{companyId?:string;templateId?:string;providerTemplateName?:string;providerTemplateId?:string;category?:string};
+ try{body=await request.json();}catch{return json({error:'Invalid template mapping request.'},400)}
+ const companyId=String(body.companyId||''),templateId=String(body.templateId||'');
+ const providerTemplateName=String(body.providerTemplateName||'').trim();
+ const providerTemplateId=String(body.providerTemplateId||'').trim();
+ const category=String(body.category||'');
+ if(!companyId||!templateId||!companyAllowed(context,companyId)||
+    !/^[a-z0-9_]{1,128}$/.test(providerTemplateName)||providerTemplateId.length>256||
+    !['marketing','transactional','reminder','customer_support','account_verification','hr_employee','emergency_operational'].includes(category)){
+  return json({error:'Valid company, approved template and provider identity are required.'},400);
+ }
+ const template=await env.DB.prepare(`
+  SELECT t.id,t.event_id AS eventId,t.language,t.internal_status AS internalStatus,
+   t.provider_status AS providerStatus,t.channel
+  FROM communication_templates t WHERE t.id=? AND t.company_id=? LIMIT 1
+ `).bind(templateId,companyId).first<{
+  id:string;eventId:string;language:string;internalStatus:string;providerStatus:string;channel:string;
+ }>();
+ if(!template)return json({error:'Approved WhatsApp template was not found.'},404);
+ if(!canManageEvent(context,companyId,template.eventId,'manage'))return json({error:'Manage Communications permission is required.'},403);
+ if(template.channel!=='whatsapp'||template.internalStatus!=='approved'||template.providerStatus!=='approved'){
+  return json({error:'An internally and provider-approved WhatsApp template is required.'},409);
+ }
+ const event=eventById(template.eventId);
+ const id=uid('comm-template-map');
+ const [created,audited]=await env.DB.batch([
+  env.DB.prepare(`
+   INSERT INTO communication_template_mappings(
+    id,template_id,company_id,use_case_id,provider_template_name,language,category,
+    owning_module,provider_template_id,enabled,status,revision,created_by,updated_by
+   ) SELECT ?,?,?,?,?,?,?,?,?,0,'draft',COALESCE(MAX(revision),0)+1,?,?
+   FROM communication_template_mappings WHERE company_id=? AND use_case_id=? AND language=?
+  `).bind(id,template.id,companyId,template.eventId,providerTemplateName,template.language,
+   category,event.module,providerTemplateId||null,context.employee.id,context.employee.id,
+   companyId,template.eventId,template.language),
+  env.DB.prepare(`
+   INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+   SELECT ?,?,?,'communications','create_template_mapping','communication_template_mapping',id,?,'web'
+   FROM communication_template_mappings WHERE id=? AND company_id=? AND enabled=0 AND status='draft'
+  `).bind(uid('audit'),context.employee.id,companyId,
+   JSON.stringify({useCaseId:template.eventId,templateId:template.id,enabled:false,status:'draft'}),id,companyId),
+ ]);
+ if(Number(created.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1){
+  return json({error:'Template mapping could not be created.'},409);
+ }
+ const saved=await env.DB.prepare('SELECT revision FROM communication_template_mappings WHERE id=? AND company_id=? LIMIT 1')
+  .bind(id,companyId).first<{revision:number}>();
+ if(!saved)return json({error:'Template mapping could not be created.'},409);
+ return json({ok:true,id,revision:Number(saved.revision),enabled:false,status:'draft'},201);
+}
+
 export async function routeCommunicationGovernance(
  request:Request,env:GovernanceEnv,context:EnhancedSessionContext,
 ):Promise<Response|null>{
  const path=new URL(request.url).pathname,method=request.method;
  if(path==='/api/communications/admin/governance'&&method==='GET')return overview(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='GET')return listTemplateMappings(request,env,context);
+ if(path==='/api/communications/admin/template-mappings'&&method==='POST')return createTemplateMapping(request,env,context);
  if(path==='/api/communications/admin/restrictions'&&method==='POST')return saveRestriction(request,env,context);
  if(path==='/api/communications/admin/templates'&&method==='POST')return createTemplate(request,env,context);
  if(path==='/api/communications/admin/templates/approve'&&method==='POST')return approveTemplate(request,env,context);

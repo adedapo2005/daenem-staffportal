@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const source = await readFile(new URL('../worker/communications-governance.ts', import.meta.url), 'utf8');
-const endpoint = source.slice(source.indexOf('async function listTemplateMappings'), source.indexOf('export async function routeCommunicationGovernance'));
+const endpoint = source.slice(source.indexOf('async function listTemplateMappings'), source.indexOf('async function createTemplateMapping'));
 assert.match(endpoint, /companyId.*useCaseId.*companyAllowed\(context,companyId\)/s);
 assert.match(endpoint, /canManageEvent\(context,companyId,useCaseId,'view'\)/);
 assert.match(endpoint, /WHERE company_id=\? AND use_case_id=\?/);
