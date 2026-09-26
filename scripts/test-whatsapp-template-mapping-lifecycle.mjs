@@ -17,3 +17,14 @@ assert.match(handler, /changes\(\)=1/);
 assert.match(handler, /liveSend:false/);
 assert.match(source, /template-mappings\/enabled.*setTemplateMappingEnabled/);
 console.log('WhatsApp template mapping lifecycle boundary: PASS');
+
+const readinessStart = source.indexOf('async function templateMappingReadiness');
+const approvalStart = source.indexOf('async function approveTemplateMapping');
+const readiness = source.slice(readinessStart, source.indexOf('\nasync function saveTemplateVariableMapping', readinessStart));
+const approval = source.slice(approvalStart, source.indexOf('\nasync function setTemplateMappingEnabled', approvalStart));
+assert.match(source, /required&&fallbackPolicy/);
+assert.match(readiness, /invalidVariableCount/);
+assert.match(readiness, /VARIABLE_FALLBACK_POLICY_INVALID/);
+assert.match(approval, /required=1 AND/);
+assert.match(approval, /invalidVariables\?\.count/);
+console.log('WhatsApp template variable fallback policy: PASS');

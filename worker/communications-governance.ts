@@ -484,12 +484,15 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
  const row=await env.DB.prepare(`
   SELECT m.id,m.use_case_id AS useCaseId,m.enabled,m.status,
    t.internal_status AS internalStatus,t.provider_status AS providerStatus,
-   (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id) AS variableCount
+   (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id) AS variableCount,
+   (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id
+    AND ((v.required=1 AND (v.fallback_policy!='none' OR v.fallback_value IS NOT NULL))
+      OR (v.required=0 AND v.fallback_policy='approved_value' AND (v.fallback_value IS NULL OR length(v.fallback_value)>v.max_length)))) AS invalidVariableCount
   FROM communication_template_mappings m
   JOIN communication_templates t ON t.id=m.template_id AND t.company_id=m.company_id
   WHERE m.id=? AND m.company_id=? LIMIT 1
  `).bind(mappingId,companyId).first<{
-  id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;variableCount:number;
+  id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;variableCount:number;invalidVariableCount:number;
  }>();
  if(!row)return json({error:'Template mapping was not found.'},404);
  if(!canManageEvent(context,companyId,row.useCaseId,'view'))return json({error:'Communications management access is not assigned.'},403);
@@ -499,6 +502,7 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
  if(row.internalStatus!=='approved')blockers.push('INTERNAL_TEMPLATE_NOT_APPROVED');
  if(row.providerStatus!=='approved')blockers.push('PROVIDER_TEMPLATE_NOT_APPROVED');
  if(Number(row.variableCount)<1)blockers.push('VARIABLE_MAPPINGS_REQUIRED');
+ if(Number(row.invalidVariableCount)>0)blockers.push('VARIABLE_FALLBACK_POLICY_INVALID');
  return json({
   mappingId:row.id,
   useCaseId:row.useCaseId,
@@ -531,7 +535,7 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
     (body.exampleValue!=null&&String(body.exampleValue).length>maxLength)||
     !['public','internal','personal','sensitive'].includes(sensitivity)||
     !['none','approved_value'].includes(fallbackPolicy)||
-    (!required&&fallbackPolicy!=='approved_value')||
+    (required&&fallbackPolicy!=='none')||
     (fallbackPolicy==='approved_value'&&(!fallbackValue||fallbackValue.length>maxLength))||
     (fallbackPolicy==='none'&&fallbackValue!==null)){
   return json({error:'Valid component, source and bounded variable policy are required.'},400);
@@ -582,6 +586,11 @@ async function approveTemplateMapping(request:Request,env:GovernanceEnv,context:
  const variables=await env.DB.prepare(`SELECT COUNT(*) AS count FROM communication_template_variable_mappings WHERE mapping_id=?`)
   .bind(mappingId).first<{count:number}>();
  if(Number(variables?.count||0)<1)return json({error:'At least one explicit component variable mapping is required.'},409);
+ const invalidVariables=await env.DB.prepare(`SELECT COUNT(*) AS count FROM communication_template_variable_mappings
+  WHERE mapping_id=? AND ((required=1 AND (fallback_policy!='none' OR fallback_value IS NOT NULL))
+   OR (required=0 AND fallback_policy='approved_value' AND (fallback_value IS NULL OR length(fallback_value)>max_length)))`)
+  .bind(mappingId).first<{count:number}>();
+ if(Number(invalidVariables?.count||0)>0)return json({error:'Template variables contain an invalid required or optional fallback policy.'},409);
  const [updated,audited]=await env.DB.batch([
   env.DB.prepare(`UPDATE communication_template_mappings SET status='approved',updated_by=?,updated_at=CURRENT_TIMESTAMP
    WHERE id=? AND company_id=? AND enabled=0 AND status='draft'`).bind(context.employee.id,mappingId,companyId),
