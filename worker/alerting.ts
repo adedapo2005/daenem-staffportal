@@ -16,6 +16,7 @@ type PlatformEventInput = {
   payload?: Record<string, unknown>;
   occurredAt?: string;
 };
+type AlertRecipientSelector = { type?: string; id?: string };
 
 const json = (body: Record<string, unknown> | unknown[], status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -36,6 +37,79 @@ function safeSeverity(value: unknown): Severity {
   return ['low', 'medium', 'high', 'critical'].includes(String(value)) ? value as Severity : 'medium';
 }
 
+async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown> | null, companyId: string | null) {
+  let selectors: AlertRecipientSelector[] = [];
+  let channels: string[] = ['in_app'];
+  try {
+    const parsed = JSON.parse(String(rule?.recipientsJson || '[]'));
+    if (Array.isArray(parsed)) selectors = parsed.filter((item): item is AlertRecipientSelector => !!item && typeof item === 'object');
+  } catch { /* Invalid configuration fails closed below. */ }
+  try {
+    const parsed = JSON.parse(String(rule?.channelsJson || '["in_app"]'));
+    if (Array.isArray(parsed)) channels = parsed.filter((item): item is string => typeof item === 'string' && ['in_app', 'screen_popup', 'email', 'whatsapp', 'web_push'].includes(item));
+  } catch { channels = []; }
+  if (!rule) selectors = [{ type: 'all_authorized' }];
+  const employees = new Set<string>();
+  for (const selector of selectors) {
+    const scopeCompany = typeof rule?.companyId === 'string' ? rule.companyId : companyId;
+    if (selector.type === 'user' && selector.id) {
+      const row = await env.DB.prepare(`SELECT e.id FROM employees e JOIN employee_company_memberships m ON m.employee_id=e.id
+        WHERE e.id=? AND e.employment_status='active' AND m.active=1 AND (? IS NULL OR m.company_id=?)
+        AND EXISTS (SELECT 1 FROM employee_roles er JOIN role_permissions rp ON rp.role_id=er.role_id
+          JOIN permissions p ON p.id=rp.permission_id WHERE er.employee_id=e.id AND er.company_id=m.company_id
+          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+        .bind(selector.id, scopeCompany, scopeCompany).first<{ id: string }>();
+      if (row) employees.add(row.id);
+    } else if (selector.type === 'role' && selector.id) {
+      const rows = await env.DB.prepare(`SELECT DISTINCT e.id FROM employees e
+        JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
+        JOIN employee_roles er ON er.employee_id=e.id AND er.company_id=m.company_id
+        JOIN roles r ON r.id=er.role_id AND r.active=1
+        WHERE e.employment_status='active' AND r.code=? AND (? IS NULL OR m.company_id=?)
+        AND EXISTS (SELECT 1 FROM employee_roles ar JOIN role_permissions rp ON rp.role_id=ar.role_id
+          JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
+          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+        .bind(selector.id, scopeCompany, scopeCompany).all<{ id: string }>();
+      for (const row of rows.results || []) employees.add(row.id);
+    } else if (selector.type === 'department' && selector.id) {
+      const rows = await env.DB.prepare(`SELECT DISTINCT e.id FROM employees e JOIN employee_company_memberships m ON m.employee_id=e.id
+        WHERE e.employment_status='active' AND m.active=1 AND e.department=? AND (? IS NULL OR m.company_id=?)
+        AND EXISTS (SELECT 1 FROM employee_roles ar JOIN role_permissions rp ON rp.role_id=ar.role_id
+          JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
+          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+        .bind(selector.id, scopeCompany, scopeCompany).all<{ id: string }>();
+      for (const row of rows.results || []) employees.add(row.id);
+    } else if (selector.type === 'business' || selector.type === 'site' || selector.type === 'all_authorized') {
+      const targetCompany = selector.type === 'business' && selector.id ? selector.id : scopeCompany;
+      if (companyId && targetCompany !== companyId) continue;
+      const locationClause = selector.type === 'site' && selector.id ? ' AND m.location_id=?' : '';
+      const rows = await env.DB.prepare(`SELECT DISTINCT e.id FROM employees e JOIN employee_company_memberships m ON m.employee_id=e.id
+        WHERE e.employment_status='active' AND m.active=1 AND (? IS NULL OR m.company_id=?)${locationClause}
+        AND EXISTS (SELECT 1 FROM employee_roles ar JOIN role_permissions rp ON rp.role_id=ar.role_id
+          JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
+          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+        .bind(targetCompany, targetCompany, ...(locationClause ? [selector.id as string] : [])).all<{ id: string }>();
+      for (const row of rows.results || []) employees.add(row.id);
+    }
+  }
+  return { employeeIds: [...employees], channels: [...new Set(channels)] };
+}
+
+async function createRecipientDeliveries(env: AlertingEnv, alertId: string, employeeIds: string[], channels: string[]) {
+  for (const employeeId of employeeIds) {
+    const recipientId = uid('alert-recipient');
+    await env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_recipients(id,alert_id,employee_id,recipient_reason)
+      VALUES(?,?,?,'matched_alert_rule')`).bind(recipientId, alertId, employeeId).run();
+    const recipient = await env.DB.prepare('SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?')
+      .bind(alertId, employeeId).first<{ id: string }>();
+    if (!recipient) continue;
+    for (const channel of channels) {
+      await env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_deliveries(id,alert_id,recipient_id,channel,status)
+        VALUES(?,?,?,?,'queued')`).bind(uid('alert-delivery'), alertId, recipient.id, channel).run();
+    }
+  }
+}
+
 function companyScope(context: SessionContext) {
   if (canManage(context)) return { sql: '', values: [] as string[] };
   const ids = context.companies.map((company) => company.id);
@@ -54,13 +128,16 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
   const occurredAt = input.occurredAt || new Date().toISOString();
   const eventId = uid('alert-event');
   const rule = await env.DB.prepare(`
-    SELECT id,severity,acknowledgement_required acknowledgementRequired,dedup_window_minutes dedupWindowMinutes
+    SELECT id,company_id companyId,severity,acknowledgement_required acknowledgementRequired,dedup_window_minutes dedupWindowMinutes,
+      recipients_json recipientsJson,channels_json channelsJson
     FROM platform_alert_rules
     WHERE active=1 AND event_type=? AND (module IS NULL OR module=?)
       AND (company_id IS NULL OR company_id=?)
     ORDER BY CASE WHEN company_id=? THEN 0 ELSE 1 END, CASE WHEN module=? THEN 0 ELSE 1 END, created_at DESC
     LIMIT 1
   `).bind(input.eventType, input.module, input.companyId || null, input.companyId || null, input.module).first<Record<string, unknown>>();
+  const recipientPlan = await resolveRecipients(env, rule || null, input.companyId || null);
+  if (!recipientPlan.employeeIds.length) return null;
   const severity = safeSeverity(rule?.severity || input.severityHint);
   const fingerprint = await digest([
     input.companyId || 'group', input.module, input.eventType, input.sourceType,
@@ -93,6 +170,7 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
         summary=COALESCE(?,summary),related_path=COALESCE(?,related_path),updated_at=CURRENT_TIMESTAMP
       WHERE id=?
     `).bind(occurredAt, severity, input.summary || null, input.relatedPath || null, existing.id).run();
+    await createRecipientDeliveries(env, String(existing.id), recipientPlan.employeeIds, recipientPlan.channels);
     return { alertId: String(existing.id), alertNo: String(existing.alertNo), deduplicated: true };
   }
   const alertId = uid('alert');
@@ -107,6 +185,7 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
     fingerprint, severity, input.title, input.summary || null, input.relatedPath || null,
     Number(rule?.acknowledgementRequired || 0), occurredAt, occurredAt,
   ).run();
+  await createRecipientDeliveries(env, alertId, recipientPlan.employeeIds, recipientPlan.channels);
   return { alertId, alertNo, deduplicated: false };
 }
 
