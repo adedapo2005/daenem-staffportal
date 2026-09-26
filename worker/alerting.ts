@@ -308,7 +308,22 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
   if (companyId && !owner(context) && !context.companies.some((company) => company.id === companyId)) {
     return json({ error: 'Company access is not assigned.' }, 403);
   }
-  const id = String(body.id || uid('alert-rule'));
+  if (body.id !== undefined && (typeof body.id !== 'string' || !body.id.trim())) {
+    return json({ error: 'Invalid alert rule identifier.' }, 400);
+  }
+  const requestedId = typeof body.id === 'string' ? body.id : null;
+  if (requestedId) {
+    const existing = await env.DB.prepare('SELECT company_id companyId FROM platform_alert_rules WHERE id=?')
+      .bind(requestedId).first<{ companyId: string | null }>();
+    if (!existing) return json({ error: 'Alert rule not found.' }, 404);
+    if (!owner(context) && (!existing.companyId || !context.companies.some((company) => company.id === existing.companyId))) {
+      return json({ error: 'Alert rule access is not assigned.' }, 403);
+    }
+    if (!owner(context) && existing.companyId !== companyId) {
+      return json({ error: 'Company access is not assigned.' }, 403);
+    }
+  }
+  const id = requestedId || uid('alert-rule');
   const severity = safeSeverity(body.severity);
   await env.DB.prepare(`
     INSERT INTO platform_alert_rules
