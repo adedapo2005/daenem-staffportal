@@ -6,6 +6,7 @@ const prefs = read('src/signin-preferences.ts');
 const studio = read('src/theme-studio-entry.ts');
 const worker = read('worker/theme-preferences.ts');
 const workerIndex = read('worker/index.ts');
+const weatherProvider = read('worker/weather-provider.ts');
 const passwordAuth = read('worker/password-auth.ts');
 const authRefinement = read('worker/auth-refinement.ts');
 const auth = read('src/auth.tsx');
@@ -113,8 +114,8 @@ check('live layout governor measures actual columns without polling', signin.inc
 check('layout governor exposes measured fit diagnostics', signin.includes('data-auth-required-height') && signin.includes('data-auth-available-height') && signin.includes('data-live-required-height') && signin.includes('data-live-available-height'));
 check('comfortable default capacity shows all five widgets', signin.includes("today: 3") && signin.includes("'live-context': 2") && signin.includes("? { 'workspace-spotlight': 1"));
 check('900px class reduces TODAY capacity without hiding widgets', signin.includes("density === 'compact'") && signin.includes('today: 2') && signin.includes('instances.length > capacity'));
-check('weather requests Google current conditions in the approved default unit', workerIndex.includes('weather.googleapis.com/v1/currentConditions:lookup') && workerIndex.includes("api.searchParams.set('unitsSystem', 'IMPERIAL')"));
-check('weather payload normalizes the Google response and missing fields', workerIndex.includes('temperature: number(data.temperature)') && workerIndex.includes('apparentTemperature: number(data.feelsLikeTemperature)') && workerIndex.includes("typeof condition === 'string' ? condition : 'Current conditions'"));
+check('weather requests Google current conditions in the approved default unit', weatherProvider.includes('weather.googleapis.com/v1/currentConditions:lookup') && weatherProvider.includes("unitsSystem: 'IMPERIAL' | 'METRIC' = 'IMPERIAL'") && weatherProvider.includes("url.searchParams.set('unitsSystem', unitsSystem)"));
+check('weather payload normalizes the Google response and missing fields', workerIndex.includes('temperature: number(weatherData.temperature)') && workerIndex.includes('apparentTemperature: number(weatherData.feelsLikeTemperature)') && workerIndex.includes("typeof condition === 'string' ? condition : 'Current conditions'"));
 check('weather retains cached data on refresh failure', signin.includes("reading.state === 'unavailable' && previous?.state === 'ready'") && signin.includes('setInterval(refreshWeather, 300_000)'));
 check('weather administration exposes safe detail and animation controls', studio.includes("['showFeelsLike','Feels like']") && studio.includes("['showSunriseSunset','Sunrise / sunset']") && studio.includes('globalOperations.weatherStyle') && studio.includes('globalOperations.weatherAnimation') && prefs.includes('weatherAnimation'));
 check('seven clock cards have independent weather readings and paging', signin.includes('weather={weather[location.zone]}') && signin.includes('visibleLocations') && signin.includes('Previous locations') && signin.includes('clockCapacity'));
@@ -125,7 +126,7 @@ const weatherFixtures = [
   { temperature: { degrees: 28 } },
   { weatherCondition: { description: { text: 'Unknown condition' } } },
 ];
-check('Google weather contract fixtures cover complete and partial responses', weatherFixtures[0].temperature.degrees === 28 && weatherFixtures[1].feelsLikeTemperature === undefined && weatherFixtures[2].weatherCondition.description.text === 'Unknown condition' && workerIndex.includes('data.currentConditionsHistory') && workerIndex.includes('providerStatus: \'fresh\''));
+check('Google weather contract fixtures cover complete and partial responses', weatherFixtures[0].temperature.degrees === 28 && weatherFixtures[1].feelsLikeTemperature === undefined && weatherFixtures[2].weatherCondition.description.text === 'Unknown condition' && workerIndex.includes('weatherData.currentConditionsHistory') && weatherProvider.includes("providerStatus: 'fresh'") && weatherProvider.includes("providerStatus: 'cached'"));
 
 // Deterministic fit accounting for the compact desktop composition. These
 // values are derived from the final CSS control heights, gaps, panel padding,

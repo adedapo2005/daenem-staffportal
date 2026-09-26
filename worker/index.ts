@@ -1,7 +1,7 @@
 import { getSessionContext, hasPermission, routeAuth, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
 import { readSignInConfig } from './theme-preferences';
 import { DASHBOARD_FIELD_PERMISSIONS, type DashboardAggregateField } from '../src/dashboard-capabilities';
-import { resolveMetaCredential } from './meta-credentials';
+import { readGoogleWeather } from './weather-provider';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -9,6 +9,7 @@ interface Env extends AuthEnv {
   ASSETS: Fetcher;
   TIMEZONE: string;
   WEATHER_PROVIDER_ENABLED?: string;
+  SOCIAL_CACHE?: KVNamespace;
 }
 
 type JsonValue = Record<string, unknown> | unknown[];
@@ -37,10 +38,6 @@ async function weather(request: Request, env: Env) {
   if (env.WEATHER_PROVIDER_ENABLED !== 'true' || env.APP_STAGE === 'production') {
     return json({ available: false, providerStatus: 'provider_required' });
   }
-  let key: string;
-  try { key = await resolveMetaCredential(env, 'google_weather_api_key'); }
-  catch { return json({ available: false, providerStatus: 'provider_unavailable' }); }
-  if (!key) return json({ available: false, providerStatus: 'provider_required' });
   const url = new URL(request.url);
   const lat = Number(url.searchParams.get('lat'));
   const lon = Number(url.searchParams.get('lon'));
@@ -48,15 +45,9 @@ async function weather(request: Request, env: Env) {
     return json({ error: 'Valid latitude and longitude are required.' }, 400);
   }
 
-  const api = new URL('https://weather.googleapis.com/v1/currentConditions:lookup');
-  api.searchParams.set('location.latitude', String(lat));
-  api.searchParams.set('location.longitude', String(lon));
-  api.searchParams.set('unitsSystem', 'IMPERIAL');
-  let result: Response;
-  try { result = await fetch(api.toString(), { headers: { 'X-Goog-Api-Key': key }, cf: { cacheTtl: 300, cacheEverything: true } }); }
-  catch { return json({ available: false, providerStatus: 'provider_unavailable' }, 502); }
-  if (!result.ok) return json({ available: false, providerStatus: 'provider_unavailable' }, 502);
-  let data: {
+  const result = await readGoogleWeather(env, lat, lon);
+  if (!result.data) return json({ available: false, providerStatus: result.providerStatus }, result.providerStatus === 'provider_required' ? 200 : 502);
+  const weatherData = result.data as {
     currentTime?: unknown; isDaytime?: unknown;
     weatherCondition?: { description?: { text?: unknown } };
     temperature?: unknown; feelsLikeTemperature?: unknown; relativeHumidity?: unknown;
@@ -64,30 +55,28 @@ async function weather(request: Request, env: Env) {
     wind?: { speed?: unknown; direction?: { degrees?: unknown }; gust?: unknown };
     currentConditionsHistory?: { maxTemperature?: unknown; minTemperature?: unknown };
   };
-  try { data = await result.json() as typeof data; }
-  catch { return json({ available: false, providerStatus: 'provider_unavailable' }, 502); }
   const numberValue = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null;
   const number = (value: unknown) => numberValue((value as { degrees?: unknown; value?: unknown; quantity?: unknown } | null)?.degrees ?? (value as { value?: unknown; quantity?: unknown } | null)?.value ?? (value as { quantity?: unknown } | null)?.quantity);
-  const current = data.currentConditionsHistory || {};
-  const condition = data.weatherCondition?.description?.text;
+  const current = weatherData.currentConditionsHistory || {};
+  const condition = weatherData.weatherCondition?.description?.text;
 
   return json({
     available: true,
     provider: 'Google Weather',
-    providerStatus: 'fresh',
+    providerStatus: result.providerStatus,
     location: 'Current work location',
-    temperature: number(data.temperature),
-    apparentTemperature: number(data.feelsLikeTemperature),
-    humidity: numberValue(data.relativeHumidity),
-    isDay: typeof data.isDaytime === 'boolean' ? data.isDaytime : null,
-    precipitationProbability: numberValue(data.precipitation?.probability?.percent),
-    precipitation: number(data.precipitation?.qpf),
-    windSpeed: number(data.wind?.speed),
-    windDirection: numberValue(data.wind?.direction?.degrees),
-    windGust: number(data.wind?.gust),
+    temperature: number(weatherData.temperature),
+    apparentTemperature: number(weatherData.feelsLikeTemperature),
+    humidity: numberValue(weatherData.relativeHumidity),
+    isDay: typeof weatherData.isDaytime === 'boolean' ? weatherData.isDaytime : null,
+    precipitationProbability: numberValue(weatherData.precipitation?.probability?.percent),
+    precipitation: number(weatherData.precipitation?.qpf),
+    windSpeed: number(weatherData.wind?.speed),
+    windDirection: numberValue(weatherData.wind?.direction?.degrees),
+    windGust: number(weatherData.wind?.gust),
     today: { high: number(current.maxTemperature), low: number(current.minTemperature) },
     description: typeof condition === 'string' ? condition : 'Current conditions',
-    observedAt: typeof data.currentTime === 'string' ? data.currentTime : null,
+    observedAt: typeof weatherData.currentTime === 'string' ? weatherData.currentTime : null,
   });
 }
 
