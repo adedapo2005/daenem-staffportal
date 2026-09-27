@@ -50,7 +50,9 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
     const control = await env.DB.prepare(`SELECT observe_only AS observeOnly,auto_remediation_enabled AS autoRemediationEnabled
       FROM smart_bug_control WHERE id=1`).first<{ observeOnly: number; autoRemediationEnabled: number }>();
     return json({ incidents, active, bySeverity, byStatus,
-      mode: control?.observeOnly === 0 ? 'non_production_auto_heal' : 'observe_only',
+      mode: control?.observeOnly === 0 && control?.autoRemediationEnabled === 1
+        ? 'non_production_auto_heal'
+        : 'observe_only',
       autoRemediationEnabled: control?.autoRemediationEnabled === 1 });
   }
 

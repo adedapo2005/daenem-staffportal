@@ -19,9 +19,11 @@ assert.match(source, /recurrence === 'recurring' \? ' AND recurrence_of IS NOT N
 assert.match(source, /fingerprint LIKE \?/);
 assert.match(source, /WHERE 1=1\$\{scopeSql\}\$\{filterSql\}/);
 assert.match(source, /GROUP BY status,severity/);
+assert.match(source, /control\?\.observeOnly === 0 && control\?\.autoRemediationEnabled === 1/);
+assert.match(source, /mode: control\?\.observeOnly === 0 && control\?\.autoRemediationEnabled === 1[\s\S]*?'non_production_auto_heal'[\s\S]*?'observe_only'/);
 assert.match(source, /mode: 'observe_only', autoRemediationEnabled: false/);
 assert.match(source, /sanitized_summary,/);
 assert.match(source, /ORDER BY CASE severity WHEN 'P0' THEN 0 WHEN 'P1' THEN 1/);
 assert.match(runtime, /import \{ routeSmartBugManagement \} from '\.\/smart-bug-management'/);
 assert.match(runtime, /routeSmartBugManagement\(request, env, context\)/);
-console.log('PASS 21 Smart Bug Management read-model boundary assertions');
+console.log('PASS 23 Smart Bug Management read-model boundary assertions');
