@@ -64,13 +64,34 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
 
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/estimate'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
+  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
 
   const owner = context.roles.some((role) => role.code === 'owner');
   const companyIds = owner
     ? TARGET_COMPANIES
     : TARGET_COMPANIES.filter((companyId) => context.companies.some((company) => company.id === companyId) && hasPermission(context, 'finance.reports', 'view', companyId));
   if (companyIds.length === 0) return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
+
+  if (url.pathname === '/api/financial-gateway/budgets') {
+    if (request.method !== 'GET') return json({ error: 'Use GET to read provider budgets.' }, 405);
+    const requestedCompanyId = url.searchParams.get('companyId');
+    if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
+      return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
+    }
+    const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
+    const placeholders = scopedCompanyIds.map(() => '?').join(',');
+    const rows = await env.DB.prepare(`
+      SELECT id,company_id AS companyId,provider_scope AS providerScope,
+        module_scope AS moduleScope,period,budget_minor AS budgetMinor,currency,
+        alert_threshold_percent AS alertThresholdPercent,exhausted_action AS exhaustedAction,
+        active,created_at AS createdAt,updated_at AS updatedAt
+      FROM financial_provider_budgets
+      WHERE company_id IN (${placeholders})
+      ORDER BY company_id,period,provider_scope,module_scope,currency,id
+      LIMIT 500
+    `).bind(...scopedCompanyIds).all<Record<string, unknown>>();
+    return json({ budgets: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+  }
 
   if (url.pathname === '/api/financial-gateway/estimate') {
     if (request.method !== 'POST') return json({ error: 'Use POST to request a provider-cost estimate.' }, 405);
