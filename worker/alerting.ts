@@ -137,18 +137,18 @@ async function createRecipientDeliveries(env: AlertingEnv, alertId: string, empl
     if (!recipient) continue;
     for (const channel of channels) {
       const deliveryId = uid('alert-delivery');
-      await env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_deliveries(id,alert_id,recipient_id,channel,status)
-        VALUES(?,?,?,?,'queued')`).bind(deliveryId, alertId, recipient.id, channel).run();
-      const delivery = await env.DB.prepare(`SELECT id,status FROM platform_alert_deliveries
-        WHERE alert_id=? AND recipient_id=? AND channel=?`).bind(alertId, recipient.id, channel)
-        .first<{ id: string; status: string }>();
-      if (delivery?.status === 'queued' && channel === 'in_app') {
-        await env.DB.prepare(`INSERT OR IGNORE INTO notification_outbox
+      const statements = [env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_deliveries(id,alert_id,recipient_id,channel,status)
+        VALUES(?,?,?,?,'queued')`).bind(deliveryId, alertId, recipient.id, channel)];
+      if (channel === 'in_app') {
+        statements.push(env.DB.prepare(`INSERT OR IGNORE INTO notification_outbox
           (id,employee_id,company_id,source_type,source_id,channel,title,message,priority,status)
-          VALUES(?,?,?,'platform_alert',?,'in_app',?,?,?,'queued')`)
-          .bind(delivery.id, employeeId, alert.companyId, alertId, alert.title,
-            alert.summary || alert.title, 'normal').run();
+          SELECT id,?,?, 'platform_alert',?,'in_app',?,?,?,'queued'
+          FROM platform_alert_deliveries
+          WHERE alert_id=? AND recipient_id=? AND channel='in_app' AND status='queued' LIMIT 1`)
+          .bind(employeeId, alert.companyId, alertId, alert.title,
+            alert.summary || alert.title, 'normal', alertId, recipient.id));
       }
+      await env.DB.batch(statements);
     }
   }
 }
