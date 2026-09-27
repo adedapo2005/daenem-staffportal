@@ -64,13 +64,45 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
 
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
+  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
 
   const owner = context.roles.some((role) => role.code === 'owner');
   const companyIds = owner
     ? TARGET_COMPANIES
     : TARGET_COMPANIES.filter((companyId) => context.companies.some((company) => company.id === companyId) && hasPermission(context, 'finance.reports', 'view', companyId));
   if (companyIds.length === 0) return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
+
+  if (url.pathname === '/api/financial-gateway/cost-events') {
+    if (request.method !== 'GET') return json({ error: 'Use GET to read provider-cost events.' }, 405);
+    const requestedCompanyId = url.searchParams.get('companyId');
+    if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
+      return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
+    }
+    const rawLimit = url.searchParams.get('limit');
+    const limit = rawLimit === null ? 50 : Number(rawLimit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return json({ error: 'Choose between 1 and 100 provider-cost events.' }, 400);
+    }
+    const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
+    const placeholders = scopedCompanyIds.map(() => '?').join(',');
+    const rows = await env.DB.prepare(`
+      SELECT id,company_id AS companyId,actor_employee_id AS actorEmployeeId,
+        actor_role_code AS actorRoleCode,action,amount_minor AS amountMinor,currency,
+        provider,estimated_cost_minor AS estimatedCostMinor,
+        actual_cost_minor AS actualCostMinor,cost_currency AS costCurrency,
+        pricing_id AS pricingId,pricing_verified_at AS pricingVerifiedAt,
+        approval_id AS approvalId,maker_employee_id AS makerEmployeeId,
+        checker_employee_id AS checkerEmployeeId,provider_reference AS providerReference,
+        retry_of_event_id AS retryOfEventId,reversal_of_event_id AS reversalOfEventId,
+        occurred_at AS occurredAt,evidence_reference AS evidenceReference,
+        requesting_module AS requestingModule
+      FROM financial_provider_cost_events
+      WHERE company_id IN (${placeholders})
+      ORDER BY occurred_at DESC,id DESC
+      LIMIT ?
+    `).bind(...scopedCompanyIds, limit).all<Record<string, unknown>>();
+    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, limit });
+  }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
     if (request.method !== 'GET') return json({ error: 'Use GET to read provider budgets.' }, 405);
