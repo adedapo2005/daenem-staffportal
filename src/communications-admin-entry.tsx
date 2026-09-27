@@ -208,7 +208,7 @@ function CommunicationsAdmin({context,onClose}:{context:WorkforceContext;onClose
    </section>}
    {globalAdmin&&<section className="comm-admin-card meta-vault-card">
     <div className="comm-admin-title"><KeyRound size={19}/><div><h3>Meta credentials</h3><p>Encrypted Staff Portal credential vault for Meta-dependent features. Local sign-in and non-Meta website functions remain available when these values are missing.</p></div></div>
-    <div className="meta-vault-notice"><ShieldCheck size={16}/><span>Saved values are encrypted server-side and are never returned to this browser. Entering a new value replaces only that credential. Farms is excluded from this Staff Portal Meta configuration.</span></div>
+    <div className="meta-vault-notice"><ShieldCheck size={16}/><span>Saved values are encrypted server-side and are never returned to this browser. Entering a new value replaces only that credential. Provider configuration is restricted to businesses within the Staff Portal scope.</span></div>
     <div className="meta-credential-grid">{metaCredentials.map(item=><article className="meta-credential-row" key={item.key}>
      <header><div><strong>{item.label}</strong><span>{item.requiredFor.join(' · ')}</span></div><em className={item.configured?'configured':'missing'}>{item.configured?(item.source==='ui'?'Configured in portal':item.source==='database'?'Existing Staff Portal config':'Configured by server'):'Not configured'}</em></header>
      <div className="meta-credential-input">

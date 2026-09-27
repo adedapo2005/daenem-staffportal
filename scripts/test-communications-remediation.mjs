@@ -338,7 +338,7 @@ test('Meta credential vault is encrypted, masked, owner-managed and runtime-reso
   assert.match(webhook,/resolveMetaCredential\(env,'communications_webhook_verify_token'\)/);
   assert.match(outbound,/resolveMetaCredential\(env,'meta_system_user_token'\)/);
   assert.match(oauth,/withResolvedMetaCredentials/);
-  assert.match(oauth,/Staff Portal Meta credentials are not available for the Farms brand/);
+  assert.match(oauth,/This brand is outside the Staff Portal provider scope/);
   assert.match(whatsappAuth,/resolveMetaCredential\(env,'meta_graph_version'\)/);
   assert.match(ui,/How To Get This Credential/);
   assert.match(ui,/type=\{item\.secret\?'password':'text'\}/);

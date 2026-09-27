@@ -33,7 +33,10 @@ export async function getSocialBrand(env: AuthEnv, brandId: string) {
     SELECT id,company_id AS companyId,code,name,short_name AS shortName,
            primary_market AS primaryMarket,timezone,locale,tone_profile_json AS toneProfileJson,
            default_cta AS defaultCta,default_whatsapp_phone AS defaultWhatsappPhone,active
-    FROM social_brands WHERE id=? AND active=1
+    FROM social_brands
+    WHERE id=? AND active=1
+      AND lower(code) <> 'farms'
+      AND lower(name) NOT LIKE '%farm%'
   `).bind(brandId).first<SocialBrand>();
 }
 
@@ -48,7 +51,11 @@ export async function listAccessibleSocialBrands(env: AuthEnv, context: SessionC
     SELECT id,company_id AS companyId,code,name,short_name AS shortName,
            primary_market AS primaryMarket,timezone,locale,tone_profile_json AS toneProfileJson,
            default_cta AS defaultCta,default_whatsapp_phone AS defaultWhatsappPhone,active
-    FROM social_brands WHERE active=1 ORDER BY CASE code WHEN 'farms' THEN 1 WHEN 'printing' THEN 2 WHEN 'bakery' THEN 3 WHEN 'autos' THEN 4 WHEN 'properties' THEN 5 ELSE 6 END
+    FROM social_brands
+    WHERE active=1
+      AND lower(code) <> 'farms'
+      AND lower(name) NOT LIKE '%farm%'
+    ORDER BY CASE code WHEN 'printing' THEN 1 WHEN 'bakery' THEN 2 WHEN 'autos' THEN 3 WHEN 'properties' THEN 4 WHEN 'logistics' THEN 5 ELSE 6 END
   `).all<SocialBrand>();
   return (rows.results || []).filter((brand) => canAccessSocialBrand(context, brand));
 }

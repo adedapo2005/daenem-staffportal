@@ -383,7 +383,7 @@ async function saveSite(request: Request, env: Env, context: SessionContext) {
   const site = await env.DB.prepare('SELECT id FROM website_sites WHERE company_id=?').bind(companyId).first<{ id: string }>();
   if (!site) return json({ error: 'Website workspace is not provisioned for this business.' }, 404);
   const domain = normalizedDomain(value.domain), previewBaseUrl = httpsUrl(value.previewBaseUrl), enabled = Boolean(value.publicFeedEnabled);
-  if (domain === undefined) return json({ error: 'Enter a valid business website domain. Staff Portal and Farms domains cannot be assigned.' }, 400);
+  if (domain === undefined) return json({ error: 'Enter a valid business website domain. Staff Portal and protected external portal domains cannot be assigned.' }, 400);
   if (previewBaseUrl === undefined) return json({ error: 'Preview link must be a valid HTTPS URL.' }, 400);
   if (enabled && !domain) return json({ error: 'Configure the business website domain before enabling the public content feed.' }, 409);
   const name = text(value.name, 140);
