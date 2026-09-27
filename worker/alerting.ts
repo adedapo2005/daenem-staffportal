@@ -63,17 +63,22 @@ function safeSeverity(value: unknown): Severity {
 }
 
 async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown> | null, companyId: string | null) {
-  let selectors: AlertRecipientSelector[] = [];
+  let selectors: AlertRecipientSelector[] = [{ type: 'all_authorized' }];
   let channels: string[] = ['in_app'];
-  try {
-    const parsed = JSON.parse(String(rule?.recipientsJson || '[]'));
-    if (Array.isArray(parsed)) selectors = parsed.filter((item): item is AlertRecipientSelector => !!item && typeof item === 'object');
-  } catch { /* Invalid configuration fails closed below. */ }
-  try {
-    const parsed = JSON.parse(String(rule?.channelsJson || '["in_app"]'));
-    if (Array.isArray(parsed)) channels = parsed.filter((item): item is string => typeof item === 'string' && ['in_app', 'screen_popup', 'email', 'whatsapp', 'web_push'].includes(item));
-  } catch { channels = []; }
-  if (!rule) selectors = [{ type: 'all_authorized' }];
+  if (rule) {
+    let parsedSelectors: unknown;
+    let parsedChannels: unknown;
+    try { parsedSelectors = JSON.parse(String(rule.recipientsJson || '')); }
+    catch { return { employeeIds: [], recipientReasons: new Map<string, string>(), channels: [] }; }
+    try { parsedChannels = JSON.parse(String(rule.channelsJson || '')); }
+    catch { return { employeeIds: [], recipientReasons: new Map<string, string>(), channels: [] }; }
+    // Never deliver to a silently filtered subset of a corrupted saved rule.
+    if (!validAlertRuleAudience(parsedSelectors, parsedChannels)) {
+      return { employeeIds: [], recipientReasons: new Map<string, string>(), channels: [] };
+    }
+    selectors = parsedSelectors as AlertRecipientSelector[];
+    channels = parsedChannels as string[];
+  }
   const employees = new Map<string, string>();
   const addRecipients = (ids: string[], selector: AlertRecipientSelector, scopeCompany: string | null) => {
     const reason = JSON.stringify({ selector: selector.type, scope: selector.type === 'site' ? selector.id : scopeCompany });
