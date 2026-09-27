@@ -289,6 +289,28 @@ async function listHistory(request: Request, env: AlertingEnv, context: SessionC
   `).bind(status, status, ...scope.values, ...recipientValues).all<Record<string, unknown>>();
   return json({ alerts: rows.results || [] });
 }
+
+async function listDeliveries(request: Request, env: AlertingEnv, context: SessionContext) {
+  if (!canManage(context)) return json({ error: 'Alert delivery administration access is not assigned.' }, 403);
+  const alertId = new URL(request.url).searchParams.get('alertId')?.trim() || '';
+  if (!alertId || alertId.length > 160) return json({ error: 'A valid alert is required.' }, 400);
+  const scope = companyScope(context);
+  const rows = await env.DB.prepare(`
+    SELECT d.id,d.channel,d.status,d.attempts,d.provider_message_id providerMessageId,
+      CASE WHEN d.last_error IS NOT NULL THEN 1 ELSE 0 END hasError,
+      d.sent_at sentAt,d.delivered_at deliveredAt,d.viewed_at viewedAt,
+      d.created_at createdAt,d.updated_at updatedAt,ar.employee_id employeeId,
+      a.id alertId,a.company_id companyId
+    FROM platform_alert_deliveries d
+    JOIN platform_alert_recipients ar ON ar.id=d.recipient_id AND ar.alert_id=d.alert_id
+    JOIN platform_alerts a ON a.id=d.alert_id
+    WHERE d.alert_id=?${scope.sql}
+    ORDER BY ar.employee_id,d.channel
+    LIMIT 300
+  `).bind(alertId, ...scope.values).all<Record<string, unknown>>();
+  return json({ alertId, deliveries: rows.results || [] });
+}
+
 async function receipt(request: Request, env: AlertingEnv, context: SessionContext, action: 'acknowledge' | 'action') {
   if (!canView(context)) return json({ error: 'Alert access is not assigned.' }, 403);
   let body: { alertId?: string };
@@ -416,6 +438,7 @@ export async function routeAlerting(request: Request, env: AlertingEnv, context:
   const url = new URL(request.url);
   if (url.pathname === '/api/alerting/attention' && request.method === 'GET') return listAttention(env, context);
   if (url.pathname === '/api/alerting/history' && request.method === 'GET') return listHistory(request, env, context);
+  if (url.pathname === '/api/alerting/deliveries' && request.method === 'GET') return listDeliveries(request, env, context);
   if (url.pathname === '/api/alerting/acknowledge' && request.method === 'POST') return receipt(request, env, context, 'acknowledge');
   if (url.pathname === '/api/alerting/action' && request.method === 'POST') return receipt(request, env, context, 'action');
   if (url.pathname === '/api/alerting/rules' && request.method === 'GET') return listRules(env, context);
