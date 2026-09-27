@@ -400,6 +400,15 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
   if (companyId && !owner(context) && !context.companies.some((company) => company.id === companyId)) {
     return json({ error: 'Company access is not assigned.' }, 403);
   }
+  if (!owner(context) && Array.isArray(recipients) && recipients.some((value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const selector = value as AlertRecipientSelector;
+    if (selector.type !== 'business') return false;
+    return !selector.id || (companyId ? selector.id !== companyId :
+      !context.companies.some((company) => company.id === selector.id));
+  })) {
+    return json({ error: 'Business recipient access is not assigned.' }, 403);
+  }
   if (body.id !== undefined && (typeof body.id !== 'string' || !body.id.trim())) {
     return json({ error: 'Invalid alert rule identifier.' }, 400);
   }

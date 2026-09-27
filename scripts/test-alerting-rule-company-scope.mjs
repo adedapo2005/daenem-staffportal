@@ -18,5 +18,8 @@ assert.match(saveRule, /body\.id !== undefined && \(typeof body\.id !== 'string'
 assert.match(saveRule, /if \(!existing\) return json\(\{ error: 'Alert rule not found\.' \}, 404\)/);
 assert.match(saveRule, /if \(!owner\(context\) && \(!existing\.companyId \|\| !context\.companies\.some\(\(company\) => company\.id === existing\.companyId\)\)\)/);
 assert.match(saveRule, /if \(!owner\(context\) && existing\.companyId !== companyId\)/);
+assert.match(saveRule, /selector\.type !== 'business'[\s\S]*?company\.id === selector\.id/);
+assert.match(saveRule, /Business recipient access is not assigned\./);
+assert.match(saveRule, /if \(!owner\(context\) && Array\.isArray\(recipients\)[\s\S]*?selector\.id !== companyId/);
 assert.match(saveRule, /const id = requestedId \|\| uid\('alert-rule'\)/);
-console.log('Alert rule update company scope: 6/6 PASS');
+console.log('Alert rule company and business recipient scope: 9/9 PASS');
