@@ -144,14 +144,16 @@ async function createRecipientDeliveries(env: AlertingEnv, alertId: string, empl
       const deliveryId = uid('alert-delivery');
       const statements = [env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_deliveries(id,alert_id,recipient_id,channel,status)
         VALUES(?,?,?,?,'queued')`).bind(deliveryId, alertId, recipient.id, channel)];
-      if (channel === 'in_app') {
+      // Reuse only channels already supported by the shared outbox. External
+      // providers remain queued behind their own activation and delivery gates.
+      if (channel === 'in_app' || channel === 'web_push') {
         statements.push(env.DB.prepare(`INSERT OR IGNORE INTO notification_outbox
           (id,employee_id,company_id,source_type,source_id,channel,title,message,priority,status)
-          SELECT id,?,?, 'platform_alert',?,'in_app',?,?,?,'queued'
+          SELECT id,?,?, 'platform_alert',?,?,?,?,?,'queued'
           FROM platform_alert_deliveries
-          WHERE alert_id=? AND recipient_id=? AND channel='in_app' AND status='queued' LIMIT 1`)
-          .bind(employeeId, alert.companyId, alertId, alert.title,
-            alert.summary || alert.title, 'normal', alertId, recipient.id));
+          WHERE alert_id=? AND recipient_id=? AND channel=? AND status='queued' LIMIT 1`)
+          .bind(employeeId, alert.companyId, alertId, channel, alert.title,
+            alert.summary || alert.title, 'normal', alertId, recipient.id, channel));
       }
       await env.DB.batch(statements);
     }
