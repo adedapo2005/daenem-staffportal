@@ -105,7 +105,10 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
     if (key in counts) counts[key] = Number(row.count) || 0;
     if (row.last_success_at && (!lastSuccessfulSync || row.last_success_at > lastSuccessfulSync)) lastSuccessfulSync = row.last_success_at;
   }
-  const queued = counts.pending + counts.syncing + counts.retrying;
+  // Uploads accepted while OneDrive is unconfigured still need a secondary
+  // copy. Keep them visible in the pending total so the Admin health summary
+  // cannot imply that storage is healthy merely because no worker can sync yet.
+  const queued = counts.pending + counts.syncing + counts.retrying + counts.providerRequired;
   return json({
     provider: 'Microsoft OneDrive',
     primaryStorage: 'Cloudflare R2',

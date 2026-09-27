@@ -18,4 +18,10 @@ assert.doesNotMatch(route, /original_name|r2_key|provider_item_id|sha256|size_by
 assert.match(route, /ORDER BY CASE status WHEN 'failed' THEN 0 WHEN 'retrying' THEN 1 WHEN 'pending' THEN 2/);
 assert.match(route, /\.bind\(\.\.\.\(isOwner \? \[\] : companyIds\), \.\.\.\(status \? \[status\] : \[\]\), limit\)/);
 
-console.log('Storage mirror Admin read model: 10/10 PASS');
+const healthStart = source.indexOf("if (url.pathname !== '/api/admin/storage/mirror-health'");
+const health = source.slice(healthStart);
+assert.match(health, /providerRequired: 0/);
+assert.match(health, /counts\.pending \+ counts\.syncing \+ counts\.retrying \+ counts\.providerRequired/);
+assert.match(health, /queued \? 'backup_pending'/);
+
+console.log('Storage mirror Admin read model: 13/13 PASS');
