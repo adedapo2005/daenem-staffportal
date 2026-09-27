@@ -17,6 +17,31 @@ type PlatformEventInput = {
   occurredAt?: string;
 };
 type AlertRecipientSelector = { type?: string; id?: string };
+const alertRecipientTypes = new Set(['user', 'role', 'department', 'business', 'site', 'all_authorized']);
+const alertChannels = new Set(['in_app', 'screen_popup', 'email', 'whatsapp', 'web_push']);
+
+function validAlertRuleAudience(recipients: unknown, channels: unknown) {
+  if (!Array.isArray(recipients) || recipients.length < 1 || recipients.length > 100 ||
+      !Array.isArray(channels) || channels.length < 1 || channels.length > alertChannels.size) return false;
+  const recipientKeys = new Set<string>();
+  for (const value of recipients) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const selector = value as AlertRecipientSelector;
+    if (typeof selector.type !== 'string' || !alertRecipientTypes.has(selector.type)) return false;
+    if (selector.type === 'all_authorized') {
+      if (selector.id !== undefined && selector.id !== '') return false;
+    } else if (typeof selector.id !== 'string' || !selector.id.trim() || selector.id.length > 160) return false;
+    const key = `${selector.type}:${selector.id || ''}`;
+    if (recipientKeys.has(key)) return false;
+    recipientKeys.add(key);
+  }
+  const uniqueChannels = new Set<string>();
+  for (const channel of channels) {
+    if (typeof channel !== 'string' || !alertChannels.has(channel) || uniqueChannels.has(channel)) return false;
+    uniqueChannels.add(channel);
+  }
+  return true;
+}
 
 const json = (body: Record<string, unknown> | unknown[], status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -339,6 +364,11 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
   const name = String(body.name || '').trim();
   const eventType = String(body.eventType || '').trim();
   if (!name || !eventType) return json({ error: 'Rule name and event are required.' }, 400);
+  const recipients = body.recipients === undefined ? [{ type: 'all_authorized' }] : body.recipients;
+  const channels = body.channels === undefined ? ['in_app'] : body.channels;
+  if (!validAlertRuleAudience(recipients, channels)) {
+    return json({ error: 'Choose valid, unique alert recipients and delivery channels.' }, 400);
+  }
   const companyId = body.companyId ? String(body.companyId) : null;
   if (companyId && !owner(context) && !context.companies.some((company) => company.id === companyId)) {
     return json({ error: 'Company access is not assigned.' }, 403);
@@ -373,8 +403,8 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
       active=excluded.active,updated_at=CURRENT_TIMESTAMP
   `).bind(
     id, companyId, name, body.module ? String(body.module) : null, eventType, severity,
-    JSON.stringify(body.conditions || {}), JSON.stringify(body.recipients || []),
-    JSON.stringify(body.channels || ['in_app']), body.acknowledgementRequired ? 1 : 0,
+    JSON.stringify(body.conditions || {}), JSON.stringify(recipients),
+    JSON.stringify(channels), body.acknowledgementRequired ? 1 : 0,
     body.quietHoursOverride ? 1 : 0, Math.max(1, Number(body.dedupWindowMinutes || 30)),
     JSON.stringify(body.escalation || {}), body.active === false ? 0 : 1, context.employee.id,
   ).run();
