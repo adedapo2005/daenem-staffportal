@@ -8,6 +8,7 @@ const endpoint = source.slice(start, end);
 assert.ok(start >= 0 && end > start);
 assert.match(endpoint, /if\(!owner\(context\)\).*403/);
 assert.match(endpoint, /weather-credential\/test/);
+assert.match(endpoint, /if\(!body\|\|typeof body!=='object'\|\|Array\.isArray\(body\)\).*Invalid weather test request/s);
 assert.match(endpoint, /env\.APP_STAGE==='production'/);
 assert.match(endpoint, /typeof body\.latitude!=='number'\|\|typeof body\.longitude!=='number'/);
 assert.match(endpoint, /latitude < -90\|\|latitude > 90/);

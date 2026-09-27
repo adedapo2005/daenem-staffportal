@@ -218,6 +218,7 @@ async function weatherCredentialSetting(request:Request,env:Env,context:Enhanced
     if(request.method!=='POST')return json({error:'Method not allowed.'},405);
     if(env.APP_STAGE==='production')return json({error:'Weather provider tests are unavailable in production.'},409);
     let body:{latitude?:unknown;longitude?:unknown};try{body=await request.json()}catch{return json({error:'Invalid weather test request.'},400)}
+    if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Invalid weather test request.'},400);
     const latitude=Number(body.latitude),longitude=Number(body.longitude);
     if(typeof body.latitude!=='number'||typeof body.longitude!=='number'||!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180){
       return json({error:'Valid test coordinates are required.'},400);
