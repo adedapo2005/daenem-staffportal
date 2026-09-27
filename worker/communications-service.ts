@@ -7,6 +7,7 @@ import { routeCommunicationOutboxAdmin } from './communications-outbox-admin.js'
 import { routeCommunicationGovernance } from './communications-governance.js';
 import { routeCommunicationsInbox } from './communications-inbox.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
+import { readGoogleWeather } from './weather-provider.js';
 import type { Authorization, Channel, RequestContext } from './communications/types.js';
 import { deleteMetaCredential, isMetaCredentialKey, metaCredentialStatuses, saveMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
 import {
@@ -22,6 +23,7 @@ import {
 interface Env extends MetaCredentialEnv {
   AI?: Ai;
   SOCIAL_AI_MODEL?: string;
+  SOCIAL_CACHE?: KVNamespace;
 }
 
 const json = (body: Record<string, unknown> | unknown[], status = 200) =>
@@ -212,6 +214,19 @@ async function deleteMetaCredentialSetting(request:Request,env:Env,context:Enhan
 async function weatherCredentialSetting(request:Request,env:Env,context:EnhancedSessionContext){
   if(!owner(context))return json({error:'Group Owner or Group Admin access is required.'},403);
   const key='google_weather_api_key' as const;
+  if(new URL(request.url).pathname==='/api/communications/admin/weather-credential/test'){
+    if(request.method!=='POST')return json({error:'Method not allowed.'},405);
+    if(env.APP_STAGE==='production')return json({error:'Weather provider tests are unavailable in production.'},409);
+    let body:{latitude?:unknown;longitude?:unknown};try{body=await request.json()}catch{return json({error:'Invalid weather test request.'},400)}
+    const latitude=Number(body.latitude),longitude=Number(body.longitude);
+    if(typeof body.latitude!=='number'||typeof body.longitude!=='number'||!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180){
+      return json({error:'Valid test coordinates are required.'},400);
+    }
+    const result=await readGoogleWeather(env,latitude,longitude);
+    const ok=Boolean(result.data);
+    await auditCommunication(env,context,undefined,'test_weather_provider_connection','weather_provider',key,{providerStatus:result.providerStatus,ok});
+    return json({ok,provider:'Google Weather',providerStatus:result.providerStatus},ok?200:503);
+  }
   if(request.method==='GET'){
     const credential=(await metaCredentialStatuses(env)).find(item=>item.key===key);
     return json({credential:credential?{key:credential.key,label:credential.label,configured:credential.configured,source:credential.source,updatedAt:credential.updatedAt}:null});
@@ -722,7 +737,7 @@ export async function routeCommunications(
     if (path === '/api/communications/admin/meta-credentials' && method === 'DELETE') {
       return deleteMetaCredentialSetting(request,env,context);
     }
-    if (path === '/api/communications/admin/weather-credential' && ['GET','POST','DELETE'].includes(method)) {
+    if (['/api/communications/admin/weather-credential','/api/communications/admin/weather-credential/test'].includes(path) && ['GET','POST','DELETE'].includes(method)) {
       return weatherCredentialSetting(request,env,context);
     }
     if (path === '/api/communications/admin/policy' && method === 'GET') {

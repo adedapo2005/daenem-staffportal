@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const source = await readFile(new URL('../worker/communications-service.ts', import.meta.url), 'utf8');
+const start = source.indexOf('async function weatherCredentialSetting');
+const end = source.indexOf('\nasync function getPolicy', start);
+const endpoint = source.slice(start, end);
+assert.ok(start >= 0 && end > start);
+assert.match(endpoint, /if\(!owner\(context\)\).*403/);
+assert.match(endpoint, /weather-credential\/test/);
+assert.match(endpoint, /env\.APP_STAGE==='production'/);
+assert.match(endpoint, /typeof body\.latitude!=='number'\|\|typeof body\.longitude!=='number'/);
+assert.match(endpoint, /latitude < -90\|\|latitude > 90/);
+assert.match(endpoint, /longitude < -180\|\|longitude > 180/);
+assert.match(endpoint, /readGoogleWeather\(env,latitude,longitude\)/);
+assert.match(endpoint, /providerStatus:result\.providerStatus,ok/);
+assert.doesNotMatch(endpoint, /JSON\.stringify\(.*latitude|JSON\.stringify\(.*longitude/s);
+assert.match(source, /weather-credential\/test/);
+console.log('Google Weather non-production provider connection test boundary: 10/10 PASS');
