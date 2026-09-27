@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const migration = await readFile(new URL('../migrations/0078_construction_evidence.sql', import.meta.url), 'utf8');
+const source = await readFile(new URL('../worker/construction.ts', import.meta.url), 'utf8');
+assert.match(migration, /evidence_no TEXT NOT NULL UNIQUE/);
+assert.match(migration, /project_id TEXT NOT NULL REFERENCES construction_projects\(id\) ON DELETE RESTRICT/);
+assert.match(migration, /company_id TEXT NOT NULL REFERENCES companies\(id\) ON DELETE RESTRICT/);
+assert.match(migration, /sha256_hex TEXT NOT NULL CHECK\(length\(sha256_hex\) = 64\)/);
+const upload = source.slice(source.indexOf('async function uploadEvidence'), source.indexOf('async function listEvidence'));
+assert.match(upload, /if\(!can\(c,'edit'\)\)/);
+assert.match(upload, /!project\|\|!companyAllowed\(c,project\.companyId\)/);
+assert.match(upload, /await env\.FILES\.put/);
+assert.match(upload, /INSERT INTO construction_evidence/);
+assert.match(upload, /INSERT OR IGNORE INTO storage_mirror_jobs/);
+assert.match(upload, /backupStatus:'provider_required'/);
+assert.match(upload, /catch\(error\)\{await env\.FILES\.delete\(key\);throw error\}/);
+assert.doesNotMatch(upload, /graph\.microsoft|graph\.microsoft\.com|Authorization.*Bearer/);
+const stream = source.slice(source.indexOf('async function streamEvidence'), source.indexOf('async function child'));
+assert.match(stream, /!companyAllowed\(c,row\.companyId\)/);
+assert.match(stream, /cache-control.*private, no-store/);
+assert.match(source, /evidence_no reference,source,description,original_filename filename/);
+console.log('Construction evidence ingestion boundary: 14 assertions PASS');
