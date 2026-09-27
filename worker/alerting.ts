@@ -320,8 +320,13 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
 
   const alert = await env.DB.prepare(`
     SELECT id,company_id companyId,status FROM platform_alerts WHERE id=?
-  `).bind(alertId).first<{ id: string; companyId?: string; status: string }>();
+  `).bind(alertId).first<{ id: string; companyId: string | null; status: string }>();
   if (!alert) return json({ error: 'Alert not found.' }, 404);
+  // Alert management permission does not grant group-wide receipt authority.
+  // Keep mutations within the same company scope used by the read models.
+  if (!owner(context) && (!alert.companyId || !context.companies.some((company) => company.id === alert.companyId))) {
+    return json({ error: 'Alert not found.' }, 404);
+  }
   if (alert.status === 'resolved') return json({ error: 'Resolved alerts cannot be updated.' }, 409);
 
   if (!canManage(context)) {

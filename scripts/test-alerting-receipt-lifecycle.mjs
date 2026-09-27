@@ -6,6 +6,8 @@ const start = source.indexOf("async function receipt(");
 const end = source.indexOf('async function listRules', start);
 const receipt = source.slice(start, end);
 assert.match(receipt, /alert\.status === 'resolved'.*return json\(\{ error: 'Resolved alerts cannot be updated\.' \}, 409\)/s);
+assert.match(receipt, /if \(!owner\(context\) && \(!alert\.companyId \|\| !context\.companies\.some\(\(company\) => company\.id === alert\.companyId\)\)\) \{\s*return json\(\{ error: 'Alert not found\.' \}, 404\);\s*\}/);
+assert.match(receipt, /Alert management permission does not grant group-wide receipt authority/);
 assert.match(receipt, /WHERE id=\? AND status<>'resolved'/);
 assert.ok(receipt.includes('Number(writes[0]?.meta?.changes || 0) !== 1'));
 assert.match(receipt, /resultingStatus = action === 'action' \? 'actioned' : \['open', 'reopened'\]\.includes\(alert\.status\) \? 'acknowledged' : alert\.status/);
