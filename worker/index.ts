@@ -41,6 +41,7 @@ async function weather(request: Request, env: Env) {
   const url = new URL(request.url);
   const rawLat = url.searchParams.get('lat');
   const rawLon = url.searchParams.get('lon');
+  const rawUnitsSystem = url.searchParams.get('unitsSystem');
   if (rawLat === null || rawLon === null || !rawLat.trim() || !rawLon.trim()) {
     return json({ error: 'Valid latitude and longitude are required.' }, 400);
   }
@@ -49,8 +50,12 @@ async function weather(request: Request, env: Env) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     return json({ error: 'Valid latitude and longitude are required.' }, 400);
   }
+  if (rawUnitsSystem !== null && rawUnitsSystem !== 'IMPERIAL' && rawUnitsSystem !== 'METRIC') {
+    return json({ error: 'Choose IMPERIAL or METRIC weather units.' }, 400);
+  }
 
-  const result = await readGoogleWeather(env, lat, lon);
+  const unitsSystem = rawUnitsSystem === 'METRIC' ? 'METRIC' : 'IMPERIAL';
+  const result = await readGoogleWeather(env, lat, lon, unitsSystem);
   if (!result.data) return json({ available: false, providerStatus: result.providerStatus }, result.providerStatus === 'provider_required' ? 200 : 502);
   const weatherData = result.data as {
     currentTime?: unknown; isDaytime?: unknown;
@@ -69,6 +74,7 @@ async function weather(request: Request, env: Env) {
     available: true,
     provider: 'Google Weather',
     providerStatus: result.providerStatus,
+    unitsSystem,
     location: 'Current work location',
     temperature: number(weatherData.temperature),
     apparentTemperature: number(weatherData.feelsLikeTemperature),
