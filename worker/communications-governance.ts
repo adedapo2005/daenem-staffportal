@@ -570,7 +570,10 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
   ),
   env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
    VALUES(?,?,?,'communications','map_template_variable','communication_template_variable_mapping',?,?,'web')`)
-   .bind(uid('audit'),context.employee.id,mapping.companyId,id,JSON.stringify({mappingId,component,position,sourceModule,dataType,required,sensitivity})),
+   .bind(uid('audit'),context.employee.id,mapping.companyId,id,JSON.stringify({
+    mappingId,component,componentName:componentName||null,position,variableName,
+    sourceField,sourceModule,dataType,required,formatter,maxLength,fallbackPolicy,sensitivity,
+   })),
  ]);
  if(Number(saved.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1)return json({error:'Variable mapping could not be saved.'},409);
  return json({ok:true,id,mappingId},201);
