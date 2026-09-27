@@ -62,9 +62,100 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
   return { decision: estimate! === 0 ? 'free' as const : 'estimated' as const, estimatedCostMinor: estimate!, currency: pricing.currency };
 }
 
+const PRICING_MODELS = ['FREE', 'FIXED', 'PERCENTAGE', 'PERCENTAGE_FIXED', 'TIERED', 'PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST', 'UNKNOWN_REVERIFY'];
+const PRICING_COMPANIES = new Set(TARGET_COMPANIES);
+
+async function maintainPricing(request: Request, env: FinancialGatewayEnv, context: SessionContext) {
+  if (!context.roles.some((role) => role.code === 'owner')) return json({ error: 'Owner pricing administration access is required.' }, 403);
+  let body: Record<string, unknown>;
+  try { body = await request.json() as Record<string, unknown>; }
+  catch { return json({ error: 'Invalid provider pricing record.' }, 400); }
+  const id = typeof body.id === 'string' && body.id.length <= 160 ? body.id : '';
+  const provider = typeof body.provider === 'string' ? body.provider.trim() : '';
+  const service = typeof body.service === 'string' ? body.service.trim() : '';
+  const pricingModel = typeof body.pricingModel === 'string' ? body.pricingModel : '';
+  const currency = typeof body.currency === 'string' ? body.currency : '';
+  const vatTreatment = typeof body.vatTreatment === 'string' ? body.vatTreatment : '';
+  const status = typeof body.status === 'string' ? body.status : '';
+  const officialSource = typeof body.officialSource === 'string' ? body.officialSource.trim() : '';
+  const notes = typeof body.notes === 'string' ? body.notes.trim() : '';
+  const companies = body.businesses;
+  const effectiveAt = body.effectiveAt == null ? null : body.effectiveAt;
+  const lastVerifiedAt = body.lastVerifiedAt == null ? null : body.lastVerifiedAt;
+  const integerOrNull = (value: unknown) => value === null || value === undefined || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0);
+  const dateOrNull = (value: unknown) => value === null || (typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value);
+  const fixed = body.fixedAmountMinor;
+  const pct = body.percentageBps;
+  const minimum = body.minimumAmountMinor;
+  const maximum = body.maximumAmountMinor;
+  const cap = body.capAmountMinor;
+  const hasFixedRate = pricingModel === 'FIXED' || ['PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST'].includes(pricingModel);
+  const hasPercentageRate = pricingModel === 'PERCENTAGE' || pricingModel === 'PERCENTAGE_FIXED';
+  const pricingTermsComplete = pricingModel === 'FREE' ||
+    (hasFixedRate && fixed != null) ||
+    (hasPercentageRate && pct != null && (pricingModel !== 'PERCENTAGE_FIXED' || fixed != null));
+  if (!id || !/^[A-Za-z0-9:_-]{1,160}$/.test(id) || !provider || provider.length > 80 || !service || service.length > 120 ||
+      !PRICING_MODELS.includes(pricingModel) || !/^[A-Z]{3}$/.test(currency) ||
+      !['included', 'excluded', 'not_applicable', 'unknown'].includes(vatTreatment) ||
+      !['verified', 'unknown_reverify', 'inactive'].includes(status) ||
+      !Array.isArray(companies) || companies.length < 1 || companies.length > TARGET_COMPANIES.length ||
+      companies.some((company) => typeof company !== 'string' || !PRICING_COMPANIES.has(company)) || new Set(companies).size !== companies.length ||
+      !integerOrNull(fixed) || !integerOrNull(minimum) || !integerOrNull(maximum) || !integerOrNull(cap) ||
+      pct !== null && pct !== undefined && (typeof pct !== 'number' || !Number.isSafeInteger(pct) || pct < 0 || pct > 10_000) ||
+      minimum != null && maximum != null && Number(maximum) < Number(minimum) ||
+      !dateOrNull(effectiveAt) || !dateOrNull(lastVerifiedAt) ||
+      officialSource.length > 500 || (officialSource && (() => { try { return new URL(officialSource).protocol !== 'https:'; } catch { return true; } })()) ||
+      notes.length > 1000 || (status === 'verified' && (vatTreatment === 'unknown' || !effectiveAt || !lastVerifiedAt || !officialSource ||
+        pricingModel === 'TIERED' || pricingModel === 'UNKNOWN_REVERIFY' || !pricingTermsComplete))) {
+    return json({ error: 'Provider pricing fields, verified source and business availability must be valid and bounded.' }, 400);
+  }
+  const facts = {
+    provider, service, pricingModel,
+    fixedAmountMinor: fixed ?? null, percentageBps: pct ?? null,
+    minimumAmountMinor: minimum ?? null, maximumAmountMinor: maximum ?? null, capAmountMinor: cap ?? null,
+    vatTreatment, currency, effectiveAt, lastVerifiedAt, officialSource: officialSource || null,
+    status, notes: notes || null,
+  };
+  const existing = await env.DB.prepare('SELECT id FROM financial_provider_pricing WHERE id=? LIMIT 1').bind(id).first<{ id: string }>();
+  if (!existing) {
+    const conflict = await env.DB.prepare('SELECT id FROM financial_provider_pricing WHERE provider=? AND service=? AND currency=? LIMIT 1').bind(provider, service, currency).first<{ id: string }>();
+    if (conflict) return json({ error: 'A pricing record already exists for this provider, service and currency.' }, 409);
+  }
+  const statements = [
+    env.DB.prepare(`INSERT INTO financial_provider_pricing(
+      id,provider,service,pricing_model,fixed_amount_minor,percentage_bps,minimum_amount_minor,maximum_amount_minor,cap_amount_minor,
+      vat_treatment,currency,effective_at,last_verified_at,official_source,status,notes
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+      provider=excluded.provider,service=excluded.service,pricing_model=excluded.pricing_model,
+      fixed_amount_minor=excluded.fixed_amount_minor,percentage_bps=excluded.percentage_bps,
+      minimum_amount_minor=excluded.minimum_amount_minor,maximum_amount_minor=excluded.maximum_amount_minor,
+      cap_amount_minor=excluded.cap_amount_minor,vat_treatment=excluded.vat_treatment,currency=excluded.currency,
+      effective_at=excluded.effective_at,last_verified_at=excluded.last_verified_at,official_source=excluded.official_source,
+      status=excluded.status,notes=excluded.notes,updated_at=CURRENT_TIMESTAMP`)
+      .bind(id, provider, service, pricingModel, facts.fixedAmountMinor, facts.percentageBps, facts.minimumAmountMinor,
+        facts.maximumAmountMinor, facts.capAmountMinor, vatTreatment, currency, effectiveAt, lastVerifiedAt,
+        facts.officialSource, status, facts.notes),
+    ...TARGET_COMPANIES.map((companyId) => env.DB.prepare(`INSERT INTO financial_provider_pricing_businesses(pricing_id,company_id,available)
+      VALUES(?,?,?) ON CONFLICT(pricing_id,company_id) DO UPDATE SET available=excluded.available`)
+      .bind(id, companyId, (companies as string[]).includes(companyId) ? 1 : 0)),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+      VALUES(?,?,NULL,'financial_gateway',?,'financial_provider_pricing',?,?,'web')`)
+      .bind(`audit-${crypto.randomUUID()}`, context.employee.id, existing ? 'update_provider_pricing' : 'create_provider_pricing', id,
+        JSON.stringify({ ...facts, availableBusinesses: companies })),
+  ];
+  try { await env.DB.batch(statements); }
+  catch { return json({ error: 'Provider pricing could not be saved. Check for an existing provider/service/currency record.' }, 409); }
+  return json({ ok: true, id, status, availableBusinesses: companies, providerCallMade: false });
+}
+
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
+  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
+
+  if (url.pathname === '/api/financial-gateway/pricing/admin') {
+    if (request.method !== 'POST') return json({ error: 'Use POST to maintain provider pricing.' }, 405);
+    return maintainPricing(request, env, context);
+  }
 
   const owner = context.roles.some((role) => role.code === 'owner');
   const companyIds = owner

@@ -18,6 +18,15 @@ assert.match(route, /WHERE EXISTS\s*\([\s\S]*?scoped\.company_id IN/);
 assert.match(route, /cache-control': 'no-store'/);
 assert.match(entry, /routeFinancialGateway\(request,env,context\)/);
 assert.match(route, /export function estimateProviderCost/);
+assert.match(route, /\/api\/financial-gateway\/pricing\/admin/);
+assert.match(route, /Owner pricing administration access is required/);
+assert.match(route, /new Set\(companies\)\.size !== companies\.length/);
+assert.match(route, /PRICING_COMPANIES\.has\(company\)/);
+assert.match(route, /status === 'verified' && \(vatTreatment === 'unknown'[\s\S]*?pricingTermsComplete\)/);
+assert.match(route, /pricingModel === 'TIERED' \|\| pricingModel === 'UNKNOWN_REVERIFY' \|\| !pricingTermsComplete/);
+assert.match(route, /INSERT INTO audit_logs[\s\S]*?financial_provider_pricing/);
+assert.match(route, /availableBusinesses: companies, providerCallMade: false/);
+assert.doesNotMatch(route.slice(route.indexOf('async function maintainPricing'), route.indexOf('\nexport async function routeFinancialGateway')), /fetch\(|.send\(/);
 assert.match(route, /pricing\.status === 'verified'/);
 assert.match(route, /verifiedAt >= effectiveAt/);
 assert.match(route, /pricing_or_vat_unverified/);
@@ -28,7 +37,7 @@ assert.match(route, /b\.company_id=\? AND b\.available=1/);
 assert.match(route, /estimateProviderCost\(pricing, body\)/);
 assert.doesNotMatch(route.slice(route.indexOf("if (url.pathname === '/api/financial-gateway/estimate')"), route.indexOf("if (request.method !== 'GET')")), /fetch\(|\.put\(|\.send\(/);
 
-const estimator = route.slice(route.indexOf('export function estimateProviderCost'), route.indexOf('\n\nexport async function routeFinancialGateway'));
+const estimator = route.slice(route.indexOf('export function estimateProviderCost'), route.indexOf('\nconst PRICING_MODELS'));
 const javascript = ts.transpileModule(estimator, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { estimateProviderCost } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
 const verified = { pricingModel: 'PERCENTAGE_FIXED', fixedAmountMinor: 25, percentageBps: 150,
