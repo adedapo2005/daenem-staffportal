@@ -12,7 +12,7 @@ check('Attendance view permission is evaluated for the selected company', attend
 check('Attendance clock permission is evaluated for the selected company', attendance.includes("hasPermission(context, 'attendance.access', 'create', companyId)"));
 check('Attendance policy locations repeat authoritative company scope', attendance.includes('cl.id = m.location_id AND cl.company_id = m.company_id'));
 check('Attendance photos use company-scoped object keys', attendance.includes('attendance/${companyId}/${employeeId}/${workDate}'));
-check('Attendance photo metadata records company scope', attendance.includes('customMetadata: { companyId, employeeId, workDate, action }'));
+check('Attendance photo metadata records company scope', /customMetadata: \{[^}]*companyId[^}]*employeeId[^}]*workDate[^}]*action/.test(attendance));
 check('Attendance responses disable caching', attendance.includes("'cache-control': 'no-store'"));
 
 check('Payroll authority is evaluated for the target company', payroll.includes("hasPermission(context,'payroll.access',level,companyId)"));

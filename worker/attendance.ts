@@ -138,11 +138,12 @@ async function savePhoto(env: AttendanceEnv, companyId: string, employeeId: stri
   const image = decodeImage(dataUrl);
   const extension = image.contentType === 'image/png' ? 'png' : image.contentType === 'image/webp' ? 'webp' : 'jpg';
   const key = `attendance/${companyId}/${employeeId}/${workDate}/${action}-${crypto.randomUUID()}.${extension}`;
+  const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', image.bytes)), byte => byte.toString(16).padStart(2, '0')).join('');
   await env.FILES.put(key, image.bytes, {
     httpMetadata: { contentType: image.contentType },
-    customMetadata: { companyId, employeeId, workDate, action },
+    customMetadata: { companyId, employeeId, workDate, action, sha256: digest },
   });
-  return key;
+  return { key, digest, sizeBytes: image.bytes.byteLength, contentType: image.contentType };
 }
 
 function eventTime(policy: AttendancePolicyRow, offlineCreatedAt?: string) {
@@ -218,17 +219,24 @@ async function clock(request: Request, env: AttendanceEnv, context: SessionConte
   if (action === 'clock_in' && day.clock_in_at) return json({ error: 'You already clocked in for this work day.' }, 409);
   if (action === 'clock_out' && !day.clock_in_at) return json({ error: 'You cannot clock out without a valid clock-in.' }, 409);
   if (action === 'clock_out' && day.clock_out_at) return json({ error: 'You already clocked out for this work day.' }, 409);
+  const clockInAt = action === 'clock_out' ? new Date(String(day.clock_in_at)) : null;
+  const workedMinutes = clockInAt ? Math.max(0, Math.round((occurred.getTime() - clockInAt.getTime()) / 60_000)) : 0;
+  if (action === 'clock_out' && workedMinutes > 24 * 60) {
+    return json({ error: 'Clock-out is too far from the recorded clock-in. A manager must review this attendance day.' }, 409);
+  }
 
-  let photoKey: string | null = null;
+  let photo: Awaited<ReturnType<typeof savePhoto>> | null = null;
   if (body.photoDataUrl) {
-    try { photoKey = await savePhoto(env, companyId, context.employee.id, workDate, action, body.photoDataUrl); }
+    try { photo = await savePhoto(env, companyId, context.employee.id, workDate, action, body.photoDataUrl); }
     catch (error) { return json({ error: (error as Error).message }, 400); }
   }
+  const photoKey = photo?.key || null;
 
   const occurredAt = occurred.toISOString();
   const eventId = uid('attendance-event');
-  if (action === 'clock_in') {
-    await env.DB.batch([
+  try {
+    if (action === 'clock_in') {
+      await env.DB.batch([
       env.DB.prepare(`
         INSERT INTO attendance_events (
           id, attendance_day_id, employee_id, event_type, occurred_at, latitude, longitude,
@@ -239,12 +247,16 @@ async function clock(request: Request, env: AttendanceEnv, context: SessionConte
         UPDATE attendance_days SET clock_in_at = ?, status = 'incomplete', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(occurredAt, day.id),
-    ]);
-  } else {
-    const clockInAt = new Date(String(day.clock_in_at));
-    const workedMinutes = Math.max(0, Math.round((occurred.getTime() - clockInAt.getTime()) / 60_000));
-    if (workedMinutes > 24 * 60) return json({ error: 'Clock-out is too far from the recorded clock-in. A manager must review this attendance day.' }, 409);
-    await env.DB.batch([
+      ...(photo ? [env.DB.prepare(`
+        INSERT OR IGNORE INTO storage_mirror_jobs(
+          id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status
+        ) VALUES(?,'microsoft_onedrive','attendance',?,?,?,?,?,?,?,?,'provider_required')
+      `).bind(`storage-mirror-attendance-${eventId}-${photo.digest}`, eventId, companyId, photo.key,
+        `${action}.${photo.contentType === 'image/png' ? 'png' : photo.contentType === 'image/webp' ? 'webp' : 'jpg'}`,
+        photo.contentType, photo.sizeBytes, photo.digest, `microsoft_onedrive:attendance:${eventId}:${photo.digest}`)] : []),
+      ]);
+    } else {
+      await env.DB.batch([
       env.DB.prepare(`
         INSERT INTO attendance_events (
           id, attendance_day_id, employee_id, event_type, occurred_at, latitude, longitude,
@@ -255,7 +267,18 @@ async function clock(request: Request, env: AttendanceEnv, context: SessionConte
         UPDATE attendance_days SET clock_out_at = ?, worked_minutes = ?, status = 'present',
           completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?
       `).bind(occurredAt, workedMinutes, day.id),
-    ]);
+      ...(photo ? [env.DB.prepare(`
+        INSERT OR IGNORE INTO storage_mirror_jobs(
+          id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status
+        ) VALUES(?,'microsoft_onedrive','attendance',?,?,?,?,?,?,?,?,'provider_required')
+      `).bind(`storage-mirror-attendance-${eventId}-${photo.digest}`, eventId, companyId, photo.key,
+        `${action}.${photo.contentType === 'image/png' ? 'png' : photo.contentType === 'image/webp' ? 'webp' : 'jpg'}`,
+        photo.contentType, photo.sizeBytes, photo.digest, `microsoft_onedrive:attendance:${eventId}:${photo.digest}`)] : []),
+      ]);
+    }
+  } catch (error) {
+    if (photo) await env.FILES.delete(photo.key);
+    throw error;
   }
 
   await env.DB.prepare(`
