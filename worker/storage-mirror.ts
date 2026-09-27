@@ -63,20 +63,20 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
     let queuedForRetry = 0;
     if (jobs.length) {
       const statements = jobs.flatMap((job) => [
-        env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
-          SELECT ?,?,?,'storage','mirror_retry_requested','storage_mirror_job',?,?,'web'
-          WHERE EXISTS(SELECT 1 FROM storage_mirror_jobs WHERE id=? AND provider='microsoft_onedrive' AND status='failed')`)
-          .bind(`audit-${crypto.randomUUID()}`, context.employee.id, job.companyId, job.id,
-            JSON.stringify({ outcome: 'queued_for_retry' }), job.id),
         env.DB.prepare(`UPDATE storage_mirror_jobs SET status='pending',next_attempt_at=CURRENT_TIMESTAMP,
           last_error_code=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND provider='microsoft_onedrive' AND status='failed'`)
           .bind(job.id),
+        env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+          SELECT ?,?,?,'storage','mirror_retry_requested','storage_mirror_job',?,?,'web'
+          WHERE changes()=1 AND EXISTS(SELECT 1 FROM storage_mirror_jobs WHERE id=? AND provider='microsoft_onedrive' AND status='pending')`)
+          .bind(`audit-${crypto.randomUUID()}`, context.employee.id, job.companyId, job.id,
+            JSON.stringify({ outcome: 'queued_for_retry' }), job.id),
       ]);
       const results = await env.DB.batch(statements);
-      // Each job contributes an audit insert followed by a compare-and-set update.
+      // Each job contributes a compare-and-set update followed by its conditional audit.
       // Count only updates that actually transitioned failed -> pending so a
       // concurrent retry cannot inflate the admin's success summary.
-      for (let index = 1; index < results.length; index += 2) {
+      for (let index = 0; index < results.length; index += 2) {
         if (Number(results[index]?.meta?.changes) > 0) queuedForRetry += 1;
       }
     }
