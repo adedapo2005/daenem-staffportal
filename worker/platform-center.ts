@@ -533,16 +533,23 @@ async function uploadMedia(request: Request, env: Env, context: SessionContext) 
   const site = await env.DB.prepare('SELECT id,site_code AS siteCode FROM website_sites WHERE company_id=?').bind(companyId).first<{ id: string; siteCode: string }>();
   if (!site) return json({ error: 'Website workspace is not provisioned for this business.' }, 404);
   const id = uid('website-media'), filename = safeFileName(file.name), key = `websites/${site.siteCode}/${new Date().toISOString().slice(0, 10)}/${id}-${filename}`;
-  await env.FILES.put(key, file.stream(), { httpMetadata: { contentType: file.type, cacheControl: 'public, max-age=31536000, immutable' }, customMetadata: { siteId: site.id, uploadedBy: context.employee.id, altText } });
+  const bytes = await file.arrayBuffer();
+  const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), byte => byte.toString(16).padStart(2, '0')).join('');
+  await env.FILES.put(key, bytes, { httpMetadata: { contentType: file.type, cacheControl: 'public, max-age=31536000, immutable' }, customMetadata: { siteId: site.id, companyId, uploadedBy: context.employee.id, altText, sha256: digest } });
   try {
-    await env.DB.prepare(`INSERT INTO website_media_assets(id,site_id,r2_key,filename,mime_type,size_bytes,alt_text,created_by) VALUES(?,?,?,?,?,?,?,?)`)
-      .bind(id, site.id, key, filename, file.type, file.size, altText, context.employee.id).run();
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO website_media_assets(id,site_id,r2_key,filename,mime_type,size_bytes,alt_text,created_by) VALUES(?,?,?,?,?,?,?,?)`)
+        .bind(id, site.id, key, filename, file.type, file.size, altText, context.employee.id),
+      env.DB.prepare(`INSERT OR IGNORE INTO storage_mirror_jobs(id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status)
+        VALUES(?,'microsoft_onedrive','website',?,?,?,?,?,?,?,?,'provider_required')`)
+        .bind(`storage-mirror-website-${id}-${digest}`, id, companyId, key, filename, file.type, file.size, digest, `microsoft_onedrive:website:${id}:${digest}`),
+    ]);
   } catch (error) {
     await env.FILES.delete(key);
     throw error;
   }
-  await audit(env, context, companyId, 'upload_website_media', 'website_media_asset', id, { filename, mimeType: file.type, sizeBytes: file.size, altText });
-  return json({ ok: true, media: { id, filename, mimeType: file.type, sizeBytes: file.size, altText } }, 201);
+  await audit(env, context, companyId, 'upload_website_media', 'website_media_asset', id, { filename, mimeType: file.type, sizeBytes: file.size, sha256: digest, backupStatus: 'provider_required', altText });
+  return json({ ok: true, media: { id, filename, mimeType: file.type, sizeBytes: file.size, altText, backupStatus: 'provider_required' } }, 201);
 }
 
 async function siteForCompany(env: Env, companyId: string) {
