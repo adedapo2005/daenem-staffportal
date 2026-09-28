@@ -44,11 +44,28 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
         AND (provider_item_id IS NULL OR trim(provider_item_id)='' OR synced_at IS NULL)
         ${scopeSql}
     `).bind(...binds).first<{ count: number }>();
+    // Failed jobs must retain a sanitized error code so an authorized operator
+    // can distinguish and investigate failures. Never expose raw errors or
+    // file-identifying metadata from this aggregate sentinel.
+    const failedWithoutCode = await env.DB.prepare(`
+      SELECT COUNT(*) AS count
+      FROM storage_mirror_jobs
+      WHERE provider='microsoft_onedrive' AND status='failed'
+        AND (last_error_code IS NULL OR trim(last_error_code)='')
+        ${scopeSql}
+    `).bind(...binds).first<{ count: number }>();
+    const successEvidenceFindings = Number(finding?.count || 0);
+    const failedWithoutCodeFindings = Number(failedWithoutCode?.count || 0);
+    const findingCount = successEvidenceFindings + failedWithoutCodeFindings;
     return json({
-      detector: 'storage_mirror_success_evidence',
+      detector: 'storage_mirror_integrity',
       readOnly: true,
-      findingCount: Number(finding?.count || 0),
-      state: Number(finding?.count || 0) > 0 ? 'finding' : 'clear',
+      findingCount,
+      findings: {
+        mirroredWithoutSuccessEvidence: successEvidenceFindings,
+        failedWithoutErrorCode: failedWithoutCodeFindings,
+      },
+      state: findingCount > 0 ? 'finding' : 'clear',
     });
   }
 

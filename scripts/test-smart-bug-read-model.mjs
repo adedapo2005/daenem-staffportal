@@ -43,8 +43,10 @@ const integrityEnd = source.indexOf('\n  if (incidentDetail) {', integrityStart)
 const integrity = source.slice(integrityStart, integrityEnd);
 assert.ok(integrityStart >= 0 && integrityEnd > integrityStart, 'storage mirror integrity sentinel exists');
 assert.match(integrity, /WHERE provider='microsoft_onedrive'/);
+assert.match(integrity, /status='failed'[\s\S]*last_error_code IS NULL OR trim\(last_error_code\)=''/);
 assert.match(integrity, /\$\{scopeSql\}/);
 assert.match(integrity, /readOnly: true/);
-assert.match(integrity, /findingCount:/);
+assert.match(integrity, /findingCount,?/);
+assert.match(integrity, /failedWithoutErrorCode: failedWithoutCodeFindings/);
 assert.doesNotMatch(integrity, /UPDATE |INSERT INTO|DELETE FROM|FILES\.|r2_key|original_name|provider_item_id AS/i);
-console.log('PASS 40 Smart Bug Management read-model boundary assertions');
+console.log('PASS 42 Smart Bug Management read-model boundary assertions');
