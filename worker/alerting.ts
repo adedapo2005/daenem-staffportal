@@ -62,6 +62,28 @@ function safeSeverity(value: unknown): Severity {
   return ['low', 'medium', 'high', 'critical'].includes(String(value)) ? value as Severity : 'medium';
 }
 
+function validPlatformEvent(input: PlatformEventInput) {
+  const boundedText = (value: unknown, max: number, required = false) =>
+    typeof value === 'string' && value.length <= max && (!required || Boolean(value.trim())) && !/[\u0000-\u001f\u007f]/.test(value);
+  if (!input || typeof input !== 'object' ||
+      !/^[a-z][a-z0-9_.-]{0,79}$/.test(input.module) ||
+      !/^[a-z][a-z0-9_.-]{0,119}$/.test(input.eventType) ||
+      !/^[a-z][a-z0-9_.-]{0,79}$/.test(input.sourceType) ||
+      (input.companyId !== undefined && input.companyId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(input.companyId)) ||
+      (input.sourceId !== undefined && input.sourceId !== null && !boundedText(input.sourceId, 160)) ||
+      !boundedText(input.title, 160, true) ||
+      (input.summary !== undefined && input.summary !== null && !boundedText(input.summary, 2000)) ||
+      (input.relatedPath !== undefined && input.relatedPath !== null &&
+        (!boundedText(input.relatedPath, 500) || !input.relatedPath.startsWith('/') ||
+          input.relatedPath.startsWith('//') || input.relatedPath.includes('\\') ||
+          /[?#]/.test(input.relatedPath) || input.relatedPath.split('/').some((part) => part === '..'))) ||
+      (input.severityHint !== undefined && !['low', 'medium', 'high', 'critical'].includes(input.severityHint)) ||
+      (input.occurredAt !== undefined && (!boundedText(input.occurredAt, 40) || !Number.isFinite(Date.parse(input.occurredAt)))) ||
+      (input.payload !== undefined && (!input.payload || typeof input.payload !== 'object' || Array.isArray(input.payload)))) return false;
+  try { return JSON.stringify(input.payload || {}).length <= 16_384; }
+  catch { return false; }
+}
+
 async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown> | null, companyId: string | null) {
   let selectors: AlertRecipientSelector[] = [{ type: 'all_authorized' }];
   let channels: string[] = ['in_app'];
@@ -182,6 +204,9 @@ async function audit(env: AlertingEnv, context: SessionContext, action: string, 
 }
 
 export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEventInput) {
+  // Publishers are internal, but still cross a trust boundary: malformed event
+  // data must fail closed before it can become alert, outbox, or audit content.
+  if (!validPlatformEvent(input)) return null;
   const occurredAt = input.occurredAt || new Date().toISOString();
   const eventId = uid('alert-event');
   const rule = await env.DB.prepare(`
