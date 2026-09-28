@@ -486,13 +486,19 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
    t.internal_status AS internalStatus,t.provider_status AS providerStatus,
    (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id) AS variableCount,
    (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id
+    AND NOT (v.component='body' AND v.component_name='' AND v.source_field='customer_display_name'
+      AND v.source_module='communications' AND v.data_type='text' AND v.formatter='none'
+      AND v.position BETWEEN 1 AND 100 AND v.max_length BETWEEN 1 AND 4096
+      AND v.sensitivity!='prohibited')) AS unsupportedVariableCount,
+   (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id
     AND ((v.required=1 AND (v.fallback_policy!='none' OR v.fallback_value IS NOT NULL))
       OR (v.required=0 AND v.fallback_policy='approved_value' AND (v.fallback_value IS NULL OR length(v.fallback_value)>v.max_length)))) AS invalidVariableCount
   FROM communication_template_mappings m
   JOIN communication_templates t ON t.id=m.template_id AND t.company_id=m.company_id
   WHERE m.id=? AND m.company_id=? LIMIT 1
  `).bind(mappingId,companyId).first<{
-  id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;variableCount:number;invalidVariableCount:number;
+  id:string;useCaseId:string;enabled:number;status:string;internalStatus:string;providerStatus:string;
+  variableCount:number;unsupportedVariableCount:number;invalidVariableCount:number;
  }>();
  if(!row)return json({error:'Template mapping was not found.'},404);
  if(!canManageEvent(context,companyId,row.useCaseId,'view'))return json({error:'Communications management access is not assigned.'},403);
@@ -503,10 +509,9 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
  if(row.providerStatus!=='approved')blockers.push('PROVIDER_TEMPLATE_NOT_APPROVED');
  if(Number(row.variableCount)<1)blockers.push('VARIABLE_MAPPINGS_REQUIRED');
  if(Number(row.invalidVariableCount)>0)blockers.push('VARIABLE_FALLBACK_POLICY_INVALID');
- // Mapping records are governed and auditable, but the runtime source-field
- // resolver is intentionally not attached yet. Keep the readiness projection
- // truthful until approved values can be resolved and validated at send time.
- if(Number(row.variableCount)>0)blockers.push('VARIABLE_RESOLUTION_UNAVAILABLE');
+ // The Inbox resolver currently supports only a company-scoped customer display
+ // name in a text body parameter. Other sources/components remain fail-closed.
+ if(Number(row.unsupportedVariableCount)>0)blockers.push('VARIABLE_RESOLUTION_UNAVAILABLE');
  return json({
   mappingId:row.id,
   useCaseId:row.useCaseId,
