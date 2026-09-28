@@ -152,8 +152,8 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
 }
 
 async function createRecipientDeliveries(env: AlertingEnv, alertId: string, employeeIds: string[], channels: string[], recipientReasons: Map<string, string>) {
-  const alert = await env.DB.prepare('SELECT company_id companyId,title,summary FROM platform_alerts WHERE id=?')
-    .bind(alertId).first<{ companyId: string | null; title: string; summary: string | null }>();
+  const alert = await env.DB.prepare('SELECT company_id companyId,title,summary,severity FROM platform_alerts WHERE id=?')
+    .bind(alertId).first<{ companyId: string | null; title: string; summary: string | null; severity: Severity }>();
   if (!alert) return;
   for (const employeeId of employeeIds) {
     const recipientId = uid('alert-recipient');
@@ -173,13 +173,14 @@ async function createRecipientDeliveries(env: AlertingEnv, alertId: string, empl
         // alert delivery remains canonically screen_popup for the UI to render
         // as an immediate popup. Keep both records in the same atomic batch.
         const outboxChannel = channel === 'screen_popup' ? 'in_app' : channel;
+        const outboxPriority = alert.severity === 'critical' ? 'urgent' : alert.severity === 'high' ? 'high' : alert.severity;
         statements.push(env.DB.prepare(`INSERT OR IGNORE INTO notification_outbox
           (id,employee_id,company_id,source_type,source_id,channel,title,message,priority,status)
           SELECT id,?,?, 'platform_alert',?,?,?,?,?,'queued'
           FROM platform_alert_deliveries
           WHERE alert_id=? AND recipient_id=? AND channel=? AND status='queued' LIMIT 1`)
           .bind(employeeId, alert.companyId, alertId, outboxChannel, alert.title,
-            alert.summary || alert.title, 'normal', alertId, recipient.id, channel));
+            alert.summary || alert.title, outboxPriority, alertId, recipient.id, channel));
       }
       await env.DB.batch(statements);
     }

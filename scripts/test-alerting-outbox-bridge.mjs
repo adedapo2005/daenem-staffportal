@@ -5,7 +5,7 @@ const source = await readFile(new URL('../worker/alerting.ts', import.meta.url),
 const start = source.indexOf('async function createRecipientDeliveries');
 const end = source.indexOf('\nfunction companyScope', start);
 const delivery = source.slice(start, end);
-assert.match(delivery, /SELECT company_id companyId,title,summary FROM platform_alerts WHERE id=\?/);
+assert.match(delivery, /SELECT company_id companyId,title,summary,severity FROM platform_alerts WHERE id=\?/);
 assert.match(delivery, /INSERT OR IGNORE INTO notification_outbox/);
 assert.match(delivery, /await env\.DB\.batch\(statements\)/);
 assert.match(delivery, /const statements = \[env\.DB\.prepare\(`INSERT OR IGNORE INTO platform_alert_deliveries/);
@@ -16,6 +16,7 @@ assert.match(delivery, /if \(channel === 'in_app' \|\| channel === 'web_push' \|
 assert.match(delivery, /const outboxChannel = channel === 'screen_popup' \? 'in_app' : channel/);
 assert.match(delivery, /screen_popup for the UI to render/);
 assert.match(delivery, /WHERE alert_id=\? AND recipient_id=\? AND channel=\? AND status='queued' LIMIT 1/);
-assert.match(delivery, /alert\.summary \|\| alert\.title, 'normal', alertId, recipient\.id, channel\)/);
+assert.match(delivery, /alert\.severity === 'critical' \? 'urgent' : alert\.severity === 'high' \? 'high' : alert\.severity/);
+assert.match(delivery, /alert\.summary \|\| alert\.title, outboxPriority, alertId, recipient\.id, channel\)/);
 assert.doesNotMatch(delivery, /channel === 'email'|channel === 'whatsapp'/);
 console.log('Alert in-app/screen-popup outbox bridge, atomic canonical delivery, and gated external channels: 13/13 PASS');
