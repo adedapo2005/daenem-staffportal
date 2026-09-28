@@ -209,7 +209,92 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
   if (companyIds.length === 0) return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
 
   if (url.pathname === '/api/financial-gateway/reconciliation-imports') {
-    if (request.method !== 'GET') return json({ error: 'Use GET to read reconciliation imports.' }, 405);
+    if (request.method === 'POST') {
+      // Staging is an evidence-only operation. It does not post, match, or
+      // otherwise change a business ledger.
+      if (!owner) return json({ error: 'Owner reconciliation-import access is required.' }, 403);
+      const rawBody = await request.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 1_000_000) return json({ error: 'Reconciliation import is too large.' }, 413);
+      let parsedBody: unknown;
+      try { parsedBody = JSON.parse(rawBody); }
+      catch { return json({ error: 'Invalid reconciliation import.' }, 400); }
+      if (!parsedBody || typeof parsedBody !== 'object' || Array.isArray(parsedBody)) return json({ error: 'Invalid reconciliation import.' }, 400);
+      const body = parsedBody as Record<string, unknown>;
+      const companyId = typeof body.companyId === 'string' ? body.companyId : '';
+      const sourceType = typeof body.sourceType === 'string' ? body.sourceType : '';
+      const provider = body.provider == null ? null : typeof body.provider === 'string' ? body.provider.trim() : '';
+      const sourceReference = body.sourceReference == null ? null : typeof body.sourceReference === 'string' ? body.sourceReference.trim() : '';
+      const fileSha256 = body.fileSha256 == null ? null : typeof body.fileSha256 === 'string' ? body.fileSha256 : '';
+      const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim() : '';
+      const inputRows = body.rows;
+      if (!TARGET_COMPANIES.includes(companyId) || !['provider_api','provider_webhook','csv','excel','manual'].includes(sourceType) ||
+          (provider !== null && (!provider || provider.length > 80)) ||
+          (sourceReference !== null && (!sourceReference || sourceReference.length > 160)) ||
+          (fileSha256 !== null && !/^[a-f0-9]{64}$/.test(fileSha256)) ||
+          !/^[A-Za-z0-9:_-]{1,160}$/.test(idempotencyKey) || !Array.isArray(inputRows) || inputRows.length < 1 || inputRows.length > 100 ||
+          inputRows.some((row) => !row || typeof row !== 'object' || Array.isArray(row))) {
+        return json({ error: 'Business, source, idempotency key and 1 to 100 normalized rows are required.' }, 400);
+      }
+      if (!companyIds.includes(companyId)) return json({ error: 'Financial reconciliation access is not assigned.' }, 403);
+      const rows = (inputRows as Record<string, unknown>[]).map((row) => ({
+        providerReference: row.providerReference == null ? null : typeof row.providerReference === 'string' ? row.providerReference.trim() : '',
+        occurredAt: typeof row.occurredAt === 'string' ? row.occurredAt : '',
+        direction: row.direction,
+        amountMinor: row.amountMinor,
+        currency: row.currency,
+        description: row.description == null ? null : typeof row.description === 'string' ? row.description.trim() : '',
+      }));
+      const timestampIsValid = (value: string) => Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+      if (rows.some((row) => (row.providerReference !== null && (!row.providerReference || row.providerReference.length > 200)) ||
+          !timestampIsValid(row.occurredAt) || !['credit','debit'].includes(String(row.direction)) ||
+          typeof row.amountMinor !== 'number' || !Number.isSafeInteger(row.amountMinor) || row.amountMinor < 0 ||
+          typeof row.currency !== 'string' || !/^[A-Z]{3}$/.test(row.currency) ||
+          (row.description !== null && row.description.length > 1000))) {
+        return json({ error: 'Each normalized row needs a valid timestamp, direction, amount, currency and bounded reference or description.' }, 400);
+      }
+      const existing = await env.DB.prepare(`SELECT id,row_count AS rowCount,provider,source_reference AS sourceReference,file_sha256 AS fileSha256
+        FROM financial_reconciliation_imports
+        WHERE company_id=? AND source_type=? AND idempotency_key=? LIMIT 1`)
+        .bind(companyId, sourceType, idempotencyKey).first<{ id: string; rowCount: number; provider: string | null; sourceReference: string | null; fileSha256: string | null }>();
+      if (existing) {
+        const stored = await env.DB.prepare(`SELECT provider_reference AS providerReference,occurred_at AS occurredAt,
+          direction,amount_minor AS amountMinor,currency,description FROM financial_reconciliation_import_rows
+          WHERE import_id=? ORDER BY row_number`).bind(existing.id).all<Record<string, unknown>>();
+        const same = Number(existing.rowCount) === rows.length && existing.provider === (provider || null) &&
+          existing.sourceReference === (sourceReference || null) && existing.fileSha256 === fileSha256 &&
+          JSON.stringify(stored.results || []) === JSON.stringify(rows);
+        return same
+          ? json({ ok: true, id: existing.id, companyId, rowCount: rows.length, idempotentReplay: true, providerCallMade: false })
+          : json({ error: 'The idempotency key is already assigned to different reconciliation evidence.' }, 409);
+      }
+      const importId = `fri-${crypto.randomUUID()}`;
+      const statements = [
+        env.DB.prepare(`INSERT INTO financial_reconciliation_imports(
+          id,company_id,source_type,provider,source_reference,file_sha256,row_count,idempotency_key,created_by
+        ) VALUES(?,?,?,?,?,?,?,?,?)`).bind(importId, companyId, sourceType, provider || null,
+          sourceReference || null, fileSha256, rows.length, idempotencyKey, context.employee.id),
+        ...rows.map((row, index) => env.DB.prepare(`INSERT INTO financial_reconciliation_import_rows(
+          id,import_id,row_number,provider_reference,occurred_at,direction,amount_minor,currency,description
+        ) VALUES(?,?,?,?,?,?,?,?,?)`).bind(`frir-${crypto.randomUUID()}`, importId, index + 1,
+          row.providerReference || null, row.occurredAt, row.direction, row.amountMinor, row.currency,
+          row.description || null)),
+        env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+          VALUES(?,?,?,'financial_gateway','stage_reconciliation_import','financial_reconciliation_import',?,?,'web')`)
+          .bind(`audit-${crypto.randomUUID()}`, context.employee.id, companyId, importId,
+            JSON.stringify({ sourceType, provider, sourceReference, rowCount: rows.length, fileSha256 })),
+      ];
+      try { await env.DB.batch(statements); }
+      catch {
+        const replay = await env.DB.prepare(`SELECT id FROM financial_reconciliation_imports
+          WHERE company_id=? AND source_type=? AND idempotency_key=? LIMIT 1`)
+          .bind(companyId, sourceType, idempotencyKey).first<{ id: string }>();
+        return replay
+          ? json({ error: 'The idempotency key was concurrently used; retry to verify the staged evidence.' }, 409)
+          : json({ error: 'Reconciliation evidence could not be staged.' }, 409);
+      }
+      return json({ ok: true, id: importId, companyId, rowCount: rows.length, idempotentReplay: false, providerCallMade: false }, 201);
+    }
+    if (request.method !== 'GET') return json({ error: 'Use GET or POST for reconciliation imports.' }, 405);
     const requestedCompanyId = url.searchParams.get('companyId');
     if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
       return json({ error: 'Financial reconciliation access is not assigned.' }, 403);
