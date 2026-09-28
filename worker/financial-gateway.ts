@@ -228,6 +228,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       try { body = await request.json() as Record<string, unknown>; }
       catch { return json({ error: 'Invalid provider budget.' }, 400); }
       const companyId = typeof body.companyId === 'string' ? body.companyId : '';
+      const groupBudget = companyId === 'group';
       const providerScope = typeof body.providerScope === 'string' ? body.providerScope.trim() : '';
       const moduleScope = typeof body.moduleScope === 'string' ? body.moduleScope.trim() : '';
       const period = body.period;
@@ -236,7 +237,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       const alertThresholdPercent = body.alertThresholdPercent;
       const exhaustedAction = body.exhaustedAction;
       const active = body.active;
-      if (!TARGET_COMPANIES.includes(companyId) || !providerScope || providerScope.length > 80 ||
+      if ((!groupBudget && !TARGET_COMPANIES.includes(companyId)) || !providerScope || providerScope.length > 80 ||
           (providerScope !== '*' && !/^[A-Za-z0-9_.:-]+$/.test(providerScope)) ||
           !moduleScope || moduleScope.length > 80 ||
           (moduleScope !== '*' && !/^[a-z][a-z0-9_.:-]*$/.test(moduleScope)) ||
@@ -249,6 +250,27 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       }
       const id = `fpb-${crypto.randomUUID()}`;
       try {
+        if (groupBudget) {
+          await env.DB.batch([
+            env.DB.prepare(`INSERT INTO financial_provider_group_budgets(
+              id,provider_scope,module_scope,period,budget_minor,currency,
+              alert_threshold_percent,exhausted_action,active,created_by,updated_by
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(provider_scope,module_scope,period,currency) DO UPDATE SET
+              budget_minor=excluded.budget_minor,alert_threshold_percent=excluded.alert_threshold_percent,
+              exhausted_action=excluded.exhausted_action,active=excluded.active,
+              updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
+              .bind(id, providerScope, moduleScope, period, budgetMinor, currency,
+                alertThresholdPercent, exhaustedAction, active ? 1 : 0, context.employee.id, context.employee.id),
+            env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+              SELECT ?,?,NULL,'financial_gateway','upsert_provider_group_budget','financial_provider_group_budget',id,?,'web'
+              FROM financial_provider_group_budgets WHERE provider_scope=? AND module_scope=? AND period=? AND currency=?`)
+              .bind(`audit-${crypto.randomUUID()}`, context.employee.id,
+                JSON.stringify({ scope: 'group', providerScope, moduleScope, period, budgetMinor, currency, alertThresholdPercent, exhaustedAction, active }),
+                providerScope, moduleScope, period, currency),
+          ]);
+          return json({ ok: true, companyId: 'group', providerScope, moduleScope, period, budgetMinor, currency, active, providerCallMade: false });
+        }
         await env.DB.batch([
           env.DB.prepare(`INSERT INTO financial_provider_budgets(
             id,company_id,provider_scope,module_scope,period,budget_minor,currency,
@@ -310,6 +332,38 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
           actualSpentMinor * 100 >= budgetMinor * alertThresholdPercent,
       };
     });
+    if (owner) {
+      const groupRows = await env.DB.prepare(`
+        SELECT b.id,'group' AS companyId,b.provider_scope AS providerScope,
+          b.module_scope AS moduleScope,b.period,b.budget_minor AS budgetMinor,b.currency,
+          b.alert_threshold_percent AS alertThresholdPercent,b.exhausted_action AS exhaustedAction,
+          b.active,b.created_at AS createdAt,b.updated_at AS updatedAt,
+          COALESCE((SELECT SUM(e.actual_cost_minor)
+            FROM financial_provider_cost_events e
+            WHERE e.company_id IN (${TARGET_COMPANIES.map(() => '?').join(',')})
+              AND e.cost_currency=b.currency AND e.actual_cost_minor IS NOT NULL
+              AND date(e.occurred_at) >= CASE b.period
+                WHEN 'daily' THEN date('now','start of day')
+                ELSE date('now','start of month') END
+              AND (b.provider_scope='*' OR e.provider=b.provider_scope)
+              AND (b.module_scope='*' OR e.requesting_module=b.module_scope)),0) AS actualSpentMinor
+        FROM financial_provider_group_budgets b
+        ORDER BY b.period,b.provider_scope,b.module_scope,b.currency,b.id
+        LIMIT 100
+      `).bind(...TARGET_COMPANIES).all<Record<string, unknown>>();
+      budgets.push(...(groupRows.results || []).map((budget) => {
+        const actualSpentMinor = Number(budget.actualSpentMinor) || 0;
+        const budgetMinor = Number(budget.budgetMinor) || 0;
+        const alertThresholdPercent = Number(budget.alertThresholdPercent) || 0;
+        return {
+          ...budget,
+          actualSpentMinor,
+          utilizationPercent: budgetMinor > 0 ? Math.floor(actualSpentMinor * 100 / budgetMinor) : null,
+          thresholdReached: Boolean(budget.active) && budgetMinor > 0 &&
+            actualSpentMinor * 100 >= budgetMinor * alertThresholdPercent,
+        };
+      }));
+    }
     return json({ budgets, visibleCompanyIds: scopedCompanyIds });
   }
 
