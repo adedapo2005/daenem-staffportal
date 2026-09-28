@@ -82,7 +82,7 @@ async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:Prepar
   `).bind(String(row.templateId||''),row.companyId,String(row.templateName||''),String(row.templateLanguage||'')).first<{id:string}>();
   if(!mapping)throw new Error('WHATSAPP_TEMPLATE_MAPPING_NOT_READY');
   const result=await env.DB.prepare(`
-    SELECT component,component_name AS componentName,position,source_field AS sourceField,
+    SELECT component,component_name AS componentName,position,variable_name AS variableName,source_field AS sourceField,
       source_module AS sourceModule,data_type AS dataType,required,max_length AS maxLength,
       formatter,fallback_policy AS fallbackPolicy,fallback_value AS fallbackValue,sensitivity
     FROM communication_template_variable_mappings WHERE mapping_id=?
@@ -96,6 +96,7 @@ async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:Prepar
   if(variables.some(v=>!['header','body'].includes(String(v.component))||v.componentName||v.sourceField!=='customer_display_name'||
       v.sourceModule!=='communications'||v.dataType!=='text'||v.formatter!=='none'||
       !Number.isInteger(Number(v.position))||Number(v.position)<1||Number(v.position)>100||
+      (v.variableName!==''&&!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(String(v.variableName)))||
       !Number.isInteger(Number(v.maxLength))||Number(v.maxLength)<1||Number(v.maxLength)>4096||
       v.sensitivity==='prohibited'))throw new Error('WHATSAPP_TEMPLATE_VARIABLE_SOURCE_UNAVAILABLE');
   const conversation=await env.DB.prepare(`
@@ -110,7 +111,7 @@ async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:Prepar
     if(!resolved)throw new Error(Number(variable.required)===1?'WHATSAPP_TEMPLATE_REQUIRED_VALUE_MISSING':'WHATSAPP_TEMPLATE_FALLBACK_UNAVAILABLE');
     if(resolved.length>Number(variable.maxLength))throw new Error('WHATSAPP_TEMPLATE_VALUE_TOO_LONG');
     const parameters=parametersByComponent.get(String(variable.component))||[];
-    parameters.push({type:'text',text:resolved});
+    parameters.push({type:'text',text:resolved,...(variable.variableName?{parameter_name:String(variable.variableName)}:{})});
     parametersByComponent.set(String(variable.component),parameters);
   }
   return (['header','body'] as const).flatMap(component=>{
