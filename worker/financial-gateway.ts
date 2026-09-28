@@ -27,7 +27,14 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
   if (!verified || (pricing.vatTreatment !== 'included' && pricing.vatTreatment !== 'not_applicable')) {
     return { decision: 'verification_required' as const, reason: 'pricing_or_vat_unverified', currency: pricing.currency };
   }
-  if (pricing.pricingModel === 'FREE') return { decision: 'free' as const, estimatedCostMinor: 0, currency: pricing.currency };
+  if (pricing.pricingModel === 'FREE') {
+    const hasConflictingFeeTerms = pricing.fixedAmountMinor !== null || pricing.percentageBps !== null ||
+      pricing.minimumAmountMinor !== null || pricing.maximumAmountMinor !== null || pricing.capAmountMinor !== null;
+    if (hasConflictingFeeTerms) {
+      return { decision: 'verification_required' as const, reason: 'free_pricing_has_fee_terms', currency: pricing.currency };
+    }
+    return { decision: 'free' as const, estimatedCostMinor: 0, currency: pricing.currency };
+  }
   if (!units) return { decision: 'verification_required' as const, reason: 'valid_quantity_required', currency: pricing.currency };
   if (['PERCENTAGE', 'PERCENTAGE_FIXED'].includes(pricing.pricingModel) && moneyAmount === null) {
     return { decision: 'verification_required' as const, reason: 'valid_transaction_amount_required', currency: pricing.currency };
@@ -94,6 +101,8 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
   const pricingTermsComplete = pricingModel === 'FREE' ||
     (hasFixedRate && fixed != null) ||
     (hasPercentageRate && pct != null && (pricingModel !== 'PERCENTAGE_FIXED' || fixed != null));
+  const freePricingHasFeeTerms = pricingModel === 'FREE' &&
+    [fixed, pct, minimum, maximum, cap].some((value) => value !== null && value !== undefined);
   if (!id || !/^[A-Za-z0-9:_-]{1,160}$/.test(id) || !provider || provider.length > 80 || !service || service.length > 120 ||
       !PRICING_MODELS.includes(pricingModel) || !/^[A-Z]{3}$/.test(currency) ||
       !['included', 'excluded', 'not_applicable', 'unknown'].includes(vatTreatment) ||
@@ -101,6 +110,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
       !Array.isArray(companies) || companies.length < 1 || companies.length > TARGET_COMPANIES.length ||
       companies.some((company) => typeof company !== 'string' || !PRICING_COMPANIES.has(company)) || new Set(companies).size !== companies.length ||
       !integerOrNull(fixed) || !integerOrNull(minimum) || !integerOrNull(maximum) || !integerOrNull(cap) ||
+      freePricingHasFeeTerms ||
       pct !== null && pct !== undefined && (typeof pct !== 'number' || !Number.isSafeInteger(pct) || pct < 0 || pct > 10_000) ||
       minimum != null && maximum != null && Number(maximum) < Number(minimum) ||
       !dateOrNull(effectiveAt) || !dateOrNull(lastVerifiedAt) ||

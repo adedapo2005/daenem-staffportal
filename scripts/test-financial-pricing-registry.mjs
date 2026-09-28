@@ -31,6 +31,7 @@ assert.match(route, /pricing\.status === 'verified'/);
 assert.match(route, /verifiedAt >= effectiveAt/);
 assert.match(route, /pricing_or_vat_unverified/);
 assert.match(route, /pricingModel === 'FREE'/);
+assert.match(route, /freePricingHasFeeTerms[\s\S]*?freePricingHasFeeTerms \|\|/);
 assert.match(route, /pricing_model_requires_explicit_terms/);
 assert.match(route, /\/api\/financial-gateway\/estimate/);
 assert.match(route, /b\.company_id=\? AND b\.available=1/);
@@ -45,8 +46,11 @@ const verified = { pricingModel: 'PERCENTAGE_FIXED', fixedAmountMinor: 25, perce
   currency: 'NGN', effectiveAt: '2026-01-01T00:00:00.000Z', lastVerifiedAt: '2026-09-01T00:00:00.000Z', status: 'verified' };
 assert.deepEqual(estimateProviderCost(verified, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'estimated', estimatedCostMinor: 176, currency: 'NGN' });
-assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FREE', vatTreatment: 'not_applicable' }, {}, Date.parse('2026-09-27T00:00:00Z')),
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FREE', fixedAmountMinor: null, percentageBps: null,
+  minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null, vatTreatment: 'not_applicable' }, {}, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'free', estimatedCostMinor: 0, currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FREE', vatTreatment: 'not_applicable' }, {}, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'verification_required', reason: 'free_pricing_has_fee_terms', currency: 'NGN' });
 assert.equal(estimateProviderCost({ ...verified, pricingModel: 'TIERED' }, {}, Date.parse('2026-09-27T00:00:00Z')).decision, 'verification_required');
 assert.equal(estimateProviderCost({ ...verified, lastVerifiedAt: '2025-12-01T00:00:00.000Z' }, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')).decision, 'verification_required');
-console.log('Financial pricing registry and estimate boundary: 25 assertions PASS');
+console.log('Financial pricing registry and estimate boundary: PASS');
