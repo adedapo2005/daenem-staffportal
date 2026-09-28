@@ -34,12 +34,13 @@ assert.match(endpoint, /e\.company_id=b\.company_id AND e\.cost_currency=b\.curr
 assert.match(endpoint, /WHEN 'daily' THEN date\('now','start of day'\)\s+ELSE date\('now','start of month'\)/);
 assert.match(endpoint, /b\.provider_scope='\*' OR e\.provider=b\.provider_scope/);
 assert.match(endpoint, /b\.module_scope='\*' OR e\.requesting_module=b\.module_scope/);
-assert.match(endpoint, /const usage = budgetUsage\(actualSpentMinor, budgetMinor, alertThresholdPercent, Boolean\(budget\.active\)\)/);
+assert.match(endpoint, /const actualSpentMinor = safeActualSpend\(budget\.actualSpentMinor\)/);
+assert.match(endpoint, /const usage = budgetUsage\(actualSpentMinor \?\? Number\.MAX_SAFE_INTEGER \+ 1, budgetMinor, alertThresholdPercent, Boolean\(budget\.active\)\)/);
 assert.match(source, /spent \* 100n >= budget \* BigInt\(alertThresholdPercent\)/);
 assert.match(source, /utilization = spent \* 100n \/ budget/);
 const helper = source.slice(source.indexOf('function budgetUsage'), source.indexOf('\nexport function estimateProviderCost'));
-const javascript = ts.transpileModule(`${helper}\nexport { budgetUsage };`, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const { budgetUsage } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
+const javascript = ts.transpileModule(`${helper}\nexport { budgetUsage, safeActualSpend };`, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const { budgetUsage, safeActualSpend } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
 assert.deepEqual(budgetUsage(90_071_992_547_409, 90_071_992_547_410, 100, true),
   { utilizationPercent: 99, thresholdReached: false });
 assert.deepEqual(budgetUsage(90_071_992_547_410, 90_071_992_547_410, 100, true),
@@ -48,4 +49,13 @@ assert.deepEqual(budgetUsage(Number.MAX_SAFE_INTEGER, 1, 80, true),
   { utilizationPercent: Number.MAX_SAFE_INTEGER, thresholdReached: true });
 assert.deepEqual(budgetUsage(Number.MAX_SAFE_INTEGER + 1, 100, 80, true),
   { utilizationPercent: null, thresholdReached: true });
+assert.equal(safeActualSpend(0), 0);
+assert.equal(safeActualSpend(90_071_992_547_409), 90_071_992_547_409);
+assert.equal(safeActualSpend(Number.MAX_SAFE_INTEGER + 1), null);
+assert.equal(safeActualSpend(-1), null);
+assert.deepEqual(budgetUsage(safeActualSpend(Number.MAX_SAFE_INTEGER + 1) ?? Number.MAX_SAFE_INTEGER + 1, 100, 80, true),
+  { utilizationPercent: null, thresholdReached: true });
+assert.match(endpoint, /actualSpentMinor = safeActualSpend\(budget\.actualSpentMinor\)/);
+assert.equal((endpoint.match(/safeActualSpend\(budget\.actualSpentMinor\)/g) || []).length, 2,
+  'business and Group budgets preserve unsafe spend as unknown');
 console.log('Financial provider budget read/write boundary: PASS');

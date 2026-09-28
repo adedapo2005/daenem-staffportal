@@ -31,6 +31,10 @@ function budgetUsage(actualSpentMinor: number, budgetMinor: number, alertThresho
   };
 }
 
+function safeActualSpend(value: unknown): number | null {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
 export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor?: unknown; quantity?: unknown }, now = Date.now()) {
   const amount = input.amountMinor;
   const quantity = input.quantity === undefined ? 1 : input.quantity;
@@ -519,10 +523,10 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       LIMIT 500
     `).bind(...scopedCompanyIds).all<Record<string, unknown>>();
     const budgets = (rows.results || []).map((budget) => {
-      const actualSpentMinor = Number(budget.actualSpentMinor) || 0;
+      const actualSpentMinor = safeActualSpend(budget.actualSpentMinor);
       const budgetMinor = Number(budget.budgetMinor) || 0;
       const alertThresholdPercent = Number(budget.alertThresholdPercent) || 0;
-      const usage = budgetUsage(actualSpentMinor, budgetMinor, alertThresholdPercent, Boolean(budget.active));
+      const usage = budgetUsage(actualSpentMinor ?? Number.MAX_SAFE_INTEGER + 1, budgetMinor, alertThresholdPercent, Boolean(budget.active));
       return {
         ...budget,
         actualSpentMinor,
@@ -549,10 +553,10 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         LIMIT 100
       `).bind(...TARGET_COMPANIES).all<Record<string, unknown>>();
       budgets.push(...(groupRows.results || []).map((budget) => {
-        const actualSpentMinor = Number(budget.actualSpentMinor) || 0;
+        const actualSpentMinor = safeActualSpend(budget.actualSpentMinor);
         const budgetMinor = Number(budget.budgetMinor) || 0;
         const alertThresholdPercent = Number(budget.alertThresholdPercent) || 0;
-        const usage = budgetUsage(actualSpentMinor, budgetMinor, alertThresholdPercent, Boolean(budget.active));
+        const usage = budgetUsage(actualSpentMinor ?? Number.MAX_SAFE_INTEGER + 1, budgetMinor, alertThresholdPercent, Boolean(budget.active));
         return {
           ...budget,
           actualSpentMinor,

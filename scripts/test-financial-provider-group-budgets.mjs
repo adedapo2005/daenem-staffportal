@@ -19,6 +19,7 @@ assert.match(endpoint, /if \(owner\) \{[\s\S]*?FROM financial_provider_group_bud
 assert.match(endpoint, /e\.company_id IN \(\$\{TARGET_COMPANIES\.map\(\(\) => '\?'\)\.join\(','\)\}\)/);
 assert.match(endpoint, /\.bind\(\.\.\.TARGET_COMPANIES\)/);
 assert.match(endpoint, /companyId: 'group'/);
-assert.match(endpoint, /thresholdReached: Boolean\(budget\.active\)/);
+assert.match(endpoint, /actualSpentMinor = safeActualSpend\(budget\.actualSpentMinor\)/);
+assert.match(endpoint, /budgetUsage\(actualSpentMinor \?\? Number\.MAX_SAFE_INTEGER \+ 1, budgetMinor, alertThresholdPercent, Boolean\(budget\.active\)\)/);
 
 console.log('Financial provider group budget boundary: PASS');
