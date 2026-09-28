@@ -15,7 +15,7 @@ assert.match(endpoint, /row\.internalStatus!=='approved'/);
 assert.match(endpoint, /row\.providerStatus!=='approved'/);
 assert.match(endpoint, /variableCount:number/);
 assert.match(endpoint, /unsupportedVariableCount:number/);
-assert.match(endpoint, /component='body' AND v\.component_name='' AND v\.source_field='customer_display_name'/);
+assert.match(endpoint, /component IN \('header','body'\) AND v\.component_name='' AND v\.source_field='customer_display_name'/);
 assert.match(endpoint, /v\.source_module='communications' AND v\.data_type='text' AND v\.formatter='none'/);
 assert.match(endpoint, /unsupportedVariableCount\)>0\)blockers\.push\('VARIABLE_RESOLUTION_UNAVAILABLE'\)/);
 assert.match(endpoint, /VARIABLE_MAPPINGS_REQUIRED/);

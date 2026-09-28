@@ -486,7 +486,7 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
    t.internal_status AS internalStatus,t.provider_status AS providerStatus,
    (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id) AS variableCount,
    (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id
-    AND NOT (v.component='body' AND v.component_name='' AND v.source_field='customer_display_name'
+    AND NOT (v.component IN ('header','body') AND v.component_name='' AND v.source_field='customer_display_name'
       AND v.source_module='communications' AND v.data_type='text' AND v.formatter='none'
       AND v.position BETWEEN 1 AND 100 AND v.max_length BETWEEN 1 AND 4096
       AND v.sensitivity!='prohibited')) AS unsupportedVariableCount,
@@ -674,7 +674,7 @@ async function setTemplateMappingEnabled(request:Request,env:GovernanceEnv,conte
   SELECT m.id,m.use_case_id AS useCaseId,m.enabled,m.status,
    t.internal_status AS internalStatus,t.provider_status AS providerStatus,t.channel,
    (SELECT COUNT(*) FROM communication_template_variable_mappings v WHERE v.mapping_id=m.id
-    AND NOT (v.component='body' AND v.component_name='' AND v.source_field='customer_display_name'
+    AND NOT (v.component IN ('header','body') AND v.component_name='' AND v.source_field='customer_display_name'
       AND v.source_module='communications' AND v.data_type='text' AND v.formatter='none'
       AND v.position BETWEEN 1 AND 100 AND v.max_length BETWEEN 1 AND 4096
       AND v.sensitivity!='prohibited')) AS unsupportedVariableCount,
