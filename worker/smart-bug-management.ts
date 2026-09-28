@@ -20,15 +20,37 @@ function scope(context: SessionContext) {
 export async function routeSmartBugManagement(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
   const incidentDetail = url.pathname.match(/^\/api\/admin\/smart-bugs\/incidents\/([A-Za-z0-9:_-]{1,160})$/);
-  if (request.method !== 'GET' || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail)) return null;
+  const storageMirrorIntegrity = url.pathname === '/api/admin/smart-bugs/integrity/storage-mirror';
+  if (request.method !== 'GET' || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail && !storageMirrorIntegrity)) return null;
   if (!groupRole(context)) return json({ error: 'Smart Bug Management access is not assigned.' }, 403);
 
   const { isOwner, companyIds } = scope(context);
-  if (!isOwner && companyIds.length === 0) return json(url.pathname.endsWith('/overview')
-    ? { incidents: 0, active: 0, bySeverity: { P0: 0, P1: 0, P2: 0, P3: 0 }, byStatus: {}, mode: 'observe_only', autoRemediationEnabled: false }
-    : { incidents: [], limit: 50 });
+  if (!isOwner && companyIds.length === 0) return json(storageMirrorIntegrity
+    ? { detector: 'storage_mirror_success_evidence', readOnly: true, findingCount: 0, state: 'clear' }
+    : url.pathname.endsWith('/overview')
+      ? { incidents: 0, active: 0, bySeverity: { P0: 0, P1: 0, P2: 0, P3: 0 }, byStatus: {}, mode: 'observe_only', autoRemediationEnabled: false }
+      : { incidents: [], limit: 50 });
   const scopeSql = isOwner ? '' : ` AND company_id IN (${companyIds.map(() => '?').join(',')})`;
   const binds = isOwner ? [] : companyIds;
+
+  if (storageMirrorIntegrity) {
+    // A row marked mirrored without provider identity or a successful sync time
+    // contradicts the durable mirror contract. Keep this sentinel read-only and
+    // aggregate-only; file names, keys and provider identifiers stay private.
+    const finding = await env.DB.prepare(`
+      SELECT COUNT(*) AS count
+      FROM storage_mirror_jobs
+      WHERE provider='microsoft_onedrive' AND status='mirrored'
+        AND (provider_item_id IS NULL OR trim(provider_item_id)='' OR synced_at IS NULL)
+        ${scopeSql}
+    `).bind(...binds).first<{ count: number }>();
+    return json({
+      detector: 'storage_mirror_success_evidence',
+      readOnly: true,
+      findingCount: Number(finding?.count || 0),
+      state: Number(finding?.count || 0) > 0 ? 'finding' : 'clear',
+    });
+  }
 
   if (incidentDetail) {
     const incident = await env.DB.prepare(`
