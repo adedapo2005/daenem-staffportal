@@ -417,13 +417,16 @@ export async function dispatchCommunicationOutboxItem(
     `).bind(result.providerMessageId,outboxId,leaseOwner).run();
     return {status:'accepted',providerMessageId:result.providerMessageId};
   }
-  if(result.ambiguous){
+  // An accepted response without a provider message ID cannot be safely
+  // retried: the provider may have created the message even though its
+  // reconciliation reference was omitted.
+  if(result.ambiguous||result.accepted){
     await env.DB.prepare(`
       UPDATE communication_outbox SET status='failed',ambiguity_state='provider_unknown',
         last_error_code=?,next_attempt_at=NULL,lease_owner=NULL,lease_expires_at=NULL,
         last_provider_response_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
       WHERE id=? AND lease_owner=?
-    `).bind(result.errorCode||'PROVIDER_UNKNOWN',outboxId,leaseOwner).run();
+    `).bind(result.errorCode||(result.accepted?'PROVIDER_ACCEPTED_ID_MISSING':'PROVIDER_UNKNOWN'),outboxId,leaseOwner).run();
     return {status:'failed',ambiguous:true,awaitingReconciliation:true};
   }
   const delay=Math.min(60,Math.max(1,2**Math.min(6,Number(outbox.attempts||0))));

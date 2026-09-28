@@ -407,3 +407,13 @@ test('Communications dispatch discovery is bounded, due-only and ambiguity-safe'
   assert.match(source,/ORDER BY priority DESC,created_at ASC[\s\S]*LIMIT \?/);
   assert.doesNotMatch(source,/fetch\(|graph\.facebook\.com/);
 });
+
+test('Accepted provider responses without a message ID are held for reconciliation',async()=>{
+  const source=await readFile(path.join(root,'worker','communications-dispatch.ts'),'utf8');
+  assert.match(source,/if\(result\.accepted&&result\.providerMessageId\)/);
+  assert.match(source,/if\(result\.ambiguous\|\|result\.accepted\)/);
+  const ambiguous=source.slice(source.indexOf('if(result.ambiguous||result.accepted)'),source.indexOf('const delay=',source.indexOf('if(result.ambiguous||result.accepted)')));
+  assert.match(ambiguous,/ambiguity_state='provider_unknown'/);
+  assert.match(ambiguous,/next_attempt_at=NULL/);
+  assert.match(ambiguous,/result\.accepted\?'PROVIDER_ACCEPTED_ID_MISSING':'PROVIDER_UNKNOWN'/);
+});
