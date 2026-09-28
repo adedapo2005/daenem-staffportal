@@ -90,10 +90,10 @@ async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:Prepar
   `).bind(mapping.id).all<Record<string,unknown>>();
   const variables=result.results||[];
   if(!variables.length)throw new Error('WHATSAPP_TEMPLATE_VARIABLES_REQUIRED');
-  // This bounded Inbox slice resolves only the canonical customer display name.
-  // Other mapped sources/components remain fail-closed until their source and
-  // provider format contracts are implemented explicitly.
-  if(variables.some(v=>v.component!=='body'||v.componentName||v.sourceField!=='customer_display_name'||
+  // This bounded Inbox slice resolves only the canonical customer display name
+  // into Meta text HEADER and BODY parameters. Other sources/components remain
+  // fail-closed until their source and provider format contracts are explicit.
+  if(variables.some(v=>!['header','body'].includes(String(v.component))||v.componentName||v.sourceField!=='customer_display_name'||
       v.sourceModule!=='communications'||v.dataType!=='text'||v.formatter!=='none'||
       !Number.isInteger(Number(v.position))||Number(v.position)<1||Number(v.position)>100||
       !Number.isInteger(Number(v.maxLength))||Number(v.maxLength)<1||Number(v.maxLength)>4096||
@@ -102,15 +102,21 @@ async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:Prepar
     SELECT customer_display_name AS customerDisplayName FROM communication_inbox_conversations
     WHERE id=? AND company_id=? LIMIT 1
   `).bind(row.conversationId,row.companyId).first<{customerDisplayName:string|null}>();
-  const components=[...variables].sort((a,b)=>Number(a.position)-Number(b.position)).map(variable=>{
+  const parametersByComponent = new Map<string,Record<string,unknown>[]>();
+  for(const variable of variables){
     const value=typeof conversation?.customerDisplayName==='string'?conversation.customerDisplayName.trim():'';
     const approvedFallback=variable.fallbackPolicy==='approved_value'&&typeof variable.fallbackValue==='string'?variable.fallbackValue:'';
     const resolved=value||approvedFallback;
     if(!resolved)throw new Error(Number(variable.required)===1?'WHATSAPP_TEMPLATE_REQUIRED_VALUE_MISSING':'WHATSAPP_TEMPLATE_FALLBACK_UNAVAILABLE');
     if(resolved.length>Number(variable.maxLength))throw new Error('WHATSAPP_TEMPLATE_VALUE_TOO_LONG');
-    return {type:'text',text:resolved};
+    const parameters=parametersByComponent.get(String(variable.component))||[];
+    parameters.push({type:'text',text:resolved});
+    parametersByComponent.set(String(variable.component),parameters);
+  }
+  return (['header','body'] as const).flatMap(component=>{
+    const parameters=parametersByComponent.get(component);
+    return parameters?.length?[{type:component,parameters}]:[];
   });
-  return [{type:'body',parameters:components}];
 }
 
 async function ensureIdempotencyKey(
