@@ -12,6 +12,7 @@ assert.match(route, /FROM financial_provider_owner_actions/);
 assert.match(route, /financial_provider_owner_action/);
 assert.match(route, /providerCallMade: false/);
 assert.match(route, /company_id=excluded\.company_id AND provider=excluded\.provider AND action=excluded\.action/);
+assert.match(route, /WHERE changes\(\)=1 AND EXISTS\(SELECT 1 FROM financial_provider_owner_actions/);
 assert.doesNotMatch(route, /fetch\(|access_token|refresh_token|client_secret/i);
 assert.match(entry, /routeFinancialProviderOwnerActions\(request,env,context\)/);
 console.log('Financial provider Owner Action Queue boundaries: PASS');
