@@ -24,6 +24,16 @@ assert.match(source, /mode: control\?\.observeOnly === 0 && control\?\.autoRemed
 assert.match(source, /mode: 'observe_only', autoRemediationEnabled: false/);
 assert.match(source, /sanitized_summary,/);
 assert.match(source, /ORDER BY CASE severity WHEN 'P0' THEN 0 WHEN 'P1' THEN 1/);
+const detailStart = source.indexOf('if (incidentDetail) {');
+const detailEnd = source.indexOf("if (url.pathname.endsWith('/overview'))", detailStart);
+const detail = source.slice(detailStart, detailEnd);
+assert.ok(detailStart >= 0 && detailEnd > detailStart, 'incident detail read model exists');
+assert.match(source, /const incidentDetail = url\.pathname\.match\(\/\^\\\/api\\\/admin\\\/smart-bugs\\\/incidents\\\/\(\[A-Za-z0-9:_-\]\{1,160\}\)\$\/\)/);
+assert.match(detail, /WHERE id=\?\$\{scopeSql\}/);
+assert.match(detail, /if \(!incident\) return json\(\{ error: 'Incident not found\.' \}, 404\)/);
+assert.match(detail, /safe_summary AS summary/);
+assert.match(detail, /ORDER BY created_at ASC,id ASC LIMIT 100/);
+assert.doesNotMatch(detail, /affected_record_refs_json|reference_json|correlation_id|input_refs_json|provider_item_id|dependencies_json|validation_results_json|root_cause_hypothesis/);
 assert.match(runtime, /import \{ routeSmartBugManagement \} from '\.\/smart-bug-management'/);
 assert.match(runtime, /routeSmartBugManagement\(request, env, context\)/);
-console.log('PASS 23 Smart Bug Management read-model boundary assertions');
+console.log('PASS 31 Smart Bug Management read-model boundary assertions');

@@ -19,7 +19,8 @@ function scope(context: SessionContext) {
 
 export async function routeSmartBugManagement(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (request.method !== 'GET' || !['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname)) return null;
+  const incidentDetail = url.pathname.match(/^\/api\/admin\/smart-bugs\/incidents\/([A-Za-z0-9:_-]{1,160})$/);
+  if (request.method !== 'GET' || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail)) return null;
   if (!groupRole(context)) return json({ error: 'Smart Bug Management access is not assigned.' }, 403);
 
   const { isOwner, companyIds } = scope(context);
@@ -28,6 +29,25 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
     : { incidents: [], limit: 50 });
   const scopeSql = isOwner ? '' : ` AND company_id IN (${companyIds.map(() => '?').join(',')})`;
   const binds = isOwner ? [] : companyIds;
+
+  if (incidentDetail) {
+    const incident = await env.DB.prepare(`
+      SELECT id,fingerprint,severity,status,title,sanitized_summary AS sanitizedSummary,
+        company_id AS companyId,module,service,first_seen_at AS firstSeenAt,last_seen_at AS lastSeenAt,
+        occurrence_count AS occurrenceCount,confidence,runbook_id AS runbookId,
+        safety_class AS safetyClass,recurrence_of AS recurrenceOf,
+        resolved_at AS resolvedAt,
+        created_at AS createdAt,updated_at AS updatedAt
+      FROM smart_bug_incidents WHERE id=?${scopeSql}
+    `).bind(incidentDetail[1], ...binds).first<Record<string, unknown>>();
+    if (!incident) return json({ error: 'Incident not found.' }, 404);
+    const evidence = await env.DB.prepare(`
+      SELECT evidence_type AS evidenceType,source_module AS sourceModule,
+        safe_summary AS summary,created_at AS createdAt
+      FROM smart_bug_evidence WHERE incident_id=? ORDER BY created_at ASC,id ASC LIMIT 100
+    `).bind(incidentDetail[1]).all<Record<string, unknown>>();
+    return json({ incident, evidence: evidence.results || [] });
+  }
 
   if (url.pathname.endsWith('/overview')) {
     const rows = await env.DB.prepare(`
