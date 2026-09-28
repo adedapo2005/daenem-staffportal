@@ -401,7 +401,25 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
   try { body = await request.json(); } catch { return json({ error: 'Invalid alert rule request.' }, 400); }
   const name = String(body.name || '').trim();
   const eventType = String(body.eventType || '').trim();
-  if (!name || !eventType) return json({ error: 'Rule name and event are required.' }, 400);
+  const module = body.module == null ? null : String(body.module).trim();
+  const severity = body.severity === undefined ? 'medium' : body.severity;
+  const dedupWindowMinutes = body.dedupWindowMinutes === undefined ? 30 : body.dedupWindowMinutes;
+  const conditions = body.conditions === undefined ? {} : body.conditions;
+  const escalation = body.escalation === undefined ? {} : body.escalation;
+  const boundedObject = (value: unknown, maxLength: number) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    try { return JSON.stringify(value).length <= maxLength; } catch { return false; }
+  };
+  if (!name || name.length > 120 || !eventType || eventType.length > 120 ||
+      (module !== null && (!module || module.length > 80)) ||
+      !['low', 'medium', 'high', 'critical'].includes(String(severity)) ||
+      typeof dedupWindowMinutes !== 'number' || !Number.isInteger(dedupWindowMinutes) || dedupWindowMinutes < 1 || dedupWindowMinutes > 10080 ||
+      !boundedObject(conditions, 8192) || !boundedObject(escalation, 8192) ||
+      (body.acknowledgementRequired !== undefined && typeof body.acknowledgementRequired !== 'boolean') ||
+      (body.quietHoursOverride !== undefined && typeof body.quietHoursOverride !== 'boolean') ||
+      (body.active !== undefined && typeof body.active !== 'boolean')) {
+    return json({ error: 'Alert rule fields must be valid and bounded.' }, 400);
+  }
   const recipients = body.recipients === undefined ? [{ type: 'all_authorized' }] : body.recipients;
   const channels = body.channels === undefined ? ['in_app'] : body.channels;
   if (!validAlertRuleAudience(recipients, channels)) {
@@ -436,7 +454,6 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
     }
   }
   const id = requestedId || uid('alert-rule');
-  const severity = safeSeverity(body.severity);
   await env.DB.prepare(`
     INSERT INTO platform_alert_rules
       (id,company_id,name,module,event_type,severity,conditions_json,recipients_json,channels_json,
@@ -449,11 +466,11 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
       dedup_window_minutes=excluded.dedup_window_minutes,escalation_json=excluded.escalation_json,
       active=excluded.active,updated_at=CURRENT_TIMESTAMP
   `).bind(
-    id, companyId, name, body.module ? String(body.module) : null, eventType, severity,
+    id, companyId, name, module, eventType, severity,
     JSON.stringify(body.conditions || {}), JSON.stringify(recipients),
     JSON.stringify(channels), body.acknowledgementRequired ? 1 : 0,
-    body.quietHoursOverride ? 1 : 0, Math.max(1, Number(body.dedupWindowMinutes || 30)),
-    JSON.stringify(body.escalation || {}), body.active === false ? 0 : 1, context.employee.id,
+    body.quietHoursOverride ? 1 : 0, dedupWindowMinutes,
+    JSON.stringify(escalation), body.active === false ? 0 : 1, context.employee.id,
   ).run();
   await audit(env, context, 'save_rule', id, companyId, { name, eventType, severity });
   return json({ ok: true, id }, body.id ? 200 : 201);
