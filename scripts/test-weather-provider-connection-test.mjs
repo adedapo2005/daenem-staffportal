@@ -13,7 +13,7 @@ assert.match(endpoint, /env\.APP_STAGE==='production'/);
 assert.match(endpoint, /typeof body\.latitude!=='number'\|\|typeof body\.longitude!=='number'/);
 assert.match(endpoint, /latitude < -90\|\|latitude > 90/);
 assert.match(endpoint, /longitude < -180\|\|longitude > 180/);
-assert.match(endpoint, /readGoogleWeather\(env,latitude,longitude\)/);
+assert.match(endpoint, /readGoogleWeather\(env,latitude,longitude,'IMPERIAL',true\)/);
 assert.match(endpoint, /providerStatus:result\.providerStatus,ok/);
 assert.doesNotMatch(endpoint, /JSON\.stringify\(.*latitude|JSON\.stringify\(.*longitude/s);
 assert.match(source, /weather-credential\/test/);

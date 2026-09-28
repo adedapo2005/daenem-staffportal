@@ -18,6 +18,7 @@ export async function readGoogleWeather(
   latitude: number,
   longitude: number,
   unitsSystem: 'IMPERIAL' | 'METRIC' = 'IMPERIAL',
+  forceRefresh = false,
 ): Promise<GoogleWeatherResult> {
   // Keep this trust boundary defensive even when callers validate coordinates.
   // Invalid values must not become cache keys or provider requests.
@@ -34,14 +35,16 @@ export async function readGoogleWeather(
   const digestHex = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
   const cacheKey = `weather:google:v1:${digestHex}`;
 
-  try {
-    const cached = await cache.get(cacheKey);
-    if (cached) {
-      const parsed: unknown = JSON.parse(cached);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return { data: parsed as Record<string, unknown>, providerStatus: 'cached' };
+  if (!forceRefresh) {
+    try {
+      const cached = await cache.get(cacheKey);
+      if (cached) {
+        const parsed: unknown = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return { data: parsed as Record<string, unknown>, providerStatus: 'cached' };
+      }
+    } catch {
+      // A cache read failure must not expose credentials or fail the portal request.
     }
-  } catch {
-    // A cache read failure must not expose credentials or fail the portal request.
   }
 
   const existingRequest = inFlightWeather.get(cacheKey);

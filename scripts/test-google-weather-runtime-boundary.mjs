@@ -33,6 +33,7 @@ assert.match(provider, /if \(existingRequest\) return existingRequest/);
 assert.match(provider, /inFlightWeather\.set\(cacheKey, request\)/);
 assert.match(provider, /inFlightWeather\.get\(cacheKey\) === request\) inFlightWeather\.delete\(cacheKey\)/);
 assert.match(provider, /fetchAndCacheWeather\(env, latitude, longitude, unitsSystem, cacheKey, cache\)/);
+assert.match(provider, /if \(!forceRefresh\) \{[\s\S]*?const cached = await cache\.get\(cacheKey\)/);
 assert.match(provider, /weather:google:v1:\$\{digestHex\}/);
 assert.match(provider, /cache\.get\(cacheKey\)/);
 assert.match(provider, /cache\.put\(cacheKey, value/);
