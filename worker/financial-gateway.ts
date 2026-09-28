@@ -206,7 +206,57 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
-    if (request.method !== 'GET') return json({ error: 'Use GET to read provider budgets.' }, 405);
+    if (request.method === 'POST') {
+      if (!owner) return json({ error: 'Owner provider-budget administration access is required.' }, 403);
+      let body: Record<string, unknown>;
+      try { body = await request.json() as Record<string, unknown>; }
+      catch { return json({ error: 'Invalid provider budget.' }, 400); }
+      const companyId = typeof body.companyId === 'string' ? body.companyId : '';
+      const providerScope = typeof body.providerScope === 'string' ? body.providerScope.trim() : '';
+      const moduleScope = typeof body.moduleScope === 'string' ? body.moduleScope.trim() : '';
+      const period = body.period;
+      const budgetMinor = body.budgetMinor;
+      const currency = body.currency;
+      const alertThresholdPercent = body.alertThresholdPercent;
+      const exhaustedAction = body.exhaustedAction;
+      const active = body.active;
+      if (!TARGET_COMPANIES.includes(companyId) || !providerScope || providerScope.length > 80 ||
+          (providerScope !== '*' && !/^[A-Za-z0-9_.:-]+$/.test(providerScope)) ||
+          !moduleScope || moduleScope.length > 80 ||
+          (moduleScope !== '*' && !/^[a-z][a-z0-9_.:-]*$/.test(moduleScope)) ||
+          !['monthly', 'daily'].includes(String(period)) ||
+          typeof budgetMinor !== 'number' || !Number.isSafeInteger(budgetMinor) || budgetMinor <= 0 ||
+          typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency) ||
+          typeof alertThresholdPercent !== 'number' || !Number.isInteger(alertThresholdPercent) || alertThresholdPercent < 1 || alertThresholdPercent > 100 ||
+          !['require_approval', 'block_noncritical'].includes(String(exhaustedAction)) || typeof active !== 'boolean') {
+        return json({ error: 'Company, scope, period, positive budget, currency and bounded policy are required.' }, 400);
+      }
+      const id = `fpb-${crypto.randomUUID()}`;
+      try {
+        await env.DB.batch([
+          env.DB.prepare(`INSERT INTO financial_provider_budgets(
+            id,company_id,provider_scope,module_scope,period,budget_minor,currency,
+            alert_threshold_percent,exhausted_action,active,created_by,updated_by
+          ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+          ON CONFLICT(company_id,provider_scope,module_scope,period,currency) DO UPDATE SET
+            budget_minor=excluded.budget_minor,alert_threshold_percent=excluded.alert_threshold_percent,
+            exhausted_action=excluded.exhausted_action,active=excluded.active,
+            updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
+            .bind(id, companyId, providerScope, moduleScope, period, budgetMinor, currency,
+              alertThresholdPercent, exhaustedAction, active ? 1 : 0, context.employee.id, context.employee.id),
+          env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+            SELECT ?,?,?, 'financial_gateway','upsert_provider_budget','financial_provider_budget',id,?,'web'
+            FROM financial_provider_budgets WHERE company_id=? AND provider_scope=? AND module_scope=? AND period=? AND currency=?`)
+            .bind(`audit-${crypto.randomUUID()}`, context.employee.id, companyId,
+              JSON.stringify({ providerScope, moduleScope, period, budgetMinor, currency, alertThresholdPercent, exhaustedAction, active }),
+              companyId, providerScope, moduleScope, period, currency),
+        ]);
+      } catch {
+        return json({ error: 'Provider budget could not be saved.' }, 409);
+      }
+      return json({ ok: true, companyId, providerScope, moduleScope, period, budgetMinor, currency, active, providerCallMade: false });
+    }
+    if (request.method !== 'GET') return json({ error: 'Use GET or POST for provider budgets.' }, 405);
     const requestedCompanyId = url.searchParams.get('companyId');
     if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
       return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
