@@ -49,7 +49,7 @@ export async function routeFinancialProviderOwnerActions(request: Request, env: 
     env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
       SELECT ?,?,?,'financial_gateway',?,'financial_provider_owner_action',?,?,'web'
       WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_provider_owner_actions WHERE id=? AND company_id=? AND provider=? AND action=?)`)
-      .bind(`audit-${crypto.randomUUID()}`,context.employee.id,values.companyId,existing?'update_provider_owner_action':'record_provider_owner_action',values.id,
+      .bind(`audit-${crypto.randomUUID()}`,context.employee.id,values.companyId,'save_provider_owner_action',values.id,
         JSON.stringify({provider:values.provider,action:values.action,status,reason:values.reason,blocked:values.blocked,notBlocked:values.notBlocked,clearingEvidence:values.clearingEvidence}),
         values.id,values.companyId,values.provider,values.action),
   ]); } catch { return json({ error: 'Provider owner action conflicts with an existing business/provider/action record.' }, 409); }
