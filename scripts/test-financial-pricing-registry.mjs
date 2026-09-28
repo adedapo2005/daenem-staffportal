@@ -21,6 +21,7 @@ assert.match(route, /export function estimateProviderCost/);
 assert.match(route, /\/api\/financial-gateway\/pricing\/admin/);
 assert.match(route, /Owner pricing administration access is required/);
 assert.match(route, /new Set\(companies\)\.size !== companies\.length/);
+assert.match(route, /minimum != null && \(\(maximum != null && maximum < minimum\) \|\| \(cap != null && cap < minimum\)\)/);
 assert.match(route, /PRICING_COMPANIES\.has\(company\)/);
 assert.match(route, /status === 'verified' && \(vatTreatment === 'unknown'[\s\S]*?pricingTermsComplete\)/);
 assert.match(route, /pricingModel === 'TIERED' \|\| pricingModel === 'UNKNOWN_REVERIFY' \|\| !pricingTermsComplete/);
@@ -46,6 +47,8 @@ const verified = { pricingModel: 'PERCENTAGE_FIXED', fixedAmountMinor: 25, perce
   currency: 'NGN', effectiveAt: '2026-01-01T00:00:00.000Z', lastVerifiedAt: '2026-09-01T00:00:00.000Z', status: 'verified' };
 assert.deepEqual(estimateProviderCost(verified, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'estimated', estimatedCostMinor: 176, currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, minimumAmountMinor: 401 }, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'verification_required', reason: 'pricing_bounds_conflict', currency: 'NGN' });
 assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PERCENTAGE', fixedAmountMinor: null,
   percentageBps: 138, minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null },
   { amountMinor: 9007199254144565 }, Date.parse('2026-09-27T00:00:00Z')),

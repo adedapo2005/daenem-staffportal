@@ -35,6 +35,13 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
     }
     return { decision: 'free' as const, estimatedCostMinor: 0, currency: pricing.currency };
   }
+  // Contradictory bounds must never produce a deceptively low estimate. This
+  // check also protects estimates for legacy rows that predate save validation.
+  if (pricing.minimumAmountMinor !== null &&
+      ((pricing.maximumAmountMinor !== null && pricing.maximumAmountMinor < pricing.minimumAmountMinor) ||
+       (pricing.capAmountMinor !== null && pricing.capAmountMinor < pricing.minimumAmountMinor))) {
+    return { decision: 'verification_required' as const, reason: 'pricing_bounds_conflict', currency: pricing.currency };
+  }
   if (!units) return { decision: 'verification_required' as const, reason: 'valid_quantity_required', currency: pricing.currency };
   if (['PERCENTAGE', 'PERCENTAGE_FIXED'].includes(pricing.pricingModel) && moneyAmount === null) {
     return { decision: 'verification_required' as const, reason: 'valid_transaction_amount_required', currency: pricing.currency };
@@ -122,6 +129,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
       companies.some((company) => typeof company !== 'string' || !PRICING_COMPANIES.has(company)) || new Set(companies).size !== companies.length ||
       !integerOrNull(fixed) || !integerOrNull(minimum) || !integerOrNull(maximum) || !integerOrNull(cap) ||
       freePricingHasFeeTerms ||
+      minimum != null && ((maximum != null && maximum < minimum) || (cap != null && cap < minimum)) ||
       pct !== null && pct !== undefined && (typeof pct !== 'number' || !Number.isSafeInteger(pct) || pct < 0 || pct > 10_000) ||
       minimum != null && maximum != null && Number(maximum) < Number(minimum) ||
       !dateOrNull(effectiveAt) || !dateOrNull(lastVerifiedAt) ||
