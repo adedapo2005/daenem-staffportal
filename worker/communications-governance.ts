@@ -525,6 +525,44 @@ async function templateMappingReadiness(request:Request,env:GovernanceEnv,contex
  });
 }
 
+async function previewTemplateMapping(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
+ const url=new URL(request.url);
+ const companyId=String(url.searchParams.get('companyId')||''),mappingId=String(url.searchParams.get('mappingId')||'');
+ if(!companyId||!mappingId||mappingId.length>160||!companyAllowed(context,companyId))
+  return json({error:'Company and template mapping are required.'},400);
+ const mapping=await env.DB.prepare(`SELECT id,use_case_id AS useCaseId,status,enabled
+  FROM communication_template_mappings WHERE id=? AND company_id=? LIMIT 1`)
+  .bind(mappingId,companyId).first<{id:string;useCaseId:string;status:string;enabled:number}>();
+ if(!mapping)return json({error:'Template mapping was not found.'},404);
+ if(!canManageEvent(context,companyId,mapping.useCaseId,'manage'))return json({error:'Communications management access is not assigned.'},403);
+ const result=await env.DB.prepare(`SELECT component,component_name AS componentName,position,variable_name AS variableName,
+  required,max_length AS maxLength,fallback_policy AS fallbackPolicy,fallback_value AS fallbackValue,example_value AS exampleValue
+  FROM communication_template_variable_mappings WHERE mapping_id=?
+  ORDER BY component,component_name,position LIMIT 100`).bind(mappingId).all<Record<string,unknown>>();
+ const variables=result.results||[];
+ if(!variables.length)return json({error:'Explicit template variable mappings are required.'},409);
+ const blockers:string[]=[];
+ const values=variables.map(variable=>{
+  const example=typeof variable.exampleValue==='string'?variable.exampleValue:null;
+  const fallback=variable.fallbackPolicy==='approved_value'&&typeof variable.fallbackValue==='string'?variable.fallbackValue:null;
+  const value=example??fallback;
+  const maxLength=Number(variable.maxLength);
+  if(!['header','body','footer','button'].includes(String(variable.component))||
+     !Number.isInteger(Number(variable.position))||Number(variable.position)<1||Number(variable.position)>100||
+     !Number.isInteger(maxLength)||maxLength<1||maxLength>4096){
+   blockers.push('MAPPING_INVALID');
+  }else if(value===null&&Number(variable.required)===1){
+   blockers.push('REQUIRED_EXAMPLE_MISSING');
+  }else if(value!==null&&value.length>maxLength){
+   blockers.push('EXAMPLE_VALUE_TOO_LONG');
+  }
+  return {component:variable.component,componentName:variable.componentName||null,position:Number(variable.position),
+   variableName:variable.variableName||null,value:value!==null&&value.length<=maxLength?value:null};
+ });
+ return json({mappingId,status:mapping.status,enabled:Boolean(mapping.enabled),previewOnly:true,providerCallMade:false,
+  providerPayloadGenerated:false,blockers:[...new Set(blockers)],componentValues:values});
+}
+
 async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,context:EnhancedSessionContext){
  let body:Record<string,unknown>;
  try{body=await request.json();}catch{return json({error:'Invalid template variable mapping.'},400)}
@@ -682,6 +720,7 @@ export async function routeCommunicationGovernance(
  if(path==='/api/communications/admin/governance'&&method==='GET')return overview(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='GET')return listTemplateMappings(request,env,context);
  if(path==='/api/communications/admin/template-mappings/readiness'&&method==='GET')return templateMappingReadiness(request,env,context);
+ if(path==='/api/communications/admin/template-mappings/preview'&&method==='GET')return previewTemplateMapping(request,env,context);
  if(path==='/api/communications/admin/template-mappings'&&method==='POST')return createTemplateMapping(request,env,context);
  if(path==='/api/communications/admin/template-mappings/approve'&&method==='POST')return approveTemplateMapping(request,env,context);
  if(path==='/api/communications/admin/template-mappings/enabled'&&method==='POST')return setTemplateMappingEnabled(request,env,context);
