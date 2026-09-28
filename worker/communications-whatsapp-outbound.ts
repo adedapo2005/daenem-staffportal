@@ -51,7 +51,7 @@ async function loadPreparedMessage(
     LIMIT 1
   `).bind(messageId,conversationId,companyId,companyId,companyId).first<PreparedMessage>();
 }
-function buildPayload(row:PreparedMessage){
+function buildPayload(row:PreparedMessage,templateComponents?:Record<string,unknown>[]){
   const to=normalizeRecipient(row.customerWaId);
   if(row.replyMode==='template'){
     if(!row.templateName||!row.templateLanguage)throw new Error('APPROVED_TEMPLATE_REQUIRED');
@@ -60,7 +60,7 @@ function buildPayload(row:PreparedMessage){
       recipient_type:'individual',
       to,
       type:'template',
-      template:{name:row.templateName,language:{code:row.templateLanguage}},
+      template:{name:row.templateName,language:{code:row.templateLanguage},...(templateComponents?.length?{components:templateComponents}:{})},
     };
   }
   return {
@@ -70,6 +70,46 @@ function buildPayload(row:PreparedMessage){
     type:'text',
     text:{preview_url:false,body:row.body},
   };
+}
+
+async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:PreparedMessage){
+  const mapping=await env.DB.prepare(`
+    SELECT id FROM communication_template_mappings
+    WHERE template_id=? AND company_id=? AND provider_template_name=? AND language=?
+      AND category='customer_support' AND enabled=1 AND status='approved'
+    LIMIT 1
+  `).bind(String(row.templateId||''),row.companyId,String(row.templateName||''),String(row.templateLanguage||'')).first<{id:string}>();
+  if(!mapping)throw new Error('WHATSAPP_TEMPLATE_MAPPING_NOT_READY');
+  const result=await env.DB.prepare(`
+    SELECT component,component_name AS componentName,position,source_field AS sourceField,
+      source_module AS sourceModule,data_type AS dataType,required,max_length AS maxLength,
+      formatter,fallback_policy AS fallbackPolicy,fallback_value AS fallbackValue,sensitivity
+    FROM communication_template_variable_mappings WHERE mapping_id=?
+    ORDER BY component,component_name,position LIMIT 100
+  `).bind(mapping.id).all<Record<string,unknown>>();
+  const variables=result.results||[];
+  if(!variables.length)throw new Error('WHATSAPP_TEMPLATE_VARIABLES_REQUIRED');
+  // This bounded Inbox slice resolves only the canonical customer display name.
+  // Other mapped sources/components remain fail-closed until their source and
+  // provider format contracts are implemented explicitly.
+  if(variables.some(v=>v.component!=='body'||v.componentName||v.sourceField!=='customer_display_name'||
+      v.sourceModule!=='communications'||v.dataType!=='text'||v.formatter!=='none'||
+      !Number.isInteger(Number(v.position))||Number(v.position)<1||Number(v.position)>100||
+      !Number.isInteger(Number(v.maxLength))||Number(v.maxLength)<1||Number(v.maxLength)>4096||
+      v.sensitivity==='prohibited'))throw new Error('WHATSAPP_TEMPLATE_VARIABLE_SOURCE_UNAVAILABLE');
+  const conversation=await env.DB.prepare(`
+    SELECT customer_display_name AS customerDisplayName FROM communication_inbox_conversations
+    WHERE id=? AND company_id=? LIMIT 1
+  `).bind(row.conversationId,row.companyId).first<{customerDisplayName:string|null}>();
+  const components=[...variables].sort((a,b)=>Number(a.position)-Number(b.position)).map(variable=>{
+    const value=typeof conversation?.customerDisplayName==='string'?conversation.customerDisplayName.trim():'';
+    const approvedFallback=variable.fallbackPolicy==='approved_value'&&typeof variable.fallbackValue==='string'?variable.fallbackValue:'';
+    const resolved=value||approvedFallback;
+    if(!resolved)throw new Error(Number(variable.required)===1?'WHATSAPP_TEMPLATE_REQUIRED_VALUE_MISSING':'WHATSAPP_TEMPLATE_FALLBACK_UNAVAILABLE');
+    if(resolved.length>Number(variable.maxLength))throw new Error('WHATSAPP_TEMPLATE_VALUE_TOO_LONG');
+    return {type:'text',text:resolved};
+  });
+  return [{type:'body',parameters:components}];
 }
 
 async function ensureIdempotencyKey(
@@ -95,6 +135,7 @@ export async function prepareWhatsAppInboxSend(
 ):Promise<WhatsAppSendPreparation>{
   const row=await loadPreparedMessage(env,input.companyId,input.conversationId,input.messageId);
   if(!row)throw new Error('WHATSAPP_DRAFT_NOT_SENDABLE');
+  let templateComponents:Record<string,unknown>[]|undefined;
   if(row.replyMode==='freeform'){
     const lastMs=row.lastCustomerMessageAt?Date.parse(row.lastCustomerMessageAt):NaN;
     if(!Number.isFinite(lastMs)||Date.now()>=lastMs+24*60*60*1000)throw new Error('WHATSAPP_TEMPLATE_REQUIRED');
@@ -107,25 +148,11 @@ export async function prepareWhatsAppInboxSend(
       LIMIT 1
     `).bind(String(row.templateId||''),row.companyId).first();
     if(!current)throw new Error('WHATSAPP_TEMPLATE_NOT_APPROVED');
-    const mapping=await env.DB.prepare(`
-      SELECT t.id AS templateId,m.id AS mappingId
-      FROM communication_templates t
-      JOIN communication_template_mappings m
-        ON m.template_id=t.id AND m.company_id=t.company_id
-      WHERE t.id=? AND t.company_id=? AND t.channel='whatsapp'
-        AND t.internal_status='approved' AND t.provider_status='approved'
-        AND m.provider_template_name=? AND m.language=?
-        AND m.enabled=1 AND m.status='approved'
-      LIMIT 1
-    `).bind(String(row.templateId||''),row.companyId,String(row.templateName||''),String(row.templateLanguage||'')).first();
-    if(!mapping)throw new Error('WHATSAPP_TEMPLATE_MAPPING_NOT_READY');
-    // The Inbox adapter does not yet resolve approved source fields into Meta
-    // component parameters. Never send a template payload with missing values.
-    throw new Error('WHATSAPP_TEMPLATE_VARIABLE_RESOLUTION_UNAVAILABLE');
+    templateComponents=await resolveInboxTemplateComponents(env,row);
   }
   if(!normalizeRecipient(row.customerWaId))throw new Error('WHATSAPP_RECIPIENT_INVALID');
   const idempotencyKey=await ensureIdempotencyKey(env,row);
-  const payload=buildPayload(row);
+  const payload=buildPayload(row,templateComponents);
   const version=(await resolveMetaCredential(env,'meta_graph_version'))||'v24.0';
   const endpoint=`https://graph.facebook.com/${version}/${encodeURIComponent(row.phoneNumberId)}/messages`;
   const tokenConfigured=Boolean(await resolveMetaCredential(env,'meta_system_user_token'));

@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const source = await readFile(new URL('../worker/communications-whatsapp-outbound.ts', import.meta.url), 'utf8');
+const start = source.indexOf('async function resolveInboxTemplateComponents');
+const end = source.indexOf('\nasync function ensureIdempotencyKey', start);
+const resolver = source.slice(start, end);
+assert.ok(start >= 0 && end > start, 'bounded Inbox template variable resolver exists');
+assert.match(resolver, /enabled=1 AND status='approved'/);
+assert.match(resolver, /category='customer_support'/);
+assert.match(resolver, /WHERE mapping_id=\?/);
+assert.match(resolver, /v\.component!=='body'/);
+assert.match(resolver, /v\.sourceField!=='customer_display_name'/);
+assert.match(resolver, /v\.sourceModule!=='communications'/);
+assert.match(resolver, /v\.dataType!=='text'/);
+assert.match(resolver, /v\.formatter!=='none'/);
+assert.match(resolver, /customer_display_name AS customerDisplayName[\s\S]*WHERE id=\? AND company_id=\?/);
+assert.match(resolver, /WHATSAPP_TEMPLATE_REQUIRED_VALUE_MISSING/);
+assert.match(resolver, /WHATSAPP_TEMPLATE_FALLBACK_UNAVAILABLE/);
+assert.match(resolver, /resolved\.length>Number\(variable\.maxLength\)/);
+assert.match(resolver, /return \[\{type:'body',parameters:components\}\]/);
+assert.match(source, /components:\s*templateComponents/);
+assert.doesNotMatch(resolver, /fetch\(|provider_item_id|token|password|secret/i);
+console.log('WhatsApp Inbox template variable resolution boundary: 14/14 PASS');

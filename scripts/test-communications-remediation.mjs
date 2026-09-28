@@ -153,7 +153,7 @@ test('WhatsApp outbound adapter is idempotent, scoped, audited and double-gated'
   assert.match(adapter,/communication_template_mappings/);
   assert.match(adapter,/m\.enabled=1 AND m\.status='approved'/);
   assert.match(adapter,/WHATSAPP_TEMPLATE_MAPPING_NOT_READY/);
-  assert.match(adapter,/WHATSAPP_TEMPLATE_VARIABLE_RESOLUTION_UNAVAILABLE/);
+  assert.match(adapter,/resolveInboxTemplateComponents\(env,row\)/);
   assert.match(adapter,/PROVIDER_TRANSPORT_AMBIGUOUS/);
   assert.match(inbox,/'prepare_send'/);
   assert.match(inbox,/prepare-send/);
