@@ -179,7 +179,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
 
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
+  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
 
   if (url.pathname === '/api/financial-gateway/pricing/admin') {
     if (request.method !== 'POST') return json({ error: 'Use POST to maintain provider pricing.' }, 405);
@@ -191,6 +191,33 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     ? TARGET_COMPANIES
     : TARGET_COMPANIES.filter((companyId) => context.companies.some((company) => company.id === companyId) && hasPermission(context, 'finance.reports', 'view', companyId));
   if (companyIds.length === 0) return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
+
+  if (url.pathname === '/api/financial-gateway/cost-summary') {
+    if (request.method !== 'GET') return json({ error: 'Use GET to read monthly provider-cost summaries.' }, 405);
+    const month = url.searchParams.get('month') || '';
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return json({ error: 'Choose a month in YYYY-MM format.' }, 400);
+    }
+    const requestedCompanyId = url.searchParams.get('companyId');
+    if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
+      return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
+    }
+    const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
+    const placeholders = scopedCompanyIds.map(() => '?').join(',');
+    const rows = await env.DB.prepare(`
+      SELECT company_id AS companyId,provider,cost_currency AS currency,
+        requesting_module AS module,COUNT(*) AS eventCount,
+        COUNT(actual_cost_minor) AS actualCostEventCount,
+        SUM(actual_cost_minor) AS actualCostMinor,
+        SUM(estimated_cost_minor) AS estimatedCostMinor
+      FROM financial_provider_cost_events
+      WHERE company_id IN (${placeholders}) AND strftime('%Y-%m',occurred_at)=?
+      GROUP BY company_id,provider,cost_currency,requesting_module
+      ORDER BY company_id,provider,cost_currency,requesting_module
+      LIMIT 500
+    `).bind(...scopedCompanyIds, month).all<Record<string, unknown>>();
+    return json({ month, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+  }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {
     if (request.method !== 'GET') return json({ error: 'Use GET to read provider-cost events.' }, 405);
