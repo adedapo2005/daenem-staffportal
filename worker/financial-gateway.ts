@@ -15,6 +15,22 @@ type PricingFacts = {
   vatTreatment: string; currency: string; effectiveAt: string | null; lastVerifiedAt: string | null; status: string;
 };
 
+function budgetUsage(actualSpentMinor: number, budgetMinor: number, alertThresholdPercent: number, active: boolean) {
+  if (!Number.isSafeInteger(actualSpentMinor) || actualSpentMinor < 0 ||
+      !Number.isSafeInteger(budgetMinor) || budgetMinor <= 0 ||
+      !Number.isInteger(alertThresholdPercent) || alertThresholdPercent < 1 || alertThresholdPercent > 100) {
+    return { utilizationPercent: null, thresholdReached: active };
+  }
+  const spent = BigInt(actualSpentMinor);
+  const budget = BigInt(budgetMinor);
+  const utilization = spent * 100n / budget;
+  const maxJsonInteger = BigInt(Number.MAX_SAFE_INTEGER);
+  return {
+    utilizationPercent: Number(utilization > maxJsonInteger ? maxJsonInteger : utilization),
+    thresholdReached: active && spent * 100n >= budget * BigInt(alertThresholdPercent),
+  };
+}
+
 export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor?: unknown; quantity?: unknown }, now = Date.now()) {
   const amount = input.amountMinor;
   const quantity = input.quantity === undefined ? 1 : input.quantity;
@@ -359,12 +375,11 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       const actualSpentMinor = Number(budget.actualSpentMinor) || 0;
       const budgetMinor = Number(budget.budgetMinor) || 0;
       const alertThresholdPercent = Number(budget.alertThresholdPercent) || 0;
+      const usage = budgetUsage(actualSpentMinor, budgetMinor, alertThresholdPercent, Boolean(budget.active));
       return {
         ...budget,
         actualSpentMinor,
-        utilizationPercent: budgetMinor > 0 ? Math.floor(actualSpentMinor * 100 / budgetMinor) : null,
-        thresholdReached: Boolean(budget.active) && budgetMinor > 0 &&
-          actualSpentMinor * 100 >= budgetMinor * alertThresholdPercent,
+        ...usage,
       };
     });
     if (owner) {
@@ -390,12 +405,11 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         const actualSpentMinor = Number(budget.actualSpentMinor) || 0;
         const budgetMinor = Number(budget.budgetMinor) || 0;
         const alertThresholdPercent = Number(budget.alertThresholdPercent) || 0;
+        const usage = budgetUsage(actualSpentMinor, budgetMinor, alertThresholdPercent, Boolean(budget.active));
         return {
           ...budget,
           actualSpentMinor,
-          utilizationPercent: budgetMinor > 0 ? Math.floor(actualSpentMinor * 100 / budgetMinor) : null,
-          thresholdReached: Boolean(budget.active) && budgetMinor > 0 &&
-            actualSpentMinor * 100 >= budgetMinor * alertThresholdPercent,
+          ...usage,
         };
       }));
     }
