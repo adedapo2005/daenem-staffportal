@@ -48,7 +48,18 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
     case 'PERCENTAGE':
     case 'PERCENTAGE_FIXED': {
       if (pricing.percentageBps === null || (pricing.pricingModel === 'PERCENTAGE_FIXED' && pricing.fixedAmountMinor === null)) break;
-      estimate = Math.ceil((moneyAmount as number) * pricing.percentageBps / 10_000) + (pricing.pricingModel === 'PERCENTAGE_FIXED' ? pricing.fixedAmountMinor as number : 0);
+      // Compute basis-point fees without floating-point multiplication. A safe
+      // integer transaction amount can still produce an inexact intermediate
+      // when multiplied by the rate, which can overstate the rounded fee.
+      const amount = BigInt(moneyAmount as number);
+      const basisPoints = BigInt(pricing.percentageBps);
+      const percentageFee = (amount * basisPoints + 9_999n) / 10_000n;
+      const fixedFee = BigInt(pricing.pricingModel === 'PERCENTAGE_FIXED' ? pricing.fixedAmountMinor as number : 0);
+      const combinedFee = percentageFee + fixedFee;
+      if (combinedFee > BigInt(Number.MAX_SAFE_INTEGER)) {
+        return { decision: 'verification_required' as const, reason: 'pricing_terms_incomplete', currency: pricing.currency };
+      }
+      estimate = Number(combinedFee);
       if (pricing.minimumAmountMinor !== null) estimate = Math.max(estimate, pricing.minimumAmountMinor);
       if (pricing.maximumAmountMinor !== null) estimate = Math.min(estimate, pricing.maximumAmountMinor);
       if (pricing.capAmountMinor !== null) estimate = Math.min(estimate, pricing.capAmountMinor);

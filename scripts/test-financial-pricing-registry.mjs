@@ -46,6 +46,10 @@ const verified = { pricingModel: 'PERCENTAGE_FIXED', fixedAmountMinor: 25, perce
   currency: 'NGN', effectiveAt: '2026-01-01T00:00:00.000Z', lastVerifiedAt: '2026-09-01T00:00:00.000Z', status: 'verified' };
 assert.deepEqual(estimateProviderCost(verified, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'estimated', estimatedCostMinor: 176, currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PERCENTAGE', fixedAmountMinor: null,
+  percentageBps: 138, minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null },
+  { amountMinor: 9007199254144565 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'estimated', estimatedCostMinor: 124299349707195, currency: 'NGN' });
 assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FREE', fixedAmountMinor: null, percentageBps: null,
   minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null, vatTreatment: 'not_applicable' }, {}, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'free', estimatedCostMinor: 0, currency: 'NGN' });
