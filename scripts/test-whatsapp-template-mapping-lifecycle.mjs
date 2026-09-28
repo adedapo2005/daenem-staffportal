@@ -28,3 +28,10 @@ assert.match(readiness, /VARIABLE_FALLBACK_POLICY_INVALID/);
 assert.match(approval, /required=1 AND/);
 assert.match(approval, /invalidVariables\?\.count/);
 console.log('WhatsApp template variable fallback policy: PASS');
+
+const variableStart = source.indexOf('async function saveTemplateVariableMapping');
+const variableEnd = source.indexOf('\nasync function approveTemplateMapping', variableStart);
+const variableWrite = source.slice(variableStart, variableEnd);
+assert.match(variableWrite, /INSERT INTO communication_template_variable_mappings\([\s\S]*?\) SELECT \?[\s\S]*?WHERE EXISTS\(SELECT 1 FROM communication_template_mappings[\s\S]*?enabled=0 AND status='draft'/);
+assert.match(variableWrite, /INSERT INTO audit_logs[\s\S]*?WHERE changes\(\)=1 AND EXISTS\(SELECT 1 FROM communication_template_variable_mappings/);
+console.log('WhatsApp template variable draft compare-and-set: PASS');

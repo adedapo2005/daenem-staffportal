@@ -563,17 +563,21 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
   env.DB.prepare(`INSERT INTO communication_template_variable_mappings(
    id,mapping_id,component,component_name,position,variable_name,source_field,source_module,
    data_type,required,formatter,max_length,fallback_policy,fallback_value,sensitivity,example_value
-  ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
+  ) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+    WHERE EXISTS(SELECT 1 FROM communication_template_mappings
+      WHERE id=? AND company_id=? AND enabled=0 AND status='draft')`).bind(
    id,mappingId,component,componentName,position,variableName,sourceField,sourceModule,dataType,
    required?1:0,formatter,maxLength,fallbackPolicy,fallbackValue,sensitivity,
-   body.exampleValue==null?null:String(body.exampleValue),
+   body.exampleValue==null?null:String(body.exampleValue),mappingId,mapping.companyId,
   ),
   env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
-   VALUES(?,?,?,'communications','map_template_variable','communication_template_variable_mapping',?,?,'web')`)
+   SELECT ?,?,?,'communications','map_template_variable','communication_template_variable_mapping',?,?,'web'
+   WHERE changes()=1 AND EXISTS(SELECT 1 FROM communication_template_variable_mappings
+    WHERE id=? AND mapping_id=?)`)
    .bind(uid('audit'),context.employee.id,mapping.companyId,id,JSON.stringify({
     mappingId,component,componentName:componentName||null,position,variableName,
     sourceField,sourceModule,dataType,required,formatter,maxLength,fallbackPolicy,sensitivity,
-   })),
+   }),id,mappingId),
  ]);
  if(Number(saved.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1)return json({error:'Variable mapping could not be saved.'},409);
  return json({ok:true,id,mappingId},201);
