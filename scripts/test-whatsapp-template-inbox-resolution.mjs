@@ -8,6 +8,7 @@ const resolver = source.slice(start, end);
 assert.ok(start >= 0 && end > start, 'bounded Inbox template variable resolver exists');
 assert.match(resolver, /enabled=1 AND status='approved'/);
 assert.match(resolver, /category='customer_support'/);
+assert.match(resolver, /use_case_id='support\.reply'/);
 assert.match(resolver, /WHERE mapping_id=\?/);
 assert.match(resolver, /v\.component!=='body'/);
 assert.match(resolver, /v\.sourceField!=='customer_display_name'/);
