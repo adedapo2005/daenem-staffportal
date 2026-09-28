@@ -195,6 +195,10 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       return json({ error: 'Choose between 1 and 100 provider-cost events.' }, 400);
     }
+    const requestingModule = url.searchParams.get('module');
+    if (requestingModule !== null && !/^[a-z][a-z0-9_.:-]{0,79}$/.test(requestingModule)) {
+      return json({ error: 'Choose a valid module filter.' }, 400);
+    }
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
@@ -210,10 +214,11 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         requesting_module AS requestingModule
       FROM financial_provider_cost_events
       WHERE company_id IN (${placeholders})
+        AND (? IS NULL OR requesting_module=?)
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, limit).all<Record<string, unknown>>();
-    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, limit });
+    `).bind(...scopedCompanyIds, requestingModule, requestingModule, limit).all<Record<string, unknown>>();
+    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, module: requestingModule, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
