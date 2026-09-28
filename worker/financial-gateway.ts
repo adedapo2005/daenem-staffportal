@@ -264,16 +264,37 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
-      SELECT id,company_id AS companyId,provider_scope AS providerScope,
-        module_scope AS moduleScope,period,budget_minor AS budgetMinor,currency,
-        alert_threshold_percent AS alertThresholdPercent,exhausted_action AS exhaustedAction,
-        active,created_at AS createdAt,updated_at AS updatedAt
-      FROM financial_provider_budgets
-      WHERE company_id IN (${placeholders})
-      ORDER BY company_id,period,provider_scope,module_scope,currency,id
+      SELECT b.id,b.company_id AS companyId,b.provider_scope AS providerScope,
+        b.module_scope AS moduleScope,b.period,b.budget_minor AS budgetMinor,b.currency,
+        b.alert_threshold_percent AS alertThresholdPercent,b.exhausted_action AS exhaustedAction,
+        b.active,b.created_at AS createdAt,b.updated_at AS updatedAt,
+        COALESCE((SELECT SUM(e.actual_cost_minor)
+          FROM financial_provider_cost_events e
+          WHERE e.company_id=b.company_id AND e.cost_currency=b.currency
+            AND e.actual_cost_minor IS NOT NULL
+            AND date(e.occurred_at) >= CASE b.period
+              WHEN 'daily' THEN date('now','start of day')
+              ELSE date('now','start of month') END
+            AND (b.provider_scope='*' OR e.provider=b.provider_scope)
+            AND (b.module_scope='*' OR e.requesting_module=b.module_scope)),0) AS actualSpentMinor
+      FROM financial_provider_budgets b
+      WHERE b.company_id IN (${placeholders})
+      ORDER BY b.company_id,b.period,b.provider_scope,b.module_scope,b.currency,b.id
       LIMIT 500
     `).bind(...scopedCompanyIds).all<Record<string, unknown>>();
-    return json({ budgets: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    const budgets = (rows.results || []).map((budget) => {
+      const actualSpentMinor = Number(budget.actualSpentMinor) || 0;
+      const budgetMinor = Number(budget.budgetMinor) || 0;
+      const alertThresholdPercent = Number(budget.alertThresholdPercent) || 0;
+      return {
+        ...budget,
+        actualSpentMinor,
+        utilizationPercent: budgetMinor > 0 ? Math.floor(actualSpentMinor * 100 / budgetMinor) : null,
+        thresholdReached: Boolean(budget.active) && budgetMinor > 0 &&
+          actualSpentMinor * 100 >= budgetMinor * alertThresholdPercent,
+      };
+    });
+    return json({ budgets, visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/estimate') {

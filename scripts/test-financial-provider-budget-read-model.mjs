@@ -19,7 +19,7 @@ assert.match(endpoint, /upsert_provider_budget/);
 assert.match(endpoint, /providerCallMade: false/);
 assert.match(endpoint, /request\.method !== 'GET'\) return json\(\{ error: 'Use GET or POST for provider budgets\.'/);
 assert.match(endpoint, /!companyIds\.includes\(requestedCompanyId\)/);
-assert.match(endpoint, /FROM financial_provider_budgets\s+WHERE company_id IN \(\$\{placeholders\}\)/);
+assert.match(endpoint, /FROM financial_provider_budgets b\s+WHERE b\.company_id IN \(\$\{placeholders\}\)/);
 assert.match(endpoint, /LIMIT 500/);
 for (const field of ['provider_scope AS providerScope', 'module_scope AS moduleScope', 'budget_minor AS budgetMinor',
   'alert_threshold_percent AS alertThresholdPercent', 'exhausted_action AS exhaustedAction', 'active']) {
@@ -28,4 +28,12 @@ for (const field of ['provider_scope AS providerScope', 'module_scope AS moduleS
 const readModel = endpoint.slice(endpoint.indexOf('const requestedCompanyId'), endpoint.indexOf("if (url.pathname === '/api/financial-gateway/estimate'"));
 assert.doesNotMatch(readModel, /provider_reference|actor_employee_id|created_by|updated_by|access_token|client_secret/i);
 assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds\)/);
+assert.match(endpoint, /SUM\(e\.actual_cost_minor\)/);
+assert.match(endpoint, /e\.company_id=b\.company_id AND e\.cost_currency=b\.currency/);
+assert.match(endpoint, /WHEN 'daily' THEN date\('now','start of day'\)\s+ELSE date\('now','start of month'\)/);
+assert.match(endpoint, /b\.provider_scope='\*' OR e\.provider=b\.provider_scope/);
+assert.match(endpoint, /b\.module_scope='\*' OR e\.requesting_module=b\.module_scope/);
+assert.match(endpoint, /utilizationPercent: budgetMinor > 0/);
+assert.match(endpoint, /thresholdReached: Boolean\(budget\.active\) && budgetMinor > 0/);
+assert.match(endpoint, /actualSpentMinor \* 100 >= budgetMinor \* alertThresholdPercent/);
 console.log('Financial provider budget read/write boundary: PASS');
