@@ -195,7 +195,8 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
 
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary', '/api/financial-gateway/reconciliation-imports'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
+  const reconciliationImportDetail = url.pathname.match(/^\/api\/financial-gateway\/reconciliation-imports\/([A-Za-z0-9:_-]{1,160})$/);
+  if ((!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary', '/api/financial-gateway/reconciliation-imports'].includes(url.pathname) && !reconciliationImportDetail) || !['GET', 'POST'].includes(request.method)) return null;
 
   if (url.pathname === '/api/financial-gateway/pricing/admin') {
     if (request.method !== 'POST') return json({ error: 'Use POST to maintain provider pricing.' }, 405);
@@ -325,6 +326,33 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       LIMIT ?
     `).bind(...scopedCompanyIds, ...(status ? [status] : []), limit).all<Record<string, unknown>>();
     return json({ imports: rows.results || [], limit, status: status || null, visibleCompanyIds: scopedCompanyIds });
+  }
+
+  if (reconciliationImportDetail && request.method === 'GET') {
+    const importId = reconciliationImportDetail[1];
+    const requestedCompanyId = url.searchParams.get('companyId');
+    if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
+      return json({ error: 'Financial reconciliation access is not assigned.' }, 403);
+    }
+    const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
+    const placeholders = scopedCompanyIds.map(() => '?').join(',');
+    const reconciliationImport = await env.DB.prepare(`
+      SELECT id,company_id AS companyId,source_type AS sourceType,provider,
+        source_reference AS sourceReference,status,row_count AS rowCount,created_at AS createdAt,
+        reviewed_at AS reviewedAt
+      FROM financial_reconciliation_imports
+      WHERE id=? AND company_id IN (${placeholders}) LIMIT 1
+    `).bind(importId, ...scopedCompanyIds).first<Record<string, unknown>>();
+    if (!reconciliationImport) return json({ error: 'Reconciliation import was not found.' }, 404);
+    const rows = await env.DB.prepare(`
+      SELECT row_number AS rowNumber,provider_reference AS providerReference,occurred_at AS occurredAt,
+        direction,amount_minor AS amountMinor,currency,description,
+        reconciliation_status AS reconciliationStatus,candidate_reference AS candidateReference,
+        reviewed_at AS reviewedAt
+      FROM financial_reconciliation_import_rows
+      WHERE import_id=? ORDER BY row_number LIMIT 100
+    `).bind(importId).all<Record<string, unknown>>();
+    return json({ reconciliationImport, rows: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-summary') {

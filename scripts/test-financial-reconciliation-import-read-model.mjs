@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const source = await readFile(new URL('../worker/financial-gateway.ts', import.meta.url), 'utf8');
 const start = source.indexOf("if (url.pathname === '/api/financial-gateway/reconciliation-imports')");
-const end = source.indexOf("if (url.pathname === '/api/financial-gateway/cost-summary')", start);
+const end = source.indexOf("if (reconciliationImportDetail && request.method === 'GET')", start);
 const endpoint = source.slice(start, end);
 const readModel = endpoint.slice(endpoint.indexOf("if (request.method !== 'GET')"));
 
