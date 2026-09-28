@@ -195,7 +195,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
 
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
+  if (!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary', '/api/financial-gateway/reconciliation-imports'].includes(url.pathname) || !['GET', 'POST'].includes(request.method)) return null;
 
   if (url.pathname === '/api/financial-gateway/pricing/admin') {
     if (request.method !== 'POST') return json({ error: 'Use POST to maintain provider pricing.' }, 405);
@@ -207,6 +207,40 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     ? TARGET_COMPANIES
     : TARGET_COMPANIES.filter((companyId) => context.companies.some((company) => company.id === companyId) && hasPermission(context, 'finance.reports', 'view', companyId));
   if (companyIds.length === 0) return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
+
+  if (url.pathname === '/api/financial-gateway/reconciliation-imports') {
+    if (request.method !== 'GET') return json({ error: 'Use GET to read reconciliation imports.' }, 405);
+    const requestedCompanyId = url.searchParams.get('companyId');
+    if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
+      return json({ error: 'Financial reconciliation access is not assigned.' }, 403);
+    }
+    const rawLimit = url.searchParams.get('limit');
+    const limit = rawLimit === null ? 50 : Number(rawLimit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return json({ error: 'Choose between 1 and 100 reconciliation imports.' }, 400);
+    }
+    const status = url.searchParams.get('status') || '';
+    if (status && !['staged', 'review_required', 'reviewed', 'cancelled'].includes(status)) {
+      return json({ error: 'Choose a valid reconciliation import status.' }, 400);
+    }
+    const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
+    const placeholders = scopedCompanyIds.map(() => '?').join(',');
+    const statusSql = status ? ' AND i.status=?' : '';
+    const rows = await env.DB.prepare(`
+      SELECT i.id,i.company_id AS companyId,i.source_type AS sourceType,i.provider,
+        i.source_reference AS sourceReference,i.status,i.row_count AS rowCount,
+        i.created_at AS createdAt,i.reviewed_at AS reviewedAt,
+        (SELECT COUNT(*) FROM financial_reconciliation_import_rows r WHERE r.import_id=i.id AND r.reconciliation_status='unmatched') AS unmatchedCount,
+        (SELECT COUNT(*) FROM financial_reconciliation_import_rows r WHERE r.import_id=i.id AND r.reconciliation_status='partial') AS partialCount,
+        (SELECT COUNT(*) FROM financial_reconciliation_import_rows r WHERE r.import_id=i.id AND r.reconciliation_status IN ('exact','overpayment','duplicate','reversed','refunded')) AS resolvedCount
+      FROM financial_reconciliation_imports i
+      WHERE i.company_id IN (${placeholders})${statusSql}
+      ORDER BY CASE i.status WHEN 'review_required' THEN 0 WHEN 'staged' THEN 1 ELSE 2 END,
+        i.created_at DESC,i.id ASC
+      LIMIT ?
+    `).bind(...scopedCompanyIds, ...(status ? [status] : []), limit).all<Record<string, unknown>>();
+    return json({ imports: rows.results || [], limit, status: status || null, visibleCompanyIds: scopedCompanyIds });
+  }
 
   if (url.pathname === '/api/financial-gateway/cost-summary') {
     if (request.method !== 'GET') return json({ error: 'Use GET to read monthly provider-cost summaries.' }, 405);
