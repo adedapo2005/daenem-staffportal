@@ -146,13 +146,17 @@ async function createRecipientDeliveries(env: AlertingEnv, alertId: string, empl
         VALUES(?,?,?,?,'queued')`).bind(deliveryId, alertId, recipient.id, channel)];
       // Reuse only channels already supported by the shared outbox. External
       // providers remain queued behind their own activation and delivery gates.
-      if (channel === 'in_app' || channel === 'web_push') {
+      if (channel === 'in_app' || channel === 'web_push' || channel === 'screen_popup') {
+        // The shared notification feed accepts in_app/web_push, while the
+        // alert delivery remains canonically screen_popup for the UI to render
+        // as an immediate popup. Keep both records in the same atomic batch.
+        const outboxChannel = channel === 'screen_popup' ? 'in_app' : channel;
         statements.push(env.DB.prepare(`INSERT OR IGNORE INTO notification_outbox
           (id,employee_id,company_id,source_type,source_id,channel,title,message,priority,status)
           SELECT id,?,?, 'platform_alert',?,?,?,?,?,'queued'
           FROM platform_alert_deliveries
           WHERE alert_id=? AND recipient_id=? AND channel=? AND status='queued' LIMIT 1`)
-          .bind(employeeId, alert.companyId, alertId, channel, alert.title,
+          .bind(employeeId, alert.companyId, alertId, outboxChannel, alert.title,
             alert.summary || alert.title, 'normal', alertId, recipient.id, channel));
       }
       await env.DB.batch(statements);
