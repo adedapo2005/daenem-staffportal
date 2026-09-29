@@ -33,6 +33,13 @@ assert.match(route, /availableBusinesses: companies, providerCallMade: false/);
 assert.doesNotMatch(route.slice(route.indexOf('async function maintainPricing'), route.indexOf('\nexport async function routeFinancialGateway')), /fetch\(|.send\(/);
 assert.match(route, /pricing\.status === 'verified'/);
 assert.match(route, /revision=financial_provider_pricing\.revision\+1/);
+assert.match(route, /const expectedRevision = existing \? Number\(existing\.revision\) \+ 1 : 1/);
+assert.match(route, /WHERE financial_provider_pricing\.revision=\?/);
+assert.equal((route.match(/WHERE changes\(\)=1 AND EXISTS\(SELECT 1 FROM financial_provider_pricing/g) || []).length, 2,
+  'availability and audit rows only follow a successful compare-and-set');
+assert.match(route, /WHERE changes\(\)=1 AND EXISTS\(SELECT 1 FROM financial_provider_pricing WHERE id=\? AND revision=\? AND provider=\? AND service=\? AND currency=\?\)/);
+assert.match(route, /results\[0\]\?\.meta\?\.changes \|\| 0\) !== 1/);
+assert.match(route, /Provider pricing changed concurrently/);
 assert.match(route, /pricingRevision: pricing\.revision/);
 assert.match(route, /verifiedAt >= effectiveAt/);
 assert.match(route, /pricing_or_vat_unverified/);

@@ -171,6 +171,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
     const conflict = await env.DB.prepare('SELECT id FROM financial_provider_pricing WHERE provider=? AND service=? AND currency=? LIMIT 1').bind(provider, service, currency).first<{ id: string }>();
     if (conflict) return json({ error: 'A pricing record already exists for this provider, service and currency.' }, 409);
   }
+  const expectedRevision = existing ? Number(existing.revision) + 1 : 1;
   const statements = [
     env.DB.prepare(`INSERT INTO financial_provider_pricing(
       id,provider,service,pricing_model,fixed_amount_minor,percentage_bps,minimum_amount_minor,maximum_amount_minor,cap_amount_minor,
@@ -181,19 +182,27 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
       minimum_amount_minor=excluded.minimum_amount_minor,maximum_amount_minor=excluded.maximum_amount_minor,
       cap_amount_minor=excluded.cap_amount_minor,vat_treatment=excluded.vat_treatment,currency=excluded.currency,
       effective_at=excluded.effective_at,last_verified_at=excluded.last_verified_at,official_source=excluded.official_source,
-      status=excluded.status,notes=excluded.notes,revision=financial_provider_pricing.revision+1,updated_at=CURRENT_TIMESTAMP`)
+      status=excluded.status,notes=excluded.notes,revision=financial_provider_pricing.revision+1,updated_at=CURRENT_TIMESTAMP
+      WHERE financial_provider_pricing.revision=?`)
       .bind(id, provider, service, pricingModel, facts.fixedAmountMinor, facts.percentageBps, facts.minimumAmountMinor,
         facts.maximumAmountMinor, facts.capAmountMinor, vatTreatment, currency, effectiveAt, lastVerifiedAt,
-        facts.officialSource, status, facts.notes),
+        facts.officialSource, status, facts.notes, existing?.revision ?? 0),
     ...TARGET_COMPANIES.map((companyId) => env.DB.prepare(`INSERT INTO financial_provider_pricing_businesses(pricing_id,company_id,available)
-      VALUES(?,?,?) ON CONFLICT(pricing_id,company_id) DO UPDATE SET available=excluded.available`)
-      .bind(id, companyId, (companies as string[]).includes(companyId) ? 1 : 0)),
+      SELECT ?,?,? WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_provider_pricing WHERE id=? AND revision=? AND provider=? AND service=? AND currency=?)
+      ON CONFLICT(pricing_id,company_id) DO UPDATE SET available=excluded.available`)
+      .bind(id, companyId, (companies as string[]).includes(companyId) ? 1 : 0, id, expectedRevision, provider, service, currency)),
     env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
-      VALUES(?,?,NULL,'financial_gateway',?,'financial_provider_pricing',?,?,'web')`)
+      SELECT ?,?,NULL,'financial_gateway',?,'financial_provider_pricing',?,?,'web'
+      WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_provider_pricing WHERE id=? AND revision=? AND provider=? AND service=? AND currency=?)`)
       .bind(`audit-${crypto.randomUUID()}`, context.employee.id, existing ? 'update_provider_pricing' : 'create_provider_pricing', id,
-        JSON.stringify({ ...facts, availableBusinesses: companies })),
+        JSON.stringify({ ...facts, availableBusinesses: companies }), id, expectedRevision, provider, service, currency),
   ];
-  try { await env.DB.batch(statements); }
+  try {
+    const results = await env.DB.batch(statements);
+    if (Number(results[0]?.meta?.changes || 0) !== 1 || Number(results[results.length - 1]?.meta?.changes || 0) !== 1) {
+      return json({ error: 'Provider pricing changed concurrently. Reload the registry and try again.' }, 409);
+    }
+  }
   catch { return json({ error: 'Provider pricing could not be saved. Check for an existing provider/service/currency record.' }, 409); }
   return json({ ok: true, id, status, availableBusinesses: companies, providerCallMade: false });
 }
