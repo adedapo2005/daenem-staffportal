@@ -40,10 +40,12 @@ export async function readGoogleWeather(
       const cached = await cache.get(cacheKey);
       if (cached) {
         const parsed: unknown = JSON.parse(cached);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return { data: parsed as Record<string, unknown>, providerStatus: 'cached' };
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { data: null, providerStatus: 'cache_unavailable' };
+        return { data: parsed as Record<string, unknown>, providerStatus: 'cached' };
       }
     } catch {
-      // A cache read failure must not expose credentials or fail the portal request.
+      // Without a trustworthy cache read, fail closed to avoid an uncontrolled paid refresh.
+      return { data: null, providerStatus: 'cache_unavailable' };
     }
   }
 

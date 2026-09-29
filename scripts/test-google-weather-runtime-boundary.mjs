@@ -34,6 +34,8 @@ assert.match(provider, /inFlightWeather\.set\(cacheKey, request\)/);
 assert.match(provider, /inFlightWeather\.get\(cacheKey\) === request\) inFlightWeather\.delete\(cacheKey\)/);
 assert.match(provider, /fetchAndCacheWeather\(env, latitude, longitude, unitsSystem, cacheKey, cache\)/);
 assert.match(provider, /if \(!forceRefresh\) \{[\s\S]*?const cached = await cache\.get\(cacheKey\)/);
+assert.match(provider, /if \(!parsed \|\| typeof parsed !== 'object' \|\| Array\.isArray\(parsed\)\) return \{ data: null, providerStatus: 'cache_unavailable' \}/);
+assert.match(provider, /Without a trustworthy cache read, fail closed to avoid an uncontrolled paid refresh\.[\s\S]*?return \{ data: null, providerStatus: 'cache_unavailable' \}/);
 assert.match(provider, /weather:google:v1:\$\{digestHex\}/);
 assert.match(provider, /cache\.get\(cacheKey\)/);
 assert.match(provider, /cache\.put\(cacheKey, value/);
