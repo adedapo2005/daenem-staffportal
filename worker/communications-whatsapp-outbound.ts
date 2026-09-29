@@ -26,7 +26,10 @@ async function liveEnabled(env:WhatsAppOutboundEnv){
 }
 
 function normalizeRecipient(value:string){
-  return value.replace(/^\+/,'').replace(/\D/g,'');
+  const trimmed=value.trim();
+  if(!/^\+?[0-9().\s-]+$/.test(trimmed))return '';
+  const digits=trimmed.replace(/\D/g,'');
+  return digits.length>=8&&digits.length<=15?digits:'';
 }
 async function loadPreparedMessage(
   env:WhatsAppOutboundEnv,companyId:string,conversationId:string,messageId:string,
