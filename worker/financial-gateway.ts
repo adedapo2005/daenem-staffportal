@@ -435,6 +435,14 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
       return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
     }
+    const provider = url.searchParams.get('provider');
+    if (provider !== null && !/^[a-z][a-z0-9_-]{0,79}$/.test(provider)) {
+      return json({ error: 'Choose a valid provider filter.' }, 400);
+    }
+    const module = url.searchParams.get('module');
+    if (module !== null && !/^[a-z][a-z0-9_.:-]{0,79}$/.test(module)) {
+      return json({ error: 'Choose a valid module filter.' }, 400);
+    }
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
@@ -445,11 +453,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         SUM(estimated_cost_minor) AS estimatedCostMinor
       FROM financial_provider_cost_events
       WHERE company_id IN (${placeholders}) AND strftime('%Y-%m',occurred_at)=?
+        AND (? IS NULL OR provider=?) AND (? IS NULL OR requesting_module=?)
       GROUP BY company_id,provider,cost_currency,requesting_module
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT 500
-    `).bind(...scopedCompanyIds, month).all<Record<string, unknown>>();
-    return json({ month, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, month, provider, provider, module, module).all<Record<string, unknown>>();
+    return json({ month, provider, module, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {
