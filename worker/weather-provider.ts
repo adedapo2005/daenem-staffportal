@@ -39,6 +39,7 @@ export async function readGoogleWeather(
     try {
       const cached = await cache.get(cacheKey);
       if (cached) {
+        if (cached.length > 64_000) return { data: null, providerStatus: 'cache_unavailable' };
         const parsed: unknown = JSON.parse(cached);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { data: null, providerStatus: 'cache_unavailable' };
         return { data: parsed as Record<string, unknown>, providerStatus: 'cached' };
