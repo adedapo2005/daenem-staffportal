@@ -35,7 +35,12 @@ export async function routeFinancialProviderOwnerActions(request: Request, env: 
     return json({ error: 'Provider owner-action fields must be complete and bounded.' }, 400);
   }
   const status = String(body.status || 'waiting_owner');
-  const existing = await env.DB.prepare('SELECT id FROM financial_provider_owner_actions WHERE id=?').bind(values.id).first<{id:string}>();
+  const existing = await env.DB.prepare(`SELECT id,company_id AS companyId,provider,action,reason,blocked,not_blocked AS notBlocked,
+    clearing_evidence AS clearingEvidence,status,updated_at AS updatedAt
+    FROM financial_provider_owner_actions WHERE id=?`).bind(values.id).first<{
+      id:string;companyId:string;provider:string;action:string;reason:string;blocked:string;notBlocked:string;
+      clearingEvidence:string;status:string;updatedAt:string;
+    }>();
   let saved: D1Result;
   let audited: D1Result;
   try { [saved, audited] = await env.DB.batch([
@@ -43,13 +48,16 @@ export async function routeFinancialProviderOwnerActions(request: Request, env: 
       VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET reason=excluded.reason,blocked=excluded.blocked,
       not_blocked=excluded.not_blocked,clearing_evidence=excluded.clearing_evidence,status=excluded.status,
       updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
-      WHERE company_id=excluded.company_id AND provider=excluded.provider AND action=excluded.action`)
+      WHERE company_id=excluded.company_id AND provider=excluded.provider AND action=excluded.action
+        AND status=? AND updated_at=? AND reason=? AND blocked=? AND not_blocked=? AND clearing_evidence=?`)
       .bind(values.id,values.companyId,values.provider,values.action,values.reason,values.blocked,values.notBlocked,values.clearingEvidence,status,
-        context.employee.id,context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+        context.employee.id,context.employee.id,existing?.status??null,existing?.updatedAt??null,existing?.reason??null,
+        existing?.blocked??null,existing?.notBlocked??null,existing?.clearingEvidence??null),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source)
       SELECT ?,?,?,'financial_gateway',?,'financial_provider_owner_action',?,?,'web'
       WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_provider_owner_actions WHERE id=? AND company_id=? AND provider=? AND action=?)`)
       .bind(`audit-${crypto.randomUUID()}`,context.employee.id,values.companyId,'save_provider_owner_action',values.id,
+        existing ? JSON.stringify({status:existing.status,reason:existing.reason,blocked:existing.blocked,notBlocked:existing.notBlocked,clearingEvidence:existing.clearingEvidence}) : null,
         JSON.stringify({provider:values.provider,action:values.action,status,reason:values.reason,blocked:values.blocked,notBlocked:values.notBlocked,clearingEvidence:values.clearingEvidence}),
         values.id,values.companyId,values.provider,values.action),
   ]); } catch { return json({ error: 'Provider owner action conflicts with an existing business/provider/action record.' }, 409); }
