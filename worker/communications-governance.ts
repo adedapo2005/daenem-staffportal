@@ -605,7 +605,9 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
  if(!canManageEvent(context,mapping.companyId,mapping.useCaseId,'manage'))return json({error:'Manage Communications permission is required.'},403);
  if(mapping.enabled!==0||mapping.status!=='draft')return json({error:'Only disabled draft mappings can be edited.'},409);
  const id=uid('comm-template-variable');
- const [saved,audited]=await env.DB.batch([
+ let saved:D1Result,audited:D1Result;
+ try{
+ [saved,audited]=await env.DB.batch([
   env.DB.prepare(`INSERT INTO communication_template_variable_mappings(
    id,mapping_id,component,component_name,position,variable_name,source_field,source_module,
    data_type,required,formatter,max_length,fallback_policy,fallback_value,sensitivity,example_value
@@ -625,6 +627,11 @@ async function saveTemplateVariableMapping(request:Request,env:GovernanceEnv,con
     sourceField,sourceModule,dataType,required,formatter,maxLength,fallbackPolicy,sensitivity,
    }),id,mappingId),
  ]);
+ }catch(error){
+  if(error instanceof Error&&/unique constraint/i.test(error.message))
+   return json({error:'A variable is already mapped to this component position.'},409);
+  throw error;
+ }
  if(Number(saved.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1)return json({error:'Variable mapping could not be saved.'},409);
  return json({ok:true,id,mappingId},201);
 }

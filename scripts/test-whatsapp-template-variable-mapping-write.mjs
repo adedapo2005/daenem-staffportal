@@ -15,6 +15,7 @@ assert.match(endpoint, /\['public','internal','personal','sensitive'\]/);
 assert.match(endpoint, /fallbackPolicy==='approved_value'.*!fallbackValue/s);
 assert.match(endpoint, /!required&&fallbackPolicy!=='approved_value'/);
 assert.match(endpoint, /'map_template_variable'/);
+assert.match(endpoint, /unique constraint\/i\.test\(error\.message\)[\s\S]*?already mapped to this component position/);
 const auditPayload = endpoint.slice(endpoint.indexOf("JSON.stringify({", endpoint.indexOf("'map_template_variable'")));
 assert.match(auditPayload, /componentName:componentName\|\|null,position,variableName/);
 assert.match(auditPayload, /sourceField,sourceModule,dataType,required,formatter,maxLength,fallbackPolicy,sensitivity/);
