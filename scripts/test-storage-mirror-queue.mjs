@@ -44,6 +44,7 @@ const printingUpload = printing.slice(printing.indexOf('async function upload(')
 assert.match(printingUpload, /if\(!can\(context,'create'\)\)/);
 assert.match(printingUpload, /await assertJob\(env,jobId\)/);
 assert.match(printingUpload, /crypto\.subtle\.digest\('SHA-256',bytes\)/);
+assert.match(printingUpload, /customMetadata:\{companyId,jobId,category,uploadedBy:context\.employee\.id,originalName:safeName,sha256:digest\}/);
 assert.match(printingUpload, /await env\.DB\.batch\(\[[\s\S]*?INSERT OR IGNORE INTO storage_mirror_jobs/);
 assert.match(printingUpload, /'microsoft_onedrive','printing',\?,\?,\?,\?,\?,\?,\?,\?,'provider_required'/);
 assert.match(printingUpload, /microsoft_onedrive:printing:/);

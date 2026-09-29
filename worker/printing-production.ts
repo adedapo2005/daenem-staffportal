@@ -53,7 +53,7 @@ async function upload(request:Request,env:PrintingProductionEnv,context:SessionC
   const bytes=await file.arrayBuffer(),digestBytes=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
   const digest=Array.from(digestBytes,byte=>byte.toString(16).padStart(2,'0')).join('');
   const fileId=crypto.randomUUID(),key=`printing/${jobId}/${category}/${Date.now()}-${fileId}-${safeName}`,mime=file.type||'application/octet-stream';
-  await env.FILES.put(key,bytes,{httpMetadata:{contentType:mime,cacheControl:'private, no-store'},customMetadata:{jobId,category,uploadedBy:context.employee.id,originalName:safeName,sha256:digest}});
+  await env.FILES.put(key,bytes,{httpMetadata:{contentType:mime,cacheControl:'private, no-store'},customMetadata:{companyId,jobId,category,uploadedBy:context.employee.id,originalName:safeName,sha256:digest}});
   try{
     await env.DB.batch([
       env.DB.prepare(`INSERT OR IGNORE INTO storage_mirror_jobs(id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status) VALUES(?,'microsoft_onedrive','printing',?,?,?,?,?,?,?,?,'provider_required')`).bind(`storage-mirror-printing-${fileId}-${digest}`,fileId,companyId,key,safeName,mime,file.size,digest,`microsoft_onedrive:printing:${fileId}:${digest}`),
