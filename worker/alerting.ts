@@ -371,11 +371,9 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
   }
   if (alert.status === 'resolved') return json({ error: 'Resolved alerts cannot be updated.' }, 409);
 
-  if (!canManage(context)) {
-    const assigned = await env.DB.prepare('SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?')
-      .bind(alertId, context.employee.id).first<{ id: string }>();
-    if (!assigned) return json({ error: 'Alert not found.' }, 404);
-  }
+  const assigned = await env.DB.prepare('SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?')
+    .bind(alertId, context.employee.id).first<{ id: string }>();
+  if (!assigned) return json({ error: 'Alert not found.' }, 404);
 
   const now = new Date().toISOString();
   let writes: D1Result[];
