@@ -120,6 +120,14 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
   return { decision: estimate! === 0 ? 'free' as const : 'estimated' as const, estimatedCostMinor: estimate!, currency: pricing.currency };
 }
 
+export function isSafeOfficialPricingSource(value: string) {
+  try {
+    const source = new URL(value);
+    return source.protocol === 'https:' && !source.username && !source.password &&
+      !source.search && !source.hash;
+  } catch { return false; }
+}
+
 const PRICING_MODELS = ['FREE', 'FIXED', 'PERCENTAGE', 'PERCENTAGE_FIXED', 'TIERED', 'PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST', 'UNKNOWN_REVERIFY'];
 const PRICING_COMPANIES = new Set(TARGET_COMPANIES);
 
@@ -170,7 +178,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
       pct !== null && pct !== undefined && (typeof pct !== 'number' || !Number.isSafeInteger(pct) || pct < 0 || pct > 10_000) ||
       minimum != null && maximum != null && Number(maximum) < Number(minimum) ||
       !dateOrNull(effectiveAt) || !dateOrNull(lastVerifiedAt) ||
-      officialSource.length > 500 || (officialSource && (() => { try { return new URL(officialSource).protocol !== 'https:'; } catch { return true; } })()) ||
+      officialSource.length > 500 || (officialSource && !isSafeOfficialPricingSource(officialSource)) ||
       notes.length > 1000 || (status === 'verified' && (vatTreatment === 'unknown' || !effectiveAt || !lastVerifiedAt || !officialSource ||
         pricingModel === 'TIERED' || pricingModel === 'UNKNOWN_REVERIFY' || !pricingTermsComplete))) {
     return json({ error: 'Provider pricing fields, verified source and business availability must be valid and bounded.' }, 400);

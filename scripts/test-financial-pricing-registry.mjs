@@ -21,6 +21,7 @@ assert.match(route, /WHERE EXISTS\s*\([\s\S]*?scoped\.company_id IN/);
 assert.match(route, /cache-control': 'no-store'/);
 assert.match(entry, /routeFinancialGateway\(request,env,context\)/);
 assert.match(route, /export function estimateProviderCost/);
+assert.match(route, /export function isSafeOfficialPricingSource/);
 assert.match(route, /\/api\/financial-gateway\/pricing\/admin/);
 assert.match(route, /Owner pricing administration access is required/);
 assert.match(route, /new Set\(companies\)\.size !== companies\.length/);
@@ -28,6 +29,7 @@ assert.match(route, /minimum != null && \(\(maximum != null && maximum < minimum
 assert.match(route, /PRICING_COMPANIES\.has\(company\)/);
 assert.match(route, /status === 'verified' && \(vatTreatment === 'unknown'[\s\S]*?pricingTermsComplete\)/);
 assert.match(route, /pricingModel === 'TIERED' \|\| pricingModel === 'UNKNOWN_REVERIFY' \|\| !pricingTermsComplete/);
+assert.match(route, /officialSource && !isSafeOfficialPricingSource\(officialSource\)/);
 assert.match(route, /INSERT INTO audit_logs[\s\S]*?financial_provider_pricing/);
 assert.match(route, /availableBusinesses: companies, providerCallMade: false/);
 assert.doesNotMatch(route.slice(route.indexOf('async function maintainPricing'), route.indexOf('\nexport async function routeFinancialGateway')), /fetch\(|.send\(/);
@@ -56,6 +58,15 @@ assert.doesNotMatch(route.slice(route.indexOf("if (url.pathname === '/api/financ
 const estimator = route.slice(route.indexOf('export function estimateProviderCost'), route.indexOf('\nconst PRICING_MODELS'));
 const javascript = ts.transpileModule(estimator, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { estimateProviderCost } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
+const sourceValidator = route.slice(route.indexOf('export function isSafeOfficialPricingSource'), route.indexOf('\nconst PRICING_MODELS'));
+const sourceValidatorJs = ts.transpileModule(sourceValidator, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const { isSafeOfficialPricingSource } = await import(`data:text/javascript;base64,${Buffer.from(sourceValidatorJs).toString('base64')}`);
+assert.equal(isSafeOfficialPricingSource('https://provider.example/pricing'), true);
+assert.equal(isSafeOfficialPricingSource('http://provider.example/pricing'), false);
+assert.equal(isSafeOfficialPricingSource('https://user:secret@provider.example/pricing'), false);
+assert.equal(isSafeOfficialPricingSource('https://provider.example/pricing?token=secret'), false);
+assert.equal(isSafeOfficialPricingSource('https://provider.example/pricing#access_token=secret'), false);
+assert.equal(isSafeOfficialPricingSource('not a URL'), false);
 const verified = { pricingModel: 'PERCENTAGE_FIXED', fixedAmountMinor: 25, percentageBps: 150,
   minimumAmountMinor: 0, maximumAmountMinor: 500, capAmountMinor: 400, vatTreatment: 'included',
   currency: 'NGN', effectiveAt: '2026-01-01T00:00:00.000Z', lastVerifiedAt: '2026-09-01T00:00:00.000Z', status: 'verified' };
