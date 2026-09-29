@@ -72,4 +72,12 @@ assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FREE', vatTr
   { decision: 'verification_required', reason: 'free_pricing_has_fee_terms', currency: 'NGN' });
 assert.equal(estimateProviderCost({ ...verified, pricingModel: 'TIERED' }, {}, Date.parse('2026-09-27T00:00:00Z')).decision, 'verification_required');
 assert.equal(estimateProviderCost({ ...verified, lastVerifiedAt: '2025-12-01T00:00:00.000Z' }, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')).decision, 'verification_required');
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PER_REQUEST', fixedAmountMinor: 125,
+  percentageBps: null, minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null },
+  { quantity: 100_000 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'estimated', estimatedCostMinor: 12_500_000, currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PER_PAGE', fixedAmountMinor: 100_000_000_000,
+  percentageBps: null, minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null },
+  { quantity: 100_000 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'verification_required', reason: 'pricing_terms_incomplete', currency: 'NGN' });
 console.log('Financial pricing registry and estimate boundary: PASS');

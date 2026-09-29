@@ -95,10 +95,15 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
     }
     case 'PER_PAGE':
     case 'PER_REQUEST':
-    case 'PER_SUCCESSFUL_REQUEST':
-      if (pricing.fixedAmountMinor === null) break;
-      estimate = pricing.fixedAmountMinor * units;
+    case 'PER_SUCCESSFUL_REQUEST': {
+      if (pricing.fixedAmountMinor === null || !Number.isSafeInteger(pricing.fixedAmountMinor) || pricing.fixedAmountMinor < 0) break;
+      const total = BigInt(pricing.fixedAmountMinor) * BigInt(units);
+      if (total > BigInt(Number.MAX_SAFE_INTEGER)) {
+        return { decision: 'verification_required' as const, reason: 'pricing_terms_incomplete', currency: pricing.currency };
+      }
+      estimate = Number(total);
       break;
+    }
     default:
       return { decision: 'verification_required' as const, reason: 'pricing_model_requires_explicit_terms', currency: pricing.currency };
   }
