@@ -317,6 +317,32 @@ async function listAttention(env: AlertingEnv, context: SessionContext) {
   return json({ alerts: rows.results || [] });
 }
 
+async function listSummary(env: AlertingEnv, context: SessionContext) {
+  if (!canView(context)) return json({ error: 'Alert access is not assigned.' }, 403);
+  const scope = companyScope(context);
+  const recipientClause = canManage(context) ? '' : `
+    AND EXISTS (
+      SELECT 1 FROM platform_alert_recipients ar
+      WHERE ar.alert_id=a.id AND ar.employee_id=?
+    )`;
+  const recipientValues = canManage(context) ? [] : [context.employee.id];
+  const row = await env.DB.prepare(`
+    SELECT COUNT(*) AS attentionCount,
+      SUM(CASE WHEN a.acknowledgement_required=1 AND
+        (ar.acknowledged_at IS NULL OR ar.id IS NULL) THEN 1 ELSE 0 END) AS acknowledgementRequiredCount,
+      MAX(COALESCE(ar.created_at,a.created_at)) AS latestArrivalAt
+    FROM platform_alerts a
+    LEFT JOIN platform_alert_recipients ar ON ar.alert_id=a.id AND ar.employee_id=?
+    WHERE a.status IN ('open','acknowledged','reopened')${scope.sql}${recipientClause}
+  `).bind(context.employee.id, ...scope.values, ...recipientValues)
+    .first<{ attentionCount: number; acknowledgementRequiredCount: number; latestArrivalAt: string | null }>();
+  return json({
+    attentionCount: Number(row?.attentionCount || 0),
+    acknowledgementRequiredCount: Number(row?.acknowledgementRequiredCount || 0),
+    latestArrivalAt: row?.latestArrivalAt || null,
+  });
+}
+
 async function listHistory(request: Request, env: AlertingEnv, context: SessionContext) {
   if (!canView(context)) return json({ error: 'Alert access is not assigned.' }, 403);
   const status = new URL(request.url).searchParams.get('status') || '';
@@ -510,6 +536,7 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
 
 export async function routeAlerting(request: Request, env: AlertingEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
+  if (url.pathname === '/api/alerting/summary' && request.method === 'GET') return listSummary(env, context);
   if (url.pathname === '/api/alerting/attention' && request.method === 'GET') return listAttention(env, context);
   if (url.pathname === '/api/alerting/history' && request.method === 'GET') return listHistory(request, env, context);
   if (url.pathname === '/api/alerting/deliveries' && request.method === 'GET') return listDeliveries(request, env, context);
