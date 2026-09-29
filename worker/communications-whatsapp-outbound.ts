@@ -93,6 +93,13 @@ async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:Prepar
   `).bind(mapping.id).all<Record<string,unknown>>();
   const variables=result.results||[];
   if(!variables.length)throw new Error('WHATSAPP_TEMPLATE_VARIABLES_REQUIRED');
+  const nextPositionByComponent = new Map<string, number>();
+  for (const variable of variables) {
+    const componentKey = `${String(variable.component)}:${String(variable.componentName || '')}`;
+    const expectedPosition = nextPositionByComponent.get(componentKey) || 1;
+    if (Number(variable.position) !== expectedPosition) throw new Error('WHATSAPP_TEMPLATE_VARIABLE_POSITION_GAP');
+    nextPositionByComponent.set(componentKey, expectedPosition + 1);
+  }
   // This bounded Inbox slice resolves only the canonical customer display name
   // into Meta text HEADER and BODY parameters. Other sources/components remain
   // fail-closed until their source and provider format contracts are explicit.
