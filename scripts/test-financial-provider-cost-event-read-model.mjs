@@ -20,7 +20,7 @@ assert.match(endpoint, /FROM financial_provider_cost_events\s+WHERE company_id I
 assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, requestingModule, requestingModule, limit\)/);
 assert.match(endpoint, /ORDER BY occurred_at DESC,id DESC/);
 for (const field of ['estimated_cost_minor AS estimatedCostMinor', 'actual_cost_minor AS actualCostMinor',
-  'pricing_verified_at AS pricingVerifiedAt', 'requesting_module AS requestingModule',
+  'pricing_revision AS pricingRevision', 'pricing_verified_at AS pricingVerifiedAt', 'requesting_module AS requestingModule',
   'actor_employee_id AS actorEmployeeId', 'provider_reference AS providerReference']) {
   assert.ok(endpoint.includes(field), `internal finance projection includes ${field}`);
 }

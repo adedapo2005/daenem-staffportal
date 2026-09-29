@@ -13,6 +13,7 @@ type PricingFacts = {
   pricingModel: string; fixedAmountMinor: number | null; percentageBps: number | null;
   minimumAmountMinor: number | null; maximumAmountMinor: number | null; capAmountMinor: number | null;
   vatTreatment: string; currency: string; effectiveAt: string | null; lastVerifiedAt: string | null; status: string;
+  revision?: number;
 };
 
 function budgetUsage(actualSpentMinor: number, budgetMinor: number, alertThresholdPercent: number, active: boolean) {
@@ -165,7 +166,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
     vatTreatment, currency, effectiveAt, lastVerifiedAt, officialSource: officialSource || null,
     status, notes: notes || null,
   };
-  const existing = await env.DB.prepare('SELECT id FROM financial_provider_pricing WHERE id=? LIMIT 1').bind(id).first<{ id: string }>();
+  const existing = await env.DB.prepare('SELECT id,revision FROM financial_provider_pricing WHERE id=? LIMIT 1').bind(id).first<{ id: string; revision: number }>();
   if (!existing) {
     const conflict = await env.DB.prepare('SELECT id FROM financial_provider_pricing WHERE provider=? AND service=? AND currency=? LIMIT 1').bind(provider, service, currency).first<{ id: string }>();
     if (conflict) return json({ error: 'A pricing record already exists for this provider, service and currency.' }, 409);
@@ -180,7 +181,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
       minimum_amount_minor=excluded.minimum_amount_minor,maximum_amount_minor=excluded.maximum_amount_minor,
       cap_amount_minor=excluded.cap_amount_minor,vat_treatment=excluded.vat_treatment,currency=excluded.currency,
       effective_at=excluded.effective_at,last_verified_at=excluded.last_verified_at,official_source=excluded.official_source,
-      status=excluded.status,notes=excluded.notes,updated_at=CURRENT_TIMESTAMP`)
+      status=excluded.status,notes=excluded.notes,revision=financial_provider_pricing.revision+1,updated_at=CURRENT_TIMESTAMP`)
       .bind(id, provider, service, pricingModel, facts.fixedAmountMinor, facts.percentageBps, facts.minimumAmountMinor,
         facts.maximumAmountMinor, facts.capAmountMinor, vatTreatment, currency, effectiveAt, lastVerifiedAt,
         facts.officialSource, status, facts.notes),
@@ -408,7 +409,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         actor_role_code AS actorRoleCode,action,amount_minor AS amountMinor,currency,
         provider,estimated_cost_minor AS estimatedCostMinor,
         actual_cost_minor AS actualCostMinor,cost_currency AS costCurrency,
-        pricing_id AS pricingId,pricing_verified_at AS pricingVerifiedAt,
+        pricing_id AS pricingId,pricing_revision AS pricingRevision,pricing_verified_at AS pricingVerifiedAt,
         approval_id AS approvalId,maker_employee_id AS makerEmployeeId,
         checker_employee_id AS checkerEmployeeId,provider_reference AS providerReference,
         retry_of_event_id AS retryOfEventId,reversal_of_event_id AS reversalOfEventId,
@@ -583,12 +584,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       p.fixed_amount_minor AS fixedAmountMinor,p.percentage_bps AS percentageBps,
       p.minimum_amount_minor AS minimumAmountMinor,p.maximum_amount_minor AS maximumAmountMinor,
       p.cap_amount_minor AS capAmountMinor,p.vat_treatment AS vatTreatment,p.currency,
-      p.effective_at AS effectiveAt,p.last_verified_at AS lastVerifiedAt,p.status
+      p.effective_at AS effectiveAt,p.last_verified_at AS lastVerifiedAt,p.status,p.revision
       FROM financial_provider_pricing p JOIN financial_provider_pricing_businesses b ON b.pricing_id=p.id
       WHERE p.id=? AND b.company_id=? AND b.available=1 LIMIT 1`)
       .bind(pricingId, companyId).first<PricingFacts>();
     if (!pricing) return json({ error: 'Pricing record was not found.' }, 404);
-    return json({ companyId, pricingId, ...estimateProviderCost(pricing, body) });
+    return json({ companyId, pricingId, pricingRevision: pricing.revision, ...estimateProviderCost(pricing, body) });
   }
   if (request.method !== 'GET') return json({ error: 'Use GET to read provider pricing.' }, 405);
 
@@ -599,7 +600,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       p.minimum_amount_minor AS minimumAmountMinor,p.maximum_amount_minor AS maximumAmountMinor,
       p.cap_amount_minor AS capAmountMinor,p.vat_treatment AS vatTreatment,p.currency,
       p.effective_at AS effectiveAt,p.last_verified_at AS lastVerifiedAt,
-      p.official_source AS officialSource,p.status,p.notes,
+      p.official_source AS officialSource,p.status,p.notes,p.revision,
       b.company_id AS companyId,b.available AS available
     FROM financial_provider_pricing p
     LEFT JOIN financial_provider_pricing_businesses b

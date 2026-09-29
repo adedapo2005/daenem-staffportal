@@ -9,6 +9,9 @@ const entry = await readFile(new URL('../worker/entry.ts', import.meta.url), 'ut
 assert.match(migration, /CREATE TABLE IF NOT EXISTS financial_provider_pricing/);
 assert.match(migration, /UNKNOWN_REVERIFY/);
 assert.match(migration, /UNIQUE\(provider, service, currency\)/);
+const revisionMigration = await readFile(new URL('../migrations/0086_financial_provider_pricing_revision.sql', import.meta.url), 'utf8');
+assert.match(revisionMigration, /ADD COLUMN revision INTEGER NOT NULL DEFAULT 1/);
+assert.match(revisionMigration, /ADD COLUMN pricing_revision INTEGER/);
 assert.match(migration, /company_id IN \('company-printing','company-bakery','company-autos','company-properties','company-logistics'\)/);
 assert.doesNotMatch(migration, /company-farms/);
 assert.match(route, /hasPermission\(context, 'finance\.reports', 'view', companyId\)/);
@@ -29,6 +32,8 @@ assert.match(route, /INSERT INTO audit_logs[\s\S]*?financial_provider_pricing/);
 assert.match(route, /availableBusinesses: companies, providerCallMade: false/);
 assert.doesNotMatch(route.slice(route.indexOf('async function maintainPricing'), route.indexOf('\nexport async function routeFinancialGateway')), /fetch\(|.send\(/);
 assert.match(route, /pricing\.status === 'verified'/);
+assert.match(route, /revision=financial_provider_pricing\.revision\+1/);
+assert.match(route, /pricingRevision: pricing\.revision/);
 assert.match(route, /verifiedAt >= effectiveAt/);
 assert.match(route, /pricing_or_vat_unverified/);
 assert.match(route, /pricingModel === 'FREE'/);
