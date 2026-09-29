@@ -21,12 +21,18 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
   const url = new URL(request.url);
   const incidentDetail = url.pathname.match(/^\/api\/admin\/smart-bugs\/incidents\/([A-Za-z0-9:_-]{1,160})$/);
   const storageMirrorIntegrity = url.pathname === '/api/admin/smart-bugs/integrity/storage-mirror';
-  if (request.method !== 'GET' || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail && !storageMirrorIntegrity)) return null;
+  const reconciliationImportIntegrity = url.pathname === '/api/admin/smart-bugs/integrity/reconciliation-imports';
+  if (request.method !== 'GET' || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail && !storageMirrorIntegrity && !reconciliationImportIntegrity)) return null;
   if (!groupRole(context)) return json({ error: 'Smart Bug Management access is not assigned.' }, 403);
 
   const { isOwner, companyIds } = scope(context);
-  if (!isOwner && companyIds.length === 0) return json(storageMirrorIntegrity
-    ? { detector: 'storage_mirror_success_evidence', readOnly: true, findingCount: 0, state: 'clear' }
+  if (!isOwner && companyIds.length === 0) return json(storageMirrorIntegrity || reconciliationImportIntegrity
+    ? {
+      detector: reconciliationImportIntegrity ? 'reconciliation_import_row_count' : 'storage_mirror_integrity',
+      readOnly: true, findingCount: 0,
+      findings: reconciliationImportIntegrity ? { importsWithRowCountMismatch: 0 } : { mirroredWithoutSuccessEvidence: 0, failedWithoutErrorCode: 0 },
+      state: 'clear',
+    }
     : url.pathname.endsWith('/overview')
       ? { incidents: 0, active: 0, bySeverity: { P0: 0, P1: 0, P2: 0, P3: 0 }, byStatus: {}, mode: 'observe_only', autoRemediationEnabled: false }
       : { incidents: [], limit: 50 });
@@ -65,6 +71,27 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
         mirroredWithoutSuccessEvidence: successEvidenceFindings,
         failedWithoutErrorCode: failedWithoutCodeFindings,
       },
+      state: findingCount > 0 ? 'finding' : 'clear',
+    });
+  }
+
+  if (reconciliationImportIntegrity) {
+    // Staged imports are evidence only. A declared row count that disagrees
+    // with persisted rows signals incomplete evidence; this detector reports
+    // aggregate counts only and never repairs or exposes import contents.
+    const finding = await env.DB.prepare(`
+      SELECT COUNT(*) AS count
+      FROM financial_reconciliation_imports i
+      WHERE i.row_count != (
+        SELECT COUNT(*) FROM financial_reconciliation_import_rows r WHERE r.import_id=i.id
+      )${scopeSql}
+    `).bind(...binds).first<{ count: number }>();
+    const findingCount = Number(finding?.count || 0);
+    return json({
+      detector: 'reconciliation_import_row_count',
+      readOnly: true,
+      findingCount,
+      findings: { importsWithRowCountMismatch: findingCount },
       state: findingCount > 0 ? 'finding' : 'clear',
     });
   }
