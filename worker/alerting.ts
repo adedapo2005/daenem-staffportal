@@ -224,8 +224,6 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
     ORDER BY CASE WHEN company_id=? THEN 0 ELSE 1 END, CASE WHEN module=? THEN 0 ELSE 1 END, created_at DESC
     LIMIT 1
   `).bind(input.eventType, input.module, input.companyId || null, input.companyId || null, input.module).first<Record<string, unknown>>();
-  const recipientPlan = await resolveRecipients(env, rule || null, input.companyId || null);
-  if (!recipientPlan.employeeIds.length) return null;
   const severity = safeSeverity(rule?.severity || input.severityHint);
   const fingerprint = await digest([
     input.companyId || 'group', input.module, input.eventType, input.sourceType,
@@ -242,6 +240,11 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
     input.severityHint || null, input.title, input.summary || null, input.relatedPath || null,
     JSON.stringify(input.payload || {}), occurredAt,
   ).run();
+
+  // An Event is durable even when current authorization resolves no recipients.
+  // In that case it remains an event only: do not create an Alert or delivery.
+  const recipientPlan = await resolveRecipients(env, rule || null, input.companyId || null);
+  if (!recipientPlan.employeeIds.length) return null;
 
   const existing = await env.DB.prepare(`
     SELECT id,alert_no alertNo,occurrence_count occurrenceCount
