@@ -443,13 +443,16 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
 }
 async function listRules(env: AlertingEnv, context: SessionContext) {
   if (!canRules(context)) return json({ error: 'Alert rule management is not assigned.' }, 403);
+  const companyIds = [...new Set(context.companies.map((company) => company.id))];
+  if (!owner(context) && companyIds.length === 0) return json({ rules: [] });
+  const scopeSql = owner(context) ? '' : `WHERE company_id IN (${companyIds.map(() => '?').join(',')})`;
   const rows = await env.DB.prepare(`
     SELECT id,company_id companyId,name,module,event_type eventType,severity,conditions_json conditionsJson,
       recipients_json recipientsJson,channels_json channelsJson,acknowledgement_required acknowledgementRequired,
       quiet_hours_override quietHoursOverride,dedup_window_minutes dedupWindowMinutes,
       escalation_json escalationJson,active,created_at createdAt,updated_at updatedAt
-    FROM platform_alert_rules ORDER BY active DESC,name ASC
-  `).all<Record<string, unknown>>();
+    FROM platform_alert_rules ${scopeSql} ORDER BY active DESC,name ASC
+  `).bind(...(owner(context) ? [] : companyIds)).all<Record<string, unknown>>();
   return json({ rules: rows.results || [] });
 }
 
@@ -484,6 +487,7 @@ async function saveRule(request: Request, env: AlertingEnv, context: SessionCont
     return json({ error: 'Choose valid, unique alert recipients and delivery channels.' }, 400);
   }
   const companyId = body.companyId ? String(body.companyId) : null;
+  if (!owner(context) && !companyId) return json({ error: 'Company access is not assigned.' }, 403);
   if (companyId && !owner(context) && !context.companies.some((company) => company.id === companyId)) {
     return json({ error: 'Company access is not assigned.' }, 403);
   }
