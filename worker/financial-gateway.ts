@@ -201,7 +201,62 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
   const reconciliationImportDetail = url.pathname.match(/^\/api\/financial-gateway\/reconciliation-imports\/([A-Za-z0-9:_-]{1,160})$/);
-  if ((!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary', '/api/financial-gateway/reconciliation-imports'].includes(url.pathname) && !reconciliationImportDetail) || !['GET', 'POST'].includes(request.method)) return null;
+  if ((!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary', '/api/financial-gateway/reconciliation-imports', '/api/financial-gateway/routing-policies'].includes(url.pathname) && !reconciliationImportDetail) || !['GET', 'POST'].includes(request.method)) return null;
+
+  if (url.pathname === '/api/financial-gateway/routing-policies') {
+    const companyIds = [...new Set(context.companies.map((company) => company.id).filter((id) => PRICING_COMPANIES.has(id)))];
+    const isOwner = context.roles.some((role) => role.code === 'owner');
+    if (request.method === 'POST') {
+      if (!isOwner) return json({ error: 'Owner provider-routing administration access is required.' }, 403);
+      let body: Record<string, unknown>;
+      try { body = await request.json() as Record<string, unknown>; }
+      catch { return json({ error: 'Invalid provider routing policy.' }, 400); }
+      const companyId = typeof body.companyId === 'string' ? body.companyId : '';
+      const id = typeof body.id === 'string' ? body.id : '';
+      const service = typeof body.service === 'string' ? body.service.trim() : '';
+      const provider = typeof body.provider === 'string' ? body.provider : '';
+      const priority = body.priority;
+      const status = body.status;
+      const routingReason = typeof body.routingReason === 'string' ? body.routingReason.trim() : '';
+      if (!PRICING_COMPANIES.has(companyId) || !/^[A-Za-z0-9:_-]{1,160}$/.test(id) || !service || service.length > 120 ||
+          !['paystack', 'monnify', 'mono', 'manual_import'].includes(provider) || typeof priority !== 'number' ||
+          !Number.isInteger(priority) || priority < 1 || priority > 20 ||
+          !['enabled', 'disabled', 'owner_action_required'].includes(String(status)) || !routingReason || routingReason.length > 1000) {
+        return json({ error: 'Business, service, approved provider, priority, status and routing reason must be valid and bounded.' }, 400);
+      }
+      try {
+        const results = await env.DB.batch([
+          env.DB.prepare(`INSERT INTO financial_provider_routing_policies(id,company_id,service,provider,priority,status,routing_reason,created_by,updated_by)
+            VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET priority=excluded.priority,status=excluded.status,
+              routing_reason=excluded.routing_reason,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+            WHERE company_id=excluded.company_id AND service=excluded.service AND provider=excluded.provider`)
+            .bind(id, companyId, service, provider, priority, status, routingReason, context.employee.id, context.employee.id),
+          env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+            SELECT ?,?,?, 'financial_gateway','save_provider_routing_policy','financial_provider_routing_policy',?,?,'web'
+            WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_provider_routing_policies WHERE id=? AND company_id=? AND service=? AND provider=?)`)
+            .bind(`audit-${crypto.randomUUID()}`, context.employee.id, companyId, id,
+              JSON.stringify({ service, provider, priority, status, routingReason }), id, companyId, service, provider),
+        ]);
+        if (Number(results[0]?.meta?.changes || 0) !== 1 || Number(results[1]?.meta?.changes || 0) !== 1) {
+          return json({ error: 'Provider routing policy could not be saved.' }, 409);
+        }
+      } catch { return json({ error: 'Provider routing policy conflicts with an existing business, service or priority.' }, 409); }
+      return json({ ok: true, id, companyId, status, providerCallMade: false });
+    }
+    if (request.method !== 'GET') return json({ error: 'Use GET or POST for provider routing policies.' }, 405);
+    const requestedCompanyId = url.searchParams.get('companyId');
+    if (requestedCompanyId && !companyIds.includes(requestedCompanyId) && !isOwner) return json({ error: 'Provider routing policy access is not assigned.' }, 403);
+    const scopedCompanyIds = isOwner ? TARGET_COMPANIES : companyIds.filter((id) => hasPermission(context, 'finance.reports', 'view', id));
+    if (!isOwner && !scopedCompanyIds.length) return json({ error: 'Provider routing policy access is not assigned.' }, 403);
+    const visible = requestedCompanyId ? scopedCompanyIds.filter((id) => id === requestedCompanyId) : scopedCompanyIds;
+    if (!visible.length) return json({ error: 'Provider routing policy access is not assigned.' }, 403);
+    const placeholders = visible.map(() => '?').join(',');
+    const rows = await env.DB.prepare(`SELECT id,company_id AS companyId,service,provider,priority,status,
+      routing_reason AS routingReason,updated_at AS updatedAt FROM financial_provider_routing_policies
+      WHERE company_id IN (${placeholders}) ORDER BY company_id,service,priority,provider LIMIT 500`)
+      .bind(...visible).all<Record<string, unknown>>();
+    return json({ policies: rows.results || [], visibleCompanyIds: visible, providerExecutionEnabled: false });
+  }
 
   if (url.pathname === '/api/financial-gateway/pricing/admin') {
     if (request.method !== 'POST') return json({ error: 'Use POST to maintain provider pricing.' }, 405);
