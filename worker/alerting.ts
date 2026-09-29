@@ -164,10 +164,15 @@ async function createRecipientDeliveries(env: AlertingEnv, alertId: string, empl
     if (!recipient) continue;
     for (const channel of channels) {
       const deliveryId = uid('alert-delivery');
+      // Only channels with an attached dispatch path enter the shared outbox.
+      // External providers stay visibly gated until their Owner-approved
+      // adapter and activation settings are available.
+      const initialStatus = channel === 'in_app' || channel === 'screen_popup' || channel === 'web_push'
+        ? 'queued' : 'provider_required';
       const statements = [env.DB.prepare(`INSERT OR IGNORE INTO platform_alert_deliveries(id,alert_id,recipient_id,channel,status)
-        VALUES(?,?,?,?,'queued')`).bind(deliveryId, alertId, recipient.id, channel)];
+        VALUES(?,?,?,?,?)`).bind(deliveryId, alertId, recipient.id, channel, initialStatus)];
       // Reuse only channels already supported by the shared outbox. External
-      // providers remain queued behind their own activation and delivery gates.
+      // providers remain provider-required until their activation gates open.
       if (channel === 'in_app' || channel === 'web_push' || channel === 'screen_popup') {
         // The shared notification feed accepts in_app/web_push, while the
         // alert delivery remains canonically screen_popup for the UI to render

@@ -8,7 +8,9 @@ const delivery = source.slice(start, end);
 assert.match(delivery, /SELECT company_id companyId,title,summary,severity FROM platform_alerts WHERE id=\?/);
 assert.match(delivery, /INSERT OR IGNORE INTO notification_outbox/);
 assert.match(delivery, /await env\.DB\.batch\(statements\)/);
-assert.match(delivery, /const statements = \[env\.DB\.prepare\(`INSERT OR IGNORE INTO platform_alert_deliveries/);
+assert.match(delivery, /const initialStatus = channel === 'in_app' \|\| channel === 'screen_popup' \|\| channel === 'web_push'[\s\S]*\? 'queued' : 'provider_required'/);
+assert.match(delivery, /INSERT OR IGNORE INTO platform_alert_deliveries\(id,alert_id,recipient_id,channel,status\)[\s\S]*VALUES\(\?\,\?\,\?\,\?\,\?\)/);
+assert.match(delivery, /\.bind\(deliveryId, alertId, recipient\.id, channel, initialStatus\)/);
 assert.match(delivery, /SELECT id,\?,\?, 'platform_alert'/);
 assert.match(delivery, /FROM platform_alert_deliveries[\s\S]*?status='queued' LIMIT 1/);
 assert.match(delivery, /\.bind\(employeeId, alert\.companyId, alertId, outboxChannel, alert\.title/);
@@ -19,4 +21,4 @@ assert.match(delivery, /WHERE alert_id=\? AND recipient_id=\? AND channel=\? AND
 assert.match(delivery, /alert\.severity === 'critical' \? 'urgent' : alert\.severity === 'high' \? 'high' : alert\.severity/);
 assert.match(delivery, /alert\.summary \|\| alert\.title, outboxPriority, alertId, recipient\.id, channel\)/);
 assert.doesNotMatch(delivery, /channel === 'email'|channel === 'whatsapp'/);
-console.log('Alert in-app/screen-popup outbox bridge, atomic canonical delivery, and gated external channels: 13/13 PASS');
+console.log('Alert in-app/screen-popup outbox bridge, atomic canonical delivery, and provider-required external channels: 15/15 PASS');
