@@ -480,6 +480,15 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (requestingModule !== null && !/^[a-z][a-z0-9_.:-]{0,79}$/.test(requestingModule)) {
       return json({ error: 'Choose a valid module filter.' }, 400);
     }
+    const day = url.searchParams.get('day');
+    if (day !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(`${day}T00:00:00.000Z`)) ||
+        new Date(`${day}T00:00:00.000Z`).toISOString().slice(0, 10) !== day)) {
+      return json({ error: 'Choose a valid day in YYYY-MM-DD format.' }, 400);
+    }
+    const actorEmployeeId = url.searchParams.get('actorEmployeeId');
+    if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
+      return json({ error: 'Choose a valid requesting-user filter.' }, 400);
+    }
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
@@ -497,10 +506,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       WHERE company_id IN (${placeholders})
         AND (? IS NULL OR provider=?)
         AND (? IS NULL OR requesting_module=?)
+        AND (? IS NULL OR date(occurred_at)=?)
+        AND (? IS NULL OR actor_employee_id=?)
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, limit).all<Record<string, unknown>>();
-    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, limit });
+    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, actorEmployeeId, actorEmployeeId, limit).all<Record<string, unknown>>();
+    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, actorEmployeeId, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {

@@ -12,16 +12,22 @@ assert.match(endpoint, /request\.method !== 'GET'/);
 assert.match(endpoint, /companyIds\.includes\(requestedCompanyId\)/);
 assert.match(endpoint, /const requestingModule = url\.searchParams\.get\('module'\)/);
 assert.match(endpoint, /const provider = url\.searchParams\.get\('provider'\)/);
+assert.match(endpoint, /const day = url\.searchParams\.get\('day'\)/);
+assert.match(endpoint, /const actorEmployeeId = url\.searchParams\.get\('actorEmployeeId'\)/);
+assert.match(endpoint, /date\(occurred_at\)=\?/);
+assert.match(endpoint, /actor_employee_id=\?/);
+assert.match(endpoint, /Choose a valid day in YYYY-MM-DD format/);
+assert.match(endpoint, /Choose a valid requesting-user filter/);
 assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\//);
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, limit\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, actorEmployeeId, actorEmployeeId, limit\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
 assert.match(endpoint, /FROM financial_provider_cost_events\s+WHERE company_id IN \(\$\{placeholders\}\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, limit\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, actorEmployeeId, actorEmployeeId, limit\)/);
 assert.match(endpoint, /ORDER BY occurred_at DESC,id DESC/);
 for (const field of ['estimated_cost_minor AS estimatedCostMinor', 'actual_cost_minor AS actualCostMinor',
   'pricing_revision AS pricingRevision', 'pricing_verified_at AS pricingVerifiedAt', 'requesting_module AS requestingModule',
@@ -30,4 +36,4 @@ for (const field of ['estimated_cost_minor AS estimatedCostMinor', 'actual_cost_
 }
 assert.doesNotMatch(endpoint, /provider_result|access_token|refresh_token|client_secret/i);
 assert.match(endpoint, /visibleCompanyIds:\s*scopedCompanyIds/);
-console.log('Financial provider-cost event read model: 18 assertions PASS');
+console.log('Financial provider-cost event read model: 24 assertions PASS');
