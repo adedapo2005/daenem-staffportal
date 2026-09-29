@@ -294,9 +294,19 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         const replay = await env.DB.prepare(`SELECT id FROM financial_reconciliation_imports
           WHERE company_id=? AND source_type=? AND idempotency_key=? LIMIT 1`)
           .bind(companyId, sourceType, idempotencyKey).first<{ id: string }>();
-        return replay
-          ? json({ error: 'The idempotency key was concurrently used; retry to verify the staged evidence.' }, 409)
-          : json({ error: 'Reconciliation evidence could not be staged.' }, 409);
+        if (!replay) return json({ error: 'Reconciliation evidence could not be staged.' }, 409);
+        const replayImport = await env.DB.prepare(`SELECT row_count AS rowCount,provider,source_reference AS sourceReference,file_sha256 AS fileSha256
+          FROM financial_reconciliation_imports WHERE id=? AND company_id=? LIMIT 1`)
+          .bind(replay.id, companyId).first<{ rowCount: number; provider: string | null; sourceReference: string | null; fileSha256: string | null }>();
+        const replayRows = await env.DB.prepare(`SELECT provider_reference AS providerReference,occurred_at AS occurredAt,
+          direction,amount_minor AS amountMinor,currency,description FROM financial_reconciliation_import_rows
+          WHERE import_id=? ORDER BY row_number`).bind(replay.id).all<Record<string, unknown>>();
+        const sameEvidence = replayImport && Number(replayImport.rowCount) === rows.length &&
+          replayImport.provider === (provider || null) && replayImport.sourceReference === (sourceReference || null) &&
+          replayImport.fileSha256 === fileSha256 && JSON.stringify(replayRows.results || []) === JSON.stringify(rows);
+        return sameEvidence
+          ? json({ ok: true, id: replay.id, companyId, rowCount: rows.length, idempotentReplay: true, providerCallMade: false })
+          : json({ error: 'The idempotency key is already assigned to different reconciliation evidence.' }, 409);
       }
       return json({ ok: true, id: importId, companyId, rowCount: rows.length, idempotentReplay: false, providerCallMade: false }, 201);
     }
