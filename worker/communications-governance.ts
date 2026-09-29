@@ -437,16 +437,19 @@ async function createTemplateMapping(request:Request,env:GovernanceEnv,context:E
   return json({error:'Valid company, approved template and provider identity are required.'},400);
  }
  const template=await env.DB.prepare(`
-  SELECT t.id,t.event_id AS eventId,t.language,t.internal_status AS internalStatus,
+  SELECT t.id,t.event_id AS eventId,t.language,t.provider_template_id AS providerTemplateId,t.internal_status AS internalStatus,
    t.provider_status AS providerStatus,t.channel
   FROM communication_templates t WHERE t.id=? AND t.company_id=? LIMIT 1
  `).bind(templateId,companyId).first<{
-  id:string;eventId:string;language:string;internalStatus:string;providerStatus:string;channel:string;
+  id:string;eventId:string;language:string;providerTemplateId:string|null;internalStatus:string;providerStatus:string;channel:string;
  }>();
  if(!template)return json({error:'Approved WhatsApp template was not found.'},404);
  if(!canManageEvent(context,companyId,template.eventId,'manage'))return json({error:'Manage Communications permission is required.'},403);
  if(template.channel!=='whatsapp'||template.internalStatus!=='approved'||template.providerStatus!=='approved'){
   return json({error:'An internally and provider-approved WhatsApp template is required.'},409);
+ }
+ if(template.providerTemplateId&&providerTemplateId!==template.providerTemplateId){
+  return json({error:'Provider template identity must match the approved WhatsApp template.'},409);
  }
  const event=eventById(template.eventId);
  const id=uid('comm-template-map');
