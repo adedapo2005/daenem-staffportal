@@ -1,6 +1,7 @@
 import type { AuthEnv, SessionContext } from './auth';
+import { encryptSocialSecret, type SocialCryptoEnv } from './social-crypto';
 
-interface StorageMirrorEnv extends AuthEnv {}
+interface StorageMirrorEnv extends AuthEnv, SocialCryptoEnv {}
 
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -11,8 +12,52 @@ function authorized(context: SessionContext) {
   return context.roles.some((role) => role.code === 'owner' || role.code === 'group_admin');
 }
 
+function validMicrosoftId(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
+async function routeOneDriveConfig(request: Request, env: StorageMirrorEnv, context: SessionContext) {
+  if (!authorized(context)) return json({ error: 'Storage administration access is not assigned.' }, 403);
+  if (request.method === 'GET') {
+    const row = await env.DB.prepare(`SELECT updated_at AS updatedAt FROM storage_mirror_oauth_config
+      WHERE id='microsoft_onedrive'`).first<{ updatedAt: string }>();
+    return json({ provider: 'Microsoft OneDrive', configured: Boolean(row), updatedAt: row?.updatedAt || null,
+      authorizationEnabled: false, liveTransferEnabled: false });
+  }
+  if (request.method !== 'PUT') return json({ error: 'Method not allowed.' }, 405);
+  if (env.APP_STAGE === 'production') return json({ error: 'OneDrive configuration is unavailable in production.' }, 409);
+  let body: { tenantId?: unknown; clientId?: unknown; clientSecret?: unknown };
+  try { body = await request.json() as typeof body; }
+  catch { return json({ error: 'Invalid OneDrive application configuration.' }, 400); }
+  const tenantId = typeof body.tenantId === 'string' ? body.tenantId.trim() : '';
+  const clientId = typeof body.clientId === 'string' ? body.clientId.trim() : '';
+  const clientSecret = typeof body.clientSecret === 'string' ? body.clientSecret.trim() : '';
+  if (!validMicrosoftId(tenantId) || !validMicrosoftId(clientId) || clientSecret.length < 16 || clientSecret.length > 4096) {
+    return json({ error: 'Provide valid Microsoft tenant and application IDs and an application secret.' }, 400);
+  }
+  let ciphertext: string;
+  try { ciphertext = await encryptSocialSecret(env, clientSecret); }
+  catch { return json({ error: 'Secure credential storage is unavailable.' }, 503); }
+  const auditId = `audit-${crypto.randomUUID()}`;
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO storage_mirror_oauth_config(id,tenant_id,client_id,client_secret_ciphertext,updated_by,updated_at)
+      VALUES('microsoft_onedrive',?,?,?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET tenant_id=excluded.tenant_id,client_id=excluded.client_id,
+      client_secret_ciphertext=excluded.client_secret_ciphertext,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
+      .bind(tenantId, clientId, ciphertext, context.employee.id),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+      VALUES(?,?,'storage','update_onedrive_application_config','storage_provider','microsoft_onedrive',?,'web')`)
+      .bind(auditId, context.employee.id, JSON.stringify({ configured: true, authorizationEnabled: false })),
+  ]);
+  const row = await env.DB.prepare(`SELECT updated_at AS updatedAt FROM storage_mirror_oauth_config
+    WHERE id='microsoft_onedrive'`).first<{ updatedAt: string }>();
+  return json({ ok: true, provider: 'Microsoft OneDrive', configured: true, updatedAt: row?.updatedAt || null,
+    authorizationEnabled: false, liveTransferEnabled: false });
+}
+
 export async function routeStorageMirror(request: Request, env: StorageMirrorEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
+  if (url.pathname === '/api/admin/storage/onedrive/config') return routeOneDriveConfig(request, env, context);
   if (url.pathname === '/api/admin/storage/mirror-jobs' && request.method === 'GET') {
     if (!authorized(context)) return json({ error: 'Storage administration access is not assigned.' }, 403);
     const status = url.searchParams.get('status') || '';
