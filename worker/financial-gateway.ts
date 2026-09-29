@@ -67,6 +67,13 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
   if (['PERCENTAGE', 'PERCENTAGE_FIXED'].includes(pricing.pricingModel) && moneyAmount === null) {
     return { decision: 'verification_required' as const, reason: 'valid_transaction_amount_required', currency: pricing.currency };
   }
+  // Legacy rows can bypass the current save validator. Never estimate a
+  // percentage-only model while silently discarding a stored fixed fee, or
+  // per-unit pricing while discarding percentage terms.
+  if ((pricing.pricingModel === 'PERCENTAGE' && pricing.fixedAmountMinor !== null) ||
+      (['PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST'].includes(pricing.pricingModel) && pricing.percentageBps !== null)) {
+    return { decision: 'verification_required' as const, reason: 'pricing_terms_conflict', currency: pricing.currency };
+  }
   let estimate: number;
   switch (pricing.pricingModel) {
     case 'FIXED':
@@ -145,6 +152,9 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
   const pricingTermsComplete = pricingModel === 'FREE' ||
     (hasFixedRate && fixed != null) ||
     (hasPercentageRate && pct != null && (pricingModel !== 'PERCENTAGE_FIXED' || fixed != null));
+  const pricingTermsConflict =
+    (pricingModel === 'PERCENTAGE' && fixed != null) ||
+    (['PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST'].includes(pricingModel) && pct != null);
   const freePricingHasFeeTerms = pricingModel === 'FREE' &&
     [fixed, pct, minimum, maximum, cap].some((value) => value !== null && value !== undefined);
   if (!id || !/^[A-Za-z0-9:_-]{1,160}$/.test(id) || !provider || provider.length > 80 || !service || service.length > 120 ||
@@ -155,6 +165,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
       companies.some((company) => typeof company !== 'string' || !PRICING_COMPANIES.has(company)) || new Set(companies).size !== companies.length ||
       !integerOrNull(fixed) || !integerOrNull(minimum) || !integerOrNull(maximum) || !integerOrNull(cap) ||
       freePricingHasFeeTerms ||
+      pricingTermsConflict ||
       minimum != null && ((maximum != null && maximum < minimum) || (cap != null && cap < minimum)) ||
       pct !== null && pct !== undefined && (typeof pct !== 'number' || !Number.isSafeInteger(pct) || pct < 0 || pct > 10_000) ||
       minimum != null && maximum != null && Number(maximum) < Number(minimum) ||

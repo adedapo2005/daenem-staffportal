@@ -45,6 +45,8 @@ assert.match(route, /verifiedAt >= effectiveAt/);
 assert.match(route, /pricing_or_vat_unverified/);
 assert.match(route, /pricingModel === 'FREE'/);
 assert.match(route, /freePricingHasFeeTerms[\s\S]*?freePricingHasFeeTerms \|\|/);
+assert.match(route, /const pricingTermsConflict =/);
+assert.match(route, /pricingTermsConflict \|\|/);
 assert.match(route, /pricing_model_requires_explicit_terms/);
 assert.match(route, /\/api\/financial-gateway\/estimate/);
 assert.match(route, /b\.company_id=\? AND b\.available=1/);
@@ -65,6 +67,12 @@ assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PERCENTAGE',
   percentageBps: 138, minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null },
   { amountMinor: 9007199254144565 }, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'estimated', estimatedCostMinor: 124299349707195, currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PERCENTAGE', fixedAmountMinor: 25 },
+  { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'verification_required', reason: 'pricing_terms_conflict', currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PER_REQUEST', percentageBps: 150 },
+  { quantity: 2 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'verification_required', reason: 'pricing_terms_conflict', currency: 'NGN' });
 assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FREE', fixedAmountMinor: null, percentageBps: null,
   minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null, vatTreatment: 'not_applicable' }, {}, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'free', estimatedCostMinor: 0, currency: 'NGN' });
