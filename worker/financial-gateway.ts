@@ -539,6 +539,11 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         /[\u0000-\u001f\u007f]/.test(reversalOfEventId))) {
       return json({ error: 'Choose a valid reversal-event filter.' }, 400);
     }
+    const approvalId = url.searchParams.get('approvalId');
+    if (approvalId !== null && (!approvalId.trim() || approvalId.length > 160 ||
+        /[\u0000-\u001f\u007f]/.test(approvalId))) {
+      return json({ error: 'Choose a valid approval-record filter.' }, 400);
+    }
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
@@ -561,11 +566,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR evidence_reference=?)
         AND (? IS NULL OR retry_of_event_id=?)
         AND (? IS NULL OR reversal_of_event_id=?)
+        AND (? IS NULL OR approval_id=?)
       GROUP BY company_id,provider,cost_currency,requesting_module
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT 500
-    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId).all<Record<string, unknown>>();
-    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId).all<Record<string, unknown>>();
+    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {
