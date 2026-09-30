@@ -44,8 +44,33 @@ const canAccess = (context: EnhancedSessionContext) => isOwner(context)
 const canManage = (context: EnhancedSessionContext) => isOwner(context)
   || hasPermission(context, 'settings.access', 'manage')
   || hasPermission(context, 'navigation.studio', 'manage');
+const WEATHER_SETTINGS_KEY = 'experience.weather.organization';
+const DEFAULT_WEATHER_SETTINGS = {
+  enabled: false,
+  defaultUnits: 'IMPERIAL' as const,
+  locationPolicy: 'assigned_work_location' as const,
+  refreshIntervalSeconds: 300,
+};
+type WeatherSettings = {
+  enabled: boolean;
+  defaultUnits: 'IMPERIAL' | 'METRIC';
+  locationPolicy: 'assigned_work_location' | 'organization_location' | 'permissioned_location';
+  refreshIntervalSeconds: number;
+};
 async function readJsonSetting<T>(env: Env, key: string, fallback: T): Promise<T> {
   try { return JSON.parse(await setting(env, key, JSON.stringify(fallback))) as T; } catch { return fallback; }
+}
+function normalizeWeatherSettings(value: unknown): WeatherSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return DEFAULT_WEATHER_SETTINGS;
+  const raw = value as Record<string, unknown>;
+  return {
+    enabled: raw.enabled === true,
+    defaultUnits: raw.defaultUnits === 'METRIC' ? 'METRIC' : 'IMPERIAL',
+    locationPolicy: ['assigned_work_location', 'organization_location', 'permissioned_location'].includes(String(raw.locationPolicy))
+      ? raw.locationPolicy as WeatherSettings['locationPolicy'] : DEFAULT_WEATHER_SETTINGS.locationPolicy,
+    refreshIntervalSeconds: Number.isInteger(raw.refreshIntervalSeconds) && Number(raw.refreshIntervalSeconds) >= 300 && Number(raw.refreshIntervalSeconds) <= 86_400
+      ? Number(raw.refreshIntervalSeconds) : DEFAULT_WEATHER_SETTINGS.refreshIntervalSeconds,
+  };
 }
 function companyAllowed(context: SessionContext, companyId?: string | null) {
   return !companyId || isOwner(context) || context.companies.some((company) => company.id === companyId);
@@ -200,10 +225,46 @@ async function rollback(request: Request, env: Env, context: EnhancedSessionCont
   return json({ ok: true, policy: beforePolicy });
 }
 
+async function weatherSettings(request: Request, env: Env, context: EnhancedSessionContext) {
+  if (!canManage(context)) return json({ error: 'Experience policy permission is required.' }, 403);
+  if (request.method === 'GET') {
+    const stored = await readJsonSetting<unknown>(env, WEATHER_SETTINGS_KEY, DEFAULT_WEATHER_SETTINGS);
+    return json({ provider: 'Google Weather', settings: normalizeWeatherSettings(stored), productionEnabled: false });
+  }
+  if (request.method !== 'POST') return json({ error: 'Use GET or POST for weather settings.' }, 405);
+  let body: unknown;
+  try { body = await request.json(); }
+  catch { return json({ error: 'Invalid weather settings.' }, 400); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'Invalid weather settings.' }, 400);
+  const values = body as Record<string, unknown>;
+  const settings = normalizeWeatherSettings(values);
+  if (typeof values.enabled !== 'boolean' || !['IMPERIAL', 'METRIC'].includes(String(values.defaultUnits)) ||
+      !['assigned_work_location', 'organization_location', 'permissioned_location'].includes(String(values.locationPolicy)) ||
+      !Number.isInteger(values.refreshIntervalSeconds) || Number(values.refreshIntervalSeconds) < 300 || Number(values.refreshIntervalSeconds) > 86_400) {
+    return json({ error: 'Choose a valid weather setting and a refresh interval from 5 minutes to 24 hours.' }, 400);
+  }
+  const before = normalizeWeatherSettings(await readJsonSetting<unknown>(env, WEATHER_SETTINGS_KEY, DEFAULT_WEATHER_SETTINGS));
+  const serialized = JSON.stringify(settings);
+  const [saved, audited] = await env.DB.batch([
+    env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
+      VALUES(?,?,'json',?,CURRENT_TIMESTAMP)
+      ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type='json',updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
+      .bind(WEATHER_SETTINGS_KEY, serialized, context.employee.id),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,before_json,after_json,source)
+      SELECT ?,?,'experience','save_weather_settings','weather_settings',?,?,?,'web' WHERE changes()=1`)
+      .bind(uid(), context.employee.id, WEATHER_SETTINGS_KEY, JSON.stringify(before), serialized),
+  ]);
+  if (Number(saved.meta?.changes || 0) !== 1 || Number(audited.meta?.changes || 0) !== 1) {
+    return json({ error: 'Weather settings could not be saved with audit evidence.' }, 409);
+  }
+  return json({ ok: true, provider: 'Google Weather', settings, productionEnabled: false });
+}
+
 export async function routeExperiencePreferences(request: Request, env: Env, context: EnhancedSessionContext): Promise<Response | null> {
   const url = new URL(request.url);
   const companyId = url.searchParams.get('companyId');
   if (!companyAllowed(context, companyId)) return json({ error: 'Company access is not assigned.' }, 403);
+  if (url.pathname === '/api/experience/weather' && ['GET', 'POST'].includes(request.method)) return weatherSettings(request, env, context);
   if (url.pathname === '/api/experience/layout' && request.method === 'GET') return json(await current(env, context, url.searchParams.get('erpId')));
   if (url.pathname === '/api/experience/layout/preference' && request.method === 'POST') return savePersonal(request, env, context);
   if (url.pathname === '/api/experience/layout/policy' && request.method === 'POST') return savePolicy(request, env, context);

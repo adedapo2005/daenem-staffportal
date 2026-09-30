@@ -12,25 +12,51 @@ export type GoogleWeatherResult =
   | { data: Record<string, unknown>; providerStatus: 'fresh' | 'cached' }
   | { data: null; providerStatus: 'cache_unavailable' | 'provider_required' | 'provider_unavailable' };
 
+export type WeatherConfiguration = {
+  enabled: boolean;
+  defaultUnits: 'IMPERIAL' | 'METRIC';
+  refreshIntervalSeconds: number;
+};
+
+export async function readWeatherConfiguration(env: WeatherProviderEnv): Promise<WeatherConfiguration> {
+  try {
+    const row = await env.DB.prepare("SELECT setting_value AS value FROM app_settings WHERE setting_key='experience.weather.organization' LIMIT 1")
+      .first<{ value: string }>();
+    if (!row?.value) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
+    const settings: unknown = JSON.parse(row.value);
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
+    const value = settings as Record<string, unknown>;
+    return {
+      enabled: value.enabled === true,
+      defaultUnits: value.defaultUnits === 'METRIC' ? 'METRIC' : 'IMPERIAL',
+      refreshIntervalSeconds: Number.isInteger(value.refreshIntervalSeconds) && Number(value.refreshIntervalSeconds) >= CACHE_TTL_SECONDS && Number(value.refreshIntervalSeconds) <= 86_400
+        ? Number(value.refreshIntervalSeconds) : CACHE_TTL_SECONDS,
+    };
+  } catch { return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS }; }
+}
+
 /** Returns only provider data. Location labels and user/company identifiers never enter shared cache values. */
 export async function readGoogleWeather(
   env: WeatherProviderEnv,
   latitude: number,
   longitude: number,
-  unitsSystem: 'IMPERIAL' | 'METRIC' = 'IMPERIAL',
+  unitsSystem?: 'IMPERIAL' | 'METRIC',
   forceRefresh = false,
 ): Promise<GoogleWeatherResult> {
+  const configuration = await readWeatherConfiguration(env);
+  const selectedUnitsSystem = unitsSystem || configuration.defaultUnits;
   // Keep this trust boundary defensive even when callers validate coordinates.
   // Invalid values must not become cache keys or provider requests.
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
       !Number.isFinite(longitude) || longitude < -180 || longitude > 180 ||
-      (unitsSystem !== 'IMPERIAL' && unitsSystem !== 'METRIC')) {
+      (selectedUnitsSystem !== 'IMPERIAL' && selectedUnitsSystem !== 'METRIC')) {
     return { data: null, providerStatus: 'provider_unavailable' };
   }
+  if (!forceRefresh && !configuration.enabled) return { data: null, providerStatus: 'provider_required' };
   const cache = env.SOCIAL_CACHE;
   if (!cache) return { data: null, providerStatus: 'cache_unavailable' };
 
-  const coordinates = `${latitude.toFixed(5)},${longitude.toFixed(5)},${unitsSystem}`;
+  const coordinates = `${latitude.toFixed(5)},${longitude.toFixed(5)},${selectedUnitsSystem}`;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(coordinates));
   const digestHex = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
   const cacheKey = `weather:google:v1:${digestHex}`;
@@ -53,7 +79,7 @@ export async function readGoogleWeather(
   const existingRequest = inFlightWeather.get(cacheKey);
   if (existingRequest) return existingRequest;
 
-  const request = fetchAndCacheWeather(env, latitude, longitude, unitsSystem, cacheKey, cache);
+  const request = fetchAndCacheWeather(env, latitude, longitude, selectedUnitsSystem, cacheKey, cache, configuration.refreshIntervalSeconds);
   inFlightWeather.set(cacheKey, request);
   try { return await request; }
   finally {
@@ -68,6 +94,7 @@ async function fetchAndCacheWeather(
   unitsSystem: 'IMPERIAL' | 'METRIC',
   cacheKey: string,
   cache: KVNamespace,
+  cacheTtlSeconds: number,
 ): Promise<GoogleWeatherResult> {
   let key: string;
   try { key = await resolveMetaCredential(env, 'google_weather_api_key'); }
@@ -88,7 +115,7 @@ async function fetchAndCacheWeather(
     if (!data || typeof data !== 'object' || Array.isArray(data)) return { data: null, providerStatus: 'provider_unavailable' };
     const value = JSON.stringify(data);
     if (value.length > 64_000) return { data: null, providerStatus: 'provider_unavailable' };
-    try { await cache.put(cacheKey, value, { expirationTtl: CACHE_TTL_SECONDS }); }
+    try { await cache.put(cacheKey, value, { expirationTtl: cacheTtlSeconds }); }
     catch { return { data: null, providerStatus: 'provider_unavailable' }; }
     return { data: data as Record<string, unknown>, providerStatus: 'fresh' };
   } catch {

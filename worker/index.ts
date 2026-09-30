@@ -1,7 +1,7 @@
 import { getSessionContext, hasPermission, routeAuth, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
 import { readSignInConfig } from './theme-preferences';
 import { DASHBOARD_FIELD_PERMISSIONS, type DashboardAggregateField } from '../src/dashboard-capabilities';
-import { readGoogleWeather } from './weather-provider';
+import { readGoogleWeather, readWeatherConfiguration } from './weather-provider';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -54,7 +54,8 @@ async function weather(request: Request, env: Env) {
     return json({ error: 'Choose IMPERIAL or METRIC weather units.' }, 400);
   }
 
-  const unitsSystem = rawUnitsSystem === 'METRIC' ? 'METRIC' : 'IMPERIAL';
+  const unitsSystem = rawUnitsSystem === 'METRIC' ? 'METRIC' : rawUnitsSystem === 'IMPERIAL'
+    ? 'IMPERIAL' : (await readWeatherConfiguration(env)).defaultUnits;
   const result = await readGoogleWeather(env, lat, lon, unitsSystem);
   if (!result.data) return json({ available: false, providerStatus: result.providerStatus }, result.providerStatus === 'provider_required' ? 200 : 502);
   const weatherData = result.data as {
