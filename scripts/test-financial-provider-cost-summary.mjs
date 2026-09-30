@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -676,6 +676,78 @@ try {
   const legacyApproval = await (await request(`${transactionQuery}&providerReference=ref-a`)).json();
   assert.equal(legacyApproval.approvalId, null);
   assert.equal(legacyApproval.summaries[0].eventCount, 2, 'omission retains legacy null approval links');
+
+  const participantInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,actor_role_code,action,provider,requesting_module,occurred_at,
+      estimated_cost_minor,actual_cost_minor,cost_currency,currency,amount_minor,pricing_id,pricing_revision,
+      approval_id,reversal_of_event_id,retry_of_event_id,provider_reference,evidence_reference,
+      maker_employee_id,checker_employee_id,provider_result)
+    VALUES(?,?,'user-a','finance','estimate','paystack','finance','2026-09-15T12:00:00Z',20,?,?,'USD',
+      1000,'price-a',1,'ref-a','ref-a','ref-a','participant-provider','participant-evidence',?,?,'internal-result-must-not-leak')`);
+  const participantBase = `${transactionQuery}&providerReference=participant-provider&evidenceReference=participant-evidence&approvalId=ref-a&retryOfEventId=ref-a&reversalOfEventId=ref-a`;
+  const employees = ['participant:A_1', 'participant:a_1', 'participant:A_1-suffix', 'x'.repeat(160)];
+  for (const employee of employees) db.prepare('INSERT INTO employees VALUES(?)').run(employee);
+  for (const field of ['makerEmployeeId', 'checkerEmployeeId']) {
+    const other = field === 'makerEmployeeId' ? 'checkerEmployeeId' : 'makerEmployeeId';
+    assert.equal(omitted[field], null);
+    for (const employee of employees) {
+      const participants = field === 'makerEmployeeId' ? [employee, 'user-b'] : ['user-b', employee];
+      for (const [company, actual, currency] of [['company-printing', 81, 'NGN'],
+        ['company-printing', null, 'NGN'], ['company-printing', 82, 'EUR'], ['company-bakery', 91, 'NGN']]) {
+        participantInsert.run(String(++id), company, actual, currency, ...participants);
+      }
+      const query = new URLSearchParams(`${participantBase}&${other}=user-b`);
+      query.set(field, employee);
+      const body = await (await request(query)).json();
+      assert.equal(body[field], employee);
+      assert.equal(body[other], 'user-b');
+      assert.deepEqual(body.summaries, [{ ...result.summaries[0], actualCostMinor: 81 }]);
+      const both = await (await request(query, multi)).json();
+      assert.equal(both.summaries.length, 2);
+      assert.equal(both.summaries[0].actualCostMinor, 91);
+      const companyQuery = new URLSearchParams(query);
+      companyQuery.set('companyId', 'company-bakery');
+      assert.deepEqual((await (await request(companyQuery, multi)).json()).summaries, [both.summaries[0]]);
+      const denominations = new URLSearchParams(query);
+      denominations.delete('costCurrency');
+      assert.deepEqual((await (await request(denominations)).json()).summaries.map(row => [row.currency, row.actualCostMinor]),
+        [['EUR', 82], ['NGN', 81]]);
+      for (const [key, value] of [['provider', 'mono'], ['module', 'payroll'], ['month', '2026-08'],
+        ['actorEmployeeId', 'user-b'], ['costCurrency', 'USD'], ['action', 'pending'],
+        ['pricingId', 'PRICE-A'], ['pricingRevision', '2'], ['actorRoleCode', 'FINANCE'], ['currency', 'NGN'],
+        ['providerReference', 'absent'], ['evidenceReference', 'absent'], ['retryOfEventId', 'REF-A'],
+        ['reversalOfEventId', 'REF-A'], ['approvalId', 'REF-A'], [other, 'user-a']]) {
+        const mismatch = new URLSearchParams(query);
+        mismatch.set(key, value);
+        assert.deepEqual((await (await request(mismatch)).json()).summaries, [], `${key} intersects ${field}`);
+      }
+      query.delete(other);
+      assert.deepEqual((await (await request(query)).json()).summaries, body.summaries, 'each filter works independently');
+      assert.ok(!JSON.stringify(both).includes('internal-result-must-not-leak'));
+    }
+    const participants = field === 'makerEmployeeId' ? ['foreign-user', null] : [null, 'foreign-user'];
+    participantInsert.run(String(++id), 'company-bakery', 999, 'NGN', ...participants);
+    for (const employee of ['foreign-user', 'absent-user']) {
+      assert.deepEqual((await (await request(`${participantBase}&${field}=${employee}`)).json()).summaries, []);
+    }
+    const beforeInvalid = reads;
+    for (const employee of ['', ' ', 'x'.repeat(161), 'a\n', 'a\u0000', 'a\u007f', 'a/b', 'é', "x' OR 1=1 --"]) {
+      assert.equal((await request(`${base}&${new URLSearchParams({ [field]: employee })}`)).status, 400);
+    }
+    assert.equal((await request(`${base}&${field}=user-a`, { ...context, allowed: [] })).status, 403);
+    assert.equal((await request(`${base}&${field}=foreign-user&companyId=company-bakery`)).status, 403);
+    assert.equal(reads, beforeInvalid, 'invalid filters and revoked permission reject before SQL');
+    const pendingParticipants = field === 'makerEmployeeId' ? ['user-a', null] : [null, 'user-a'];
+    participantInsert.run(String(++id), 'company-printing', null, 'NGN', ...pendingParticipants);
+    const pending = await (await request(`${participantBase}&${field}=user-a`)).json();
+    assert.equal(pending.summaries[0].actualCostMinor, null);
+    assert.equal(pending.summaries[0].actualCostEventCount, 0);
+  }
+  const legacyParticipants = await (await request(`${transactionQuery}&providerReference=ref-a`)).json();
+  assert.equal(legacyParticipants.makerEmployeeId, null);
+  assert.equal(legacyParticipants.checkerEmployeeId, null);
+  assert.equal(legacyParticipants.summaries[0].eventCount, 2, 'omission retains legacy null participants');
+  console.log('Monthly maker/checker totals: real route / SQLite regression PASS');
 
 } finally {
   db.close();
