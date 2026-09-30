@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -42,7 +42,7 @@ try {
     CREATE TABLE financial_provider_pricing(id TEXT PRIMARY KEY);
     INSERT INTO companies VALUES('company-printing'),('company-bakery');
     INSERT INTO employees VALUES('user-a'),('user-b'),('USER-A'),('user-a-suffix'),('foreign-user');`);
-  for (const name of ['0079_financial_provider_cost_events', '0081_financial_provider_cost_event_module']) {
+  for (const name of ['0079_financial_provider_cost_events', '0081_financial_provider_cost_event_module', '0086_financial_provider_pricing_revision']) {
     db.exec(await readFile(new URL(`../migrations/${name}.sql`, import.meta.url), 'utf8'));
   }
   const insert = db.prepare(`INSERT INTO financial_provider_cost_events
@@ -193,7 +193,7 @@ try {
   assert.equal(omitted.pricingId, null);
   const pricingIds = ['price-a', 'PRICE-A', 'price-a-suffix', 'price:_1', 'x'.repeat(160)];
   for (const [index, pricingId] of pricingIds.entries()) {
-    db.prepare('INSERT INTO financial_provider_pricing VALUES(?)').run(pricingId);
+    db.prepare('INSERT INTO financial_provider_pricing(id) VALUES(?)').run(pricingId);
     add('user-a', 101 + index, 'NGN', 'company-printing', 'paystack', 'finance', '2026-09-15T12:00:00Z', 'estimate', pricingId);
     add('user-a', null, 'NGN', 'company-printing', 'paystack', 'finance', '2026-09-15T12:00:00Z', 'estimate', pricingId);
     add('user-a', 201 + index, 'NGN', 'company-bakery', 'paystack', 'finance', '2026-09-15T12:00:00Z', 'estimate', pricingId);
@@ -215,7 +215,7 @@ try {
     }
     assert.ok(!JSON.stringify(body).includes('internal-result-must-not-leak'));
   }
-  db.prepare('INSERT INTO financial_provider_pricing VALUES(?)').run('foreign-price');
+  db.prepare('INSERT INTO financial_provider_pricing(id) VALUES(?)').run('foreign-price');
   add('foreign-user', 900, 'NGN', 'company-bakery', 'paystack', 'finance', '2026-09-15T12:00:00Z', 'estimate', 'foreign-price');
   for (const pricingId of ['foreign-price', 'absent-price']) {
     assert.deepEqual((await (await request(`${base}&pricingId=${pricingId}`)).json()).summaries, []);
@@ -231,6 +231,55 @@ try {
   assert.equal((await request(`${base}&pricingId=foreign-price&companyId=company-bakery`)).status, 403);
   assert.equal(reads, pricingReads, 'invalid pricing IDs and denied scope reject before SQL');
   console.log('Monthly pricing-record totals: real route / SQLite regression PASS');
+  assert.equal(omitted.pricingRevision, null);
+  const revisionInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,action,provider,requesting_module,occurred_at,
+      estimated_cost_minor,actual_cost_minor,cost_currency,pricing_id,pricing_revision,provider_result)
+    VALUES(?,?, 'user-a','estimate','paystack','finance','2026-09-15T12:00:00Z',20,?,'NGN','price-a',?,
+      'internal-result-must-not-leak')`);
+  for (const revision of [1, 2, Number.MAX_SAFE_INTEGER]) {
+    revisionInsert.run(String(++id), 'company-printing', 51, revision);
+    revisionInsert.run(String(++id), 'company-printing', null, revision);
+    revisionInsert.run(String(++id), 'company-bakery', 91, revision);
+    const query = `${base}&actorEmployeeId=user-a&costCurrency=NGN&action=estimate&pricingId=price-a&pricingRevision=${revision}`;
+    const body = await (await request(query)).json();
+    assert.equal(body.pricingRevision, revision);
+    assert.deepEqual(body.summaries, [{ ...result.summaries[0], actualCostMinor: 51 }]);
+    const companies = await (await request(query, multi)).json();
+    assert.equal(companies.summaries.length, 2);
+    assert.equal(companies.summaries[0].actualCostMinor, 91);
+    assert.deepEqual((await (await request(`${query}&companyId=company-bakery`, multi)).json()).summaries,
+      [companies.summaries[0]]);
+    for (const [key, value] of [['provider', 'mono'], ['module', 'payroll'], ['month', '2026-08'],
+      ['actorEmployeeId', 'user-b'], ['costCurrency', 'USD'], ['action', 'pending'], ['pricingId', 'PRICE-A']]) {
+      const params = new URLSearchParams(query);
+      params.set(key, value);
+      assert.deepEqual((await (await request(params)).json()).summaries, [], `${key} intersects revision filter`);
+    }
+    assert.ok(!JSON.stringify(body).includes('internal-result-must-not-leak'));
+  }
+  revisionInsert.run(String(++id), 'company-printing', null, 3);
+  const unknownRevisionCost = await (await request(`${base}&pricingRevision=3`)).json();
+  assert.equal(unknownRevisionCost.summaries[0].actualCostMinor, null);
+  assert.equal(unknownRevisionCost.summaries[0].actualCostEventCount, 0);
+  revisionInsert.run(String(++id), 'company-bakery', 999, 4);
+  for (const revision of [4, 5]) {
+    assert.deepEqual((await (await request(`${base}&pricingRevision=${revision}`)).json()).summaries, [],
+      'foreign-only and absent revisions are indistinguishable');
+  }
+  const allRevisions = await (await request(`${base}&pricingId=price-a`)).json();
+  assert.equal(allRevisions.pricingRevision, null);
+  assert.equal(allRevisions.summaries[0].eventCount, 9, 'omission includes legacy null revisions');
+  assert.equal(allRevisions.summaries[0].actualCostMinor, 254);
+  const revisionReads = reads;
+  for (const revision of ['', ' ', '0', '-1', '01', '+1', '1.0', '1e1', '1\n', '9007199254740992',
+    'Infinity', 'NaN', "1 OR 1=1", '9'.repeat(400)]) {
+    assert.equal((await request(`${base}&${new URLSearchParams({ pricingRevision: revision })}`)).status, 400);
+  }
+  assert.equal((await request(`${base}&pricingRevision=1`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${base}&pricingRevision=4&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, revisionReads, 'invalid revisions and revoked permissions reject before SQL');
+  console.log('Monthly pricing-revision totals: real route / SQLite regression PASS');
 } finally {
   db.close();
 }
