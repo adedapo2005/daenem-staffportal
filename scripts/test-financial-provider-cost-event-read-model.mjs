@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -525,6 +525,67 @@ try {
   const omittedApproval = await (await request('providerReference=approval-provider')).json();
   assert.equal(omittedApproval.approvalId, null);
   assert.equal(omittedApproval.events.length, 7, 'omission includes authorized linked and unlinked approval evidence');
+  // Exercise both employee audit roles independently and together. No employee
+  // lookup should disclose whether a filter belongs to another company.
+  for (const field of ['makerEmployeeId', 'checkerEmployeeId']) {
+    const column = field === 'makerEmployeeId' ? 'maker_employee_id' : 'checker_employee_id';
+    const otherColumn = field === 'makerEmployeeId' ? 'checker_employee_id' : 'maker_employee_id';
+    const otherField = field === 'makerEmployeeId' ? 'checkerEmployeeId' : 'makerEmployeeId';
+    const employee = `${field}:A_1`;
+    const employeeInsert = db.prepare('INSERT OR IGNORE INTO employees(id) VALUES(?)');
+    for (const value of [employee, employee.toLowerCase(), `${employee}suffix`, 'private-employee', 'x'.repeat(160)]) employeeInsert.run(value);
+    const roleInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+      (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,evidence_reference,approval_id,retry_of_event_id,reversal_of_event_id,${column},${otherColumn},occurred_at,provider_result)
+      VALUES(?,?,'estimate','paystack','finance','synthetic-user',?,?,'role-evidence','role-approval','september-start','september-end',?,'synthetic-user','2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+    for (const [suffix, company, value] of [
+      ['1', 'company-printing', employee], ['2', 'company-printing', employee], ['3', 'company-printing', employee],
+      ['foreign', 'company-bakery', employee], ['private', 'company-bakery', 'private-employee'],
+      ['case', 'company-printing', employee.toLowerCase()], ['prefix', 'company-printing', `${employee}suffix`],
+      ['max', 'company-printing', 'x'.repeat(160)], ['null', 'company-printing', null],
+    ]) roleInsert.run(`${field}-${suffix}`, company, field, pricingId, value);
+    const roleQuery = new URLSearchParams({ [field]: employee, [otherField]: 'synthetic-user',
+      providerReference: field, pricingId, evidenceReference: 'role-evidence', approvalId: 'role-approval',
+      retryOfEventId: 'september-start', reversalOfEventId: 'september-end', action: 'estimate',
+      provider: 'paystack', module: 'finance', actorEmployeeId: 'synthetic-user', day: '2026-09-15', month: '2026-09', limit: '2' });
+    const first = await (await request(roleQuery)).json();
+    assert.equal(first[field], employee);
+    assert.equal(first[otherField], 'synthetic-user');
+    assert.deepEqual(first.events.map(event => event.id), [`${field}-3`, `${field}-2`]);
+    assert.ok(first.nextCursor);
+    roleQuery.set('cursor', first.nextCursor);
+    const last = await (await request(roleQuery)).json();
+    assert.deepEqual(last.events.map(event => event.id), [`${field}-1`]);
+    assert.equal(last.nextCursor, null);
+    assert.ok(!JSON.stringify(last).includes('internal-result-must-not-leak'));
+    for (const key of [field, otherField, 'actorEmployeeId', 'provider', 'module', 'providerReference', 'pricingId',
+      'evidenceReference', 'approvalId', 'retryOfEventId', 'reversalOfEventId', 'action', 'day', 'month']) {
+      const mismatch = new URLSearchParams(roleQuery);
+      mismatch.set(key, key === 'day' ? '2026-08-01' : key === 'month' ? '2026-08' : 'absent');
+      const result = await (await request(mismatch)).json();
+      assert.deepEqual(result.events, [], `${key} intersects ${field} continuation`);
+    }
+    for (const value of ['private-employee', 'absent-employee']) {
+      const result = await (await request(new URLSearchParams({ [field]: value }))).json();
+      assert.deepEqual(result.events, []);
+      assert.equal(result.nextCursor, null);
+    }
+    const beforeRejection = reads;
+    assert.equal((await request(roleQuery, { ...context, allowed: [] })).status, 403);
+    assert.equal((await request(`${roleQuery}&companyId=company-bakery`)).status, 403);
+    for (const value of ['', ' ', 'x'.repeat(161), 'id\n', 'id\u0000', 'id\u007f', "' OR 1=1 --", 'id/1']) {
+      assert.equal((await request(new URLSearchParams({ [field]: value }))).status, 400);
+    }
+    assert.equal(reads, beforeRejection, 'invalid role IDs and unauthorized requests do not query evidence');
+    for (const [value, suffix] of [[employee.toLowerCase(), 'case'], [`${employee}suffix`, 'prefix'], ['x'.repeat(160), 'max']]) {
+      const result = await (await request(new URLSearchParams({ [field]: value, providerReference: field }))).json();
+      assert.deepEqual(result.events.map(event => event.id), [`${field}-${suffix}`]);
+    }
+    const omitted = await (await request(new URLSearchParams({ providerReference: field }))).json();
+    assert.equal(omitted[field], null);
+    assert.equal(omitted[otherField], null);
+    assert.equal(omitted.events.length, 7, 'omitted role filters include authorized linked and unlinked evidence');
+  }
+  console.log('Financial maker/checker drilldown: runtime/SQLite PASS');
   console.log('Financial approval-record drilldown: runtime/SQLite PASS');
   console.log('Financial reversal-event drilldown: runtime/SQLite PASS');
   console.log('Financial retry-event drilldown: runtime/SQLite PASS');

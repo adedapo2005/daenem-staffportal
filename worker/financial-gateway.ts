@@ -537,6 +537,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
       return json({ error: 'Choose a valid requesting-user filter.' }, 400);
     }
+    const makerEmployeeId = url.searchParams.get('makerEmployeeId');
+    const checkerEmployeeId = url.searchParams.get('checkerEmployeeId');
+    if ([makerEmployeeId, checkerEmployeeId].some(id => id !== null &&
+        (id.length < 1 || id.length > 160 || /[^A-Za-z0-9:_-]/.test(id)))) {
+      return json({ error: 'Choose valid maker/checker filters.' }, 400);
+    }
     // References are opaque: preserve case and punctuation and compare exactly.
     const providerReference = url.searchParams.get('providerReference');
     if (providerReference !== null && (!providerReference.trim() || providerReference.length > 200 ||
@@ -619,15 +625,17 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR retry_of_event_id=?)
         AND (? IS NULL OR reversal_of_event_id=?)
         AND (? IS NULL OR approval_id=?)
+        AND (? IS NULL OR maker_employee_id=?)
+        AND (? IS NULL OR checker_employee_id=?)
         AND (? IS NULL OR occurred_at < ? OR (occurred_at = ? AND id < ?))
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
+    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
     const events = (rows.results || []).slice(0, limit);
     const last = events[events.length - 1];
     const nextCursor = (rows.results || []).length > limit && last
       ? JSON.stringify([last.occurredAt, last.id]) : null;
-    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, providerReference, action, pricingId, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, limit });
+    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, providerReference, action, pricingId, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
