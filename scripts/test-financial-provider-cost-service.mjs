@@ -83,6 +83,56 @@ try {
     assert.equal(reads, before, 'invalid and denied requests do not read evidence');
   }
   assert.equal((await request('cost-summary', { ...filter, cursor: first.nextCursor }, { ...context, allowed: [] })).status, 403);
+  const grouped = await read('cost-summary', { groupBy: 'service' });
+  assert.deepEqual(grouped.summaries.map(row => [row.currency, row.module, row.service, row.eventCount, row.actualCostMinor]), [
+    ['NGN', 'finance', null, 1, 40],
+    ['NGN', 'finance', 'Verify Account', 2, 10],
+    ['NGN', 'finance', 'verify account', 1, 50],
+    ['USD', 'hr', 'Verify Account', 1, 30],
+  ]);
+  const serviceGroups = []; let serviceCursor;
+  do {
+    const page = await read('cost-summary', { groupBy: 'service', limit: '1', ...(serviceCursor ? { cursor: serviceCursor } : {}) });
+    serviceGroups.push(...page.summaries); serviceCursor = page.nextCursor;
+  } while (serviceCursor);
+  assert.deepEqual(serviceGroups, grouped.summaries, 'NULL and case-distinct services survive continuation');
+  const serviceFirst = await read('cost-summary', { groupBy: 'service', limit: '1' });
+  for (const [key, value] of Object.entries({ service: 'Absent', provider: 'mono', module: 'payroll', costCurrency: 'EUR',
+    day: '2026-09-14', actorEmployeeId: 'absent', costCenterId: 'absent', action: 'absent', pricingId: 'absent',
+    pricingRevision: '1', actorRoleCode: 'absent', currency: 'USD', providerReference: 'absent', evidenceReference: 'absent',
+    retryOfEventId: 'absent', reversalOfEventId: 'absent', approvalId: 'absent', makerEmployeeId: 'absent', checkerEmployeeId: 'absent' })) {
+    assert.deepEqual((await read('cost-summary', { groupBy: 'service', cursor: serviceFirst.nextCursor, [key]: value })).summaries, [], `${key} applies on grouped continuation`);
+  }
+  assert.deepEqual((await read('cost-summary', { groupBy: 'service', ...filter })).summaries,
+    grouped.summaries.filter(row => row.service === filter.service));
+  const multi = { ...context, companies: [{ id: 'company-printing' }, { id: 'company-bakery' }] };
+  const multiFirst = await read('cost-summary', { groupBy: 'service', limit: '1' }, multi);
+  assert.equal(multiFirst.summaries[0].companyId, 'company-bakery');
+  assert.deepEqual((await read('cost-summary', { groupBy: 'service', cursor: multiFirst.nextCursor })).summaries, grouped.summaries,
+    'continuation reapplies membership instead of inheriting cursor authority');
+  assert.deepEqual((await read('cost-summary', { groupBy: 'service', service: 'Private Service' })).summaries, []);
+  const groupedReads = reads;
+  for (const groupBy of ['', 'SERVICE', 'provider', "service' OR 1=1"]) {
+    assert.equal((await request('cost-summary', { groupBy })).status, 400);
+  }
+  assert.equal((await request('cost-summary', { groupBy: 'service', cursor: first.nextCursor })).status, 400);
+  assert.equal((await request('cost-summary', { cursor: serviceFirst.nextCursor })).status, 400);
+  assert.equal((await request('cost-summary', { groupBy: 'service', cursor: JSON.stringify(['company-printing', null, null, null, 1]) })).status, 400);
+  assert.equal((await request('cost-summary', { groupBy: 'service', cursor: serviceFirst.nextCursor }, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request('cost-summary', { groupBy: 'service', companyId: 'company-bakery' })).status, 403);
+  assert.equal(reads, groupedReads, 'invalid grouping/cursor and denied access reject before SQL');
+  // Exercise bounded continuation beyond the default 500-group cap.
+  for (let n = 0; n < 501; n++) insert.run(`bulk-${n}`, 'company-printing', 'bulk', null, 'NGN', `Service ${String(n).padStart(3, '0')}`);
+  const bulkFirst = await read('cost-summary', { groupBy: 'service', module: 'bulk' });
+  const bulkLast = await read('cost-summary', { groupBy: 'service', module: 'bulk', cursor: bulkFirst.nextCursor });
+  assert.equal(bulkFirst.summaries.length, 500);
+  assert.equal(bulkLast.summaries.length, 1);
+  assert.equal(bulkLast.nextCursor, null);
+  const bulkGroups = [...bulkFirst.summaries, ...bulkLast.summaries];
+  assert.equal(new Set(bulkGroups.map(row => row.service)).size, 501);
+  assert.ok(bulkGroups.every(row => row.actualCostMinor === null && row.actualCostEventCount === 0 && row.estimatedCostMinor === 20));
+  assert.equal((await read('cost-summary', { module: 'bulk' })).summaries.length, 1, 'default grouping remains compatible');
+  console.log('Service-grouped monthly totals, bounded continuation and Zero Disclosure: PASS');
   console.log('Provider-cost service attribution, scoped drilldown and summary pagination: PASS');
 } finally {
   db.close();
