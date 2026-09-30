@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -360,6 +360,64 @@ try {
   const omittedEvidence = await (await request('providerReference=evidence-provider')).json();
   assert.equal(omittedEvidence.evidenceReference, null);
   assert.equal(omittedEvidence.events.length, 9, 'omission includes authorized evidence with and without references');
+  const retryOfEventId = "Original / A+%_&'";
+  for (const id of [retryOfEventId, retryOfEventId.toLowerCase(), `${retryOfEventId}suffix`, 'private-original', 'x'.repeat(160)]) {
+    insert.run(id, id === 'private-original' ? 'company-bakery' : 'company-printing', '2026-08-01T00:00:00Z');
+  }
+  const retryInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,evidence_reference,retry_of_event_id,occurred_at,provider_result)
+    VALUES(?,?,'estimate','paystack','finance','synthetic-user','retry-provider',?,'retry-evidence',?,'2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+  for (const [id, company, value] of [
+    ['retry-1', 'company-printing', retryOfEventId], ['retry-2', 'company-printing', retryOfEventId],
+    ['retry-3', 'company-printing', retryOfEventId], ['retry-foreign', 'company-bakery', retryOfEventId],
+    ['retry-case', 'company-printing', retryOfEventId.toLowerCase()],
+    ['retry-prefix', 'company-printing', `${retryOfEventId}suffix`],
+    ['retry-private', 'company-bakery', 'private-original'],
+    ['retry-max', 'company-printing', 'x'.repeat(160)], ['retry-null', 'company-printing', null],
+  ]) retryInsert.run(id, company, pricingId, value);
+  const retryQuery = new URLSearchParams({ retryOfEventId, evidenceReference: 'retry-evidence', pricingId,
+    action: 'estimate', provider: 'paystack', module: 'finance', actorEmployeeId: 'synthetic-user',
+    providerReference: 'retry-provider', month: '2026-09', day: '2026-09-15', limit: '2' });
+  const retryFirst = await (await request(retryQuery)).json();
+  assert.equal(retryFirst.retryOfEventId, retryOfEventId);
+  assert.deepEqual(retryFirst.events.map(event => event.id), ['retry-3', 'retry-2']);
+  assert.ok(retryFirst.nextCursor);
+  retryQuery.set('cursor', retryFirst.nextCursor);
+  const retryLast = await (await request(retryQuery)).json();
+  assert.deepEqual(retryLast.events.map(event => event.id), ['retry-1']);
+  assert.equal(retryLast.nextCursor, null);
+  assert.ok(!JSON.stringify(retryLast).includes('internal-result-must-not-leak'));
+  for (const [key, value] of [['provider', 'mono'], ['module', 'attendance'], ['actorEmployeeId', 'another-user'],
+    ['providerReference', 'absent'], ['month', '2026-08'], ['day', '2026-09-01'], ['action', 'other'],
+    ['pricingId', 'absent'], ['evidenceReference', 'absent'], ['retryOfEventId', "' OR 1=1 --"]]) {
+    const mismatch = new URLSearchParams(retryQuery);
+    mismatch.set(key, value);
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects the retry continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const value of ['private-original', 'absent-original']) {
+    const result = await (await request(new URLSearchParams({ retryOfEventId: value }))).json();
+    assert.deepEqual(result.events, [], 'foreign and absent originals disclose no evidence');
+    assert.equal(result.nextCursor, null);
+  }
+  const retryReads = reads;
+  assert.equal((await request(retryQuery, { ...context, allowed: [] })).status, 403);
+  retryQuery.set('companyId', 'company-bakery');
+  assert.equal((await request(retryQuery)).status, 403);
+  for (const value of ['', ' ', 'x'.repeat(161), 'id\n', 'id\u0000', 'id\u007f']) {
+    assert.equal((await request(new URLSearchParams({ retryOfEventId: value }))).status, 400);
+  }
+  assert.equal(reads, retryReads, 'invalid retry IDs and denied requests never query evidence');
+  for (const [value, id] of [['x'.repeat(160), 'retry-max'], [retryOfEventId.toLowerCase(), 'retry-case'],
+    [`${retryOfEventId}suffix`, 'retry-prefix']]) {
+    const result = await (await request(new URLSearchParams({ retryOfEventId: value }))).json();
+    assert.deepEqual(result.events.map(event => event.id), [id]);
+  }
+  const omittedRetry = await (await request('providerReference=retry-provider')).json();
+  assert.equal(omittedRetry.retryOfEventId, null);
+  assert.equal(omittedRetry.events.length, 7, 'omission includes authorized original and retry evidence');
+  console.log('Financial retry-event drilldown: runtime/SQLite PASS');
   console.log('Financial evidence-reference drilldown: runtime/SQLite PASS');
   console.log('Financial pricing-record drilldown: runtime/SQLite PASS');
   console.log('Financial provider-action drilldown: runtime/SQLite PASS');
