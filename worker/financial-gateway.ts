@@ -529,6 +529,11 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         /[\u0000-\u001f\u007f]/.test(evidenceReference))) {
       return json({ error: 'Choose a valid evidence-reference filter.' }, 400);
     }
+    const retryOfEventId = url.searchParams.get('retryOfEventId');
+    if (retryOfEventId !== null && (!retryOfEventId.trim() || retryOfEventId.length > 160 ||
+        /[\u0000-\u001f\u007f]/.test(retryOfEventId))) {
+      return json({ error: 'Choose a valid retry-event filter.' }, 400);
+    }
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
@@ -549,11 +554,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR currency=?)
         AND (? IS NULL OR provider_reference=?)
         AND (? IS NULL OR evidence_reference=?)
+        AND (? IS NULL OR retry_of_event_id=?)
       GROUP BY company_id,provider,cost_currency,requesting_module
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT 500
-    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference).all<Record<string, unknown>>();
-    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId).all<Record<string, unknown>>();
+    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {

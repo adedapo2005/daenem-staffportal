@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -498,6 +498,68 @@ try {
   const legacyEvidence = await (await request(`${transactionQuery}&providerReference=ref-a`)).json();
   assert.equal(legacyEvidence.evidenceReference, null);
   assert.equal(legacyEvidence.summaries[0].eventCount, 2, 'omission retains legacy null evidence');
+  assert.equal(omitted.retryOfEventId, null);
+  const retryParent = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,occurred_at) VALUES(?,'company-printing','original','2026-08-01T00:00:00Z')`);
+  for (const reference of ['ref-a', 'REF-A', 'ref-a-suffix', " bank's/ref:1 ", 'x'.repeat(160),
+    '\u{1f4b0}'.repeat(80), 'pending-reference', 'foreign-reference']) retryParent.run(reference);
+  const retryInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,actor_role_code,action,provider,requesting_module,occurred_at,
+      estimated_cost_minor,actual_cost_minor,cost_currency,currency,amount_minor,pricing_id,pricing_revision,
+      retry_of_event_id,provider_reference,evidence_reference,provider_result)
+    VALUES(?,?,'user-a','finance','estimate','paystack','finance','2026-09-15T12:00:00Z',20,?,?,'USD',
+      1000,'price-a',1,?,'retry-provider-ref','retry-evidence-ref','internal-result-must-not-leak')`);
+  for (const reference of ['ref-a', 'REF-A', 'ref-a-suffix', " bank's/ref:1 ", 'x'.repeat(160), '\u{1f4b0}'.repeat(80)]) {
+    retryInsert.run(String(++id), 'company-printing', 81, 'NGN', reference);
+    retryInsert.run(String(++id), 'company-printing', null, 'NGN', reference);
+    retryInsert.run(String(++id), 'company-printing', 82, 'EUR', reference);
+    retryInsert.run(String(++id), 'company-bakery', 91, 'NGN', reference);
+    const query = `${transactionQuery}&providerReference=retry-provider-ref&evidenceReference=retry-evidence-ref&${new URLSearchParams({ retryOfEventId: reference })}`;
+    const body = await (await request(query)).json();
+    assert.equal(body.retryOfEventId, reference);
+    assert.deepEqual(body.summaries, [{ ...result.summaries[0], actualCostMinor: 81 }],
+      'exact opaque reference, including case, punctuation, whitespace and Unicode');
+    const both = await (await request(query, multi)).json();
+    assert.equal(both.summaries.length, 2);
+    assert.equal(both.summaries[0].actualCostMinor, 91);
+    assert.deepEqual((await (await request(`${query}&companyId=company-bakery`, multi)).json()).summaries,
+      [both.summaries[0]]);
+    const denominations = new URLSearchParams(query);
+    denominations.delete('costCurrency');
+    assert.deepEqual((await (await request(denominations)).json()).summaries.map(row => [row.currency, row.actualCostMinor]),
+      [['EUR', 82], ['NGN', 81]], 'cost currencies remain separate');
+    for (const [key, value] of [['provider', 'mono'], ['module', 'payroll'], ['month', '2026-08'],
+      ['actorEmployeeId', 'user-b'], ['costCurrency', 'USD'], ['action', 'pending'],
+      ['pricingId', 'PRICE-A'], ['pricingRevision', '2'], ['actorRoleCode', 'FINANCE'], ['currency', 'NGN'], ['providerReference', 'absent-reference'], ['evidenceReference', 'absent-evidence']]) {
+      const params = new URLSearchParams(query);
+      params.set(key, value);
+      assert.deepEqual((await (await request(params)).json()).summaries, [], `${key} intersects reference`);
+    }
+    assert.ok(!JSON.stringify(both).includes('internal-result-must-not-leak'));
+  }
+  retryInsert.run(String(++id), 'company-printing', null, 'NGN', 'pending-reference');
+  const pendingRetry = await (await request(`${transactionQuery}&retryOfEventId=pending-reference`)).json();
+  assert.equal(pendingRetry.summaries[0].actualCostMinor, null);
+  assert.equal(pendingRetry.summaries[0].actualCostEventCount, 0);
+  retryInsert.run(String(++id), 'company-bakery', 999, 'NGN', 'foreign-reference');
+  for (const reference of ['foreign-reference', 'absent-reference', "x' OR 1=1 --"]) {
+    assert.deepEqual((await (await request(`${base}&${new URLSearchParams({ retryOfEventId: reference })}`)).json()).summaries, []);
+  }
+  const withoutRetry = await (await request(`${transactionQuery}&providerReference=retry-provider-ref&evidenceReference=retry-evidence-ref`)).json();
+  assert.equal(withoutRetry.retryOfEventId, null);
+  assert.equal(withoutRetry.summaries[0].eventCount, 13, 'omission includes all inserted evidence references');
+  assert.equal(withoutRetry.summaries[0].actualCostMinor, 486);
+  const retryReads = reads;
+  for (const reference of ['', ' ', 'x'.repeat(161), '\u{1f4b0}'.repeat(81), 'ref\n', 'a\u0000', 'a\u007f']) {
+    assert.equal((await request(`${base}&${new URLSearchParams({ retryOfEventId: reference })}`)).status, 400);
+  }
+  assert.equal((await request(`${base}&retryOfEventId=ref-a`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${base}&retryOfEventId=foreign-reference&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, retryReads, 'invalid references and denied scope reject before SQL');
+  console.log('Monthly retry-event totals: real route / SQLite regression PASS');
+  const legacyRetry = await (await request(`${transactionQuery}&providerReference=ref-a`)).json();
+  assert.equal(legacyRetry.retryOfEventId, null);
+  assert.equal(legacyRetry.summaries[0].eventCount, 2, 'omission retains legacy null retry links');
 
 } finally {
   db.close();
