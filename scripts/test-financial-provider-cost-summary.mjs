@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -48,11 +48,11 @@ try {
   const insert = db.prepare(`INSERT INTO financial_provider_cost_events
     (id,company_id,actor_employee_id,action,provider,requesting_module,occurred_at,
       estimated_cost_minor,actual_cost_minor,cost_currency,provider_result)
-    VALUES(?,?,?,'estimate',?,?,?,?,?,?, 'internal-result-must-not-leak')`);
+    VALUES(?,?,?,?,?,?,?,?,?,?, 'internal-result-must-not-leak')`);
   let id = 0;
   const add = (actor, actual, currency = 'NGN', company = 'company-printing', provider = 'paystack',
-    module = 'finance', time = '2026-09-15T12:00:00Z') =>
-    insert.run(String(++id), company, actor, provider, module, time, 20, actual, currency);
+    module = 'finance', time = '2026-09-15T12:00:00Z', action = 'estimate') =>
+    insert.run(String(++id), company, actor, action, provider, module, time, 20, actual, currency);
   add('user-a', 10);
   add('user-a', null);
   add('user-a', 30, 'USD');
@@ -151,6 +151,45 @@ try {
   assert.ok(!JSON.stringify(scopedCurrency).includes('internal-result-must-not-leak'));
   console.log('Monthly cost-currency totals: real route / SQLite regression PASS');
   console.log('Monthly requesting-user totals: real route / SQLite regression PASS');
+  assert.equal(omitted.action, null);
+  assert.deepEqual((await (await request(`${base}&actorEmployeeId=user-a&action=estimate&costCurrency=NGN`)).json()).summaries,
+    [result.summaries[0]], 'action intersects existing filters without changing totals');
+  const actions = ['Estimate', 'estimate-suffix', "verify:bank's account", '\u{1f4b0}'.repeat(100)];
+  for (const action of actions) {
+    add('user-a', 81, 'NGN', 'company-printing', 'paystack', 'finance', '2026-09-15T12:00:00Z', action);
+    add('user-a', 82, 'NGN', 'company-bakery', 'paystack', 'finance', '2026-09-15T12:00:00Z', action);
+    const query = `${base}&actorEmployeeId=user-a&costCurrency=NGN&${new URLSearchParams({ action })}`;
+    const body = await (await request(query)).json();
+    assert.equal(body.action, action);
+    assert.deepEqual(body.summaries, [{ ...result.summaries[0], eventCount: 1, actualCostEventCount: 1,
+      actualCostMinor: 81, estimatedCostMinor: 20 }], 'exact case/punctuation/Unicode and company isolation');
+    const companies = await (await request(query, multi)).json();
+    assert.equal(companies.summaries.length, 2);
+    assert.equal(companies.summaries[0].actualCostMinor, 82);
+    for (const [key, value] of [['provider', 'mono'], ['module', 'payroll'], ['month', '2026-08'],
+      ['actorEmployeeId', 'user-b'], ['costCurrency', 'USD']]) {
+      const params = new URLSearchParams(query);
+      params.set(key, value);
+      assert.deepEqual((await (await request(params)).json()).summaries, [], `${key} remains applied`);
+    }
+  }
+  add(null, null, 'NGN', 'company-printing', 'paystack', 'finance', '2026-09-15T12:00:00Z', 'pending');
+  const pending = await (await request(`${base}&action=pending`)).json();
+  assert.equal(pending.summaries[0].actualCostMinor, null);
+  assert.equal(pending.summaries[0].actualCostEventCount, 0);
+  add('foreign-user', 900, 'NGN', 'company-bakery', 'paystack', 'finance', '2026-09-15T12:00:00Z', 'foreign-only');
+  for (const action of ['foreign-only', 'absent', "x' OR 1=1 --"]) {
+    assert.deepEqual((await (await request(`${base}&${new URLSearchParams({ action })}`)).json()).summaries, []);
+  }
+  const actionReads = reads;
+  for (const action of ['', ' ', 'x'.repeat(101), '\u{1f4b0}'.repeat(101), 'estimate\n', 'a\u0000', 'a\u007f']) {
+    assert.equal((await request(`${base}&${new URLSearchParams({ action })}`)).status, 400);
+  }
+  assert.equal((await request(`${base}&action=estimate`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${base}&action=foreign-only&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, actionReads, 'invalid actions and denied scope reject before SQL');
+  assert.ok(!JSON.stringify(pending).includes('internal-result-must-not-leak'));
+  console.log('Monthly action totals: real route / SQLite regression PASS');
 } finally {
   db.close();
 }
