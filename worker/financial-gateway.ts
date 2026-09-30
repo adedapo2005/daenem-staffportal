@@ -481,6 +481,10 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (provider !== null && !/^[a-z][a-z0-9_-]{0,79}$/.test(provider)) {
       return json({ error: 'Choose a valid provider filter.' }, 400);
     }
+    const costCurrency = url.searchParams.get('costCurrency');
+    if (costCurrency !== null && (costCurrency.length !== 3 || /[^A-Z]/.test(costCurrency))) {
+      return json({ error: 'Choose a valid three-letter cost currency.' }, 400);
+    }
     const module = url.searchParams.get('module');
     if (module !== null && !/^[a-z][a-z0-9_.:-]{0,79}$/.test(module)) {
       return json({ error: 'Choose a valid module filter.' }, 400);
@@ -501,11 +505,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       WHERE company_id IN (${placeholders}) AND strftime('%Y-%m',occurred_at)=?
         AND (? IS NULL OR provider=?) AND (? IS NULL OR requesting_module=?)
         AND (? IS NULL OR actor_employee_id=?)
+        AND (? IS NULL OR cost_currency=?)
       GROUP BY company_id,provider,cost_currency,requesting_module
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT 500
-    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId).all<Record<string, unknown>>();
-    return json({ month, provider, module, actorEmployeeId, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency).all<Record<string, unknown>>();
+    return json({ month, provider, module, actorEmployeeId, costCurrency, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {

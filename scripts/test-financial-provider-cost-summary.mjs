@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -110,6 +110,46 @@ try {
   assert.equal(both.summaries[0].companyId, 'company-bakery');
   assert.equal(both.summaries[0].actualCostMinor, 40);
   assert.ok(!JSON.stringify(both).includes('internal-result-must-not-leak'));
+  assert.equal(omitted.costCurrency, null);
+  for (const currency of ['NGN', 'USD']) {
+    const filtered = await (await request(`${base}&actorEmployeeId=user-a&costCurrency=${currency}`)).json();
+    assert.equal(filtered.costCurrency, currency);
+    assert.deepEqual(filtered.summaries, result.summaries.filter(row => row.currency === currency));
+  }
+  const scopedCurrency = await (await request(`${base}&actorEmployeeId=user-a&costCurrency=NGN`, multi)).json();
+  assert.deepEqual(scopedCurrency.summaries, both.summaries.filter(row => row.currency === 'NGN'));
+  const singleCompany = await (await request(`${base}&actorEmployeeId=user-a&costCurrency=NGN&companyId=company-bakery`, multi)).json();
+  assert.deepEqual(singleCompany.summaries, [both.summaries[0]]);
+  const allActors = await (await request(`${base}&costCurrency=NGN`)).json();
+  assert.deepEqual(allActors.summaries, [omitted.summaries[0]], 'currency filter retains null actors');
+  const unknownActual = await (await request(`${base}&actorEmployeeId=user-a&costCurrency=EUR`)).json();
+  assert.deepEqual(unknownActual.summaries, []);
+  add('user-a', null, 'EUR');
+  const pendingActual = await (await request(`${base}&actorEmployeeId=user-a&costCurrency=EUR`)).json();
+  assert.equal(pendingActual.summaries[0].actualCostMinor, null, 'unknown actual costs never become zero');
+  assert.equal(pendingActual.summaries[0].actualCostEventCount, 0);
+  add('foreign-user', 900, 'GBP', 'company-bakery');
+  for (const currency of ['GBP', 'CAD']) {
+    assert.deepEqual((await (await request(`${base}&costCurrency=${currency}`)).json()).summaries, [],
+      'foreign-only and absent currencies disclose no evidence');
+  }
+  for (const [filter, amount] of [['provider=mono&module=finance', 50], ['provider=paystack&module=payroll', 60],
+    ['provider=paystack&module=finance&month=2026-08', 70]]) {
+    const params = new URLSearchParams(`month=2026-09&${filter}&actorEmployeeId=user-a&costCurrency=NGN`);
+    if (filter.includes('month=2026-08')) params.set('month', '2026-08');
+    const body = await (await request(params)).json();
+    assert.equal(body.summaries.length, 1);
+    assert.equal(body.summaries[0].actualCostMinor, amount);
+  }
+  const currencyReads = reads;
+  for (const currency of ['', ' ', 'ngn', 'Ngn', 'NG', 'NGNN', 'NGN\n', 'NG\u0000', "' OR 1=1", '€UR']) {
+    assert.equal((await request(`${base}&${new URLSearchParams({ costCurrency: currency })}`)).status, 400);
+  }
+  assert.equal((await request(`${base}&costCurrency=NGN`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${base}&costCurrency=GBP&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, currencyReads, 'invalid currencies and revoked permissions reject before SQL');
+  assert.ok(!JSON.stringify(scopedCurrency).includes('internal-result-must-not-leak'));
+  console.log('Monthly cost-currency totals: real route / SQLite regression PASS');
   console.log('Monthly requesting-user totals: real route / SQLite regression PASS');
 } finally {
   db.close();
