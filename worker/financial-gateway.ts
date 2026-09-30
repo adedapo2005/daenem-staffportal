@@ -292,12 +292,25 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (!isOwner && !scopedCompanyIds.length) return json({ error: 'Provider routing policy access is not assigned.' }, 403);
     const visible = requestedCompanyId ? scopedCompanyIds.filter((id) => id === requestedCompanyId) : scopedCompanyIds;
     if (!visible.length) return json({ error: 'Provider routing policy access is not assigned.' }, 403);
+    const limitParam = url.searchParams.get('limit');
+    const limit = limitParam === null ? 100 : Number(limitParam);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !/^\d+$/.test(limitParam ?? '100')) {
+      return json({ error: 'Choose between 1 and 100 provider routing policies.' }, 400);
+    }
+    const afterId = url.searchParams.get('afterId');
+    if (afterId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(afterId)) {
+      return json({ error: 'Choose a valid provider routing policy cursor.' }, 400);
+    }
     const placeholders = visible.map(() => '?').join(',');
     const rows = await env.DB.prepare(`SELECT id,company_id AS companyId,service,provider,priority,status,
       routing_reason AS routingReason,updated_at AS updatedAt FROM financial_provider_routing_policies
-      WHERE company_id IN (${placeholders}) ORDER BY company_id,service,priority,provider LIMIT 500`)
-      .bind(...visible).all<Record<string, unknown>>();
-    return json({ policies: rows.results || [], visibleCompanyIds: visible, providerExecutionEnabled: false });
+      WHERE company_id IN (${placeholders}) AND (? IS NULL OR id > ?)
+      ORDER BY id LIMIT ?`)
+      .bind(...visible, afterId, afterId, limit + 1).all<Record<string, unknown>>();
+    const page = rows.results || [];
+    const policies = page.slice(0, limit);
+    const nextCursor = page.length > limit ? String(policies[policies.length - 1].id) : null;
+    return json({ policies, nextCursor, limit, visibleCompanyIds: visible, providerExecutionEnabled: false });
   }
 
   if (url.pathname === '/api/financial-gateway/pricing/admin') {
