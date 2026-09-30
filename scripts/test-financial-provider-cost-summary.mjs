@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -280,6 +280,57 @@ try {
   assert.equal((await request(`${base}&pricingRevision=4&companyId=company-bakery`)).status, 403);
   assert.equal(reads, revisionReads, 'invalid revisions and revoked permissions reject before SQL');
   console.log('Monthly pricing-revision totals: real route / SQLite regression PASS');
+  assert.equal(omitted.actorRoleCode, null);
+  const roleInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,actor_role_code,action,provider,requesting_module,occurred_at,
+      estimated_cost_minor,actual_cost_minor,cost_currency,pricing_id,pricing_revision,provider_result)
+    VALUES(?,?,'user-a',?,'estimate','paystack','finance','2026-09-15T12:00:00Z',20,?,'NGN','price-a',1,
+      'internal-result-must-not-leak')`);
+  const roleQuery = `${base}&actorEmployeeId=user-a&costCurrency=NGN&action=estimate&pricingId=price-a&pricingRevision=1`;
+  for (const [index, role] of ['finance', 'FINANCE', 'finance-suffix', "finance:owner's role", '\u{1f4b0}'.repeat(160)].entries()) {
+    roleInsert.run(String(++id), 'company-printing', role, 61 + index);
+    roleInsert.run(String(++id), 'company-printing', role, null);
+    roleInsert.run(String(++id), 'company-bakery', role, 91 + index);
+    const query = `${roleQuery}&${new URLSearchParams({ actorRoleCode: role })}`;
+    const body = await (await request(query)).json();
+    assert.equal(body.actorRoleCode, role);
+    assert.deepEqual(body.summaries, [{ ...result.summaries[0], actualCostMinor: 61 + index }],
+      'role matches exact case, full value, punctuation and Unicode; unknown costs remain unknown');
+    const companies = await (await request(query, multi)).json();
+    assert.equal(companies.summaries.length, 2);
+    assert.equal(companies.summaries[0].actualCostMinor, 91 + index);
+    assert.deepEqual((await (await request(`${query}&companyId=company-bakery`, multi)).json()).summaries,
+      [companies.summaries[0]]);
+    for (const [key, value] of [['provider', 'mono'], ['module', 'payroll'], ['month', '2026-08'],
+      ['actorEmployeeId', 'user-b'], ['costCurrency', 'USD'], ['action', 'pending'],
+      ['pricingId', 'PRICE-A'], ['pricingRevision', '2']]) {
+      const params = new URLSearchParams(query);
+      params.set(key, value);
+      assert.deepEqual((await (await request(params)).json()).summaries, [], `${key} intersects role filter`);
+    }
+    assert.ok(!JSON.stringify(body).includes('internal-result-must-not-leak'));
+  }
+  roleInsert.run(String(++id), 'company-printing', 'pending-role', null);
+  const pendingRole = await (await request(`${roleQuery}&actorRoleCode=pending-role`)).json();
+  assert.equal(pendingRole.summaries[0].actualCostMinor, null);
+  assert.equal(pendingRole.summaries[0].actualCostEventCount, 0);
+  roleInsert.run(String(++id), 'company-bakery', 'foreign-role', 999);
+  for (const role of ['foreign-role', 'absent-role', "x' OR 1=1 --"]) {
+    assert.deepEqual((await (await request(`${roleQuery}&${new URLSearchParams({ actorRoleCode: role })}`)).json()).summaries, [],
+      'foreign-only, absent and SQL-like roles disclose no evidence');
+  }
+  const allRoles = await (await request(roleQuery)).json();
+  assert.equal(allRoles.actorRoleCode, null);
+  assert.equal(allRoles.summaries[0].eventCount, 13, 'omission retains legacy null roles');
+  assert.equal(allRoles.summaries[0].actualCostMinor, 366);
+  const roleReads = reads;
+  for (const role of ['', ' ', 'x'.repeat(161), '\u{1f4b0}'.repeat(161), 'finance\n', 'a\u0000', 'a\u007f']) {
+    assert.equal((await request(`${roleQuery}&${new URLSearchParams({ actorRoleCode: role })}`)).status, 400);
+  }
+  assert.equal((await request(`${roleQuery}&actorRoleCode=finance`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${roleQuery}&actorRoleCode=foreign-role&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, roleReads, 'invalid roles and revoked permissions reject before SQL');
+  console.log('Monthly actor-role totals: real route / SQLite regression PASS');
 } finally {
   db.close();
 }

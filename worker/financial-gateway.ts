@@ -493,6 +493,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
       return json({ error: 'Choose a valid requesting-user filter.' }, 400);
     }
+    // Historical role evidence is an exact value, not a grant of authority.
+    const actorRoleCode = url.searchParams.get('actorRoleCode');
+    if (actorRoleCode !== null && (!actorRoleCode.trim() || [...actorRoleCode].length > 160 ||
+        /[\u0000-\u001f\u007f]/.test(actorRoleCode))) {
+      return json({ error: 'Choose a valid actor-role filter.' }, 400);
+    }
     const action = url.searchParams.get('action');
     if (action !== null && (!action.trim() || [...action].length > 100 ||
         /[\u0000-\u001f\u007f]/.test(action))) {
@@ -524,11 +530,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR action=?)
         AND (? IS NULL OR pricing_id=?)
         AND (? IS NULL OR pricing_revision=?)
+        AND (? IS NULL OR actor_role_code=?)
       GROUP BY company_id,provider,cost_currency,requesting_module
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT 500
-    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision).all<Record<string, unknown>>();
-    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode).all<Record<string, unknown>>();
+    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {
