@@ -563,6 +563,11 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         /[\u0000-\u001f\u007f]/.test(retryOfEventId))) {
       return json({ error: 'Choose a valid retry-event filter.' }, 400);
     }
+    const reversalOfEventId = url.searchParams.get('reversalOfEventId');
+    if (reversalOfEventId !== null && (!reversalOfEventId.trim() || reversalOfEventId.length > 160 ||
+        /[\u0000-\u001f\u007f]/.test(reversalOfEventId))) {
+      return json({ error: 'Choose a valid reversal-event filter.' }, 400);
+    }
     // The cursor is only a position, never authority: all current scope and
     // filter predicates apply again on every page. Preserve the stored text
     // timestamp to match the existing deterministic ordering exactly.
@@ -607,15 +612,16 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR pricing_id=?)
         AND (? IS NULL OR evidence_reference=?)
         AND (? IS NULL OR retry_of_event_id=?)
+        AND (? IS NULL OR reversal_of_event_id=?)
         AND (? IS NULL OR occurred_at < ? OR (occurred_at = ? AND id < ?))
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
+    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
     const events = (rows.results || []).slice(0, limit);
     const last = events[events.length - 1];
     const nextCursor = (rows.results || []).length > limit && last
       ? JSON.stringify([last.occurredAt, last.id]) : null;
-    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, providerReference, action, pricingId, evidenceReference, retryOfEventId, limit });
+    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, providerReference, action, pricingId, evidenceReference, retryOfEventId, reversalOfEventId, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {

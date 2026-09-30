@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -417,6 +417,61 @@ try {
   const omittedRetry = await (await request('providerReference=retry-provider')).json();
   assert.equal(omittedRetry.retryOfEventId, null);
   assert.equal(omittedRetry.events.length, 7, 'omission includes authorized original and retry evidence');
+  const reversalOfEventId = retryOfEventId;
+  const reversalInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,evidence_reference,reversal_of_event_id,retry_of_event_id,occurred_at,provider_result)
+    VALUES(?,?,'estimate','paystack','finance','synthetic-user','reversal-provider',?,'reversal-evidence',?,'september-start','2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+  for (const [id, company, value] of [
+    ['reversal-1', 'company-printing', reversalOfEventId], ['reversal-2', 'company-printing', reversalOfEventId],
+    ['reversal-3', 'company-printing', reversalOfEventId], ['reversal-foreign', 'company-bakery', reversalOfEventId],
+    ['reversal-case', 'company-printing', reversalOfEventId.toLowerCase()],
+    ['reversal-prefix', 'company-printing', `${reversalOfEventId}suffix`],
+    ['reversal-private', 'company-bakery', 'private-original'],
+    ['reversal-max', 'company-printing', 'x'.repeat(160)], ['reversal-null', 'company-printing', null],
+  ]) reversalInsert.run(id, company, pricingId, value);
+  const reversalQuery = new URLSearchParams({ reversalOfEventId, retryOfEventId: 'september-start', evidenceReference: 'reversal-evidence', pricingId,
+    action: 'estimate', provider: 'paystack', module: 'finance', actorEmployeeId: 'synthetic-user',
+    providerReference: 'reversal-provider', month: '2026-09', day: '2026-09-15', limit: '2' });
+  const reversalFirst = await (await request(reversalQuery)).json();
+  assert.equal(reversalFirst.reversalOfEventId, reversalOfEventId);
+  assert.deepEqual(reversalFirst.events.map(event => event.id), ['reversal-3', 'reversal-2']);
+  assert.ok(reversalFirst.nextCursor);
+  reversalQuery.set('cursor', reversalFirst.nextCursor);
+  const reversalLast = await (await request(reversalQuery)).json();
+  assert.deepEqual(reversalLast.events.map(event => event.id), ['reversal-1']);
+  assert.equal(reversalLast.nextCursor, null);
+  assert.ok(!JSON.stringify(reversalLast).includes('internal-result-must-not-leak'));
+  for (const [key, value] of [['provider', 'mono'], ['module', 'attendance'], ['actorEmployeeId', 'another-user'],
+    ['providerReference', 'absent'], ['month', '2026-08'], ['day', '2026-09-01'], ['action', 'other'],
+    ['pricingId', 'absent'], ['evidenceReference', 'absent'], ['retryOfEventId', 'absent'], ['reversalOfEventId', "' OR 1=1 --"]]) {
+    const mismatch = new URLSearchParams(reversalQuery);
+    mismatch.set(key, value);
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects the reversal continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const value of ['private-original', 'absent-original']) {
+    const result = await (await request(new URLSearchParams({ reversalOfEventId: value }))).json();
+    assert.deepEqual(result.events, [], 'foreign and absent originals disclose no evidence');
+    assert.equal(result.nextCursor, null);
+  }
+  const reversalReads = reads;
+  assert.equal((await request(reversalQuery, { ...context, allowed: [] })).status, 403);
+  reversalQuery.set('companyId', 'company-bakery');
+  assert.equal((await request(reversalQuery)).status, 403);
+  for (const value of ['', ' ', 'x'.repeat(161), 'id\n', 'id\u0000', 'id\u007f']) {
+    assert.equal((await request(new URLSearchParams({ reversalOfEventId: value }))).status, 400);
+  }
+  assert.equal(reads, reversalReads, 'invalid reversal IDs and denied requests never query evidence');
+  for (const [value, id] of [['x'.repeat(160), 'reversal-max'], [reversalOfEventId.toLowerCase(), 'reversal-case'],
+    [`${reversalOfEventId}suffix`, 'reversal-prefix']]) {
+    const result = await (await request(new URLSearchParams({ reversalOfEventId: value }))).json();
+    assert.deepEqual(result.events.map(event => event.id), [id]);
+  }
+  const omittedReversal = await (await request('providerReference=reversal-provider')).json();
+  assert.equal(omittedReversal.reversalOfEventId, null);
+  assert.equal(omittedReversal.events.length, 7, 'omission includes authorized original and reversal evidence');
+  console.log('Financial reversal-event drilldown: runtime/SQLite PASS');
   console.log('Financial retry-event drilldown: runtime/SQLite PASS');
   console.log('Financial evidence-reference drilldown: runtime/SQLite PASS');
   console.log('Financial pricing-record drilldown: runtime/SQLite PASS');
