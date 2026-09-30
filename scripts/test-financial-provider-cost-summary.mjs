@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCenterId, costCenterId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId,/);
-assert.match(endpoint, /return json\(\{ month, day, provider, module, actorEmployeeId, costCenterId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries, nextCursor, limit,/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCenterId, costCenterId, service, service, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId,/);
+assert.match(endpoint, /return json\(\{ month, day, provider, module, actorEmployeeId, costCenterId, service, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries, nextCursor, limit,/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -43,7 +43,7 @@ try {
     CREATE TABLE spend_cost_centers(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES companies(id));
     INSERT INTO companies VALUES('company-printing'),('company-bakery');
     INSERT INTO employees VALUES('user-a'),('user-b'),('USER-A'),('user-a-suffix'),('foreign-user');`);
-  for (const name of ['0079_financial_provider_cost_events', '0081_financial_provider_cost_event_module', '0086_financial_provider_pricing_revision', '0089_financial_provider_cost_center']) {
+  for (const name of ['0079_financial_provider_cost_events', '0081_financial_provider_cost_event_module', '0086_financial_provider_pricing_revision', '0089_financial_provider_cost_center', '0090_financial_provider_cost_service']) {
     db.exec(await readFile(new URL(`../migrations/${name}.sql`, import.meta.url), 'utf8'));
   }
   const insert = db.prepare(`INSERT INTO financial_provider_cost_events

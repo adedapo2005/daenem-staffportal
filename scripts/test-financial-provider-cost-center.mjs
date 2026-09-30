@@ -18,7 +18,7 @@ try {
     INSERT INTO companies VALUES('company-printing'),('company-bakery');
     INSERT INTO spend_cost_centers VALUES('print-general','company-printing'),('print-ops','company-printing'),('bakery-general','company-bakery');`);
   for (const name of ['0079_financial_provider_cost_events', '0081_financial_provider_cost_event_module',
-    '0086_financial_provider_pricing_revision', '0089_financial_provider_cost_center']) {
+    '0086_financial_provider_pricing_revision', '0089_financial_provider_cost_center', '0090_financial_provider_cost_service']) {
     db.exec(await readFile(new URL(`../migrations/${name}.sql`, import.meta.url), 'utf8'));
   }
   const insert = db.prepare(`INSERT INTO financial_provider_cost_events
