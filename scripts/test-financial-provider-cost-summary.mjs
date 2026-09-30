@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { DatabaseSync } from 'node:sqlite';
+import ts from 'typescript';
 
 const source = await readFile(new URL('../worker/financial-gateway.ts', import.meta.url), 'utf8');
 const start = source.indexOf("if (url.pathname === '/api/financial-gateway/cost-summary')");
@@ -21,9 +23,94 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
 console.log('Financial provider-cost monthly summary: 17/17 PASS');
+
+const javascript = ts.transpileModule(source.replace(/^import .* from '\.\/auth';/m,
+  `const hasPermission = (context, resource, action, companyId) =>
+    resource === 'finance.reports' && action === 'view' && context.allowed.includes(companyId);`),
+  { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const { routeFinancialGateway } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
+const db = new DatabaseSync(':memory:');
+try {
+  db.exec(`CREATE TABLE companies(id TEXT PRIMARY KEY);
+    CREATE TABLE employees(id TEXT PRIMARY KEY);
+    CREATE TABLE financial_provider_pricing(id TEXT PRIMARY KEY);
+    INSERT INTO companies VALUES('company-printing'),('company-bakery');
+    INSERT INTO employees VALUES('user-a'),('user-b'),('USER-A'),('user-a-suffix'),('foreign-user');`);
+  for (const name of ['0079_financial_provider_cost_events', '0081_financial_provider_cost_event_module']) {
+    db.exec(await readFile(new URL(`../migrations/${name}.sql`, import.meta.url), 'utf8'));
+  }
+  const insert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,action,provider,requesting_module,occurred_at,
+      estimated_cost_minor,actual_cost_minor,cost_currency,provider_result)
+    VALUES(?,?,?,'estimate',?,?,?,?,?,?, 'internal-result-must-not-leak')`);
+  let id = 0;
+  const add = (actor, actual, currency = 'NGN', company = 'company-printing', provider = 'paystack',
+    module = 'finance', time = '2026-09-15T12:00:00Z') =>
+    insert.run(String(++id), company, actor, provider, module, time, 20, actual, currency);
+  add('user-a', 10);
+  add('user-a', null);
+  add('user-a', 30, 'USD');
+  add('user-a', 40, 'NGN', 'company-bakery');
+  add('foreign-user', 999, 'NGN', 'company-bakery');
+  add('user-a', 50, 'NGN', 'company-printing', 'mono');
+  add('user-a', 60, 'NGN', 'company-printing', 'paystack', 'payroll');
+  add('user-a', 70, 'NGN', 'company-printing', 'paystack', 'finance', '2026-08-31T23:59:59Z');
+  for (const actor of ['user-b', null, 'USER-A', 'user-a-suffix']) add(actor, 100);
+  let reads = 0;
+  const env = { DB: { prepare(sql) {
+    assert.match(sql, /^\s*SELECT/);
+    return { bind(...args) { return { async all() {
+      reads++;
+      return { results: db.prepare(sql).all(...args) };
+    } }; } };
+  } } };
+  const context = { roles: [], companies: [{ id: 'company-printing' }], allowed: ['company-printing', 'company-bakery'] };
+  const request = (query, session = context) => routeFinancialGateway(
+    new Request(`https://portal.invalid/api/financial-gateway/cost-summary?${query}`), env, session);
+  const base = 'month=2026-09&provider=paystack&module=finance';
+  const response = await request(`${base}&actorEmployeeId=user-a`);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  const result = await response.json();
+  assert.equal(result.actorEmployeeId, 'user-a');
+  assert.deepEqual(result.visibleCompanyIds, ['company-printing']);
+  assert.deepEqual(result.summaries, [
+    { companyId: 'company-printing', provider: 'paystack', currency: 'NGN', module: 'finance',
+      eventCount: 2, actualCostEventCount: 1, actualCostMinor: 10, estimatedCostMinor: 40 },
+    { companyId: 'company-printing', provider: 'paystack', currency: 'USD', module: 'finance',
+      eventCount: 1, actualCostEventCount: 1, actualCostMinor: 30, estimatedCostMinor: 20 },
+  ]);
+  const omitted = await (await request(base)).json();
+  assert.equal(omitted.actorEmployeeId, null);
+  assert.equal(omitted.summaries[0].eventCount, 6, 'omission includes null actors');
+  assert.equal(omitted.summaries[0].actualCostMinor, 410);
+  for (const actor of ['USER-A', 'user-a-suffix']) {
+    const body = await (await request(`${base}&actorEmployeeId=${actor}`)).json();
+    assert.equal(body.summaries[0].actualCostMinor, 100, 'exact case and full ID match');
+  }
+  for (const actor of ['missing-user', 'foreign-user', 'x'.repeat(160)]) {
+    assert.deepEqual((await (await request(`${base}&actorEmployeeId=${actor}`)).json()).summaries, []);
+  }
+  const before = reads;
+  for (const actor of ['', ' ', 'x'.repeat(161), "a' OR 1=1", 'a\n', 'a/b', 'é']) {
+    assert.equal((await request(`${base}&${new URLSearchParams({ actorEmployeeId: actor })}`)).status, 400);
+  }
+  assert.equal((await request(`${base}&actorEmployeeId=user-a`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${base}&actorEmployeeId=user-a&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, before, 'invalid or unauthorized requests never read evidence');
+  const multi = { ...context, companies: [{ id: 'company-printing' }, { id: 'company-bakery' }] };
+  const both = await (await request(`${base}&actorEmployeeId=user-a`, multi)).json();
+  assert.equal(both.summaries.length, 3, 'companies remain separate groups');
+  assert.equal(both.summaries[0].companyId, 'company-bakery');
+  assert.equal(both.summaries[0].actualCostMinor, 40);
+  assert.ok(!JSON.stringify(both).includes('internal-result-must-not-leak'));
+  console.log('Monthly requesting-user totals: real route / SQLite regression PASS');
+} finally {
+  db.close();
+}
