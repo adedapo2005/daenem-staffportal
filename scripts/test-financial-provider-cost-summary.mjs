@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId\)/);
+assert.match(endpoint, /return json\(\{ month, day, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -748,6 +748,47 @@ try {
   assert.equal(legacyParticipants.checkerEmployeeId, null);
   assert.equal(legacyParticipants.summaries[0].eventCount, 2, 'omission retains legacy null participants');
   console.log('Monthly maker/checker totals: real route / SQLite regression PASS');
+  assert.equal(omitted.day, null);
+  for (const [time, actual, company, currency] of [
+    ['2024-02-29T00:00:00Z', 10, 'company-printing', 'NGN'],
+    ['2024-02-29T23:59:59Z', null, 'company-printing', 'NGN'],
+    ['2024-03-01T00:30:00+01:00', 20, 'company-printing', 'USD'],
+    ['2024-02-28T23:30:00-01:00', 30, 'company-bakery', 'NGN'],
+    ['2024-02-28T23:59:59Z', 40, 'company-printing', 'NGN'],
+    ['2024-03-01T00:00:00Z', 50, 'company-printing', 'NGN'],
+  ]) add('user-a', actual, currency, company, 'paystack', 'finance', time);
+  const dayQuery = 'month=2024-02&day=2024-02-29&provider=paystack&module=finance&actorEmployeeId=user-a';
+  const daily = await (await request(dayQuery)).json();
+  assert.equal(daily.day, '2024-02-29');
+  assert.deepEqual(daily.summaries, [result.summaries[0], { ...result.summaries[1], actualCostMinor: 20 }]);
+  const dailyBoth = await (await request(dayQuery, multi)).json();
+  assert.equal(dailyBoth.summaries.length, 3);
+  assert.equal(dailyBoth.summaries[0].actualCostMinor, 30);
+  assert.deepEqual((await (await request(`${dayQuery}&companyId=company-bakery`, multi)).json()).summaries, [dailyBoth.summaries[0]]);
+  assert.deepEqual((await (await request(`${dayQuery}&costCurrency=NGN`)).json()).summaries, [daily.summaries[0]]);
+  for (const [key, value] of [['month', '2024-03'], ['day', '2024-02-27'], ['provider', 'mono'],
+    ['module', 'payroll'], ['actorEmployeeId', 'user-b'], ['action', 'absent'], ['pricingId', 'absent'],
+    ['pricingRevision', '2'], ['actorRoleCode', 'absent'], ['currency', 'USD'], ['providerReference', 'absent'],
+    ['evidenceReference', 'absent'], ['retryOfEventId', 'absent'], ['reversalOfEventId', 'absent'],
+    ['approvalId', 'absent'], ['makerEmployeeId', 'user-b'], ['checkerEmployeeId', 'user-b']]) {
+    const query = new URLSearchParams(dayQuery);
+    query.set(key, value);
+    assert.deepEqual((await (await request(query)).json()).summaries, [], `${key} intersects day`);
+  }
+  add('user-a', 999, 'NGN', 'company-bakery', 'paystack', 'finance', '2024-02-26T12:00:00Z');
+  for (const day of ['2024-02-26', '2024-02-25']) {
+    assert.deepEqual((await (await request(`month=2024-02&day=${day}`)).json()).summaries, [], 'foreign and absent days are indistinguishable');
+  }
+  const dayReads = reads;
+  for (const day of ['', ' ', '2023-02-29', '2024-02-30', '2024-04-31', '2024-13-01', '2024-00-01',
+    '2024-02-00', '2024-2-29', '2024-02-29T00:00:00Z', '2024-02-29\n', "x' OR 1=1 --"]) {
+    assert.equal((await request(new URLSearchParams({ month: '2024-02', day }))).status, 400);
+  }
+  assert.equal((await request(dayQuery, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${dayQuery}&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, dayReads, 'malformed days and denied permissions reject before SQL');
+  assert.ok(!JSON.stringify(dailyBoth).includes('internal-result-must-not-leak'));
+  console.log('Monthly exact-day totals and UTC boundaries: real route / SQLite regression PASS');
 
 } finally {
   db.close();

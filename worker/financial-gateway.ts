@@ -473,6 +473,11 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
       return json({ error: 'Choose a month in YYYY-MM format.' }, 400);
     }
+    const day = url.searchParams.get('day');
+    if (day !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(`${day}T00:00:00.000Z`)) ||
+        new Date(`${day}T00:00:00.000Z`).toISOString().slice(0, 10) !== day)) {
+      return json({ error: 'Choose a valid day in YYYY-MM-DD format.' }, 400);
+    }
     const requestedCompanyId = url.searchParams.get('companyId');
     if (requestedCompanyId && !companyIds.includes(requestedCompanyId)) {
       return json({ error: 'Financial provider-cost access is not assigned.' }, 403);
@@ -560,6 +565,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         SUM(estimated_cost_minor) AS estimatedCostMinor
       FROM financial_provider_cost_events
       WHERE company_id IN (${placeholders}) AND strftime('%Y-%m',occurred_at)=?
+        AND (? IS NULL OR strftime('%Y-%m-%d',occurred_at)=?)
         AND (? IS NULL OR provider=?) AND (? IS NULL OR requesting_module=?)
         AND (? IS NULL OR actor_employee_id=?)
         AND (? IS NULL OR cost_currency=?)
@@ -578,8 +584,8 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       GROUP BY company_id,provider,cost_currency,requesting_module
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT 500
-    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId).all<Record<string, unknown>>();
-    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId).all<Record<string, unknown>>();
+    return json({ month, day, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {
