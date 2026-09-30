@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, pricingRevision, pricingRevision, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, pricingRevision, pricingRevision, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, costCurrency, costCurrency, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -644,6 +644,63 @@ try {
   const omittedRevision = await (await request('providerReference=revision-provider')).json();
   assert.equal(omittedRevision.pricingRevision, null);
   assert.equal(omittedRevision.events.length, 7, 'omission includes all authorized revisions and legacy null evidence');
+  // Cost currency is independent of the customer transaction currency.
+  const currencyInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,pricing_revision,
+     evidence_reference,approval_id,retry_of_event_id,reversal_of_event_id,maker_employee_id,checker_employee_id,
+     amount_minor,currency,estimated_cost_minor,cost_currency,occurred_at,provider_result)
+    VALUES(?,?,'estimate','paystack','finance','synthetic-user','currency-provider',?,2,'currency-evidence',
+      'currency-approval','september-start','september-end','synthetic-user','synthetic-user',
+      100,?,?,?,'2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+  for (const [suffix, company, currency, costCurrency] of [
+    ['1', 'company-printing', 'USD', 'NGN'], ['2', 'company-printing', 'USD', 'NGN'],
+    ['3', 'company-printing', 'USD', 'NGN'], ['foreign', 'company-bakery', 'USD', 'NGN'],
+    ['private', 'company-bakery', 'USD', 'EUR'], ['other', 'company-printing', 'NGN', 'USD'],
+    ['null', 'company-printing', 'NGN', null],
+  ]) currencyInsert.run(`currency-${suffix}`, company, pricingId, currency, costCurrency === null ? null : 10, costCurrency);
+  const currencyQuery = new URLSearchParams({ costCurrency: 'NGN', pricingRevision: '2', pricingId,
+    providerReference: 'currency-provider', evidenceReference: 'currency-evidence', approvalId: 'currency-approval',
+    retryOfEventId: 'september-start', reversalOfEventId: 'september-end', action: 'estimate',
+    makerEmployeeId: 'synthetic-user', checkerEmployeeId: 'synthetic-user', actorEmployeeId: 'synthetic-user',
+    provider: 'paystack', module: 'finance', day: '2026-09-15', month: '2026-09', limit: '2' });
+  const currencyFirst = await (await request(currencyQuery)).json();
+  assert.equal(currencyFirst.costCurrency, 'NGN');
+  assert.deepEqual(currencyFirst.events.map(event => event.id), ['currency-3', 'currency-2']);
+  assert.ok(currencyFirst.nextCursor);
+  currencyQuery.set('cursor', currencyFirst.nextCursor);
+  const currencyLast = await (await request(currencyQuery)).json();
+  assert.deepEqual(currencyLast.events.map(event => event.id), ['currency-1']);
+  assert.equal(currencyLast.nextCursor, null);
+  assert.ok(!JSON.stringify(currencyLast).includes('internal-result-must-not-leak'));
+  for (const key of ['costCurrency', 'pricingRevision', 'pricingId', 'providerReference', 'evidenceReference', 'approvalId',
+    'retryOfEventId', 'reversalOfEventId', 'action', 'makerEmployeeId', 'checkerEmployeeId', 'actorEmployeeId',
+    'provider', 'module', 'day', 'month']) {
+    const mismatch = new URLSearchParams(currencyQuery);
+    mismatch.set(key, key === 'costCurrency' ? 'GBP' : key === 'pricingRevision' ? '3' :
+      key === 'day' ? '2026-08-01' : key === 'month' ? '2026-08' : 'absent');
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects currency continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const costCurrency of ['EUR', 'GBP']) {
+    const result = await (await request(`costCurrency=${costCurrency}`)).json();
+    assert.deepEqual(result.events, [], 'foreign and absent currencies disclose no evidence');
+    assert.equal(result.nextCursor, null);
+  }
+  const currencyReads = reads;
+  assert.equal((await request(currencyQuery, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${currencyQuery}&companyId=company-bakery`)).status, 403);
+  for (const value of ['', ' ', 'ngn', 'Ngn', 'NG', 'NGNN', ' NGN', 'NGN ', 'NGN\n', 'NGN\u0000', '123', 'ＮＧＮ', "NGN' OR 1=1"]) {
+    assert.equal((await request(new URLSearchParams({ costCurrency: value }))).status, 400);
+  }
+  assert.equal(reads, currencyReads, 'invalid currencies and revoked permission reject before SQL');
+  const usdCosts = await (await request('costCurrency=USD')).json();
+  assert.deepEqual(usdCosts.events.map(event => event.id), ['currency-other']);
+  assert.equal(usdCosts.events[0].currency, 'NGN', 'filter uses provider cost denomination, not transaction currency');
+  const omittedCurrency = await (await request('providerReference=currency-provider')).json();
+  assert.equal(omittedCurrency.costCurrency, null);
+  assert.equal(omittedCurrency.events.length, 5, 'omission includes all authorized currencies and null evidence');
+  console.log('Financial cost-currency drilldown: runtime/SQLite PASS');
   console.log('Financial pricing-revision drilldown: runtime/SQLite PASS');
   console.log('Financial maker/checker drilldown: runtime/SQLite PASS');
   console.log('Financial approval-record drilldown: runtime/SQLite PASS');
