@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -385,6 +385,61 @@ try {
   assert.equal(reads, transactionReads, 'invalid transaction currencies and denied scope reject before SQL');
   assert.ok(!JSON.stringify(bothTransactions).includes('internal-result-must-not-leak'));
   console.log('Monthly transaction-currency totals: real route / SQLite regression PASS');
+  assert.equal(omitted.providerReference, null);
+  const referenceInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,actor_role_code,action,provider,requesting_module,occurred_at,
+      estimated_cost_minor,actual_cost_minor,cost_currency,currency,amount_minor,pricing_id,pricing_revision,
+      provider_reference,provider_result)
+    VALUES(?,?,'user-a','finance','estimate','paystack','finance','2026-09-15T12:00:00Z',20,?,?,'USD',
+      1000,'price-a',1,?,'internal-result-must-not-leak')`);
+  for (const reference of ['ref-a', 'REF-A', 'ref-a-suffix', " bank's/ref:1 ", 'x'.repeat(200), '\u{1f4b0}'.repeat(100)]) {
+    referenceInsert.run(String(++id), 'company-printing', 81, 'NGN', reference);
+    referenceInsert.run(String(++id), 'company-printing', null, 'NGN', reference);
+    referenceInsert.run(String(++id), 'company-printing', 82, 'EUR', reference);
+    referenceInsert.run(String(++id), 'company-bakery', 91, 'NGN', reference);
+    const query = `${transactionQuery}&${new URLSearchParams({ providerReference: reference })}`;
+    const body = await (await request(query)).json();
+    assert.equal(body.providerReference, reference);
+    assert.deepEqual(body.summaries, [{ ...result.summaries[0], actualCostMinor: 81 }],
+      'exact opaque reference, including case, punctuation, whitespace and Unicode');
+    const both = await (await request(query, multi)).json();
+    assert.equal(both.summaries.length, 2);
+    assert.equal(both.summaries[0].actualCostMinor, 91);
+    assert.deepEqual((await (await request(`${query}&companyId=company-bakery`, multi)).json()).summaries,
+      [both.summaries[0]]);
+    const denominations = new URLSearchParams(query);
+    denominations.delete('costCurrency');
+    assert.deepEqual((await (await request(denominations)).json()).summaries.map(row => [row.currency, row.actualCostMinor]),
+      [['EUR', 82], ['NGN', 81]], 'cost currencies remain separate');
+    for (const [key, value] of [['provider', 'mono'], ['module', 'payroll'], ['month', '2026-08'],
+      ['actorEmployeeId', 'user-b'], ['costCurrency', 'USD'], ['action', 'pending'],
+      ['pricingId', 'PRICE-A'], ['pricingRevision', '2'], ['actorRoleCode', 'FINANCE'], ['currency', 'NGN']]) {
+      const params = new URLSearchParams(query);
+      params.set(key, value);
+      assert.deepEqual((await (await request(params)).json()).summaries, [], `${key} intersects reference`);
+    }
+    assert.ok(!JSON.stringify(both).includes('internal-result-must-not-leak'));
+  }
+  referenceInsert.run(String(++id), 'company-printing', null, 'NGN', 'pending-reference');
+  const pendingReference = await (await request(`${transactionQuery}&providerReference=pending-reference`)).json();
+  assert.equal(pendingReference.summaries[0].actualCostMinor, null);
+  assert.equal(pendingReference.summaries[0].actualCostEventCount, 0);
+  referenceInsert.run(String(++id), 'company-bakery', 999, 'NGN', 'foreign-reference');
+  for (const reference of ['foreign-reference', 'absent-reference', "x' OR 1=1 --"]) {
+    assert.deepEqual((await (await request(`${base}&${new URLSearchParams({ providerReference: reference })}`)).json()).summaries, []);
+  }
+  const withoutReference = await (await request(transactionQuery)).json();
+  assert.equal(withoutReference.providerReference, null);
+  assert.equal(withoutReference.summaries[0].eventCount, 15, 'omission retains null references');
+  assert.equal(withoutReference.summaries[0].actualCostMinor, 557);
+  const referenceReads = reads;
+  for (const reference of ['', ' ', 'x'.repeat(201), '\u{1f4b0}'.repeat(101), 'ref\n', 'a\u0000', 'a\u007f']) {
+    assert.equal((await request(`${base}&${new URLSearchParams({ providerReference: reference })}`)).status, 400);
+  }
+  assert.equal((await request(`${base}&providerReference=ref-a`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${base}&providerReference=foreign-reference&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, referenceReads, 'invalid references and denied scope reject before SQL');
+  console.log('Monthly provider-reference totals: real route / SQLite regression PASS');
 } finally {
   db.close();
 }
