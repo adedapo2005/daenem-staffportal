@@ -69,6 +69,61 @@ try {
     assert.equal((await request(endpoint, `${base}companyId=company-bakery&costCenterId=bakery-general`)).status, 403);
   }
   assert.equal(reads, before, 'invalid and denied requests never read cost evidence');
+  const groupedQuery = 'month=2026-09&groupBy=costCenter';
+  const grouped = await (await request('cost-summary', groupedQuery)).json();
+  assert.deepEqual(grouped.summaries.map(row => [row.costCenterId, row.actualCostMinor]),
+    [[null, 40], ['print-general', 10], ['print-ops', 30]]);
+  const first = await (await request('cost-summary', groupedQuery + '&limit=1')).json();
+  let cursor = null; const collected = [];
+  do {
+    const page = await (await request('cost-summary', groupedQuery + '&limit=1' +
+      (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''))).json();
+    collected.push(...page.summaries); cursor = page.nextCursor;
+  } while (cursor);
+  assert.deepEqual(collected, grouped.summaries, 'continuation includes legacy nulls and each centre exactly once');
+  const both = await (await request('cost-summary', groupedQuery, multi)).json();
+  assert.equal(both.summaries[0].companyId, 'company-bakery');
+  const multiFirst = await (await request('cost-summary', groupedQuery + '&limit=1', multi)).json();
+  assert.deepEqual((await (await request('cost-summary', groupedQuery + '&cursor=' + encodeURIComponent(multiFirst.nextCursor))).json()).summaries,
+    grouped.summaries, 'cursor conveys no company authority');
+  assert.deepEqual((await (await request('cost-summary', groupedQuery + '&costCenterId=print-general')).json()).summaries,
+    [grouped.summaries[1]]);
+  for (const [key, value] of [['provider','mono'], ['module','payroll'], ['service','missing'], ['day','2026-09-16'],
+    ['costCurrency','USD'], ['action','missing'], ['actorEmployeeId','missing'], ['costCenterId','bakery-general']]) {
+    assert.deepEqual((await (await request('cost-summary', groupedQuery + '&cursor=' + encodeURIComponent(first.nextCursor) +
+      '&' + new URLSearchParams({[key]:value}))).json()).summaries, [], key + ' intersects grouped continuation');
+  }
+  const groupedReads = reads;
+  for (const query of [
+    'month=2026-09&cursor=' + encodeURIComponent(first.nextCursor),
+    'month=2026-09&groupBy=service&cursor=' + encodeURIComponent(first.nextCursor),
+    groupedQuery + '&cursor=' + encodeURIComponent(JSON.stringify(['company-printing',null,null,null,null])),
+    groupedQuery + '&cursor=' + encodeURIComponent(JSON.stringify(['company-printing',null,null,null,null,'service'])),
+  ]) assert.equal((await request('cost-summary', query)).status, 400);
+  assert.equal((await request('cost-summary', groupedQuery, {...context, allowed:[]})).status, 403);
+  assert.equal((await request('cost-summary', groupedQuery + '&companyId=company-bakery')).status, 403);
+  assert.equal(reads, groupedReads, 'invalid cursor and denied scope reject before SQL');
+  const addCenter = db.prepare("INSERT INTO spend_cost_centers VALUES(?,'company-printing')");
+  const bulkInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,occurred_at,actual_cost_minor,cost_currency,cost_center_id)
+    VALUES(?,'company-printing','bulk','paystack','finance','2026-08-15T12:00:00Z',?,?,?)`);
+  for (let n=0; n<501; n++) {
+    const center = 'bulk-' + String(n).padStart(3,'0');
+    addCenter.run(center); bulkInsert.run(center, null, 'NGN', center);
+  }
+  bulkInsert.run('bulk-usd', 25, 'USD', 'bulk-000');
+  const bulkQuery = 'month=2026-08&groupBy=costCenter';
+  const bulkFirst = await (await request('cost-summary', bulkQuery)).json();
+  const bulkLast = await (await request('cost-summary', bulkQuery + '&cursor=' + encodeURIComponent(bulkFirst.nextCursor))).json();
+  assert.equal(bulkFirst.summaries.length, 500);
+  assert.equal(bulkLast.summaries.length, 2);
+  assert.equal(bulkLast.nextCursor, null);
+  const rows = [...bulkFirst.summaries, ...bulkLast.summaries];
+  assert.equal(new Set(rows.map(row => JSON.stringify([row.companyId,row.currency,row.costCenterId]))).size, 502);
+  assert.equal(rows[0].actualCostMinor, null, 'unknown costs remain unknown');
+  assert.equal(rows[501].currency, 'USD');
+  assert.equal(rows[501].actualCostMinor, 25, 'currencies never combine');
+  console.log('Cost-centre grouped totals, continuation and authorization: PASS');
   console.log('Provider-cost centre attribution and scoped drilldown: PASS');
 } finally {
   db.close();

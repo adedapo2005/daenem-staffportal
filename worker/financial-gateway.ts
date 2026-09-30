@@ -488,22 +488,24 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       return json({ error: 'Choose between 1 and 500 provider-cost summary groups.' }, 400);
     }
     const groupBy = url.searchParams.get('groupBy');
-    if (groupBy !== null && groupBy !== 'service') {
+    if (groupBy !== null && groupBy !== 'service' && groupBy !== 'costCenter') {
       return json({ error: 'Choose a valid provider-cost summary grouping.' }, 400);
     }
-    const groupByService = groupBy === 'service';
+    const groupColumn = groupBy === 'service' ? 'service' : groupBy === 'costCenter' ? 'cost_center_id' : null;
+    const groupField = groupBy === 'service' ? 'service' : 'costCenterId';
     const cursor = url.searchParams.get('cursor');
     let after: (string | null)[] | null = null;
     if (cursor !== null) {
       try {
         if (cursor.length > 8192) throw new Error('Invalid cursor');
         const position: unknown = JSON.parse(cursor);
-        if (!Array.isArray(position) || position.length !== (groupByService ? 5 : 4) || typeof position[0] !== 'string' ||
+        if (!Array.isArray(position) || position.length !== (groupBy === 'costCenter' ? 6 : groupColumn ? 5 : 4) || typeof position[0] !== 'string' ||
             !position[0] || position.some(value => value !== null &&
               (typeof value !== 'string' || value.length > 1024 || /[\u0000-\u001f\u007f]/.test(value)))) {
           throw new Error('Invalid cursor');
         }
-        after = position as (string | null)[];
+        if (groupBy === 'costCenter' && position[5] !== 'costCenter') throw new Error('Invalid cursor');
+        after = position.slice(0, 5) as (string | null)[];
       } catch {
         return json({ error: 'Choose a valid provider-cost summary cursor.' }, 400);
       }
@@ -607,7 +609,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
       SELECT company_id AS companyId,provider,cost_currency AS currency,
-        requesting_module AS module,${groupByService ? 'service,' : ''}COUNT(*) AS eventCount,
+        requesting_module AS module,${groupColumn ? `${groupColumn} AS ${groupField},` : ''}COUNT(*) AS eventCount,
         COUNT(actual_cost_minor) AS actualCostEventCount,
         SUM(actual_cost_minor) AS actualCostMinor,
         SUM(estimated_cost_minor) AS estimatedCostMinor
@@ -631,22 +633,22 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR approval_id=?)
         AND (? IS NULL OR maker_employee_id=?)
         AND (? IS NULL OR checker_employee_id=?)
-      GROUP BY company_id,provider,cost_currency,requesting_module${groupByService ? ',service' : ''}
+      GROUP BY company_id,provider,cost_currency,requesting_module${groupColumn ? `,${groupColumn}` : ''}
       HAVING (? = 0 OR (company_id,provider IS NOT NULL,COALESCE(provider,''),
         cost_currency IS NOT NULL,COALESCE(cost_currency,''),
-        requesting_module IS NOT NULL,COALESCE(requesting_module,'')${groupByService ? ",service IS NOT NULL,COALESCE(service,'')" : ''}) > (${groupByService ? '?,?,?,?,?,?,?,?,?' : '?,?,?,?,?,?,?'}))
-      ORDER BY company_id,provider,cost_currency,requesting_module${groupByService ? ',service' : ''}
+        requesting_module IS NOT NULL,COALESCE(requesting_module,'')${groupColumn ? `,${groupColumn} IS NOT NULL,COALESCE(${groupColumn},'')` : ''}) > (${groupColumn ? '?,?,?,?,?,?,?,?,?' : '?,?,?,?,?,?,?'}))
+      ORDER BY company_id,provider,cost_currency,requesting_module${groupColumn ? `,${groupColumn}` : ''}
       LIMIT ?
     `).bind(...scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCenterId, costCenterId, service, service, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId,
       after ? 1 : 0, after?.[0] ?? '', after?.[1] != null ? 1 : 0, after?.[1] ?? '',
       after?.[2] != null ? 1 : 0, after?.[2] ?? '', after?.[3] != null ? 1 : 0, after?.[3] ?? '',
-      ...(groupByService ? [after?.[4] != null ? 1 : 0, after?.[4] ?? ''] : []), limit + 1).all<Record<string, unknown>>();
+      ...(groupColumn ? [after?.[4] != null ? 1 : 0, after?.[4] ?? ''] : []), limit + 1).all<Record<string, unknown>>();
     // A cursor is only a position; every request reapplies current permissions and filters.
     // Null flags preserve SQLite ordering without conflating NULL with an empty string.
     const summaries = (rows.results || []).slice(0, limit);
     const last = summaries[summaries.length - 1];
     const nextCursor = (rows.results || []).length > limit && last
-      ? JSON.stringify([last.companyId, last.provider, last.currency, last.module, ...(groupByService ? [last.service] : [])]) : null;
+      ? JSON.stringify([last.companyId, last.provider, last.currency, last.module, ...(groupColumn ? [last[groupField], ...(groupBy === 'costCenter' ? ['costCenter'] : [])] : [])]) : null;
     return json({ month, day, provider, module, actorEmployeeId, costCenterId, service, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries, nextCursor, limit, visibleCompanyIds: scopedCompanyIds });
   }
 
