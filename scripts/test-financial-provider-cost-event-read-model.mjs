@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -250,6 +250,61 @@ try {
   const omittedAction = await (await request('providerReference=action-reference')).json();
   assert.equal(omittedAction.action, null);
   assert.equal(omittedAction.events.length, 8, 'omitted action retains all authorized action values');
+  const pricingId = 'Price:Record_01-A';
+  const pricingInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,occurred_at,provider_result)
+    VALUES(?,?,'estimate','paystack','finance','synthetic-user','pricing-reference',?,'2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+  for (const value of [pricingId, pricingId.toLowerCase(), `${pricingId}suffix`, 'private-price', 'x'.repeat(160)]) {
+    db.prepare('INSERT INTO financial_provider_pricing(id) VALUES(?)').run(value);
+  }
+  for (const [id, company, value] of [
+    ['price-1', 'company-printing', pricingId], ['price-2', 'company-printing', pricingId],
+    ['price-3', 'company-printing', pricingId], ['price-foreign', 'company-bakery', pricingId],
+    ['price-case', 'company-printing', pricingId.toLowerCase()],
+    ['price-prefix', 'company-printing', `${pricingId}suffix`],
+    ['price-private', 'company-bakery', 'private-price'],
+    ['price-max', 'company-printing', 'x'.repeat(160)],
+    ['price-null', 'company-printing', null],
+  ]) pricingInsert.run(id, company, value);
+  const pricingQuery = new URLSearchParams({ pricingId, action: 'estimate', provider: 'paystack', module: 'finance',
+    actorEmployeeId: 'synthetic-user', providerReference: 'pricing-reference', month: '2026-09', day: '2026-09-15', limit: '2' });
+  const pricingFirst = await (await request(pricingQuery)).json();
+  assert.equal(pricingFirst.pricingId, pricingId);
+  assert.deepEqual(pricingFirst.events.map(event => event.id), ['price-3', 'price-2']);
+  assert.ok(pricingFirst.nextCursor);
+  pricingQuery.set('cursor', pricingFirst.nextCursor);
+  const pricingLast = await (await request(pricingQuery)).json();
+  assert.deepEqual(pricingLast.events.map(event => event.id), ['price-1']);
+  assert.equal(pricingLast.nextCursor, null);
+  assert.ok(!JSON.stringify(pricingLast).includes('internal-result-must-not-leak'));
+  for (const [key, value] of [['provider', 'mono'], ['module', 'attendance'], ['actorEmployeeId', 'another-user'],
+    ['providerReference', 'absent'], ['month', '2026-08'], ['day', '2026-09-01'], ['action', 'other'], ['pricingId', 'absent']]) {
+    const mismatch = new URLSearchParams(pricingQuery);
+    mismatch.set(key, value);
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects the pricing continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const value of ['private-price', 'absent-price']) {
+    const result = await (await request(new URLSearchParams({ pricingId: value }))).json();
+    assert.deepEqual(result.events, [], 'foreign and absent pricing records are indistinguishable');
+  }
+  const pricingReads = reads;
+  assert.equal((await request(pricingQuery, { ...context, allowed: [] })).status, 403);
+  pricingQuery.set('companyId', 'company-bakery');
+  assert.equal((await request(pricingQuery)).status, 403);
+  for (const value of ['', ' ', 'x'.repeat(161), 'price\n', 'price\u0000', "' OR 1=1 --", 'price/path']) {
+    assert.equal((await request(new URLSearchParams({ pricingId: value }))).status, 400);
+  }
+  assert.equal(reads, pricingReads, 'invalid pricing IDs and denied requests never query evidence');
+  for (const [value, id] of [['x'.repeat(160), 'price-max'], [pricingId.toLowerCase(), 'price-case'], [`${pricingId}suffix`, 'price-prefix']]) {
+    const result = await (await request(new URLSearchParams({ pricingId: value }))).json();
+    assert.deepEqual(result.events.map(event => event.id), [id]);
+  }
+  const omittedPricing = await (await request('providerReference=pricing-reference')).json();
+  assert.equal(omittedPricing.pricingId, null);
+  assert.equal(omittedPricing.events.length, 7, 'omitting pricing includes authorized evidence with and without pricing');
+  console.log('Financial pricing-record drilldown: runtime/SQLite PASS');
   console.log('Financial provider-action drilldown: runtime/SQLite PASS');
   console.log('Financial provider-reference drilldown: runtime/SQLite PASS');
   console.log('Financial provider-cost keyset pagination: runtime/SQLite PASS');
