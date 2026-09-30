@@ -527,6 +527,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         new Date(`${day}T00:00:00.000Z`).toISOString().slice(0, 10) !== day)) {
       return json({ error: 'Choose a valid day in YYYY-MM-DD format.' }, 400);
     }
+    // Match the monthly summary's UTC calendar semantics so its drilldown
+    // cannot silently include events from another accounting period.
+    const month = url.searchParams.get('month');
+    if (month !== null && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return json({ error: 'Choose a month in YYYY-MM format.' }, 400);
+    }
     const actorEmployeeId = url.searchParams.get('actorEmployeeId');
     if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
       return json({ error: 'Choose a valid requesting-user filter.' }, 400);
@@ -549,11 +555,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR provider=?)
         AND (? IS NULL OR requesting_module=?)
         AND (? IS NULL OR date(occurred_at)=?)
+        AND (? IS NULL OR strftime('%Y-%m',occurred_at)=?)
         AND (? IS NULL OR actor_employee_id=?)
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, actorEmployeeId, actorEmployeeId, limit).all<Record<string, unknown>>();
-    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, actorEmployeeId, limit });
+    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, limit).all<Record<string, unknown>>();
+    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
