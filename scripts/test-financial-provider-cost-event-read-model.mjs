@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -471,6 +471,61 @@ try {
   const omittedReversal = await (await request('providerReference=reversal-provider')).json();
   assert.equal(omittedReversal.reversalOfEventId, null);
   assert.equal(omittedReversal.events.length, 7, 'omission includes authorized original and reversal evidence');
+  const approvalId = retryOfEventId;
+  const approvalInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,evidence_reference,approval_id,retry_of_event_id,reversal_of_event_id,occurred_at,provider_result)
+    VALUES(?,?,'estimate','paystack','finance','synthetic-user','approval-provider',?,'approval-evidence',?,'september-start','september-end','2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+  for (const [id, company, value] of [
+    ['approval-1', 'company-printing', approvalId], ['approval-2', 'company-printing', approvalId],
+    ['approval-3', 'company-printing', approvalId], ['approval-foreign', 'company-bakery', approvalId],
+    ['approval-case', 'company-printing', approvalId.toLowerCase()],
+    ['approval-prefix', 'company-printing', `${approvalId}suffix`],
+    ['approval-private', 'company-bakery', 'private-original'],
+    ['approval-max', 'company-printing', 'x'.repeat(160)], ['approval-null', 'company-printing', null],
+  ]) approvalInsert.run(id, company, pricingId, value);
+  const approvalQuery = new URLSearchParams({ approvalId, reversalOfEventId: 'september-end', retryOfEventId: 'september-start', evidenceReference: 'approval-evidence', pricingId,
+    action: 'estimate', provider: 'paystack', module: 'finance', actorEmployeeId: 'synthetic-user',
+    providerReference: 'approval-provider', month: '2026-09', day: '2026-09-15', limit: '2' });
+  const approvalFirst = await (await request(approvalQuery)).json();
+  assert.equal(approvalFirst.approvalId, approvalId);
+  assert.deepEqual(approvalFirst.events.map(event => event.id), ['approval-3', 'approval-2']);
+  assert.ok(approvalFirst.nextCursor);
+  approvalQuery.set('cursor', approvalFirst.nextCursor);
+  const approvalLast = await (await request(approvalQuery)).json();
+  assert.deepEqual(approvalLast.events.map(event => event.id), ['approval-1']);
+  assert.equal(approvalLast.nextCursor, null);
+  assert.ok(!JSON.stringify(approvalLast).includes('internal-result-must-not-leak'));
+  for (const [key, value] of [['provider', 'mono'], ['module', 'attendance'], ['actorEmployeeId', 'another-user'],
+    ['providerReference', 'absent'], ['month', '2026-08'], ['day', '2026-09-01'], ['action', 'other'],
+    ['pricingId', 'absent'], ['evidenceReference', 'absent'], ['retryOfEventId', 'absent'], ['reversalOfEventId', 'absent'], ['approvalId', "' OR 1=1 --"]]) {
+    const mismatch = new URLSearchParams(approvalQuery);
+    mismatch.set(key, value);
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects the approval continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const value of ['private-original', 'absent-original']) {
+    const result = await (await request(new URLSearchParams({ approvalId: value }))).json();
+    assert.deepEqual(result.events, [], 'foreign and absent approvals disclose no evidence');
+    assert.equal(result.nextCursor, null);
+  }
+  const approvalReads = reads;
+  assert.equal((await request(approvalQuery, { ...context, allowed: [] })).status, 403);
+  approvalQuery.set('companyId', 'company-bakery');
+  assert.equal((await request(approvalQuery)).status, 403);
+  for (const value of ['', ' ', 'x'.repeat(161), 'id\n', 'id\u0000', 'id\u007f']) {
+    assert.equal((await request(new URLSearchParams({ approvalId: value }))).status, 400);
+  }
+  assert.equal(reads, approvalReads, 'invalid approval IDs and denied requests never query evidence');
+  for (const [value, id] of [['x'.repeat(160), 'approval-max'], [approvalId.toLowerCase(), 'approval-case'],
+    [`${approvalId}suffix`, 'approval-prefix']]) {
+    const result = await (await request(new URLSearchParams({ approvalId: value }))).json();
+    assert.deepEqual(result.events.map(event => event.id), [id]);
+  }
+  const omittedApproval = await (await request('providerReference=approval-provider')).json();
+  assert.equal(omittedApproval.approvalId, null);
+  assert.equal(omittedApproval.events.length, 7, 'omission includes authorized linked and unlinked approval evidence');
+  console.log('Financial approval-record drilldown: runtime/SQLite PASS');
   console.log('Financial reversal-event drilldown: runtime/SQLite PASS');
   console.log('Financial retry-event drilldown: runtime/SQLite PASS');
   console.log('Financial evidence-reference drilldown: runtime/SQLite PASS');
