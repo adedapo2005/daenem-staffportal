@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, limit\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -104,6 +104,54 @@ try {
   assert.equal((await request('month=2026-09&companyId=company-bakery')).status, 403);
   assert.equal((await request('month=2026-09', { ...context, allowed: [] })).status, 403);
   assert.equal(reads, readsBeforeRejections, 'invalid and unauthorized requests never query cost evidence');
+  for (let i = 0; i < 205; i++) insert.run(`tied-${String(i).padStart(3, '0')}`, 'company-printing', '2026-09-15T12:00:00Z');
+  const query = 'month=2026-09&provider=paystack&module=finance&actorEmployeeId=synthetic-user&limit=100';
+  const first = await (await request(query)).json();
+  assert.equal(first.events.length, 100);
+  assert.ok(first.nextCursor);
+  // A newer append between pages must not shift an offset and repeat evidence.
+  insert.run('new-after-first-page', 'company-printing', '2026-09-30T23:59:59.999Z');
+  const collected = [...first.events];
+  let cursor = first.nextCursor;
+  let pages = 1;
+  while (cursor) {
+    assert.ok(++pages <= 4, 'pagination terminates');
+    const page = await (await request(`${query}&cursor=${encodeURIComponent(cursor)}`)).json();
+    assert.ok(page.events.length <= 100);
+    collected.push(...page.events);
+    cursor = page.nextCursor;
+  }
+  const expected = db.prepare(`SELECT id FROM financial_provider_cost_events WHERE company_id='company-printing'
+    AND strftime('%Y-%m',occurred_at)='2026-09' AND id!='new-after-first-page' ORDER BY occurred_at DESC,id DESC`).all();
+  assert.deepEqual(collected.map(event => event.id), expected.map(event => event.id));
+  assert.equal(new Set(collected.map(event => event.id)).size, 208);
+  const last = collected.at(-1);
+  const exhausted = await (await request(`${query}&cursor=${encodeURIComponent(JSON.stringify([last.occurredAt, last.id]))}`)).json();
+  assert.deepEqual(exhausted.events, []);
+  assert.equal(exhausted.nextCursor, null);
+  const exactPage = await (await request('day=2026-09-01&limit=1')).json();
+  assert.equal(exactPage.events.length, 1);
+  assert.equal(exactPage.nextCursor, null, 'exact page size has no phantom continuation');
+  const foreignCursor = encodeURIComponent(JSON.stringify(['2026-09-15T00:00:00Z', 'other-company']));
+  const scoped = await (await request(`${query}&cursor=${foreignCursor}`)).json();
+  assert.ok(scoped.events.every(event => event.companyId === 'company-printing'));
+  for (const filter of ['provider=mono', 'module=attendance', 'actorEmployeeId=another-user', 'month=2026-08&day=2026-09-01']) {
+    const filtered = await (await request(`${filter}&cursor=${encodeURIComponent(first.nextCursor)}`)).json();
+    assert.deepEqual(filtered.events, [], 'continuation retains every requested filter');
+    assert.equal(filtered.nextCursor, null);
+  }
+  const injectedPosition = encodeURIComponent(JSON.stringify(['2026-09-15T00:00:00Z', "' OR 1=1 --"]));
+  const injection = await (await request(`${query}&cursor=${injectedPosition}`)).json();
+  assert.ok(injection.events.every(event => event.companyId === 'company-printing'));
+  const deniedReads = reads;
+  assert.equal((await request(`${query}&cursor=${encodeURIComponent(first.nextCursor)}`, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${query}&companyId=company-bakery&cursor=${foreignCursor}`)).status, 403);
+  for (const invalid of ['', 'null', '{}', '[]', '[1,2]', '["bad-date","id"]', '["2026-09-01",""]', JSON.stringify(['2026-09-01', 'x'.repeat(161)]), 'x'.repeat(1025)]) {
+    assert.equal((await request(`${query}&cursor=${encodeURIComponent(invalid)}`)).status, 400);
+  }
+  assert.equal(reads, deniedReads, 'invalid cursors and revoked permissions reject before evidence query');
+  assert.ok(!JSON.stringify(collected).includes('internal-result-must-not-leak'));
+  console.log('Financial provider-cost keyset pagination: runtime/SQLite PASS');
   console.log('Financial provider-cost monthly drilldown: runtime/SQLite PASS');
 } finally {
   db.close();

@@ -537,6 +537,25 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
       return json({ error: 'Choose a valid requesting-user filter.' }, 400);
     }
+    // The cursor is only a position, never authority: all current scope and
+    // filter predicates apply again on every page. Preserve the stored text
+    // timestamp to match the existing deterministic ordering exactly.
+    const cursor = url.searchParams.get('cursor');
+    let beforeTime: string | null = null;
+    let beforeId: string | null = null;
+    if (cursor !== null) {
+      try {
+        if (cursor.length > 1024) throw new Error('Invalid cursor');
+        const position: unknown = JSON.parse(cursor);
+        if (!Array.isArray(position) || position.length !== 2 ||
+            typeof position[0] !== 'string' || position[0].length > 80 || !Number.isFinite(Date.parse(position[0])) ||
+            typeof position[1] !== 'string' || position[1].length < 1 || position[1].length > 160 ||
+            position.some(value => /[\u0000-\u001f\u007f]/.test(value))) throw new Error('Invalid cursor');
+        [beforeTime, beforeId] = position;
+      } catch {
+        return json({ error: 'Choose a valid provider-cost event cursor.' }, 400);
+      }
+    }
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const rows = await env.DB.prepare(`
@@ -557,10 +576,15 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR date(occurred_at)=?)
         AND (? IS NULL OR strftime('%Y-%m',occurred_at)=?)
         AND (? IS NULL OR actor_employee_id=?)
+        AND (? IS NULL OR occurred_at < ? OR (occurred_at = ? AND id < ?))
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, limit).all<Record<string, unknown>>();
-    return json({ events: rows.results || [], visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, limit });
+    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
+    const events = (rows.results || []).slice(0, limit);
+    const last = events[events.length - 1];
+    const nextCursor = (rows.results || []).length > limit && last
+      ? JSON.stringify([last.occurredAt, last.id]) : null;
+    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
