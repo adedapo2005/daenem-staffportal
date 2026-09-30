@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -198,6 +198,59 @@ try {
   setReference.run('x'.repeat(200), 'max-length');
   const boundedReference = await (await request(new URLSearchParams({ providerReference: 'x'.repeat(200) }))).json();
   assert.deepEqual(boundedReference.events.map(event => event.id), ['ref-max-length']);
+  const actionInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,occurred_at,provider_result)
+    VALUES(?, ?, ?, 'paystack','finance','synthetic-user','action-reference','2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+  const action = "Verify / A+%_&'";
+  for (const [id, company, value] of [
+    ['action-1', 'company-printing', action], ['action-2', 'company-printing', action],
+    ['action-3', 'company-printing', action], ['action-foreign', 'company-bakery', action],
+    ['action-case', 'company-printing', action.toLowerCase()],
+    ['action-prefix', 'company-printing', `${action}suffix`],
+    ['action-space', 'company-printing', ` ${action} `],
+    ['action-private', 'company-bakery', 'private-action'],
+    ['action-max', 'company-printing', 'x'.repeat(100)],
+    ['action-unicode', 'company-printing', '😀'.repeat(100)],
+  ]) actionInsert.run(id, company, value);
+  const actionQuery = new URLSearchParams({ action, provider: 'paystack', module: 'finance',
+    actorEmployeeId: 'synthetic-user', providerReference: 'action-reference', month: '2026-09', day: '2026-09-15', limit: '2' });
+  const actionFirst = await (await request(actionQuery)).json();
+  assert.equal(actionFirst.action, action);
+  assert.deepEqual(actionFirst.events.map(event => event.id), ['action-3', 'action-2']);
+  assert.ok(actionFirst.nextCursor);
+  actionQuery.set('cursor', actionFirst.nextCursor);
+  const actionLast = await (await request(actionQuery)).json();
+  assert.deepEqual(actionLast.events.map(event => event.id), ['action-1']);
+  assert.equal(actionLast.nextCursor, null);
+  assert.ok(!JSON.stringify(actionLast).includes('internal-result-must-not-leak'));
+  for (const [key, value] of [['provider', 'mono'], ['module', 'attendance'], ['actorEmployeeId', 'another-user'],
+    ['providerReference', 'absent'], ['month', '2026-08'], ['day', '2026-09-01'], ['action', "' OR 1=1 --"]]) {
+    const mismatch = new URLSearchParams(actionQuery);
+    mismatch.set(key, value);
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects the action continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const value of ['private-action', 'absent-action']) {
+    const result = await (await request(new URLSearchParams({ action: value }))).json();
+    assert.deepEqual(result.events, [], 'foreign and absent actions are indistinguishable');
+  }
+  const actionReads = reads;
+  assert.equal((await request(actionQuery, { ...context, allowed: [] })).status, 403);
+  actionQuery.set('companyId', 'company-bakery');
+  assert.equal((await request(actionQuery)).status, 403);
+  for (const value of ['', ' ', 'x'.repeat(101), '😀'.repeat(101), 'action\n', 'action\u0000', 'action\u007f']) {
+    assert.equal((await request(new URLSearchParams({ action: value }))).status, 400);
+  }
+  assert.equal(reads, actionReads, 'invalid actions and denied requests never query evidence');
+  for (const [value, id] of [['x'.repeat(100), 'action-max'], ['😀'.repeat(100), 'action-unicode'], [` ${action} `, 'action-space']]) {
+    const result = await (await request(new URLSearchParams({ action: value }))).json();
+    assert.deepEqual(result.events.map(event => event.id), [id]);
+  }
+  const omittedAction = await (await request('providerReference=action-reference')).json();
+  assert.equal(omittedAction.action, null);
+  assert.equal(omittedAction.events.length, 8, 'omitted action retains all authorized action values');
+  console.log('Financial provider-action drilldown: runtime/SQLite PASS');
   console.log('Financial provider-reference drilldown: runtime/SQLite PASS');
   console.log('Financial provider-cost keyset pagination: runtime/SQLite PASS');
   console.log('Financial provider-cost monthly drilldown: runtime/SQLite PASS');
