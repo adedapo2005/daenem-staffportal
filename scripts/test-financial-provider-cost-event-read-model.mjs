@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, pricingRevision, pricingRevision, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, costCurrency, costCurrency, currency, currency, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, pricingRevision, pricingRevision, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, costCurrency, costCurrency, currency, currency, actorRoleCode, actorRoleCode, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -747,6 +747,65 @@ try {
   const legacyTransaction = await (await request('day=2026-08-31')).json();
   assert.ok(legacyTransaction.events.some(event => event.currency === null), 'omission retains legacy null denomination');
   assert.deepEqual((await (await request('day=2026-08-31&currency=USD')).json()).events, []);
+  // Clone synthetic currency evidence with historical role codes; never mutate audit rows.
+  const roleClone = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,pricing_revision,
+     evidence_reference,approval_id,retry_of_event_id,reversal_of_event_id,maker_employee_id,checker_employee_id,
+     amount_minor,currency,estimated_cost_minor,cost_currency,occurred_at,provider_result,actor_role_code)
+    SELECT ?,?,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,pricing_revision,
+     evidence_reference,approval_id,retry_of_event_id,reversal_of_event_id,maker_employee_id,checker_employee_id,
+     amount_minor,currency,estimated_cost_minor,cost_currency,occurred_at,provider_result,?
+    FROM financial_provider_cost_events WHERE id='currency-1'`);
+  for (const [suffix, company, role] of [
+    ['1', 'company-printing', 'FINANCE_MANAGER'], ['2', 'company-printing', 'FINANCE_MANAGER'],
+    ['3', 'company-printing', 'FINANCE_MANAGER'], ['foreign', 'company-bakery', 'FINANCE_MANAGER'],
+    ['private', 'company-bakery', 'PRIVATE_ROLE'], ['case', 'company-printing', 'finance_manager'],
+    ['prefix', 'company-printing', 'FINANCE_MANAGER_2'], ['max', 'company-printing', 'x'.repeat(160)],
+    ['literal', 'company-printing', "Role / A+%_&'"],
+  ]) roleClone.run(`actor-role-${suffix}`, company, role);
+  const actorRoleQuery = new URLSearchParams(transactionQuery);
+  actorRoleQuery.delete('cursor');
+  actorRoleQuery.set('actorRoleCode', 'FINANCE_MANAGER');
+  const actorRoleFirst = await (await request(actorRoleQuery)).json();
+  assert.equal(actorRoleFirst.actorRoleCode, 'FINANCE_MANAGER');
+  assert.deepEqual(actorRoleFirst.events.map(event => event.id), ['actor-role-3', 'actor-role-2']);
+  assert.ok(actorRoleFirst.nextCursor);
+  actorRoleQuery.set('cursor', actorRoleFirst.nextCursor);
+  const actorRoleLast = await (await request(actorRoleQuery)).json();
+  assert.deepEqual(actorRoleLast.events.map(event => event.id), ['actor-role-1']);
+  assert.equal(actorRoleLast.nextCursor, null);
+  assert.ok(actorRoleLast.events.every(event => event.actorRoleCode === 'FINANCE_MANAGER'));
+  assert.ok(!JSON.stringify(actorRoleLast).includes('internal-result-must-not-leak'));
+  for (const key of [...actorRoleQuery.keys()].filter(key => !['cursor', 'limit'].includes(key))) {
+    const mismatch = new URLSearchParams(actorRoleQuery);
+    mismatch.set(key, ['currency', 'costCurrency'].includes(key) ? 'GBP' : key === 'pricingRevision' ? '3' :
+      key === 'day' ? '2026-08-01' : key === 'month' ? '2026-08' : 'absent');
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects actor-role continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const role of ['PRIVATE_ROLE', 'ABSENT_ROLE', "' OR 1=1 --"]) {
+    const result = await (await request(new URLSearchParams({ actorRoleCode: role }))).json();
+    assert.deepEqual(result.events, []);
+    assert.equal(result.nextCursor, null);
+  }
+  const actorRoleReads = reads;
+  assert.equal((await request(actorRoleQuery, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${actorRoleQuery}&companyId=company-bakery`)).status, 403);
+  for (const value of ['', ' ', 'x'.repeat(161), 'role\n', 'role\u0000', 'role\u007f']) {
+    assert.equal((await request(new URLSearchParams({ actorRoleCode: value }))).status, 400);
+  }
+  assert.equal(reads, actorRoleReads, 'invalid roles and revoked access reject before SQL');
+  for (const [value, suffix] of [['finance_manager', 'case'], ['FINANCE_MANAGER_2', 'prefix'],
+    ['x'.repeat(160), 'max'], ["Role / A+%_&'", 'literal']]) {
+    const result = await (await request(new URLSearchParams({ actorRoleCode: value }))).json();
+    assert.deepEqual(result.events.map(event => event.id), [`actor-role-${suffix}`]);
+  }
+  const omittedRole = await (await request('providerReference=currency-provider')).json();
+  assert.equal(omittedRole.actorRoleCode, null);
+  assert.equal(omittedRole.events.length, 12);
+  assert.ok(omittedRole.events.some(event => event.actorRoleCode === null));
+  console.log('Financial actor-role drilldown: runtime/SQLite PASS');
   console.log('Financial transaction-currency drilldown: runtime/SQLite PASS');
   console.log('Financial pricing-revision drilldown: runtime/SQLite PASS');
   console.log('Financial maker/checker drilldown: runtime/SQLite PASS');
