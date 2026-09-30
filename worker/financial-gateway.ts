@@ -523,6 +523,10 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
       return json({ error: 'Choose a valid requesting-user filter.' }, 400);
     }
+    const costCenterId = url.searchParams.get('costCenterId');
+    if (costCenterId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(costCenterId)) {
+      return json({ error: 'Choose a valid cost-centre filter.' }, 400);
+    }
     // Historical role evidence is an exact value, not a grant of authority.
     const actorRoleCode = url.searchParams.get('actorRoleCode');
     if (actorRoleCode !== null && (!actorRoleCode.trim() || [...actorRoleCode].length > 160 ||
@@ -589,6 +593,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR strftime('%Y-%m-%d',occurred_at)=?)
         AND (? IS NULL OR provider=?) AND (? IS NULL OR requesting_module=?)
         AND (? IS NULL OR actor_employee_id=?)
+        AND (? IS NULL OR cost_center_id=?)
         AND (? IS NULL OR cost_currency=?)
         AND (? IS NULL OR action=?)
         AND (? IS NULL OR pricing_id=?)
@@ -608,7 +613,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         requesting_module IS NOT NULL,COALESCE(requesting_module,'')) > (?,?,?,?,?,?,?))
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT ?
-    `).bind(...scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId,
+    `).bind(...scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCenterId, costCenterId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId,
       after ? 1 : 0, after?.[0] ?? '', after?.[1] != null ? 1 : 0, after?.[1] ?? '',
       after?.[2] != null ? 1 : 0, after?.[2] ?? '', after?.[3] != null ? 1 : 0, after?.[3] ?? '', limit + 1).all<Record<string, unknown>>();
     // A cursor is only a position; every request reapplies current permissions and filters.
@@ -617,7 +622,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     const last = summaries[summaries.length - 1];
     const nextCursor = (rows.results || []).length > limit && last
       ? JSON.stringify([last.companyId, last.provider, last.currency, last.module]) : null;
-    return json({ month, day, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries, nextCursor, limit, visibleCompanyIds: scopedCompanyIds });
+    return json({ month, day, provider, module, actorEmployeeId, costCenterId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries, nextCursor, limit, visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {
@@ -653,6 +658,10 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     const actorEmployeeId = url.searchParams.get('actorEmployeeId');
     if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
       return json({ error: 'Choose a valid requesting-user filter.' }, 400);
+    }
+    const costCenterId = url.searchParams.get('costCenterId');
+    if (costCenterId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(costCenterId)) {
+      return json({ error: 'Choose a valid cost-centre filter.' }, 400);
     }
     // Historical role evidence is an exact value, not a grant of authority.
     const actorRoleCode = url.searchParams.get('actorRoleCode');
@@ -747,7 +756,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         checker_employee_id AS checkerEmployeeId,provider_reference AS providerReference,
         retry_of_event_id AS retryOfEventId,reversal_of_event_id AS reversalOfEventId,
         occurred_at AS occurredAt,evidence_reference AS evidenceReference,
-        requesting_module AS requestingModule
+        requesting_module AS requestingModule,cost_center_id AS costCenterId
       FROM financial_provider_cost_events
       WHERE company_id IN (${placeholders})
         AND (? IS NULL OR provider=?)
@@ -755,6 +764,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR date(occurred_at)=?)
         AND (? IS NULL OR strftime('%Y-%m',occurred_at)=?)
         AND (? IS NULL OR actor_employee_id=?)
+        AND (? IS NULL OR cost_center_id=?)
         AND (? IS NULL OR provider_reference=?)
         AND (? IS NULL OR action=?)
         AND (? IS NULL OR pricing_id=?)
@@ -771,12 +781,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR occurred_at < ? OR (occurred_at = ? AND id < ?))
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, pricingRevision, pricingRevision, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, costCurrency, costCurrency, currency, currency, actorRoleCode, actorRoleCode, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
+    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, costCenterId, costCenterId, providerReference, providerReference, action, action, pricingId, pricingId, pricingRevision, pricingRevision, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, costCurrency, costCurrency, currency, currency, actorRoleCode, actorRoleCode, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
     const events = (rows.results || []).slice(0, limit);
     const last = events[events.length - 1];
     const nextCursor = (rows.results || []).length > limit && last
       ? JSON.stringify([last.occurredAt, last.id]) : null;
-    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, providerReference, action, pricingId, pricingRevision, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, costCurrency, currency, actorRoleCode, limit });
+    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, costCenterId, providerReference, action, pricingId, pricingRevision, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, costCurrency, currency, actorRoleCode, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
