@@ -48,6 +48,15 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
   if (!verified || (pricing.vatTreatment !== 'included' && pricing.vatTreatment !== 'not_applicable')) {
     return { decision: 'verification_required' as const, reason: 'pricing_or_vat_unverified', currency: pricing.currency };
   }
+  // Validate persisted facts as well as save inputs: legacy rows can contain
+  // fractional/unsafe terms that throw in BigInt or are hidden by fee bounds.
+  const numericTerms = [pricing.fixedAmountMinor, pricing.percentageBps,
+    pricing.minimumAmountMinor, pricing.maximumAmountMinor, pricing.capAmountMinor];
+  if (numericTerms.some((value) => value !== null &&
+      (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)) ||
+      (pricing.percentageBps !== null && pricing.percentageBps > 10_000)) {
+    return { decision: 'verification_required' as const, reason: 'pricing_numeric_terms_invalid', currency: pricing.currency };
+  }
   if (pricing.pricingModel === 'FREE') {
     const hasConflictingFeeTerms = pricing.fixedAmountMinor !== null || pricing.percentageBps !== null ||
       pricing.minimumAmountMinor !== null || pricing.maximumAmountMinor !== null || pricing.capAmountMinor !== null;
@@ -71,7 +80,7 @@ export function estimateProviderCost(pricing: PricingFacts, input: { amountMinor
   // percentage-only model while silently discarding a stored fixed fee, or
   // per-unit pricing while discarding percentage terms.
   if ((pricing.pricingModel === 'PERCENTAGE' && pricing.fixedAmountMinor !== null) ||
-      (['PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST'].includes(pricing.pricingModel) && pricing.percentageBps !== null)) {
+      (['FIXED', 'PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST'].includes(pricing.pricingModel) && pricing.percentageBps !== null)) {
     return { decision: 'verification_required' as const, reason: 'pricing_terms_conflict', currency: pricing.currency };
   }
   let estimate: number;
@@ -162,7 +171,7 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
     (hasPercentageRate && pct != null && (pricingModel !== 'PERCENTAGE_FIXED' || fixed != null));
   const pricingTermsConflict =
     (pricingModel === 'PERCENTAGE' && fixed != null) ||
-    (['PER_PAGE', 'PER_REQUEST', 'PER_SUCCESSFUL_REQUEST'].includes(pricingModel) && pct != null);
+    (hasFixedRate && pct != null);
   const freePricingHasFeeTerms = pricingModel === 'FREE' &&
     [fixed, pct, minimum, maximum, cap].some((value) => value !== null && value !== undefined);
   if (!id || !/^[A-Za-z0-9:_-]{1,160}$/.test(id) || !provider || provider.length > 80 || !service || service.length > 120 ||

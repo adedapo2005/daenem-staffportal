@@ -48,6 +48,7 @@ assert.match(route, /pricing_or_vat_unverified/);
 assert.match(route, /pricingModel === 'FREE'/);
 assert.match(route, /freePricingHasFeeTerms[\s\S]*?freePricingHasFeeTerms \|\|/);
 assert.match(route, /const pricingTermsConflict =/);
+assert.match(route, /hasFixedRate && pct != null/);
 assert.match(route, /pricingTermsConflict \|\|/);
 assert.match(route, /pricing_model_requires_explicit_terms/);
 assert.match(route, /\/api\/financial-gateway\/estimate/);
@@ -99,4 +100,27 @@ assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'PER_PAGE', f
   percentageBps: null, minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null },
   { quantity: 100_000 }, Date.parse('2026-09-27T00:00:00Z')),
   { decision: 'verification_required', reason: 'pricing_terms_incomplete', currency: 'NGN' });
-console.log('Financial pricing registry and estimate boundary: PASS');
+// Legacy database rows must not throw, round away invalid terms or let bounds
+// hide them. Test every numeric term at the estimator's trust boundary.
+const numericTerms = ['fixedAmountMinor', 'percentageBps', 'minimumAmountMinor', 'maximumAmountMinor', 'capAmountMinor'];
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FIXED' }, {}, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'verification_required', reason: 'pricing_terms_conflict', currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, pricingModel: 'FIXED', percentageBps: null }, {}, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'estimated', estimatedCostMinor: 25, currency: 'NGN' });
+let invalidNumericCases = 0;
+for (const term of numericTerms) {
+  for (const value of [-1, 0.5, NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER + 1, '25', undefined]) {
+    assert.deepEqual(estimateProviderCost({ ...verified, [term]: value }, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
+      { decision: 'verification_required', reason: 'pricing_numeric_terms_invalid', currency: 'NGN' },
+      `${term} must reject ${String(value)}`);
+    invalidNumericCases++;
+  }
+}
+assert.deepEqual(estimateProviderCost({ ...verified, percentageBps: 10_001 }, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'verification_required', reason: 'pricing_numeric_terms_invalid', currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, percentageBps: 0, fixedAmountMinor: 0 }, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'free', estimatedCostMinor: 0, currency: 'NGN' });
+assert.deepEqual(estimateProviderCost({ ...verified, percentageBps: 10_000, fixedAmountMinor: 0,
+  minimumAmountMinor: null, maximumAmountMinor: null, capAmountMinor: null }, { amountMinor: 10001 }, Date.parse('2026-09-27T00:00:00Z')),
+  { decision: 'estimated', estimatedCostMinor: 10001, currency: 'NGN' });
+console.log(`Financial pricing registry and estimate boundary: PASS (including ${invalidNumericCases + 3} numeric boundary cases)`);
