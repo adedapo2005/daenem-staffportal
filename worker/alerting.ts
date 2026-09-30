@@ -414,7 +414,7 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
         WHERE alert_id=? AND employee_id=? AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`).bind(now, now, alertId, context.employee.id, alertId),
       env.DB.prepare(`UPDATE platform_alert_deliveries SET status='viewed',delivered_at=COALESCE(delivered_at,?),
         viewed_at=COALESCE(viewed_at,?),updated_at=CURRENT_TIMESTAMP
-        WHERE alert_id=? AND channel='in_app' AND recipient_id IN
+        WHERE alert_id=? AND channel IN ('in_app','screen_popup') AND recipient_id IN
           (SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?)
           AND status IN ('queued','sent','delivered','viewed')
           AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`)
@@ -429,7 +429,7 @@ async function receipt(request: Request, env: AlertingEnv, context: SessionConte
         AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`).bind(now, now, now, alertId, context.employee.id, alertId),
       env.DB.prepare(`UPDATE platform_alert_deliveries SET status='viewed',delivered_at=COALESCE(delivered_at,?),
         viewed_at=COALESCE(viewed_at,?),updated_at=CURRENT_TIMESTAMP
-        WHERE alert_id=? AND channel='in_app' AND recipient_id IN
+        WHERE alert_id=? AND channel IN ('in_app','screen_popup') AND recipient_id IN
           (SELECT id FROM platform_alert_recipients WHERE alert_id=? AND employee_id=?)
           AND status IN ('queued','sent','delivered','viewed')
           AND EXISTS(SELECT 1 FROM platform_alerts WHERE id=? AND status<>'resolved')`)
