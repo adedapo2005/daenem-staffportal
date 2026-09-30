@@ -469,6 +469,27 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
 
   if (url.pathname === '/api/financial-gateway/cost-summary') {
     if (request.method !== 'GET') return json({ error: 'Use GET to read monthly provider-cost summaries.' }, 405);
+    const rawLimit = url.searchParams.get('limit');
+    const limit = rawLimit === null ? 500 : Number(rawLimit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+      return json({ error: 'Choose between 1 and 500 provider-cost summary groups.' }, 400);
+    }
+    const cursor = url.searchParams.get('cursor');
+    let after: [string, string | null, string | null, string | null] | null = null;
+    if (cursor !== null) {
+      try {
+        if (cursor.length > 8192) throw new Error('Invalid cursor');
+        const position: unknown = JSON.parse(cursor);
+        if (!Array.isArray(position) || position.length !== 4 || typeof position[0] !== 'string' ||
+            !position[0] || position.some(value => value !== null &&
+              (typeof value !== 'string' || value.length > 1024 || /[\u0000-\u001f\u007f]/.test(value)))) {
+          throw new Error('Invalid cursor');
+        }
+        after = position as [string, string | null, string | null, string | null];
+      } catch {
+        return json({ error: 'Choose a valid provider-cost summary cursor.' }, 400);
+      }
+    }
     const month = url.searchParams.get('month') || '';
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
       return json({ error: 'Choose a month in YYYY-MM format.' }, 400);
@@ -582,10 +603,21 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR maker_employee_id=?)
         AND (? IS NULL OR checker_employee_id=?)
       GROUP BY company_id,provider,cost_currency,requesting_module
+      HAVING (? = 0 OR (company_id,provider IS NOT NULL,COALESCE(provider,''),
+        cost_currency IS NOT NULL,COALESCE(cost_currency,''),
+        requesting_module IS NOT NULL,COALESCE(requesting_module,'')) > (?,?,?,?,?,?,?))
       ORDER BY company_id,provider,cost_currency,requesting_module
-      LIMIT 500
-    `).bind(...scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId).all<Record<string, unknown>>();
-    return json({ month, day, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+      LIMIT ?
+    `).bind(...scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId,
+      after ? 1 : 0, after?.[0] ?? '', after?.[1] != null ? 1 : 0, after?.[1] ?? '',
+      after?.[2] != null ? 1 : 0, after?.[2] ?? '', after?.[3] != null ? 1 : 0, after?.[3] ?? '', limit + 1).all<Record<string, unknown>>();
+    // A cursor is only a position; every request reapplies current permissions and filters.
+    // Null flags preserve SQLite ordering without conflating NULL with an empty string.
+    const summaries = (rows.results || []).slice(0, limit);
+    const last = summaries[summaries.length - 1];
+    const nextCursor = (rows.results || []).length > limit && last
+      ? JSON.stringify([last.companyId, last.provider, last.currency, last.module]) : null;
+    return json({ month, day, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries, nextCursor, limit, visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {

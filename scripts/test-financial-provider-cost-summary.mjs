@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId\)/);
-assert.match(endpoint, /return json\(\{ month, day, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, day, day, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency, providerReference, providerReference, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId,/);
+assert.match(endpoint, /return json\(\{ month, day, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, providerReference, evidenceReference, retryOfEventId, reversalOfEventId, approvalId, makerEmployeeId, checkerEmployeeId, summaries, nextCursor, limit,/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -789,6 +789,76 @@ try {
   assert.equal(reads, dayReads, 'malformed days and denied permissions reject before SQL');
   assert.ok(!JSON.stringify(dailyBoth).includes('internal-result-must-not-leak'));
   console.log('Monthly exact-day totals and UTC boundaries: real route / SQLite regression PASS');
+
+  // More than the old cap, plus legacy NULL and empty provider groups.
+  const pageInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,occurred_at)
+    VALUES(?,?,'pagination',?,?,'2025-01-15T12:00:00Z')`);
+  for (let n = 0; n < 501; n++) pageInsert.run('page-' + n, 'company-printing', 'p' + String(n).padStart(3, '0'), 'finance');
+  for (const [n, provider, module] of [[0, null, null], [1, '', null], [2, 'p000', null]]) {
+    pageInsert.run('legacy-' + n, 'company-printing', provider, module);
+  }
+  pageInsert.run('foreign-page', 'company-bakery', 'foreign', 'finance');
+  const pageBase = 'month=2025-01&action=pagination';
+  const firstPage = await (await request(pageBase)).json();
+  assert.equal(firstPage.limit, 500);
+  assert.equal(firstPage.summaries.length, 500);
+  assert.ok(firstPage.nextCursor);
+  const finalPage = await (await request(pageBase + '&cursor=' + encodeURIComponent(firstPage.nextCursor))).json();
+  assert.equal(finalPage.summaries.length, 4);
+  assert.equal(finalPage.nextCursor, null);
+  assert.equal(new Set([...firstPage.summaries, ...finalPage.summaries].map(row => JSON.stringify([row.companyId, row.provider, row.currency, row.module]))).size, 504);
+  let next = null; const groups = [];
+  do {
+    const query = new URLSearchParams(pageBase); query.set('limit', '2');
+    if (next) query.set('cursor', next);
+    const page = await (await request(query)).json();
+    groups.push(...page.summaries); next = page.nextCursor;
+  } while (next);
+  assert.deepEqual(groups, [...firstPage.summaries, ...finalPage.summaries], 'small pages preserve null ordering and every aggregate');
+  assert.equal(groups[0].provider, null);
+  assert.equal(groups[1].provider, '');
+  assert.equal(groups[2].module, null);
+  const query = new URLSearchParams(pageBase); query.set('limit', '1');
+  const multiFirst = await (await request(query, multi)).json();
+  assert.equal(multiFirst.summaries[0].companyId, 'company-bakery');
+  query.set('cursor', multiFirst.nextCursor);
+  const narrowed = await (await request(query)).json();
+  assert.equal(narrowed.summaries[0].companyId, 'company-printing', 'cursor grants no company authority');
+  query.set('provider', 'p500');
+  assert.equal((await (await request(query)).json()).summaries[0].provider, 'p500');
+  query.set('module', 'payroll');
+  assert.deepEqual((await (await request(query)).json()).summaries, []);
+  query.delete('module'); query.set('day', '2025-01-14');
+  assert.deepEqual((await (await request(query)).json()).summaries, []);
+  const costPageQuery = new URLSearchParams(dayQuery); costPageQuery.set('limit', '1');
+  const costFirst = await (await request(costPageQuery, multi)).json();
+  costPageQuery.set('cursor', costFirst.nextCursor);
+  const costSecond = await (await request(costPageQuery, multi)).json();
+  costPageQuery.set('cursor', costSecond.nextCursor);
+  const costLast = await (await request(costPageQuery, multi)).json();
+  assert.deepEqual([...costFirst.summaries,...costSecond.summaries,...costLast.summaries], dailyBoth.summaries,
+    'company/currency groups and complete null-aware aggregates survive page boundaries');
+  assert.equal(costLast.nextCursor,null);
+  // Appending evidence to an earlier group does not shift the continuation position.
+  add('user-a', 5, 'NGN', 'company-bakery', 'paystack', 'finance', '2024-02-29T01:00:00Z');
+  costPageQuery.set('cursor',costFirst.nextCursor);
+  assert.deepEqual((await (await request(costPageQuery,multi)).json()).summaries,costSecond.summaries);
+  const pageReads = reads;
+  for (const cursor of ['', 'null', '{}', '[]', '[null,null,null,null]', '["company-printing",1,null,null]',
+    JSON.stringify(['company-printing','a\n',null,null]), JSON.stringify(['x'.repeat(1025),null,null,null]), 'x'.repeat(8193)]) {
+    assert.equal((await request(new URLSearchParams({month:'2025-01',cursor}))).status, 400);
+  }
+  for (const limit of ['', '0', '-1', '501', '1.5', 'NaN', 'Infinity']) {
+    assert.equal((await request(pageBase + '&limit=' + limit)).status, 400);
+  }
+  assert.equal((await request(query, {...context, allowed:[]})).status,403);
+  assert.equal((await request(pageBase + '&companyId=company-bakery&cursor=' + encodeURIComponent(firstPage.nextCursor))).status,403);
+  assert.equal(reads,pageReads,'malformed pagination and denied scope reject before SQL');
+  const malicious = JSON.stringify(["x' OR 1=1 --",null,null,null]);
+  assert.deepEqual((await (await request(pageBase + '&cursor=' + encodeURIComponent(malicious))).json()).summaries,[]);
+  assert.ok(!JSON.stringify(groups).includes('internal-result-must-not-leak'));
+  console.log('Monthly summary continuation, legacy null ordering and current authorization: real route / SQLite PASS');
 
 } finally {
   db.close();
