@@ -434,9 +434,27 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (status && !['staged', 'review_required', 'reviewed', 'cancelled'].includes(status)) {
       return json({ error: 'Choose a valid reconciliation import status.' }, 400);
     }
+    const rawCursor = url.searchParams.get('cursor');
+    let cursor: [number, string, string] | null = null;
+    if (rawCursor !== null) {
+      try {
+        if (rawCursor.length > 512 || !/^[A-Za-z0-9_-]+$/.test(rawCursor)) throw new Error('Invalid cursor');
+        const decoded = JSON.parse(atob(rawCursor.replace(/-/g, '+').replace(/_/g, '/'))) as unknown;
+        if (!Array.isArray(decoded) || decoded.length !== 3 ||
+            !Number.isInteger(decoded[0]) || decoded[0] < 0 || decoded[0] > 2 ||
+            typeof decoded[1] !== 'string' || decoded[1].length > 40 ||
+            !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(decoded[1]) ||
+            typeof decoded[2] !== 'string' || !/^[A-Za-z0-9:_-]{1,160}$/.test(decoded[2])) throw new Error('Invalid cursor');
+        cursor = decoded as [number, string, string];
+      } catch { return json({ error: 'Choose a valid reconciliation import cursor.' }, 400); }
+    }
     const scopedCompanyIds = requestedCompanyId ? [requestedCompanyId] : companyIds;
     const placeholders = scopedCompanyIds.map(() => '?').join(',');
     const statusSql = status ? ' AND i.status=?' : '';
+    const statusOrder = "CASE i.status WHEN 'review_required' THEN 0 WHEN 'staged' THEN 1 ELSE 2 END";
+    const cursorSql = cursor ? ` AND (${statusOrder} > ? OR
+      (${statusOrder} = ? AND i.created_at < ?) OR
+      (${statusOrder} = ? AND i.created_at = ? AND i.id > ?))` : '';
     const rows = await env.DB.prepare(`
       SELECT i.id,i.company_id AS companyId,i.source_type AS sourceType,i.provider,
         i.source_reference AS sourceReference,i.status,i.row_count AS rowCount,
@@ -445,12 +463,20 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         (SELECT COUNT(*) FROM financial_reconciliation_import_rows r WHERE r.import_id=i.id AND r.reconciliation_status='partial') AS partialCount,
         (SELECT COUNT(*) FROM financial_reconciliation_import_rows r WHERE r.import_id=i.id AND r.reconciliation_status IN ('exact','overpayment','duplicate','reversed','refunded')) AS resolvedCount
       FROM financial_reconciliation_imports i
-      WHERE i.company_id IN (${placeholders})${statusSql}
-      ORDER BY CASE i.status WHEN 'review_required' THEN 0 WHEN 'staged' THEN 1 ELSE 2 END,
+      WHERE i.company_id IN (${placeholders})${statusSql}${cursorSql}
+      ORDER BY ${statusOrder},
         i.created_at DESC,i.id ASC
       LIMIT ?
-    `).bind(...scopedCompanyIds, ...(status ? [status] : []), limit).all<Record<string, unknown>>();
-    return json({ imports: rows.results || [], limit, status: status || null, visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, ...(status ? [status] : []),
+      ...(cursor ? [cursor[0], cursor[0], cursor[1], cursor[0], cursor[1], cursor[2]] : []), limit + 1).all<Record<string, unknown>>();
+    const page = rows.results || [];
+    const imports = page.slice(0, limit);
+    const last = imports[imports.length - 1];
+    const nextCursor = page.length > limit && last ? btoa(JSON.stringify([
+      last.status === 'review_required' ? 0 : last.status === 'staged' ? 1 : 2,
+      last.createdAt, last.id,
+    ])).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') : null;
+    return json({ imports, nextCursor, limit, status: status || null, visibleCompanyIds: scopedCompanyIds });
   }
 
   if (reconciliationImportDetail && request.method === 'GET') {
