@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -151,6 +151,54 @@ try {
   }
   assert.equal(reads, deniedReads, 'invalid cursors and revoked permissions reject before evidence query');
   assert.ok(!JSON.stringify(collected).includes('internal-result-must-not-leak'));
+  const reference = "Txn / A+%_&'";
+  const referenceInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,action,provider,requesting_module,occurred_at,provider_reference,provider_result)
+    VALUES(?,?,'synthetic-user','estimate','paystack','finance',?,?,'internal-result-must-not-leak')`);
+  const setReference = { run(value, id) {
+    referenceInsert.run(`ref-${id}`, id === 'other-company' ? 'company-bakery' : 'company-printing',
+      id === 'august' ? '2026-08-15T12:00:00Z' : '2026-09-15T12:00:00Z', value);
+  } };
+  for (const id of ['tied-001', 'tied-002', 'tied-003', 'other-company', 'august']) setReference.run(reference, id);
+  setReference.run(reference.toLowerCase(), 'tied-004');
+  setReference.run(`${reference}suffix`, 'tied-005');
+  const referenceQuery = new URLSearchParams({ providerReference: reference, month: '2026-09',
+    provider: 'paystack', module: 'finance', actorEmployeeId: 'synthetic-user', day: '2026-09-15', limit: '2' });
+  const referenceFirst = await (await request(referenceQuery)).json();
+  assert.equal(referenceFirst.providerReference, reference);
+  assert.deepEqual(referenceFirst.events.map(event => event.id), ['ref-tied-003', 'ref-tied-002']);
+  assert.ok(referenceFirst.nextCursor);
+  referenceQuery.set('cursor', referenceFirst.nextCursor);
+  const referenceLast = await (await request(referenceQuery)).json();
+  assert.deepEqual(referenceLast.events.map(event => event.id), ['ref-tied-001']);
+  assert.equal(referenceLast.nextCursor, null);
+  assert.ok(!JSON.stringify(referenceLast).includes('internal-result-must-not-leak'));
+  for (const [key, value] of [['provider', 'mono'], ['module', 'attendance'], ['actorEmployeeId', 'another-user'],
+    ['month', '2026-08'], ['day', '2026-09-01'], ['providerReference', "' OR 1=1 --"]]) {
+    const mismatched = new URLSearchParams(referenceQuery);
+    mismatched.set(key, value);
+    const result = await (await request(mismatched)).json();
+    assert.deepEqual(result.events, [], `${key} remains intersected on continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  referenceInsert.run('ref-private', 'company-bakery', '2026-09-15T12:00:00Z', 'private-reference');
+  for (const value of ['private-reference', 'missing-reference']) {
+    const result = await (await request(new URLSearchParams({ providerReference: value }))).json();
+    assert.deepEqual(result.events, [], 'foreign and absent references both return empty evidence');
+    assert.equal(result.nextCursor, null);
+  }
+  const referenceReads = reads;
+  assert.equal((await request(referenceQuery, { ...context, allowed: [] })).status, 403);
+  referenceQuery.set('companyId', 'company-bakery');
+  assert.equal((await request(referenceQuery)).status, 403);
+  for (const value of ['', ' ', 'x'.repeat(201), 'ref\n', 'ref\u0000', 'ref\u007f']) {
+    assert.equal((await request(new URLSearchParams({ providerReference: value }))).status, 400);
+  }
+  assert.equal(reads, referenceReads, 'invalid references and unauthorized requests never read evidence');
+  setReference.run('x'.repeat(200), 'max-length');
+  const boundedReference = await (await request(new URLSearchParams({ providerReference: 'x'.repeat(200) }))).json();
+  assert.deepEqual(boundedReference.events.map(event => event.id), ['ref-max-length']);
+  console.log('Financial provider-reference drilldown: runtime/SQLite PASS');
   console.log('Financial provider-cost keyset pagination: runtime/SQLite PASS');
   console.log('Financial provider-cost monthly drilldown: runtime/SQLite PASS');
 } finally {

@@ -537,6 +537,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (actorEmployeeId !== null && !/^[A-Za-z0-9:_-]{1,160}$/.test(actorEmployeeId)) {
       return json({ error: 'Choose a valid requesting-user filter.' }, 400);
     }
+    // References are opaque: preserve case and punctuation and compare exactly.
+    const providerReference = url.searchParams.get('providerReference');
+    if (providerReference !== null && (!providerReference.trim() || providerReference.length > 200 ||
+        /[\u0000-\u001f\u007f]/.test(providerReference))) {
+      return json({ error: 'Choose a valid provider-reference filter.' }, 400);
+    }
     // The cursor is only a position, never authority: all current scope and
     // filter predicates apply again on every page. Preserve the stored text
     // timestamp to match the existing deterministic ordering exactly.
@@ -576,15 +582,16 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR date(occurred_at)=?)
         AND (? IS NULL OR strftime('%Y-%m',occurred_at)=?)
         AND (? IS NULL OR actor_employee_id=?)
+        AND (? IS NULL OR provider_reference=?)
         AND (? IS NULL OR occurred_at < ? OR (occurred_at = ? AND id < ?))
       ORDER BY occurred_at DESC,id DESC
       LIMIT ?
-    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
+    `).bind(...scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, beforeTime, beforeTime, beforeTime, beforeId, limit + 1).all<Record<string, unknown>>();
     const events = (rows.results || []).slice(0, limit);
     const last = events[events.length - 1];
     const nextCursor = (rows.results || []).length > limit && last
       ? JSON.stringify([last.occurredAt, last.id]) : null;
-    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, limit });
+    return json({ events, nextCursor, visibleCompanyIds: scopedCompanyIds, provider, module: requestingModule, day, month, actorEmployeeId, providerReference, limit });
   }
 
   if (url.pathname === '/api/financial-gateway/budgets') {
