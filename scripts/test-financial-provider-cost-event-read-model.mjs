@@ -24,7 +24,7 @@ assert.match(endpoint, /provider !== null && !\/\^\[a-z\]\[a-z0-9_-\]\{0,79\}\$\
 assert.match(endpoint, /\^\[a-z\]\[a-z0-9_\.:-\]\{0,79\}\$/);
 assert.match(endpoint, /requesting_module=\?/);
 assert.match(endpoint, /provider=\?\)/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, provider, provider, requestingModule, requestingModule, day, day, month, month, actorEmployeeId, actorEmployeeId, providerReference, providerReference, action, action, pricingId, pricingId, pricingRevision, pricingRevision, evidenceReference, evidenceReference, retryOfEventId, retryOfEventId, reversalOfEventId, reversalOfEventId, approvalId, approvalId, makerEmployeeId, makerEmployeeId, checkerEmployeeId, checkerEmployeeId, beforeTime, beforeTime, beforeTime, beforeId, limit \+ 1\)/);
 assert.match(endpoint, /module: requestingModule/);
 assert.match(endpoint, /provider, module: requestingModule/);
 assert.match(endpoint, /!Number\.isInteger\(limit\).*limit < 1 \|\| limit > 100/s);
@@ -585,6 +585,66 @@ try {
     assert.equal(omitted[otherField], null);
     assert.equal(omitted.events.length, 7, 'omitted role filters include authorized linked and unlinked evidence');
   }
+  // Revisions are exact positive integers, independent of current registry state.
+  db.prepare('INSERT INTO financial_provider_pricing(id) VALUES(?)').run('revision-other-price');
+  const revisionInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,action,provider,requesting_module,actor_employee_id,provider_reference,pricing_id,pricing_revision,
+     evidence_reference,approval_id,retry_of_event_id,reversal_of_event_id,maker_employee_id,checker_employee_id,occurred_at,provider_result)
+    VALUES(?,?,'estimate','paystack','finance','synthetic-user','revision-provider',?,?,'revision-evidence',
+      'revision-approval','september-start','september-end','synthetic-user','synthetic-user',
+      '2026-09-15T12:00:00Z','internal-result-must-not-leak')`);
+  for (const [suffix, company, price, revision] of [
+    ['1', 'company-printing', pricingId, 2], ['2', 'company-printing', pricingId, 2],
+    ['3', 'company-printing', pricingId, 2], ['foreign', 'company-bakery', pricingId, 2],
+    ['private', 'company-bakery', pricingId, 777], ['other-price', 'company-printing', 'revision-other-price', 2],
+    ['other-revision', 'company-printing', pricingId, 1], ['null', 'company-printing', pricingId, null],
+    ['max', 'company-printing', pricingId, Number.MAX_SAFE_INTEGER],
+  ]) revisionInsert.run(`revision-${suffix}`, company, price, revision);
+  const revisionQuery = new URLSearchParams({ pricingRevision: '2', pricingId,
+    providerReference: 'revision-provider', evidenceReference: 'revision-evidence', approvalId: 'revision-approval',
+    retryOfEventId: 'september-start', reversalOfEventId: 'september-end', action: 'estimate',
+    makerEmployeeId: 'synthetic-user', checkerEmployeeId: 'synthetic-user', actorEmployeeId: 'synthetic-user',
+    provider: 'paystack', module: 'finance', day: '2026-09-15', month: '2026-09', limit: '2' });
+  const revisionFirst = await (await request(revisionQuery)).json();
+  assert.equal(revisionFirst.pricingRevision, 2);
+  assert.deepEqual(revisionFirst.events.map(event => event.id), ['revision-3', 'revision-2']);
+  assert.ok(revisionFirst.nextCursor);
+  revisionQuery.set('cursor', revisionFirst.nextCursor);
+  const revisionLast = await (await request(revisionQuery)).json();
+  assert.deepEqual(revisionLast.events.map(event => event.id), ['revision-1']);
+  assert.equal(revisionLast.nextCursor, null);
+  assert.ok(!JSON.stringify(revisionLast).includes('internal-result-must-not-leak'));
+  for (const key of ['pricingRevision', 'pricingId', 'providerReference', 'evidenceReference', 'approvalId',
+    'retryOfEventId', 'reversalOfEventId', 'action', 'makerEmployeeId', 'checkerEmployeeId', 'actorEmployeeId',
+    'provider', 'module', 'day', 'month']) {
+    const mismatch = new URLSearchParams(revisionQuery);
+    mismatch.set(key, key === 'pricingRevision' ? '3' : key === 'day' ? '2026-08-01' : key === 'month' ? '2026-08' : 'absent');
+    const result = await (await request(mismatch)).json();
+    assert.deepEqual(result.events, [], `${key} intersects revision continuation`);
+    assert.equal(result.nextCursor, null);
+  }
+  for (const revision of ['777', '778']) {
+    const result = await (await request(`pricingRevision=${revision}`)).json();
+    assert.deepEqual(result.events, [], 'foreign and absent revisions disclose no evidence');
+    assert.equal(result.nextCursor, null);
+  }
+  const revisionReads = reads;
+  assert.equal((await request(revisionQuery, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${revisionQuery}&companyId=company-bakery`)).status, 403);
+  for (const value of ['', ' ', '0', '-1', '1.5', '2.0', '2e0', '0x2', '+2', '02', '2\n', '2\u0000',
+    'Infinity', 'NaN', '9007199254740992', "2 OR 1=1"]) {
+    assert.equal((await request(new URLSearchParams({ pricingRevision: value }))).status, 400);
+  }
+  assert.equal(reads, revisionReads, 'invalid revisions and revoked permission reject before SQL');
+  const maximumRevision = await (await request(`pricingRevision=${Number.MAX_SAFE_INTEGER}`)).json();
+  assert.deepEqual(maximumRevision.events.map(event => event.id), ['revision-max']);
+  const revisionWithoutPrice = await (await request('pricingRevision=2')).json();
+  assert.deepEqual(revisionWithoutPrice.events.map(event => event.id).sort(),
+    ['revision-1', 'revision-2', 'revision-3', 'revision-other-price']);
+  const omittedRevision = await (await request('providerReference=revision-provider')).json();
+  assert.equal(omittedRevision.pricingRevision, null);
+  assert.equal(omittedRevision.events.length, 7, 'omission includes all authorized revisions and legacy null evidence');
+  console.log('Financial pricing-revision drilldown: runtime/SQLite PASS');
   console.log('Financial maker/checker drilldown: runtime/SQLite PASS');
   console.log('Financial approval-record drilldown: runtime/SQLite PASS');
   console.log('Financial reversal-event drilldown: runtime/SQLite PASS');
