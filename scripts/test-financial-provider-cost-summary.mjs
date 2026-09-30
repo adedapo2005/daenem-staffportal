@@ -23,8 +23,8 @@ assert.match(endpoint, /GROUP BY company_id,provider,cost_currency,requesting_mo
 assert.match(endpoint, /COUNT\(actual_cost_minor\) AS actualCostEventCount/);
 assert.match(endpoint, /SUM\(actual_cost_minor\) AS actualCostMinor/);
 assert.match(endpoint, /SUM\(estimated_cost_minor\) AS estimatedCostMinor/);
-assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode\)/);
-assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, summaries:/);
+assert.match(endpoint, /\.bind\(\.\.\.scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency\)/);
+assert.match(endpoint, /return json\(\{ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, summaries:/);
 assert.match(endpoint, /visibleCompanyIds: scopedCompanyIds/);
 assert.doesNotMatch(endpoint, /company-farms|access_token|refresh_token|client_secret/i);
 
@@ -331,6 +331,60 @@ try {
   assert.equal((await request(`${roleQuery}&actorRoleCode=foreign-role&companyId=company-bakery`)).status, 403);
   assert.equal(reads, roleReads, 'invalid roles and revoked permissions reject before SQL');
   console.log('Monthly actor-role totals: real route / SQLite regression PASS');
+  assert.equal(omitted.currency, null);
+  const transactionInsert = db.prepare(`INSERT INTO financial_provider_cost_events
+    (id,company_id,actor_employee_id,actor_role_code,action,provider,requesting_module,occurred_at,
+      estimated_cost_minor,actual_cost_minor,cost_currency,currency,amount_minor,pricing_id,pricing_revision,provider_result)
+    VALUES(?,?,'user-a','finance','estimate','paystack','finance','2026-09-15T12:00:00Z',20,?,?,?,
+      1000,'price-a',1,'internal-result-must-not-leak')`);
+  for (const [company, actual, cost, transaction] of [
+    ['company-printing', 71, 'NGN', 'USD'], ['company-printing', null, 'NGN', 'USD'],
+    ['company-printing', 72, 'EUR', 'USD'], ['company-printing', 73, 'NGN', 'NGN'],
+    ['company-bakery', 91, 'NGN', 'USD'], ['company-bakery', 999, 'NGN', 'GBP'],
+  ]) transactionInsert.run(String(++id), company, actual, cost, transaction);
+  const transactionQuery = `${roleQuery}&actorRoleCode=finance&currency=USD`;
+  const transactionBody = await (await request(transactionQuery)).json();
+  assert.equal(transactionBody.currency, 'USD');
+  assert.deepEqual(transactionBody.summaries, [{ ...result.summaries[0], actualCostMinor: 71 }],
+    'transaction currency filters independently of cost denomination');
+  const noCostFilter = new URLSearchParams(transactionQuery);
+  noCostFilter.delete('costCurrency');
+  const denominations = await (await request(noCostFilter)).json();
+  assert.deepEqual(denominations.summaries.map(row => [row.currency, row.actualCostMinor]), [['EUR', 72], ['NGN', 71]],
+    'cost denominations remain separate without conversion');
+  const bothTransactions = await (await request(transactionQuery, multi)).json();
+  assert.equal(bothTransactions.summaries.length, 2);
+  assert.equal(bothTransactions.summaries[0].actualCostMinor, 91);
+  assert.deepEqual((await (await request(`${transactionQuery}&companyId=company-bakery`, multi)).json()).summaries,
+    [bothTransactions.summaries[0]]);
+  for (const [key, value] of [['provider', 'mono'], ['module', 'payroll'], ['month', '2026-08'],
+    ['actorEmployeeId', 'user-b'], ['costCurrency', 'USD'], ['action', 'pending'],
+    ['pricingId', 'PRICE-A'], ['pricingRevision', '2'], ['actorRoleCode', 'FINANCE']]) {
+    const params = new URLSearchParams(transactionQuery);
+    params.set(key, value);
+    assert.deepEqual((await (await request(params)).json()).summaries, [], `${key} intersects transaction currency`);
+  }
+  const withoutTransaction = await (await request(`${roleQuery}&actorRoleCode=finance`)).json();
+  assert.equal(withoutTransaction.currency, null);
+  assert.equal(withoutTransaction.summaries[0].eventCount, 5, 'omission includes legacy null transaction currency');
+  assert.equal(withoutTransaction.summaries[0].actualCostMinor, 205);
+  transactionInsert.run(String(++id), 'company-printing', null, 'NGN', 'JPY');
+  const unknownTransaction = await (await request(`${base}&currency=JPY`)).json();
+  assert.equal(unknownTransaction.summaries[0].actualCostMinor, null);
+  assert.equal(unknownTransaction.summaries[0].actualCostEventCount, 0);
+  for (const currency of ['GBP', 'CAD']) {
+    assert.deepEqual((await (await request(`${base}&currency=${currency}`)).json()).summaries, [],
+      'foreign-only and absent transaction currencies are indistinguishable');
+  }
+  const transactionReads = reads;
+  for (const currency of ['', ' ', 'usd', 'Usd', 'US', 'USDD', 'USD\n', 'US\u0000', "' OR 1=1", '\u20acUR']) {
+    assert.equal((await request(`${base}&${new URLSearchParams({ currency })}`)).status, 400);
+  }
+  assert.equal((await request(transactionQuery, { ...context, allowed: [] })).status, 403);
+  assert.equal((await request(`${transactionQuery}&companyId=company-bakery`)).status, 403);
+  assert.equal(reads, transactionReads, 'invalid transaction currencies and denied scope reject before SQL');
+  assert.ok(!JSON.stringify(bothTransactions).includes('internal-result-must-not-leak'));
+  console.log('Monthly transaction-currency totals: real route / SQLite regression PASS');
 } finally {
   db.close();
 }

@@ -485,6 +485,10 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (costCurrency !== null && (costCurrency.length !== 3 || /[^A-Z]/.test(costCurrency))) {
       return json({ error: 'Choose a valid three-letter cost currency.' }, 400);
     }
+    const currency = url.searchParams.get('currency');
+    if (currency !== null && (currency.length !== 3 || /[^A-Z]/.test(currency))) {
+      return json({ error: 'Choose a valid three-letter transaction currency.' }, 400);
+    }
     const module = url.searchParams.get('module');
     if (module !== null && !/^[a-z][a-z0-9_.:-]{0,79}$/.test(module)) {
       return json({ error: 'Choose a valid module filter.' }, 400);
@@ -531,11 +535,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
         AND (? IS NULL OR pricing_id=?)
         AND (? IS NULL OR pricing_revision=?)
         AND (? IS NULL OR actor_role_code=?)
+        AND (? IS NULL OR currency=?)
       GROUP BY company_id,provider,cost_currency,requesting_module
       ORDER BY company_id,provider,cost_currency,requesting_module
       LIMIT 500
-    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode).all<Record<string, unknown>>();
-    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+    `).bind(...scopedCompanyIds, month, provider, provider, module, module, actorEmployeeId, actorEmployeeId, costCurrency, costCurrency, action, action, pricingId, pricingId, pricingRevision, pricingRevision, actorRoleCode, actorRoleCode, currency, currency).all<Record<string, unknown>>();
+    return json({ month, provider, module, actorEmployeeId, costCurrency, action, pricingId, pricingRevision, actorRoleCode, currency, summaries: rows.results || [], visibleCompanyIds: scopedCompanyIds });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-events') {
