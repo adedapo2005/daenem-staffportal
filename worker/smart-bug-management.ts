@@ -1,6 +1,6 @@
 import type { SessionContext } from './auth';
 
-interface Env { DB: D1Database }
+interface Env { DB: D1Database; APP_STAGE?: string }
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -22,11 +22,14 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
   const incidentDetail = url.pathname.match(/^\/api\/admin\/smart-bugs\/incidents\/([A-Za-z0-9:_-]{1,160})$/);
   const storageMirrorIntegrity = url.pathname === '/api/admin/smart-bugs/integrity/storage-mirror';
   const reconciliationImportIntegrity = url.pathname === '/api/admin/smart-bugs/integrity/reconciliation-imports';
-  if (request.method !== 'GET' || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail && !storageMirrorIntegrity && !reconciliationImportIntegrity)) return null;
+  const runIntegrityScan = url.pathname === '/api/admin/smart-bugs/detect/integrity' && request.method === 'POST';
+  if ((!runIntegrityScan && request.method !== 'GET') || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail && !storageMirrorIntegrity && !reconciliationImportIntegrity && !runIntegrityScan)) return null;
   if (!groupRole(context)) return json({ error: 'Smart Bug Management access is not assigned.' }, 403);
 
   const { isOwner, companyIds } = scope(context);
-  if (!isOwner && companyIds.length === 0) return json(storageMirrorIntegrity || reconciliationImportIntegrity
+  if (!isOwner && companyIds.length === 0) return json(runIntegrityScan
+    ? { ok: true, readOnly: true, scannedCompanies: 0, incidentsRecorded: 0, findings: [] }
+    : storageMirrorIntegrity || reconciliationImportIntegrity
     ? {
       detector: reconciliationImportIntegrity ? 'reconciliation_import_row_count' : 'storage_mirror_integrity',
       readOnly: true, findingCount: 0,
@@ -38,6 +41,70 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
       : { incidents: [], limit: 50 });
   const scopeSql = isOwner ? '' : ` AND company_id IN (${companyIds.map(() => '?').join(',')})`;
   const binds = isOwner ? [] : companyIds;
+
+  if (runIntegrityScan) {
+    const companyRows = isOwner
+      ? await env.DB.prepare('SELECT id FROM companies ORDER BY id').all<{ id: string }>()
+      : { results: companyIds.map((id) => ({ id })) };
+    const scanCompanies = (companyRows.results || []).map((row) => row.id);
+    const environmentScope = env.APP_STAGE === 'production' ? 'production' : 'non-production';
+    const findings: Array<{ companyId: string; detector: string; count: number }> = [];
+    for (const companyId of scanCompanies) {
+      const [mirror, reconciliation] = await Promise.all([
+        env.DB.prepare(`SELECT
+          (SELECT COUNT(*) FROM storage_mirror_jobs WHERE provider='microsoft_onedrive' AND status='mirrored'
+            AND (provider_item_id IS NULL OR trim(provider_item_id)='' OR synced_at IS NULL) AND company_id=?) +
+          (SELECT COUNT(*) FROM storage_mirror_jobs WHERE provider='microsoft_onedrive' AND status='failed'
+            AND (last_error_code IS NULL OR trim(last_error_code)='') AND company_id=?) AS count`)
+          .bind(companyId, companyId).first<{ count: number }>(),
+        env.DB.prepare(`SELECT COUNT(*) AS count FROM financial_reconciliation_imports i
+          WHERE i.company_id=? AND i.row_count != (SELECT COUNT(*) FROM financial_reconciliation_import_rows r WHERE r.import_id=i.id)`)
+          .bind(companyId).first<{ count: number }>(),
+      ]);
+      for (const [detector, value] of [
+        ['storage_mirror_integrity', mirror?.count],
+        ['reconciliation_import_row_count', reconciliation?.count],
+      ] as const) {
+        const count = Number(value) || 0;
+        if (count > 0) findings.push({ companyId, detector, count });
+      }
+    }
+
+    const correlationId = crypto.randomUUID();
+    for (const finding of findings) {
+      const fingerprintBytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${environmentScope}|${finding.companyId}|${finding.detector}`));
+      const fingerprint = [...new Uint8Array(fingerprintBytes)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+      const incidentId = `smart-bug-${fingerprint.slice(0, 48)}`;
+      const title = finding.detector === 'storage_mirror_integrity' ? 'Storage mirror integrity needs review' : 'Reconciliation import integrity needs review';
+      const summary = `${finding.count} integrity condition${finding.count === 1 ? '' : 's'} require authorized review. No records were changed.`;
+      await env.DB.batch([
+        env.DB.prepare(`INSERT INTO smart_bug_incidents
+          (id,fingerprint,severity,status,title,sanitized_summary,environment_scope,company_id,module,service,
+           first_seen_at,last_seen_at,occurrence_count,safety_class)
+          VALUES(?,?,'P2','DETECTED',?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,1,'MANUAL_ONLY')
+          ON CONFLICT(id) DO UPDATE SET status=CASE WHEN smart_bug_incidents.status='RESOLVED'
+              THEN 'DETECTED' ELSE smart_bug_incidents.status END,
+            last_seen_at=CURRENT_TIMESTAMP,occurrence_count=smart_bug_incidents.occurrence_count+1,
+            sanitized_summary=excluded.sanitized_summary,updated_at=CURRENT_TIMESTAMP`)
+          .bind(incidentId, fingerprint, title, summary, environmentScope, finding.companyId,
+            finding.detector === 'storage_mirror_integrity' ? 'storage' : 'financial_gateway', finding.detector),
+        env.DB.prepare(`INSERT INTO smart_bug_evidence
+          (id,incident_id,evidence_type,source_module,safe_summary,reference_json,correlation_id)
+          VALUES(?,?,'integrity_scan',?,?,?,?)`)
+          .bind(`smart-bug-evidence-${crypto.randomUUID()}`, incidentId,
+            finding.detector === 'storage_mirror_integrity' ? 'storage' : 'financial_gateway', summary,
+            JSON.stringify({ detector: finding.detector, findingCount: finding.count }), `${correlationId}:${finding.detector}:${finding.companyId}`),
+        env.DB.prepare(`INSERT INTO smart_bug_audit
+          (id,incident_id,actor_type,actor_id,company_id,action,reason,input_refs_json,result,correlation_id)
+          VALUES(?,?,'employee',?,?,'run_read_only_integrity_scan','Authorized manual detector run','[]',?,?)`)
+          .bind(`smart-bug-audit-${crypto.randomUUID()}`, incidentId, context.employee.id, finding.companyId,
+            JSON.stringify({ detector: finding.detector, findingCount: finding.count, recordsChanged: false }),
+            `${correlationId}:${finding.detector}:${finding.companyId}`),
+      ]);
+    }
+    return json({ ok: true, readOnly: true, scannedCompanies: scanCompanies.length, incidentsRecorded: findings.length,
+      findings: findings.map(({ companyId, detector, count }) => ({ companyId, detector, count })) });
+  }
 
   if (storageMirrorIntegrity) {
     // A row marked mirrored without provider identity or a successful sync time

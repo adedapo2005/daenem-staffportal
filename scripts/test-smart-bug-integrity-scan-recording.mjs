@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const source = await readFile(new URL('../worker/smart-bug-management.ts', import.meta.url), 'utf8');
+const start = source.indexOf("if (runIntegrityScan) {");
+const end = source.indexOf("if (storageMirrorIntegrity) {", start);
+assert.ok(start >= 0 && end > start, 'manual read-only integrity scan is registered');
+const scan = source.slice(start, end);
+assert.match(source, /url\.pathname === '\/api\/admin\/smart-bugs\/detect\/integrity' && request\.method === 'POST'/);
+assert.match(source, /if \(!groupRole\(context\)\) return json\(\{ error: 'Smart Bug Management access is not assigned\.' \}, 403\)/);
+assert.match(scan, /SELECT id FROM companies ORDER BY id/);
+assert.match(scan, /company_id=\?/);
+assert.match(scan, /storage_mirror_jobs/);
+assert.match(scan, /financial_reconciliation_imports/);
+assert.match(scan, /records were changed/);
+assert.match(scan, /environmentScope = env\.APP_STAGE === 'production' \? 'production' : 'non-production'/);
+assert.match(scan, /ON CONFLICT\(id\) DO UPDATE SET status=CASE/);
+assert.match(scan, /occurrence_count=smart_bug_incidents\.occurrence_count\+1/);
+assert.match(scan, /status='RESOLVED'[\s\S]*?THEN 'DETECTED' ELSE smart_bug_incidents\.status END/);
+assert.doesNotMatch(scan, /status IN \('RESOLVED','FALSE_POSITIVE','SUPPRESSED_BY_POLICY'\)|0\.95/);
+assert.match(scan, /INSERT INTO smart_bug_evidence/);
+assert.match(scan, /INSERT INTO smart_bug_audit/);
+assert.match(scan, /recordsChanged: false/);
+assert.doesNotMatch(scan, /FILES\.|UPDATE (storage_mirror_jobs|financial_reconciliation_imports)|DELETE FROM|ALTER TABLE|auto_remediation_enabled\s*=\s*1/i);
+console.log('Smart Bug authorized read-only integrity scan recording: 17/17 PASS');
