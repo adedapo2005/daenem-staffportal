@@ -17,7 +17,11 @@ check('Attendance responses disable caching', attendance.includes("'cache-contro
 
 check('Payroll authority is evaluated for the target company', payroll.includes("hasPermission(context,'payroll.access',level,companyId)"));
 check('Payroll adjustment employees require active target-company membership', payroll.includes('employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1'));
-check('Payroll adjustment auto-approval uses target-company authority', payroll.includes("hasPermission(context,'payroll.access','approve',companyId)"));
+check('Only Owner may self-approve a payroll adjustment at submission', payroll.includes("const status=owner?'approved':'pending'"));
+check('Payroll adjustment and formal audit evidence are written atomically', payroll.includes('await env.DB.batch([') && payroll.includes("'owner_self_approval':'submit_adjustment'"));
+check('Payroll adjustment review requires target-company approve authority', payroll.includes("can(context,adjustment.companyId,'approve')"));
+check('Payroll adjustment review uses pending-state compare-and-set and atomic audit', payroll.includes("WHERE id=? AND company_id=? AND status='pending'")
+  && payroll.includes('WHERE changes()=1'));
 check('Unauthorized payroll run detail uses neutral not-found denial', payroll.includes("if(!can(context,companyId))return json({error:'Payroll run not found.'},404)"));
 check('Unauthorized payroll status changes use neutral not-found denial', payroll.includes("if(!can(context,run.companyId,minimum))return json({error:'Payroll run not found.'},404)"));
 check('Payroll responses disable caching', payroll.includes("'cache-control':'no-store'"));

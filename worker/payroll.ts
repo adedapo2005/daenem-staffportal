@@ -5,8 +5,9 @@ type PayrollStatus = 'draft' | 'review' | 'approved' | 'processing' | 'paid' | '
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
 const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
 const transitions:Record<PayrollStatus,PayrollStatus[]>={draft:['review','cancelled'],review:['draft','approved','cancelled'],approved:['processing','cancelled'],processing:['paid'],paid:[],cancelled:[]};
-function companyAccess(context:SessionContext,companyId:string){return context.companies.some(company=>company.id===companyId)}
-function can(context:SessionContext,companyId:string,level:'view'|'create'|'edit'|'approve'|'manage'='view'){return companyAccess(context,companyId)&&hasPermission(context,'payroll.access',level,companyId)}
+function isOwner(context:SessionContext){return context.roles.some(role=>role.code==='owner')}
+function companyAccess(context:SessionContext,companyId:string){return isOwner(context)||context.companies.some(company=>company.id===companyId)}
+function can(context:SessionContext,companyId:string,level:'view'|'create'|'edit'|'approve'|'manage'='view'){return isOwner(context)||(companyAccess(context,companyId)&&hasPermission(context,'payroll.access',level,companyId))}
 function kobo(value:unknown){const n=Number(value||0);return Number.isFinite(n)?Math.round(n*100):0}
 async function setting(env:PayrollEnv,key:string,fallback:string){const row=await env.DB.prepare('SELECT setting_value FROM app_settings WHERE setting_key=?').bind(key).first<{setting_value:string}>();return row?.setting_value??fallback}
 
@@ -29,7 +30,57 @@ async function setCompensation(request:Request,env:PayrollEnv,context:SessionCon
   env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'payroll','set_compensation','employee_compensation',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({employeeId:body.employeeId,effectiveFrom,baseSalaryKobo:kobo(body.baseSalaryNaira)}))
 ]);return json({ok:true,compensationId:id})}
 
-async function addAdjustment(request:Request,env:PayrollEnv,context:SessionContext){let body:{companyId?:string;employeeId?:string;periodKey?:string;adjustmentType?:string;description?:string;amountNaira?:number;taxable?:boolean};try{body=await request.json()}catch{return json({error:'Invalid payroll adjustment request.'},400)}const companyId=String(body.companyId||'');if(!can(context,companyId,'create'))return json({error:'Create Payroll permission is required.'},403);if(!body.employeeId||!body.periodKey||!body.adjustmentType||!body.description)return json({error:'Employee, period, type and description are required.'},400);const allowed=['allowance','bonus','overtime','commission','deduction','salary_advance','loan_repayment','other'];if(!allowed.includes(body.adjustmentType))return json({error:'Invalid payroll adjustment type.'},400);const membership=await env.DB.prepare(`SELECT id FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1`).bind(body.employeeId,companyId).first();if(!membership)return json({error:'Employee is not active in this company.'},404);const id=uid('payroll-adjustment');const autoApprove=hasPermission(context,'payroll.access','approve',companyId);await env.DB.prepare(`INSERT INTO payroll_adjustments(id,employee_id,company_id,period_key,adjustment_type,description,amount_kobo,taxable,status,submitted_by,approved_by,approved_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,body.employeeId,companyId,body.periodKey,body.adjustmentType,body.description,Math.abs(kobo(body.amountNaira)),body.taxable?1:0,autoApprove?'approved':'pending',context.employee.id,autoApprove?context.employee.id:null,autoApprove?new Date().toISOString():null).run();return json({ok:true,adjustmentId:id,status:autoApprove?'approved':'pending'},201)}
+async function addAdjustment(request:Request,env:PayrollEnv,context:SessionContext){
+ let body:{companyId?:string;employeeId?:string;periodKey?:string;adjustmentType?:string;description?:string;amountNaira?:number;taxable?:boolean};
+ try{body=await request.json()}catch{return json({error:'Invalid payroll adjustment request.'},400)}
+ const companyId=String(body.companyId||'');
+ if(!can(context,companyId,'create'))return json({error:'Create Payroll permission is required.'},403);
+ if(!body.employeeId||!body.periodKey||!body.adjustmentType||!body.description)return json({error:'Employee, period, type and description are required.'},400);
+ const allowed=['allowance','bonus','overtime','commission','deduction','salary_advance','loan_repayment','other'];
+ if(!allowed.includes(body.adjustmentType))return json({error:'Invalid payroll adjustment type.'},400);
+ const membership=await env.DB.prepare(`SELECT id FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1`).bind(body.employeeId,companyId).first();
+ if(!membership)return json({error:'Employee is not active in this company.'},404);
+
+ const owner=isOwner(context);
+ const status=owner?'approved':'pending';
+ const adjustmentId=uid('payroll-adjustment');
+ const correlationId=(request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128);
+ const approvalTime=owner?new Date().toISOString():null;
+ const auditAction=owner?'owner_self_approval':'submit_adjustment';
+ const auditAfter={employeeId:body.employeeId,periodKey:body.periodKey,adjustmentType:body.adjustmentType,amountKobo:Math.abs(kobo(body.amountNaira)),taxable:Boolean(body.taxable),fromStatus:null,toStatus:status,...(owner?{reason:'Owner self-approval at submission.'}:{})};
+ await env.DB.batch([
+  env.DB.prepare(`INSERT INTO payroll_adjustments(id,employee_id,company_id,period_key,adjustment_type,description,amount_kobo,taxable,status,submitted_by,approved_by,approved_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`)
+   .bind(adjustmentId,body.employeeId,companyId,body.periodKey,body.adjustmentType,body.description,Math.abs(kobo(body.amountNaira)),body.taxable?1:0,status,context.employee.id,owner?context.employee.id:null,approvalTime),
+  env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'payroll',?,'payroll_adjustment',?,?,'web',?)`)
+   .bind(uid('audit'),context.employee.id,companyId,auditAction,adjustmentId,JSON.stringify(auditAfter),correlationId)
+ ]);
+ return json({ok:true,adjustmentId,status},201)
+}
+
+async function approveAdjustment(request:Request,env:PayrollEnv,context:SessionContext){
+ let body:{adjustmentId?:string};
+ try{body=await request.json()}catch{return json({error:'Invalid payroll adjustment approval.'},400)}
+ const adjustmentId=String(body.adjustmentId||'');
+ if(!adjustmentId)return json({error:'Payroll adjustment is required.'},400);
+ const adjustment=await env.DB.prepare(`SELECT id,company_id AS companyId,submitted_by AS submittedBy,status FROM payroll_adjustments WHERE id=?`).bind(adjustmentId).first<{id:string;companyId:string;submittedBy:string;status:string}>();
+ if(!adjustment||!can(context,adjustment.companyId,'approve'))return json({error:'Payroll adjustment not found.'},404);
+ if(adjustment.status!=='pending')return json({error:'Only pending payroll adjustments can be approved.'},409);
+ const owner=isOwner(context);
+ if(!owner&&adjustment.submittedBy===context.employee.id)return json({error:'A different Payroll approver is required.'},409);
+ const approvalTime=new Date().toISOString();
+ const correlationId=(request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128);
+ const auditAction=owner&&adjustment.submittedBy===context.employee.id?'owner_self_approval':'approve_adjustment';
+ const auditBefore={fromStatus:'pending'};
+ const auditAfter={toStatus:'approved',...(auditAction==='owner_self_approval'?{reason:'Owner self-approval of a pending payroll adjustment.'}:{})};
+ const results=await env.DB.batch([
+  env.DB.prepare(`UPDATE payroll_adjustments SET status='approved',approved_by=?,approved_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status='pending'`)
+   .bind(context.employee.id,approvalTime,adjustmentId,adjustment.companyId),
+  env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source,request_id) SELECT ?,?,?,'payroll',?,'payroll_adjustment',?,?,?, 'web',? WHERE changes()=1`)
+   .bind(uid('audit'),context.employee.id,adjustment.companyId,auditAction,adjustmentId,JSON.stringify(auditBefore),JSON.stringify(auditAfter),correlationId)
+ ]);
+ if(!Number(results?.[0]?.meta?.changes||0))return json({error:'Only pending payroll adjustments can be approved.'},409);
+ return json({ok:true,adjustmentId,status:'approved'});
+}
 
 async function draftRun(request:Request,env:PayrollEnv,context:SessionContext){let body:{companyId?:string;periodStart?:string;periodEnd?:string;payDate?:string;notes?:string};try{body=await request.json()}catch{return json({error:'Invalid payroll run request.'},400)}const companyId=String(body.companyId||'');if(!can(context,companyId,'create'))return json({error:'Create Payroll permission is required.'},403);if(!body.periodStart||!body.periodEnd||!body.payDate)return json({error:'Period start, period end and pay date are required.'},400);if(body.periodStart>body.periodEnd)return json({error:'Payroll period start cannot be after period end.'},400);const duplicate=await env.DB.prepare(`SELECT id FROM payroll_runs WHERE company_id=? AND period_start=? AND period_end=? AND status<>'cancelled' LIMIT 1`).bind(companyId,body.periodStart,body.periodEnd).first();if(duplicate)return json({error:'A payroll run already exists for this company and period.'},409);const company=await env.DB.prepare('SELECT code,name FROM companies WHERE id=?').bind(companyId).first<{code:string;name:string}>();if(!company)return json({error:'Company not found.'},404);const periodKey=body.periodStart.slice(0,7);const runId=uid('payroll-run');const runNo=`PAY-${company.code}-${periodKey.replace('-','')}-${crypto.randomUUID().slice(0,4).toUpperCase()}`;
 const employees=await env.DB.prepare(`
@@ -54,4 +105,4 @@ async function runDetail(request:Request,env:PayrollEnv,context:SessionContext){
 
 async function changeStatus(request:Request,env:PayrollEnv,context:SessionContext){let body:{runId?:string;toStatus?:PayrollStatus;note?:string};try{body=await request.json()}catch{return json({error:'Invalid payroll status request.'},400)}if(!body.runId||!body.toStatus)return json({error:'Payroll run and destination status are required.'},400);const run=await env.DB.prepare(`SELECT id,company_id AS companyId,status FROM payroll_runs WHERE id=?`).bind(body.runId).first<{id:string;companyId:string;status:PayrollStatus}>();if(!run)return json({error:'Payroll run not found.'},404);const minimum=body.toStatus==='approved'||body.toStatus==='paid'?'approve':'edit';if(!can(context,run.companyId,minimum))return json({error:'Payroll run not found.'},404);if(!(transitions[run.status]||[]).includes(body.toStatus))return json({error:`Payroll cannot move directly from ${run.status} to ${body.toStatus}.`},409);if(body.toStatus==='approved'&&(await setting(env,'payroll.require_complete_attendance','true'))==='true'){const incomplete=await env.DB.prepare(`SELECT COUNT(*) AS count FROM payroll_items WHERE payroll_run_id=? AND CAST(json_extract(calculation_json,'$.incompleteDays') AS INTEGER)>0`).bind(run.id).first<{count:number}>();if(Number(incomplete?.count||0)>0)return json({error:`${incomplete?.count} payroll item(s) contain incomplete attendance. Resolve or formally override those attendance records before payroll approval.`,code:'INCOMPLETE_ATTENDANCE_BLOCKS_PAYROLL'},409)}await env.DB.batch([env.DB.prepare(`UPDATE payroll_runs SET status=?,approved_by=CASE WHEN ?='approved' THEN ? ELSE approved_by END,approved_at=CASE WHEN ?='approved' THEN CURRENT_TIMESTAMP ELSE approved_at END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.toStatus,body.toStatus,context.employee.id,body.toStatus,run.id),env.DB.prepare(`INSERT INTO payroll_approval_events(id,payroll_run_id,from_status,to_status,actor_employee_id,note) VALUES(?,?,?,?,?,?)`).bind(uid('payroll-event'),run.id,run.status,body.toStatus,context.employee.id,body.note||null),env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source) VALUES(?,?,?,'payroll','status_change','payroll_run',?,?,?,'web')`).bind(uid('audit'),context.employee.id,run.companyId,run.id,JSON.stringify({status:run.status}),JSON.stringify({status:body.toStatus,note:body.note||null}))]);return json({ok:true,status:body.toStatus})}
 
-export async function routePayroll(request:Request,env:PayrollEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/payroll/compensation'&&request.method==='GET')return listCompensation(request,env,context);if(url.pathname==='/api/payroll/compensation'&&request.method==='POST')return setCompensation(request,env,context);if(url.pathname==='/api/payroll/adjustments'&&request.method==='POST')return addAdjustment(request,env,context);if(url.pathname==='/api/payroll/runs'&&request.method==='GET')return listRuns(request,env,context);if(url.pathname==='/api/payroll/runs/draft'&&request.method==='POST')return draftRun(request,env,context);if(url.pathname==='/api/payroll/run'&&request.method==='GET')return runDetail(request,env,context);if(url.pathname==='/api/payroll/runs/status'&&request.method==='POST')return changeStatus(request,env,context);return null}
+export async function routePayroll(request:Request,env:PayrollEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/payroll/compensation'&&request.method==='GET')return listCompensation(request,env,context);if(url.pathname==='/api/payroll/compensation'&&request.method==='POST')return setCompensation(request,env,context);if(url.pathname==='/api/payroll/adjustments'&&request.method==='POST')return addAdjustment(request,env,context);if(url.pathname==='/api/payroll/adjustments/approve'&&request.method==='POST')return approveAdjustment(request,env,context);if(url.pathname==='/api/payroll/runs'&&request.method==='GET')return listRuns(request,env,context);if(url.pathname==='/api/payroll/runs/draft'&&request.method==='POST')return draftRun(request,env,context);if(url.pathname==='/api/payroll/run'&&request.method==='GET')return runDetail(request,env,context);if(url.pathname==='/api/payroll/runs/status'&&request.method==='POST')return changeStatus(request,env,context);return null}
