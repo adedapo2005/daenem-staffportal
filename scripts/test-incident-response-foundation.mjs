@@ -14,6 +14,7 @@ const checks = [
   ['location unavailable creation stays supported', worker.includes("latitude !== null ? 'degraded' : 'unavailable'")],
   ['incident, audit and initial location evidence commit atomically', worker.includes('const [inserted] = await env.DB.batch([') && worker.includes('SELECT ?,?,?,?,? WHERE changes()=1') && worker.includes('EXISTS(SELECT 1 FROM safety_incident_audit WHERE incident_id=? AND action=\'created\')')],
   ['detail read rechecks active company membership', worker.includes("const detailMatch = url.pathname.match(/^\\/api\\/incidents\\/([^/]+)$/)") && worker.includes('employee_company_memberships') && worker.includes("active=1")],
+  ['detail read requires incident permission for the incident company', worker.includes('canAccess(context, companyId)') && worker.includes("hasPermission(context, 'alerting.access', 'view', companyId)") && worker.includes("hasPermission(context, 'security.access', 'view', companyId)")],
   ['unauthorized detail reads remain neutral', worker.includes('if (!authorized) return neutral()')],
   ['terminal incidents do not expose live location', worker.includes("const terminal = ['resolved', 'cancelled'].includes(String(incident.status))") && worker.includes("safeIncident.locationStatus = 'ended'")],
 ];

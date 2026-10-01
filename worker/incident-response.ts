@@ -5,8 +5,8 @@ const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.
 const id = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 const neutral = () => json({ error: 'Incident not found.' }, 404);
 
-function canAccess(context: SessionContext) {
-  return hasPermission(context, 'alerting.access', 'view') || hasPermission(context, 'security.access', 'view');
+function canAccess(context: SessionContext, companyId: string) {
+  return hasPermission(context, 'alerting.access', 'view', companyId) || hasPermission(context, 'security.access', 'view', companyId);
 }
 
 async function scopedOperationId(companyId: string, operationId: string) {
@@ -61,7 +61,7 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
     if (!incident) return neutral();
     const isOwner = context.roles.some((role) => role.code === 'owner');
     const companyId = String(incident.companyId || '');
-    const authorized = isOwner || (canAccess(context) && Boolean(await env.DB.prepare(
+    const authorized = isOwner || (canAccess(context, companyId) && Boolean(await env.DB.prepare(
       'SELECT 1 FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1'
     ).bind(context.employee.id, companyId).first()));
     if (!authorized) return neutral();
@@ -77,6 +77,5 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
     }
     return json({ ok: true, incident: safeIncident });
   }
-  if (!canAccess(context)) return neutral();
   return json({ error: 'Incident route not found.' }, 404);
 }
