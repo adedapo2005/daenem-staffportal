@@ -514,12 +514,12 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       return json({ error: 'Choose between 1 and 500 provider-cost summary groups.' }, 400);
     }
     const groupBy = url.searchParams.get('groupBy');
-    if (groupBy !== null && groupBy !== 'service' && groupBy !== 'costCenter' && groupBy !== 'actorEmployee' && groupBy !== 'day' && groupBy !== 'action' && groupBy !== 'actorRole') {
+    if (groupBy !== null && groupBy !== 'service' && groupBy !== 'costCenter' && groupBy !== 'actorEmployee' && groupBy !== 'day' && groupBy !== 'action' && groupBy !== 'actorRole' && groupBy !== 'pricing') {
       return json({ error: 'Choose a valid provider-cost summary grouping.' }, 400);
     }
-    const groupColumn = groupBy === 'service' ? 'service' : groupBy === 'costCenter' ? 'cost_center_id' : groupBy === 'actorEmployee' ? 'actor_employee_id' : groupBy === 'day' ? "strftime('%Y-%m-%d',occurred_at)" : groupBy === 'action' ? 'action' : groupBy === 'actorRole' ? 'actor_role_code' : null;
-    const groupField = groupBy === 'service' ? 'service' : groupBy === 'costCenter' ? 'costCenterId' : groupBy === 'day' ? 'day' : groupBy === 'action' ? 'action' : groupBy === 'actorRole' ? 'actorRoleCode' : 'actorEmployeeId';
-    const markedGrouping = groupBy === 'costCenter' || groupBy === 'actorEmployee' || groupBy === 'day' || groupBy === 'action' || groupBy === 'actorRole';
+    const groupColumn = groupBy === 'service' ? 'service' : groupBy === 'costCenter' ? 'cost_center_id' : groupBy === 'actorEmployee' ? 'actor_employee_id' : groupBy === 'day' ? "strftime('%Y-%m-%d',occurred_at)" : groupBy === 'action' ? 'action' : groupBy === 'actorRole' ? 'actor_role_code' : groupBy === 'pricing' ? 'pricing_id' : null;
+    const groupField = groupBy === 'service' ? 'service' : groupBy === 'costCenter' ? 'costCenterId' : groupBy === 'day' ? 'day' : groupBy === 'action' ? 'action' : groupBy === 'actorRole' ? 'actorRoleCode' : groupBy === 'pricing' ? 'pricingId' : 'actorEmployeeId';
+    const markedGrouping = groupBy === 'costCenter' || groupBy === 'actorEmployee' || groupBy === 'day' || groupBy === 'action' || groupBy === 'actorRole' || groupBy === 'pricing';
     const cursor = url.searchParams.get('cursor');
     let after: (string | null)[] | null = null;
     if (cursor !== null) {
