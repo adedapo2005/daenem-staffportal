@@ -2,6 +2,7 @@ import { getSessionContext, hasPermission, routeAuth, type AccessLevel, type Aut
 import { readSignInConfig } from './theme-preferences';
 import { DASHBOARD_FIELD_PERMISSIONS, type DashboardAggregateField } from '../src/dashboard-capabilities';
 import { readGoogleWeather, readWeatherConfiguration } from './weather-provider';
+import { routeIncidentResponse } from './incident-response';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -432,6 +433,8 @@ export default {
       if (url.pathname === '/api/ai/guide/catalog' && request.method === 'GET') return securityHeaders(await aiGuideCatalog(context));
       if (url.pathname === '/api/dashboard/summary' && request.method === 'GET') return securityHeaders(await dashboardSummary(request, env, context));
       if (url.pathname === '/api/security/recent' && request.method === 'GET') return securityHeaders(await recentSecurity(request, env, context));
+      const incidentResponse = await routeIncidentResponse(request, env, context);
+      if (incidentResponse) return securityHeaders(incidentResponse);
       if (url.pathname === '/api/admin/roles' && request.method === 'GET') return securityHeaders(await rolesForCompany(request, env, context));
       return securityHeaders(json({ error: 'API route not found.' }, 404));
     }
