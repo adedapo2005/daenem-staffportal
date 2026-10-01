@@ -38,15 +38,15 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
     const summary = String(body.summary || '').trim().slice(0, 1000) || null;
     const scopedId = await scopedOperationId(companyId, operationId);
     const incidentId = id('incident'), now = new Date().toISOString(), locationStatus = latitude !== null ? 'degraded' : 'unavailable';
-    const inserted = await env.DB.prepare(`INSERT INTO safety_incidents(id,operation_id,company_id,reporter_employee_id,incident_type,location_status,current_latitude,current_longitude,current_accuracy_m,location_updated_at,location_source,summary) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(operation_id) DO NOTHING`).bind(incidentId, scopedId, companyId, context.employee.id, incidentType, locationStatus, latitude, longitude, accuracy, latitude !== null ? now : null, locationSource, summary).run();
+    const [inserted] = await env.DB.batch([
+      env.DB.prepare(`INSERT INTO safety_incidents(id,operation_id,company_id,reporter_employee_id,incident_type,location_status,current_latitude,current_longitude,current_accuracy_m,location_updated_at,location_source,summary) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(operation_id) DO NOTHING`).bind(incidentId, scopedId, companyId, context.employee.id, incidentType, locationStatus, latitude, longitude, accuracy, latitude !== null ? now : null, locationSource, summary),
+      env.DB.prepare(`INSERT INTO safety_incident_audit(id,incident_id,actor_employee_id,action,details_json) SELECT ?,?,?,?,? WHERE changes()=1`).bind(id('incident-audit'), incidentId, context.employee.id, 'created', JSON.stringify({ locationStatus })),
+      env.DB.prepare(`INSERT INTO safety_incident_location_events(id,incident_id,latitude,longitude,accuracy_m,source,recorded_at) SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM safety_incident_audit WHERE incident_id=? AND action='created') AND ? IS NOT NULL AND ? IS NOT NULL`).bind(id('incident-location'), incidentId, latitude, longitude, accuracy, locationSource || 'reported', now, incidentId, latitude, longitude),
+    ]);
     if (Number(inserted.meta?.changes || 0) === 0) {
       const existing = await env.DB.prepare('SELECT id,status,location_status AS locationStatus FROM safety_incidents WHERE operation_id=? AND company_id=?').bind(scopedId, companyId).first<Record<string, unknown>>();
       return existing ? json({ ok: true, created: false, incident: existing }) : neutral();
     }
-    await env.DB.batch([
-      env.DB.prepare(`INSERT INTO safety_incident_audit(id,incident_id,actor_employee_id,action,details_json) VALUES(?,?,?,?,?)`).bind(id('incident-audit'), incidentId, context.employee.id, 'created', JSON.stringify({ locationStatus })),
-      ...(latitude !== null && longitude !== null ? [env.DB.prepare(`INSERT INTO safety_incident_location_events(id,incident_id,latitude,longitude,accuracy_m,source,recorded_at) VALUES(?,?,?,?,?,?,?)`).bind(id('incident-location'), incidentId, latitude, longitude, accuracy, locationSource || 'reported', now)] : []),
-    ]);
     return json({ ok: true, created: true, incident: { id: incidentId, status: 'open', locationStatus } }, 201);
   }
   if (!canAccess(context)) return neutral();

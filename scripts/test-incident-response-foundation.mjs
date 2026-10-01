@@ -12,5 +12,6 @@ const checks = [
   ['idempotency key is company scoped and opaque', worker.includes('scopedOperationId(companyId, operationId)') && worker.includes('WHERE operation_id=? AND company_id=?')],
   ['concurrent retries do not create duplicate incidents', worker.includes('ON CONFLICT(operation_id) DO NOTHING') && worker.includes('inserted.meta?.changes')],
   ['location unavailable creation stays supported', worker.includes("latitude !== null ? 'degraded' : 'unavailable'")],
+  ['incident, audit and initial location evidence commit atomically', worker.includes('const [inserted] = await env.DB.batch([') && worker.includes('SELECT ?,?,?,?,? WHERE changes()=1') && worker.includes('EXISTS(SELECT 1 FROM safety_incident_audit WHERE incident_id=? AND action=\'created\')')],
 ];
 for (const [name, ok] of checks) { if (!ok) throw new Error(`FAIL: ${name}`); console.log(`PASS: ${name}`); }
