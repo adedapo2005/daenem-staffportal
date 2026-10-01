@@ -5,7 +5,7 @@ const source = await readFile(new URL('../worker/financial-gateway.ts', import.m
 const matcherStart = source.indexOf('const reconciliationImportDetail =');
 const matcherEnd = source.indexOf("if (url.pathname === '/api/financial-gateway/pricing/admin')", matcherStart);
 const routeStart = source.indexOf("if (reconciliationImportDetail && request.method === 'GET')");
-const routeEnd = source.indexOf("if (url.pathname === '/api/financial-gateway/cost-summary')", routeStart);
+const routeEnd = source.indexOf("if (reconciliationReview && request.method === 'POST')", routeStart);
 const matcher = source.slice(matcherStart, matcherEnd);
 const route = source.slice(routeStart, routeEnd);
 

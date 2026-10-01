@@ -243,7 +243,8 @@ async function maintainPricing(request: Request, env: FinancialGatewayEnv, conte
 export async function routeFinancialGateway(request: Request, env: FinancialGatewayEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
   const reconciliationImportDetail = url.pathname.match(/^\/api\/financial-gateway\/reconciliation-imports\/([A-Za-z0-9:_-]{1,160})$/);
-  if ((!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary', '/api/financial-gateway/reconciliation-imports', '/api/financial-gateway/routing-policies'].includes(url.pathname) && !reconciliationImportDetail) || !['GET', 'POST'].includes(request.method)) return null;
+  const reconciliationReview = url.pathname.match(/^\/api\/financial-gateway\/reconciliation-imports\/([A-Za-z0-9:_-]{1,160})\/review$/);
+  if ((!['/api/financial-gateway/pricing', '/api/financial-gateway/pricing/admin', '/api/financial-gateway/estimate', '/api/financial-gateway/budgets', '/api/financial-gateway/cost-events', '/api/financial-gateway/cost-summary', '/api/financial-gateway/reconciliation-imports', '/api/financial-gateway/routing-policies'].includes(url.pathname) && !reconciliationImportDetail && !reconciliationReview) || !['GET', 'POST'].includes(request.method)) return null;
 
   if (url.pathname === '/api/financial-gateway/routing-policies') {
     const companyIds = [...new Set(context.companies.map((company) => company.id).filter((id) => PRICING_COMPANIES.has(id)))];
@@ -504,6 +505,62 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
       WHERE import_id=? ORDER BY row_number LIMIT 100
     `).bind(importId).all<Record<string, unknown>>();
     return json({ reconciliationImport, rows: rows.results || [], visibleCompanyIds: scopedCompanyIds });
+  }
+
+  if (reconciliationReview && request.method === 'POST') {
+    // Row classification is an evidence review only. Keep the write narrow,
+    // owner-authorized until reviewer roles are explicitly configured, and
+    // compare-and-set the prior classification so concurrent reviews cannot
+    // overwrite one another silently.
+    if (!owner) return json({ error: 'Owner reconciliation review access is required.' }, 403);
+    let body: Record<string, unknown>;
+    try {
+      const rawBody = await request.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 16_000) return json({ error: 'Reconciliation review is too large.' }, 413);
+      const parsed = JSON.parse(rawBody) as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return json({ error: 'Invalid reconciliation review.' }, 400);
+      body = parsed as Record<string, unknown>;
+    } catch { return json({ error: 'Invalid reconciliation review.' }, 400); }
+    const importId = reconciliationReview[1];
+    const companyId = typeof body.companyId === 'string' ? body.companyId : '';
+    const rowNumber = typeof body.rowNumber === 'number' ? body.rowNumber : NaN;
+    const expectedStatus = typeof body.expectedStatus === 'string' ? body.expectedStatus : '';
+    const expectedCandidateReference = body.expectedCandidateReference == null ? null
+      : typeof body.expectedCandidateReference === 'string' ? body.expectedCandidateReference : '';
+    const nextStatus = typeof body.status === 'string' ? body.status : '';
+    const candidateReference = body.candidateReference == null ? null
+      : typeof body.candidateReference === 'string' ? body.candidateReference.trim() : '';
+    const allowedStatuses = ['unmatched', 'partial', 'exact', 'overpayment', 'duplicate', 'reversed', 'refunded'];
+    if (!companyIds.includes(companyId) || !Number.isInteger(rowNumber) || Number(rowNumber) < 1 || Number(rowNumber) > 100 ||
+        !allowedStatuses.includes(String(expectedStatus)) || !allowedStatuses.includes(String(nextStatus)) ||
+        (expectedCandidateReference !== null && typeof expectedCandidateReference !== 'string') ||
+        (typeof expectedCandidateReference === 'string' && expectedCandidateReference.length > 200) ||
+        (candidateReference !== null && (!candidateReference || candidateReference.length > 200)) ||
+        (nextStatus !== 'unmatched' && !candidateReference)) {
+      return json({ error: 'Business, row, expected review state and a valid evidence classification are required.' }, 400);
+    }
+    if (expectedStatus === nextStatus && expectedCandidateReference === candidateReference) {
+      return json({ error: 'The reconciliation review must change the current classification.' }, 400);
+    }
+    const now = new Date().toISOString();
+    const [updated] = await env.DB.batch([
+      env.DB.prepare(`UPDATE financial_reconciliation_import_rows
+        SET reconciliation_status=?,candidate_reference=?,reviewed_by=?,reviewed_at=?
+        WHERE import_id=? AND row_number=? AND reconciliation_status=? AND candidate_reference IS ?
+          AND EXISTS(SELECT 1 FROM financial_reconciliation_imports WHERE id=? AND company_id=?)`)
+        .bind(nextStatus, candidateReference, context.employee.id, now, importId, rowNumber,
+          expectedStatus, expectedCandidateReference, importId, companyId),
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source)
+        SELECT ?,?,?, 'financial_gateway','review_reconciliation_row','financial_reconciliation_import_row',?,?,?, 'web'
+        WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_reconciliation_imports WHERE id=? AND company_id=?)`)
+        .bind(`audit-${crypto.randomUUID()}`, context.employee.id, companyId, `${importId}:${rowNumber}`,
+          JSON.stringify({ status: expectedStatus, candidateReference: expectedCandidateReference }),
+          JSON.stringify({ status: nextStatus, candidateReference, reviewedAt: now }), importId, companyId),
+    ]);
+    if (Number(updated.meta?.changes || 0) !== 1) {
+      return json({ error: 'The reconciliation row was not found or changed. Reload the evidence and try again.' }, 409);
+    }
+    return json({ ok: true, importId, companyId, rowNumber, status: nextStatus, candidateReference, reviewedAt: now });
   }
 
   if (url.pathname === '/api/financial-gateway/cost-summary') {
