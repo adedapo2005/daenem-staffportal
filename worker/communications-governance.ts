@@ -453,7 +453,8 @@ async function createTemplateMapping(request:Request,env:GovernanceEnv,context:E
  }
  const event=eventById(template.eventId);
  const id=uid('comm-template-map');
- const [created,audited]=await env.DB.batch([
+ let created:D1Result,audited:D1Result;
+ try{[created,audited]=await env.DB.batch([
   env.DB.prepare(`
    INSERT INTO communication_template_mappings(
     id,template_id,company_id,use_case_id,provider_template_name,language,category,
@@ -469,7 +470,11 @@ async function createTemplateMapping(request:Request,env:GovernanceEnv,context:E
    FROM communication_template_mappings WHERE id=? AND company_id=? AND enabled=0 AND status='draft'
   `).bind(uid('audit'),context.employee.id,companyId,
    JSON.stringify({useCaseId:template.eventId,templateId:template.id,enabled:false,status:'draft'}),id,companyId),
- ]);
+ ]);}catch(error){
+  if(error instanceof Error&&/unique constraint/i.test(error.message))
+   return json({error:'A mapping revision was created concurrently. Refresh and try again.'},409);
+  throw error;
+ }
  if(Number(created.meta?.changes||0)!==1||Number(audited.meta?.changes||0)!==1){
   return json({error:'Template mapping could not be created.'},409);
  }
