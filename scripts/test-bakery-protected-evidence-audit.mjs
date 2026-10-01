@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const source = await readFile(new URL('../worker/bakery-accountability.ts', import.meta.url), 'utf8');
+const uploadStart = source.indexOf('async function uploadInvestigationEvidence(');
+const uploadEnd = source.indexOf('async function streamInvestigationEvidence', uploadStart);
+assert.ok(uploadStart >= 0 && uploadEnd > uploadStart, 'evidence upload handler must exist');
+const uploadHandler = source.slice(uploadStart, uploadEnd);
+assert.match(uploadHandler, /actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id/);
+assert.match(uploadHandler, /investigation_evidence_uploaded/);
+assert.match(uploadHandler, /requestCorrelationId\(request\)/, 'upload audit must preserve request correlation');
+
 const start = source.indexOf('async function streamInvestigationEvidence(');
 const end = source.indexOf('async function listInvestigationEvidence', start);
 assert.ok(start >= 0 && end > start, 'evidence stream handler must exist');
