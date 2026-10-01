@@ -49,6 +49,34 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
     }
     return json({ ok: true, created: true, incident: { id: incidentId, status: 'open', locationStatus } }, 201);
   }
+  const detailMatch = url.pathname.match(/^\/api\/incidents\/([^/]+)$/);
+  if (detailMatch && request.method === 'GET') {
+    const incidentId = decodeURIComponent(detailMatch[1]);
+    if (!incidentId || incidentId.length > 160) return neutral();
+    const incident = await env.DB.prepare(`SELECT id,company_id AS companyId,incident_type AS incidentType,status,location_status AS locationStatus,
+      current_latitude AS currentLatitude,current_longitude AS currentLongitude,current_accuracy_m AS currentAccuracyM,
+      location_updated_at AS locationUpdatedAt,location_source AS locationSource,tracking_started_at AS trackingStartedAt,
+      tracking_ended_at AS trackingEndedAt,summary,created_at AS createdAt,updated_at AS updatedAt
+      FROM safety_incidents WHERE id=?`).bind(incidentId).first<Record<string, unknown>>();
+    if (!incident) return neutral();
+    const isOwner = context.roles.some((role) => role.code === 'owner');
+    const companyId = String(incident.companyId || '');
+    const authorized = isOwner || (canAccess(context) && Boolean(await env.DB.prepare(
+      'SELECT 1 FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1'
+    ).bind(context.employee.id, companyId).first()));
+    if (!authorized) return neutral();
+    const terminal = ['resolved', 'cancelled'].includes(String(incident.status));
+    const safeIncident = { ...incident };
+    if (terminal) {
+      safeIncident.currentLatitude = null;
+      safeIncident.currentLongitude = null;
+      safeIncident.currentAccuracyM = null;
+      safeIncident.locationUpdatedAt = null;
+      safeIncident.locationSource = null;
+      safeIncident.locationStatus = 'ended';
+    }
+    return json({ ok: true, incident: safeIncident });
+  }
   if (!canAccess(context)) return neutral();
   return json({ error: 'Incident route not found.' }, 404);
 }
