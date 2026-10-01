@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 const migration = fs.readFileSync('migrations/0076_incident_response_foundation.sql', 'utf8');
 const worker = fs.readFileSync('worker/incident-response.ts', 'utf8');
+const entry = fs.readFileSync('worker/app-entry.ts', 'utf8');
 const checks = [
+  ['effective application entry routes incidents to the migration-aligned incident authority', entry.includes("import { routeIncidentResponse } from './incident-response'") && entry.includes('const response = await routeIncidentResponse(request, env, context)') && !entry.includes("import { routeIncidents } from './incidents'")],
   ['operation id uniqueness', migration.includes('operation_id TEXT NOT NULL UNIQUE')],
   ['location unavailable is valid', migration.includes("location_status IN ('live','degraded','paused','unavailable','ended')") && worker.includes("'unavailable'")],
   ['neutral unauthorized denial', worker.includes("const neutral = () => json({ error: 'Incident not found.' }, 404)")],

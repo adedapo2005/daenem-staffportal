@@ -3,7 +3,7 @@ import { getSessionContext, type AuthEnv } from './auth';
 import { routeBroadcasts } from './broadcasts';
 import { routeForms } from './forms';
 import { routeFacilities } from './facilities';
-import { routeIncidents } from './incidents';
+import { routeIncidentResponse } from './incident-response';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -47,7 +47,7 @@ export default {
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/incidents')) {
-        const response = await routeIncidents(request, env, context);
+        const response = await routeIncidentResponse(request, env, context);
         if (response) return secure(response);
       }
       return secure(json({ error: 'API route not found.' }, 404));
