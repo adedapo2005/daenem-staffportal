@@ -38,6 +38,7 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
           calls.push({ table, sql, args });
           return {
             all: async () => {
+              if (sql.includes('1=0')) return { results: [] };
               const companies = ['company-a', 'company-b'].filter(companyId =>
                 !sql.includes(`${table === 'activity' ? 'al' : table === 'audit' ? 'au' : 'sl'}.company_id IN`) || args.includes(companyId));
               return { results: companies.map(companyId => ({
@@ -77,3 +78,12 @@ const owner = fixture({ owner: true });
 const ownerResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity'), owner.env, owner.context);
 const ownerEvents = await ownerResponse.json();
 check('Owner retains group-wide audit visibility across all three sources', ownerResponse.status === 200 && ownerEvents.events.length === 6 && owner.calls.length === 3 && owner.calls.every(call => !call.sql.includes('.company_id IN')));
+
+const auditOnly = fixture({ companyAAudit: 'view' });
+const auditOnlyResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?provenance=formal_audit'), auditOnly.env, auditOnly.context);
+const auditOnlyEvents = await auditOnlyResponse.json();
+check('provenance filter returns only formal audit events', auditOnlyResponse.status === 200 && auditOnlyEvents.events.length === 1 && auditOnlyEvents.events[0].provenance === 'formal_audit' && auditOnly.calls.find(call => call.table === 'activity').sql.includes('1=0') && auditOnly.calls.find(call => call.table === 'security').sql.includes('1=0'));
+const invalidFixture = fixture({ companyAAudit: 'view' });
+const invalidProvenance = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?provenance=internal'), invalidFixture.env, invalidFixture.context);
+check('invalid provenance is rejected before source queries', invalidProvenance.status === 400 && invalidFixture.calls.length === 0);
+check('formal audit projection includes before and after fields only on the audit source', auditOnly.calls.find(call => call.table === 'audit').sql.includes('before_json beforeJson') && auditOnly.calls.find(call => call.table === 'audit').sql.includes('after_json afterJson') && auditOnly.calls.find(call => call.table === 'security').sql.includes('details_json') === false);
