@@ -65,6 +65,11 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
       'SELECT 1 FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1'
     ).bind(context.employee.id, companyId).first()));
     if (!authorized) return neutral();
+    const locationHistoryResult = await env.DB.prepare(`SELECT latitude,longitude,accuracy_m AS accuracyM,source,recorded_at AS recordedAt
+      FROM (SELECT latitude,longitude,accuracy_m,source,recorded_at,id FROM safety_incident_location_events
+        WHERE incident_id=? ORDER BY recorded_at DESC,id DESC LIMIT 101)
+      ORDER BY recorded_at ASC,id ASC`).bind(incidentId).all<Record<string, unknown>>();
+    const locationHistory = locationHistoryResult.results || [];
     const terminal = ['resolved', 'cancelled'].includes(String(incident.status));
     const safeIncident = { ...incident };
     if (terminal) {
@@ -75,7 +80,7 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
       safeIncident.locationSource = null;
       safeIncident.locationStatus = 'ended';
     }
-    return json({ ok: true, incident: safeIncident });
+    return json({ ok: true, incident: safeIncident, locationHistory: locationHistory.slice(0, 100), locationHistoryHasMore: locationHistory.length > 100 });
   }
   return json({ error: 'Incident route not found.' }, 404);
 }

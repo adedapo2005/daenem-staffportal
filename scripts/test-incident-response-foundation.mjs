@@ -16,6 +16,7 @@ const checks = [
   ['detail read rechecks active company membership', worker.includes("const detailMatch = url.pathname.match(/^\\/api\\/incidents\\/([^/]+)$/)") && worker.includes('employee_company_memberships') && worker.includes("active=1")],
   ['detail read requires incident permission for the incident company', worker.includes('canAccess(context, companyId)') && worker.includes("hasPermission(context, 'alerting.access', 'view', companyId)") && worker.includes("hasPermission(context, 'security.access', 'view', companyId)")],
   ['unauthorized detail reads remain neutral', worker.includes('if (!authorized) return neutral()')],
+  ['authorized detail reads include bounded incident-scoped movement history with truncation signal', worker.includes('WHERE incident_id=? ORDER BY recorded_at DESC,id DESC LIMIT 101') && worker.includes('locationHistory.slice(0, 100)') && worker.includes('locationHistoryHasMore: locationHistory.length > 100') && worker.indexOf('if (!authorized) return neutral()') < worker.indexOf('const locationHistoryResult = await env.DB.prepare')],
   ['terminal incidents do not expose live location', worker.includes("const terminal = ['resolved', 'cancelled'].includes(String(incident.status))") && worker.includes("safeIncident.locationStatus = 'ended'")],
 ];
 for (const [name, ok] of checks) { if (!ok) throw new Error(`FAIL: ${name}`); console.log(`PASS: ${name}`); }
