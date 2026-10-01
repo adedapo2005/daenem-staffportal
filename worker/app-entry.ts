@@ -3,6 +3,7 @@ import { getSessionContext, type AuthEnv } from './auth';
 import { routeBroadcasts } from './broadcasts';
 import { routeForms } from './forms';
 import { routeFacilities } from './facilities';
+import { routeIncidents } from './incidents';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -30,7 +31,7 @@ function secure(response: Response) {
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/api/broadcasts') || url.pathname.startsWith('/api/forms') || url.pathname.startsWith('/api/facilities')) {
+    if (url.pathname.startsWith('/api/broadcasts') || url.pathname.startsWith('/api/forms') || url.pathname.startsWith('/api/facilities') || url.pathname.startsWith('/api/incidents')) {
       const context = await getSessionContext(request, env);
       if (!context) return secure(json({ error: 'Authentication required.' }, 401));
       if (url.pathname.startsWith('/api/broadcasts')) {
@@ -43,6 +44,10 @@ export default {
       }
       if (url.pathname.startsWith('/api/facilities')) {
         const response = await routeFacilities(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/incidents')) {
+        const response = await routeIncidents(request, env, context);
         if (response) return secure(response);
       }
       return secure(json({ error: 'API route not found.' }, 404));
