@@ -15,6 +15,7 @@ const functionBody = (name, nextName) => {
 
 const overview = functionBody('hrOverview', 'hrEmployees');
 const employees = functionBody('hrEmployees', 'saveHrDetails');
+const detail = functionBody('hrEmployeeDetail', 'saveHrDetails');
 const deny = "!companyId||!companyAllowed(c,companyId)||!canCompany(c,'hr.access','view',companyId)";
 
 check('Company B without HR permission is denied before overview queries', overview.includes(deny) && overview.indexOf(deny) < overview.indexOf('env.DB.prepare'));
@@ -31,6 +32,7 @@ check('Owner retains explicit group-wide company authority through canCompany',
 check('denial response is neutral and non-confirming',
   overview.includes("{error:'HR overview is unavailable.'},404") &&
   employees.includes("{error:'HR employee list is unavailable.'},404"));
+check('employee detail requires target-company HR view before querying', detail.includes("!companyId||!employeeId||!companyAllowed(c,companyId)||!canCompany(c,'hr.access','view',companyId)") && detail.indexOf("!companyId||!employeeId||!companyAllowed(c,companyId)||!canCompany(c,'hr.access','view',companyId)") < detail.indexOf('env.DB.prepare') && detail.includes("{error:'HR employee detail is unavailable.'},404"));
 
 const executable = source.replace(
   "import { hasPermission, type AuthEnv, type SessionContext } from './auth';",
@@ -114,4 +116,16 @@ for (const path of ['/api/hr/overview?companyId=company-b', '/api/hr/employees?c
   const owner = fixture({ owner: true });
   const ownerResponse = await routeGroupErp(new Request(`https://staffportal.test${path}`), owner.env, owner.context);
   check(`${path.split('?')[0]} preserves Owner group-wide authority`, ownerResponse.status === 200);
+}
+
+for (const [label, contextOptions, expected] of [
+  ['denies Company B employee detail without Company B HR', {}, 404],
+  ['permits authorized Company B employee detail', { companyBPermission: 'view' }, 200],
+  ['preserves Owner employee detail authority', { owner: true }, 200]
+]) {
+  const fixtureState = fixture(contextOptions);
+  const response = await routeGroupErp(new Request('https://staffportal.test/api/hr/employee?companyId=company-b&employeeId=employee-b'), fixtureState.env, fixtureState.context);
+  check(label, response.status === expected);
+  if (expected === 404) check('employee detail denial performs zero Company B reads', fixtureState.calls.length === 0 && fixtureState.writes.length === 0);
+  else check(`${label} binds Company B`, fixtureState.calls.length > 0 && fixtureState.calls.every(call => call.args.includes('company-b')));
 }
