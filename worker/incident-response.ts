@@ -52,8 +52,10 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
       env.DB.prepare(`INSERT INTO safety_incident_location_events(id,incident_id,latitude,longitude,accuracy_m,source,recorded_at) SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM safety_incident_audit WHERE incident_id=? AND action='created') AND ? IS NOT NULL AND ? IS NOT NULL`).bind(id('incident-location'), incidentId, latitude, longitude, accuracy, locationSource || 'reported', now, incidentId, latitude, longitude),
     ]);
     if (Number(inserted.meta?.changes || 0) === 0) {
-      const existing = await env.DB.prepare('SELECT id,status,location_status AS locationStatus FROM safety_incidents WHERE operation_id=? AND company_id=?').bind(scopedId, companyId).first<Record<string, unknown>>();
-      return existing ? json({ ok: true, created: false, incident: existing }) : neutral();
+      const existing = await env.DB.prepare('SELECT id,reporter_employee_id AS reporterEmployeeId,status,location_status AS locationStatus FROM safety_incidents WHERE operation_id=? AND company_id=?').bind(scopedId, companyId).first<Record<string, unknown>>();
+      return existing && existing.reporterEmployeeId === context.employee.id
+        ? json({ ok: true, created: false, incident: { id: existing.id, status: existing.status, locationStatus: existing.locationStatus } })
+        : neutral();
     }
     return json({ ok: true, created: true, incident: { id: incidentId, status: 'open', locationStatus } }, 201);
   }

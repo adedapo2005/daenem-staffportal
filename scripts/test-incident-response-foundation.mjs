@@ -11,6 +11,7 @@ const checks = [
   ['Owner retains group-wide incident creation authority', worker.includes("context.roles.some((role) => role.code === 'owner')") && worker.includes('if (!membership && !isOwner) return neutral()')],
   ['idempotency key is company scoped and opaque', worker.includes('scopedOperationId(companyId, operationId)') && worker.includes('WHERE operation_id=? AND company_id=?')],
   ['concurrent retries do not create duplicate incidents', worker.includes('ON CONFLICT(operation_id) DO NOTHING') && worker.includes('inserted.meta?.changes')],
+  ['idempotent replay discloses incident details only to the original reporter', worker.includes('reporter_employee_id AS reporterEmployeeId') && worker.includes('existing.reporterEmployeeId === context.employee.id') && worker.includes(': neutral()')],
   ['location unavailable creation stays supported', worker.includes("latitude !== null ? 'degraded' : 'unavailable'")],
   ['incident, audit and initial location evidence commit atomically', worker.includes('const [inserted] = await env.DB.batch([') && worker.includes('SELECT ?,?,?,?,? WHERE changes()=1') && worker.includes('EXISTS(SELECT 1 FROM safety_incident_audit WHERE incident_id=? AND action=\'created\')')],
   ['detail read rechecks active company membership', worker.includes("const detailMatch = url.pathname.match(/^\\/api\\/incidents\\/([^/]+)$/)") && worker.includes('employee_company_memberships') && worker.includes("active=1")],
