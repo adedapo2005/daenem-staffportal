@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+const levels=['none','view','create','edit','approve','manage'];
+const hasPermission=(context,code,minimum='view',companyId)=>levels.indexOf((companyId?context.companyPermissions?.[companyId]?.[code]:context.permissions?.[code])||'none')>=levels.indexOf(minimum);
+const isOwner=(context)=>context.roles.some((role)=>role.code==='owner');
+const allowed=(context,companyId)=>isOwner(context)||(context.companies.some((company)=>company.id===companyId)&&hasPermission(context,'payroll.access','edit',companyId));
+const multi={roles:[],companies:[{id:'A'},{id:'B'}],permissions:{'payroll.access':'edit'},companyPermissions:{A:{'payroll.access':'edit'},B:{'payroll.access':'none'}}};
+assert.equal(allowed(multi,'B'),false);
+assert.equal(allowed(multi,'A'),true);
+assert.equal(allowed({...multi,roles:[{code:'owner'}]},'B'),true);
+console.log('PASS payroll company-scope workflow closure 3/3');
