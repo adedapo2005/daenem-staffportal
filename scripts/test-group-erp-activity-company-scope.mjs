@@ -30,13 +30,23 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
   };
   const DB = {
     prepare(sql) {
+      const table = sql.includes('FROM activity_logs') ? 'activity'
+        : sql.includes('FROM audit_logs') ? 'audit'
+          : sql.includes('FROM security_logs') ? 'security' : 'unknown';
       return {
         bind(...args) {
-          calls.push({ sql, args });
+          calls.push({ table, sql, args });
           return {
-            all: async () => ({ results: ['company-a', 'company-b']
-              .filter(companyId => !sql.includes('al.company_id IN') || args.slice(9, -1).includes(companyId))
-              .map(companyId => ({ id: `event-${companyId}`, companyId })) })
+            all: async () => {
+              const companies = ['company-a', 'company-b'].filter(companyId =>
+                !sql.includes(`${table === 'activity' ? 'al' : table === 'audit' ? 'au' : 'sl'}.company_id IN`) || args.includes(companyId));
+              return { results: companies.map(companyId => ({
+                id: `${table}-${companyId}`,
+                companyId,
+                provenance: table === 'activity' ? 'client_telemetry' : table === 'audit' ? 'formal_audit' : 'formal_security',
+                occurredAt: '2026-10-01 12:00:00'
+              })) };
+            }
           };
         }
       };
@@ -48,19 +58,22 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
 const denied = fixture();
 const deniedResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity'), denied.env, denied.context);
 check('non-Owner without company Audit Explorer authority receives neutral denial', deniedResponse.status === 404 && (await deniedResponse.json()).error === 'Audit Explorer is unavailable.');
-check('no-authority denial performs no activity-log query', denied.calls.length === 0);
+check('no-authority denial performs no activity, audit or security query', denied.calls.length === 0);
 
 const companyAOnly = fixture({ companyAAudit: 'view' });
 const companyAResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity'), companyAOnly.env, companyAOnly.context);
 const companyAEvents = await companyAResponse.json();
-check('non-Owner audit query is SQL-scoped to authorized companies', companyAOnly.calls.length === 1 && companyAOnly.calls[0].sql.includes('al.company_id IN (?)') && companyAOnly.calls[0].args.slice(9, -1).join(',') === 'company-a');
-check('Company A reader receives no Company B activity', companyAResponse.status === 200 && companyAEvents.events.length === 1 && companyAEvents.events[0].companyId === 'company-a');
+check('consolidated read queries all three sources with target-company authorization', companyAOnly.calls.length === 3 && companyAOnly.calls.every(call => call.sql.includes(`${call.table === 'activity' ? 'al' : call.table === 'audit' ? 'au' : 'sl'}.company_id IN (?)`) && call.args.includes('company-a')));
+check('Company A reader receives no Company B activity, audit or security event', companyAResponse.status === 200 && companyAEvents.events.length === 3 && companyAEvents.events.every(event => event.companyId === 'company-a'));
+check('consolidated events label client telemetry and formal audit/security provenance', ['client_telemetry', 'formal_audit', 'formal_security'].every(provenance => companyAEvents.events.some(event => event.provenance === provenance)));
+check('security details blobs are excluded from the read projection', companyAOnly.calls.find(call => call.table === 'security').sql.includes('details_json') === false);
 
 const companyBOnly = fixture({ companyBAudit: 'view' });
 const companyBResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?employeeId=employee-b'), companyBOnly.env, companyBOnly.context);
-check('Company B permission permits Company B audit queries only', companyBResponse.status === 200 && companyBOnly.calls[0].args.slice(9, -1).join(',') === 'company-b');
+const companyBEvents = await companyBResponse.json();
+check('Company B permission permits Company B audit queries only', companyBResponse.status === 200 && companyBOnly.calls.length === 3 && companyBOnly.calls.every(call => call.args.includes('company-b')) && companyBEvents.events.every(event => event.companyId === 'company-b'));
 
 const owner = fixture({ owner: true });
 const ownerResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity'), owner.env, owner.context);
 const ownerEvents = await ownerResponse.json();
-check('Owner retains group-wide audit visibility', ownerResponse.status === 200 && ownerEvents.events.length === 2 && !owner.calls[0].sql.includes('al.company_id IN'));
+check('Owner retains group-wide audit visibility across all three sources', ownerResponse.status === 200 && ownerEvents.events.length === 6 && owner.calls.length === 3 && owner.calls.every(call => !call.sql.includes('.company_id IN')));
