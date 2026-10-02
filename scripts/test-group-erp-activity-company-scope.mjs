@@ -88,3 +88,24 @@ const invalidFixture = fixture({ companyAAudit: 'view' });
 const invalidProvenance = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?provenance=internal'), invalidFixture.env, invalidFixture.context);
 check('invalid provenance is rejected before source queries', invalidProvenance.status === 400 && invalidFixture.calls.length === 0);
 check('formal audit projection includes before and after fields only on the audit source', auditOnly.calls.find(call => call.table === 'audit').sql.includes('before_json beforeJson') && auditOnly.calls.find(call => call.table === 'audit').sql.includes('after_json afterJson') && auditOnly.calls.find(call => call.table === 'security').sql.includes('details_json') === false);
+
+const crossCompanyFilter = fixture({ companyAAudit: 'view' });
+const crossCompanyFilterResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?companyId=company-b'), crossCompanyFilter.env, crossCompanyFilter.context);
+check('explicit company filter outside authorized scope gets neutral denial before all source queries', crossCompanyFilterResponse.status === 404 && (await crossCompanyFilterResponse.json()).error === 'Audit Explorer is unavailable.' && crossCompanyFilter.calls.length === 0);
+
+const filtered = fixture({ companyAAudit: 'view' });
+const filteredResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?companyId=company-a&action=record.update&recordId=record-7&from=2026-10-01T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z&outcome=denied&riskLevel=high&sessionId=session-2&device=Chrome'), filtered.env, filtered.context);
+const filteredEvents = await filteredResponse.json();
+check('business, action, record, time, outcome, risk, session and device filters reach only authorized company queries', filteredResponse.status === 200 && filtered.calls.length === 3 && filtered.calls.every(call => call.args.includes('company-a') && call.args.includes('record.update') && call.args.includes('record-7') && call.args.includes('2026-10-01T00:00:00Z') && call.args.includes('2026-10-02T00:00:00Z') && call.args.includes('session-2') && call.args.includes('%Chrome%')) && filtered.calls[0].args.includes('denied') && filtered.calls[2].args.includes('high') && filteredEvents.events.every(event => event.companyId === 'company-a'));
+
+const invalidRange = fixture({ companyAAudit: 'view' });
+const invalidRangeResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?from=2026-10-02&to=2026-10-01'), invalidRange.env, invalidRange.context);
+check('reversed or malformed time ranges are rejected before source queries', invalidRangeResponse.status === 400 && invalidRange.calls.length === 0);
+
+const invalidRisk = fixture({ companyAAudit: 'view' });
+const invalidRiskResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?riskLevel=secret'), invalidRisk.env, invalidRisk.context);
+check('invalid risk levels are rejected before source queries', invalidRiskResponse.status === 400 && invalidRisk.calls.length === 0);
+
+const invalidLimit = fixture({ companyAAudit: 'view' });
+const invalidLimitResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?limit=not-a-number'), invalidLimit.env, invalidLimit.context);
+check('malformed result limits use the bounded default instead of reaching D1', invalidLimitResponse.status === 200 && invalidLimit.calls.length === 3 && invalidLimit.calls.every(call => call.args.at(-1) === 100));
