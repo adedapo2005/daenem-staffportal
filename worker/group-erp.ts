@@ -22,11 +22,13 @@ function cfMeta(request:Request){const cf=(request as Request & {cf?:Record<stri
 function requestCorrelationId(request:Request){return (request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128)}
 const auditSensitiveKey=/(password|passcode|secret|token|otp|one.?time|authorization|cookie|account.?number|card.?number|cvv|pin|api.?key|private.?key|access.?key)/i;
 const auditSensitiveValue=/(?:bearer\s+[a-z0-9._~+\/-]+=*|eyJ[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(?<!\d)\d{8,20}(?!\d))/gi;
+const auditSensitiveAssignment=/(?:password|passcode|secret|token|otp|one.?time|authorization|cookie|api.?key|private.?key|access.?key|refresh.?token|client.?secret)\s*[:=]\s*[^\s,;]+/gi;
+function minimizeAuditText(value:string){return value.replace(auditSensitiveAssignment,match=>`${match.slice(0,match.search(/[:=]/))}=[redacted]`).replace(auditSensitiveValue,'[redacted]')}
 function safeAuditJson(value:unknown,depth=0):unknown{
  if(depth>4)return '[omitted]';
  if(value===null||typeof value==='boolean')return value;
  if(typeof value==='number')return Number.isInteger(value)&&value>=10000000&&value<=99999999999999999999?'[redacted]':value;
- if(typeof value==='string')return (value.length<=500?value:`${value.slice(0,500)}…`).replace(auditSensitiveValue,'[redacted]');
+ if(typeof value==='string')return minimizeAuditText(value.length<=500?value:`${value.slice(0,500)}…`);
  if(Array.isArray(value))return value.slice(0,50).map(item=>safeAuditJson(item,depth+1));
  if(typeof value!=='object')return '[omitted]';
  const clean:Record<string,unknown>={};
@@ -37,7 +39,7 @@ function safeAuditJsonText(value:unknown){
  if(value===null||value===undefined||value==='')return value;
  try{return JSON.stringify(safeAuditJson(typeof value==='string'?JSON.parse(value):value))}catch{return '[redacted]'}
 }
-function safeAuditText(value:unknown){if(value===null||value===undefined)return value;const text=String(value).replace(auditSensitiveValue,'[redacted]');return text.length<=500?text:`${text.slice(0,500)}…`}
+function safeAuditText(value:unknown){if(value===null||value===undefined)return value;const text=minimizeAuditText(String(value));return text.length<=500?text:`${text.slice(0,500)}…`}
 async function audit(request:Request,env:GroupErpEnv,c:SessionContext,module:string,action:string,entityType:string,entityId:string|undefined,after:unknown,companyId?:string){await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,?,?,?,?,?, 'web',?)`).bind(uid('audit'),c.employee.id,companyId||null,module,action,entityType,entityId||null,JSON.stringify(after||{}),requestCorrelationId(request)).run().catch(()=>undefined)}
 
 async function cryptoKey(env:GroupErpEnv){if(!env.AUTH_PEPPER)throw new Error('Secure payroll data key is unavailable.');const raw=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`daenem-payroll-bank-v1:${env.AUTH_PEPPER}`));return crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['encrypt','decrypt'])}
