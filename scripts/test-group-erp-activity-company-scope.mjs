@@ -16,7 +16,7 @@ const compiled = ts.transpileModule(executable, {
 }).outputText;
 const { routeGroupErp } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
-function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none', auditEntity = false } = {}) {
+function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none', auditEntity = false, auditTimelineRows } = {}) {
   const calls = [];
   const context = {
     roles: owner ? [{ code: 'owner' }] : [{ code: 'employee' }],
@@ -47,6 +47,15 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
             },
             all: async () => {
               if (sql.includes('1=0')) return { results: [] };
+              if (table === 'audit' && sql.includes('au.entity_type=?')) {
+                const rows = (auditTimelineRows || [{
+                  sourceId: 'audit-company-a', occurredAt: '2026-10-01 12:00:00', employeeId: 'actor', companyId: 'company-a',
+                  entityType: 'payroll_run', entityId: 'run-1', provenance: 'formal_audit', reason: 'Approved correction with account number 9876543210',
+                  beforeJson: '{"status":"draft","token":"secret-value"}', afterJson: '{"status":"reviewed"}'
+                }]).filter(row => !sql.includes('au.company_id IS ?') || args[2] === row.companyId);
+                rows.sort((left, right) => String(left.occurredAt).localeCompare(String(right.occurredAt)) * (sql.includes('ORDER BY au.occurred_at DESC') ? -1 : 1));
+                return { results: rows.slice(0, 100) };
+              }
               const companies = ['company-a', 'company-b'].filter(companyId =>
                 !sql.includes(`${table === 'activity' ? 'al' : table === 'audit' ? 'au' : 'sl'}.company_id IN`) || args.includes(companyId));
               return { results: companies.map(companyId => ({
@@ -116,7 +125,21 @@ check('formal audit detail applies policy-aware numeric text masking while prese
 const timelineDetail = fixture({ companyAAudit: 'view', auditEntity: true });
 const timelineResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a&includeTimeline=1'), timelineDetail.env, timelineDetail.context);
 const timelineBody = await timelineResponse.json();
-check('formal audit detail can return a bounded related-record timeline under the same company authorization', timelineResponse.status === 200 && timelineDetail.calls.length === 2 && timelineDetail.calls[1].sql.includes('au.entity_type=?') && timelineDetail.calls[1].sql.includes('au.company_id IN (?)') && timelineDetail.calls[1].args.includes('company-a') && timelineBody.event.sourceId === 'audit-company-a' && Array.isArray(timelineBody.timeline) && timelineBody.timeline.length === 1);
+check('formal audit detail can return a bounded related-record timeline under the selected company scope', timelineResponse.status === 200 && timelineDetail.calls.length === 2 && timelineDetail.calls[1].sql.includes('au.entity_type=?') && timelineDetail.calls[1].sql.includes('au.company_id IS ?') && timelineDetail.calls[1].args[2] === 'company-a' && timelineBody.event.sourceId === 'audit-company-a' && Array.isArray(timelineBody.timeline) && timelineBody.timeline.length === 1);
+const manyTimelineRows = Array.from({ length: 105 }, (_, index) => ({
+  sourceId: `audit-${String(index + 1).padStart(3, '0')}`, occurredAt: new Date(Date.UTC(2026, 9, 1, 12, index)).toISOString(), employeeId: 'actor',
+  companyId: 'company-a', entityType: 'payroll_run', entityId: 'run-1', provenance: 'formal_audit', reason: 'Approved correction with account number 9876543210',
+  beforeJson: '{"status":"draft","token":"secret-value"}', afterJson: '{"status":"reviewed"}'
+}));
+const recentTimelineFixture = fixture({ companyAAudit: 'view', auditEntity: true, auditTimelineRows: [...manyTimelineRows, {
+  sourceId: 'audit-cross-company', occurredAt: new Date(Date.UTC(2026, 9, 1, 12, 106)).toISOString(), employeeId: 'actor', companyId: 'company-b',
+  entityType: 'payroll_run', entityId: 'run-1', provenance: 'formal_audit', reason: 'Different company event', beforeJson: null, afterJson: null
+}] });
+const recentTimelineResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a&includeTimeline=1'), recentTimelineFixture.env, recentTimelineFixture.context);
+const recentTimelineBody = await recentTimelineResponse.json();
+const recentTimeline = recentTimelineBody.timeline || [];
+check('timeline bounds to the newest 100 audit rows and returns those rows chronologically', recentTimelineResponse.status === 200 && recentTimeline.length === 100 && recentTimeline[0].sourceId === 'audit-006' && recentTimeline.at(-1).sourceId === 'audit-105' && recentTimeline.every((row, index) => index === 0 || recentTimeline[index - 1].occurredAt <= row.occurredAt));
+check('newest timeline window stays within the selected record company and minimizes sensitive audit fields', recentTimelineFixture.calls[1].sql.includes('au.company_id IS ?') && recentTimelineFixture.calls[1].args[2] === 'company-a' && recentTimeline.every(row => row.companyId === 'company-a' && row.reason.includes('[redacted]') && row.beforeJson.includes('[redacted]')) && !JSON.stringify(recentTimeline).includes('secret-value'));
 
 const crossCompanyDetail = fixture({ companyBAudit: 'view' });
 const crossCompanyDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a'), crossCompanyDetail.env, crossCompanyDetail.context);
