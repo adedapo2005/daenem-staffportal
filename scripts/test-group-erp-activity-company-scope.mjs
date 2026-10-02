@@ -53,7 +53,12 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
                 id: `${table}-${companyId}`,
                 companyId,
                 provenance: table === 'activity' ? 'client_telemetry' : table === 'audit' ? 'formal_audit' : 'formal_security',
-                occurredAt: '2026-10-01 12:00:00'
+                occurredAt: '2026-10-01 12:00:00',
+                ...(table === 'audit' ? {
+                  reason: 'Approved correction with numeric reference 123456789012; cash amount 123456789012; account number 9876543210',
+                  beforeJson: '{"status":"draft","token":"secret-value","cashAmountKobo":123456789012}',
+                  afterJson: '{"status":"reviewed","apiKey":"private-value"}'
+                } : {})
               })) };
             }
           };
@@ -77,6 +82,8 @@ check('Company A reader receives no Company B activity, audit or security event'
 check('consolidated events label client telemetry and formal audit/security provenance', ['client_telemetry', 'formal_audit', 'formal_security'].every(provenance => companyAEvents.events.some(event => event.provenance === provenance)));
 check('consolidated events retain a canonical source record ID for bounded drill-down', companyAEvents.events.every(event => event.sourceId && event.sourceId === event.id));
 check('security details blobs are excluded from the read projection', companyAOnly.calls.find(call => call.table === 'security').sql.includes('details_json') === false);
+const listedAudit = companyAEvents.events.find(event => event.provenance === 'formal_audit');
+check('formal audit list redacts sensitive reason, before and after values while preserving allowed business amounts', listedAudit?.reason.includes('numeric reference [redacted]') && listedAudit.reason.includes('account number [redacted]') && listedAudit.reason.includes('cash amount 123456789012') && listedAudit.beforeJson.includes('"token":"[redacted]"') && listedAudit.beforeJson.includes('"cashAmountKobo":123456789012') && listedAudit.afterJson.includes('"apiKey":"[redacted]"') && !JSON.stringify(listedAudit).includes('secret-value') && !JSON.stringify(listedAudit).includes('private-value'));
 
 const companyBOnly = fixture({ companyBAudit: 'view' });
 const companyBResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?employeeId=employee-b'), companyBOnly.env, companyBOnly.context);
