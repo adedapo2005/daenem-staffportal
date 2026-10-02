@@ -37,6 +37,14 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
         bind(...args) {
           calls.push({ table, sql, args });
           return {
+            first: async () => {
+              if (!sql.includes('FROM audit_logs') || !sql.includes('au.id=?')) return null;
+              const authorized = !sql.includes('au.company_id IN') || args.includes('company-a');
+              return authorized ? {
+                sourceId: args[0], companyId: 'company-a', provenance: 'formal_audit',
+                reason: 'Approved correction', beforeJson: '{"status":"draft"}', afterJson: '{"status":"reviewed"}'
+              } : null;
+            },
             all: async () => {
               if (sql.includes('1=0')) return { results: [] };
               const companies = ['company-a', 'company-b'].filter(companyId =>
@@ -93,6 +101,23 @@ const invalidFixture = fixture({ companyAAudit: 'view' });
 const invalidProvenance = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?provenance=internal'), invalidFixture.env, invalidFixture.context);
 check('invalid provenance is rejected before source queries', invalidProvenance.status === 400 && invalidFixture.calls.length === 0);
 check('formal audit projection includes before and after fields only on the audit source', auditOnly.calls.find(call => call.table === 'audit').sql.includes('before_json beforeJson') && auditOnly.calls.find(call => call.table === 'audit').sql.includes('after_json afterJson') && auditOnly.calls.find(call => call.table === 'security').sql.includes('details_json') === false);
+
+const auditDetail = fixture({ companyAAudit: 'view' });
+const auditDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a'), auditDetail.env, auditDetail.context);
+const auditDetailBody = await auditDetailResponse.json();
+check('formal audit detail returns source-bound reason and before/after values within authorized company scope', auditDetailResponse.status === 200 && auditDetail.calls.length === 1 && auditDetail.calls[0].sql.includes('au.company_id IN (?)') && auditDetail.calls[0].args.includes('company-a') && auditDetailBody.event.sourceId === 'audit-company-a' && auditDetailBody.event.reason === 'Approved correction' && auditDetailBody.event.beforeJson.includes('draft') && auditDetailBody.event.afterJson.includes('reviewed'));
+
+const crossCompanyDetail = fixture({ companyBAudit: 'view' });
+const crossCompanyDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a'), crossCompanyDetail.env, crossCompanyDetail.context);
+check('cross-company audit detail receives neutral not-found with company predicate bound before disclosure', crossCompanyDetailResponse.status === 404 && (await crossCompanyDetailResponse.json()).error === 'Audit record is unavailable.' && crossCompanyDetail.calls.length === 1 && crossCompanyDetail.calls[0].sql.includes('au.company_id IN (?)') && crossCompanyDetail.calls[0].args.includes('company-b'));
+
+const ownerDetail = fixture({ owner: true });
+const ownerDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a'), ownerDetail.env, ownerDetail.context);
+check('Owner retains group-wide formal audit detail access', ownerDetailResponse.status === 200 && ownerDetail.calls.length === 1 && !ownerDetail.calls[0].sql.includes('au.company_id IN'));
+
+const unsupportedDetail = fixture({ companyAAudit: 'view' });
+const unsupportedDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_security&sourceId=security-company-a'), unsupportedDetail.env, unsupportedDetail.context);
+check('detail endpoint fails closed for non-formal-audit provenance without querying security details', unsupportedDetailResponse.status === 404 && unsupportedDetail.calls.length === 0);
 
 const crossCompanyFilter = fixture({ companyAAudit: 'view' });
 const crossCompanyFilterResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?companyId=company-b'), crossCompanyFilter.env, crossCompanyFilter.context);
