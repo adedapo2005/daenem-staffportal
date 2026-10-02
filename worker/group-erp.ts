@@ -1,4 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { previewAuditRetention } from './audit-retention';
 
 interface GroupErpEnv extends AuthEnv {
   FILES?: R2Bucket;
@@ -103,8 +104,9 @@ export async function routeGroupErp(request:Request,env:GroupErpEnv,c:SessionCon
  if(p==='/api/payroll/payment-batches/export'&&m==='GET')return exportPaymentBatch(request,env,c);
  if(p==='/api/search/suggest'&&m==='GET')return smartSearch(request,env,c);
  if(p==='/api/activity/record'&&m==='POST')return recordActivity(request,env,c);
- if(p==='/api/audit/activity/detail'&&m==='GET')return activityAuditDetail(request,env,c);
- if(p==='/api/audit/activity'&&m==='GET')return activityExplorer(request,env,c);
+  if(p==='/api/audit/activity/detail'&&m==='GET')return activityAuditDetail(request,env,c);
+  if(p==='/api/audit/activity'&&m==='GET')return activityExplorer(request,env,c);
+  if(p==='/api/audit/retention/preview'&&m==='GET')return previewAuditRetention(request,env,c);
  if(p==='/api/diagnostics/summary'&&m==='GET')return diagnostics(env,c);
  if(p==='/api/toolbox/run'&&m==='POST')return toolbox(request,env,c);
  return null;
