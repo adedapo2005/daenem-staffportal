@@ -14,6 +14,7 @@ const checks = [
   ['policy failure fails closed', worker.includes('return null') && worker.includes('Audit retention policy is unavailable.')],
   ['preview never deletes', worker.includes("deletionEnabled: false") && !worker.match(/\.prepare\([^)]*DELETE/i)],
   ['protected categories are explicit', worker.includes("'formal_audit', 'formal_security', 'financial', 'hr'")],
+  ['unclassified server activity is not presented as an eligible count', worker.includes('serverActivity: null') && worker.includes("serverActivity: 'category_classification_required'") && !/method\s*<>\s*'CLIENT'/.test(worker)],
   ['preview is Owner-only and neutral for others', worker.includes("if (!isOwner) return json({ error: 'Audit retention preview is unavailable.' }, 404)")],
   ['route is wired', groupErp.includes("p==='/api/audit/retention/preview'&&m==='GET'")],
 ];

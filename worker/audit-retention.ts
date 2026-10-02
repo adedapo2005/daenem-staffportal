@@ -54,10 +54,10 @@ export async function previewAuditRetention(request: Request, env: AuditRetentio
 
   const clientCutoff = new Date(Date.now() - policy.clientTelemetryDays * 86400000).toISOString();
   const serverCutoff = new Date(Date.now() - policy.serverActivityDays * 86400000).toISOString();
-  const [client, server] = await Promise.all([
-    env.DB.prepare(`SELECT COUNT(*) count FROM activity_logs WHERE method='CLIENT' AND occurred_at < ?`).bind(clientCutoff).first<{ count: number }>(),
-    env.DB.prepare(`SELECT COUNT(*) count FROM activity_logs WHERE method<>'CLIENT' AND occurred_at < ?`).bind(serverCutoff).first<{ count: number }>(),
-  ]);
+  // Server activity has no durable retention category yet. Counting every
+  // non-client row as eligible could include protected financial or HR history,
+  // so keep that candidate count unavailable until rows can be classified.
+  const client = await env.DB.prepare(`SELECT COUNT(*) count FROM activity_logs WHERE method='CLIENT' AND occurred_at < ?`).bind(clientCutoff).first<{ count: number }>();
 
   return json({
     mode: 'preview_only',
@@ -66,8 +66,9 @@ export async function previewAuditRetention(request: Request, env: AuditRetentio
     protectedCategories,
     candidates: {
       clientTelemetry: Number(client?.count || 0),
-      serverActivity: Number(server?.count || 0),
+      serverActivity: null,
     },
+    candidateAvailability: { serverActivity: 'category_classification_required' },
     cutoffs: { clientTelemetry: clientCutoff, serverActivity: serverCutoff },
   });
 }
