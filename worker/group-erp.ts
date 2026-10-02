@@ -21,10 +21,11 @@ function canCompany(c:SessionContext,p:string,l:AccessLevel,companyId:string){re
 function cfMeta(request:Request){const cf=(request as Request & {cf?:Record<string,unknown>}).cf||{};return{ip:request.headers.get('cf-connecting-ip')||'',country:String(cf.country||request.headers.get('cf-ipcountry')||''),colo:String(cf.colo||''),ua:request.headers.get('user-agent')||'',referer:request.headers.get('referer')||''}}
 function requestCorrelationId(request:Request){return (request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128)}
 const auditSensitiveKey=/(password|passcode|secret|token|otp|one.?time|authorization|cookie|account.?number|card.?number|cvv|pin|api.?key|private.?key|access.?key)/i;
+const auditSensitiveValue=/(?:bearer\s+[a-z0-9._~+\/-]+=*|eyJ[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(?<!\d)\d{8,20}(?!\d))/gi;
 function safeAuditJson(value:unknown,depth=0):unknown{
  if(depth>4)return '[omitted]';
  if(value===null||typeof value==='boolean'||typeof value==='number')return value;
- if(typeof value==='string')return value.length<=500?value.slice(0,500):`${value.slice(0,500)}…`;
+ if(typeof value==='string')return (value.length<=500?value:`${value.slice(0,500)}…`).replace(auditSensitiveValue,'[redacted]');
  if(Array.isArray(value))return value.slice(0,50).map(item=>safeAuditJson(item,depth+1));
  if(typeof value!=='object')return '[omitted]';
  const clean:Record<string,unknown>={};
