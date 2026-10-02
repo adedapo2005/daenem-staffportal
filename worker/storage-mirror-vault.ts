@@ -55,14 +55,25 @@ export async function resolveOneDriveOAuthTokens(env: StorageMirrorVaultEnv): Pr
     FROM storage_mirror_oauth_tokens WHERE id='microsoft_onedrive' LIMIT 1`)
     .first<{ accessTokenCiphertext: string; refreshTokenCiphertext: string; expiresAt: string; scopesJson: string }>();
   if (!row) return null;
+
+  let storedScopes: unknown;
   try {
-    const scopes = normalizeOneDriveScopes(JSON.parse(row.scopesJson));
-    return {
-      accessToken: await decryptSocialSecret(env, row.accessTokenCiphertext),
-      refreshToken: await decryptSocialSecret(env, row.refreshTokenCiphertext),
-      expiresAt: row.expiresAt,
-      scopes,
-    };
+    storedScopes = JSON.parse(row.scopesJson);
+  } catch {
+    throw new Error('ONEDRIVE_OAUTH_TOKEN_METADATA_INVALID');
+  }
+
+  let scopes: string[];
+  try {
+    scopes = normalizeOneDriveScopes(storedScopes);
+  } catch {
+    throw new Error('ONEDRIVE_OAUTH_TOKEN_SCOPE_POLICY_INVALID');
+  }
+
+  try {
+    const accessToken = await decryptSocialSecret(env, row.accessTokenCiphertext);
+    const refreshToken = await decryptSocialSecret(env, row.refreshTokenCiphertext);
+    return { accessToken, refreshToken, expiresAt: row.expiresAt, scopes };
   } catch {
     throw new Error('ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED');
   }

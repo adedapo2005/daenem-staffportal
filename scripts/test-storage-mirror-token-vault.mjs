@@ -14,6 +14,11 @@ assert.match(vault, /await decryptSocialSecret\(env, row\.accessTokenCiphertext\
 assert.match(vault, /await decryptSocialSecret\(env, row\.refreshTokenCiphertext\)/);
 assert.match(vault, /ON CONFLICT\(id\) DO UPDATE/);
 assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED/);
+assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_METADATA_INVALID/);
+assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_SCOPE_POLICY_INVALID/);
+assert.match(vault, /storedScopes = JSON\.parse\(row\.scopesJson\);[\s\S]*?ONEDRIVE_OAUTH_TOKEN_METADATA_INVALID/);
+assert.match(vault, /scopes = normalizeOneDriveScopes\(storedScopes\);[\s\S]*?ONEDRIVE_OAUTH_TOKEN_SCOPE_POLICY_INVALID/);
+assert.match(vault, /const accessToken = await decryptSocialSecret\(env, row\.accessTokenCiphertext\);[\s\S]*?ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED/);
 assert.match(vault, /new Set\(\['Files\.ReadWrite\.AppFolder', 'offline_access'\]\)/);
 assert.match(vault, /scope\.length > 256 \|\| !ONEDRIVE_ALLOWED_OAUTH_SCOPES\.has\(scope\)/);
 assert.match(vault, /!scopes\.includes\('Files\.ReadWrite\.AppFolder'\)/);
@@ -22,4 +27,4 @@ assert.equal((vault.match(/normalizeOneDriveScopes\(/g) ?? []).length, 3,
 assert.doesNotMatch(routes, /storage_mirror_oauth_tokens|access_token_ciphertext|refresh_token_ciphertext/);
 assert.match(routes, /authorizationEnabled: false, liveTransferEnabled: false/);
 
-console.log('OneDrive OAuth token vault boundary: 14/14 PASS');
+console.log('OneDrive OAuth token vault boundary: 19/19 PASS');
