@@ -33,8 +33,8 @@ async function readPolicy(env: AuditRetentionEnv): Promise<RetentionPolicy | nul
       FROM activity_retention_policies WHERE id='global' LIMIT 1
     `).first<RetentionPolicyRow>();
     if (!row || row.formalAuditDays !== 0 || row.formalSecurityDays !== 0) return null;
-    if (!Number.isInteger(row.clientTelemetryDays) || row.clientTelemetryDays! < 30 || row.clientTelemetryDays! > 3650) return null;
-    if (!Number.isInteger(row.serverActivityDays) || row.serverActivityDays! < 30 || row.serverActivityDays! > 3650) return null;
+    if (!Number.isSafeInteger(row.clientTelemetryDays) || row.clientTelemetryDays! <= 0) return null;
+    if (!Number.isSafeInteger(row.serverActivityDays) || row.serverActivityDays! <= 0) return null;
     return {
       clientTelemetryDays: row.clientTelemetryDays!,
       serverActivityDays: row.serverActivityDays!,

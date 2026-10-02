@@ -6,8 +6,9 @@ const groupErp = fs.readFileSync('worker/group-erp.ts', 'utf8');
 
 const checks = [
   ['policy table is migration-backed', migration.includes('CREATE TABLE IF NOT EXISTS activity_retention_policies')],
-  ['client and server categories are bounded and unconfigured by default', /client_telemetry_days INTEGER\s+CHECK \(client_telemetry_days BETWEEN 30 AND 3650\)/.test(migration) && /server_activity_days INTEGER\s+CHECK \(server_activity_days BETWEEN 30 AND 3650\)/.test(migration) && !/client_telemetry_days[^,]*DEFAULT/i.test(migration) && !/server_activity_days[^,]*DEFAULT/i.test(migration)],
-  ['preview rejects missing category durations', worker.includes('Number.isInteger(row.clientTelemetryDays)') && worker.includes('Number.isInteger(row.serverActivityDays)')],
+  ['durations have no invented bounds or defaults', /client_telemetry_days INTEGER\s+CHECK \(client_telemetry_days IS NULL OR client_telemetry_days > 0\)/.test(migration) && /server_activity_days INTEGER\s+CHECK \(server_activity_days IS NULL OR server_activity_days > 0\)/.test(migration) && !/client_telemetry_days[^,]*DEFAULT/i.test(migration) && !/server_activity_days[^,]*DEFAULT/i.test(migration) && !/BETWEEN\s+\d+\s+AND\s+\d+/i.test(migration)],
+  ['preview requires explicit positive whole-number category durations', worker.includes('Number.isSafeInteger(row.clientTelemetryDays)') && worker.includes('row.clientTelemetryDays! <= 0') && worker.includes('Number.isSafeInteger(row.serverActivityDays)') && worker.includes('row.serverActivityDays! <= 0')],
+  ['initial policy row leaves category durations unconfigured', /INSERT OR IGNORE INTO activity_retention_policies \(id\)\s+VALUES \('global'\)/.test(migration)],
   ['formal audit cannot expire', migration.includes('formal_audit_days INTEGER NOT NULL DEFAULT 0 CHECK (formal_audit_days = 0)')],
   ['formal security cannot expire', migration.includes('formal_security_days INTEGER NOT NULL DEFAULT 0 CHECK (formal_security_days = 0)')],
   ['policy failure fails closed', worker.includes('return null') && worker.includes('Audit retention policy is unavailable.')],
