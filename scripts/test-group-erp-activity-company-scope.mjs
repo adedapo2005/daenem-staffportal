@@ -16,7 +16,7 @@ const compiled = ts.transpileModule(executable, {
 }).outputText;
 const { routeGroupErp } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
-function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none' } = {}) {
+function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none', auditEntity = false } = {}) {
   const calls = [];
   const context = {
     roles: owner ? [{ code: 'owner' }] : [{ code: 'employee' }],
@@ -41,7 +41,7 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
               if (!sql.includes('FROM audit_logs') || !sql.includes('au.id=?')) return null;
               const authorized = !sql.includes('au.company_id IN') || args.includes('company-a');
               return authorized ? {
-                sourceId: args[0], companyId: 'company-a', provenance: 'formal_audit',
+                sourceId: args[0], companyId: 'company-a', provenance: 'formal_audit', entityType: auditEntity ? 'payroll_run' : '', entityId: auditEntity ? 'run-1' : '',
                 reason: 'Approved correction requested by ops@example.com with token Bearer abcdefghijklmnop; numeric reference 123456789012; cash amount 123456789012; account number 9876543210; access key 246813579024; client_secret=client-value', beforeJson: '{"status":"draft","token":"secret-value","numericReference":123456789012,"cashAmountKobo":123456789012,"quantity":123456789012,"operationalId":123456789012,"note":"contact ops@example.com using Bearer abcdefghijklmnop; 123456789012; refresh_token: refresh-value"}', afterJson: '{"status":"reviewed","accountNumber":123456789012,"credentials":"api_key=api-value"}'
               } : null;
             },
@@ -106,6 +106,10 @@ const auditDetail = fixture({ companyAAudit: 'view' });
 const auditDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a'), auditDetail.env, auditDetail.context);
 const auditDetailBody = await auditDetailResponse.json();
 check('formal audit detail applies policy-aware numeric text masking while preserving authorized business numbers within company scope', auditDetailResponse.status === 200 && auditDetail.calls.length === 1 && auditDetail.calls[0].sql.includes('au.company_id IN (?)') && auditDetail.calls[0].args.includes('company-a') && auditDetailBody.event.sourceId === 'audit-company-a' && auditDetailBody.event.reason.includes('Approved correction') && auditDetailBody.event.reason.includes('numeric reference [redacted]') && auditDetailBody.event.reason.includes('account number [redacted]') && auditDetailBody.event.reason.includes('access key [redacted]') && auditDetailBody.event.reason.includes('cash amount 123456789012') && !auditDetailBody.event.reason.includes('ops@example.com') && !auditDetailBody.event.reason.includes('abcdefghijklmnop') && auditDetailBody.event.reason.includes('123456789012') && !auditDetailBody.event.reason.includes('client-value') && auditDetailBody.event.beforeJson.includes('draft') && auditDetailBody.event.afterJson.includes('reviewed') && auditDetailBody.event.beforeJson.includes('[redacted]') && auditDetailBody.event.afterJson.includes('[redacted]') && !auditDetailBody.event.beforeJson.includes('secret-value') && !auditDetailBody.event.beforeJson.includes('refresh-value') && !auditDetailBody.event.beforeJson.includes('ops@example.com') && !auditDetailBody.event.beforeJson.includes('abcdefghijklmnop') && auditDetailBody.event.beforeJson.includes('"numericReference":"[redacted]"') && auditDetailBody.event.beforeJson.includes('"cashAmountKobo":123456789012') && auditDetailBody.event.beforeJson.includes('"quantity":123456789012') && auditDetailBody.event.beforeJson.includes('"operationalId":123456789012') && auditDetailBody.event.beforeJson.includes('123456789012; refresh_token') && auditDetailBody.event.afterJson.includes('"accountNumber":"[redacted]"') && !auditDetailBody.event.afterJson.includes('api-value'));
+const timelineDetail = fixture({ companyAAudit: 'view', auditEntity: true });
+const timelineResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a&includeTimeline=1'), timelineDetail.env, timelineDetail.context);
+const timelineBody = await timelineResponse.json();
+check('formal audit detail can return a bounded related-record timeline under the same company authorization', timelineResponse.status === 200 && timelineDetail.calls.length === 2 && timelineDetail.calls[1].sql.includes('au.entity_type=?') && timelineDetail.calls[1].sql.includes('au.company_id IN (?)') && timelineDetail.calls[1].args.includes('company-a') && timelineBody.event.sourceId === 'audit-company-a' && Array.isArray(timelineBody.timeline) && timelineBody.timeline.length === 1);
 
 const crossCompanyDetail = fixture({ companyBAudit: 'view' });
 const crossCompanyDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a'), crossCompanyDetail.env, crossCompanyDetail.context);
