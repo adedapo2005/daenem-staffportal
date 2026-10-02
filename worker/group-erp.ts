@@ -23,7 +23,8 @@ function requestCorrelationId(request:Request){return (request.headers.get('x-re
 const auditSensitiveKey=/(password|passcode|secret|token|otp|one.?time|authorization|cookie|account.?number|card.?number|cvv|pin|api.?key|private.?key|access.?key|numeric.?reference)/i;
 const auditSensitiveValue=/(?:bearer\s+[a-z0-9._~+\/-]+=*|eyJ[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/gi;
 const auditSensitiveAssignment=/(?:password|passcode|secret|token|otp|one.?time|authorization|cookie|account.?number|card.?number|cvv|pin|api.?key|private.?key|access.?key|refresh.?token|client.?secret)\s*[:=]\s*[^\s,;]+/gi;
-function minimizeAuditText(value:string){return value.replace(auditSensitiveAssignment,match=>`${match.slice(0,match.search(/[:=]/))}=[redacted]`).replace(auditSensitiveValue,'[redacted]')}
+const auditSensitiveNumericLabel=/(\b(?:numeric\s+reference|account\s+number|card\s+number|security\s+code|one[ -]?time\s+code|passcode|password|token|otp|pin|cvv)\b\s*(?:(?:is|was|ending\s+in)\s+|[:=]\s*)?#?)((?:\d[ -]?){3,}\d)/gi;
+function minimizeAuditText(value:string){return value.replace(auditSensitiveAssignment,match=>`${match.slice(0,match.search(/[:=]/))}=[redacted]`).replace(auditSensitiveNumericLabel,(match,label,numeric)=>numeric.replace(/\D/g,'').length>=4?`${label}[redacted]`:match).replace(auditSensitiveValue,'[redacted]')}
 function safeAuditJson(value:unknown,depth=0):unknown{
  if(depth>4)return '[omitted]';
  if(value===null||typeof value==='boolean')return value;
