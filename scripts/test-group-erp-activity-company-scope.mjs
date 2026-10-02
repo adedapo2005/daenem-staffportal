@@ -48,13 +48,21 @@ function fixture({ owner = false, companyAAudit = 'none', companyBAudit = 'none'
             all: async () => {
               if (sql.includes('1=0')) return { results: [] };
               if (table === 'audit' && sql.includes('au.entity_type=?')) {
-                const rows = (auditTimelineRows || [{
+                let rows = (auditTimelineRows || [{
                   sourceId: 'audit-company-a', occurredAt: '2026-10-01 12:00:00', employeeId: 'actor', companyId: 'company-a',
                   entityType: 'payroll_run', entityId: 'run-1', provenance: 'formal_audit', reason: 'Approved correction with account number 9876543210',
                   beforeJson: '{"status":"draft","token":"secret-value"}', afterJson: '{"status":"reviewed"}'
                 }]).filter(row => !sql.includes('au.company_id IS ?') || args[2] === row.companyId);
-                rows.sort((left, right) => String(left.occurredAt).localeCompare(String(right.occurredAt)) * (sql.includes('ORDER BY au.occurred_at DESC') ? -1 : 1));
-                return { results: rows.slice(0, 100) };
+                if (sql.includes("(?='' OR au.occurred_at<?")) {
+                  const [, , , cursorAt, , , cursorId] = args;
+                  if (cursorAt) rows = rows.filter(row => String(row.occurredAt) < cursorAt || (String(row.occurredAt) === cursorAt && String(row.sourceId) < cursorId));
+                }
+                rows.sort((left, right) => {
+                  const timeOrder = String(left.occurredAt).localeCompare(String(right.occurredAt));
+                  const idOrder = String(left.sourceId).localeCompare(String(right.sourceId));
+                  return sql.includes('ORDER BY au.occurred_at DESC') ? (timeOrder || idOrder) * -1 : (timeOrder || idOrder);
+                });
+                return { results: rows.slice(0, 101) };
               }
               const companies = ['company-a', 'company-b'].filter(companyId =>
                 !sql.includes(`${table === 'activity' ? 'al' : table === 'audit' ? 'au' : 'sl'}.company_id IN`) || args.includes(companyId));
@@ -131,6 +139,7 @@ const manyTimelineRows = Array.from({ length: 105 }, (_, index) => ({
   companyId: 'company-a', entityType: 'payroll_run', entityId: 'run-1', provenance: 'formal_audit', reason: 'Approved correction with account number 9876543210',
   beforeJson: '{"status":"draft","token":"secret-value"}', afterJson: '{"status":"reviewed"}'
 }));
+manyTimelineRows[4].occurredAt = manyTimelineRows[5].occurredAt;
 const recentTimelineFixture = fixture({ companyAAudit: 'view', auditEntity: true, auditTimelineRows: [...manyTimelineRows, {
   sourceId: 'audit-cross-company', occurredAt: new Date(Date.UTC(2026, 9, 1, 12, 106)).toISOString(), employeeId: 'actor', companyId: 'company-b',
   entityType: 'payroll_run', entityId: 'run-1', provenance: 'formal_audit', reason: 'Different company event', beforeJson: null, afterJson: null
@@ -139,7 +148,15 @@ const recentTimelineResponse = await routeGroupErp(new Request('https://staffpor
 const recentTimelineBody = await recentTimelineResponse.json();
 const recentTimeline = recentTimelineBody.timeline || [];
 check('timeline bounds to the newest 100 audit rows and returns those rows chronologically', recentTimelineResponse.status === 200 && recentTimeline.length === 100 && recentTimeline[0].sourceId === 'audit-006' && recentTimeline.at(-1).sourceId === 'audit-105' && recentTimeline.every((row, index) => index === 0 || recentTimeline[index - 1].occurredAt <= row.occurredAt));
+check('newest timeline window returns a continuation cursor at its oldest included event', Boolean(recentTimelineBody.nextTimelineCursor) && recentTimelineBody.nextTimelineCursor === `${recentTimeline[0].occurredAt}|${recentTimeline[0].sourceId}`);
 check('newest timeline window stays within the selected record company and minimizes sensitive audit fields', recentTimelineFixture.calls[1].sql.includes('au.company_id IS ?') && recentTimelineFixture.calls[1].args[2] === 'company-a' && recentTimeline.every(row => row.companyId === 'company-a' && row.reason.includes('[redacted]') && row.beforeJson.includes('[redacted]')) && !JSON.stringify(recentTimeline).includes('secret-value'));
+const olderTimelineResponse = await routeGroupErp(new Request(`https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a&includeTimeline=1&timelineCursor=${encodeURIComponent(recentTimelineBody.nextTimelineCursor)}`), recentTimelineFixture.env, recentTimelineFixture.context);
+const olderTimelineBody = await olderTimelineResponse.json();
+check('timeline continuation returns only older same-company events without repeating the first page', olderTimelineResponse.status === 200 && olderTimelineBody.timeline.length === 5 && olderTimelineBody.timeline[0].sourceId === 'audit-001' && olderTimelineBody.timeline.at(-1).sourceId === 'audit-005' && olderTimelineBody.timeline.every(row => row.companyId === 'company-a' && !recentTimeline.some(recent => recent.sourceId === row.sourceId)) && recentTimelineFixture.calls[3].args[2] === 'company-a' && recentTimelineFixture.calls[3].args[6] === 'audit-006');
+check('timeline continuation ends cleanly when no older events remain', olderTimelineBody.nextTimelineCursor === null);
+const invalidTimelineCursor = fixture({ companyAAudit: 'view', auditEntity: true });
+const invalidTimelineResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a&includeTimeline=1&timelineCursor=invalid'), invalidTimelineCursor.env, invalidTimelineCursor.context);
+check('malformed timeline cursors fail closed without running the timeline query', invalidTimelineResponse.status === 400 && invalidTimelineCursor.calls.length === 1 && (await invalidTimelineResponse.json()).error === 'Invalid activity timeline cursor.');
 
 const crossCompanyDetail = fixture({ companyBAudit: 'view' });
 const crossCompanyDetailResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity/detail?provenance=formal_audit&sourceId=audit-company-a'), crossCompanyDetail.env, crossCompanyDetail.context);
