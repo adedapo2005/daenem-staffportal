@@ -58,7 +58,7 @@ async function upload(request:Request,env:PrintingProductionEnv,context:SessionC
   try{
     await env.DB.batch([
       env.DB.prepare(`INSERT OR IGNORE INTO storage_mirror_jobs(id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status) VALUES(?,'microsoft_onedrive','printing',?,?,?,?,?,?,?,?,'provider_required')`).bind(`storage-mirror-printing-${fileId}-${digest}`,fileId,companyId,key,safeName,mime,file.size,digest,`microsoft_onedrive:printing:${fileId}:${digest}`),
-      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'printing','upload_file','print_job',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,jobId,JSON.stringify({category,key,name:safeName,size:file.size,type:mime,sha256:digest,backupStatus:'provider_required'}))
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'printing','upload_file','print_job',?,?,'web',?)`).bind(uid('audit'),context.employee.id,companyId,jobId,JSON.stringify({category,key,name:safeName,size:file.size,type:mime,sha256:digest,backupStatus:'provider_required'}),requestCorrelationId(request))
     ]);
   }catch(error){await env.FILES.delete(key);throw error}
   return json({ok:true,key,name:safeName,size:file.size,sha256:digest,backupStatus:'provider_required'});
