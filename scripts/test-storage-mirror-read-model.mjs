@@ -13,7 +13,7 @@ assert.match(route, /limit > 100/);
 assert.match(route, /company_id IN \(\$\{companyIds\.map\(\(\) => '\?'\)\.join\(','\)\}\)/);
 assert.match(route, /WHERE provider='microsoft_onedrive'/);
 assert.match(route, /source_module AS sourceModule,status,attempt_count AS attemptCount/);
-assert.match(route, /last_error_code AS lastErrorCode,created_at AS createdAt/);
+assert.match(route, /last_error_code AS lastErrorCode,next_attempt_at AS nextAttemptAt/);
 assert.doesNotMatch(route, /original_name|r2_key|provider_item_id|sha256|size_bytes/);
 assert.match(route, /ORDER BY CASE status WHEN 'failed' THEN 0 WHEN 'retrying' THEN 1 WHEN 'pending' THEN 2/);
 assert.match(route, /\.bind\(\.\.\.\(isOwner \? \[\] : companyIds\), \.\.\.\(status \? \[status\] : \[\]\), limit\)/);

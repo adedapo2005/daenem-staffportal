@@ -49,7 +49,8 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
     const statusSql = status ? ' AND status=?' : '';
     const rows = await env.DB.prepare(`
       SELECT id,source_module AS sourceModule,status,attempt_count AS attemptCount,
-        last_error_code AS lastErrorCode,created_at AS createdAt,updated_at AS updatedAt,
+        last_error_code AS lastErrorCode,next_attempt_at AS nextAttemptAt,
+        created_at AS createdAt,updated_at AS updatedAt,
         synced_at AS syncedAt
       FROM storage_mirror_jobs
       WHERE provider='microsoft_onedrive'${scopeSql}${statusSql}
