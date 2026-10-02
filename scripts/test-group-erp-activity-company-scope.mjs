@@ -67,6 +67,7 @@ const companyAEvents = await companyAResponse.json();
 check('consolidated read queries all three sources with target-company authorization', companyAOnly.calls.length === 3 && companyAOnly.calls.every(call => call.sql.includes(`${call.table === 'activity' ? 'al' : call.table === 'audit' ? 'au' : 'sl'}.company_id IN (?)`) && call.args.includes('company-a')));
 check('Company A reader receives no Company B activity, audit or security event', companyAResponse.status === 200 && companyAEvents.events.length === 3 && companyAEvents.events.every(event => event.companyId === 'company-a'));
 check('consolidated events label client telemetry and formal audit/security provenance', ['client_telemetry', 'formal_audit', 'formal_security'].every(provenance => companyAEvents.events.some(event => event.provenance === provenance)));
+check('consolidated events retain a canonical source record ID for bounded drill-down', companyAEvents.events.every(event => event.sourceId && event.sourceId === event.id));
 check('security details blobs are excluded from the read projection', companyAOnly.calls.find(call => call.table === 'security').sql.includes('details_json') === false);
 
 const companyBOnly = fixture({ companyBAudit: 'view' });
