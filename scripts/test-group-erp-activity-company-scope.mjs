@@ -85,6 +85,10 @@ const auditOnlyResponse = await routeGroupErp(new Request('https://staffportal.t
 const auditOnlyEvents = await auditOnlyResponse.json();
 check('provenance filter returns only formal audit events', auditOnlyResponse.status === 200 && auditOnlyEvents.events.length === 1 && auditOnlyEvents.events[0].provenance === 'formal_audit' && auditOnly.calls.find(call => call.table === 'activity').sql.includes('1=0') && auditOnly.calls.find(call => call.table === 'security').sql.includes('1=0'));
 check('formal audit projection preserves the approved reason field', auditOnly.calls.find(call => call.table === 'audit').sql.includes('au.reason reason'));
+const sourceIdFixture = fixture({ companyAAudit: 'view' });
+const sourceIdResponse = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?provenance=formal_audit&sourceId=audit-company-a'), sourceIdFixture.env, sourceIdFixture.context);
+const sourceIdEvents = await sourceIdResponse.json();
+check('formal audit drill-down filters by canonical source row ID within authorized company scope', sourceIdResponse.status === 200 && sourceIdEvents.events.length === 1 && sourceIdEvents.events[0].companyId === 'company-a' && sourceIdFixture.calls.find(call => call.table === 'audit').sql.includes('au.id=?') && sourceIdFixture.calls.find(call => call.table === 'audit').args.includes('audit-company-a'));
 const invalidFixture = fixture({ companyAAudit: 'view' });
 const invalidProvenance = await routeGroupErp(new Request('https://staffportal.test/api/audit/activity?provenance=internal'), invalidFixture.env, invalidFixture.context);
 check('invalid provenance is rejected before source queries', invalidProvenance.status === 400 && invalidFixture.calls.length === 0);
