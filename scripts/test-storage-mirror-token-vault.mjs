@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 
 const migration = await readFile(new URL('../migrations/0093_storage_mirror_token_vault.sql', import.meta.url), 'utf8');
@@ -39,47 +40,79 @@ const executable = vault.replace(
 const compiled = ts.transpileModule(executable, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
 }).outputText;
-const { resolveOneDriveOAuthTokens } = await import(
+const { resolveOneDriveOAuthTokens, storeOneDriveOAuthTokens } = await import(
   `data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`
 );
 
-function readFixture(scopesJson, accessTokenCiphertext = 'access', refreshTokenCiphertext = 'refresh') {
-  const queries = [];
-  const env = {
-    DB: {
-      prepare(sql) {
-        queries.push(sql);
-        return {
-          first: async () => ({
-            scopesJson,
-            accessTokenCiphertext,
-            refreshTokenCiphertext,
-            expiresAt: '2026-10-02T00:00:00.000Z'
-          })
-        };
-      }
+const db = new DatabaseSync(':memory:');
+db.exec(await readFile(new URL('../migrations/0093_storage_mirror_token_vault.sql', import.meta.url), 'utf8'));
+const env = {
+  DB: {
+    prepare(sql) {
+      return {
+        async first() { return db.prepare(sql).get(); },
+        bind(...values) {
+          return {
+            async first() { return db.prepare(sql).get(...values); },
+            async run() { return db.prepare(sql).run(...values); }
+          };
+        }
+      };
     }
-  };
-  return { env, queries };
+  }
+};
+
+async function writeStoredRow(scopesJson, accessTokenCiphertext = 'encrypted:access', refreshTokenCiphertext = 'encrypted:refresh') {
+  await env.DB.prepare(`INSERT INTO storage_mirror_oauth_tokens
+      (id,access_token_ciphertext,refresh_token_ciphertext,expires_at,scopes_json)
+    VALUES('microsoft_onedrive',?,?,?,?)
+    ON CONFLICT(id) DO UPDATE SET access_token_ciphertext=excluded.access_token_ciphertext,
+      refresh_token_ciphertext=excluded.refresh_token_ciphertext,expires_at=excluded.expires_at,
+      scopes_json=excluded.scopes_json`)
+    .bind(accessTokenCiphertext, refreshTokenCiphertext, '2026-10-02T00:00:00.000Z', scopesJson).run();
 }
 
 async function expectReadError(fixture, code) {
   await assert.rejects(resolveOneDriveOAuthTokens(fixture.env), error => error?.message === code);
 }
 
-const malformedMetadata = readFixture('{');
-await expectReadError(malformedMetadata, 'ONEDRIVE_OAUTH_TOKEN_METADATA_INVALID');
-const forbiddenScopes = readFixture(JSON.stringify(['Files.ReadWrite.All', 'Files.ReadWrite.AppFolder']));
-await expectReadError(forbiddenScopes, 'ONEDRIVE_OAUTH_TOKEN_SCOPE_POLICY_INVALID');
-const ciphertextFailure = readFixture(JSON.stringify(['Files.ReadWrite.AppFolder', 'offline_access']), 'bad-ciphertext');
-await expectReadError(ciphertextFailure, 'ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED');
-const validVault = readFixture(JSON.stringify(['Files.ReadWrite.AppFolder', 'offline_access']));
-const resolvedTokens = await resolveOneDriveOAuthTokens(validVault.env);
-assert.deepEqual(resolvedTokens, {
-  accessToken: 'decrypted:access',
-  refreshToken: 'decrypted:refresh',
+const approvedTokens = {
+  accessToken: 'access-secret-fixture',
+  refreshToken: 'refresh-secret-fixture',
   expiresAt: '2026-10-02T00:00:00.000Z',
   scopes: ['Files.ReadWrite.AppFolder', 'offline_access']
-});
+};
+await storeOneDriveOAuthTokens(env, approvedTokens);
+const storedRow = db.prepare('SELECT * FROM storage_mirror_oauth_tokens').get();
+assert.equal(storedRow.id, 'microsoft_onedrive');
+assert.equal(storedRow.access_token_ciphertext, 'encrypted:access-secret-fixture');
+assert.equal(storedRow.refresh_token_ciphertext, 'encrypted:refresh-secret-fixture');
+assert.equal(storedRow.scopes_json, JSON.stringify(approvedTokens.scopes));
+assert.throws(() => db.prepare("INSERT INTO storage_mirror_oauth_tokens(id,access_token_ciphertext,refresh_token_ciphertext,expires_at) VALUES('other-provider','a','b','x')").run(), /CHECK/);
+await assert.rejects(storeOneDriveOAuthTokens(env, { ...approvedTokens, scopes: ['Files.ReadWrite.All'] }),
+  error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
+assert.equal(db.prepare('SELECT COUNT(*) AS count FROM storage_mirror_oauth_tokens').get().count, 1,
+  'rejected token response leaves the existing vault row unchanged');
 
-console.log('OneDrive OAuth token vault boundary: 19 static + 4 behavioral assertions PASS');
+await writeStoredRow('{');
+await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_METADATA_INVALID');
+await writeStoredRow(JSON.stringify(['Files.ReadWrite.All', 'Files.ReadWrite.AppFolder']));
+await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_SCOPE_POLICY_INVALID');
+await writeStoredRow(JSON.stringify(approvedTokens.scopes), 'bad-ciphertext');
+await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED');
+await storeOneDriveOAuthTokens(env, approvedTokens);
+const resolvedTokens = await resolveOneDriveOAuthTokens(env);
+assert.deepEqual(resolvedTokens, {
+  accessToken: 'decrypted:encrypted:access-secret-fixture',
+  refreshToken: 'decrypted:encrypted:refresh-secret-fixture',
+  expiresAt: approvedTokens.expiresAt,
+  scopes: approvedTokens.scopes
+});
+await storeOneDriveOAuthTokens(env, { ...approvedTokens, accessToken: 'rotated-access-fixture' });
+assert.equal(db.prepare('SELECT COUNT(*) AS count FROM storage_mirror_oauth_tokens').get().count, 1,
+  'token refresh upsert preserves the single-provider vault row');
+assert.equal(db.prepare('SELECT access_token_ciphertext FROM storage_mirror_oauth_tokens').get().access_token_ciphertext,
+  'encrypted:rotated-access-fixture');
+
+db.close();
+console.log('OneDrive OAuth token vault boundary: static assertions + isolated SQLite migration/store/read/error behavior PASS');
