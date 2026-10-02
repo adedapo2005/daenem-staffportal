@@ -14,7 +14,12 @@ assert.match(vault, /await decryptSocialSecret\(env, row\.accessTokenCiphertext\
 assert.match(vault, /await decryptSocialSecret\(env, row\.refreshTokenCiphertext\)/);
 assert.match(vault, /ON CONFLICT\(id\) DO UPDATE/);
 assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED/);
+assert.match(vault, /new Set\(\['Files\.ReadWrite\.AppFolder', 'offline_access'\]\)/);
+assert.match(vault, /scope\.length > 256 \|\| !ONEDRIVE_ALLOWED_OAUTH_SCOPES\.has\(scope\)/);
+assert.match(vault, /!scopes\.includes\('Files\.ReadWrite\.AppFolder'\)/);
+assert.equal((vault.match(/normalizeOneDriveScopes\(/g) ?? []).length, 3,
+  'scope allowlist must guard both token storage and vault reads');
 assert.doesNotMatch(routes, /storage_mirror_oauth_tokens|access_token_ciphertext|refresh_token_ciphertext/);
 assert.match(routes, /authorizationEnabled: false, liveTransferEnabled: false/);
 
-console.log('OneDrive OAuth token vault boundary: 10/10 PASS');
+console.log('OneDrive OAuth token vault boundary: 14/14 PASS');

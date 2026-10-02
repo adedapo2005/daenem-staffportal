@@ -10,15 +10,29 @@ export interface OneDriveOAuthTokens {
   scopes: string[];
 }
 
+const ONEDRIVE_ALLOWED_OAUTH_SCOPES = new Set(['Files.ReadWrite.AppFolder', 'offline_access']);
+
+function normalizeOneDriveScopes(value: unknown): string[] {
+  if (!Array.isArray(value) || value.some((scope) => typeof scope !== 'string')) {
+    throw new Error('ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
+  }
+  const scopes = [...new Set(value.map((scope: string) => scope.trim()).filter(Boolean))];
+  if (scopes.length > 40 || scopes.some((scope) => scope.length > 256 || !ONEDRIVE_ALLOWED_OAUTH_SCOPES.has(scope)) ||
+    !scopes.includes('Files.ReadWrite.AppFolder')) {
+    throw new Error('ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
+  }
+  return scopes;
+}
+
 function validToken(value: string) {
   return value.length > 0 && value.length <= 16_384;
 }
 
 export async function storeOneDriveOAuthTokens(env: StorageMirrorVaultEnv, tokens: OneDriveOAuthTokens) {
   const expiresAt = new Date(tokens.expiresAt);
-  const scopes = [...new Set(tokens.scopes.map((scope) => scope.trim()).filter(Boolean))];
+  const scopes = normalizeOneDriveScopes(tokens.scopes);
   if (!validToken(tokens.accessToken) || !validToken(tokens.refreshToken) ||
-    !Number.isFinite(expiresAt.getTime()) || scopes.length > 40 || scopes.some((scope) => scope.length > 256)) {
+    !Number.isFinite(expiresAt.getTime())) {
     throw new Error('ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
   }
 
@@ -42,8 +56,7 @@ export async function resolveOneDriveOAuthTokens(env: StorageMirrorVaultEnv): Pr
     .first<{ accessTokenCiphertext: string; refreshTokenCiphertext: string; expiresAt: string; scopesJson: string }>();
   if (!row) return null;
   try {
-    const scopes = JSON.parse(row.scopesJson);
-    if (!Array.isArray(scopes) || scopes.some((scope) => typeof scope !== 'string')) throw new Error('invalid scopes');
+    const scopes = normalizeOneDriveScopes(JSON.parse(row.scopesJson));
     return {
       accessToken: await decryptSocialSecret(env, row.accessTokenCiphertext),
       refreshToken: await decryptSocialSecret(env, row.refreshTokenCiphertext),
