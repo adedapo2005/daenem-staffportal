@@ -24,7 +24,8 @@ const auditSensitiveKey=/(password|passcode|secret|token|otp|one.?time|authoriza
 const auditSensitiveValue=/(?:bearer\s+[a-z0-9._~+\/-]+=*|eyJ[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9_-]{8,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(?<!\d)\d{8,20}(?!\d))/gi;
 function safeAuditJson(value:unknown,depth=0):unknown{
  if(depth>4)return '[omitted]';
- if(value===null||typeof value==='boolean'||typeof value==='number')return value;
+ if(value===null||typeof value==='boolean')return value;
+ if(typeof value==='number')return Number.isInteger(value)&&value>=10000000&&value<=99999999999999999999?'[redacted]':value;
  if(typeof value==='string')return (value.length<=500?value:`${value.slice(0,500)}…`).replace(auditSensitiveValue,'[redacted]');
  if(Array.isArray(value))return value.slice(0,50).map(item=>safeAuditJson(item,depth+1));
  if(typeof value!=='object')return '[omitted]';
