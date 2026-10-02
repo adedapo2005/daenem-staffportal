@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs.readFileSync(new URL('../worker/construction.ts', import.meta.url), 'utf8');
+const start = source.indexOf('async function streamEvidence(');
+const end = source.indexOf('async function child(', start);
+assert.ok(start >= 0 && end > start, 'construction evidence stream handler must exist');
+const handler = source.slice(start, end);
+assert.match(source, /requestCorrelationId\(request\)/);
+assert.match(handler, /companyAllowed\(c,row\.companyId\)/);
+assert.match(handler, /'protected_file_read'/);
+assert.match(handler, /'construction_evidence'/);
+assert.match(handler, /after_json,source,request_id/);
+assert.match(handler, /requestCorrelationId\(request\)/, 'construction protected read must preserve request correlation');
+assert.match(handler, /outcome:'authorized_read'/);
+assert.match(handler, /return json\(\{error:'Evidence file is temporarily unavailable\.'\},503\)/);
+assert.ok(handler.indexOf("'protected_file_read'") < handler.indexOf('new Response('), 'audit must succeed before file bytes are returned');
+assert.match(handler, /'cache-control':\'private, no-store\'/);
+console.log('Construction protected file audit: 10/10 assertions PASS');
