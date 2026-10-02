@@ -11,6 +11,10 @@ function authorized(context: SessionContext) {
   return context.roles.some((role) => role.code === 'owner' || role.code === 'group_admin');
 }
 
+function requestCorrelationId(request: Request) {
+  return (request.headers.get('x-request-id') || request.headers.get('cf-ray') || crypto.randomUUID()).slice(0, 128);
+}
+
 async function routeOneDriveConfig(request: Request, env: StorageMirrorEnv, context: SessionContext) {
   if (!authorized(context)) return json({ error: 'Storage administration access is not assigned.' }, 403);
   if (request.method === 'GET') {
@@ -78,15 +82,16 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
     const jobs = eligible.results || [];
     let queuedForRetry = 0;
     if (jobs.length) {
+      const requestId = requestCorrelationId(request);
       const statements = jobs.flatMap((job) => [
         env.DB.prepare(`UPDATE storage_mirror_jobs SET status='pending',next_attempt_at=CURRENT_TIMESTAMP,
           last_error_code=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND provider='microsoft_onedrive' AND status='failed'`)
           .bind(job.id),
-        env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
-          SELECT ?,?,?,'storage','mirror_retry_requested','storage_mirror_job',?,?,'web'
+        env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id)
+          SELECT ?,?,?,'storage','mirror_retry_requested','storage_mirror_job',?,?,'web',?
           WHERE changes()=1 AND EXISTS(SELECT 1 FROM storage_mirror_jobs WHERE id=? AND provider='microsoft_onedrive' AND status='pending')`)
           .bind(`audit-${crypto.randomUUID()}`, context.employee.id, job.companyId, job.id,
-            JSON.stringify({ outcome: 'queued_for_retry' }), job.id),
+            JSON.stringify({ outcome: 'queued_for_retry' }), requestId, job.id),
       ]);
       const results = await env.DB.batch(statements);
       // Each job contributes a compare-and-set update followed by its conditional audit.

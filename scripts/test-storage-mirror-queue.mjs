@@ -61,7 +61,7 @@ assert.match(attendance, /catch \(error\) \{\s*if \(photo\) await env\.FILES\.de
 assert.doesNotMatch(attendance, /graph\.microsoft|graph\.microsoft\.com|Authorization.*Bearer/);
 assert.ok(attendance.indexOf('if (action === \'clock_out\' && workedMinutes >') < attendance.indexOf('photo = await savePhoto'), 'invalid clock-outs must be rejected before saving their photo to R2');
 const constructionUpload = construction.slice(construction.indexOf('async function uploadEvidence'), construction.indexOf('\nasync function listEvidence'));
-assert.match(constructionUpload, /companyAllowed\(c,project\.companyId\)/);
+assert.match(constructionUpload, /companyAllowed\(c,project\.companyId,'edit'\)/);
 assert.match(constructionUpload, /await env\.DB\.batch\(\[[\s\S]*?INSERT INTO construction_evidence[\s\S]*?INSERT OR IGNORE INTO storage_mirror_jobs/);
 assert.match(constructionUpload, /'microsoft_onedrive','construction'/);
 assert.match(constructionUpload, /microsoft_onedrive:construction:/);
@@ -95,6 +95,9 @@ assert.match(retry, /company_id IN \(\$\{companyIds\.map\(\(\) => '\?'\)\.join\(
 assert.match(retry, /SET status='pending',next_attempt_at=CURRENT_TIMESTAMP/);
 assert.match(retry, /WHERE id=\? AND provider='microsoft_onedrive' AND status='failed'/);
 assert.match(retry, /SET status='pending',next_attempt_at=CURRENT_TIMESTAMP[\s\S]*?WHERE id=\? AND provider='microsoft_onedrive' AND status='failed'[\s\S]*?mirror_retry_requested/);
+assert.match(retry, /audit_logs\([^)]*source,request_id\)[\s\S]*?SELECT [\s\S]*?'web',\?[\s\S]*?requestId[\s\S]*?job\.id\)/);
+assert.match(retry, /const requestId = requestCorrelationId\(request\)/);
+assert.match(readModel, /function requestCorrelationId\(request: Request\)[\s\S]*?x-request-id[\s\S]*?cf-ray[\s\S]*?slice\(0, 128\)/);
 assert.match(retry, /WHERE changes\(\)=1 AND EXISTS\(SELECT 1 FROM storage_mirror_jobs WHERE id=\? AND provider='microsoft_onedrive' AND status='pending'\)/);
 assert.match(retry, /const results = await env\.DB\.batch\(statements\)/);
 assert.match(retry, /results\[index\]\?\.meta\?\.changes/);
