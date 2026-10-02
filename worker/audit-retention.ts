@@ -15,6 +15,18 @@ type RetentionPolicyRow = Omit<RetentionPolicy, 'clientTelemetryDays' | 'serverA
 };
 
 const protectedCategories = ['formal_audit', 'formal_security', 'financial', 'hr'] as const;
+const DAY_MS = 86400000;
+
+function cutoffForDays(days: number, now = Date.now()): string | null {
+  const timestamp = now - days * DAY_MS;
+  if (!Number.isFinite(timestamp)) return null;
+  const date = new Date(timestamp);
+  if (!Number.isFinite(date.getTime())) return null;
+  const cutoff = date.toISOString();
+  // The database timestamps use four-digit UTC years; extended ISO years do
+  // not sort lexically with those values, so they cannot produce a truthful cutoff.
+  return /^\d{4}-\d{2}-\d{2}T/.test(cutoff) ? cutoff : null;
+}
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -52,8 +64,9 @@ export async function previewAuditRetention(request: Request, env: AuditRetentio
   const policy = await readPolicy(env);
   if (!policy) return json({ error: 'Audit retention policy is unavailable.' }, 503);
 
-  const clientCutoff = new Date(Date.now() - policy.clientTelemetryDays * 86400000).toISOString();
-  const serverCutoff = new Date(Date.now() - policy.serverActivityDays * 86400000).toISOString();
+  const clientCutoff = cutoffForDays(policy.clientTelemetryDays);
+  const serverCutoff = cutoffForDays(policy.serverActivityDays);
+  if (!clientCutoff || !serverCutoff) return json({ error: 'Audit retention preview is unavailable.' }, 503);
   // Server activity has no durable retention category yet. Counting every
   // non-client row as eligible could include protected financial or HR history,
   // so keep that candidate count unavailable until rows can be classified.
