@@ -9,6 +9,11 @@ type RetentionPolicy = {
   formalSecurityDays: 0;
 };
 
+type RetentionPolicyRow = Omit<RetentionPolicy, 'clientTelemetryDays' | 'serverActivityDays'> & {
+  clientTelemetryDays: number | null;
+  serverActivityDays: number | null;
+};
+
 const protectedCategories = ['formal_audit', 'formal_security', 'financial', 'hr'] as const;
 
 function json(body: Record<string, unknown>, status = 200) {
@@ -26,11 +31,16 @@ async function readPolicy(env: AuditRetentionEnv): Promise<RetentionPolicy | nul
         formal_audit_days formalAuditDays,
         formal_security_days formalSecurityDays
       FROM activity_retention_policies WHERE id='global' LIMIT 1
-    `).first<RetentionPolicy>();
+    `).first<RetentionPolicyRow>();
     if (!row || row.formalAuditDays !== 0 || row.formalSecurityDays !== 0) return null;
-    if (!Number.isInteger(row.clientTelemetryDays) || row.clientTelemetryDays < 30 || row.clientTelemetryDays > 3650) return null;
-    if (!Number.isInteger(row.serverActivityDays) || row.serverActivityDays < 30 || row.serverActivityDays > 3650) return null;
-    return row;
+    if (!Number.isInteger(row.clientTelemetryDays) || row.clientTelemetryDays! < 30 || row.clientTelemetryDays! > 3650) return null;
+    if (!Number.isInteger(row.serverActivityDays) || row.serverActivityDays! < 30 || row.serverActivityDays! > 3650) return null;
+    return {
+      clientTelemetryDays: row.clientTelemetryDays!,
+      serverActivityDays: row.serverActivityDays!,
+      formalAuditDays: row.formalAuditDays,
+      formalSecurityDays: row.formalSecurityDays,
+    };
   } catch {
     return null;
   }

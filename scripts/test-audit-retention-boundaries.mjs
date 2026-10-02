@@ -6,7 +6,8 @@ const groupErp = fs.readFileSync('worker/group-erp.ts', 'utf8');
 
 const checks = [
   ['policy table is migration-backed', migration.includes('CREATE TABLE IF NOT EXISTS activity_retention_policies')],
-  ['client and server categories are bounded', migration.includes('client_telemetry_days INTEGER') && migration.includes('server_activity_days INTEGER')],
+  ['client and server categories are bounded and unconfigured by default', /client_telemetry_days INTEGER\s+CHECK \(client_telemetry_days BETWEEN 30 AND 3650\)/.test(migration) && /server_activity_days INTEGER\s+CHECK \(server_activity_days BETWEEN 30 AND 3650\)/.test(migration) && !/client_telemetry_days[^,]*DEFAULT/i.test(migration) && !/server_activity_days[^,]*DEFAULT/i.test(migration)],
+  ['preview rejects missing category durations', worker.includes('Number.isInteger(row.clientTelemetryDays)') && worker.includes('Number.isInteger(row.serverActivityDays)')],
   ['formal audit cannot expire', migration.includes('formal_audit_days INTEGER NOT NULL DEFAULT 0 CHECK (formal_audit_days = 0)')],
   ['formal security cannot expire', migration.includes('formal_security_days INTEGER NOT NULL DEFAULT 0 CHECK (formal_security_days = 0)')],
   ['policy failure fails closed', worker.includes('return null') && worker.includes('Audit retention policy is unavailable.')],
