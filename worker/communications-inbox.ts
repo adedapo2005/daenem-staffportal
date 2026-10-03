@@ -2,12 +2,14 @@ import { hasCompanyPermission, type EnhancedSessionContext } from './auth-contex
 import type { AccessLevel } from './auth.js';
 import { assertStaffPortalCompany } from './communications-repository.js';
 import { prepareWhatsAppInboxSend, sendWhatsAppInboxMessage, type WhatsAppOutboundEnv } from './communications-whatsapp-outbound.js';
+import { publishPlatformEvent } from './alerting';
 
 interface Env extends WhatsAppOutboundEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
 const levels:AccessLevel[]=['none','view','create','edit','approve','manage'];
 const WHATSAPP_SERVICE_WINDOW_MS=24*60*60*1000;
+function requestCorrelationId(request:Request){return (request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128)}
 
 function owner(context:EnhancedSessionContext){return context.roles.some(role=>['owner','group_admin'].includes(role.code))}
 function companyAllowed(context:EnhancedSessionContext,companyId:string){
@@ -123,7 +125,26 @@ async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:
       const exists=await env.DB.prepare(`SELECT 1 FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1 LIMIT 1`).bind(employeeId,companyId).first();
       if(!exists)return json({error:'Assignee is not in this company.'},400);
     }
-    await env.DB.prepare(`UPDATE communication_inbox_conversations SET assigned_employee_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(employeeId,id).run();
+    const assignedAt=new Date().toISOString(),requestId=requestCorrelationId(request),auditId=uid('audit'),priorCompanyId=item.companyId??null;
+    const [assigned,audited]=await env.DB.batch([
+      env.DB.prepare(`UPDATE communication_inbox_conversations SET assigned_employee_id=?,updated_at=? WHERE id=? AND company_id IS ? AND assigned_employee_id IS ? AND updated_at=?`)
+        .bind(employeeId,assignedAt,id,priorCompanyId,item.assignedEmployeeId??null,String(item.updatedAt||'')),
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source,request_id)
+        SELECT ?,?,?,'communications','assign_inbox_conversation','communication_inbox_conversation',?,?,?, 'web',?
+        WHERE EXISTS(SELECT 1 FROM communication_inbox_conversations WHERE id=? AND company_id IS ? AND assigned_employee_id IS ? AND updated_at=?)`)
+        .bind(auditId,context.employee.id,companyId,id,JSON.stringify({assignedEmployeeId:item.assignedEmployeeId??null}),JSON.stringify({assignedEmployeeId:employeeId}),requestId,id,priorCompanyId,employeeId,assignedAt)
+    ]);
+    if(Number(assigned.meta?.changes||0)!==1)return json({error:'Conversation assignment changed. Refresh and try again.'},409);
+    if(Number(audited.meta?.changes||0)!==1)return json({error:'Conversation assignment audit was not recorded.'},500);
+    if(employeeId){
+      try{
+        await publishPlatformEvent(env,{companyId,module:'communications',eventType:'inbox_assigned',sourceType:'communication_inbox_conversation',sourceId:`${id}:${employeeId}`,title:'A Communications inbox conversation needs your attention.',summary:'An inbox conversation was assigned to staff.'});
+      }catch{
+        await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id)
+          VALUES(?,?,?,'communications','assignment_alert_publication_failed','communication_inbox_conversation',?,?,'web',?)`)
+          .bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({eventType:'inbox_assigned'}),requestId).run();
+      }
+    }
     return json({ok:true,assignedEmployeeId:employeeId});
   }
   if(action==='route'){
