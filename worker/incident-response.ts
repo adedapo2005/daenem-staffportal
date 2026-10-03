@@ -106,6 +106,41 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
     if (Number(stopped.meta?.changes || 0) !== 1) return neutral();
     return json({ ok: true, locationStatus: 'paused', trackingEndedAt: now });
   }
+  const statusMatch = url.pathname.match(/^\/api\/incidents\/([^/]+)\/status$/);
+  if (statusMatch && request.method === 'POST') {
+    const incidentId = routeId(statusMatch[1]);
+    if (!incidentId || incidentId.length > 160) return neutral();
+    const incident = await env.DB.prepare(
+      'SELECT company_id AS companyId,status FROM safety_incidents WHERE id=?'
+    ).bind(incidentId).first<{ companyId: string; status: string }>();
+    if (!incident) return neutral();
+    const companyId = String(incident.companyId || '');
+    const isOwner = context.roles.some((role) => role.code === 'owner');
+    const membership = isOwner || Boolean(await env.DB.prepare(
+      'SELECT 1 FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1'
+    ).bind(context.employee.id, companyId).first());
+    if (!membership || (!isOwner && !hasPermission(context, 'security.access', 'edit', companyId))) return neutral();
+    let body: { status?: string; reason?: string };
+    try { body = await request.json(); } catch { return json({ error: 'Invalid incident status.' }, 400); }
+    const nextStatus = String(body.status || '').trim();
+    const reason = String(body.reason || '').trim().slice(0, 500);
+    if (!['open', 'acknowledged', 'actioned', 'resolved', 'cancelled'].includes(nextStatus)) return json({ error: 'Incident status is invalid.' }, 400);
+    if ((nextStatus === 'resolved' || nextStatus === 'cancelled') && !reason) return json({ error: 'A reason is required to end an incident.' }, 400);
+    if (nextStatus === incident.status) return json({ ok: true, changed: false, status: incident.status });
+    const now = new Date().toISOString();
+    const terminal = nextStatus === 'resolved' || nextStatus === 'cancelled';
+    const [updated] = await env.DB.batch([
+      env.DB.prepare(`UPDATE safety_incidents SET status=?,location_status=CASE WHEN ?=1 THEN 'ended' ELSE location_status END,
+        current_latitude=CASE WHEN ?=1 THEN NULL ELSE current_latitude END,current_longitude=CASE WHEN ?=1 THEN NULL ELSE current_longitude END,
+        current_accuracy_m=CASE WHEN ?=1 THEN NULL ELSE current_accuracy_m END,location_updated_at=CASE WHEN ?=1 THEN NULL ELSE location_updated_at END,
+        location_source=CASE WHEN ?=1 THEN NULL ELSE location_source END,tracking_ended_at=CASE WHEN ?=1 THEN ? ELSE tracking_ended_at END,updated_at=? WHERE id=? AND status=?`)
+        .bind(nextStatus, terminal ? 1 : 0, terminal ? 1 : 0, terminal ? 1 : 0, terminal ? 1 : 0, terminal ? 1 : 0, terminal ? 1 : 0, terminal ? 1 : 0, terminal ? now : null, now, incidentId, incident.status),
+      env.DB.prepare(`INSERT INTO safety_incident_audit(id,incident_id,actor_employee_id,action,details_json) SELECT ?,?,?,?,? WHERE changes()=1`)
+        .bind(id('incident-audit'), incidentId, context.employee.id, 'status_changed', JSON.stringify({ fromStatus: incident.status, toStatus: nextStatus, reason: reason || null, terminal })),
+    ]);
+    if (Number(updated.meta?.changes || 0) !== 1) return neutral();
+    return json({ ok: true, changed: true, status: nextStatus, locationStatus: terminal ? 'ended' : undefined });
+  }
   const detailMatch = url.pathname.match(/^\/api\/incidents\/([^/]+)$/);
   if (detailMatch && request.method === 'GET') {
     const incidentId = routeId(detailMatch[1]);

@@ -25,5 +25,8 @@ const checks = [
   ['location updates persist server timestamp, accuracy, source and movement evidence', worker.includes('current_accuracy_m=?,location_updated_at=?,location_source=?') && worker.includes("INSERT INTO safety_incident_location_events(id,incident_id,latitude,longitude,accuracy_m,source,recorded_at) SELECT ?,?,?,?,?,?,? WHERE changes()=1")],
   ['location updates never claim live without a freshness threshold', worker.includes("SET location_status='degraded'") && worker.includes("locationStatus: 'degraded'")],
   ['explicit tracking stop clears current coordinates and records stop audit', worker.includes("/location\\/stop$/") && worker.includes("location_status='paused',current_latitude=NULL,current_longitude=NULL") && worker.includes("'location_tracking_stopped'")],
+  ['status transitions require company-scoped security edit', worker.includes("const statusMatch = url.pathname.match(/^\\/api\\/incidents\\/([^/]+)\\/status$/)") && worker.includes("hasPermission(context, 'security.access', 'edit', companyId)")],
+  ['terminal status requires a reason and ends location truthfully', worker.includes("nextStatus === 'resolved' || nextStatus === 'cancelled'") && worker.includes("A reason is required to end an incident.") && worker.includes("location_status=CASE WHEN ?=1 THEN 'ended'")],
+  ['status changes are audited with from and to state', worker.includes("'status_changed'") && worker.includes('fromStatus') && worker.includes('toStatus')],
 ];
 for (const [name, ok] of checks) { if (!ok) throw new Error(`FAIL: ${name}`); console.log(`PASS: ${name}`); }
