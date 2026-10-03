@@ -10,6 +10,14 @@ const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
 const levels:AccessLevel[]=['none','view','create','edit','approve','manage'];
 const WHATSAPP_SERVICE_WINDOW_MS=24*60*60*1000;
 function requestCorrelationId(request:Request){return (request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128)}
+const lastStaffReplySql=`SELECT MAX(m.updated_at) FROM communication_inbox_messages m
+  WHERE m.conversation_id=c.id AND m.direction='outbound' AND m.staff_employee_id IS NOT NULL
+    AND m.status IN ('sent','delivered','read')`;
+const lastCustomerReceivedSql=`SELECT MAX(m.created_at) FROM communication_inbox_messages m
+  WHERE m.conversation_id=c.id AND m.direction='inbound' AND m.status='received'`;
+const awaitingStaffSql=`c.status<>'resolved'
+  AND EXISTS(SELECT 1 FROM communication_inbox_messages incoming WHERE incoming.conversation_id=c.id AND incoming.direction='inbound' AND incoming.status='received')
+  AND ((${lastStaffReplySql}) IS NULL OR datetime((${lastStaffReplySql}))<=datetime((${lastCustomerReceivedSql})))`;
 
 function owner(context:EnhancedSessionContext){return context.roles.some(role=>['owner','group_admin'].includes(role.code))}
 function companyAllowed(context:EnhancedSessionContext,companyId:string){
@@ -72,9 +80,12 @@ async function listInbox(request:Request,env:Env,context:EnhancedSessionContext)
   if(!can(context,companyId,'communications.support.inbox.view','view'))return json({error:'Permission denied.'},403);
   const status=String(url.searchParams.get('status')||'open'),q=String(url.searchParams.get('q')||'').trim().slice(0,120);
   const limit=Math.min(Math.max(Number(url.searchParams.get('limit')||50),1),100);
+  const statusFilter=status==='waiting_for_staff'?awaitingStaffSql:"(?='all' OR c.status=?)";
+  const statusBindings=status==='waiting_for_staff'?[]:[status,status];
   const result=await env.DB.prepare(`SELECT c.id,c.company_id AS companyId,c.sender_id AS senderId,c.customer_wa_id AS customerWaId,
     c.customer_display_name AS customerDisplayName,c.status,c.assigned_employee_id AS assignedEmployeeId,
     c.unread_count AS unreadCount,c.last_message_at AS lastMessageAt,c.last_customer_message_at AS lastCustomerMessageAt,s.routing_mode AS routingMode,
+    (${lastStaffReplySql}) AS lastStaffReplyAt,CASE WHEN ${awaitingStaffSql} THEN 1 ELSE 0 END AS awaitingStaffReply,
     s.display_name AS senderDisplayName,
     (SELECT m.body FROM communication_inbox_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS lastMessage
     FROM communication_inbox_conversations c
@@ -83,9 +94,9 @@ async function listInbox(request:Request,env:Env,context:EnhancedSessionContext)
       SELECT 1 FROM communication_whatsapp_sender_companies sc
       WHERE sc.sender_id=c.sender_id AND sc.company_id=? AND sc.enabled=1
     )))
-    AND (?='all' OR c.status=?)
+    AND (${statusFilter})
     AND (?='' OR lower(COALESCE(c.customer_display_name,'')) LIKE lower(?) OR c.customer_wa_id LIKE ?)
-    ORDER BY c.last_message_at DESC LIMIT ?`).bind(companyId,companyId,status,status,q,`%${q}%`,`%${q}%`,limit).all();
+    ORDER BY c.last_message_at DESC LIMIT ?`).bind(companyId,companyId,...statusBindings,q,`%${q}%`,`%${q}%`,limit).all();
   return json({companyId,conversations:result.results||[]});
 }
 
