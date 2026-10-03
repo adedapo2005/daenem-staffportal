@@ -10,14 +10,17 @@ const check = (name, condition) => {
 const executable = source.replace(
   "import { hasPermission, type AuthEnv, type SessionContext } from './auth';",
   "const hasPermission=(context,code,minimum='view',companyId)=>{const levels=['none','view','create','edit','approve','manage'];const level=companyId?(context.companyPermissions?.[companyId]?.[code]||'none'):(context.permissions?.[code]||'none');return levels.indexOf(level)>=levels.indexOf(minimum)};"
+).replace(
+  "import { previewAuditRetention } from './audit-retention';",
+  "const previewAuditRetention=async()=>new Response('{}');"
 );
 const compiled = ts.transpileModule(executable, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
 }).outputText;
 const { routeGroupErp } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
-function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'none' } = {}) {
-  const calls = [], writes = [];
+function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'none', failRequiredAudit = false } = {}) {
+  const calls = [], writes = [], auditAttempts = [];
   const context = {
     roles: owner ? [{ code: 'owner' }] : [{ code: 'employee' }],
     companies: [{ id: 'company-a' }, { id: 'company-b' }],
@@ -42,13 +45,20 @@ function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'n
             all: async () => sql.includes('FROM payroll_payment_batches pb')
               ? { results: ['company-a', 'company-b'].filter(id => visible(sql, args, id, 2)).map(id => ({ id: `batch-${id.slice(-1)}`, companyId: id })) }
               : { results: [] },
-            run: async () => { writes.push({ sql, args }); return { success: true }; }
+            run: async () => {
+              if (sql.includes('INSERT INTO audit_logs')) {
+                auditAttempts.push({ sql, args });
+                if (failRequiredAudit) throw new Error('forced audit insert failure');
+              }
+              writes.push({ sql, args });
+              return { success: true };
+            }
           };
         }
       };
     }
   };
-  return { context, env: { DB, AUTH_PEPPER: 'test-only-fixture-key' }, calls, writes };
+  return { context, env: { DB, AUTH_PEPPER: 'test-only-fixture-key' }, calls, writes, auditAttempts };
 }
 
 const noPayroll = fixture();
@@ -69,8 +79,15 @@ check('cross-company export lookup is SQL-scoped and reads no batch items or aud
 
 const authorizedExport = fixture({ companyBPayroll: 'edit' });
 const authorizedExportResponse = await routeGroupErp(new Request('https://staffportal.test/api/payroll/payment-batches/export?id=batch-b'), authorizedExport.env, authorizedExport.context);
-check('Company B Payroll editor can export Company B draft', authorizedExportResponse.status === 200 && (await authorizedExportResponse.text()).includes('Employee,Bank,Account Name'));
-check('authorized export binds Company B at batch lookup and writes audit evidence', authorizedExport.calls[0].args.includes('company-b') && authorizedExport.writes.length >= 1);
+const authorizedCsv = await authorizedExportResponse.text();
+check('Company B Payroll editor can export Company B draft', authorizedExportResponse.status === 200 && authorizedCsv.includes('Employee,Bank,Account Name'));
+check('authorized export binds Company B at batch lookup and persists formal audit before CSV response', authorizedExport.calls[0].args.includes('company-b') && authorizedExport.auditAttempts.length === 1 && authorizedExport.writes.length >= 1 && authorizedExport.writes.at(-1).sql.includes('INSERT INTO audit_logs'));
+
+const auditFailureExport = fixture({ companyBPayroll: 'edit', failRequiredAudit: true });
+const auditFailureResponse = await routeGroupErp(new Request('https://staffportal.test/api/payroll/payment-batches/export?id=batch-b'), auditFailureExport.env, auditFailureExport.context);
+const auditFailureBody = await auditFailureResponse.text();
+check('required export-audit failure returns bounded 503', auditFailureResponse.status === 503 && auditFailureBody.includes('temporarily unavailable'));
+check('required export-audit failure discloses no CSV content and performs no provider or money movement', !auditFailureBody.includes('Employee,Bank,Account Name') && auditFailureExport.auditAttempts.length === 1 && auditFailureExport.writes.length === 0);
 
 const ownerList = fixture({ owner: true });
 const ownerListResponse = await routeGroupErp(new Request('https://staffportal.test/api/payroll/payment-batches'), ownerList.env, ownerList.context);
