@@ -14,6 +14,9 @@ const valid = { module: 'storage', eventType: 'mirror.failed', sourceType: 'stor
   companyId: 'company-printing', sourceId: 'mirror-1', title: 'Backup needs attention',
   summary: 'A secondary copy needs review.', relatedPath: '/admin/storage' };
 assert.equal(validPlatformEvent(valid), true);
+assert.equal(validPlatformEvent({ ...valid, recipientTarget: { employeeId: 'employee-1', permission: 'communications.support.inbox.view' } }), true);
+assert.equal(validPlatformEvent({ ...valid, recipientTarget: { employeeId: '', permission: 'communications.support.inbox.view' } }), false);
+assert.equal(validPlatformEvent({ ...valid, recipientTarget: { employeeId: 'employee-1', permission: '' } }), false);
 assert.equal(validPlatformEvent({ ...valid, title: '' }), false);
 assert.equal(validPlatformEvent({ ...valid, title: 'x'.repeat(161) }), false);
 assert.equal(validPlatformEvent({ ...valid, summary: 'x'.repeat(2001) }), false);
@@ -22,4 +25,4 @@ assert.equal(validPlatformEvent({ ...valid, relatedPath: '//outside.example/path
 assert.equal(validPlatformEvent({ ...valid, relatedPath: '/admin/../private' }), false);
 assert.equal(validPlatformEvent({ ...valid, occurredAt: 'not-a-time' }), false);
 assert.equal(validPlatformEvent({ ...valid, payload: { data: 'x'.repeat(16_385) } }), false);
-console.log('Alerting event input boundary: 9/9 PASS');
+console.log('Alerting event input boundary: 12/12 PASS');

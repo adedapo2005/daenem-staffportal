@@ -15,6 +15,7 @@ type PlatformEventInput = {
   relatedPath?: string;
   payload?: Record<string, unknown>;
   occurredAt?: string;
+  recipientTarget?: { employeeId: string; permission: string };
 };
 type AlertRecipientSelector = { type?: string; id?: string };
 const alertRecipientTypes = new Set(['user', 'role', 'department', 'business', 'site', 'all_authorized']);
@@ -79,12 +80,17 @@ function validPlatformEvent(input: PlatformEventInput) {
           /[?#]/.test(input.relatedPath) || input.relatedPath.split('/').some((part) => part === '..'))) ||
       (input.severityHint !== undefined && !['low', 'medium', 'high', 'critical'].includes(input.severityHint)) ||
       (input.occurredAt !== undefined && (!boundedText(input.occurredAt, 40) || !Number.isFinite(Date.parse(input.occurredAt)))) ||
+      (input.recipientTarget !== undefined && (!input.recipientTarget ||
+        typeof input.recipientTarget.employeeId !== 'string' || typeof input.recipientTarget.permission !== 'string' ||
+        !/^[A-Za-z0-9:_-]{1,160}$/.test(input.recipientTarget.employeeId) ||
+        !/^[a-z][a-z0-9_.-]{0,79}$/.test(input.recipientTarget.permission))) ||
       (input.payload !== undefined && (!input.payload || typeof input.payload !== 'object' || Array.isArray(input.payload)))) return false;
   try { return JSON.stringify(input.payload || {}).length <= 16_384; }
   catch { return false; }
 }
 
-async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown> | null, companyId: string | null, module: string) {
+async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown> | null, companyId: string | null, module: string,
+  recipientTarget?: PlatformEventInput['recipientTarget']) {
   // Security alerts may contain a protected record link. Require both central
   // alert access and target-company security visibility before resolving recipients.
   const securityAccess = module === 'security' ? `AND EXISTS (
@@ -154,6 +160,18 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
         .bind(targetCompany, targetCompany, ...(locationClause ? [selector.id as string] : [])).all<{ id: string }>();
       addRecipients((rows.results || []).map((row) => row.id), selector, scopeCompany);
     }
+  }
+  if (recipientTarget) {
+    const authorized = companyId ? await env.DB.prepare(`SELECT e.id FROM employees e
+      JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1
+      WHERE e.id=? AND e.employment_status='active'
+        AND (EXISTS (SELECT 1 FROM employee_roles er JOIN role_permissions rp ON rp.role_id=er.role_id
+          JOIN permissions p ON p.id=rp.permission_id WHERE er.employee_id=e.id AND er.company_id=m.company_id
+            AND p.code=? AND rp.access_level IN ('view','create','edit','approve','manage')) OR EXISTS (SELECT 1 FROM employee_roles er JOIN role_permissions rp ON rp.role_id=er.role_id
+          JOIN permissions p ON p.id=rp.permission_id WHERE er.employee_id=e.id AND er.company_id=m.company_id
+            AND p.code='communications.support.manage' AND rp.access_level='manage'))
+      LIMIT 1`).bind(companyId, recipientTarget.employeeId, recipientTarget.permission).first<{ id: string }>() : null;
+    for (const id of employees.keys()) if (!authorized || id !== recipientTarget.employeeId) employees.delete(id);
   }
   return { employeeIds: [...employees.keys()], recipientReasons: employees, channels: [...new Set(channels)] };
 }
@@ -250,7 +268,7 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
 
   // An Event is durable even when current authorization resolves no recipients.
   // In that case it remains an event only: do not create an Alert or delivery.
-  const recipientPlan = await resolveRecipients(env, rule || null, input.companyId || null, input.module);
+  const recipientPlan = await resolveRecipients(env, rule || null, input.companyId || null, input.module, input.recipientTarget);
   if (!recipientPlan.employeeIds.length) return null;
 
   const existing = await env.DB.prepare(`

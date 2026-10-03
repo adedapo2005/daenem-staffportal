@@ -149,7 +149,7 @@ async function mutate(request:Request,env:Env,context:EnhancedSessionContext,id:
     if(Number(audited.meta?.changes||0)!==1)return json({error:'Conversation assignment audit was not recorded.'},500);
     if(employeeId){
       try{
-        await publishPlatformEvent(env,{companyId,module:'communications',eventType:'inbox_assigned',sourceType:'communication_inbox_conversation',sourceId:`${id}:${employeeId}`,title:'A Communications inbox conversation needs your attention.',summary:'An inbox conversation was assigned to staff.'});
+        await publishPlatformEvent(env,{companyId,module:'communications',eventType:'inbox_assigned',sourceType:'communication_inbox_conversation',sourceId:`${id}:${employeeId}`,title:'A Communications inbox conversation needs your attention.',summary:'An inbox conversation was assigned to staff.',recipientTarget:{employeeId,permission:'communications.support.inbox.view'}});
       }catch{
         await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id)
           VALUES(?,?,?,'communications','assignment_alert_publication_failed','communication_inbox_conversation',?,?,'web',?)`)
