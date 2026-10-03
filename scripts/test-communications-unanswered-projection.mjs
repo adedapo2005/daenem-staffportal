@@ -13,6 +13,10 @@ assert.match(list,/status==='waiting_for_staff'\?awaitingStaffSql/,
   'waiting_for_staff is a server-side queue filter');
 assert.match(source,/direction='outbound' AND m\.staff_employee_id IS NOT NULL\s+AND m\.status IN \('sent','delivered','read'\)/,
   'only provider-confirmed replies from a staff member count as answers');
+assert.match(source,/lastStaffReplySql=`SELECT MAX\(m\.created_at\) FROM communication_inbox_messages/,
+  'staff reply time uses the immutable message creation timestamp, not webhook-mutated updated_at');
+assert.doesNotMatch(source,/lastStaffReplySql=`SELECT MAX\(m\.updated_at\)/,
+  'delivery/read status changes cannot make an old staff reply appear newer than a customer message');
 assert.match(source,/direction='inbound' AND m\.status='received'/,
   'customer answer state is derived from persisted inbound messages');
 assert.match(source,/\(\(\$\{lastStaffReplySql\}\) IS NULL OR datetime\(\(\$\{lastStaffReplySql\}\)\)<=datetime\(\(\$\{lastCustomerReceivedSql\}\)\)\)/,

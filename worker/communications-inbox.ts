@@ -10,7 +10,7 @@ const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
 const levels:AccessLevel[]=['none','view','create','edit','approve','manage'];
 const WHATSAPP_SERVICE_WINDOW_MS=24*60*60*1000;
 function requestCorrelationId(request:Request){return (request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128)}
-const lastStaffReplySql=`SELECT MAX(m.updated_at) FROM communication_inbox_messages m
+const lastStaffReplySql=`SELECT MAX(m.created_at) FROM communication_inbox_messages m
   WHERE m.conversation_id=c.id AND m.direction='outbound' AND m.staff_employee_id IS NOT NULL
     AND m.status IN ('sent','delivered','read')`;
 const lastCustomerReceivedSql=`SELECT MAX(m.created_at) FROM communication_inbox_messages m
