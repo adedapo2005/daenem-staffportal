@@ -8,7 +8,8 @@ assert.ok(start >= 0 && end > start, 'Bakery export handler must exist');
 const handler = source.slice(start, end);
 
 assert.ok(handler.indexOf("accountabilityReports(request,env,context)") >= 0, 'export must reuse the governed report projection');
-assert.match(handler, /if\(!capabilities\.flour\)return json\(\{error:'Flour Usage Report permission is required\.'\},403\)/);
+assert.match(handler, /if\(section==='flour'&&!allowed\(context,'bakery\.flour_control'\)\)return json\(\{error:'Report not found\.'\},404\)/, 'dedicated flour authority must deny before building the report');
+assert.ok(handler.indexOf("allowed(context,'bakery.flour_control')") < handler.indexOf('accountabilityReports(request,env,context)'), 'flour authorization must precede every report query');
 assert.match(handler, /'export_report','bakery_accountability_report'/);
 assert.match(handler, /actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id/);
 assert.match(handler, /COMPANY,[\s\S]*requestCorrelationId\(request\)/, 'export audit must be company-scoped and request-correlated');
