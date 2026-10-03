@@ -1,4 +1,4 @@
-import type { SessionContext } from './auth';
+import { hasPermission, type SessionContext } from './auth';
 
 interface Env { DB: D1Database; APP_STAGE?: string }
 
@@ -7,14 +7,15 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' },
 });
 
-function groupRole(context: SessionContext) {
-  return context.roles.some((role) => role.code === 'owner' || role.code === 'group_admin');
+function canCompany(context: SessionContext, permission: string, level: 'view' | 'edit', companyId: string) {
+  if (hasPermission(context, permission, level, companyId)) return true;
+  return hasPermission(context, permission, level) &&
+    hasPermission(context, 'smart_bug.cross_company', 'view');
 }
 
-function scope(context: SessionContext) {
-  const isOwner = context.roles.some((role) => role.code === 'owner');
-  const companyIds = [...new Set(context.companies.map((company) => company.id))];
-  return { isOwner, companyIds };
+function authorizedCompanies(context: SessionContext, permission: string, level: 'view' | 'edit') {
+  return [...new Set(context.companies.map((company) => company.id))]
+    .filter((companyId) => canCompany(context, permission, level, companyId));
 }
 
 export async function routeSmartBugManagement(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
@@ -24,26 +25,18 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
   const reconciliationImportIntegrity = url.pathname === '/api/admin/smart-bugs/integrity/reconciliation-imports';
   const runIntegrityScan = url.pathname === '/api/admin/smart-bugs/detect/integrity' && request.method === 'POST';
   if ((!runIntegrityScan && request.method !== 'GET') || (!['/api/admin/smart-bugs/overview', '/api/admin/smart-bugs/incidents'].includes(url.pathname) && !incidentDetail && !storageMirrorIntegrity && !reconciliationImportIntegrity && !runIntegrityScan)) return null;
-  if (!groupRole(context)) return json({ error: 'Smart Bug Management access is not assigned.' }, 403);
-
-  const { isOwner, companyIds } = scope(context);
-  if (!isOwner && companyIds.length === 0) return json(runIntegrityScan
-    ? { ok: true, readOnly: true, scannedCompanies: 0, incidentsRecorded: 0, findings: [] }
-    : storageMirrorIntegrity || reconciliationImportIntegrity
-    ? {
-      detector: reconciliationImportIntegrity ? 'reconciliation_import_row_count' : 'storage_mirror_integrity',
-      readOnly: true, findingCount: 0,
-      findings: reconciliationImportIntegrity ? { importsWithRowCountMismatch: 0 } : { mirroredWithoutSuccessEvidence: 0, failedWithoutErrorCode: 0 },
-      state: 'clear',
-    }
-    : url.pathname.endsWith('/overview')
-      ? { incidents: 0, active: 0, bySeverity: { P0: 0, P1: 0, P2: 0, P3: 0 }, byStatus: {}, mode: 'observe_only', autoRemediationEnabled: false }
-      : { incidents: [], limit: 50 });
-  const scopeSql = isOwner ? '' : ` AND company_id IN (${companyIds.map(() => '?').join(',')})`;
-  const binds = isOwner ? [] : companyIds;
+  const permission = runIntegrityScan ? 'smart_bug.detectors' :
+    storageMirrorIntegrity || reconciliationImportIntegrity ? 'smart_bug.integrity' : 'smart_bug.incidents';
+  const level = runIntegrityScan ? 'edit' : 'view';
+  const companyIds = authorizedCompanies(context, permission, level);
+  const hasCrossCompany = hasPermission(context, permission, level) &&
+    hasPermission(context, 'smart_bug.cross_company', 'view');
+  if (!hasCrossCompany && companyIds.length === 0) return json({ error: 'Smart Bug Management is unavailable.' }, 404);
+  const scopeSql = hasCrossCompany ? '' : ` AND company_id IN (${companyIds.map(() => '?').join(',')})`;
+  const binds = hasCrossCompany ? [] : companyIds;
 
   if (runIntegrityScan) {
-    const companyRows = isOwner
+    const companyRows = hasCrossCompany
       ? await env.DB.prepare('SELECT id FROM companies ORDER BY id').all<{ id: string }>()
       : { results: companyIds.map((id) => ({ id })) };
     const scanCompanies = (companyRows.results || []).map((row) => row.id);
@@ -174,11 +167,12 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
       FROM smart_bug_incidents WHERE id=?${scopeSql}
     `).bind(incidentDetail[1], ...binds).first<Record<string, unknown>>();
     if (!incident) return json({ error: 'Incident not found.' }, 404);
-    const evidence = await env.DB.prepare(`
+    const canViewDiagnostics = canCompany(context, 'smart_bug.diagnostics', 'view', String(incident.companyId || ''));
+    const evidence = canViewDiagnostics ? await env.DB.prepare(`
       SELECT evidence_type AS evidenceType,source_module AS sourceModule,
         safe_summary AS summary,created_at AS createdAt
       FROM smart_bug_evidence WHERE incident_id=? ORDER BY created_at ASC,id ASC LIMIT 100
-    `).bind(incidentDetail[1]).all<Record<string, unknown>>();
+    `).bind(incidentDetail[1]).all<Record<string, unknown>>() : { results: [] };
     return json({ incident, evidence: evidence.results || [] });
   }
 
@@ -225,7 +219,7 @@ export async function routeSmartBugManagement(request: Request, env: Env, contex
       (recurrence && !['recurring','first_occurrence'].includes(recurrence))) {
     return json({ error: 'Choose valid bounded incident filters.' }, 400);
   }
-  if (companyId && !isOwner && !companyIds.includes(companyId)) return json({ incidents: [], limit, status: status || null });
+  if (companyId && !hasCrossCompany && !companyIds.includes(companyId)) return json({ incidents: [], limit, status: status || null });
   const filters = [
     ...(status ? [[' AND status=?', status] as const] : []),
     ...(severity ? [[' AND severity=?', severity] as const] : []),
