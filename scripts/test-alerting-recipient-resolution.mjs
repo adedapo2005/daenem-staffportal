@@ -16,8 +16,8 @@ assert.match(resolver, /recipientTarget\.employeeId/);
 assert.match(resolver, /recipientTarget\.permission/);
 assert.match(resolver, /employee_company_memberships m ON m\.employee_id=e\.id AND m\.company_id=\? AND m\.active=1/);
 assert.match(resolver, /p\.code='communications\.support\.manage' AND rp\.access_level='manage'/);
-assert.match(resolver, /if \(!authorized \|\| id !== recipientTarget\.employeeId\) employees\.delete\(id\)/,
-  'targeted events filter rule recipients to the authorized target employee');
+assert.match(resolver, /employees\.clear\(\);\s*if \(authorized\) employees\.set\(recipientTarget\.employeeId/,
+  'targeted events resolve the explicitly authorized employee independently of generic rule audiences');
 assert.match(resolver, /Never deliver to a silently filtered subset of a corrupted saved rule/);
 assert.match(resolver, /employeeIds: \[\], recipientReasons: new Map<string, string>\(\), channels: \[\]/);
 assert.match(publisher, /if \(!recipientPlan\.employeeIds\.length\) return null/);

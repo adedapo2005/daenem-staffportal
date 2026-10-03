@@ -171,7 +171,14 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
           JOIN permissions p ON p.id=rp.permission_id WHERE er.employee_id=e.id AND er.company_id=m.company_id
             AND p.code='communications.support.manage' AND rp.access_level='manage'))
       LIMIT 1`).bind(companyId, recipientTarget.employeeId, recipientTarget.permission).first<{ id: string }>() : null;
-    for (const id of employees.keys()) if (!authorized || id !== recipientTarget.employeeId) employees.delete(id);
+    // An explicit event target is itself a recipient selector. Resolve it
+    // against active company membership and the requested permission, then
+    // replace the generic audience. A saved rule's unrelated audience must
+    // not suppress a valid target or add other recipients to a targeted event.
+    employees.clear();
+    if (authorized) employees.set(recipientTarget.employeeId, JSON.stringify({
+      selector: 'user', scope: companyId, permission: recipientTarget.permission,
+    }));
   }
   return { employeeIds: [...employees.keys()], recipientReasons: employees, channels: [...new Set(channels)] };
 }

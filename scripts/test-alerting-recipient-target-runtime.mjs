@@ -43,6 +43,12 @@ assert.deepEqual(otherCompanyOnly.employeeIds, [], 'membership and inbox permiss
 
 const differentRuleAudience = await resolveRecipients(env(), { recipientsJson: '[{"type":"user","id":"employee-other"}]', channelsJson: '["in_app"]' },
   'company-a', 'communications', target);
-assert.deepEqual(differentRuleAudience.employeeIds, [], 'configured audience is intersected with the assigned employee');
+assert.deepEqual(differentRuleAudience.employeeIds, ['employee-assignee'], 'an unrelated saved audience cannot suppress the authorized assigned employee');
 
-console.log('Alerting recipient target and permission runtime: PASS 4/4');
+const noGenericAlertAccess = await resolveRecipients(env({ audience: ['employee-other'] }), null, 'company-a', 'communications', target);
+assert.deepEqual(noGenericAlertAccess.employeeIds, ['employee-assignee'], 'target permission and active company membership do not require generic alerting.access');
+
+const inactiveOrRevoked = await resolveRecipients(env({ targetAuthorized: false }), null, 'company-a', 'communications', target);
+assert.deepEqual(inactiveOrRevoked.employeeIds, [], 'inactive, permission-revoked, or non-member targets receive no alert');
+
+console.log('Alerting recipient target and permission runtime: PASS 6/6');
