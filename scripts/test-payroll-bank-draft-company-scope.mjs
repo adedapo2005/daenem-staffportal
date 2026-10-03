@@ -10,14 +10,14 @@ const javascript = ts.transpile(source.replace(authImport, testAuth), { module: 
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`;
 const { routePayrollBankDraft } = await import(moduleUrl);
 
-function mockEnv() {
+function mockEnv(runStatus = 'approved') {
   const writes = [];
   const prepared = [];
   const env = { DB: {
     prepare(sql) {
       const statement = { sql, bindings: [], bind(...values) { this.bindings = values; return this; },
         async first() {
-          if (sql.includes('FROM payroll_runs')) return { id: 'run-b', companyId: 'company-b', runNo: 'RUN-1', status: 'approved', totalNetKobo: 2500 };
+          if (sql.includes('FROM payroll_runs')) return { id: 'run-b', companyId: 'company-b', runNo: 'RUN-1', status: runStatus, totalNetKobo: 2500 };
           if (sql.includes('FROM payroll_banks')) return { bankKey: 'BANK-X', name: 'Bank X', adapter: 'csv', directApiAvailable: 0 };
           return null;
         },
@@ -75,4 +75,18 @@ async function requestFor(env, user) {
   assert.equal(writes[0].bindings[2], 'company-b', 'Owner-created internal draft remains scoped to its target company');
 }
 
+{
+  const { env, writes } = mockEnv('paid');
+  const response = await requestFor(env, context({ companyPermissions: { 'company-b': { 'payroll.access': 'edit' } } }));
+  assert.equal(response.status, 409, 'finalized paid run cannot create another payment draft');
+  assert.match((await response.json()).error, /finalized payroll run/i);
+  assert.equal(writes.length, 0, 'paid-run draft denial performs zero writes');
+}
+
+{
+  const { env, writes } = mockEnv('paid');
+  const response = await requestFor(env, context({ owner: true, companies: ['company-a'], permissions: {}, companyPermissions: {} }));
+  assert.equal(response.status, 409, 'Owner internal authority cannot create a draft for a finalized paid run');
+  assert.equal(writes.length, 0, 'Owner paid-run draft denial performs zero writes');
+}
 console.log('PASS: dedicated payroll bank draft target-company denial, authorized Company B draft, held line, scoped audit, and Owner authority');

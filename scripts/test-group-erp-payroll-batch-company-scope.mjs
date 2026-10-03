@@ -19,7 +19,7 @@ const compiled = ts.transpileModule(executable, {
 }).outputText;
 const { routeGroupErp } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
-function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'none', failRequiredAudit = false } = {}) {
+function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'none', failRequiredAudit = false, payrollRunStatus = 'approved' } = {}) {
   const calls = [], writes = [], auditAttempts = [];
   const context = {
     roles: owner ? [{ code: 'owner' }] : [{ code: 'employee' }],
@@ -41,6 +41,8 @@ function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'n
           return {
             first: async () => sql.includes('FROM payroll_payment_batches pb') && visible(sql, args, 'company-b')
               ? { id: 'batch-b', company_id: 'company-b', batch_no: 'BATCH-B', adapter: 'manual' }
+              : sql.includes('FROM payroll_runs') ? { id: 'run-b', companyId: 'company-b', runNo: 'RUN-1', status: payrollRunStatus, totalNetKobo: 2500 }
+              : sql.includes('FROM payroll_banks') ? { bankKey: 'BANK-X', name: 'Bank X', adapter: 'csv', directApiAvailable: 0 }
               : null,
             all: async () => sql.includes('FROM payroll_payment_batches pb')
               ? { results: ['company-a', 'company-b'].filter(id => visible(sql, args, id, 2)).map(id => ({ id: `batch-${id.slice(-1)}`, companyId: id })) }
@@ -56,11 +58,18 @@ function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'n
           };
         }
       };
-    }
+    },
+    async batch(statements) { writes.push(...statements.map(statement => ({ sql: statement.sql, args: statement.args }))); }
   };
   return { context, env: { DB, AUTH_PEPPER: 'test-only-fixture-key' }, calls, writes, auditAttempts };
 }
 
+const paidRunDraft = fixture({ companyBPayroll: 'edit', payrollRunStatus: 'paid' });
+const paidRunDraftResponse = await routeGroupErp(new Request('https://staffportal.test/api/payroll/payment-batches', {
+  method: 'POST', headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ payrollRunId: 'run-b', fundingBankKey: 'BANK-X' })
+}), paidRunDraft.env, paidRunDraft.context);
+check('duplicate Group ERP path rejects a paid run before draft writes', paidRunDraftResponse.status === 409 && paidRunDraft.writes.length === 0);
 const noPayroll = fixture();
 const noPayrollResponse = await routeGroupErp(new Request('https://staffportal.test/api/payroll/payment-batches'), noPayroll.env, noPayroll.context);
 check('payment-batch list with no company Payroll permission returns an empty neutral result', noPayrollResponse.status === 200 && (await noPayrollResponse.json()).batches.length === 0);
