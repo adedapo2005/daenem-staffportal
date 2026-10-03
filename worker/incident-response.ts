@@ -24,6 +24,27 @@ async function scopedOperationId(companyId: string, operationId: string) {
   return `incident-op-${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
+async function publishIncidentEventWithFailureAudit(
+  env: IncidentEnv,
+  context: SessionContext,
+  incidentId: string,
+  input: Parameters<typeof publishPlatformEvent>[1],
+) {
+  try {
+    await publishPlatformEvent(env, input);
+  } catch {
+    // Keep incident truth durable when central alerting is unavailable.
+    // Retry timing/execution remains governed by the alerting policy.
+    await env.DB.prepare(`
+      INSERT INTO safety_incident_audit(id,incident_id,actor_employee_id,action,details_json)
+      VALUES(?,?,?,?,?)
+    `).bind(
+      id('incident-audit'), incidentId, context.employee.id, 'alert_publication_failed',
+      JSON.stringify({ eventType: input.eventType, sourceType: input.sourceType, sourceId: incidentId }),
+    ).run();
+  }
+}
+
 export async function routeIncidentResponse(request: Request, env: IncidentEnv, context: SessionContext, executionContext: ExecutionContext): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/incidents')) return null;
@@ -58,7 +79,7 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
         ? json({ ok: true, created: false, incident: { id: existing.id, status: existing.status, locationStatus: existing.locationStatus } })
         : neutral();
     }
-    executionContext.waitUntil(publishPlatformEvent(env, {
+    executionContext.waitUntil(publishIncidentEventWithFailureAudit(env, context, incidentId, {
       companyId,
       module: 'security',
       eventType: 'safety.incident.created',
@@ -67,7 +88,7 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
       title: 'A safety incident was reported',
       summary: 'A safety incident requires review.',
       relatedPath: `/incidents/${encodeURIComponent(incidentId)}`,
-    }).catch(() => null));
+    }));
     return json({ ok: true, created: true, incident: { id: incidentId, status: 'open', locationStatus } }, 201);
   }
   const locationMatch = url.pathname.match(/^\/api\/incidents\/([^/]+)\/location$/);
@@ -150,7 +171,7 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
         .bind(id('incident-audit'), incidentId, context.employee.id, 'status_changed', JSON.stringify({ fromStatus: incident.status, toStatus: nextStatus, reason: reason || null, terminal })),
     ]);
     if (Number(updated.meta?.changes || 0) !== 1) return neutral();
-    executionContext.waitUntil(publishPlatformEvent(env, {
+    executionContext.waitUntil(publishIncidentEventWithFailureAudit(env, context, incidentId, {
       companyId,
       module: 'security',
       eventType: 'safety.incident.status_changed',
@@ -159,7 +180,7 @@ export async function routeIncidentResponse(request: Request, env: IncidentEnv, 
       title: 'A safety incident status changed',
       summary: 'A safety incident status requires review.',
       relatedPath: `/incidents/${encodeURIComponent(incidentId)}`,
-    }).catch(() => null));
+    }));
     return json({ ok: true, changed: true, status: nextStatus, locationStatus: terminal ? 'ended' : undefined });
   }
   const detailMatch = url.pathname.match(/^\/api\/incidents\/([^/]+)$/);
