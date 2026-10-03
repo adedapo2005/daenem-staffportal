@@ -84,7 +84,14 @@ function validPlatformEvent(input: PlatformEventInput) {
   catch { return false; }
 }
 
-async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown> | null, companyId: string | null) {
+async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown> | null, companyId: string | null, module: string) {
+  // Security alerts may contain a protected record link. Require both central
+  // alert access and target-company security visibility before resolving recipients.
+  const securityAccess = module === 'security' ? `AND EXISTS (
+    SELECT 1 FROM employee_roles sr JOIN role_permissions srp ON srp.role_id=sr.role_id
+    JOIN permissions sp ON sp.id=srp.permission_id
+    WHERE sr.employee_id=e.id AND sr.company_id=m.company_id
+      AND sp.code='security.access' AND srp.access_level<>'none')` : '';
   let selectors: AlertRecipientSelector[] = [{ type: 'all_authorized' }];
   let channels: string[] = ['in_app'];
   if (rule) {
@@ -113,7 +120,7 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
         WHERE e.id=? AND e.employment_status='active' AND m.active=1 AND (? IS NULL OR m.company_id=?)
         AND EXISTS (SELECT 1 FROM employee_roles er JOIN role_permissions rp ON rp.role_id=er.role_id
           JOIN permissions p ON p.id=rp.permission_id WHERE er.employee_id=e.id AND er.company_id=m.company_id
-          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+          AND p.code='alerting.access' AND rp.access_level<>'none')${securityAccess}`)
         .bind(selector.id, scopeCompany, scopeCompany).first<{ id: string }>();
       if (row) addRecipients([row.id], selector, scopeCompany);
     } else if (selector.type === 'role' && selector.id) {
@@ -124,7 +131,7 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
         WHERE e.employment_status='active' AND r.code=? AND (? IS NULL OR m.company_id=?)
         AND EXISTS (SELECT 1 FROM employee_roles ar JOIN role_permissions rp ON rp.role_id=ar.role_id
           JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
-          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+          AND p.code='alerting.access' AND rp.access_level<>'none')${securityAccess}`)
         .bind(selector.id, scopeCompany, scopeCompany).all<{ id: string }>();
       addRecipients((rows.results || []).map((row) => row.id), selector, scopeCompany);
     } else if (selector.type === 'department' && selector.id) {
@@ -132,7 +139,7 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
         WHERE e.employment_status='active' AND m.active=1 AND e.department=? AND (? IS NULL OR m.company_id=?)
         AND EXISTS (SELECT 1 FROM employee_roles ar JOIN role_permissions rp ON rp.role_id=ar.role_id
           JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
-          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+          AND p.code='alerting.access' AND rp.access_level<>'none')${securityAccess}`)
         .bind(selector.id, scopeCompany, scopeCompany).all<{ id: string }>();
       addRecipients((rows.results || []).map((row) => row.id), selector, scopeCompany);
     } else if (selector.type === 'business' || selector.type === 'site' || selector.type === 'all_authorized') {
@@ -143,7 +150,7 @@ async function resolveRecipients(env: AlertingEnv, rule: Record<string, unknown>
         WHERE e.employment_status='active' AND m.active=1 AND (? IS NULL OR m.company_id=?)${locationClause}
         AND EXISTS (SELECT 1 FROM employee_roles ar JOIN role_permissions rp ON rp.role_id=ar.role_id
           JOIN permissions p ON p.id=rp.permission_id WHERE ar.employee_id=e.id AND ar.company_id=m.company_id
-          AND p.code='alerting.access' AND rp.access_level<>'none')`)
+          AND p.code='alerting.access' AND rp.access_level<>'none')${securityAccess}`)
         .bind(targetCompany, targetCompany, ...(locationClause ? [selector.id as string] : [])).all<{ id: string }>();
       addRecipients((rows.results || []).map((row) => row.id), selector, scopeCompany);
     }
@@ -243,7 +250,7 @@ export async function publishPlatformEvent(env: AlertingEnv, input: PlatformEven
 
   // An Event is durable even when current authorization resolves no recipients.
   // In that case it remains an event only: do not create an Alert or delivery.
-  const recipientPlan = await resolveRecipients(env, rule || null, input.companyId || null);
+  const recipientPlan = await resolveRecipients(env, rule || null, input.companyId || null, input.module);
   if (!recipientPlan.employeeIds.length) return null;
 
   const existing = await env.DB.prepare(`

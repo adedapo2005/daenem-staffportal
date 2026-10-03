@@ -2,8 +2,11 @@ import fs from 'node:fs';
 const migration = fs.readFileSync('migrations/0076_incident_response_foundation.sql', 'utf8');
 const worker = fs.readFileSync('worker/incident-response.ts', 'utf8');
 const entry = fs.readFileSync('worker/app-entry.ts', 'utf8');
+const workerEntry = fs.readFileSync('worker/index.ts', 'utf8');
+const alerting = fs.readFileSync('worker/alerting.ts', 'utf8');
+const statusRoute = worker.slice(worker.indexOf('const statusMatch'), worker.indexOf('const detailMatch'));
 const checks = [
-  ['effective application entry routes incidents to the migration-aligned incident authority', entry.includes("import { routeIncidentResponse } from './incident-response'") && entry.includes('const response = await routeIncidentResponse(request, env, context)') && !entry.includes("import { routeIncidents } from './incidents'")],
+  ['effective application entries route incidents to the migration-aligned incident authority with execution context', entry.includes("import { routeIncidentResponse } from './incident-response'") && entry.includes('const response = await routeIncidentResponse(request, env, context, ctx)') && workerEntry.includes('routeIncidentResponse(request, env, context, _ctx)') && !entry.includes("import { routeIncidents } from './incidents'")],
   ['operation id uniqueness', migration.includes('operation_id TEXT NOT NULL UNIQUE')],
   ['location unavailable is valid', migration.includes("location_status IN ('live','degraded','paused','unavailable','ended')") && worker.includes("'unavailable'")],
   ['neutral unauthorized denial', worker.includes("const neutral = () => json({ error: 'Incident not found.' }, 404)")],
@@ -28,5 +31,9 @@ const checks = [
   ['status transitions require company-scoped security edit', worker.includes("const statusMatch = url.pathname.match(/^\\/api\\/incidents\\/([^/]+)\\/status$/)") && worker.includes("hasPermission(context, 'security.access', 'edit', companyId)")],
   ['terminal status requires a reason and ends location truthfully', worker.includes("nextStatus === 'resolved' || nextStatus === 'cancelled'") && worker.includes("A reason is required to end an incident.") && worker.includes("location_status=CASE WHEN ?=1 THEN 'ended'")],
   ['status changes are audited with from and to state', worker.includes("'status_changed'") && worker.includes('fromStatus') && worker.includes('toStatus')],
+  ['incident creation publishes only after a new idempotent insert through the central alerting pipeline', worker.indexOf('if (Number(inserted.meta?.changes || 0) === 0)') < worker.indexOf('executionContext.waitUntil(publishPlatformEvent(env, {') && worker.includes("eventType: 'safety.incident.created'") && worker.includes("sourceType: 'safety_incident'") && entry.includes('routeIncidentResponse(request, env, context, ctx)')],
+  ['incident status events publish only after successful compare-and-set and remain separate from incident status writes', statusRoute.indexOf('if (Number(updated.meta?.changes || 0) !== 1) return neutral();') < statusRoute.indexOf("eventType: 'safety.incident.status_changed'") && statusRoute.includes('executionContext.waitUntil')],
+  ['incident alert event content excludes location, user summary, and evidence payload', worker.includes("title: 'A safety incident was reported'") && worker.includes("summary: 'A safety incident requires review.'") && !worker.includes('payload: { latitude')],
+  ['security alert recipients require target-company security access before alert creation', alerting.includes("const securityAccess = module === 'security'") && alerting.includes("sp.code='security.access' AND srp.access_level<>'none'") && alerting.includes('resolveRecipients(env, rule || null, input.companyId || null, input.module)')],
 ];
 for (const [name, ok] of checks) { if (!ok) throw new Error(`FAIL: ${name}`); console.log(`PASS: ${name}`); }

@@ -433,7 +433,7 @@ export default {
       if (url.pathname === '/api/ai/guide/catalog' && request.method === 'GET') return securityHeaders(await aiGuideCatalog(context));
       if (url.pathname === '/api/dashboard/summary' && request.method === 'GET') return securityHeaders(await dashboardSummary(request, env, context));
       if (url.pathname === '/api/security/recent' && request.method === 'GET') return securityHeaders(await recentSecurity(request, env, context));
-      const incidentResponse = await routeIncidentResponse(request, env, context);
+      const incidentResponse = await routeIncidentResponse(request, env, context, _ctx);
       if (incidentResponse) return securityHeaders(incidentResponse);
       if (url.pathname === '/api/admin/roles' && request.method === 'GET') return securityHeaders(await rolesForCompany(request, env, context));
       return securityHeaders(json({ error: 'API route not found.' }, 404));
