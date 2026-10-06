@@ -136,6 +136,27 @@
 }
 
 .csp-layout-master-detail-workspace .csp-purpose{display:none!important}
+.csp-layout-master-detail-workspace .csp-master-toolbar{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+}
+.csp-layout-master-detail-workspace .csp-master-sort button{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:28px;
+  border:0;
+  background:transparent;
+  padding:0;
+  color:inherit;
+  font:inherit;
+  cursor:pointer;
+}
+.csp-layout-master-detail-workspace .csp-master-sort button:focus-visible{
+  outline:2px solid #1f5eff;
+  outline-offset:2px;
+  border-radius:6px;
+}
 
 @media (min-width:3200px){
   .csp-layout-master-detail-workspace .csp-grid{
@@ -264,4 +285,49 @@
   .csp-record-breadcrumbs{font-size:11px}
   .csp-dedicated-record .csp-record-workspace{min-height:0}
   .csp-dedicated-record .csp-record-workspace-header{grid-template-columns:1fr!important}
+}
+
+/* Quick Inspection remains lightweight, explicitly dismissible and keyboard-safe. */
+.csp-record-quick-inspection-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:4px;
+}
+.csp-record-quick-inspection-header h3{margin:2px 0 0}
+.csp-record-quick-inspection-close{
+  flex:0 0 auto;
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(54,77,113,.14);
+  border-radius:9px;
+  background:#fff;
+  color:#526a80;
+  cursor:pointer;
+}
+.csp-record-quick-inspection-close:hover{background:#f4f8fa;color:#0b5961}
+.csp-record-quick-inspection-open-full{width:100%}
+.csp-record-quick-inspection-toggle{
+  width:100%;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border:1px solid rgba(12,111,120,.17);
+  border-radius:11px;
+  background:#f7fbfb;
+  color:#0b5961;
+  font:inherit;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+.csp-record-quick-inspection-close:focus-visible,
+.csp-record-quick-inspection-toggle:focus-visible{
+  outline:2px solid #1f5eff;
+  outline-offset:2px;
 }

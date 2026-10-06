@@ -137,6 +137,15 @@ must(recordInteractionSource.includes('Back To Records'), 'dedicated record retu
 must(dashboard.includes("url.searchParams.set('record', recordRouteKey(record,index))"), 'dedicated record URL routing is missing');
 must(dashboard.includes("window.addEventListener('popstate', syncRecordRoute)"), 'dedicated record browser history synchronization is missing');
 must(dashboard.includes("window.history.pushState(state,'',url)"), 'dedicated record pushState navigation is missing');
+must(recordInteractionSource.includes('value={listState.query}'), 'record list search state is not controlled/preservable');
+must(recordInteractionSource.includes("listState.view==='priority'"), 'record list filter state is not controlled/preservable');
+must(recordInteractionSource.includes('sort:nextSort[listState.sort]'), 'record list sort state is not controlled/preservable');
+must(recordInteractionSource.includes('scrollTop:event.currentTarget.scrollTop'), 'record list scroll state is not captured');
+must(dashboard.includes('recordListState={recordListState}'), 'record list state is not preserved above dedicated record routing');
+must(recordInteractionSource.includes('aria-label="Close Quick Inspection"'), 'Quick Inspection explicit close control is missing');
+must(recordInteractionSource.includes('Open Quick Inspection'), 'Quick Inspection reopen control is missing');
+must(recordInteractionSource.includes("event.key==='Escape'"), 'Quick Inspection Escape handling is missing');
+must(recordInteractionSource.includes('quickInspectionToggleRef.current?.focus()') && recordInteractionSource.includes('quickInspectionCloseRef.current?.focus()'), 'Quick Inspection focus return/entry handling is missing');
 for (const technicalCopy of ['Operational Context', 'Data Scope', 'working context', 'Authorized Record Filters', 'Search Authorized Records', 'aria-label="Authorized Records"']) {
   must(!recordInteractionSource.includes(technicalCopy), 'record interaction contains technical user-facing copy: ' + technicalCopy);
 }
