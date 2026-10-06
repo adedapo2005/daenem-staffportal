@@ -162,6 +162,7 @@ function TextEntryDialog({
   const [value, setValue] = useState(initialValue);
   const [validation, setValidation] = useState('');
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   const cancelRef = useRef(onCancel);
   useEffect(() => { cancelRef.current = onCancel; }, [onCancel]);
   useEffect(() => {
@@ -170,7 +171,19 @@ function TextEntryDialog({
     setValidation('');
     const previous = document.activeElement as HTMLElement | null;
     const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 0);
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') cancelRef.current(); };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); cancelRef.current(); return; }
+      if (event.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && active === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       window.clearTimeout(focusTimer);
@@ -184,8 +197,9 @@ function TextEntryDialog({
     if (trimmed.length < 3) { setValidation('Enter at least 3 characters so the reviewer has useful context.'); return; }
     onSubmit(trimmed);
   };
-  return <div className="spend-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
-    <div className="spend-dialog" role="dialog" aria-modal="true" aria-labelledby="spend-dialog-title" aria-describedby="spend-dialog-description" onMouseDown={(event) => event.stopPropagation()}>
+  const backdropDismissAllowed = danger === false;
+  return <div className="spend-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (backdropDismissAllowed && event.target === event.currentTarget) onCancel(); }}>
+    <div ref={dialogRef} className="spend-dialog" role="dialog" aria-modal="true" aria-labelledby="spend-dialog-title" aria-describedby="spend-dialog-description" onMouseDown={(event) => event.stopPropagation()}>
       <div className="spend-dialog-heading"><div><span className="eyebrow">CONTROLLED INPUT</span><h2 id="spend-dialog-title">{title}</h2><p id="spend-dialog-description">{description}</p></div><button type="button" className="spend-dialog-close" onClick={onCancel} aria-label="Close dialog"><X size={18} /></button></div>
       <label><span>{label}</span><textarea ref={inputRef} value={value} onChange={(event) => { setValue(event.target.value); setValidation(''); }} placeholder={placeholder} rows={5} aria-invalid={Boolean(validation)} aria-describedby={validation ? 'spend-dialog-error' : undefined} /></label>
       {validation && <p id="spend-dialog-error" className="spend-dialog-error" role="alert">{validation}</p>}

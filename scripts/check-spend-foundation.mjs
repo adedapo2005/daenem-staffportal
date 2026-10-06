@@ -94,6 +94,7 @@ if (spend.includes('commitmentStates') || /status\s+IN\s*\(\s*'committed'[^)]*'c
 for (const contract of ['roleAssignedForCompany', 'requiredPermission', 'approvalPermissionSatisfied', 'master_value_edited', 'master_value_merged', 'before', 'after']) expect('worker/spend.ts', spend, contract);
 for (const contract of ['allocationTemplateId', 'Select approved template', 'beneficiaryCostCenters', 'rawCalculatedShareKobo', 'roundingAdjustmentKobo']) expect('spend-entry.tsx', entry + spend, contract);
 if (entry.includes('window.prompt')) throw new Error('Spend UI must use controlled modal/sheet input, not window.prompt.');
+for (const dialogContract of ['dialogRef', "event.key !== 'Tab'", 'querySelectorAll<HTMLElement>', 'backdropDismissAllowed', 'danger === false']) expect('spend-entry.tsx', entry, dialogContract);
 for (const phrase of ['My Expense Requests', 'controlled', 'Submit request', 'Offline: request safely queued', 'ERP_CONTEXTS', 'Show Both', 'Network location is not GPS']) expect('spend-entry.tsx', entry, phrase);
 expect('spend-entry.tsx', entry, "import { OfflinePlatformProvider, useOfflinePlatform } from './offline-sync';");
 expect('spend-entry.tsx', entry, '<OfflinePlatformProvider context={context}>');

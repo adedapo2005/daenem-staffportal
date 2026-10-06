@@ -199,7 +199,21 @@ async function openSpend(browser, role, viewport, tab) {
   page.on('console', (message) => { if (message.type() === 'error' && !/Failed to load resource/.test(message.text())) { runtimeErrors.push(`${role} console: ${message.text()}`); console.error(`QA_CONSOLE_ERROR ${role}: ${message.text()}`); } });
   page.on('dialog', (dialog) => { runtimeErrors.push(`${role}: unexpected browser dialog ${dialog.type()}`); console.error(`QA_BROWSER_DIALOG ${role}: ${dialog.type()}`); void dialog.dismiss(); });
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('[data-offline-sync-indicator]', { timeout: 15000 });
+  try {
+    await page.waitForSelector('[data-offline-sync-indicator], [data-canonical-runtime]', { timeout: 15000 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      href: location.href,
+      bodyText: document.body.innerText.slice(0, 6000),
+      rootHtml: document.getElementById('root')?.innerHTML.slice(0, 2000) || '',
+      rootChildren: document.getElementById('root')?.childElementCount || 0,
+      canonical: Boolean(document.querySelector('.csp-shell')),
+      authLoading: Boolean(document.querySelector('.auth-loading')),
+      offlineIndicator: Boolean(document.querySelector('[data-offline-sync-indicator]')),
+    }));
+    console.error(`QA_FULL_APP_DIAGNOSTIC ${JSON.stringify(diagnostic)}`);
+    throw error;
+  }
   await page.waitForTimeout(500);
   const moduleId = role === 'owner' ? 'spend-intelligence' : role === 'manager' ? 'expense-approvals' : 'expense-requests';
   await page.evaluate((id) => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id } })), moduleId);
@@ -349,12 +363,26 @@ async function main() {
     await admin.page.locator('.spend-view > .spend-view-heading h2').filter({ hasText: 'Cost Intelligence Administration' }).waitFor();
     const adminEvidence = await inspect(admin.page, 'spend-admin-mobile-390x844.png', 'Cost Intelligence Administration');
     assert(adminEvidence.text.includes('Edit') && adminEvidence.text.includes('Deactivate') && adminEvidence.text.includes('PROPOSALS'), 'Admin controlled-data actions are not visible in the rendered UI');
-    await admin.page.getByRole('button', { name: 'Reject', exact: true }).click();
+    const rejectButton = admin.page.getByRole('button', { name: 'Reject', exact: true });
+    await rejectButton.click();
     const rejectionDialog = admin.page.getByRole('dialog', { name: 'Reject master-data proposal' });
     await rejectionDialog.waitFor();
-    assert(await rejectionDialog.locator('textarea').evaluate((element) => element === document.activeElement), 'Controlled rejection modal did not focus its textarea');
+    const rejectionTextarea = rejectionDialog.locator('textarea');
+    const rejectionClose = rejectionDialog.getByRole('button', { name: 'Close dialog' });
+    const rejectionSubmit = rejectionDialog.getByRole('button', { name: 'Reject proposal', exact: true });
+    assert(await rejectionTextarea.evaluate((element) => element === document.activeElement), 'Controlled rejection modal did not focus its textarea');
+    await inspect(admin.page, 'spend-focused-dialog-reject-390x844.png', 'Reject master-data proposal');
+    await rejectionSubmit.focus();
+    await admin.page.keyboard.press('Tab');
+    assert(await rejectionClose.evaluate((element) => element === document.activeElement), 'Focused rejection dialog did not trap forward Tab at the final control');
+    await admin.page.keyboard.press('Shift+Tab');
+    assert(await rejectionSubmit.evaluate((element) => element === document.activeElement), 'Focused rejection dialog did not trap reverse Tab at the first control');
+    await admin.page.locator('.spend-dialog-backdrop').click({ position: { x: 2, y: 2 } });
+    assert(await rejectionDialog.isVisible(), 'High-risk rejection dialog closed from a backdrop click');
     await admin.page.keyboard.press('Escape');
     await rejectionDialog.waitFor({ state: 'detached' });
+    await admin.page.waitForTimeout(50);
+    assert(await rejectButton.evaluate((element) => element === document.activeElement), 'Focused rejection dialog did not return focus to the trigger after Escape');
     await admin.browserContext.close();
   } finally {
     await browser.close();
