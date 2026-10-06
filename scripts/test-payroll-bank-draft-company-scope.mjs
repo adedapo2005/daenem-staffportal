@@ -3,12 +3,22 @@ import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 
 const source = await readFile(new URL('../worker/payroll-bank-draft.ts', import.meta.url), 'utf8');
+const erpSource = await readFile(new URL('../worker/group-erp.ts', import.meta.url), 'utf8');
 const authImport = "import{hasPermission,type AuthEnv,type SessionContext}from'./auth';";
 assert.ok(source.includes(authImport), 'the dedicated payroll bank draft route must keep its auth dependency');
 const testAuth = `const hasPermission=(context,code,minimum='view',companyId)=>{const levels=['none','view','create','edit','approve','manage'];const granted=companyId?context.companyPermissions?.[companyId]?.[code]||'none':context.permissions?.[code]||'none';return levels.indexOf(granted)>=levels.indexOf(minimum)};`;
 const javascript = ts.transpile(source.replace(authImport, testAuth), { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 });
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`;
 const { routePayrollBankDraft } = await import(moduleUrl);
+
+const saveBankStart = erpSource.indexOf('async function saveBankAccount(');
+const saveBankEnd = erpSource.indexOf('\nasync function ', saveBankStart);
+const saveBankSource = erpSource.slice(saveBankStart, saveBankEnd < 0 ? undefined : saveBankEnd);
+assert.ok(saveBankSource.includes('VALUES(?,?,?,?,?,?,?,?,0,?)'), 'new employee bank details must remain pending, not become payout-primary before verification');
+assert.ok(!saveBankSource.includes('UPDATE employee_bank_accounts SET is_primary=0'), 'saving pending details must not demote an existing verified primary account');
+assert.ok(erpSource.includes('ba.active=1 AND ba.is_primary=1 AND ba.verified_at IS NOT NULL WHERE pi.payroll_run_id=?'), 'the duplicate draft implementation must only select verified primary bank accounts');
+assert.ok(erpSource.includes("pbi.status='ready' AND ba.id IS NOT NULL") && erpSource.includes('ba.verified_at IS NOT NULL WHERE pbi.batch_id=?'), 'CSV export must include only ready items linked to a verified bank account');
+assert.ok(erpSource.includes('ba.active=1 AND ba.is_primary=1 AND ba.verified_at IS NOT NULL WHERE m.company_id=? AND m.active=1'), 'Payroll readiness must treat unverified bank details as missing');
 
 function mockEnv(runStatus = 'approved') {
   const writes = [];
@@ -23,6 +33,7 @@ function mockEnv(runStatus = 'approved') {
         },
         async all() { return { results: [
           { payrollItemId: 'item-1', employeeId: 'employee-1', displayName: 'Employee One', amountKobo: 1500, bankAccountId: 'account-1', beneficiaryBankKey: 'BANK-X', accountName: 'Employee One', last4: '1234' },
+          // An unverified primary is absent from the LEFT JOIN projection and must be held like missing details.
           { payrollItemId: 'item-2', employeeId: 'employee-2', displayName: 'Employee Two', amountKobo: 1000, bankAccountId: null, beneficiaryBankKey: null, accountName: null, last4: null },
         ] }; },
       };
@@ -53,17 +64,22 @@ async function requestFor(env, user) {
 }
 
 {
-  const { env, writes } = mockEnv();
+  const { env, writes, prepared } = mockEnv();
   const user = context({ companyPermissions: { 'company-a': { 'payroll.access': 'none' }, 'company-b': { 'payroll.access': 'edit' } } });
   const response = await requestFor(env, user);
   assert.equal(response.status, 201, 'Company B Payroll Edit must create the draft');
   const payload = await response.json();
   assert.equal(payload.batch.status, 'draft');
-  assert.equal(payload.batch.heldCount, 1, 'employees without bank details remain held');
+  assert.equal(payload.batch.heldCount, 1, 'employees without verified bank details remain held');
+  assert.ok(prepared.some(statement => statement.sql.includes('ba.verified_at IS NOT NULL')), 'the effective dedicated POST query requires verified primary bank details');
   assert.equal(writes.length, 4, 'the only writes are one batch, two draft items, and one audit entry');
   assert.ok(writes.every(statement => /^\s*INSERT INTO (payroll_payment_batches|payroll_payment_batch_items|audit_logs)\b/i.test(statement.sql)), 'authorized writes must remain limited to draft records and audit evidence');
   assert.equal(writes[0].bindings[2], 'company-b', 'the payment draft is stored in Company B');
   assert.equal(writes.at(-1).bindings[2], 'company-b', 'audit evidence is scoped to Company B');
+  assert.equal(writes[2].bindings[4], null, 'an unverified primary account is not snapshotted onto a held payment line');
+  assert.equal(writes[2].bindings[6], null, 'unverified bank identity is withheld from the held payment line');
+  assert.equal(writes[2].bindings[7], null, 'unverified account last-four digits are withheld from the held payment line');
+  assert.equal(writes[2].bindings[10], 'held', 'unverified bank details cannot produce a ready payout line');
 }
 
 {
