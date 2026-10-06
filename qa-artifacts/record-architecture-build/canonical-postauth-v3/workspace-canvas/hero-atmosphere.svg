@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="presentation">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7dcaf3"/><stop offset=".45" stop-color="#f0f9ff"/><stop offset=".78" stop-color="#f0e8ff"/><stop offset="1" stop-color="#b6c2ee"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e6f9ff"/><stop offset=".48" stop-color="#9cc5e4"/><stop offset="1" stop-color="#5968af"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#95c7e1"/><stop offset="1" stop-color="#5962a4"/></linearGradient>
+    <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse"><path d="M38 0H0V38" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="2"/></pattern>
+    <pattern id="windows" width="22" height="26" patternUnits="userSpaceOnUse"><rect width="7" height="4" rx="1" fill="#fff" opacity=".7"/><rect x="12" y="13" width="6" height="4" rx="1" fill="#c9edff" opacity=".65"/></pattern>
+    <filter id="soft" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="13"/></filter>
+  </defs>
+  <rect width="1600" height="520" fill="url(#sky)"/><g fill="#fff" opacity=".45" filter="url(#soft)"><path d="M30 146c54-44 117-31 150 4 44-31 101-24 130 19H0c4-9 12-16 30-23Z"/><path d="M1064 112c48-39 103-30 131 2 35-27 93-21 119 15h-280c3-6 12-12 30-17Z"/></g><circle cx="1218" cy="112" r="66" fill="#fff2bd" opacity=".9"/><circle cx="1218" cy="112" r="132" fill="#fff4c7" opacity=".2"/>
+  <path d="M0 288 C248 232 488 274 704 239 S1200 194 1600 252V520H0Z" fill="#edf5ff" opacity=".64"/><rect x="0" y="250" width="1600" height="270" fill="url(#grid)" opacity=".62"/>
+  <g fill="url(#glass)"><path d="M36 392V208h93v-55h62v239Z"/><path d="M220 392V106h67v-38h86v324Z"/><path d="M404 392V193h59v-88h79v287Z"/><path d="M588 392V141h94v-54h44v305Z"/><path d="M782 392V179h64v-93h91v306Z"/><path d="M982 392V118h61v-42h92v316Z"/><path d="M1184 392V178h82v-80h66v294Z"/><path d="M1364 392V142h95v-43h78v293Z"/></g><g fill="url(#windows)" opacity=".8"><path d="M220 106h153v286H220Z"/><path d="M588 141h138v251H588Z"/><path d="M982 118h153v274H982Z"/><path d="M1364 142h173v250H1364Z"/></g>
+  <g fill="#eaf7ff" opacity=".76"><rect x="244" y="145" width="104" height="14" rx="7"/><rect x="617" y="168" width="104" height="14" rx="7"/><rect x="1011" y="151" width="92" height="14" rx="7"/><rect x="1392" y="181" width="88" height="14" rx="7"/></g>
+  <path d="M0 410 C300 374 542 424 798 393 S1280 376 1600 410V520H0Z" fill="url(#water)" opacity=".78"/><path d="M92 436H1510M180 472H1420" stroke="#fff" stroke-opacity=".46" stroke-width="4"/><path d="M400 430l145 90h190l-145-94Z" fill="#fff" opacity=".13"/>
+  <g fill="#fff" opacity=".85"><circle cx="310" cy="370" r="7"/><circle cx="760" cy="326" r="7"/><circle cx="1150" cy="354" r="7"/></g><path d="M310 370 C450 290 600 420 760 326 S1020 285 1150 354" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="4" stroke-dasharray="7 10"/>
+</svg>

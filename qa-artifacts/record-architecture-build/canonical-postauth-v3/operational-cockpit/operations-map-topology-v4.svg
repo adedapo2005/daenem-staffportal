@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-label="Decorative Europe, Africa, Middle East, Asia and Australia topology">
+  <defs>
+    <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#9ddcff"/>
+      <stop offset=".42" stop-color="#86c8f2"/>
+      <stop offset=".72" stop-color="#acdff8"/>
+      <stop offset="1" stop-color="#e7f7ff"/>
+    </linearGradient>
+    <radialGradient id="oceanBloom" cx="58%" cy="45%" r="68%">
+      <stop stop-color="#72dce9" stop-opacity=".28"/>
+      <stop offset=".52" stop-color="#76b9ec" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="land" x1="0" y1="0" x2=".35" y2="1">
+      <stop stop-color="#f7fcff"/>
+      <stop offset=".55" stop-color="#d9f0fa"/>
+      <stop offset="1" stop-color="#b7dff0"/>
+    </linearGradient>
+    <linearGradient id="landLight" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#b6e2f3" stop-opacity=".18"/>
+    </linearGradient>
+    <pattern id="grid" width="60" height="56" patternUnits="userSpaceOnUse">
+      <path d="M60 0H0V56" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="1"/>
+    </pattern>
+    <filter id="landShadow" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#317db8" flood-opacity=".15"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="560" fill="url(#ocean)"/>
+  <rect width="1200" height="560" fill="url(#oceanBloom)"/>
+  <rect width="1200" height="560" fill="url(#grid)"/>
+
+  <g fill="url(#land)" stroke="#a8d5e9" stroke-width="1.4" stroke-linejoin="round" filter="url(#landShadow)">
+    <!-- Europe -->
+    <path d="M258 116L278 91 310 84 328 67 364 65 386 78 414 70 443 85 468 82 495 103 488 122 465 132 458 153 435 158 423 181 395 176 379 191 356 176 340 184 322 166 300 164 292 143 270 138Z"/>
+    <path d="M327 62L337 48 355 50 360 65 344 76 330 72Z"/>
+    <path d="M293 73L302 56 315 61 313 78 301 84Z"/>
+    <path d="M250 91L258 73 272 76 269 96 257 103Z"/>
+    <path d="M404 48L429 34 462 38 479 54 465 67 433 64Z"/>
+
+    <!-- Africa -->
+    <path d="M334 181L382 161 437 169 484 193 520 226 531 264 513 304 491 338 470 383 439 424 401 405 379 365 365 326 338 294 322 251 324 214Z"/>
+    <path d="M487 357L502 378 495 418 475 440 463 409Z"/>
+
+    <!-- Anatolia, Arabia and the Middle East -->
+    <path d="M448 161L484 153 525 166 550 188 527 207 491 199 464 185Z"/>
+    <path d="M505 204L539 196 578 221 600 260 580 287 550 273 532 239Z"/>
+
+    <!-- Eurasia / Asia -->
+    <path d="M470 101L501 82 536 85 563 65 606 66 642 51 692 54 727 43 774 50 811 42 852 56 891 54 930 70 966 76 1001 96 1036 104 1060 126 1040 143 1007 145 983 164 951 167 936 190 902 194 883 211 846 207 827 225 790 221 765 239 728 229 705 210 670 214 642 196 610 199 587 181 550 188 525 166 488 153 458 131Z"/>
+    <path d="M914 194L943 184 969 196 956 214 928 218Z"/>
+    <path d="M1005 158L1018 145 1028 161 1020 181 1007 186Z"/>
+    <path d="M1032 188L1046 176 1056 190 1049 213 1037 216Z"/>
+
+    <!-- India and Southeast Asia -->
+    <path d="M640 196L674 204 700 229 694 258 674 294 655 281 648 250 625 222Z"/>
+    <path d="M704 218L733 226 750 247 742 274 724 265 713 242Z"/>
+    <path d="M748 248L778 259 796 282 789 309 773 298 765 276Z"/>
+    <path d="M790 266L819 276 835 293 827 308 806 301Z"/>
+    <path d="M742 313L777 315 802 326 785 338 751 333Z"/>
+    <path d="M804 320L849 326 871 339 844 347 816 340Z"/>
+    <path d="M862 282L876 273 887 286 880 306 868 305Z"/>
+    <path d="M882 307L900 301 914 315 905 329 888 324Z"/>
+
+    <!-- Australia and New Zealand -->
+    <path d="M744 359L793 335 852 339 908 359 955 390 962 423 930 453 882 468 828 457 781 432 753 398Z"/>
+    <path d="M978 402L990 389 998 407 990 431 978 438 973 422Z"/>
+    <path d="M1001 437L1012 425 1018 441 1007 456 997 454Z"/>
+  </g>
+
+  <g fill="none" stroke="#8fc7e2" stroke-linecap="round" stroke-linejoin="round" opacity=".38">
+    <path d="M283 124C336 106 391 112 461 105M322 151C365 132 412 140 464 125M370 205C407 214 442 218 483 239M365 263C400 250 440 262 473 286M379 326C410 315 436 325 456 350" stroke-width="1.2"/>
+    <path d="M520 112C627 102 749 90 894 100M560 145C664 132 792 130 976 145M606 178C700 166 813 174 916 190M683 213C744 202 810 206 866 222" stroke-width="1.15"/>
+    <path d="M823 373C851 365 889 371 925 395M822 403C858 394 894 404 925 421" stroke-width="1.2"/>
+  </g>
+
+  <g fill="url(#landLight)" opacity=".55">
+    <path d="M263 116L310 87 369 72 425 89 458 111 421 119 373 111 327 128Z"/>
+    <path d="M362 186L407 177 458 201 474 235 439 229 397 213Z"/>
+    <path d="M493 102L585 72 692 60 797 56 901 66 1009 106 951 117 843 107 733 112 621 124 536 132Z"/>
+    <path d="M757 367L810 344 872 349 932 382 885 385 832 403 780 395Z"/>
+  </g>
+
+  <g fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="1.15">
+    <path d="M0 106C278 76 704 73 1200 109"/>
+    <path d="M0 198C304 164 760 163 1200 202"/>
+    <path d="M0 292C324 266 799 268 1200 297"/>
+    <path d="M0 393C317 408 810 400 1200 382"/>
+    <path d="M174 0C234 143 231 420 171 560"/>
+    <path d="M408 0C450 145 446 418 406 560"/>
+    <path d="M645 0C676 145 675 420 644 560"/>
+    <path d="M874 0C835 145 837 420 878 560"/>
+    <path d="M1070 0C1018 151 1020 411 1074 560"/>
+  </g>
+</svg>

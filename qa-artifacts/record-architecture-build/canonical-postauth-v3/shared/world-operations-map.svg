@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="presentation">
+  <defs>
+    <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c9f6ff"/><stop offset=".52" stop-color="#b6def8"/><stop offset="1" stop-color="#e8f8ff"/></linearGradient>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.6" fill="#2f78c8" opacity=".28"/></pattern>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
+  </defs>
+  <rect width="1200" height="560" rx="24" fill="url(#ocean)"/>
+  <path d="M76 154c42-55 116-91 176-52l20 46 55 16 8 55-33 32-22 77-47 19-42-36-68-12-39-44 20-49Z" fill="#eaf7ff" stroke="#8ec4ee" stroke-width="3"/>
+  <path d="M301 82l58-38 74 24 28 42-42 35-36 65-48-27-36-48Z" fill="#eaf7ff" stroke="#8ec4ee" stroke-width="3"/>
+  <path d="M438 219l69-30 55 24 9 62-30 29 14 62-49 67-40-29-15-70-40-36 27-43Z" fill="#eaf7ff" stroke="#8ec4ee" stroke-width="3"/>
+  <path d="M573 131l57-51 97 12 57 44 71-2 78 45-22 47-85 16-48 59-77-4-49-41-51-15-33-50Z" fill="#eaf7ff" stroke="#8ec4ee" stroke-width="3"/>
+  <path d="M779 314l73-32 54 35 4 60-46 43-22 74-45-28-31-63 15-45Z" fill="#eaf7ff" stroke="#8ec4ee" stroke-width="3"/>
+  <path d="M950 158l78-18 75 34 42 50-28 45-64-2-43 35-49-44 15-46-48-25Z" fill="#eaf7ff" stroke="#8ec4ee" stroke-width="3"/>
+  <g fill="url(#dots)" opacity=".62"><path d="M76 154c42-55 116-91 176-52l20 46 55 16 8 55-33 32-22 77-47 19-42-36-68-12-39-44 20-49Z"/><path d="M301 82l58-38 74 24 28 42-42 35-36 65-48-27-36-48Z"/><path d="M438 219l69-30 55 24 9 62-30 29 14 62-49 67-40-29-15-70-40-36 27-43Z"/><path d="M573 131l57-51 97 12 57 44 71-2 78 45-22 47-85 16-48 59-77-4-49-41-51-15-33-50Z"/><path d="M779 314l73-32 54 35 4 60-46 43-22 74-45-28-31-63 15-45Z"/><path d="M950 158l78-18 75 34 42 50-28 45-64-2-43 35-49-44 15-46-48-25Z"/></g>
+  <g fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="10 12" opacity=".88"><path d="M880 302C790 222 686 204 601 270S442 348 293 243"/><path d="M880 302C809 356 712 372 601 270S457 190 382 129"/><path d="M880 302C938 269 976 232 1032 203"/></g>
+  <g fill="#fff" stroke="#1f73d8" stroke-width="6"><circle cx="880" cy="302" r="16"/><circle cx="601" cy="270" r="12"/><circle cx="293" cy="243" r="12"/><circle cx="382" cy="129" r="12"/><circle cx="1032" cy="203" r="12"/></g>
+  <circle cx="880" cy="302" r="34" fill="#2f7fe1" opacity=".22" filter="url(#glow)"/>
+</svg>

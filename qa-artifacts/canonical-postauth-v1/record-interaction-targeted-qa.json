@@ -1,0 +1,254 @@
+[
+  {
+    "viewport": "390x844",
+    "mobile": true,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "none",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 390,
+    "scrollHeight": 1514,
+    "list": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+    },
+    "detail": {
+      "x": 8,
+      "y": 112,
+      "w": 374,
+      "h": 1394
+    },
+    "detailScroll": {
+      "client": 1392,
+      "scroll": 1392
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "430x932",
+    "mobile": true,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "none",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 430,
+    "scrollHeight": 1514,
+    "list": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+    },
+    "detail": {
+      "x": 8,
+      "y": 112,
+      "w": 414,
+      "h": 1394
+    },
+    "detailScroll": {
+      "client": 1392,
+      "scroll": 1392
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "768x1024",
+    "mobile": false,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "block",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 768,
+    "scrollHeight": 3599,
+    "list": {
+      "x": 88,
+      "y": 142,
+      "w": 668,
+      "h": 577
+    },
+    "detail": {
+      "x": 88,
+      "y": 729,
+      "w": 668,
+      "h": 1064
+    },
+    "detailScroll": {
+      "client": 1062,
+      "scroll": 1062
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "1024x1366",
+    "mobile": false,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "block",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 1024,
+    "scrollHeight": 2147,
+    "list": {
+      "x": 88,
+      "y": 142,
+      "w": 349,
+      "h": 623
+    },
+    "detail": {
+      "x": 453,
+      "y": 142,
+      "w": 559,
+      "h": 1064
+    },
+    "detailScroll": {
+      "client": 1062,
+      "scroll": 1062
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "1366x1024",
+    "mobile": false,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "block",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 1366,
+    "scrollHeight": 1787,
+    "list": {
+      "x": 88,
+      "y": 142,
+      "w": 372,
+      "h": 620
+    },
+    "detail": {
+      "x": 476,
+      "y": 142,
+      "w": 878,
+      "h": 737
+    },
+    "detailScroll": {
+      "client": 735,
+      "scroll": 735
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "1672x941",
+    "mobile": false,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "block",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 1672,
+    "scrollHeight": 1374,
+    "list": {
+      "x": 200,
+      "y": 128,
+      "w": 376,
+      "h": 752
+    },
+    "detail": {
+      "x": 588,
+      "y": 128,
+      "w": 1082,
+      "h": 752
+    },
+    "detailScroll": {
+      "client": 750,
+      "scroll": 750
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "1920x1080",
+    "mobile": false,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "block",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 1920,
+    "scrollHeight": 1374,
+    "list": {
+      "x": 200,
+      "y": 128,
+      "w": 376,
+      "h": 752
+    },
+    "detail": {
+      "x": 588,
+      "y": 128,
+      "w": 1330,
+      "h": 752
+    },
+    "detailScroll": {
+      "client": 750,
+      "scroll": 750
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "2560x1440",
+    "mobile": false,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "block",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 2560,
+    "scrollHeight": 1650,
+    "list": {
+      "x": 274,
+      "y": 154,
+      "w": 446,
+      "h": 577
+    },
+    "detail": {
+      "x": 738,
+      "y": 154,
+      "w": 1798,
+      "h": 745
+    },
+    "detailScroll": {
+      "client": 743,
+      "scroll": 743
+    },
+    "under9": 0,
+    "errors": []
+  },
+  {
+    "viewport": "3840x2160",
+    "mobile": false,
+    "title": "Approve Marketing Budget",
+    "listDisplay": "block",
+    "detailDisplay": "block",
+    "horizontalOverflow": false,
+    "scrollWidth": 3840,
+    "scrollHeight": 2160,
+    "list": {
+      "x": 312,
+      "y": 162,
+      "w": 564,
+      "h": 982
+    },
+    "detail": {
+      "x": 898,
+      "y": 162,
+      "w": 2910,
+      "h": 982
+    },
+    "detailScroll": {
+      "client": 980,
+      "scroll": 980
+    },
+    "under9": 0,
+    "errors": []
+  }
+]

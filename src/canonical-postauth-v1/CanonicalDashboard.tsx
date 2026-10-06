@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, Bell, BookOpen, Bot, BriefcaseBusiness, CalendarDays, CheckCircle2,
-  ChevronDown, ChevronRight, CircleDollarSign, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Command, Crown, FileText, Gauge, Globe2, Grid3X3, LayoutDashboard,
+  ChevronDown, ChevronLeft, ChevronRight, CircleDollarSign, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Command, Crown, FileText, Gauge, Globe2, Grid3X3, LayoutDashboard,
   ListChecks, MapPinned, Menu, Moon, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Sparkles, Star, Sun, Users, Wind, Workflow,
 } from 'lucide-react';
 import type { CanonicalDashboardProps, CanonicalFixture, CanonicalNavigationItem, CanonicalZoneId, StaffPortalLayoutId } from './canonical-types';
@@ -17,6 +17,7 @@ import './sol-owner-fidelity.css';
 import './operational-owner-fidelity.css';
 import './premium-postauth-motion.css';
 import './batch1-layouts-fidelity.css';
+import './record-interaction-v1.css';
 
 const nav = [
   ['Dashboard', LayoutDashboard], ['People & Teams', Users], ['Operations', Gauge], ['Projects', BriefcaseBusiness],
@@ -705,26 +706,85 @@ function HorizonPurposeBanner() {
   return <article className="csp-horizon-purpose" data-zone="announcement"><span>Great Organisations<br/>Are Built By Great People.</span><ChevronRight size={15}/></article>;
 }
 
-function MasterRecords({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
-  const records = Array.from({length:10},(_,index)=>fixture.tasks[index] ?? null);
-  return <article className="csp-card csp-master" data-zone="master-list"><header><div><b>Authorized Records <em>({fixture.tasks.length})</em></b><small className="csp-scope-note">Workspace Records · Authorized Scope</small></div><button type="button" className="primary" onClick={()=>onAction?.('master-list','new-record')}><Plus size={14}/> New Record</button></header><div className="csp-master-tabs"><button type="button" className="active" onClick={()=>onAction?.('master-list','filter-all')}>All <b>{fixture.tasks.length}</b></button><button type="button" onClick={()=>onAction?.('master-list','filter-priority')}>Priority</button><button type="button" onClick={()=>onAction?.('master-list','filter-recent')}>Recent</button></div><div className="csp-master-toolbar" aria-label="Authorized Record Filters"><button type="button" onClick={()=>onAction?.('master-list','filter-type')}>All Types</button><button type="button" onClick={()=>onAction?.('master-list','filter-status')}>All Statuses</button><label><Search size={13}/><input aria-label="Search Authorized Records" placeholder="Search Records"/></label></div><div className="csp-master-sort"><span>Sort: <b>Last Updated</b></span><ChevronDown size={12}/></div>{records.map((record,index)=><button type="button" className={index===0?'selected':''} key={record?.title ?? `record-unavailable-${index}`} onClick={()=>onAction?.('master-list','select-record')}><i className={`csp-master-record-icon tone-${index%5}`}><BriefcaseBusiness size={15}/></i><span><b>{record?.title ?? 'Not Available'}</b><small>{record?.meta ?? 'Authorized Record Unavailable'}</small><i className={`csp-master-record-track track-${index}`} aria-hidden="true"><i/></i></span><em>{record?.priority ?? 'Not Available'}</em><Star className="csp-master-star" size={13}/></button>)}</article>;
+function MasterRecords({ fixture, selectedIndex, onSelect, onAction }: { fixture: CanonicalFixture; selectedIndex: number; onSelect: (index:number)=>void; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const records = fixture.tasks;
+  return <article className="csp-card csp-master csp-record-list" data-zone="master-list">
+    <header className="csp-record-list-header"><div><span className="csp-eyebrow">Record Queue</span><b>Records You Can Access <em>({records.length})</em></b><small className="csp-scope-note">Workspace Records · Available To You</small></div><button type="button" className="primary" onClick={()=>onAction?.('master-list','new-record')}><Plus size={14}/> New Record</button></header>
+    <div className="csp-master-tabs"><button type="button" className="active" onClick={()=>onAction?.('master-list','filter-all')}>All <b>{records.length}</b></button><button type="button" onClick={()=>onAction?.('master-list','filter-priority')}>Priority</button><button type="button" onClick={()=>onAction?.('master-list','filter-recent')}>Recent</button></div>
+    <div className="csp-master-toolbar" aria-label="Record Filters"><button type="button" onClick={()=>onAction?.('master-list','filter-type')}>All Types</button><button type="button" onClick={()=>onAction?.('master-list','filter-status')}>All Statuses</button><label><Search size={13}/><input aria-label="Search Records" placeholder="Search Records"/></label></div>
+    <div className="csp-master-sort"><span>Sort: <b>Last Updated</b></span><ChevronDown size={12}/></div>
+    <div className="csp-record-list-scroll" role="listbox" aria-label="Records You Can Access">
+      {records.length===0 ? <div className="csp-record-empty"><FileText size={22}/><b>No Records Available</b><span>Records will appear here when they are available to you.</span></div> : records.map((record,index)=><button type="button" role="option" aria-selected={selectedIndex===index} className={selectedIndex===index?'selected':''} key={`${record.title}-${index}`} onClick={()=>{onSelect(index);onAction?.('master-list','select-record')}} onKeyDown={(event)=>{const keys=['ArrowDown','ArrowUp','Home','End'];if(!keys.includes(event.key))return;event.preventDefault();const items=Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button[role="option"]')??[]);const current=items.indexOf(event.currentTarget);const next=event.key==='Home'?0:event.key==='End'?items.length-1:event.key==='ArrowDown'?Math.min(items.length-1,current+1):Math.max(0,current-1);items[next]?.focus();if(next!==current){onSelect(next);onAction?.('master-list','select-record')}}}><i className={`csp-master-record-icon tone-${index%5}`}><BriefcaseBusiness size={15}/></i><span><b>{record.title}</b><small>{record.meta}</small><i className={`csp-master-record-track track-${index}`} aria-hidden="true"><i/></i></span><em className={`priority ${record.priority.toLowerCase()}`}>{record.priority}</em><Star className="csp-master-star" size={13}/></button>)}
+    </div>
+  </article>;
 }
 
-function MasterDetailSurface({ fixture, onAction }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
-  const taskCounts = [
-    ['Completed', fixture.tasks.filter((task)=>task.priority==='Low').length, 'done'],
-    ['In Progress', fixture.tasks.filter((task)=>task.priority==='Medium').length, 'active'],
-    ['Needs Attention', fixture.tasks.filter((task)=>task.priority==='High').length, 'risk'],
-  ] as const;
-  return <article className="csp-card csp-detail csp-master-detail-surface" data-zone="master-detail">
-    <section className="csp-detail-banner">
-      <img src="/canonical-postauth-v3/executive-command/hero-skyline-photographic-v2.webp" alt="" aria-hidden="true"/>
-      <div className="csp-detail-banner-copy"><i><Monitor size={21}/></i><span className="csp-eyebrow">Selected Record</span><h2>Selected Record</h2><p>{fixture.workspace.subtitle}</p><footer><span>Authorized Scope</span><span>Record Data: Not Available</span><span>{fixture.workspace.name}</span></footer></div>
-      <div className="csp-detail-banner-actions"><button type="button" onClick={()=>onAction?.('master-detail','share')}>Share</button><button type="button" onClick={()=>onAction?.('master-detail','edit')}>Edit</button><button type="button" onClick={()=>onAction?.('master-detail','more')}><MoreHorizontal size={14}/> More</button></div>
-    </section>
-    <nav className="csp-detail-tabs" aria-label="Selected Record Sections"><button type="button" className="active" onClick={()=>onAction?.('master-detail','overview')}>Overview</button><button type="button" onClick={()=>onAction?.('master-detail','tasks')}>Tasks <b>{fixture.tasks.length}</b></button><button type="button" onClick={()=>onAction?.('master-detail','milestones')}>Milestones <b>Not Available</b></button><button type="button" onClick={()=>onAction?.('master-detail','documents')}>Documents <b>Not Available</b></button><button type="button" onClick={()=>onAction?.('master-detail','team')}>Team <b>Not Available</b></button><button type="button" onClick={()=>onAction?.('master-detail','financials')}>Financials</button><button type="button" onClick={()=>onAction?.('master-detail','activity')}>Activity</button></nav>
-    <div className="csp-detail-kpis">{[['Record Health','Not Available'],['Completion','Not Available'],['Time Remaining','Not Available'],['Budget Utilisation','Not Available'],['Team Members','Not Available']].map(([label,value],index)=><span key={label}><i className={`tone-${index}`} aria-hidden="true">{index===0?<ShieldCheck size={18}/>:index===1?<Gauge size={18}/>:index===2?<CalendarDays size={18}/>:index===3?<BarChart3 size={18}/>:<Users size={18}/>}</i><small>{label}</small><b>{value}</b><em>{index===0?'Authorized Status Unavailable':'Approved Data Required'}</em></span>)}</div>
-    <div className="csp-detail-lower"><section className="csp-detail-progress"><header><b>Progress Trend</b><button type="button" onClick={()=>onAction?.('master-detail','change-period')}>Last 6 Months <ChevronDown size={13}/></button></header><div className="csp-detail-progress-chart"><MiniLineChart chartId="master-detail-progress"/><span className="csp-analytics-grid" aria-hidden="true"/></div><footer><span><i/>Planned</span><span><i/>Actual</span><span><i/>Forecast</span></footer></section><section className="csp-detail-task-status"><header><b>Task Status</b><button type="button" onClick={()=>onAction?.('master-detail','view-tasks')}>View All</button></header><div className="csp-task-ring" aria-hidden="true"><i>{fixture.tasks.length}<small>Tasks</small></i></div><div className="csp-task-legend">{taskCounts.map(([label,count,tone])=><span key={label}><i className={tone}/>{label}<b>{count}</b></span>)}</div></section><aside className="csp-detail-inspector"><header><b>Record Details</b><button type="button" onClick={()=>onAction?.('master-detail','edit-details')}>Edit</button></header>{[['Workspace',fixture.workspace.name],['Viewer',formatPersonName(fixture.viewer.displayName)],['Role',formatUiLabel(fixture.viewer.role)],['Release',fixture.release.version],['Start Date','Not Available'],['Target Date','Not Available'],['Priority','Not Available'],['Data Scope','Authorized']].map(([label,value])=><div key={label}><span>{label}</span><b>{value}</b></div>)}</aside></div>
+function MasterDetailSurface({ fixture, selectedIndex, onSelect, onMobileBack, onOpenFullRecord, onAction }: { fixture: CanonicalFixture; selectedIndex: number; onSelect: (index:number)=>void; onMobileBack:()=>void; onOpenFullRecord:(index:number)=>void; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const record = fixture.tasks[selectedIndex] ?? null;
+  const hasPrevious = selectedIndex > 0;
+  const hasNext = selectedIndex >= 0 && selectedIndex < fixture.tasks.length - 1;
+  if (!record) return <article className="csp-card csp-detail csp-master-detail-surface csp-record-workspace csp-record-workspace-empty" data-zone="master-detail"><div className="csp-record-workspace-empty-state"><FileText size={28}/><span className="csp-eyebrow">Record Workspace</span><h2>Select A Record</h2><p>Choose a record from the list to open its details.</p></div></article>;
+  return <article className="csp-card csp-detail csp-master-detail-surface csp-record-workspace" data-zone="master-detail">
+    <header className="csp-record-workspace-header">
+      <button type="button" className="csp-record-mobile-back" onClick={onMobileBack}><ChevronLeft size={16}/> Back To Records</button>
+      <div className="csp-record-identity" aria-live="polite">
+        <span className="csp-record-type">Task Record</span>
+        <h2>{record.title}</h2>
+        <p>{record.meta}</p>
+        <div className="csp-record-meta"><span><small>Status</small><b>Not Available</b></span><span><small>Priority</small><b>{record.priority}</b></span><span><small>Identifier</small><b>Not Available</b></span><span><small>Access</small><b>Authorized</b></span></div>
+      </div>
+      <div className="csp-record-actions">
+        <div className="csp-record-stepper" aria-label="Record Navigation"><button type="button" disabled={!hasPrevious} onClick={()=>hasPrevious&&onSelect(selectedIndex-1)} aria-label="Previous Record"><ChevronLeft size={15}/></button><span>{selectedIndex+1} / {fixture.tasks.length}</span><button type="button" disabled={!hasNext} onClick={()=>hasNext&&onSelect(selectedIndex+1)} aria-label="Next Record"><ChevronRight size={15}/></button></div>
+        <button type="button" className="csp-record-secondary-action" onClick={()=>onAction?.('master-detail','share')}>Share</button>
+        <button type="button" className="csp-record-primary-action" onClick={()=>onAction?.('master-detail','edit')}>Edit Record</button>
+        <button type="button" className="csp-record-more-action" aria-label="More Record Actions" onClick={()=>onAction?.('master-detail','more')}><MoreHorizontal size={16}/></button>
+      </div>
+    </header>
+    <nav className="csp-record-tabs" aria-label="Record Workspace Sections"><button type="button" className="active" aria-current="page" onClick={()=>onAction?.('master-detail','overview')}>Overview</button></nav>
+    <div className="csp-record-workspace-body">
+      <section className="csp-record-main">
+        <article className="csp-record-section csp-record-summary">
+          <header><div><span className="csp-eyebrow">Current Record</span><h3>Record Overview</h3></div><ShieldCheck size={18}/></header>
+          <dl><div><dt>Record Type</dt><dd>Task Record</dd></div><div><dt>Priority</dt><dd>{record.priority}</dd></div><div><dt>Workspace</dt><dd>{fixture.workspace.name}</dd></div><div><dt>Record Status</dt><dd>Not Available</dd></div></dl>
+        </article>
+        <article className="csp-record-section csp-record-description">
+          <header><div><span className="csp-eyebrow">Details</span><h3>Record Details</h3></div></header>
+          <p>{record.meta}</p>
+          <div className="csp-record-truth-note"><ShieldCheck size={15}/><span>Only record details available to you are shown. Missing details are not guessed.</span></div>
+        </article>
+        <article className="csp-record-section csp-record-activity">
+          <header><div><span className="csp-eyebrow">History</span><h3>Activity</h3></div><button type="button" onClick={()=>onAction?.('master-detail','activity')}>Open Activity</button></header>
+          <div className="csp-record-empty-inline"><Activity size={18}/><span><b>No Record-Specific Activity Available</b><small>Activity will appear here when it is available for this record.</small></span></div>
+        </article>
+      </section>
+      <aside className="csp-record-context">
+        <article className="csp-record-section csp-record-context-card"><span className="csp-eyebrow">Record Details</span><h3>Details</h3><dl><div><dt>Viewer</dt><dd>{formatPersonName(fixture.viewer.displayName)}</dd></div><div><dt>Role</dt><dd>{formatUiLabel(fixture.viewer.role)}</dd></div><div><dt>Release</dt><dd>{fixture.release.version}</dd></div><div><dt>Access</dt><dd>Authorized</dd></div></dl></article>
+        <article className="csp-record-section csp-record-quick-inspection"><span className="csp-eyebrow">Quick Inspection</span><h3>At A Glance</h3><div><span>Priority</span><b>{record.priority}</b></div><div><span>Status</span><b>Not Available</b></div><div><span>Related Records</span><b>Not Available</b></div><button type="button" onClick={()=>onOpenFullRecord(selectedIndex)}>Open Full Record <ChevronRight size={14}/></button></article>
+      </aside>
+    </div>
+  </article>;
+}
+
+function recordRouteKey(record: CanonicalFixture['tasks'][number], index: number) {
+  const slug = record.title.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,64) || 'record';
+  return `${index+1}-${slug}`;
+}
+
+function recordIndexFromUrl(tasks: CanonicalFixture['tasks']) {
+  if (typeof window === 'undefined') return null;
+  const routeKey = new URL(window.location.href).searchParams.get('record');
+  if (!routeKey) return null;
+  const index = tasks.findIndex((record, itemIndex)=>recordRouteKey(record,itemIndex)===routeKey);
+  return index >= 0 ? index : null;
+}
+
+function DedicatedRecordPage({ fixture, recordIndex, onBack, onRecordsBreadcrumb, onAction }: { fixture: CanonicalFixture; recordIndex:number; onBack:()=>void; onRecordsBreadcrumb:()=>void; onAction?: (zone: CanonicalZoneId, action:string)=>void }) {
+  const record = fixture.tasks[recordIndex];
+  if (!record) return null;
+  return <article className="csp-dedicated-record" data-record-dedicated-page>
+    <nav className="csp-record-breadcrumbs" aria-label="Record Breadcrumbs"><button type="button" onClick={onRecordsBreadcrumb}>Workspace</button><ChevronRight size={13}/><button type="button" onClick={onRecordsBreadcrumb}>Records You Can Access</button><ChevronRight size={13}/><span aria-current="page">{record.title}</span></nav>
+    <button type="button" className="csp-record-page-back" onClick={onBack}><ChevronLeft size={16}/> Back To Records</button>
+    <MasterDetailSurface fixture={fixture} selectedIndex={recordIndex} onSelect={()=>{}} onMobileBack={onBack} onOpenFullRecord={()=>{}} onAction={onAction}/>
   </article>;
 }
 
@@ -863,7 +923,7 @@ function BoardDecisionsSurface({ fixture, onAction }: { fixture: CanonicalFixtur
 function FocusFooter({ fixture, onAction, onLayoutChange }: { fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action: string) => void; onLayoutChange?: (id: StaffPortalLayoutId) => void }) {
   return <article className="csp-focus-footer" data-zone="world-time"><button type="button" className="csp-focus-footer-announcement" onClick={()=>onAction?.('world-time','open-announcement')}><Bell size={16}/><span><b>Latest Announcements</b><small>Latest Update From {fixture.workspace.name}</small></span><ChevronRight size={13}/></button><span className="csp-focus-footer-state"><i><Command size={15}/></i><span><b>You’re In Focus &amp; Flow</b><small>A cleaner way to get things done.</small></span></span><nav><small>Switch Layout:</small>{(['executive-command','workspace-canvas','focus-flow'] as StaffPortalLayoutId[]).map(id => <button type="button" className={id==='focus-flow'?'active':''} key={id} onClick={() => { onAction?.('world-time', `switch-${id}`); onLayoutChange?.(id); }}>{CANONICAL_LAYOUT_SPECS[id].name}</button>)}</nav></article>;
 }
-function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone: CanonicalZoneId; fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void; onLayoutChange?: (id: StaffPortalLayoutId)=>void; layoutId: StaffPortalLayoutId }) {
+function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId, selectedRecordIndex=0, onSelectRecord=()=>{}, onMobileRecordBack=()=>{}, onOpenFullRecord=()=>{} }: { zone: CanonicalZoneId; fixture: CanonicalFixture; onAction?: (zone: CanonicalZoneId, action:string)=>void; onLayoutChange?: (id: StaffPortalLayoutId)=>void; layoutId: StaffPortalLayoutId; selectedRecordIndex?: number; onSelectRecord?: (index:number)=>void; onMobileRecordBack?:()=>void; onOpenFullRecord?:(index:number)=>void }) {
   if (zone==='hero') return null;
   if (layoutId==='workspace-canvas') {
     if (zone==='kpis') return <WorkspaceKpis fixture={fixture}/>;
@@ -899,8 +959,8 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
   }
   if (zone==='operations-map') return <article className="csp-card csp-map" data-zone={zone}><header><span><MapPinned size={18}/><b>{title}</b><em>Status Unavailable</em></span><button type="button" onClick={()=>onAction?.(zone,'change-region')}>All Regions <ChevronDown size={13}/></button></header><div className="csp-map-art"><img className="csp-map-topology" src="/canonical-postauth-v3/operational-cockpit/operations-map.svg" alt="" aria-hidden="true"/><svg className="csp-map-network" viewBox="0 0 900 430" aria-hidden="true"><path d="M604 274C545 222 492 208 431 236S322 318 228 283S139 219 95 190"/><path d="M604 274C542 301 478 352 401 335S295 268 226 216S164 153 126 113"/><path className="route-soft" d="M604 274C667 233 716 195 786 166S846 164 884 181"/><path className="route-soft" d="M604 274C676 306 741 327 803 356S858 395 872 414"/><path className="route-soft" d="M604 274C577 342 538 389 492 415S431 438 381 435"/><path className="route-accent" d="M604 274C644 271 682 275 720 294S779 330 835 330"/></svg><div className="csp-map-scope-rail"><span><i><BriefcaseBusiness size={16}/></i><b>Not Available</b><small>Global Offices</small></span><span><i><Users size={16}/></i><b>{fixture.kpis[0]?.value ?? 'Not Available'}</b><small>Active Staff</small></span><span><i><Workflow size={16}/></i><b>{fixture.kpis[2]?.value ?? 'Not Available'}</b><small>Active Projects</small></span><span><i><MapPinned size={16}/></i><b>Not Available</b><small>Customer Sites</small></span></div><div className="csp-map-city-labels" aria-label="Authorized global time city context">{fixture.worldTimes.filter(item=>item.city !== fixture.worldTimes[0]?.city).map((item,index)=><span key={item.city} className={`place-${index + 1}`}><b>{item.city}</b><small>Not Available</small></span>)}</div><i className="n1"/><i className="n2"/><i className="n3"/><i className="n4"/><i className="n5"/><i className="n6"/><i className="n7"/><span>{fixture.worldTimes[0]?.city ?? 'Not Available'}</span><div className="csp-map-operations-feed"><b><Activity size={13}/> Operations Feed</b>{fixture.activity.slice(0,4).map((item,index)=><span key={item.title}><i/> <time>{item.meta || 'Not Available'}</time><em>{item.title}</em></span>)}</div><div className="csp-map-controls" aria-hidden="true"><i>+</i><i>−</i><i>⌾</i></div><button type="button" className="csp-map-view-all" onClick={()=>onAction?.(zone,'view-all')}>View All Locations <ChevronRight size={13}/></button></div></article>;
   if (zone==='studio-canvas') return <article className="csp-card csp-studio" data-zone={zone}><header><span><Workflow size={18}/><b>{title}</b></span><nav className="csp-studio-canvas-tools" aria-label="Canvas Tools"><button type="button" onClick={()=>onAction?.(zone,'undo')}>Undo</button><button type="button" onClick={()=>onAction?.(zone,'redo')}>Redo</button><button type="button" onClick={()=>onAction?.(zone,'zoom-reset')}>100%</button><button type="button" onClick={()=>onAction?.(zone,'zoom-out')}>−</button><button type="button" onClick={()=>onAction?.(zone,'zoom-in')}>+</button><button type="button" onClick={()=>onAction?.(zone,'preview')}><Monitor size={13}/> Preview</button></nav><div><button type="button" onClick={()=>onAction?.(zone,"save")}>Save</button><button type="button" className="primary" onClick={()=>onAction?.(zone,"publish")}>Publish</button></div></header><div className="csp-studio-workspace"><div className="csp-studio-grid"><svg className="csp-studio-connectors" viewBox="0 0 900 600" aria-hidden="true"><defs><marker id="studio-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0 0L8 4L0 8Z" fill="#5a52d8"/></marker></defs><path markerEnd="url(#studio-arrow)" d="M450 90V150H250V220M450 150H690V220M250 220V300H160V390M250 300H440V390M690 220V330H760V430M440 390H600V430H760"/><path markerEnd="url(#studio-arrow)" d="M440 390V510M760 430V470H650V520"/></svg><StudioNode className="n1" tone="violet" label="Authorized Data Source" detail="Connected Workspace Data"/><StudioNode className="n2" tone="blue" label="Transform Step" detail="Clean & Transform"/><StudioNode className="n3" tone="violet" label="Analysis Step" detail="Authorized Analysis"/><StudioNode className="n4" tone="cyan" label="Trend View" detail="Analytical Surface"/><StudioNode className="n5" tone="success" label="Regional View" detail="Scope Comparison"/><StudioNode className="n6" tone="violet" label="Report View" detail="Ready For Review"/><StudioNode className="n8" tone="violet" label="Automation" detail="On Demand"/><StudioNode className="n9" tone="success" label="Notify Team" detail="Authorized Action"/></div><aside className="csp-studio-inspector"><header><span><Settings2 size={16}/><b>Inspector</b></span><em>Selected</em></header><label>Node Type<select aria-label="Node Type"><option>Data Source</option><option>Workflow Step</option><option>Chart / Graph</option></select></label><label>Data Source<select aria-label="Data Source"><option>Authorized Workspace Data</option><option>Live Staff Portal Data</option></select></label><label>Refresh Cycle<select aria-label="Refresh Cycle"><option>On Demand</option><option>Scheduled</option></select></label><button type="button" onClick={()=>onAction?.(zone,"configure-node")}>Configure Node <ChevronRight size={14}/></button></aside></div></article>;
-  if (zone==='master-list') return <MasterRecords fixture={fixture} onAction={onAction}/>;
-  if (zone==='master-detail') return <MasterDetailSurface fixture={fixture} onAction={onAction}/>;
+  if (zone==='master-list') return <MasterRecords fixture={fixture} selectedIndex={selectedRecordIndex} onSelect={onSelectRecord} onAction={onAction}/>;
+  if (zone==='master-detail') return <MasterDetailSurface fixture={fixture} selectedIndex={selectedRecordIndex} onSelect={onSelectRecord} onMobileBack={onMobileRecordBack} onOpenFullRecord={onOpenFullRecord} onAction={onAction}/>;
   if (zone==='board-agenda') return <BoardAgendaSurface fixture={fixture} onAction={onAction}/>;
   if (zone==='workspace-schedule') return <article className="csp-card csp-list" data-zone={zone}><header><span><CalendarDays size={17}/><b>{title}</b></span><button type="button" onClick={()=>onAction?.(zone,"view-all")}>View All</button></header>{fixture.activity.slice(0,4).map((item,i)=><div key={item.title}><i className={`dot d${i}`}/><span><b>{item.title}</b><small>{item.meta}</small></span><ChevronRight size={14}/></div>)}</article>;
   if (zone==='workspace-projects' && layoutId==='horizon-wide') return <HorizonProjects onAction={onAction}/>;
@@ -966,7 +1026,32 @@ function ZoneCard({ zone, fixture, onAction, onLayoutChange, layoutId }: { zone:
 
 export function CanonicalDashboard({ initialLayout='executive-command', fixture=CANONICAL_VISUAL_FIXTURE, liveSlots, onLayoutChange, onWorkspace, onSearch, onAskAi, onQuickCreate, onNotifications, onProfile, navigation, activeNavigationId, onZoneAction }: CanonicalDashboardProps) {
   const [layoutId, setLayoutId] = useState<StaffPortalLayoutId>(initialLayout);
+  const [selectedRecordIndex, setSelectedRecordIndex] = useState(0);
+  const [mobileRecordOpen, setMobileRecordOpen] = useState(false);
+  const [dedicatedRecordIndex, setDedicatedRecordIndex] = useState<number|null>(null);
   useEffect(() => { setLayoutId(initialLayout); }, [initialLayout]);
+  useEffect(() => {
+    if (!fixture.tasks.length) {
+      setSelectedRecordIndex(0);
+      setMobileRecordOpen(false);
+      return;
+    }
+    setSelectedRecordIndex((current)=>Math.min(current, fixture.tasks.length-1));
+  }, [fixture.tasks.length]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncRecordRoute = () => {
+      const index = recordIndexFromUrl(fixture.tasks);
+      setDedicatedRecordIndex(index);
+      if (index !== null) {
+        setSelectedRecordIndex(index);
+        setMobileRecordOpen(false);
+      }
+    };
+    syncRecordRoute();
+    window.addEventListener('popstate', syncRecordRoute);
+    return () => window.removeEventListener('popstate', syncRecordRoute);
+  }, [fixture.tasks]);
   const qaWeatherCondition = import.meta.env.DEV && import.meta.env.VITE_CANONICAL_QA_FIXTURE === 'true' && typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('weather')
     : null;
@@ -978,16 +1063,51 @@ export function CanonicalDashboard({ initialLayout='executive-command', fixture=
     ? () => onZoneAction?.('ai-insights','ask-ai')
     : undefined;
   const setLayout = (id: StaffPortalLayoutId) => { setLayoutId(id); onLayoutChange?.(id); };
+  const setRecordUrl = (index: number|null, mode: 'push'|'replace'='push') => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (index === null) url.searchParams.delete('record');
+    else {
+      const record = fixture.tasks[index];
+      if (!record) return;
+      url.searchParams.set('record', recordRouteKey(record,index));
+    }
+    const state = { ...(window.history.state ?? {}), staffPortalRecordRoute: index !== null };
+    if (mode === 'replace') window.history.replaceState(state,'',url);
+    else window.history.pushState(state,'',url);
+  };
+  const openDedicatedRecord = (index:number) => {
+    if (!fixture.tasks[index]) return;
+    setSelectedRecordIndex(index);
+    setMobileRecordOpen(false);
+    setDedicatedRecordIndex(index);
+    setRecordUrl(index);
+    onZoneAction?.('master-detail','open-full-record');
+  };
+  const openRecordList = () => {
+    setDedicatedRecordIndex(null);
+    setMobileRecordOpen(false);
+    setRecordUrl(null);
+  };
+  const backToRecordList = () => {
+    if (typeof window !== 'undefined' && window.history.state?.staffPortalRecordRoute) {
+      window.history.back();
+      return;
+    }
+    setDedicatedRecordIndex(null);
+    setMobileRecordOpen(false);
+    setRecordUrl(null,'replace');
+  };
   const style = useMemo(()=>({ '--csp-wide-rows': spec.wideRowMinimums.map(h=>`minmax(${h}px, auto)`).join(' '), '--csp-desktop-areas': spec.desktopGridAreas.map(x=>`\"${x}\"`).join(' '), '--csp-tablet-areas': spec.tabletGridAreas.map(x=>`\"${x}\"`).join(' ') }) as CSSProperties,[spec]);
-  return <div className={`csp-root csp-layout-${layoutId} csp-nav-${spec.navMode}`} data-canonical-staffportal-dashboard data-layout-id={layoutId} style={style}>
+  return <div className={`csp-root csp-layout-${layoutId} csp-nav-${spec.navMode}${layoutId==='master-detail-workspace'&&mobileRecordOpen?' csp-mobile-record-open':''}`} data-canonical-staffportal-dashboard data-layout-id={layoutId} style={style}>
     <TopBar fixture={renderFixture} layoutId={layoutId} onLayoutChange={setLayout} onWorkspace={onWorkspace} onSearch={onSearch} onAskAi={onAskAi ?? qaFixtureAskAi} onQuickCreate={onQuickCreate} onNotifications={onNotifications} onProfile={onProfile}/>
     <SideNav layoutId={layoutId} navigation={navigation} activeNavigationId={activeNavigationId}/>
-    <main className="csp-content">
+    {layoutId==='master-detail-workspace' && dedicatedRecordIndex!==null ? <main className="csp-content csp-dedicated-record-page"><DedicatedRecordPage fixture={renderFixture} recordIndex={dedicatedRecordIndex} onBack={backToRecordList} onRecordsBreadcrumb={openRecordList} onAction={onZoneAction}/></main> : <main className="csp-content">
       <LayoutRibbon layoutId={layoutId} onAction={onZoneAction}/>
       <div className="csp-grid">
         {spec.zones.includes('hero') && ((liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,'hero')) ? liveSlots.hero : <CanonicalHero fixture={renderFixture} layoutId={layoutId} onLayoutChange={setLayout} onAction={onZoneAction}/>)}
-        {spec.zones.filter(z=>z!=='hero').map(zone=><div className="csp-zone" data-zone-shell={zone} style={{gridArea:zone,order:spec.mobileOrder.indexOf(zone)}} key={zone}>{(liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,zone)) ? liveSlots[zone] : <ZoneCard zone={zone} fixture={renderFixture} layoutId={layoutId} onAction={onZoneAction} onLayoutChange={setLayout}/>}</div>)}
+        {spec.zones.filter(z=>z!=='hero').map(zone=><div className="csp-zone" data-zone-shell={zone} style={{gridArea:zone,order:spec.mobileOrder.indexOf(zone)}} key={zone}>{(liveSlots && Object.prototype.hasOwnProperty.call(liveSlots,zone)) ? liveSlots[zone] : <ZoneCard zone={zone} fixture={renderFixture} layoutId={layoutId} onAction={onZoneAction} onLayoutChange={setLayout} selectedRecordIndex={selectedRecordIndex} onSelectRecord={(index)=>{setSelectedRecordIndex(index);setMobileRecordOpen(true)}} onMobileRecordBack={()=>setMobileRecordOpen(false)} onOpenFullRecord={openDedicatedRecord}/>}</div>)}
       </div>
-    </main>
+    </main>}
   </div>;
 }

@@ -1,0 +1,13 @@
+{
+  "name": "Daenem Workforce Hub",
+  "short_name": "Daenem Workforce",
+  "description": "Secure multi-company employee ERP for Daenem Group.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f6fb",
+  "theme_color": "#17233b",
+  "categories": ["business", "productivity"],
+  "lang": "en-NG"
+}

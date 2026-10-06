@@ -246,9 +246,9 @@ export const CANONICAL_LAYOUT_SPECS: Record<StaffPortalLayoutId, CanonicalLayout
     "navMode": "split-pane",
     "description": "Browse, select, inspect and act through a master list, rich detail workspace and inspector.",
     "desktopGridAreas": [
-      "master-list master-list master-list master-detail master-detail master-detail master-detail master-detail master-detail ai-insights ai-insights ai-insights",
-      "master-list master-list master-list master-detail master-detail master-detail master-detail master-detail master-detail status status status",
-      "master-list master-list master-list activity activity activity activity approvals approvals approvals knowledge knowledge",
+      "master-list master-list master-list master-detail master-detail master-detail master-detail master-detail master-detail master-detail master-detail master-detail",
+      "master-list master-list master-list master-detail master-detail master-detail master-detail master-detail master-detail master-detail master-detail master-detail",
+      "activity activity activity activity approvals approvals approvals approvals knowledge knowledge knowledge knowledge",
       "announcement announcement announcement announcement announcement announcement quick-actions quick-actions quick-actions world-time world-time world-time"
     ],
     "tabletGridAreas": [

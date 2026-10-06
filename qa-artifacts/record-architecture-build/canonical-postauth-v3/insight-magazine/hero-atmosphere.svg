@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="presentation">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3b56f"/><stop offset=".42" stop-color="#f8e4c6"/><stop offset="1" stop-color="#7a91cb"/></linearGradient>
+    <linearGradient id="city" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4e0c8"/><stop offset="1" stop-color="#5d6d9d"/></linearGradient>
+    <linearGradient id="wash" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#fff" stop-opacity=".56"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="1600" height="520" fill="url(#sky)"/><circle cx="1212" cy="118" r="72" fill="#fff4c7" opacity=".84"/><path d="M0 264C220 214 460 259 730 222S1200 205 1600 252V520H0Z" fill="#f5e2d5" opacity=".63"/>
+  <g fill="url(#city)"><path d="M72 383V207h76v-50h73v226Z"/><path d="M238 383V146h65V81h67v302Z"/><path d="M392 383V207h82v-73h54v249Z"/><path d="M544 383V122h72V74h73v309Z"/><path d="M706 383V174h58v-80h87v289Z"/><path d="M895 383V135h73v-44h62v292Z"/><path d="M1045 383V189h84v-77h52v271Z"/><path d="M1190 383V153h92v-42h74v272Z"/><path d="M1370 383V213h56v-63h105v233Z"/></g>
+  <path d="M0 393H1600V520H0Z" fill="#695b83" opacity=".58"/><path d="M0 394L520 520H715L164 386Z" fill="url(#wash)" opacity=".5"/>
+  <path d="M162 433C410 391 594 449 830 414S1264 395 1500 431" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="4"/>
+  <g fill="#fff" opacity=".78"><rect x="250" y="284" width="116" height="54" rx="8"/><rect x="555" y="243" width="138" height="69" rx="8"/><rect x="1035" y="260" width="126" height="60" rx="8"/></g>
+  <g fill="#c66c70" opacity=".55"><circle cx="290" cy="302" r="8"/><circle cx="595" cy="267" r="8"/><circle cx="1074" cy="280" r="8"/></g>
+</svg>

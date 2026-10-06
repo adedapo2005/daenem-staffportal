@@ -1,0 +1,267 @@
+/* DAENEM Record Interaction Architecture V1 — post-fidelity authority.
+   Loaded after legacy batch fidelity CSS so the approved record-processing
+   architecture controls Master–Detail without weakening unrelated layouts. */
+
+@media (min-width:1440px) and (max-width:2199px){
+  .csp-layout-master-detail-workspace .csp-grid{
+    grid-template-rows:370px 370px 220px 46px 180px!important;
+    gap:12px!important;
+    min-height:1094px!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="master-list"]{
+    grid-column:1/4!important;
+    grid-row:1/3!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="master-detail"]{
+    grid-column:4/13!important;
+    grid-row:1/3!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="activity"]{
+    grid-column:1/5!important;
+    grid-row:3!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="approvals"]{
+    grid-column:5/9!important;
+    grid-row:3!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="ai-insights"]{
+    grid-column:9/13!important;
+    grid-row:3!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="announcement"]{
+    grid-column:1/7!important;
+    grid-row:4!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="status"]{
+    grid-column:7/13!important;
+    grid-row:4!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="knowledge"]{
+    grid-column:1/5!important;
+    grid-row:5!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="quick-actions"]{
+    grid-column:5/9!important;
+    grid-row:5!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="world-time"]{
+    grid-column:9/13!important;
+    grid-row:5!important;
+  }
+
+  .csp-layout-master-detail-workspace .csp-record-list,
+  .csp-layout-master-detail-workspace .csp-record-workspace,
+  .csp-layout-master-detail-workspace .csp-master-detail-surface{
+    height:100%!important;
+    min-height:0!important;
+  }
+  .csp-layout-master-detail-workspace .csp-record-list-header{
+    height:auto!important;
+    min-height:76px!important;
+    margin:0!important;
+  }
+  .csp-layout-master-detail-workspace .csp-record-workspace-header{
+    height:auto!important;
+    min-height:132px!important;
+    margin:0!important;
+  }
+
+  /* Remove legacy authority-frame compression from secondary content.
+     Anything visible in this layout must retain the global 9px floor. */
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list,
+  .csp-layout-master-detail-workspace [data-zone-shell="ai-insights"] .csp-ai-card{
+    height:220px!important;
+    min-height:220px!important;
+  }
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div{
+    min-height:38px!important;
+    height:auto!important;
+    padding:5px 1px!important;
+  }
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div b,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div b,
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div small,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div small,
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list>div>em,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list>div>em,
+  .csp-layout-master-detail-workspace .csp-context-ai-intro b,
+  .csp-layout-master-detail-workspace .csp-context-ai-intro small,
+  .csp-layout-master-detail-workspace .csp-context-ai-rows>button b,
+  .csp-layout-master-detail-workspace .csp-context-ai-rows>button small,
+  .csp-layout-master-detail-workspace .csp-ai-footer,
+  .csp-layout-master-detail-workspace [data-zone="quick-actions"] .csp-actions>div button{
+    font-size:9px!important;
+    line-height:1.15!important;
+  }
+}
+
+@media (min-width:2200px){
+  .csp-layout-master-detail-workspace .csp-grid{
+    grid-template-rows:390px 390px 300px 70px 250px!important;
+    gap:18px!important;
+    min-height:1472px!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="master-list"]{
+    grid-column:1/4!important;
+    grid-row:1/3!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="master-detail"]{
+    grid-column:4/13!important;
+    grid-row:1/3!important;
+  }
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="activity"]{grid-column:1/5!important;grid-row:3!important}
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="approvals"]{grid-column:5/9!important;grid-row:3!important}
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="ai-insights"]{grid-column:9/13!important;grid-row:3!important}
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="announcement"]{grid-column:1/7!important;grid-row:4!important}
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="status"]{grid-column:7/13!important;grid-row:4!important}
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="knowledge"]{grid-column:1/5!important;grid-row:5!important}
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="quick-actions"]{grid-column:5/9!important;grid-row:5!important}
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="world-time"]{grid-column:9/13!important;grid-row:5!important}
+  .csp-layout-master-detail-workspace .csp-record-list,
+  .csp-layout-master-detail-workspace .csp-record-workspace,
+  .csp-layout-master-detail-workspace .csp-master-detail-surface{
+    height:100%!important;
+    min-height:0!important;
+  }
+}
+
+@media (max-width:767px){
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="master-list"],
+  .csp-layout-master-detail-workspace .csp-grid>[data-zone-shell="master-detail"]{
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+}
+
+.csp-layout-master-detail-workspace .csp-purpose{display:none!important}
+
+@media (min-width:3200px){
+  .csp-layout-master-detail-workspace .csp-grid{
+    grid-template-rows:480px 480px 360px 80px 310px!important;
+    gap:22px!important;
+    min-height:1798px!important;
+  }
+  .csp-layout-master-detail-workspace [data-zone-shell="activity"] .csp-list,
+  .csp-layout-master-detail-workspace [data-zone-shell="approvals"] .csp-list,
+  .csp-layout-master-detail-workspace [data-zone-shell="ai-insights"] .csp-ai-card{
+    height:360px!important;
+    min-height:360px!important;
+  }
+}
+
+@media (min-width:1200px) and (max-width:1439px){
+  .csp-layout-master-detail-workspace .csp-record-workspace-body{
+    grid-template-columns:minmax(0,1fr) minmax(230px,29%)!important;
+    gap:12px;
+  }
+  .csp-layout-master-detail-workspace .csp-record-context{
+    grid-template-columns:1fr!important;
+  }
+}
+
+
+/* RECORD INTERACTION V1 — ultrawide / 4K overflow guard.
+   Preserve adaptive density while preventing the master-detail shell from
+   extending beyond the viewport because of legacy width/min-width rules. */
+.csp-layout-master-detail-workspace,
+.csp-layout-master-detail-workspace .csp-content,
+.csp-layout-master-detail-workspace .csp-grid,
+.csp-layout-master-detail-workspace .csp-zone,
+.csp-layout-master-detail-workspace [data-zone-shell="master-list"],
+.csp-layout-master-detail-workspace [data-zone-shell="master-detail"],
+.csp-layout-master-detail-workspace .csp-record-list,
+.csp-layout-master-detail-workspace .csp-record-workspace {
+  min-width: 0 !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.csp-layout-master-detail-workspace {
+  overflow-x: clip;
+}
+.csp-layout-master-detail-workspace .csp-content,
+.csp-layout-master-detail-workspace .csp-grid {
+  width: 100%;
+}
+@media (min-width:2200px){
+  .csp-layout-master-detail-workspace .csp-grid{
+    grid-template-columns:
+      repeat(3,minmax(0,calc(var(--csp-record-master)/3)))
+      repeat(9,minmax(0,1fr)) !important;
+  }
+}
+
+
+/* Dedicated Record Page — route-owned, deep-linkable record destination. */
+.csp-dedicated-record-page{
+  width:100%;
+  min-width:0;
+  padding:clamp(16px,2vw,30px);
+}
+.csp-dedicated-record{
+  width:min(1600px,100%);
+  margin:0 auto;
+  min-width:0;
+}
+.csp-record-breadcrumbs{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  margin:0 0 14px;
+  font-size:12px;
+}
+.csp-record-breadcrumbs button{
+  border:0;
+  background:transparent;
+  padding:4px 2px;
+  font:inherit;
+  color:inherit;
+  cursor:pointer;
+}
+.csp-record-breadcrumbs button:hover,
+.csp-record-breadcrumbs button:focus-visible{
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.csp-record-breadcrumbs span[aria-current="page"]{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-weight:700;
+}
+.csp-record-page-back{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:36px;
+  margin:0 0 12px;
+  border:1px solid rgba(30,45,70,.14);
+  border-radius:10px;
+  background:rgba(255,255,255,.82);
+  padding:7px 11px;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+.csp-dedicated-record .csp-record-workspace{
+  min-height:clamp(560px,72vh,920px);
+  height:auto!important;
+}
+.csp-dedicated-record .csp-record-mobile-back{
+  display:none!important;
+}
+.csp-dedicated-record .csp-record-workspace-body{
+  grid-template-columns:minmax(0,1fr) minmax(260px,30%);
+}
+@media (max-width:900px){
+  .csp-dedicated-record-page{padding:14px}
+  .csp-dedicated-record .csp-record-workspace-body{grid-template-columns:1fr}
+}
+@media (max-width:767px){
+  .csp-record-breadcrumbs{font-size:11px}
+  .csp-dedicated-record .csp-record-workspace{min-height:0}
+  .csp-dedicated-record .csp-record-workspace-header{grid-template-columns:1fr!important}
+}

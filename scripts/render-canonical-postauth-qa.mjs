@@ -21,7 +21,7 @@ const layouts = [
   'board-pulse',
 ];
 
-const layoutSpecSource = fs.readFileSync(path.join(root, 'src', 'canonical-postauth-v1', 'layout-specs.ts'), 'utf8');
+const layoutSpecSource = fs.readFileSync(path.join(root, 'src', 'canonical-postauth-v1', 'layout-specs.ts'), 'utf8').replace(/\r\n/g, '\n');
 const layoutSpecStart = layoutSpecSource.indexOf(' = ') + 3;
 const layoutSpecEnd = layoutSpecSource.indexOf(';\n\nexport const CANONICAL_LAYOUT_IDS');
 if (layoutSpecStart < 3 || layoutSpecEnd < 0) throw new Error('CANONICAL_LAYOUT_SPEC_PARSE_FAILED');
@@ -35,6 +35,7 @@ const coreViewports = [
   [768, 1024],
   [1024, 1366],
   [1366, 1024],
+  [1672, 941],
   [360, 800],
   [390, 844],
   [412, 915],
@@ -134,6 +135,7 @@ function startVite(port, { fixtureMode, baselineMode }) {
   const nodeOptions = [process.env.NODE_OPTIONS, fs.existsSync(optionalWranglerShim) ? `--require=${optionalWranglerShim}` : null].filter(Boolean).join(' ');
   const child = spawn(command, ['run', 'dev', '--', '--config', 'vite.canonical-qa.config.ts', '--host', '127.0.0.1', '--port', String(port)], {
     cwd: root,
+    shell: process.platform === 'win32',
     env: {
       ...process.env,
       NODE_OPTIONS: nodeOptions,

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-label="Decorative global network routes">
+  <defs>
+    <filter id="routeGlow" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="hubGlow" x="-160%" y="-160%" width="420%" height="420%"><feGaussianBlur stdDeviation="13"/></filter>
+    <filter id="markerGlow" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="7"/></filter>
+    <linearGradient id="routeWest" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#2ce8c5"/><stop offset=".58" stop-color="#46d8dd"/><stop offset="1" stop-color="#66c7ed"/>
+    </linearGradient>
+    <linearGradient id="routeEast" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#50e4cf"/><stop offset=".6" stop-color="#36cadb"/><stop offset="1" stop-color="#70bdf1"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke-linecap="round" opacity=".32" filter="url(#routeGlow)">
+    <path d="M782 282C698 203 596 165 514 169S426 115 362 87" stroke="url(#routeWest)" stroke-width="16"/>
+    <path d="M782 282C693 244 621 213 556 195" stroke="url(#routeWest)" stroke-width="15"/>
+    <path d="M782 282C746 191 716 111 731 62" stroke="#55dfdb" stroke-width="14"/>
+    <path d="M782 282C823 207 865 131 907 105" stroke="url(#routeEast)" stroke-width="16"/>
+    <path d="M782 282C881 255 979 229 1070 207" stroke="url(#routeEast)" stroke-width="15"/>
+    <path d="M782 282C829 304 873 343 904 392" stroke="#45dfc5" stroke-width="14"/>
+    <path d="M782 282C773 330 752 379 719 400" stroke="#45dfc5" stroke-width="13"/>
+  </g>
+
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-dasharray="8 11" opacity=".94">
+    <path d="M782 282C698 203 596 165 514 169S426 115 362 87" stroke-width="3.3"/>
+    <path d="M782 282C693 244 621 213 556 195" stroke-width="3"/>
+    <path d="M782 282C678 304 590 282 500 228S418 179 470 164" stroke-width="3"/>
+    <path d="M782 282C746 191 716 111 731 62" stroke-width="3"/>
+    <path d="M782 282C823 207 865 131 907 105" stroke-width="3.2"/>
+    <path d="M782 282C881 255 979 229 1070 207" stroke-width="3.15"/>
+    <path d="M782 282C829 304 873 343 904 392" stroke-width="3.05"/>
+    <path d="M782 282C773 330 752 379 719 400" stroke-width="2.8"/>
+  </g>
+
+  <g fill="#42e7ce" opacity=".22" filter="url(#markerGlow)">
+    <circle cx="362" cy="87" r="22"/><circle cx="470" cy="164" r="20"/><circle cx="556" cy="195" r="21"/>
+    <circle cx="731" cy="62" r="20"/><circle cx="907" cy="105" r="21"/><circle cx="1070" cy="207" r="21"/>
+    <circle cx="904" cy="392" r="22"/><circle cx="719" cy="400" r="20"/>
+  </g>
+  <g fill="#fff" stroke="#16b99a" stroke-width="5">
+    <circle cx="362" cy="87" r="10"/><circle cx="470" cy="164" r="9"/><circle cx="556" cy="195" r="9"/>
+    <circle cx="731" cy="62" r="9"/><circle cx="907" cy="105" r="10"/><circle cx="1070" cy="207" r="10"/>
+    <circle cx="904" cy="392" r="10"/><circle cx="719" cy="400" r="9"/>
+  </g>
+
+  <circle cx="782" cy="282" r="59" fill="#4bf0df" opacity=".3" filter="url(#hubGlow)"/>
+  <circle cx="782" cy="282" r="31" fill="none" stroke="#fff" stroke-width="5" opacity=".96"/>
+  <circle cx="782" cy="282" r="15" fill="#287fe7" stroke="#fff" stroke-width="4"/>
+</svg>

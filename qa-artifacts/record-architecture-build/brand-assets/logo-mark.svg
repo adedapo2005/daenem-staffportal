@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">Daenem mark</title>
+  <defs><linearGradient id="mark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7d5a"/><stop offset=".42" stop-color="#ee4e86"/><stop offset=".75" stop-color="#246cd9"/><stop offset="1" stop-color="#13b9b0"/></linearGradient></defs>
+  <circle cx="82" cy="42" r="18" fill="#ff7d5a"/>
+  <path d="M44 73h73c53 0 87 33 87 75s-34 75-87 75H44V73Zm51 34v82h9c29 0 47-16 47-41s-18-41-47-41h-9Z" fill="url(#mark)"/>
+  <path d="M44 73h50v150H44z" fill="url(#mark)" opacity=".95"/>
+</svg>

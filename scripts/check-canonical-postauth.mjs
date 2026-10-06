@@ -119,6 +119,28 @@ must(dashboardEntry.includes("if (activeView === 'overview')") && dashboardEntry
 must(dashboardEntry.indexOf("if (activeView === 'overview')") < dashboardEntry.indexOf('return <main className={'), 'legacy dashboard return precedes canonical overview boundary');
 must(layoutSystem.includes("'master-detail': 'master-detail-workspace'"), 'accepted stored master-detail compatibility mapping is missing');
 
+const recordInteractionStart = dashboard.indexOf('function MasterRecords');
+const recordInteractionEnd = dashboard.indexOf('function WorkspaceTasks');
+const recordInteractionSource = recordInteractionStart >= 0 && recordInteractionEnd > recordInteractionStart
+  ? dashboard.slice(recordInteractionStart, recordInteractionEnd)
+  : '';
+must(recordInteractionSource.includes('Records You Can Access'), 'record interaction list heading is not plain-language');
+must(recordInteractionSource.includes('No Records Available'), 'record interaction empty state is not plain-language');
+must(recordInteractionSource.includes('Available To You'), 'record interaction availability language is missing');
+must(recordInteractionSource.includes('Record Details'), 'record interaction detail language is missing');
+must(recordInteractionSource.includes('aria-label="Record Filters"'), 'record interaction filter accessibility label is not plain-language');
+must(recordInteractionSource.includes('aria-label="Search Records"'), 'record interaction search accessibility label is not plain-language');
+must(recordInteractionSource.includes('aria-label="Records You Can Access"'), 'record interaction list accessibility label is not plain-language');
+must(recordInteractionSource.includes('data-record-dedicated-page'), 'dedicated record page primitive is missing');
+must(recordInteractionSource.includes('aria-label="Record Breadcrumbs"'), 'dedicated record breadcrumbs are missing');
+must(recordInteractionSource.includes('Back To Records'), 'dedicated record return control is missing');
+must(dashboard.includes("url.searchParams.set('record', recordRouteKey(record,index))"), 'dedicated record URL routing is missing');
+must(dashboard.includes("window.addEventListener('popstate', syncRecordRoute)"), 'dedicated record browser history synchronization is missing');
+must(dashboard.includes("window.history.pushState(state,'',url)"), 'dedicated record pushState navigation is missing');
+for (const technicalCopy of ['Operational Context', 'Data Scope', 'working context', 'Authorized Record Filters', 'Search Authorized Records', 'aria-label="Authorized Records"']) {
+  must(!recordInteractionSource.includes(technicalCopy), 'record interaction contains technical user-facing copy: ' + technicalCopy);
+}
+
 console.log('CANONICAL_POSTAUTH_SOURCE=PASS');
 console.log('CANONICAL_LAYOUT_IDS=' + ids.length);
 console.log('CANONICAL_LAYOUT_STRUCTURAL_PROFILES=PASS');
