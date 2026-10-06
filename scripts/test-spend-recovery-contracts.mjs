@@ -134,7 +134,7 @@ must(approvalQueue.includes('requiredPermission') && approvalQueue.includes('con
 
 // The Spend UI has controlled dialogs and template-driven shared allocation.
 must(!entry.includes('window.prompt'), 'Spend uses a browser-native prompt');
-for (const contract of ['function TextEntryDialog', 'role="dialog"', 'aria-modal="true"', "event.key === 'Escape'", 'Cancel', 'Submit', 'Select approved template', 'beneficiaryCostCenters', 'AdminMasterControls']) must(entry.includes(contract), `premium controlled UI contract missing: ${contract}`);
+for (const contract of ['function TextEntryDialog', 'role="dialog"', 'aria-modal="true"', "event.key === 'Escape'", "event.key !== 'Tab'", 'querySelectorAll<HTMLElement>', 'backdropDismissAllowed', 'danger === false', 'Cancel', 'Submit', 'Select approved template', 'beneficiaryCostCenters', 'AdminMasterControls']) must(entry.includes(contract), `premium controlled UI contract missing: ${contract}`);
 must(css.includes('min-height:44px') && css.includes('spend-dialog') && css.includes('spend-admin-controls'), 'modal touch target or responsive admin controls are missing');
 
 // Every supported master mutation is append-audited and merge leaves a
