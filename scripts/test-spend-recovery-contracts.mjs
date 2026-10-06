@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
-const read = (file) => readFileSync(join(root, file), 'utf8');
+const read = (file) => readFileSync(join(root, file), 'utf8').replace(/\r\n/g, '\n');
 const must = (condition, message) => {
   if (!condition) throw new Error(`Spend recovery contract failed: ${message}`);
 };
