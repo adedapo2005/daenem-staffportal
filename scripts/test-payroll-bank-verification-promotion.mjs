@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+const source=await readFile(new URL('../worker/payroll-bank-draft.ts',import.meta.url),'utf8');
+assert.match(source,/promoteVerifiedEmployeeBankAccount/);
+assert.match(source,/employee_company_memberships WHERE employee_id=\? AND company_id=\? AND active=1/);
+assert.match(source,/is_primary=0 AND verified_at IS NULL/);
+assert.match(source,/UPDATE employee_bank_accounts SET is_primary=0 WHERE employee_id=\? AND active=1 AND is_primary=1/);
+assert.match(source,/verificationSource:source,verificationReference:reference/);
+assert.match(source,/x-request-id/);
+assert.match(source,/provider\|bank\|nibss/);
+console.log('PASS 7 payroll bank verification promotion boundary assertions');
