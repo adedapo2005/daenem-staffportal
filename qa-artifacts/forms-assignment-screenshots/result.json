@@ -1,0 +1,162 @@
+{
+  "generatedAt": "2026-10-07T08:14:54.405Z",
+  "baseUrl": "http://127.0.0.1:4176",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "multi": [
+        "employee-a",
+        "employee-b"
+      ],
+      "deselected": [
+        "employee-b"
+      ],
+      "reselected": [
+        "employee-b",
+        "employee-a"
+      ],
+      "minFont": 9,
+      "overflow": false
+    }
+  ],
+  "runtimeErrors": [],
+  "unexpectedRequests": [],
+  "failures": []
+}
