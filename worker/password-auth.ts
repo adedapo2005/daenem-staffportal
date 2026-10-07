@@ -838,7 +838,7 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
           login_geofence_result,expires_at
         ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
       `).bind(
-        sessionId,verified.employeeId,token,text('deviceFingerprint') || null,
+        sessionId,verified.employeeId,tokenHash,text('deviceFingerprint') || null,
         text('deviceName') || null,request.headers.get('user-agent'),requestIp(request) || null,
         number('latitude') ?? null,number('longitude') ?? null,number('accuracy') ?? null,
         requestLocationLabel(request) || null,text('locationResult') || 'unknown',expiresAt,
