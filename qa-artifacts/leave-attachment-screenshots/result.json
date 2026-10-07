@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-10-07T20:23:22.093Z",
+  "baseUrl": "http://127.0.0.1:4176",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "minFont": 10,
+      "overflow": false,
+      "requiredEvidencePosts": 0,
+      "ordinaryLeavePosts": 1
+    }
+  ],
+  "runtimeErrors": [],
+  "failures": []
+}
