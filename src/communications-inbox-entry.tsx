@@ -1,4 +1,4 @@
-import React,{useCallback,useEffect,useMemo,useState}from'react';
+import React,{useCallback,useEffect,useMemo,useRef,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{Archive,ArrowLeft,AtSign,CheckCheck,ChevronDown,Circle,Clock3,Inbox,MessageCircleMore,MoreHorizontal,NotebookPen,RefreshCw,Search,Send,ShieldCheck,Sparkles,UserCheck,X}from'lucide-react';
 import{api,hasWorkforcePermission,type WorkforceContext}from'./auth';
@@ -13,8 +13,15 @@ type ReplyPolicy={serviceWindowState:'open'|'closed'|'unavailable';lastCustomerM
 type ApprovedTemplate={id:string;name:string;language:string;category:string;bodyTemplate:string;revision:number;providerTemplateId?:string|null};
 type Thread={conversation:Conversation&{connectionId?:string|null};messages:Message[];notes:Note[];approvedTemplates:ApprovedTemplate[];replyPolicy:ReplyPolicy};
 type CompanyOption={id:string;code:string;name:string;label:string;shortLabel:string;uiKey:string;monogram:string;descriptor:string};
-const cleanCompanies=(context:WorkforceContext)=>context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`));
+type InboxHistoryState={active:true;view:'list'|'thread';companyId:string;query:string;status:string;scrollTop:number;selectedId:string;fromList?:boolean};
+const isGroupOperator=(context:WorkforceContext)=>context.roles.some(role=>['owner','group_admin'].includes(role.code));
+const canViewInboxCompany=(context:WorkforceContext,companyId:string)=>isGroupOperator(context)||hasWorkforcePermission(context,'communications.support.inbox.view','view',companyId)||hasWorkforcePermission(context,'communications.support.manage','manage',companyId);
+const cleanCompanies=(context:WorkforceContext)=>context.companies.filter(company=>!/farm/i.test(`${company.id} ${company.code} ${company.name}`)&&canViewInboxCompany(context,company.id));
 const companyOption=(company:WorkforceContext['companies'][number]):CompanyOption=>({id:company.id,code:company.code,name:company.name,...resolveCommunicationCompanyUi(company)});
+const inboxHistory=()=>window.history.state?.daenemWhatsAppInbox as InboxHistoryState|undefined;
+const inboxRoute=()=>{const url=new URL(window.location.href);return{active:url.searchParams.get('waInbox')==='1'||url.searchParams.has('waConversation'),conversationId:url.searchParams.get('waConversation')||'',companyCode:url.searchParams.get('waCompany')||''}};
+const inboxUrl=(companyCode:string,conversationId='')=>{const url=new URL(window.location.href);url.searchParams.set('waInbox','1');if(companyCode)url.searchParams.set('waCompany',companyCode);else url.searchParams.delete('waCompany');if(conversationId)url.searchParams.set('waConversation',conversationId);else url.searchParams.delete('waConversation');return url};
+const clearInboxUrl=()=>{const url=new URL(window.location.href);url.searchParams.delete('waInbox');url.searchParams.delete('waCompany');url.searchParams.delete('waConversation');return url};
 const displayName=(conversation:Conversation)=>conversation.customerDisplayName?.trim()||`WhatsApp ${conversation.customerWaId.slice(-4)}`;
 const initials=(conversation:Conversation)=>{const name=displayName(conversation);const parts=name.split(/\s+/).filter(Boolean);return(parts[0]?.[0]||'W')+(parts[1]?.[0]||'')};
 const time=(value?:string|null)=>value?new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(value)):'';
@@ -38,15 +45,18 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  const companies=useMemo(()=>cleanCompanies(context),[context]);
  const companyOptions=useMemo(()=>companies.map(companyOption),[companies]);
  const companyOptionById=useMemo(()=>new Map(companyOptions.map(item=>[item.id,item])),[companyOptions]);
- const isGroupOperator=context.roles.some(role=>['owner','group_admin'].includes(role.code));
- const canRouteFor=(id:string)=>isGroupOperator||hasWorkforcePermission(context,'communications.support.inbox.assign','edit',id)||hasWorkforcePermission(context,'communications.support.manage','manage',id);
- const routeOptions=useMemo(()=>companyOptions.filter(item=>canRouteFor(item.id)),[companyOptions,context,isGroupOperator]);
- const[companyId,setCompanyId]=useState(companies[0]?.id||'');
+ const routeAtOpen=useMemo(()=>{const route=inboxRoute();const company=companyOptions.find(item=>item.code.toLowerCase()===route.companyCode.toLowerCase());return{companyId:company?.id||'',conversationId:company?route.conversationId:''}},[companyOptions]);
+ const historyAtOpen=useMemo(()=>inboxHistory(),[]);
+ const groupOperator=isGroupOperator(context);
+ const canRouteFor=(id:string)=>groupOperator||hasWorkforcePermission(context,'communications.support.inbox.assign','edit',id)||hasWorkforcePermission(context,'communications.support.manage','manage',id);
+ const routeOptions=useMemo(()=>companyOptions.filter(item=>canRouteFor(item.id)),[companyOptions,context,groupOperator]);
+ const initialCompanyId=routeAtOpen.companyId||(historyAtOpen&&companyOptions.some(item=>item.id===historyAtOpen.companyId)?historyAtOpen.companyId:'')||companies[0]?.id||'';
+ const[companyId,setCompanyId]=useState(initialCompanyId);
  const[items,setItems]=useState<Conversation[]>([]);
- const[selectedId,setSelectedId]=useState('');
+ const[selectedId,setSelectedId]=useState(routeAtOpen.conversationId||'');
  const[thread,setThread]=useState<Thread|null>(null);
- const[query,setQuery]=useState('');
- const[status,setStatus]=useState('open');
+ const[query,setQuery]=useState(historyAtOpen?.query||'');
+ const[status,setStatus]=useState(['open','pending','resolved','all'].includes(historyAtOpen?.status||'')?historyAtOpen!.status:'open');
  const[loading,setLoading]=useState(false);
  const[threadLoading,setThreadLoading]=useState(false);
  const[message,setMessage]=useState('');
@@ -57,7 +67,11 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  const[activity,setActivity]=useState('');
  const[sendReadiness,setSendReadiness]=useState<SendReadiness|null>(null);
  const[selectedPanel,setSelectedPanel]=useState<'notes'|'details'>('notes');
+ const listScrollRef=useRef<HTMLDivElement|null>(null);
+ const pendingScrollRef=useRef<number|null>(historyAtOpen?.scrollTop??null);
  const selected=items.find(item=>item.id===selectedId)||thread?.conversation||null;
+ const currentCompanyCode=companyOptionById.get(companyId)?.code||'';
+ const snapshot=(view:'list'|'thread',nextSelectedId=selectedId,scrollTop=listScrollRef.current?.scrollTop||0,fromList=false):InboxHistoryState&{fromList:boolean}=>({active:true,view,companyId,query,status,scrollTop,selectedId:nextSelectedId,fromList});
 
  const loadInbox=useCallback(async(silent=false)=>{
   if(!companyId)return;
@@ -65,7 +79,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
   try{
    const result=await api<{conversations:Conversation[]}>(`/api/communications/inbox?companyId=${encodeURIComponent(companyId)}&status=${encodeURIComponent(status)}&q=${encodeURIComponent(query.trim())}`);
    setItems(result.conversations||[]);
-   setSelectedId(current=>current&&result.conversations?.some(item=>item.id===current)?current:(result.conversations?.[0]?.id||''));
+   setSelectedId(current=>current||(window.matchMedia('(max-width:760px)').matches?'':(result.conversations?.[0]?.id||'')));
    setMessage('');
   }catch(error){setMessage((error as Error).message)}
   finally{if(!silent)setLoading(false)}
@@ -85,6 +99,40 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  useEffect(()=>{const timer=window.setTimeout(()=>void loadInbox(),180);return()=>window.clearTimeout(timer)},[loadInbox]);
  useEffect(()=>{void loadThread(selectedId);setRouteTarget('');setTemplateId('');setSendReadiness(null)},[selectedId,loadThread]);
  useEffect(()=>{
+  const route=inboxRoute();
+  if(!route.active||inboxHistory()?.active)return;
+  const state=snapshot(route.conversationId?'thread':'list',route.conversationId||selectedId,pendingScrollRef.current||0,false);
+  window.history.replaceState({...window.history.state,daenemWhatsAppInbox:state},'',inboxUrl(currentCompanyCode,route.conversationId));
+ },[]);
+ useEffect(()=>{
+  const applyHistory=()=>{
+   const route=inboxRoute();
+   if(!route.active)return;
+   const state=inboxHistory();
+   const routedCompany=companyOptions.find(item=>item.code.toLowerCase()===route.companyCode.toLowerCase());
+   const restoredCompanyId=routedCompany?.id||(state&&companyOptions.some(item=>item.id===state.companyId)?state.companyId:'');
+   if(restoredCompanyId&&restoredCompanyId!==companyId)setCompanyId(restoredCompanyId);
+   if(state?.active){
+    setQuery(state.query||'');
+    if(['open','pending','resolved','all'].includes(state.status))setStatus(state.status);
+    pendingScrollRef.current=state.scrollTop||0;
+   }
+   const mobile=window.matchMedia('(max-width:760px)').matches;
+   const restoredSelected=route.conversationId||(!mobile&&state?.view==='list'?state.selectedId:'');
+   setSelectedId(restoredSelected||'');
+   if(!restoredSelected)setThread(null);
+  };
+  window.addEventListener('popstate',applyHistory);
+  return()=>window.removeEventListener('popstate',applyHistory)
+ },[companyOptions,companyId]);
+ useEffect(()=>{
+  const pending=pendingScrollRef.current;
+  if(pending===null)return;
+  if(window.matchMedia('(max-width:760px)').matches&&selectedId)return;
+  const frame=window.requestAnimationFrame(()=>{if(listScrollRef.current){listScrollRef.current.scrollTop=pending;pendingScrollRef.current=null}});
+  return()=>window.cancelAnimationFrame(frame)
+ },[items,selectedId]);
+ useEffect(()=>{
   const timer=window.setInterval(()=>{if(document.visibilityState==='visible'&&navigator.onLine){void loadInbox(true);if(selectedId)void loadThread(selectedId,true)}},15000);
   return()=>window.clearInterval(timer)
  },[loadInbox,loadThread,selectedId]);
@@ -101,7 +149,31 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
   finally{setActivity('')}
  }
 
- function selectConversation(id:string){setSelectedId(id);void mutateRead(id)}
+ function replaceListHistory(nextSelectedId=selectedId,scrollTop=listScrollRef.current?.scrollTop||0){
+  const state=snapshot('list',nextSelectedId,scrollTop,false);
+  window.history.replaceState({...window.history.state,daenemWhatsAppInbox:state},'',inboxUrl(currentCompanyCode));
+ }
+ function selectConversation(id:string){
+  const scrollTop=listScrollRef.current?.scrollTop||0;
+  replaceListHistory(id,scrollTop);
+  const state=snapshot('thread',id,scrollTop,true);
+  window.history.pushState({...window.history.state,daenemWhatsAppInbox:state},'',inboxUrl(currentCompanyCode,id));
+  setSelectedId(id);void mutateRead(id)
+ }
+ function returnToList(){
+  const state=inboxHistory();
+  if(state?.view==='thread'&&state.fromList){window.history.back();return}
+  const listState=snapshot('list',selectedId,state?.scrollTop??listScrollRef.current?.scrollTop??0,false);
+  window.history.pushState({...window.history.state,daenemWhatsAppInbox:listState},'',inboxUrl(currentCompanyCode));
+  pendingScrollRef.current=listState.scrollTop;
+  setSelectedId('');setThread(null)
+ }
+ function changeCompany(nextCompanyId:string){
+  const nextCode=companyOptionById.get(nextCompanyId)?.code||'';
+  const state:{daenemWhatsAppInbox:InboxHistoryState}={daenemWhatsAppInbox:{active:true,view:'list',companyId:nextCompanyId,query,status,scrollTop:0,selectedId:'',fromList:false}};
+  window.history.replaceState({...window.history.state,...state},'',inboxUrl(nextCode));
+  pendingScrollRef.current=0;setCompanyId(nextCompanyId);setSelectedId('');setThread(null)
+ }
  async function mutateRead(id:string){
   if(!companyId)return;
   try{await api(`/api/communications/inbox/${encodeURIComponent(id)}/read`,{method:'POST',body:JSON.stringify({companyId})});setItems(current=>current.map(item=>item.id===id?{...item,unreadCount:0}:item))}catch{}
@@ -113,7 +185,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
    const result=await api<Omit<SendReadiness,'messageId'>>(`/api/communications/inbox/${encodeURIComponent(selectedId)}/messages/${encodeURIComponent(messageId)}/prepare-send`,{method:'POST',body:JSON.stringify({companyId})});
    setSendReadiness({messageId,...result});
    if(result.ready)setMessage('WhatsApp send readiness confirmed.');
-   else setMessage(result.reason==='LIVE_SEND_DISABLED'?'Draft is valid, but live WhatsApp sending is still release-gated.':result.reason==='META_SYSTEM_USER_TOKEN_MISSING'?'Add the Meta System User Access Token in Communications Control Center before provider sending can become ready.':`WhatsApp send is not ready: ${result.reason||'configuration incomplete'}.`);
+   else setMessage(result.reason==='LIVE_SEND_DISABLED'?'Draft is ready. Live WhatsApp sending is turned off for now.':result.reason==='META_SYSTEM_USER_TOKEN_MISSING'?'Draft is ready, but WhatsApp setup is incomplete. Ask an authorized administrator to finish the connection.':'WhatsApp sending is not ready yet. Ask an authorized administrator to check the connection.');
   }catch(error){setSendReadiness(null);setMessage((error as Error).message)}
   finally{setActivity('')}
  }
@@ -129,9 +201,9 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
   finally{setActivity('')}
  }
  function readinessReason(reason?:string|null){
-  if(reason==='LIVE_SEND_DISABLED')return 'Release gate is off';
-  if(reason==='META_SYSTEM_USER_TOKEN_MISSING')return 'Meta System User token is missing';
-  return reason?reason.replaceAll('_',' ').toLowerCase():'Ready';
+  if(reason==='LIVE_SEND_DISABLED')return 'Live sending is off';
+  if(reason==='META_SYSTEM_USER_TOKEN_MISSING')return 'WhatsApp setup is incomplete';
+  return reason?'Sending is not ready':'Ready';
  }
  async function routeConversation(){
   if(!selectedId||!companyId||!routeTarget||activity==='route')return;
@@ -140,6 +212,10 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
    await api(`/api/communications/inbox/${encodeURIComponent(selectedId)}/route`,{method:'POST',body:JSON.stringify({companyId,targetCompanyId:routeTarget})});
    setThread(current=>current?{...current,conversation:{...current.conversation,companyId:routeTarget}}:current);
    setItems(current=>current.map(item=>item.id===selectedId?{...item,companyId:routeTarget}:item));
+   const nextCode=companyOptionById.get(routeTarget)?.code||'';
+   const routeState=inboxHistory();
+   const nextState:InboxHistoryState={active:true,view:'thread',companyId:routeTarget,query,status,scrollTop:routeState?.scrollTop||0,selectedId,fromList:routeState?.fromList};
+   window.history.replaceState({...window.history.state,daenemWhatsAppInbox:nextState},'',inboxUrl(nextCode,selectedId));
    setCompanyId(routeTarget);
    setRouteTarget('');
    setMessage('Conversation routed successfully.');
@@ -157,17 +233,17 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
  return <div className="wa-backdrop" role="dialog" aria-modal="true" aria-label="WhatsApp Inbox">
   <section className="wa-shell">
    <header className="wa-topbar">
-    <div className="wa-title"><span className="wa-brand-icon"><MessageCircleMore size={20}/></span><div><small>STAFF PORTAL · CUSTOMER COMMUNICATIONS</small><h2>WhatsApp Inbox</h2></div></div>
+    <div className="wa-title"><span className="wa-brand-icon"><MessageCircleMore size={20}/></span><div><small>StaffPortal · Customer Communications</small><h2>WhatsApp Inbox</h2></div></div>
     <div className="wa-top-actions">
-     <Pill><ShieldCheck size={13}/>Staff-only</Pill>
-     <Pill tone="pending"><Circle size={9}/>Provider send release-gated</Pill>
+     <Pill><ShieldCheck size={13}/>Staff Access Only</Pill>
+     <Pill tone="pending"><Circle size={9}/>Live WhatsApp Sending Off</Pill>
      <button className="wa-icon-btn" onClick={()=>void loadInbox()} aria-label="Refresh inbox"><RefreshCw size={18}/></button>
      <button className="wa-icon-btn" onClick={onClose} aria-label="Close inbox"><X size={19}/></button>
     </div>
    </header>
 
    <div className="wa-toolbar">
-    <label className="wa-company"><span>{company?.name||'Company'}</span><ChevronDown size={14}/><select value={companyId} onChange={event=>{setCompanyId(event.target.value);setSelectedId('')}}>{companies.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    <label className="wa-company"><span>{company?.name||'Company'}</span><ChevronDown size={14}/><select value={companyId} onChange={event=>changeCompany(event.target.value)}>{companies.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label className="wa-search"><Search size={16}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search customer or WhatsApp number"/></label>
     <div className="wa-filters">
      {['open','pending','resolved','all'].map(value=><button key={value} className={status===value?'active':''} onClick={()=>setStatus(value)}>{value[0].toUpperCase()+value.slice(1)}</button>)}
@@ -177,7 +253,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
    <div className="wa-layout">
     <aside className="wa-conversation-list">
      <div className="wa-list-heading"><div><strong>Conversations</strong><span>{items.length}</span></div><small>{loading?'Refreshing…':'Newest activity first'}</small></div>
-     <div className="wa-list-scroll">{!items.length&&!loading?<EmptyState title="No conversations here" detail="New customer WhatsApp messages will appear here after the Meta webhook is connected."/>:items.map(item=>{const routedCompany=item.companyId?companyOptionById.get(item.companyId)||null:null;return <button key={item.id} className={`wa-conversation ${selectedId===item.id?'selected':''}`} onClick={()=>selectConversation(item.id)}>
+     <div className="wa-list-scroll" ref={listScrollRef}>{!items.length&&!loading?<EmptyState title="No conversations here" detail="New customer WhatsApp messages will appear here when the WhatsApp connection is ready."/>:items.map(item=>{const routedCompany=item.companyId?companyOptionById.get(item.companyId)||null:null;return <button key={item.id} data-conversation-id={item.id} aria-current={selectedId===item.id?'true':undefined} className={`wa-conversation ${selectedId===item.id?'selected':''}`} onClick={()=>selectConversation(item.id)}>
        <span className="wa-avatar">{initials(item).toUpperCase()}</span>
        <span className="wa-conversation-copy"><span className="wa-conversation-row"><strong>{displayName(item)}</strong><time>{time(item.lastMessageAt)}</time></span><span className="wa-preview">{item.lastMessage||'Message received'}</span><span className="wa-conversation-meta"><Pill tone={item.status==='open'?'open':item.status==='pending'?'pending':'neutral'}>{item.status}</Pill>{item.routingMode==='shared_group'&&(routedCompany?<span data-company={routedCompany.uiKey} className="wa-company-chip compact"><b>{routedCompany.monogram}</b>{routedCompany.shortLabel}</span>:<span className="wa-route-meta unrouted">Unrouted</span>)}{item.assignedEmployeeId===context.employee.id&&<span><UserCheck size={12}/>Assigned to you</span>}</span></span>
        {item.unreadCount>0&&<span className="wa-unread">{item.unreadCount>99?'99+':item.unreadCount}</span>}
@@ -187,7 +263,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
     <main className="wa-thread">
      {!selected?<EmptyState title="Choose a conversation" detail="Select a customer conversation to review the thread and prepare a reply."/>:<>
       <header className="wa-thread-header">
-       <button className="wa-mobile-back" onClick={()=>setSelectedId('')}><ArrowLeft size={18}/></button>
+       <button className="wa-mobile-back" onClick={returnToList} aria-label="Back to conversation list"><ArrowLeft size={18}/></button>
        <span className="wa-avatar large">{initials(selected).toUpperCase()}</span>
        <div className="wa-thread-identity"><strong>{displayName(selected)}</strong><span><AtSign size={12}/>{selected.customerWaId}</span>{selectedCompany&&<span data-company={selectedCompany.uiKey} className="wa-company-chip"><b>{selectedCompany.monogram}</b>{selectedCompany.label}</span>}</div>
        <div className="wa-thread-actions">
@@ -196,7 +272,7 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
        </div>
       </header>
       <section data-company={selectedCompany?.uiKey||'unrouted'} className={`wa-route-bar ${selected.routingMode==='shared_group'?(selected.companyId?'routed':'unrouted'):'dedicated'}`}>
-       <div className="wa-route-copy"><small>COMPANY ROUTING</small><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Shared group · unrouted':'Dedicated company')}</strong>{selectedCompany?<><span className="wa-route-trail">DAENEM Group <b>→</b> {selectedCompany.shortLabel}</span><span>{selectedCompany.descriptor}</span></>:<span>{selected.routingMode==='shared_group'?'Choose the DAENEM company that should own this customer conversation.':'This sender is dedicated to its configured company.'}</span>}</div>
+       <div className="wa-route-copy"><small>Company Routing</small><strong>{selectedCompany?.label||(selected.routingMode==='shared_group'?'Shared group · unrouted':'Dedicated company')}</strong>{selectedCompany?<><span className="wa-route-trail">DAENEM Group <b>→</b> {selectedCompany.shortLabel}</span><span>{selectedCompany.descriptor}</span></>:<span>{selected.routingMode==='shared_group'?'Choose the DAENEM company that should own this customer conversation.':'This sender is dedicated to its configured company.'}</span>}</div>
        {selected.routingMode==='shared_group'&&!selected.companyId&&<div className="wa-route-controls">
         <label><span>{routeTarget?(routeOptions.find(item=>item.id===routeTarget)?.label||'Selected company'):'Select company'}</span><select aria-label="Route conversation to company" value={routeTarget} onChange={event=>setRouteTarget(event.target.value)} disabled={!canRouteSelected||activity==='route'}><option value="">Select company</option>{routeOptions.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
         <button disabled={!canRouteSelected||!routeTarget||activity==='route'} onClick={()=>void routeConversation()}>{activity==='route'?'Routing…':'Route conversation'}</button>
@@ -215,24 +291,24 @@ function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>v
 
       <section className="wa-composer">
        {replyPolicy&&<div className={`wa-reply-policy ${replyPolicy.composerState}`}>
-        <div><small>REPLY STATE</small><strong>{replyPolicy.composerState==='routing_required'?'Route required':replyPolicy.composerState==='send_ready'?'Service window open':'Template required'}</strong></div>
-        <span>{replyPolicy.composerState==='routing_required'?'Route this conversation to a company before drafting a reply.':replyPolicy.composerState==='send_ready'?`Free-form reply eligible until ${dateTime(replyPolicy.serviceWindowExpiresAt)}. Provider sending remains release-gated.`:'The 24-hour customer service window is closed or unavailable. An approved WhatsApp template will be required for live sending.'}</span>
+        <div><small>Reply State</small><strong>{replyPolicy.composerState==='routing_required'?'Route required':replyPolicy.composerState==='send_ready'?'Service window open':'Template required'}</strong></div>
+        <span>{replyPolicy.composerState==='routing_required'?'Route this conversation to a company before drafting a reply.':replyPolicy.composerState==='send_ready'?`Free-form reply is available until ${dateTime(replyPolicy.serviceWindowExpiresAt)}. Live WhatsApp sending remains off.`:'The 24-hour customer service window is closed or unavailable. An approved WhatsApp template will be required for live sending.'}</span>
        </div>}
        {replyPolicy?.composerState==='template_required'&&<div className="wa-template-compose">
         <label><span>Approved WhatsApp template</span><select value={templateId} onChange={event=>setTemplateId(event.target.value)}><option value="">Select approved template</option>{approvedTemplates.map(item=><option key={item.id} value={item.id}>{item.name} · {item.language} · {item.category}</option>)}</select><ChevronDown size={14}/></label>
-        {selectedTemplate?<div className="wa-template-preview"><header><strong>{selectedTemplate.name}</strong><span>{selectedTemplate.language} · {selectedTemplate.category} · r{selectedTemplate.revision}</span></header><p>{selectedTemplate.bodyTemplate}</p></div>:<p className="wa-template-empty">{approvedTemplates.length?'Select a template to review the exact approved body before saving the draft.':'No internally and provider-approved WhatsApp templates are available for this company yet.'}</p>}
+        {selectedTemplate?<div className="wa-template-preview"><header><strong>{selectedTemplate.name}</strong><span>{selectedTemplate.language} · {selectedTemplate.category} · Revision {selectedTemplate.revision}</span></header><p>{selectedTemplate.bodyTemplate}</p></div>:<p className="wa-template-empty">{approvedTemplates.length?'Select a template to review the exact approved body before saving the draft.':'No approved WhatsApp templates are available for this company yet.'}</p>}
        </div>}
        {latestDraft&&<div className={`wa-send-readiness ${currentReadiness?.ready?'ready':currentReadiness?'blocked':'unchecked'}`}>
-        <div className="wa-send-readiness-copy"><small>SEND READINESS</small><strong>{currentReadiness?.ready?'Ready for provider handoff':currentReadiness?readinessReason(currentReadiness.reason):'Not checked yet'}</strong><span>{latestDraft.replyMode==='template'?`Approved template draft${latestDraft.templateName?` · ${latestDraft.templateName}`:''}`:'Free-form draft inside the customer service window'} · provider send requires a separate release gate.</span></div>
+        <div className="wa-send-readiness-copy"><small>Send Readiness</small><strong>{currentReadiness?.ready?(currentReadiness.liveSend?'Ready to Send':'Draft Ready · Live Sending Off'):currentReadiness?readinessReason(currentReadiness.reason):'Not checked yet'}</strong><span>{latestDraft.replyMode==='template'?`Approved template draft${latestDraft.templateName?` · ${latestDraft.templateName}`:''}`:'Free-form draft inside the customer service window'} · live WhatsApp sending must be turned on separately by an authorized administrator.</span></div>
         <div className="wa-send-readiness-actions">
-         {currentReadiness&&<span className="wa-readiness-facts"><b>{currentReadiness.tokenConfigured?'Meta token configured':'Meta token missing'}</b><b>{currentReadiness.liveSend?'Live gate on':'Live gate off'}</b></span>}
+         {currentReadiness&&<span className="wa-readiness-facts"><b>{currentReadiness.tokenConfigured?'WhatsApp setup ready':'WhatsApp setup incomplete'}</b><b>{currentReadiness.liveSend?'Live sending on':'Live sending off'}</b></span>}
          <button className="wa-readiness-check" disabled={activity==='prepare-send'||activity==='send'} onClick={()=>void prepareSend(latestDraft.id)}><ShieldCheck size={15}/>{activity==='prepare-send'?'Checking…':'Check readiness'}</button>
          <button className="wa-live-send" disabled={!currentReadiness?.ready||!currentReadiness.liveSend||activity==='send'} onClick={()=>void sendDraft(latestDraft.id)}><Send size={15}/>{activity==='send'?'Sending…':'Send to WhatsApp'}</button>
         </div>
        </div>}
        <div className="wa-composer-tools">
-        <button className="wa-ai-button" onClick={()=>setMessage('AI reply assistance is reserved for the governed composer and is not active in this staging foundation yet.')}><Sparkles size={15}/>AI assist</button>
-        <span>Human review required · provider release gate remains separate</span>
+        <button className="wa-ai-button" onClick={()=>setMessage('AI reply assistance is not available here yet. Please write the reply yourself.')}><Sparkles size={15}/>AI assist</button>
+        <span>Human review required · live sending is controlled separately</span>
        </div>
        {replyPolicy?.composerState!=='template_required'&&<textarea value={reply} onChange={event=>setReply(event.target.value)} maxLength={4096} disabled={replyPolicy?.composerState==='routing_required'} placeholder={replyPolicy?.composerState==='routing_required'?'Route this conversation before drafting a reply.':'Write a customer reply…'}/>}
        <footer><span>{replyPolicy?.composerState==='template_required'?(selectedTemplate?'Approved template selected':'Template selection required'):`${reply.length.toLocaleString()} / 4,096`}</span><button className="wa-send-button" disabled={activity==='reply'||replyPolicy?.composerState==='routing_required'||(replyPolicy?.composerState==='template_required'?!templateId:!reply.trim())} onClick={()=>void mutate('reply',replyPolicy?.composerState==='template_required'?{templateId}:{body:reply})}><Send size={16}/>{activity==='reply'?'Saving…':replyPolicy?.composerState==='template_required'?'Save template draft':'Save reply draft'}</button></footer>
@@ -265,11 +341,33 @@ function Host(){
  const[context,setContext]=useState<WorkforceContext|null>(null);
  const[open,setOpen]=useState(false);
  useEffect(()=>{
-  const handler=async()=>{try{const result=await api<{authenticated:boolean;context?:WorkforceContext}>('/api/auth/me');if(result.context){setContext(result.context);setOpen(true)}}catch{}};
-  window.addEventListener('daenem:open-whatsapp-inbox',handler as EventListener);
-  return()=>window.removeEventListener('daenem:open-whatsapp-inbox',handler as EventListener)
+  const handler=async()=>{
+   try{
+    const result=await api<{authenticated:boolean;context?:WorkforceContext}>('/api/auth/me');
+    if(!result.context)return;
+    const permittedCompanies=cleanCompanies(result.context);
+    if(!permittedCompanies.length)return;
+    if(!inboxRoute().active){
+     const first=companyOption(permittedCompanies[0]);
+     const state:InboxHistoryState={active:true,view:'list',companyId:first.id,query:'',status:'open',scrollTop:0,selectedId:'',fromList:false};
+     window.history.replaceState({...window.history.state,daenemWhatsAppInbox:state},'',inboxUrl(first.code));
+    }
+    setContext(result.context);setOpen(true)
+   }catch{}
+  };
+  const eventHandler=()=>void handler();
+  const popHandler=()=>{if(inboxRoute().active){setOpen(true)}else setOpen(false)};
+  window.addEventListener('daenem:open-whatsapp-inbox',eventHandler as EventListener);
+  window.addEventListener('popstate',popHandler);
+  if(inboxRoute().active)void handler();
+  return()=>{window.removeEventListener('daenem:open-whatsapp-inbox',eventHandler as EventListener);window.removeEventListener('popstate',popHandler)}
  },[]);
- return open&&context?<WhatsAppInbox context={context} onClose={()=>setOpen(false)}/>:null
+ function closeInbox(){
+  const nextState={...window.history.state};delete nextState.daenemWhatsAppInbox;
+  window.history.replaceState(nextState,'',clearInboxUrl());
+  setOpen(false)
+ }
+ return open&&context?<WhatsAppInbox context={context} onClose={closeInbox}/>:null
 }
 const host=document.createElement('div');
 host.id='communications-inbox-root';

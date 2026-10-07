@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Boxes, ChevronRight, Grid3X3, LoaderCircle, Search, X } from 'lucide-react';
 import { hasWorkforcePermission, permissionLevel, type AccessLevel, type WorkforceContext } from './auth';
 import './module-hub.css';
@@ -472,6 +472,7 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState('');
   const [message, setMessage] = useState('');
+  const deepLinkLaunchRef = useRef('');
   const available = useMemo(() => moduleDefinitions.filter((module) => isModuleVisible(context, module, companyId, companyCode)), [companyCode, companyId, context]);
   const groups = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -498,6 +499,20 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
       window.removeEventListener('daenem:open-module-hub', openRequested);
     };
   }, [available, loading, experience, resolveExperience]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('waInbox') !== '1' && !url.searchParams.has('waConversation')) return;
+    const module = moduleDefinitions.find((item) => item.id === 'whatsapp-inbox');
+    if (!module) return;
+    const routeCompanyCode = url.searchParams.get('waCompany') || companyCode;
+    const routeCompany = context.companies.find((item) => item.code.toLowerCase() === routeCompanyCode.toLowerCase());
+    if (!routeCompany || !isModuleVisible(context, module, routeCompany.id, routeCompany.code)) return;
+    const signature = url.pathname + url.search;
+    if (deepLinkLaunchRef.current === signature) return;
+    deepLinkLaunchRef.current = signature;
+    void launch(module);
+  }, [companyCode, context, experience, resolveExperience]);
 
   async function launch(module: ModuleDefinition) {
     if (loading) return;

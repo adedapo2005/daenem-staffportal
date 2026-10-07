@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-10-07T08:11:45.579Z",
+  "baseUrl": "http://127.0.0.1:4176",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "mobile": true,
+      "targetId": "conversation-19",
+      "scrollBefore": 360,
+      "scrollAfter": 360,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "mobile": true,
+      "targetId": "conversation-19",
+      "scrollBefore": 294,
+      "scrollAfter": 294,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "mobile": false,
+      "targetId": "conversation-19",
+      "scrollBefore": 304,
+      "scrollAfter": 304,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "mobile": false,
+      "targetId": "conversation-19",
+      "scrollBefore": 276,
+      "scrollAfter": 276,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "mobile": false,
+      "targetId": "conversation-19",
+      "scrollBefore": 276,
+      "scrollAfter": 276,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "mobile": false,
+      "targetId": "conversation-19",
+      "scrollBefore": 291,
+      "scrollAfter": 291,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "mobile": false,
+      "targetId": "conversation-19",
+      "scrollBefore": 276,
+      "scrollAfter": 276,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "mobile": false,
+      "targetId": "conversation-19",
+      "scrollBefore": 276,
+      "scrollAfter": 276,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "mobile": false,
+      "targetId": "conversation-19",
+      "scrollBefore": 276,
+      "scrollAfter": 276,
+      "minFont": 9,
+      "overflow": false,
+      "url": "http://127.0.0.1:4176/?waInbox=1&waCompany=PRINT&waConversation=conversation-19"
+    }
+  ],
+  "runtimeErrors": [],
+  "unauthorizedRequests": [],
+  "failures": []
+}
