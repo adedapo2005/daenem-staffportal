@@ -6,13 +6,15 @@ assert.match(source,/employee_company_memberships WHERE employee_id=\? AND compa
 assert.match(source,/is_primary=0 AND verified_at IS NULL/);
 assert.match(source,/CASE WHEN id=\? THEN 1 ELSE 0 END/);
 assert.match(source,/EXISTS \(SELECT 1 FROM employee_bank_accounts WHERE id=\? AND employee_id=\? AND active=1 AND is_primary=0 AND verified_at IS NULL\)/);
+assert.match(source,/AND NOT EXISTS \(SELECT 1 FROM audit_logs WHERE action='verify_employee_bank' AND entity_id=\? AND json_extract\(after_json,'\$\.verificationReference'\)=\?\)/);
 assert.match(source,/verificationSource:source,verificationReference:reference/);
 assert.match(source,/x-request-id/);
 assert.match(source,/\/\^\(provider\|bank\|nibss\)\$\//);
 assert.match(source,/reference\.length>256/);
 assert.match(source,/Date\.parse\(rawVerifiedAt\)/);
 assert.match(source,/INSERT INTO audit_logs[\s\S]*SELECT/);
-assert.match(source,/NOT EXISTS \(SELECT 1 FROM audit_logs WHERE action='verify_employee_bank'/);
+assert.match(source,/INSERT INTO audit_logs[\s\S]*WHERE changes\(\)>0 AND EXISTS/);
+assert.match(source,/NOT EXISTS \(SELECT 1 FROM audit_logs WHERE action='verify_employee_bank' AND entity_id=\? AND json_extract\(after_json,'\$\.verificationReference'\)=\?\)/);
 assert.match(source,/SELECT changes\(\) AS changed/);
 assert.match(source,/if\(!committed\)return json\(\{error:'Bank verification is unavailable\.'\},404\)/);
 console.log('PASS 14 payroll bank verification promotion boundary assertions');

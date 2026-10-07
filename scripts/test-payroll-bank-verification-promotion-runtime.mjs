@@ -1,0 +1,174 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import ts from 'typescript';
+
+const source = await readFile(new URL('../worker/payroll-bank-draft.ts', import.meta.url), 'utf8');
+const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const exports = {};
+new Function('exports', 'require', js)(exports, (id) => {
+  assert.equal(id, './auth');
+  return { hasPermission: (context, key, level, companyId) => context.companyPermissions?.[companyId]?.[key] === level };
+});
+const { promoteVerifiedEmployeeBankAccount } = exports;
+assert.equal(typeof promoteVerifiedEmployeeBankAccount, 'function');
+
+function createDb({ duplicateReference = '', onPendingRead, failAudit = false } = {}) {
+  const accounts = [
+    { id: 'primary-a', employee_id: 'employee-a', active: 1, is_primary: 1, verified_at: '2026-01-01T00:00:00.000Z', verification_source: 'bank:old' },
+    { id: 'candidate-a', employee_id: 'employee-a', active: 1, is_primary: 0, verified_at: null, verification_source: null },
+    { id: 'candidate-b', employee_id: 'employee-a', active: 1, is_primary: 0, verified_at: null, verification_source: null }
+  ];
+  const audits = duplicateReference ? [{ entity_id: 'candidate-b', action: 'verify_employee_bank', after_json: JSON.stringify({ verificationReference: duplicateReference }), request_id: 'prior-request' }] : [];
+  const db = {
+    accounts, audits, batchCalls: 0,
+    prepare(sql) {
+      return {
+        sql, args: [], bind(...args) { this.args = args; return this; },
+        async first() {
+          if (this.sql.includes('employee_company_memberships')) return { one: 1 };
+          if (this.sql.includes('employee_bank_accounts')) {
+            const candidate = accounts.find(row => row.id === this.args[0] && row.employee_id === this.args[1] && row.active === 1 && row.is_primary === 0 && row.verified_at === null);
+            onPendingRead?.(candidate, accounts, audits);
+            return candidate ? { id: candidate.id } : null;
+          }
+          throw new Error(`Unexpected first query: ${this.sql}`);
+        }
+      };
+    },
+    async batch(statements) {
+      this.batchCalls++;
+      const originalAccounts = structuredClone(accounts);
+      const originalAudits = structuredClone(audits);
+      let changes = 0;
+      try {
+        const [update, insert, select] = statements;
+        assert.match(update.sql, /^UPDATE employee_bank_accounts/);
+        const [targetId, _targetId2, verifiedAt, _targetId3, verification, employeeId, _targetId4, candidateId, candidateEmployeeId, refEntityId, reference] = update.args;
+        const priorRefExists = audits.some(row => row.action === 'verify_employee_bank' && row.entity_id === refEntityId && JSON.parse(row.after_json).verificationReference === reference);
+        const candidate = accounts.find(row => row.id === candidateId && row.employee_id === candidateEmployeeId && row.active === 1 && row.is_primary === 0 && row.verified_at === null);
+        if (candidate && !priorRefExists) {
+          const affected = accounts.filter(row => row.employee_id === employeeId && row.active === 1 && (row.id === targetId || row.is_primary === 1));
+          for (const row of affected) {
+            row.is_primary = row.id === targetId ? 1 : 0;
+            if (row.id === targetId) {
+              row.verified_at = verifiedAt;
+              row.verification_source = verification;
+            }
+          }
+          changes = affected.length;
+        }
+        assert.match(insert.sql, /^INSERT INTO audit_logs/);
+        const [auditId, actorId, companyId, entityId, afterJson, requestId, auditCandidateId, auditEmployeeId, auditVerification, auditRefEntityId, auditReference] = insert.args;
+        const row = accounts.find(item => item.id === auditCandidateId && item.employee_id === auditEmployeeId && item.active === 1 && item.is_primary === 1 && item.verified_at !== null && item.verification_source === auditVerification);
+        const duplicate = audits.some(item => item.action === 'verify_employee_bank' && item.entity_id === auditRefEntityId && JSON.parse(item.after_json).verificationReference === auditReference);
+        if (failAudit) throw new Error('simulated audit insert failure');
+        if (changes > 0 && row && !duplicate) {
+          audits.push({ id: auditId, actor_employee_id: actorId, company_id: companyId, entity_id: entityId, action: 'verify_employee_bank', after_json: afterJson, request_id: requestId });
+          changes = 1;
+        } else {
+          changes = 0;
+        }
+        assert.match(select.sql, /^SELECT changes\(\) AS changed$/);
+        return [{ results: [] }, { results: [] }, { results: [{ changed: changes }] }];
+      } catch (error) {
+        accounts.splice(0, accounts.length, ...originalAccounts);
+        audits.splice(0, audits.length, ...originalAudits);
+        throw error;
+      }
+    }
+  };
+  return db;
+}
+
+const context = {
+  employee: { id: 'actor-a' },
+  roles: [{ code: 'payroll-manager' }],
+  companies: [{ id: 'company-a' }],
+  companyPermissions: { 'company-a': { 'payroll.access': 'edit' } }
+};
+const input = { companyId: 'company-a', employeeId: 'employee-a', bankAccountId: 'candidate-a', verificationSource: 'bank', verificationReference: 'verify-123', verifiedAt: '2026-10-06T12:00:00.000Z' };
+const makeRequest = (id = 'request-a') => new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': id } });
+const auditCount = db => db.audits.length;
+const responseJson = response => response.json();
+
+{
+  const db = createDb();
+  const response = await promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, context, input);
+  assert.equal(response.status, 200);
+  assert.equal((await responseJson(response)).verified, true);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 1);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 0);
+  assert.equal(auditCount(db), 1);
+  assert.equal(db.audits[0].request_id, 'request-a');
+}
+
+{
+  const db = createDb();
+  db.accounts.find(row => row.id === 'candidate-a').verified_at = '2026-10-05T00:00:00.000Z';
+  const response = await promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, context, input);
+  assert.equal(response.status, 404);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 1);
+  assert.equal(auditCount(db), 0);
+}
+
+{
+  const db = createDb();
+  const first = await promoteVerifiedEmployeeBankAccount(makeRequest('request-first'), { DB: db }, context, input);
+  const replay = await promoteVerifiedEmployeeBankAccount(makeRequest('request-replay'), { DB: db }, context, input);
+  assert.equal(first.status, 200);
+  assert.equal(replay.status, 404);
+  assert.equal(auditCount(db), 1);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 1);
+}
+
+{
+  let raced = false;
+  const db = createDb({ onPendingRead(candidate, accounts, audits) {
+    if (!candidate || raced) return;
+    raced = true;
+    const primary = accounts.find(row => row.id === 'primary-a');
+    const promoted = accounts.find(row => row.id === 'candidate-a');
+    primary.is_primary = 0;
+    promoted.is_primary = 1;
+    promoted.verified_at = input.verifiedAt;
+    promoted.verification_source = 'bank:verify-123';
+    audits.push({ entity_id: 'candidate-a', action: 'verify_employee_bank', after_json: JSON.stringify({ verificationReference: 'verify-123' }), request_id: 'winner-request' });
+  } });
+  const response = await promoteVerifiedEmployeeBankAccount(makeRequest('loser-request'), { DB: db }, context, input);
+  assert.equal(response.status, 404);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 1);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 0);
+  assert.equal(auditCount(db), 1);
+  assert.equal(db.audits[0].request_id, 'winner-request');
+}
+
+{
+  const db = createDb({ duplicateReference: 'verify-123' });
+  const nextCandidate = { ...input, bankAccountId: 'candidate-b' };
+  const response = await promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, context, nextCandidate);
+  assert.equal(response.status, 404);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 1);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-b').is_primary, 0);
+  assert.equal(auditCount(db), 1);
+}
+
+{
+  const db = createDb({ failAudit: true });
+  await assert.rejects(promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, context, input), /simulated audit insert failure/);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 1);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 0);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').verified_at, null);
+  assert.equal(auditCount(db), 0);
+}
+
+{
+  const db = createDb();
+  const noCompanyPermission = { ...context, companyPermissions: {} };
+  const response = await promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, noCompanyPermission, { ...input, companyId: 'company-b' });
+  assert.equal(response.status, 404);
+  assert.equal(db.batchCalls, 0);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 1);
+  assert.equal(auditCount(db), 0);
+}
+
+console.log('PASS payroll bank promotion isolated runtime: positive, stale, replay, lost race, duplicate reference, audit rollback, and company authorization (7 scenarios)');
