@@ -6,6 +6,9 @@ assert.match(source,/employee_company_memberships WHERE employee_id=\? AND compa
 assert.match(source,/is_primary=0 AND verified_at IS NULL/);
 assert.match(source,/CASE WHEN id=\? THEN 1 ELSE 0 END/);
 assert.match(source,/EXISTS \(SELECT 1 FROM employee_bank_accounts WHERE id=\? AND employee_id=\? AND active=1 AND is_primary=0 AND verified_at IS NULL\)/);
+assert.match(source,/AS priorPrimaryId FROM employee_bank_accounts candidate/);
+assert.match(source,/\(\(\? IS NULL AND NOT EXISTS \(SELECT 1 FROM employee_bank_accounts WHERE employee_id=\? AND active=1 AND is_primary=1\)\) OR \(\? IS NOT NULL AND EXISTS \(SELECT 1 FROM employee_bank_accounts WHERE id=\? AND employee_id=\? AND active=1 AND is_primary=1\)\)\)/);
+assert.match(source,/pending\.priorPrimaryId,employeeId,pending\.priorPrimaryId,pending\.priorPrimaryId,employeeId/);
 assert.match(source,/AND NOT EXISTS \(SELECT 1 FROM audit_logs WHERE action='verify_employee_bank' AND json_extract\(after_json,'\$\.verificationSource'\)=\? AND json_extract\(after_json,'\$\.verificationReference'\)=\?\)/);
 assert.match(source,/verificationSource:source,verificationReference:reference/);
 assert.match(source,/x-request-id/);
