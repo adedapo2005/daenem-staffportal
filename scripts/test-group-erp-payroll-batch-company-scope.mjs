@@ -19,7 +19,7 @@ const compiled = ts.transpileModule(executable, {
 }).outputText;
 const { routeGroupErp } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
-function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'none', failRequiredAudit = false, payrollRunStatus = 'approved' } = {}) {
+function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'none', failRequiredAudit = false, payrollRunStatus = 'approved', paymentItem = null } = {}) {
   const calls = [], writes = [], auditAttempts = [];
   const context = {
     roles: owner ? [{ code: 'owner' }] : [{ code: 'employee' }],
@@ -44,7 +44,9 @@ function fixture({ owner = false, companyAPayroll = 'none', companyBPayroll = 'n
               : sql.includes('FROM payroll_runs') ? { id: 'run-b', companyId: 'company-b', runNo: 'RUN-1', status: payrollRunStatus, totalNetKobo: 2500 }
               : sql.includes('FROM payroll_banks') ? { bankKey: 'BANK-X', name: 'Bank X', adapter: 'csv', directApiAvailable: 0 }
               : null,
-            all: async () => sql.includes('FROM payroll_payment_batches pb')
+            all: async () => sql.includes('FROM payroll_payment_batch_items')
+              ? { results: paymentItem ? [paymentItem] : [] }
+              : sql.includes('FROM payroll_payment_batches pb')
               ? { results: ['company-a', 'company-b'].filter(id => visible(sql, args, id, 2)).map(id => ({ id: `batch-${id.slice(-1)}`, companyId: id })) }
               : { results: [] },
             run: async () => {
@@ -91,6 +93,32 @@ const authorizedExportResponse = await routeGroupErp(new Request('https://staffp
 const authorizedCsv = await authorizedExportResponse.text();
 check('Company B Payroll editor can export Company B draft', authorizedExportResponse.status === 200 && authorizedCsv.includes('Employee,Bank,Account Name'));
 check('authorized export binds Company B at batch lookup and persists formal audit before CSV response', authorizedExport.calls[0].args.includes('company-b') && authorizedExport.auditAttempts.length === 1 && authorizedExport.writes.length >= 1 && authorizedExport.writes.at(-1).sql.includes('INSERT INTO audit_logs'));
+
+function parseCsvRow(line) {
+  const cells = [];
+  let cell = '', quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (quoted && char === '"' && line[i + 1] === '"') { cell += '"'; i++; }
+    else if (char === '"') quoted = !quoted;
+    else if (char === ',' && !quoted) { cells.push(cell); cell = ''; }
+    else cell += char;
+  }
+  cells.push(cell);
+  if (quoted) throw new Error('Unclosed quoted CSV cell');
+  return cells;
+}
+
+const formulaExport = fixture({ companyBPayroll: 'edit', paymentItem: {
+  displayName: '=HYPERLINK("https://example.invalid","Open")', bankName: '+SUM(1,1)',
+  beneficiary_name: '@SUM(1,1)', amount_kobo: 12345, narration: '\t-1+1', status: 'ready'
+} });
+const formulaExportResponse = await routeGroupErp(new Request('https://staffportal.test/api/payroll/payment-batches/export?id=batch-b'), formulaExport.env, formulaExport.context);
+const formulaCsv = await formulaExportResponse.text();
+const [formulaHeader, formulaLine] = formulaCsv.split('\n');
+const formulaCells = parseCsvRow(formulaLine);
+check('formula-like text fields are forced to literal text after CSV parsing', formulaExportResponse.status === 200 && formulaHeader === 'Employee,Bank,Account Name,Account Number,Amount NGN,Narration,Status' && formulaCells[0] === "'=HYPERLINK(\"https://example.invalid\",\"Open\")" && formulaCells[1] === "'+SUM(1,1)" && formulaCells[2] === "'@SUM(1,1)" && formulaCells[5] === "'\t-1+1");
+check('protected export preserves trusted numeric amount and audits before returning CSV', formulaCells[4] === '123.45' && formulaExport.auditAttempts.length === 1 && formulaExport.writes.at(-1).sql.includes('INSERT INTO audit_logs'));
 
 const auditFailureExport = fixture({ companyBPayroll: 'edit', failRequiredAudit: true });
 const auditFailureResponse = await routeGroupErp(new Request('https://staffportal.test/api/payroll/payment-batches/export?id=batch-b'), auditFailureExport.env, auditFailureExport.context);
