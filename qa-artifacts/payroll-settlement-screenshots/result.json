@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-10-07T16:17:53.197Z",
+  "baseUrl": "http://127.0.0.1:4176",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "minFont": 9,
+      "overflow": false,
+      "paidAttempts": 0
+    }
+  ],
+  "runtimeErrors": [],
+  "failures": []
+}
