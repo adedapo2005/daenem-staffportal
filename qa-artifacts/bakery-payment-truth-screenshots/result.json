@@ -1,0 +1,206 @@
+{
+  "generatedAt": "2026-10-08T03:03:10.410Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "salesMinFont": 9,
+      "operationsMinFont": 9,
+      "salesOverflow": false,
+      "operationsOverflow": false,
+      "nonCashPost": {
+        "locationId": "location-bakery-hq",
+        "orderType": "walk_in",
+        "items": [
+          {
+            "productId": "bp-1",
+            "quantity": 1
+          }
+        ],
+        "paymentMethod": "bank_transfer",
+        "amountPaidNaira": 0,
+        "specialInstructions": "",
+        "fulfillNow": false
+      }
+    }
+  ],
+  "runtimeErrors": [],
+  "failures": []
+}
