@@ -15,17 +15,21 @@ const token = 'fixture-reset-token';
 const tokenHash = createHash('sha256').update(`password-reset:${token}:${pepper}`).digest('hex');
 
 class ResetFixture {
-  constructor({ failAt = null, expired = false, credential = true } = {}) {
+  constructor({ failAt = null, expired = false, credential = true, owner = false, beforeBatch = null } = {}) {
     this.failAt = failAt;
+    this.beforeBatch = beforeBatch;
     this.challenge = { id: 'reset-a', employeeId: 'employee-a', hash: tokenHash,
       verified: true, consumedAt: null, expired };
+    this.employee = { id: 'employee-a', status: 'active' };
+    this.memberships = [{ employeeId: 'employee-a', companyId: 'company-a', active: true, companyActive: true }];
+    this.roles = { owner };
     this.credential = credential ? { username: 'ada.staff', hash: 'old-hash', salt: 'old-salt', iterations: 1000 } : null;
     this.sessions = [
       { id: 'session-a1', employeeId: 'employee-a', revoked: false },
       { id: 'session-a2', employeeId: 'employee-a', revoked: false },
       { id: 'session-b1', employeeId: 'employee-b', revoked: false },
     ];
-    this.access = [{ employeeId: 'employee-a', status: 'ready' }];
+    this.access = credential ? [] : [{ id: 'access-a', employeeId: 'employee-a', status: 'ready', expiresAt: null }];
     this.audits = [];
     this.lock = Promise.resolve();
     this.env = {
@@ -34,8 +38,13 @@ class ResetFixture {
     };
   }
   async batch(statements) {
+    await this.beforeBatch?.(this);
     const before = structuredClone({ challenge: this.challenge, credential: this.credential,
       sessions: this.sessions, access: this.access, audits: this.audits });
+    const eligible = () => ['active', 'provisional'].includes(this.employee.status)
+      && (this.memberships.some((membership) => membership.active && membership.companyActive) || this.roles.owner);
+    const validGrant = (id) => this.access.some((access) => access.id === id && access.employeeId === 'employee-a'
+      && access.status === 'ready' && (!access.expiresAt || Date.parse(access.expiresAt) > Date.now()));
     const run = async () => {
       try {
         for (const [index, statement] of statements.entries()) {
@@ -53,29 +62,37 @@ class ResetFixture {
               && this.challenge.id === values[1] && this.challenge.employeeId === values[2]
               && this.challenge.hash === values[3]) this.challenge.consumedAt = values[0];
           } else if (stage === 'credential') {
-            if (this.challenge?.consumedAt === values.at(-1)) {
-              if (stage && sql.startsWith('update')) {
+            const marker = sql.startsWith('update') ? values[10] : values[8];
+            if (this.challenge?.consumedAt === marker && eligible()) {
+              if (sql.startsWith('update') && this.credential) {
                 this.credential = { ...(this.credential || {}), username: this.credential?.username || 'ada.staff',
                   hash: values[0], salt: values[1], iterations: values[2], changedAt: values[3] };
-              } else if (!this.credential) {
+              } else if (!this.credential && (sql.includes('1=1 and exists(select 1 from employee_login_access_requests ar where ar.id')
+                ? validGrant(values[11]) : this.roles.owner)) {
                 this.credential = { username: values[1], hash: values[2], salt: values[3], iterations: values[4], changedAt: values[5] };
               }
             }
           } else if (stage === 'sessions') {
             for (const session of this.sessions) if (session.employeeId === values[1] && !session.revoked) session.revoked = true;
           } else if (stage === 'access') {
-            for (const request of this.access) if (request.employeeId === values[1] && request.status === 'ready') request.status = 'activated';
+            for (const request of this.access) if (request.id === values[1] && request.employeeId === values[2]
+              && request.status === 'ready' && (!request.expiresAt || Date.parse(request.expiresAt) > Date.now())) {
+              request.status = 'activated'; request.activatedAt = values[0];
+            }
           } else if (stage === 'audit') {
             this.audits.push({ id: values[0], employeeId: values[1], eventType: values[2], result: 'success' });
           } else if (stage === 'invariant') {
             const [challengeId, employeeId, suppliedHash, marker, credentialEmployee, passwordHash,
-              passwordSalt, changedAt, sessionEmployee, accessEmployee, auditId, auditEmployee, eventType] = values;
+              passwordSalt, changedAt, eligibilityEmployee, sessionEmployee] = values;
+            const auditIndex = values.findIndex((value) => this.audits.some((audit) => audit.id === value));
+            const auditId = values[auditIndex], auditEmployee = values[auditIndex + 1], eventType = values[auditIndex + 2];
             const valid = this.challenge?.id === challengeId && this.challenge.employeeId === employeeId
               && this.challenge.hash === suppliedHash && this.challenge.consumedAt === marker
               && this.credential?.hash === passwordHash && this.credential?.salt === passwordSalt
               && this.credential?.changedAt === changedAt && credentialEmployee === employeeId
+              && eligibilityEmployee === employeeId && eligible()
               && !this.sessions.some((session) => session.employeeId === sessionEmployee && !session.revoked)
-              && !this.access.some((request) => request.employeeId === accessEmployee && request.status === 'ready')
+              && (eventType !== 'login_access_activated' || this.access.some((access) => access.status === 'activated') || this.roles.owner)
               && this.audits.some((audit) => audit.id === auditId && audit.employeeId === auditEmployee
                 && audit.eventType === eventType && audit.result === 'success');
             if (!valid) throw new Error('reset invariant failed');
@@ -95,19 +112,29 @@ class ResetFixture {
 
 class ResetStatement {
   constructor(fixture, sql) { this.fixture = fixture; this.sql = sql; this.values = []; }
-  bind(...values) { this.values = values; return this; }
+  bind(...values) {
+    assert.equal(values.length, (this.sql.match(/\?/g) || []).length, `SQL binding count: ${this.sql}`);
+    this.values = values;
+    return this;
+  }
   async first() {
     const f = this.fixture, query = this.sql.toLowerCase();
     if (query.trim().startsWith('select setting_value from app_settings')) return { setting_value: this.values[0] === 'security.password_pbkdf2_iterations' ? '1000' : this.values[0] === 'security.password_max_length' ? '128' : '10' };
     if (query.includes('from password_reset_challenges') && query.includes('reset_token_hash')) {
       return f.challenge && f.challenge.hash === this.values[0] && f.challenge.verified && !f.challenge.consumedAt && !f.challenge.expired
+        && ['active', 'provisional'].includes(f.employee.status)
+        && (f.memberships.some((membership) => membership.active && membership.companyActive) || f.roles.owner)
         ? { id: f.challenge.id, employeeId: f.challenge.employeeId,
           username: f.credential?.username, currentHash: f.credential?.hash,
           currentSalt: f.credential?.salt, currentIterations: f.credential?.iterations,
-          email: 'ada@example.test', activationUsername: 'ada.staff', isOwner: 0 } : null;
+          email: 'ada@example.test', activationUsername: 'ada.staff', isOwner: Number(f.roles.owner) } : null;
     }
     if (query.includes('from employee_credentials') && query.includes('lower(username)')) return null;
-    if (query.includes('from employee_login_access_requests')) return { id: 'access-a' };
+    if (query.includes('from employee_login_access_requests')) {
+      const access = f.access.find((item) => item.employeeId === this.values[0] && item.status === 'ready'
+        && (!item.expiresAt || Date.parse(item.expiresAt) > Date.now()));
+      return access ? { id: access.id } : null;
+    }
     if (query.includes('select consumed_at from password_reset_challenges')) return f.challenge ? { consumed_at: f.challenge.consumedAt } : null;
     throw new Error(`Unexpected reset fixture query: ${this.sql}`);
   }
@@ -144,6 +171,68 @@ await check('authorized login activation inserts credentials and activates its a
   assert.equal(fixture.access[0].status, 'activated');
   assert.equal(fixture.audits[0].eventType, 'login_access_activated');
   assert.equal(fixture.sessions.filter((session) => session.employeeId === 'employee-a').every((session) => session.revoked), true);
+});
+
+await check('Owner group authority permits credentialless activation without a login-access grant', async () => {
+  const fixture = new ResetFixture({ credential: false, owner: true });
+  fixture.memberships[0].active = false;
+  const response = await runReset(request(), fixture.env);
+  assert.equal(response.status, 200);
+  assert.equal(fixture.credential.username, 'ada.staff');
+  assert.equal(fixture.audits[0].eventType, 'login_access_activated');
+});
+
+await check('credentialless reset rechecks grant, employee and company eligibility inside the batch', async () => {
+  const mutations = [
+    ['cancelled grant', (fixture) => { fixture.access[0].status = 'cancelled'; }],
+    ['expired grant', (fixture) => { fixture.access[0].expiresAt = new Date(Date.now() - 60_000).toISOString(); }],
+    ['offboarded employee', (fixture) => { fixture.employee.status = 'terminated'; }],
+    ['revoked company membership', (fixture) => { fixture.memberships[0].active = false; }],
+  ];
+  for (const [name, mutate] of mutations) {
+    const fixture = new ResetFixture({ credential: false, beforeBatch: mutate });
+    const response = await runReset(request(), fixture.env);
+    assert.notEqual(response.status, 200, name);
+    assert.equal(fixture.credential, null, name);
+    assert.equal(fixture.challenge.consumedAt, null, name);
+    assert.equal(fixture.audits.length, 0, name);
+    assert.equal(fixture.sessions.filter((session) => session.employeeId === 'employee-a').every((session) => !session.revoked), true, name);
+  }
+});
+
+await check('expired, inactive or company-unscoped reset challenges are handled with neutral denial', async () => {
+  const cases = [
+    new ResetFixture({ expired: true }),
+    new ResetFixture(),
+    new ResetFixture(),
+  ];
+  cases[1].employee.status = 'terminated';
+  cases[2].memberships[0].active = false;
+  for (const fixture of cases) {
+    const response = await routeAuthRefinement(request(), fixture.env);
+    assert.equal(response?.status, 401);
+    assert.equal(fixture.challenge.consumedAt, null);
+    assert.equal(fixture.audits.length, 0);
+  }
+  for (const status of ['cancelled', 'expired']) {
+    const fixture = new ResetFixture({ credential: false });
+    if (status === 'cancelled') fixture.access[0].status = status;
+    else fixture.access[0].expiresAt = new Date(Date.now() - 60_000).toISOString();
+    const response = await routeAuthRefinement(request(), fixture.env);
+    assert.equal(response?.status, 401);
+    assert.equal(fixture.credential, null);
+    assert.equal(fixture.challenge.consumedAt, null);
+  }
+});
+
+await check('revoked Owner authority cannot substitute for a stale credentialless grant', async () => {
+  const fixture = new ResetFixture({ credential: false, owner: true, beforeBatch: (state) => { state.roles.owner = false; } });
+  fixture.access = [];
+  const response = await runReset(request(), fixture.env);
+  assert.notEqual(response.status, 200);
+  assert.equal(fixture.credential, null);
+  assert.equal(fixture.challenge.consumedAt, null);
+  assert.equal(fixture.audits.length, 0);
 });
 
 await check('invalid, expired and replayed reset tokens fail without state changes', async () => {
