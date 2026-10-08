@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-10-08T03:13:40.529Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 10,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 10,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 9,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 9,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 9,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 9,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 9,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 9,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "authorizedMinFont": 9,
+      "operationsMinFont": 9,
+      "authorizedOverflow": false,
+      "operationsOverflow": false,
+      "operationsLeadRequests": 0
+    }
+  ],
+  "runtimeErrors": [],
+  "failures": []
+}
