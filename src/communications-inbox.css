@@ -65,3 +65,27 @@
 .wa-send-readiness-copy{min-width:0;display:grid;gap:2px}.wa-send-readiness-copy small{font-size:9px;font-weight:900;letter-spacing:.12em;color:#8190a4}.wa-send-readiness-copy strong{font-size:10px}.wa-send-readiness.blocked .wa-send-readiness-copy strong{color:#8b6200}.wa-send-readiness.ready .wa-send-readiness-copy strong{color:#147f49}.wa-send-readiness-copy span{font-size:9px;line-height:1.4;color:#6f7d91}
 .wa-send-readiness-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex:0 0 auto}.wa-readiness-facts{display:grid;justify-items:end;gap:2px;margin-right:2px}.wa-readiness-facts b{font-size:9px;color:#6f7d91;font-weight:800}.wa-readiness-check,.wa-live-send{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border-radius:9px;font-size:9px;font-weight:900}.wa-readiness-check{border:1px solid rgba(111,127,153,.22);background:#fff;color:#43546e}.wa-live-send{border:0;background:#17233b;color:#fff}.wa-readiness-check:disabled,.wa-live-send:disabled{opacity:.42;cursor:not-allowed}
 @media(max-width:760px){.wa-send-readiness{align-items:stretch;flex-direction:column}.wa-send-readiness-actions{justify-content:stretch;flex-wrap:wrap}.wa-readiness-facts{width:100%;justify-items:start}.wa-readiness-check,.wa-live-send{flex:1;justify-content:center}}
+
+/* Mobile record reflow: keep company filters, staff actions and message bodies reachable. */
+@media(max-width:760px){
+ .wa-toolbar{grid-template-columns:minmax(0,1fr);gap:7px}
+ .wa-company{width:100%;box-sizing:border-box}
+ .wa-search{grid-column:1;grid-row:2;min-width:0}
+ .wa-filters{grid-column:1;grid-row:3;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));min-width:0;overflow:visible}
+ .wa-filters button{min-width:0;min-height:34px;padding:7px 2px}
+ .wa-thread-header{display:grid;grid-template-columns:34px 40px minmax(0,1fr);gap:7px;padding:8px 10px}
+ .wa-thread-header .wa-avatar.large{width:40px;height:40px}
+ .wa-thread-identity{grid-column:3;min-width:0}
+ .wa-thread-identity>span{min-width:0;overflow-wrap:anywhere}
+ .wa-thread-actions{grid-column:1/-1;margin-left:0;min-width:0;justify-content:flex-end}
+ .wa-thread-actions button{min-height:34px}
+ .wa-message-scroll{min-width:0;overflow-x:hidden;padding:11px}
+ .wa-message{min-width:0}
+ .wa-bubble{box-sizing:border-box;max-width:min(88%,100%);overflow-wrap:anywhere}
+ .wa-composer{min-width:0;margin:6px 8px 8px}
+ .wa-composer-tools{min-width:0;flex-wrap:wrap;gap:6px}
+ .wa-composer-tools>span{min-width:0;overflow-wrap:anywhere}
+ .wa-composer footer{min-width:0;gap:8px}
+ .wa-send-button{min-width:0;flex:0 1 auto;min-height:34px}
+ .wa-reply-policy>span,.wa-send-readiness-copy span{overflow-wrap:anywhere}
+}

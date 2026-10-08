@@ -2,6 +2,7 @@ import React,{useCallback,useEffect,useMemo,useRef,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{Archive,ArrowLeft,AtSign,CheckCheck,ChevronDown,Circle,Clock3,Inbox,MessageCircleMore,MoreHorizontal,NotebookPen,RefreshCw,Search,Send,ShieldCheck,Sparkles,UserCheck,X}from'lucide-react';
 import{api,hasWorkforcePermission,type WorkforceContext}from'./auth';
+import{formatPortalDateTime,formatPortalTime,resolveStaffTimeZone}from'./canonical-time';
 import{resolveCommunicationCompanyUi}from'./communications-company-ui';
 import'./communications-inbox.css';
 
@@ -24,8 +25,6 @@ const inboxUrl=(companyCode:string,conversationId='')=>{const url=new URL(window
 const clearInboxUrl=()=>{const url=new URL(window.location.href);url.searchParams.delete('waInbox');url.searchParams.delete('waCompany');url.searchParams.delete('waConversation');return url};
 const displayName=(conversation:Conversation)=>conversation.customerDisplayName?.trim()||`WhatsApp ${conversation.customerWaId.slice(-4)}`;
 const initials=(conversation:Conversation)=>{const name=displayName(conversation);const parts=name.split(/\s+/).filter(Boolean);return(parts[0]?.[0]||'W')+(parts[1]?.[0]||'')};
-const time=(value?:string|null)=>value?new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(value)):'';
-const dateTime=(value?:string|null)=>value?new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(value)):'';
 
 function StatusIcon({status}:{status:string}){
  if(status==='read')return <CheckCheck size={14}/>;
@@ -42,6 +41,9 @@ function Pill({children,tone='neutral'}:{children:React.ReactNode;tone?:'neutral
 }
 
 function WhatsAppInbox({context,onClose}:{context:WorkforceContext;onClose:()=>void}){
+ const viewerZone=resolveStaffTimeZone(context.employee.timezone);
+ const time=(value?:string|null)=>formatPortalTime(value,viewerZone);
+ const dateTime=(value?:string|null)=>formatPortalDateTime(value,viewerZone);
  const companies=useMemo(()=>cleanCompanies(context),[context]);
  const companyOptions=useMemo(()=>companies.map(companyOption),[companies]);
  const companyOptionById=useMemo(()=>new Map(companyOptions.map(item=>[item.id,item])),[companyOptions]);
