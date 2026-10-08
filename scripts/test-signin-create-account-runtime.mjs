@@ -123,6 +123,13 @@ class SignupStatement {
     }
     if (q.includes('from employee_company_memberships')) return f.employee ? { id: 'company-a', code: 'TECH' } : null;
     if (q.includes('from companies where code')) return { id: 'company-a', code: 'TECH' };
+    if (q.includes('from signup_verifications') && q.includes('id<>?')) {
+      const [username, challengeId] = this.values;
+      const other = [...f.verifications.values()].find((row) => row.id !== challengeId
+        && row.username.toLowerCase() === username.toLowerCase() && !row.consumed_at);
+      return other || (f.pending && f.pending.username.toLowerCase() === username.toLowerCase()
+        ? { id: 'pending-1' } : null);
+    }
     if (q.includes('from signup_verifications') && q.includes('lower(username)')) {
       return f.pending && f.pending.username.toLowerCase() === this.values[0].toLowerCase()
         ? { id: 'pending-1', email: f.pending.email } : null;
@@ -209,12 +216,29 @@ for (const [label, options, body] of [
   });
 }
 
-await check('used username and pending username use the same neutral denial', async () => {
-  const used = await start(new SignupFixture({ employee: { id: 'other', email: 'other@example.test', phone: '', username: base.username }, credential: true }));
-  const pending = await start(new SignupFixture({ pending: { email: 'different@example.test', username: base.username } }));
-  assert.equal(used.response.status, 409);
-  assert.deepEqual(used.body, pending.body);
-  assert.equal(used.body.error, 'That username is unavailable. Choose another username.');
+await check('credentialed username and pending reservation use the ordinary challenge response and fail closed at verification', async () => {
+  const usedFixture = new SignupFixture({ employee: { id: 'other', email: 'other@example.test', phone: '', username: base.username }, credential: true });
+  const pendingFixture = new SignupFixture({ pending: { email: 'different@example.test', username: base.username } });
+  const used = await start(usedFixture);
+  const pending = await start(pendingFixture);
+  assert.equal(used.response.status, 200);
+  assert.equal(pending.response.status, 200);
+  assert.deepEqual(publicShape(used), publicShape(newApplicant));
+  assert.deepEqual(publicShape(pending), publicShape(newApplicant));
+  for (const [fixture, started] of [[usedFixture, used], [pendingFixture, pending]]) {
+    const before = fixture.employee && { ...fixture.employee };
+    const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+    const response = await routeAuthRefinement(verify, fixture.env);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, message: 'Verification is complete. If your request is eligible, the next steps will be provided through the approved onboarding process.' });
+    assert.deepEqual(fixture.employee, before);
+    assert.equal(fixture.credentialWrites, 0);
+    assert.equal(fixture.membershipWrites, 0);
+    assert.equal(fixture.roleWrites, 0);
+    assert.equal(fixture.signupRequestWrites, 0);
+    assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
+  }
 });
 
 await check('repeated request replaces only the caller email challenge with the same response semantics', async () => {
@@ -354,6 +378,22 @@ await check('concurrent credential creation wins over credentialless signup clai
   assert.equal(response.status, 200);
   assert.deepEqual(fixture.employee, before);
   assert.equal(fixture.credentialWrites, 0);
+  assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
+});
+
+await check('concurrent username claim cannot commit a second applicant identity', async () => {
+  const fixture = new SignupFixture({ credentialAppearsBeforeBatch: true });
+  const started = await start(fixture);
+  const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+  const response = await routeAuthRefinement(verify, fixture.env);
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: 'We could not complete account verification. Please try again.' });
+  assert.equal(fixture.employee, null);
+  assert.equal(fixture.credential, true);
+  assert.equal(fixture.membershipWrites, 0);
+  assert.equal(fixture.roleWrites, 0);
+  assert.equal(fixture.signupRequestWrites, 0);
   assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
 });
 
