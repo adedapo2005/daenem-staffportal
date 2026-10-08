@@ -112,7 +112,7 @@ function requestLocationLabel(request: Request) {
   return cf?.city ? `${cf.city}${cf.region ? `, ${cf.region}` : ''}${cf.country ? `, ${cf.country}` : ''}` : undefined;
 }
 
-async function logSecurity(
+function securityLogStatement(
   env: PasswordAuthEnv,
   request: Request,
   eventType: string,
@@ -129,7 +129,7 @@ async function logSecurity(
     details?: Record<string, unknown>;
   } = {},
 ) {
-  await env.DB.prepare(`
+  return env.DB.prepare(`
     INSERT INTO security_logs (
       id, employee_id, company_id, session_id, event_type, severity, result,
       ip_address, user_agent, latitude, longitude, accuracy_m, location_label,
@@ -141,7 +141,16 @@ async function logSecurity(
     request.headers.get('user-agent'), options.latitude ?? null, options.longitude ?? null,
     options.accuracy ?? null, requestLocationLabel(request) || null, options.riskScore ?? null,
     options.details ? JSON.stringify(options.details) : null,
-  ).run().catch(() => undefined);
+  );
+}
+
+async function logSecurity(
+  env: PasswordAuthEnv,
+  request: Request,
+  eventType: string,
+  options: Parameters<typeof securityLogStatement>[3] = {},
+) {
+  await securityLogStatement(env, request, eventType, options).run().catch(() => undefined);
 }
 
 function safeErrorMessage(error: unknown) {
@@ -848,6 +857,12 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
         SET failed_attempts=0,locked_until=NULL,last_login_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
         WHERE employee_id=?
       `).bind(verified.employeeId),
+      securityLogStatement(env,request,'password_signin_whatsapp_stepup_success',{
+        employeeId:verified.employeeId,
+        companyId:verified.companyId,
+        sessionId,
+        result:'success',
+      }),
     ]);
   } catch (error) {
     return controlledAuthFailure(env,request,'session_creation',error);
@@ -865,12 +880,6 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
       text('platform') || null,request.headers.get('user-agent'),
     ).run().catch(() => undefined);
   }
-  await logSecurity(env,request,'password_signin_whatsapp_stepup_success',{
-    employeeId:verified.employeeId,
-    companyId:verified.companyId,
-    sessionId,
-    result:'success',
-  });
   return json(
     { ok:true,message:'Sign-in successful.' },
     200,
