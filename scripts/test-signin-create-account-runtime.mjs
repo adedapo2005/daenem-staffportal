@@ -11,12 +11,13 @@ new Function('module', 'exports', compiled)(module, module.exports);
 const { routeAuthRefinement } = module.exports;
 
 class SignupFixture {
-  constructor({ employee = null, credential = false, pending = null, sendFails = false, credentialAppearsBeforeBatch = false } = {}) {
+  constructor({ employee = null, credential = false, pending = null, sendFails = false, credentialAppearsBeforeBatch = false, auditFails = false } = {}) {
     this.employee = employee;
     this.credential = credential;
     this.pending = pending;
     this.sendFails = sendFails;
     this.credentialAppearsBeforeBatch = credentialAppearsBeforeBatch;
+    this.auditFails = auditFails;
     this.verifications = new Map();
     this.securityEvents = [];
     this.credentialWrites = 0;
@@ -39,7 +40,7 @@ class SignupFixture {
     if (this.credentialAppearsBeforeBatch) { this.credential = true; this.credentialAppearsBeforeBatch = false; }
     const before = { employee: this.employee && { ...this.employee }, credential: this.credential,
       credentialWrites: this.credentialWrites, membershipWrites: this.membershipWrites, roleWrites: this.roleWrites,
-      signupRequestWrites: this.signupRequestWrites,
+      signupRequestWrites: this.signupRequestWrites, securityEvents: [...this.securityEvents],
       verifications: new Map([...this.verifications].map(([id, row]) => [id, { ...row }])) };
     const changes = [];
     try {
@@ -69,6 +70,12 @@ class SignupFixture {
           const row = this.verifications.get(v[0]);
           if (row) row.consumed_at = new Date().toISOString();
           changes.push(row ? 1 : 0);
+        } else if (q.startsWith('insert into security_logs')) {
+          const challenge = this.verifications.get(v[10]);
+          const inserted = v[2] !== 'signup_verified' || (this.credentialWrites > 0 && Boolean(challenge?.consumed_at));
+          if (inserted && this.auditFails && v[2] === 'signup_verified') throw new Error('stubbed required audit failure');
+          if (inserted) this.securityEvents.push({ type: v[2], employeeId: v[1] });
+          changes.push(inserted ? 1 : 0);
         } else {
           changes.push(1);
         }
@@ -78,6 +85,7 @@ class SignupFixture {
       this.employee = before.employee; this.credential = before.credential;
       this.credentialWrites = before.credentialWrites; this.membershipWrites = before.membershipWrites;
       this.roleWrites = before.roleWrites; this.signupRequestWrites = before.signupRequestWrites;
+      this.securityEvents = before.securityEvents;
       this.verifications = before.verifications;
       throw error;
     }
@@ -287,6 +295,39 @@ await check('exact-email credentialless employee can complete authorized signup'
   assert.equal(response.status, 200);
   assert.equal(fixture.employee.email, base.email);
   assert.equal(fixture.credentialWrites, 1);
+  assert.equal(fixture.securityEvents.filter((event) => event.type === 'signup_verified').length, 1);
+});
+
+await check('required signup success audit failure rolls back account completion and returns bounded failure', async () => {
+  const fixture = new SignupFixture({ auditFails: true });
+  const started = await start(fixture);
+  const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+  const response = await routeAuthRefinement(verify, fixture.env);
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: 'We could not complete account verification. Please try again.' });
+  assert.equal(fixture.employee, null);
+  assert.equal(fixture.credential, false);
+  assert.equal(fixture.credentialWrites, 0);
+  assert.equal(fixture.membershipWrites, 0);
+  assert.equal(fixture.roleWrites, 0);
+  assert.equal(fixture.signupRequestWrites, 0);
+  assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
+  assert.equal(fixture.verifications.get(started.body.challengeId)?.consumed_at, undefined);
+});
+
+await check('required success audit failure preserves credentialless employee state', async () => {
+  const employee = { id: 'employee-audit-failure', email: base.email, phone: base.phone, username: 'employee.old' };
+  const fixture = new SignupFixture({ employee: { ...employee }, auditFails: true });
+  const started = await start(fixture);
+  const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+  const response = await routeAuthRefinement(verify, fixture.env);
+  assert.equal(response.status, 503);
+  assert.deepEqual(fixture.employee, employee);
+  assert.equal(fixture.credential, false);
+  assert.equal(fixture.credentialWrites, 0);
+  assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
 });
 
 await check('identity claimed after challenge creation blocks verification without writes', async () => {
