@@ -1,0 +1,458 @@
+{
+  "generatedAt": "2026-10-08T05:15:17.486Z",
+  "baseUrl": "http://127.0.0.1:4317",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 10,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 10,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 10,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 16,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 10,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 10,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 10,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 16,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "dispatch": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "driver": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/shipments GET",
+          "/api/logistics/trips GET"
+        ]
+      },
+      "fleet": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET",
+          "/api/logistics/fleet GET"
+        ]
+      },
+      "shipment": {
+        "overflow": false,
+        "minFont": 9,
+        "under": [],
+        "tabOverflow": false,
+        "tabsClipped": false,
+        "requests": [
+          "/api/logistics/dashboard GET"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "failures": []
+}
