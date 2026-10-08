@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
-import ts from 'typescript';
+import { stripTypeScriptTypes } from 'node:module';
 
 const migration = await readFile(new URL('../migrations/0093_storage_mirror_token_vault.sql', import.meta.url), 'utf8');
 const vault = await readFile(new URL('../worker/storage-mirror-vault.ts', import.meta.url), 'utf8');
@@ -37,9 +37,7 @@ const executable = vault.replace(
   };
   const encryptSocialSecret = async (_env, plaintext) => \`encrypted:\${plaintext}\`;`
 );
-const compiled = ts.transpileModule(executable, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
-}).outputText;
+const compiled = stripTypeScriptTypes(executable);
 const { resolveOneDriveOAuthTokens, storeOneDriveOAuthTokens } = await import(
   `data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`
 );
@@ -62,14 +60,14 @@ const env = {
   }
 };
 
-async function writeStoredRow(scopesJson, accessTokenCiphertext = 'encrypted:access', refreshTokenCiphertext = 'encrypted:refresh') {
+async function writeStoredRow(scopesJson, accessTokenCiphertext = 'encrypted:access', refreshTokenCiphertext = 'encrypted:refresh', expiresAt = '2026-10-02T00:00:00.000Z') {
   await env.DB.prepare(`INSERT INTO storage_mirror_oauth_tokens
       (id,access_token_ciphertext,refresh_token_ciphertext,expires_at,scopes_json)
     VALUES('microsoft_onedrive',?,?,?,?)
     ON CONFLICT(id) DO UPDATE SET access_token_ciphertext=excluded.access_token_ciphertext,
       refresh_token_ciphertext=excluded.refresh_token_ciphertext,expires_at=excluded.expires_at,
       scopes_json=excluded.scopes_json`)
-    .bind(accessTokenCiphertext, refreshTokenCiphertext, '2026-10-02T00:00:00.000Z', scopesJson).run();
+    .bind(accessTokenCiphertext, refreshTokenCiphertext, expiresAt, scopesJson).run();
 }
 
 async function expectReadError(fixture, code) {
@@ -79,7 +77,7 @@ async function expectReadError(fixture, code) {
 const approvedTokens = {
   accessToken: 'access-secret-fixture',
   refreshToken: 'refresh-secret-fixture',
-  expiresAt: '2026-10-02T00:00:00.000Z',
+  expiresAt: '2099-01-01T00:00:00.000Z',
   scopes: ['Files.ReadWrite.AppFolder', 'offline_access']
 };
 await storeOneDriveOAuthTokens(env, approvedTokens);
@@ -93,6 +91,10 @@ await assert.rejects(storeOneDriveOAuthTokens(env, { ...approvedTokens, scopes: 
   error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
 assert.equal(db.prepare('SELECT COUNT(*) AS count FROM storage_mirror_oauth_tokens').get().count, 1,
   'rejected token response leaves the existing vault row unchanged');
+await assert.rejects(storeOneDriveOAuthTokens(env, { ...approvedTokens, expiresAt: '2020-01-01T00:00:00.000Z' }),
+  error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
+await assert.rejects(storeOneDriveOAuthTokens(env, { ...approvedTokens, expiresAt: 'not-an-expiry' }),
+  error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
 
 await writeStoredRow('{');
 await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_METADATA_INVALID');
@@ -100,13 +102,18 @@ await writeStoredRow(JSON.stringify(['Files.ReadWrite.All', 'Files.ReadWrite.App
 await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_SCOPE_POLICY_INVALID');
 await writeStoredRow(JSON.stringify(approvedTokens.scopes), 'bad-ciphertext');
 await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED');
+await writeStoredRow(JSON.stringify(approvedTokens.scopes), 'encrypted:access', 'encrypted:refresh', 'invalid-date');
+await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_EXPIRY_INVALID');
+await writeStoredRow(JSON.stringify(approvedTokens.scopes), 'encrypted:access', 'encrypted:refresh', '2020-01-01T00:00:00.000Z');
+assert.equal((await resolveOneDriveOAuthTokens(env)).refreshRequired, true);
 await storeOneDriveOAuthTokens(env, approvedTokens);
 const resolvedTokens = await resolveOneDriveOAuthTokens(env);
 assert.deepEqual(resolvedTokens, {
   accessToken: 'decrypted:encrypted:access-secret-fixture',
   refreshToken: 'decrypted:encrypted:refresh-secret-fixture',
   expiresAt: approvedTokens.expiresAt,
-  scopes: approvedTokens.scopes
+  scopes: approvedTokens.scopes,
+  refreshRequired: false
 });
 await storeOneDriveOAuthTokens(env, { ...approvedTokens, accessToken: 'rotated-access-fixture' });
 assert.equal(db.prepare('SELECT COUNT(*) AS count FROM storage_mirror_oauth_tokens').get().count, 1,

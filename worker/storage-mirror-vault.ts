@@ -10,6 +10,10 @@ export interface OneDriveOAuthTokens {
   scopes: string[];
 }
 
+export interface ResolvedOneDriveOAuthTokens extends OneDriveOAuthTokens {
+  refreshRequired: boolean;
+}
+
 const ONEDRIVE_ALLOWED_OAUTH_SCOPES = new Set(['Files.ReadWrite.AppFolder', 'offline_access']);
 
 function normalizeOneDriveScopes(value: unknown): string[] {
@@ -25,14 +29,20 @@ function normalizeOneDriveScopes(value: unknown): string[] {
 }
 
 function validToken(value: string) {
-  return value.length > 0 && value.length <= 16_384;
+  return typeof value === 'string' && value.length > 0 && value.length <= 16_384;
+}
+
+function parseCanonicalExpiry(value: unknown): Date | null {
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) && date.toISOString() === value ? date : null;
 }
 
 export async function storeOneDriveOAuthTokens(env: StorageMirrorVaultEnv, tokens: OneDriveOAuthTokens) {
-  const expiresAt = new Date(tokens.expiresAt);
+  const expiresAt = parseCanonicalExpiry(tokens.expiresAt);
   const scopes = normalizeOneDriveScopes(tokens.scopes);
   if (!validToken(tokens.accessToken) || !validToken(tokens.refreshToken) ||
-    !Number.isFinite(expiresAt.getTime())) {
+    !expiresAt || expiresAt.getTime() <= Date.now()) {
     throw new Error('ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
   }
 
@@ -49,12 +59,14 @@ export async function storeOneDriveOAuthTokens(env: StorageMirrorVaultEnv, token
   return { expiresAt: expiresAt.toISOString(), scopes };
 }
 
-export async function resolveOneDriveOAuthTokens(env: StorageMirrorVaultEnv): Promise<OneDriveOAuthTokens | null> {
+export async function resolveOneDriveOAuthTokens(env: StorageMirrorVaultEnv): Promise<ResolvedOneDriveOAuthTokens | null> {
   const row = await env.DB.prepare(`SELECT access_token_ciphertext AS accessTokenCiphertext,
       refresh_token_ciphertext AS refreshTokenCiphertext,expires_at AS expiresAt,scopes_json AS scopesJson
     FROM storage_mirror_oauth_tokens WHERE id='microsoft_onedrive' LIMIT 1`)
     .first<{ accessTokenCiphertext: string; refreshTokenCiphertext: string; expiresAt: string; scopesJson: string }>();
   if (!row) return null;
+  const expiry = parseCanonicalExpiry(row.expiresAt);
+  if (!expiry) throw new Error('ONEDRIVE_OAUTH_TOKEN_EXPIRY_INVALID');
 
   let storedScopes: unknown;
   try {
@@ -73,7 +85,8 @@ export async function resolveOneDriveOAuthTokens(env: StorageMirrorVaultEnv): Pr
   try {
     const accessToken = await decryptSocialSecret(env, row.accessTokenCiphertext);
     const refreshToken = await decryptSocialSecret(env, row.refreshTokenCiphertext);
-    return { accessToken, refreshToken, expiresAt: row.expiresAt, scopes };
+    return { accessToken, refreshToken, expiresAt: row.expiresAt, scopes,
+      refreshRequired: expiry.getTime() <= Date.now() + 5 * 60_000 };
   } catch {
     throw new Error('ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED');
   }

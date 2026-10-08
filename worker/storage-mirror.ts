@@ -12,7 +12,23 @@ function authorized(context: SessionContext) {
 }
 
 function requestCorrelationId(request: Request) {
-  return (request.headers.get('x-request-id') || request.headers.get('cf-ray') || crypto.randomUUID()).slice(0, 128);
+  // Do not persist arbitrary caller-provided headers in audit correlation fields.
+  for (const candidate of [request.headers.get('x-request-id'), request.headers.get('cf-ray')]) {
+    if (candidate && (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate) ||
+      /^[0-9a-f]{32}$/i.test(candidate) || /^[0-9a-f]{8,20}-[A-Z]{3}$/i.test(candidate))) return candidate;
+  }
+  return crypto.randomUUID();
+}
+
+// Only fixed machine codes are safe to expose from provider/job errors.
+const PUBLIC_ERROR_CODES = new Set([
+  'PROVIDER_REQUIRED', 'AUTH_REQUIRED', 'AUTH_EXPIRED', 'SOURCE_MISSING',
+  'SOURCE_CHANGED', 'DESTINATION_UNAVAILABLE', 'UPLOAD_REJECTED',
+  'SYNC_TIMEOUT', 'RATE_LIMITED', 'CHECKSUM_MISMATCH', 'RETRY_EXHAUSTED',
+]);
+function publicMirrorErrorCode(value: unknown): string | null {
+  if (value == null || value === '') return null;
+  return typeof value === 'string' && PUBLIC_ERROR_CODES.has(value) ? value : 'BACKUP_ERROR';
 }
 
 async function routeOneDriveConfig(request: Request, env: StorageMirrorEnv, context: SessionContext) {
@@ -59,7 +75,7 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
       LIMIT ?
     `).bind(...(isOwner ? [] : companyIds), ...(status ? [status] : []), limit)
       .all<Record<string, unknown>>();
-    return json({ jobs: rows.results || [], limit, status: status || null });
+    return json({ jobs: (rows.results || []).map((row) => ({ ...row, lastErrorCode: publicMirrorErrorCode(row.lastErrorCode) })), limit, status: status || null });
   }
   if (url.pathname === '/api/admin/storage/mirror-retry' && request.method === 'POST') {
     if (!authorized(context)) return json({ error: 'Storage administration access is not assigned.' }, 403);
@@ -135,7 +151,7 @@ export async function routeStorageMirror(request: Request, env: StorageMirrorEnv
     provider: 'Microsoft OneDrive',
     primaryStorage: 'Cloudflare R2',
     providerStatus: 'provider_required',
-    syncHealth: counts.failed ? 'attention_required' : queued ? 'backup_pending' : counts.mirrored ? 'healthy' : 'no_uploads',
+    syncHealth: counts.failed ? 'attention_required' : queued ? 'backup_pending' : counts.mirrored ? 'attention_required' : 'no_uploads',
     counts,
     pendingCount: queued,
     failedCount: counts.failed,
