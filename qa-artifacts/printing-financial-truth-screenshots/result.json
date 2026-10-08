@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-10-07T22:42:28.306Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 1024,
+      "height": 1366,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 1366,
+      "height": 1024,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 1672,
+      "height": 941,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "financialMinFont": 9,
+      "operationsMinFont": 9,
+      "financialOverflow": false,
+      "operationsOverflow": false
+    }
+  ],
+  "runtimeErrors": [],
+  "failures": []
+}
