@@ -1,6 +1,7 @@
 import { getSessionContext, routeAuth } from './auth.js';
 import { getEnhancedSessionContext } from './auth-context-v2.js';
 import { routePasswordAuth, type PasswordAuthEnv } from './password-auth.js';
+import { routeAuthRefinement } from './auth-refinement.js';
 import { routeAdmin } from './admin.js';
 import { routeCommunications } from './communications-service.js';
 import { routeCommunicationsWebhook, type CommunicationsWebhookEnv } from './communications-webhook.js';
@@ -69,6 +70,9 @@ export default {
     if(url.pathname==='/health'){
       return secure(json({ok:true,service:'daenem-staffportal-api-staging',stage:'staging'}),request,env);
     }
+
+    const refinedAuthResponse=await routeAuthRefinement(request.clone() as unknown as Request,env);
+    if(refinedAuthResponse)return secure(refinedAuthResponse,request,env);
 
     const passwordAuthResponse=await routePasswordAuth(request,env);
     if(passwordAuthResponse)return secure(passwordAuthResponse,request,env);

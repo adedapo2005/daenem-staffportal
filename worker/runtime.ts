@@ -28,7 +28,6 @@ import { dispatchDueSocialJobs, processSocialQueue } from './social-dispatch';
 import { routeSocialMetaCommunityWebhook, routeSocialProvider, scheduledSocialProviderSync } from './social-provider-sync';
 import { routeSocialOAuthAuthenticated, routeSocialOAuthPublic, type SocialOAuthEnv } from './social-oauth';
 import { routeSocialCommunity } from './social-community';
-import { routeOwnerAuthRecovery } from './owner-auth-recovery';
 import { guardOwnerForcedPasswordChange, routeOwnerTemporaryAccess } from './owner-temp-access';
 import { routeOwnerTemporaryPasswordRepair } from './owner-temp-repair';
 import { guardTemporaryPasswordChange, routeTemporaryPasswordSelf } from './temporary-password';
@@ -122,13 +121,6 @@ export default {
 
     const forcedOwnerPasswordGuard = await guardOwnerForcedPasswordChange(request, env);
     if (forcedOwnerPasswordGuard) return secure(forcedOwnerPasswordGuard);
-
-    // Owner/Super Admin recovery is intentionally resolved before the generic
-    // password handler so a missing/partial credential can never strand the Owner.
-    if (url.pathname === '/api/auth/password/reset' && request.method === 'POST') {
-      const ownerRecovery = await routeOwnerAuthRecovery(request, env);
-      if (ownerRecovery) return secure(ownerRecovery);
-    }
 
     if (url.pathname.startsWith('/api/public/websites/')) {
       const response = await routePublicWebsite(request, env);

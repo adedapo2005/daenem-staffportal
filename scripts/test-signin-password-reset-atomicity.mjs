@@ -8,7 +8,10 @@ const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const module = { exports: {} };
-new Function('module', 'exports', compiled)(module, module.exports);
+new Function('module', 'exports', 'require', compiled)(module, module.exports, (specifier) => {
+  assert.equal(specifier, './credential-security');
+  return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+});
 const { routeAuthRefinement } = module.exports;
 const pepper = 'password-reset-atomicity-fixture';
 const token = 'fixture-reset-token';
@@ -179,7 +182,7 @@ await check('Owner group authority permits credentialless activation without a l
   const response = await runReset(request(), fixture.env);
   assert.equal(response.status, 200);
   assert.equal(fixture.credential.username, 'ada.staff');
-  assert.equal(fixture.audits[0].eventType, 'login_access_activated');
+  assert.equal(fixture.audits[0].eventType, 'owner_password_activation_completed');
 });
 
 await check('credentialless reset rechecks grant, employee and company eligibility inside the batch', async () => {
