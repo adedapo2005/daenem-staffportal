@@ -6,14 +6,18 @@ import ts from 'typescript';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
-const [runtime, entry, staging, productionConfig, stagingConfig, source] = await Promise.all([
-  read('worker/runtime.ts'), read('worker/entry.ts'), read('worker/staffportal-staging.ts'),
+const [runtime, appEntry, entry, staging, productionConfig, stagingConfig, source] = await Promise.all([
+  read('worker/runtime.ts'), read('worker/app-entry.ts'), read('worker/entry.ts'), read('worker/staffportal-staging.ts'),
   read('wrangler.jsonc'), read('wrangler.staffportal-staging.jsonc'), read('worker/auth-refinement.ts'),
 ]);
 const indexOf = (value, token) => value.indexOf(token);
 assert.match(productionConfig, /"main"\s*:\s*"\.\/worker\/runtime\.ts"/);
 assert.match(stagingConfig, /"main"\s*:\s*"\.\/worker\/staffportal-staging\.ts"/);
 assert.equal(runtime.includes('routeOwnerAuthRecovery'), false, 'production runtime must not preempt the authoritative reset route');
+assert.match(runtime, /import appHandler from '\.\/app-entry'/, 'production runtime must delegate reset routes to the configured app entry');
+assert.match(runtime, /return appHandler\.fetch\(request, env, ctx\)/, 'production runtime must preserve app-entry dispatch');
+assert.match(appEntry, /import coreHandler from '\.\/entry'/, 'production app entry must delegate authentication routes to the core entry');
+assert.match(appEntry, /return coreHandler\.fetch\(request, env, ctx\)/, 'production app entry must preserve core auth dispatch');
 assert.ok(indexOf(entry, 'await routeAuthRefinement') < indexOf(entry, 'await routePasswordAuth'), 'production app entry must resolve reset through refined auth first');
 assert.ok(indexOf(staging, 'await routeAuthRefinement') < indexOf(staging, 'await routePasswordAuth'), 'staging entry must resolve reset through refined auth first');
 
