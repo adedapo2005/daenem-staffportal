@@ -11,25 +11,76 @@ new Function('module', 'exports', compiled)(module, module.exports);
 const { routeAuthRefinement } = module.exports;
 
 class SignupFixture {
-  constructor({ employee = null, credential = false, pending = null, sendFails = false } = {}) {
+  constructor({ employee = null, credential = false, pending = null, sendFails = false, credentialAppearsBeforeBatch = false } = {}) {
     this.employee = employee;
     this.credential = credential;
     this.pending = pending;
     this.sendFails = sendFails;
+    this.credentialAppearsBeforeBatch = credentialAppearsBeforeBatch;
     this.verifications = new Map();
     this.securityEvents = [];
     this.credentialWrites = 0;
+    this.membershipWrites = 0;
+    this.roleWrites = 0;
+    this.signupRequestWrites = 0;
     this.deliveryCode = null;
     this.env = {
       APP_STAGE: 'bootstrap',
       AUTH_PEPPER: 'non-production-signup-runtime-fixture',
-      DB: { prepare: (sql) => new SignupStatement(this, sql) },
+      DB: { prepare: (sql) => new SignupStatement(this, sql), batch: (statements) => this.batch(statements) },
       EMAIL: { send: async (message) => {
         if (this.sendFails) throw new Error('stubbed delivery failure');
         this.deliveryCode = message.text.match(/Code: (\d{6})/)?.[1] || null;
         return { messageId: 'stubbed-message' };
       } },
     };
+  }
+  async batch(statements) {
+    if (this.credentialAppearsBeforeBatch) { this.credential = true; this.credentialAppearsBeforeBatch = false; }
+    const before = { employee: this.employee && { ...this.employee }, credential: this.credential,
+      credentialWrites: this.credentialWrites, membershipWrites: this.membershipWrites, roleWrites: this.roleWrites,
+      signupRequestWrites: this.signupRequestWrites,
+      verifications: new Map([...this.verifications].map(([id, row]) => [id, { ...row }])) };
+    const changes = [];
+    try {
+      for (const statement of statements) {
+        const q = statement.sql.toLowerCase(), v = statement.values;
+        if (q.startsWith('update employees set')) {
+          const allowed = this.employee && this.employee.id === v[9] && !this.credential
+            && this.employee.email.toLowerCase() === String(v[10]).toLowerCase();
+          if (allowed) Object.assign(this.employee, { firstName: v[0], lastName: v[1], displayName: v[2], email: v[3], phone: v[4] || this.employee.phone });
+          changes.push(allowed ? 1 : 0);
+        } else if (q.startsWith('insert into employees')) {
+          const email = v[5], phone = v[6];
+          if (this.employee && (this.employee.email.toLowerCase() === String(email).toLowerCase() || (phone && this.employee.phone === phone))) throw new Error('identity conflict');
+          this.employee = { id: v[0], displayName: v[1], email, phone, status: 'provisional' };
+          changes.push(1);
+        } else if (q.startsWith('insert into employee_credentials')) {
+          if (!this.credential) { this.credential = true; this.credentialWrites++; changes.push(1); }
+          else if (q.includes(' select ')) changes.push(0);
+          else throw new Error('credential already exists');
+        } else if (q.startsWith('insert into employee_company_memberships')) {
+          this.membershipWrites++; changes.push(1);
+        } else if (q.startsWith('insert into employee_roles')) {
+          this.roleWrites++; changes.push(1);
+        } else if (q.startsWith('insert into signup_requests')) {
+          this.signupRequestWrites++; changes.push(1);
+        } else if (q.startsWith('update signup_verifications set consumed_at')) {
+          const row = this.verifications.get(v[0]);
+          if (row) row.consumed_at = new Date().toISOString();
+          changes.push(row ? 1 : 0);
+        } else {
+          changes.push(1);
+        }
+      }
+      return statements.map((_, index) => ({ success: true, meta: { changes: changes[index] } }));
+    } catch (error) {
+      this.employee = before.employee; this.credential = before.credential;
+      this.credentialWrites = before.credentialWrites; this.membershipWrites = before.membershipWrites;
+      this.roleWrites = before.roleWrites; this.signupRequestWrites = before.signupRequestWrites;
+      this.verifications = before.verifications;
+      throw error;
+    }
   }
 }
 
@@ -49,6 +100,15 @@ class SignupStatement {
         || (phoneGuard !== '' && f.employee.phone === phone));
       return matched ? { id: f.employee.id, email: f.employee.email, phone: f.employee.phone,
         status: f.employee.status || 'active', ownerRole: f.employee.owner ? 'role-owner' : null } : null;
+    }
+    if (q.includes('from employees where id=? and lower(email)=lower(?)')) {
+      return f.employee && f.employee.id === this.values[0] && f.employee.email.toLowerCase() === this.values[1].toLowerCase()
+        ? { id: f.employee.id, email: f.employee.email, phone: f.employee.phone, status: f.employee.status || 'active' } : null;
+    }
+    if (q.includes('from employees where (lower(email)=lower(?)')) {
+      const [email, phoneGuard, phone, excluded, excludedAgain] = this.values;
+      return f.employee && f.employee.id !== excluded && (f.employee.email.toLowerCase() === email.toLowerCase() || (phoneGuard !== '' && f.employee.phone === phone))
+        ? { id: f.employee.id } : null;
     }
     if (q.includes('from employee_credentials') && q.includes('where employee_id')) {
       return f.credential && this.values[0] === f.employee?.id ? { employee_id: f.employee.id } : null;
@@ -188,6 +248,72 @@ await check('credentialed existing-account verification does not alter credentia
   assert.deepEqual(result, { ok: true, message: 'Verification is complete. If your request is eligible, the next steps will be provided through the approved onboarding process.' });
   assert.equal(fixture.credentialWrites, 0);
   assert.equal(fixture.securityEvents.at(-1)?.type, 'signup_verified_existing_account');
+});
+
+for (const [label, employee] of [
+  ['credentialless employee', { id: 'employee-phone-owner', email: 'authoritative@example.test', phone: base.phone, username: 'phone.owner' }],
+  ['protected credentialless Owner/admin', { id: 'owner-phone-owner', email: 'owner@example.test', phone: base.phone, username: 'owner.phone', owner: true }],
+]) {
+  await check(`${label} cannot be claimed through a different verified email`, async () => {
+    const fixture = new SignupFixture({ employee });
+    const before = { ...fixture.employee };
+    await start(fixture, { ...base, username: 'applicant.phone' });
+    const started = await start(fixture, { ...base, username: 'applicant.phone' });
+    const challenge = fixture.verifications.get(started.body.challengeId);
+    assert.equal(challenge.existing_employee_id, null);
+    assert.equal(started.response.status, 200);
+    assert.deepEqual(publicShape(started), publicShape(newApplicant));
+    const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+    const response = await routeAuthRefinement(verify, fixture.env);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, message: 'Verification is complete. If your request is eligible, the next steps will be provided through the approved onboarding process.' });
+    assert.deepEqual(fixture.employee, before);
+    assert.equal(fixture.credentialWrites, 0);
+    assert.equal(fixture.membershipWrites, 0);
+    assert.equal(fixture.roleWrites, 0);
+    assert.equal(fixture.signupRequestWrites, 0);
+    assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
+  });
+}
+
+await check('exact-email credentialless employee can complete authorized signup', async () => {
+  const fixture = new SignupFixture({ employee: { id: 'employee-exact-email', email: base.email, phone: base.phone, username: 'employee.old' } });
+  const started = await start(fixture);
+  assert.equal(fixture.verifications.get(started.body.challengeId).existing_employee_id, 'employee-exact-email');
+  const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+  const response = await routeAuthRefinement(verify, fixture.env);
+  assert.equal(response.status, 200);
+  assert.equal(fixture.employee.email, base.email);
+  assert.equal(fixture.credentialWrites, 1);
+});
+
+await check('identity claimed after challenge creation blocks verification without writes', async () => {
+  const fixture = new SignupFixture();
+  const started = await start(fixture);
+  fixture.employee = { id: 'concurrent-employee', email: base.email, phone: base.phone, username: 'concurrent' };
+  const before = { ...fixture.employee };
+  const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+  const response = await routeAuthRefinement(verify, fixture.env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(fixture.employee, before);
+  assert.equal(fixture.credentialWrites, 0);
+  assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
+});
+
+await check('concurrent credential creation wins over credentialless signup claim', async () => {
+  const fixture = new SignupFixture({ employee: { id: 'employee-race', email: base.email, phone: base.phone, username: 'employee.race' }, credentialAppearsBeforeBatch: true });
+  const started = await start(fixture);
+  const before = { ...fixture.employee };
+  const verify = new Request('https://staffportal.test/api/auth/signup/verify', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) });
+  const response = await routeAuthRefinement(verify, fixture.env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(fixture.employee, before);
+  assert.equal(fixture.credentialWrites, 0);
+  assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
 });
 
 console.log(`${passed.length}/${passed.length} PASS`);
