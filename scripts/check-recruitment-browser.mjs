@@ -107,6 +107,22 @@ try{
     }
     await page.locator('.jobs-erp-row').first().waitFor({state:'attached'});
   }
+  await page.setViewportSize({width:2560,height:1440});
+  await page.reload();
+  await page.addScriptTag({content:js});
+  await page.locator('.jobs-erp-row').first().click();
+  const qhd=await page.evaluate(()=>{
+    const panel=document.querySelector('.jobs-erp-panel');
+    const row=document.querySelector('.jobs-erp-row strong');
+    return {width:panel.getBoundingClientRect().width,
+      height:panel.getBoundingClientRect().height,
+      rowSize:parseFloat(getComputedStyle(row).fontSize),
+      overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+  });
+  assert.ok(qhd.width>=1700&&qhd.height>=1100&&qhd.rowSize>=20&&qhd.overflow<=2,
+    'Full-height 2560x1440 readability and overflow: '+JSON.stringify(qhd));
+  await page.screenshot({path:join(evidenceDir,'RECRUITMENT-UI-QA-2560x1440.png'),animations:'disabled'});
+  console.log('PASS full-height 2560x1440 rendered workspace scaling, typography and overflow');
   await page.setViewportSize({width:3840,height:2160});
   await page.reload();
   await page.addScriptTag({content:js});
