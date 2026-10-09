@@ -187,7 +187,7 @@ async function sellVehicle(request: Request, env: AutosEnv, context: SessionCont
   try { body = await request.json(); } catch { return json({ error: 'Invalid vehicle sale.' }, 400); }
   if (!body.vehicleId || Number(body.salePriceNaira) <= 0) return json({ error: 'Vehicle and sale price are required.' }, 400);
   const vehicle = await env.DB.prepare(`SELECT id,status,minimum_price_kobo AS minimumPriceKobo,landed_cost_kobo AS landedCostKobo FROM auto_vehicles WHERE id=? AND company_id=?`).bind(body.vehicleId, COMPANY).first<{ id: string; status: string; minimumPriceKobo?: number; landedCostKobo: number }>();
-  if (!vehicle || ['sold','delivered','retired'].includes(vehicle.status)) return json({ error: 'Vehicle is not available for sale.' }, 409);
+  if (!vehicle || ['reserved','sold','delivered','retired'].includes(vehicle.status)) return json({ error: 'Vehicle is not available for sale.' }, 409);
   if (body.leadId) {
     const lead = await env.DB.prepare(`SELECT id FROM auto_leads WHERE id=? AND company_id=?`).bind(body.leadId, COMPANY).first();
     if (!lead) return json({ error: 'Sale reference not found.' }, 404);
@@ -198,18 +198,23 @@ async function sellVehicle(request: Request, env: AutosEnv, context: SessionCont
   }
   const salePrice = kobo(body.salePriceNaira);
   if (vehicle.minimumPriceKobo && salePrice < vehicle.minimumPriceKobo && !hasPermission(context, 'autos.access', 'approve', COMPANY)) return json({ error: 'Sale price is below the configured minimum and requires approval.' }, 403);
-  const paid = Math.min(salePrice, kobo(body.amountPaidNaira ?? body.depositNaira ?? 0));
-  const balance = Math.max(0, salePrice - paid);
-  const paymentStatus = balance === 0 ? 'paid' : paid > 0 ? 'part_paid' : 'unpaid';
-  const saleStatus = balance === 0 ? 'paid' : 'reserved';
+  // Sale requests record a commercial commitment only. Client-entered deposit
+  // or amountPaid values are not authoritative payment evidence.
+  const paid = 0;
+  const balance = salePrice;
+  const paymentStatus = 'unpaid';
+  const saleStatus = 'reserved';
   const saleNo = await nextNumber(env, 'AUTO-SALE', 'auto_sales', 'sale_no');
   const id = uid('auto-sale');
   const statements: D1PreparedStatement[] = [
-    env.DB.prepare(`INSERT INTO auto_sales(id,company_id,vehicle_id,lead_id,customer_id,sale_no,sale_price_kobo,deposit_kobo,amount_paid_kobo,balance_kobo,payment_status,sale_status,payment_terms,sold_by,approved_by,approved_at,sale_date) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id, COMPANY, body.vehicleId, body.leadId || null, body.customerId || null, saleNo, salePrice, kobo(body.depositNaira), paid, balance, paymentStatus, saleStatus, body.paymentTerms || null, context.employee.id, context.employee.id, new Date().toISOString(), nigeriaDate()),
-    env.DB.prepare(`UPDATE auto_vehicles SET sale_price_kobo=?,gross_profit_kobo=?-landed_cost_kobo,status='reserved',customer_id=?,sold_by=?,sold_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(salePrice, salePrice, body.customerId || null, context.employee.id, body.vehicleId, COMPANY),
+    env.DB.prepare(`UPDATE auto_vehicles SET sale_price_kobo=?,gross_profit_kobo=?-landed_cost_kobo,status='reserved',customer_id=?,sold_by=?,sold_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status NOT IN ('reserved','sold','delivered','retired')`).bind(salePrice, salePrice, body.customerId || null, context.employee.id, body.vehicleId, COMPANY),
+    env.DB.prepare(`INSERT INTO auto_sales(id,company_id,vehicle_id,lead_id,customer_id,sale_no,sale_price_kobo,deposit_kobo,amount_paid_kobo,balance_kobo,payment_status,sale_status,payment_terms,sold_by,approved_by,approved_at,sale_date) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE changes()=1`).bind(id, COMPANY, body.vehicleId, body.leadId || null, body.customerId || null, saleNo, salePrice, 0, paid, balance, paymentStatus, saleStatus, body.paymentTerms || null, context.employee.id, context.employee.id, new Date().toISOString(), nigeriaDate()),
   ];
-  if (body.leadId) statements.push(env.DB.prepare(`UPDATE auto_leads SET status='won',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.leadId, COMPANY));
-  await env.DB.batch(statements);
+  if (body.leadId) statements.push(env.DB.prepare(`UPDATE auto_leads SET status='won',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND changes()=1`).bind(body.leadId, COMPANY));
+  const [reservation, sale] = await env.DB.batch(statements);
+  if (Number(reservation.meta?.changes || 0) !== 1 || Number(sale.meta?.changes || 0) !== 1) {
+    return json({ error: 'Vehicle is not available for sale.' }, 409);
+  }
   return json({ ok: true, sale: { id, saleNo, salePriceKobo: salePrice, amountPaidKobo: paid, balanceKobo: balance, paymentStatus, saleStatus, grossProfitKobo: salePrice - Number(vehicle.landedCostKobo || 0) } }, 201);
 }
 
