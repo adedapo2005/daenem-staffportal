@@ -111,6 +111,7 @@ try{
   await page.reload();
   await page.addScriptTag({content:js});
   await page.locator('.jobs-erp-row').first().click();
+  await page.locator('.jobs-erp-record-head').waitFor();
   const qhd=await page.evaluate(()=>{
     const panel=document.querySelector('.jobs-erp-panel');
     const row=document.querySelector('.jobs-erp-row strong');
