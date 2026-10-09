@@ -6,9 +6,11 @@ import ts from 'typescript';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
-const [runtime, appEntry, entry, staging, productionConfig, stagingConfig, source] = await Promise.all([
+const [runtime, appEntry, entry, staging, productionConfig, stagingConfig, source, coreMigration, identityMigration, credentialMigration, refinementMigration] = await Promise.all([
   read('worker/runtime.ts'), read('worker/app-entry.ts'), read('worker/entry.ts'), read('worker/staffportal-staging.ts'),
   read('wrangler.jsonc'), read('wrangler.staffportal-staging.jsonc'), read('worker/auth-refinement.ts'),
+  read('migrations/0001_core.sql'), read('migrations/0002_identity_auth.sql'),
+  read('migrations/0010_password_credentials.sql'), read('migrations/0033_auth_profile_refinement.sql'),
 ]);
 const indexOf = (value, token) => value.indexOf(token);
 assert.match(productionConfig, /"main"\s*:\s*"\.\/worker\/runtime\.ts"/);
@@ -48,51 +50,23 @@ class SqliteD1 {
   constructor({ credential = true, owner = false, staleBeforeBatch = false } = {}) {
     this.database = new DatabaseSync(':memory:');
     this.staleBeforeBatch = staleBeforeBatch;
-    this.database.exec(`
-      PRAGMA foreign_keys = ON;
-      CREATE TABLE app_settings(setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL);
-      CREATE TABLE companies(id TEXT PRIMARY KEY, active INTEGER NOT NULL);
-      CREATE TABLE employees(id TEXT PRIMARY KEY, email TEXT, employment_status TEXT NOT NULL);
-      CREATE TABLE employee_company_memberships(employee_id TEXT, company_id TEXT, active INTEGER NOT NULL);
-      CREATE TABLE employee_roles(employee_id TEXT, role_id TEXT);
-      CREATE TABLE employee_credentials(
-        employee_id TEXT PRIMARY KEY, username TEXT UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL,
-        password_salt TEXT NOT NULL, password_algorithm TEXT, password_iterations INTEGER NOT NULL,
-        email_verified_at TEXT, password_changed_at TEXT, failed_attempts INTEGER DEFAULT 0,
-        locked_until TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE password_reset_challenges(
-        id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, reset_token_hash TEXT NOT NULL,
-        verified_at TEXT, consumed_at TEXT, reset_token_expires_at TEXT NOT NULL
-      );
-      CREATE TABLE employee_login_access_requests(
-        id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, status TEXT NOT NULL,
-        expires_at TEXT, activated_at TEXT, preferred_username TEXT, requested_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE auth_sessions(id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, revoked_at TEXT);
-      CREATE TABLE security_logs(
-        id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, event_type TEXT NOT NULL,
-        severity TEXT NOT NULL, result TEXT NOT NULL, ip_address TEXT, user_agent TEXT, details_json TEXT
-      );
-    `);
-    this.database.prepare("INSERT INTO app_settings VALUES('security.password_pbkdf2_iterations','1000')").run();
-    this.database.prepare("INSERT INTO app_settings VALUES('security.worker_safe_pbkdf2_iterations','1000')").run();
-    this.database.prepare("INSERT INTO app_settings VALUES('security.password_min_length','10')").run();
-    this.database.prepare("INSERT INTO app_settings VALUES('security.password_max_length','128')").run();
-    this.database.prepare("INSERT INTO app_settings VALUES('owner.bootstrap_username','owner.staff')").run();
-    this.database.prepare("INSERT INTO companies VALUES('company-a',1)").run();
-    this.database.prepare("INSERT INTO employees VALUES('employee-a','ada@example.test','active')").run();
-    this.database.prepare("INSERT INTO employees VALUES('employee-b','ben@example.test','active')").run();
-    if (!owner) this.database.prepare("INSERT INTO employee_company_memberships VALUES('employee-a','company-a',1)").run();
-    if (owner) this.database.prepare("INSERT INTO employee_roles VALUES('employee-a','role-owner')").run();
+    this.database.exec(coreMigration);
+    this.database.exec(identityMigration);
+    this.database.exec(credentialMigration);
+    this.database.exec(refinementMigration);
+    this.database.prepare("INSERT INTO app_settings(setting_key,setting_value,value_type) VALUES('security.worker_safe_pbkdf2_iterations','1000','number') ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value").run();
+    this.database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-a','QA-A','QA Company A','other')").run();
+    this.database.prepare("INSERT INTO employees(id,employee_no,display_name,email,employment_status) VALUES('employee-a','QA-A-001','Ada Staff','ada@example.test','active'),('employee-b','QA-B-001','Ben Staff','ben@example.test','active')").run();
+    if (!owner) this.database.prepare("INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES('membership-a','employee-a','company-a',1)").run();
+    if (owner) this.database.prepare("INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES('employee-role-owner-a','employee-a','company-printing','role-owner')").run();
     this.database.prepare(`INSERT INTO password_reset_challenges
-      (id,employee_id,reset_token_hash,verified_at,consumed_at,reset_token_expires_at)
-      VALUES('reset-a','employee-a',?,CURRENT_TIMESTAMP,NULL,datetime('now','+10 minutes'))`).run(tokenHash);
-    this.database.prepare("INSERT INTO auth_sessions VALUES('session-a1','employee-a',NULL),('session-a2','employee-a',NULL),('session-b1','employee-b',NULL)").run();
+      (id,employee_id,code_hash,expires_at,reset_token_hash,verified_at,consumed_at,reset_token_expires_at)
+      VALUES('reset-a','employee-a','fixture-code-hash',datetime('now','+10 minutes'),?,CURRENT_TIMESTAMP,NULL,datetime('now','+10 minutes'))`).run(tokenHash);
+    this.database.prepare("INSERT INTO auth_sessions(id,employee_id,token_hash,expires_at,revoked_at) VALUES('session-a1','employee-a','session-hash-a1',datetime('now','+1 day'),NULL),('session-a2','employee-a','session-hash-a2',datetime('now','+1 day'),NULL),('session-b1','employee-b','session-hash-b1',datetime('now','+1 day'),NULL)").run();
     if (credential) this.database.prepare(`INSERT INTO employee_credentials
       (employee_id,username,password_hash,password_salt,password_algorithm,password_iterations,password_changed_at)
       VALUES('employee-a','ada.staff','old-hash','old-salt','PBKDF2-SHA256',1000,'old-time')`).run();
-    else this.database.prepare("INSERT INTO employee_login_access_requests(id,employee_id,status,preferred_username) VALUES('access-a','employee-a','ready','ada.staff')").run();
+    else this.database.prepare("INSERT INTO employee_login_access_requests(id,employee_id,preferred_username,status) VALUES('access-a','employee-a','ada.staff','ready')").run();
     if (!credential) this.database.prepare("INSERT INTO employee_credentials(employee_id,username,password_hash,password_salt,password_algorithm,password_iterations) VALUES('employee-b','ben.staff','other-hash','other-salt','PBKDF2-SHA256',1000)").run();
     this.env = { APP_STAGE: 'test', AUTH_PEPPER: pepper, DB: {
       prepare: (sql) => new SqlStatement(this.database, sql),
@@ -131,7 +105,7 @@ const check = async (name, action) => { await action(); passed.push(name); conso
 
 await check('configured production and staging entrypoints use the same refined reset authority', async () => {});
 
-await check('real SQLite reset commits credential, single-use challenge, target-session revocation and correlated success audit', async () => {
+await check('migration-aligned SQLite reset commits credential, single-use challenge, target-session revocation and correlated success audit', async () => {
   const fixture = new SqliteD1();
   const response = await invoke(fixture);
   assert.equal(response.status, 200);
