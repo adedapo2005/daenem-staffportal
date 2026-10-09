@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 
@@ -47,27 +49,30 @@ class SqlStatement {
 }
 
 class SqliteD1 {
-  constructor({ credential = true, owner = false, staleBeforeBatch = false } = {}) {
-    this.database = new DatabaseSync(':memory:');
+  constructor({ credential = true, owner = false, staleBeforeBatch = false, databasePath = ':memory:', initialize = true } = {}) {
+    this.database = new DatabaseSync(databasePath);
+    this.database.exec('PRAGMA busy_timeout=5000');
     this.staleBeforeBatch = staleBeforeBatch;
-    this.database.exec(coreMigration);
-    this.database.exec(identityMigration);
-    this.database.exec(credentialMigration);
-    this.database.exec(refinementMigration);
-    this.database.prepare("INSERT INTO app_settings(setting_key,setting_value,value_type) VALUES('security.worker_safe_pbkdf2_iterations','1000','number') ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value").run();
-    this.database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-a','QA-A','QA Company A','other')").run();
-    this.database.prepare("INSERT INTO employees(id,employee_no,display_name,email,employment_status) VALUES('employee-a','QA-A-001','Ada Staff','ada@example.test','active'),('employee-b','QA-B-001','Ben Staff','ben@example.test','active')").run();
-    if (!owner) this.database.prepare("INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES('membership-a','employee-a','company-a',1)").run();
-    if (owner) this.database.prepare("INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES('employee-role-owner-a','employee-a','company-printing','role-owner')").run();
-    this.database.prepare(`INSERT INTO password_reset_challenges
-      (id,employee_id,code_hash,expires_at,reset_token_hash,verified_at,consumed_at,reset_token_expires_at)
-      VALUES('reset-a','employee-a','fixture-code-hash',datetime('now','+10 minutes'),?,CURRENT_TIMESTAMP,NULL,datetime('now','+10 minutes'))`).run(tokenHash);
-    this.database.prepare("INSERT INTO auth_sessions(id,employee_id,token_hash,expires_at,revoked_at) VALUES('session-a1','employee-a','session-hash-a1',datetime('now','+1 day'),NULL),('session-a2','employee-a','session-hash-a2',datetime('now','+1 day'),NULL),('session-b1','employee-b','session-hash-b1',datetime('now','+1 day'),NULL)").run();
-    if (credential) this.database.prepare(`INSERT INTO employee_credentials
-      (employee_id,username,password_hash,password_salt,password_algorithm,password_iterations,password_changed_at)
-      VALUES('employee-a','ada.staff','old-hash','old-salt','PBKDF2-SHA256',1000,'old-time')`).run();
-    else this.database.prepare("INSERT INTO employee_login_access_requests(id,employee_id,preferred_username,status) VALUES('access-a','employee-a','ada.staff','ready')").run();
-    if (!credential) this.database.prepare("INSERT INTO employee_credentials(employee_id,username,password_hash,password_salt,password_algorithm,password_iterations) VALUES('employee-b','ben.staff','other-hash','other-salt','PBKDF2-SHA256',1000)").run();
+    if (initialize) {
+      this.database.exec(coreMigration);
+      this.database.exec(identityMigration);
+      this.database.exec(credentialMigration);
+      this.database.exec(refinementMigration);
+      this.database.prepare("INSERT INTO app_settings(setting_key,setting_value,value_type) VALUES('security.worker_safe_pbkdf2_iterations','1000','number') ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value").run();
+      this.database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-a','QA-A','QA Company A','other')").run();
+      this.database.prepare("INSERT INTO employees(id,employee_no,display_name,email,employment_status) VALUES('employee-a','QA-A-001','Ada Staff','ada@example.test','active'),('employee-b','QA-B-001','Ben Staff','ben@example.test','active')").run();
+      if (!owner) this.database.prepare("INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES('membership-a','employee-a','company-a',1)").run();
+      if (owner) this.database.prepare("INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES('employee-role-owner-a','employee-a','company-printing','role-owner')").run();
+      this.database.prepare(`INSERT INTO password_reset_challenges
+        (id,employee_id,code_hash,expires_at,reset_token_hash,verified_at,consumed_at,reset_token_expires_at)
+        VALUES('reset-a','employee-a','fixture-code-hash',datetime('now','+10 minutes'),?,CURRENT_TIMESTAMP,NULL,datetime('now','+10 minutes'))`).run(tokenHash);
+      this.database.prepare("INSERT INTO auth_sessions(id,employee_id,token_hash,expires_at,revoked_at) VALUES('session-a1','employee-a','session-hash-a1',datetime('now','+1 day'),NULL),('session-a2','employee-a','session-hash-a2',datetime('now','+1 day'),NULL),('session-b1','employee-b','session-hash-b1',datetime('now','+1 day'),NULL)").run();
+      if (credential) this.database.prepare(`INSERT INTO employee_credentials
+        (employee_id,username,password_hash,password_salt,password_algorithm,password_iterations,password_changed_at)
+        VALUES('employee-a','ada.staff','old-hash','old-salt','PBKDF2-SHA256',1000,'old-time')`).run();
+      else this.database.prepare("INSERT INTO employee_login_access_requests(id,employee_id,preferred_username,status) VALUES('access-a','employee-a','ada.staff','ready')").run();
+      if (!credential) this.database.prepare("INSERT INTO employee_credentials(employee_id,username,password_hash,password_salt,password_algorithm,password_iterations) VALUES('employee-b','ben.staff','other-hash','other-salt','PBKDF2-SHA256',1000)").run();
+    }
     this.env = { APP_STAGE: 'test', AUTH_PEPPER: pepper, DB: {
       prepare: (sql) => new SqlStatement(this.database, sql),
       batch: (statements) => this.batch(statements),
@@ -144,6 +149,27 @@ await check('two simultaneous reset submissions produce exactly one winner and o
   assert.equal(responses.filter((response) => response.status === 200).length, 1);
   assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE event_type='password_reset_completed' AND result='success'").count, 1);
   assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM auth_sessions WHERE employee_id='employee-a' AND revoked_at IS NULL").count, 0);
+});
+
+await check('independent SQLite connections cannot both consume one reset token or revoke unrelated sessions', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'staffportal-password-reset-'));
+  const databasePath = join(directory, 'reset.sqlite');
+  let first;
+  let second;
+  try {
+    first = new SqliteD1({ databasePath });
+    second = new SqliteD1({ databasePath, initialize: false });
+    const responses = await Promise.all([invoke(first), invoke(second)]);
+    assert.equal(responses.filter((response) => response.status === 200).length, 1);
+    assert.equal(first.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE event_type='password_reset_completed' AND result='success'").count, 1);
+    assert.equal(second.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at !== null, true);
+    assert.equal(second.scalar("SELECT COUNT(*) AS count FROM auth_sessions WHERE employee_id='employee-a' AND revoked_at IS NULL").count, 0);
+    assert.equal(second.scalar("SELECT COUNT(*) AS count FROM auth_sessions WHERE employee_id='employee-b' AND revoked_at IS NULL").count, 1);
+  } finally {
+    first?.database.close();
+    second?.database.close();
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 for (const [name, table, action, options] of [
