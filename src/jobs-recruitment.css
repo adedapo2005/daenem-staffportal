@@ -1,0 +1,60 @@
+/* Internal StaffPortal Jobs ERP — scoped Record Interaction shell, no glass surfaces. */
+.jobs-erp-backdrop{position:fixed;inset:0;z-index:1320;background:#0b1629d6;display:grid;place-items:center;padding:24px;font-family:Inter,Manrope,system-ui,sans-serif;color:#162743}
+.jobs-erp-panel{width:min(1540px,100%);height:min(940px,calc(100dvh - 48px));display:flex;flex-direction:column;overflow:hidden;background:#f3f6fb;border:1px solid #c9d5e6;border-radius:22px;box-shadow:0 28px 90px #07142780}
+.jobs-erp-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:21px 26px;background:#122443;color:#fff;border-bottom:3px solid #2e82d7}
+.jobs-erp-header h2{font-size:clamp(20px,2vw,29px);margin:3px 0 4px;font-weight:800;letter-spacing:-.03em}.jobs-erp-header p{font-size:13px;line-height:1.45;margin:0;color:#d5e2f4}
+.jobs-erp-kicker{font-size:10px;font-weight:800;letter-spacing:.13em;color:#81c2ff}.jobs-erp-header-actions{display:flex;align-items:center;gap:10px}
+.jobs-erp-header select,.jobs-erp-header button{min-height:42px;border:1px solid #ffffff55;border-radius:11px;color:#fff;background:#ffffff13;padding:0 11px;font-size:13px}
+.jobs-erp-header select option{color:#162743}.jobs-erp-header button{cursor:pointer;display:grid;place-items:center}
+.jobs-erp-toolbar{background:#fff;border-bottom:1px solid #d8e2ef;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.jobs-erp-toolbar strong{font-size:14px}.jobs-erp-toolbar small{display:block;color:#66778d;font-size:11px;margin-top:3px}
+.jobs-erp-button{min-height:38px;padding:9px 14px;border-radius:10px;border:1px solid #b9c8dd;background:#fff;color:#23436b;cursor:pointer;font-weight:750;font-size:12px}
+.jobs-erp-button.primary{background:#1764ad;border-color:#1764ad;color:#fff}
+.jobs-erp-button:disabled{opacity:.45;cursor:not-allowed}
+.jobs-erp-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(265px,340px) 1fr}
+.jobs-erp-rail{background:#fff;border-right:1px solid #dce5f0;overflow:auto;min-height:0}
+.jobs-erp-rail-heading{padding:16px;border-bottom:1px solid #e1e9f2;font-size:12px;font-weight:800}
+.jobs-erp-row{display:block;text-align:left;width:100%;padding:16px;border:0;border-bottom:1px solid #e9eef6;background:#fff;cursor:pointer;color:inherit}
+.jobs-erp-row:hover,.jobs-erp-row[aria-current=true]{background:#edf5ff}
+.jobs-erp-row[aria-current=true]{border-left:4px solid #227ed1;padding-left:12px}
+.jobs-erp-row strong{display:block;font-size:13px;font-weight:750}.jobs-erp-row small{display:block;font-size:11px;color:#65778e;margin-top:5px}
+.jobs-erp-record{overflow:auto;min-width:0;padding:26px;background:#f3f6fb}
+.jobs-erp-record-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.jobs-erp-record-head h3{font-size:clamp(20px,2.1vw,28px);margin:6px 0 4px;font-weight:800}
+.jobs-erp-record-head p{font-size:12px;margin:0;color:#66778d}
+.jobs-erp-badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;border-radius:999px;border:1px solid #c4d7ed;background:#eaf3ff;color:#235584;padding:6px 10px}
+.jobs-erp-card{background:#fff;border:1px solid #dce5f0;border-radius:16px;padding:20px;margin-bottom:15px;box-shadow:0 4px 14px #1a39600a}
+.jobs-erp-card h4{font-size:14px;font-weight:850;margin:0 0 13px}
+.jobs-erp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.jobs-erp-field{display:block;min-width:0;font-size:11px;font-weight:750;color:#526987}
+.jobs-erp-field input,.jobs-erp-field select,.jobs-erp-field textarea{display:block;box-sizing:border-box;width:100%;min-height:41px;margin-top:5px;background:#fff;color:#182946;border:1px solid #becde0;border-radius:10px;padding:9px 11px;font:500 13px/1.4 Inter,system-ui}
+.jobs-erp-field textarea{min-height:85px;resize:vertical}
+.jobs-erp-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:15px}
+.jobs-erp-status{padding:14px 16px;background:#fff;border:1px solid #dce5f0;border-radius:12px;color:#566b82;font-size:12px;line-height:1.5;margin:16px 0}
+.jobs-erp-status.error{border-color:#e6b8b8;background:#fff4f4;color:#953d3d}
+.jobs-erp-footer{background:#fff;border-top:1px solid #dce5f0;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#66778d;gap:12px}
+.jobs-erp-back{display:none}
+.jobs-erp-panel :focus-visible{outline:3px solid #f6b744;outline-offset:3px}
+@media(max-width:1000px){.jobs-erp-backdrop{padding:10px}.jobs-erp-panel{height:calc(100dvh - 20px)}.jobs-erp-body{grid-template-columns:280px 1fr}.jobs-erp-record{padding:17px}.jobs-erp-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.jobs-erp-backdrop{padding:0}.jobs-erp-panel{height:100dvh;border-radius:0;border:0}.jobs-erp-header{padding:14px;flex-wrap:wrap}.jobs-erp-header-actions{width:100%}.jobs-erp-header select{flex:1}.jobs-erp-toolbar{padding:11px 13px}.jobs-erp-body{display:block;position:relative}.jobs-erp-rail{height:100%;border:0}.jobs-erp-record{height:100%;box-sizing:border-box;padding:13px}.jobs-erp-body.show-record .jobs-erp-rail{display:none}.jobs-erp-body:not(.show-record) .jobs-erp-record{display:none}.jobs-erp-back{display:inline-flex}.jobs-erp-footer{padding:8px 12px}}
+@media(prefers-reduced-motion:reduce){.jobs-erp-panel *,.jobs-erp-panel *::before,.jobs-erp-panel *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Recruitment action controls: solid surfaces and readable, no glass. */
+.jobs-erp-action-stack{display:grid;gap:12px;margin-top:16px}
+.jobs-erp-action-form{display:grid;gap:12px;padding:15px;margin-top:14px;border:1px solid #cad9eb;background:#f7faff;border-radius:12px}
+.jobs-erp-action-form h5{margin:0;color:#173b6a;font-size:13px;font-weight:850}
+.jobs-erp-action-form p{margin:0;font-size:12px;line-height:1.5;color:#526981}
+.jobs-erp-action-form button{justify-self:start}
+.jobs-erp-subrecord{padding:13px 0;border-bottom:1px solid #e0e9f3;overflow-wrap:anywhere}
+.jobs-erp-subrecord strong{display:block;font-size:12px;color:#1c395c}
+.jobs-erp-subrecord p{overflow-wrap:anywhere;font-size:12px;line-height:1.55}
+.jobs-erp-safety-note{padding:10px 12px;border-left:3px solid #c89936;background:#fffaf0;color:#5d523c;font-size:12px;line-height:1.6}
+@media(max-width:700px){.jobs-erp-action-form{padding:12px}.jobs-erp-action-form button{width:100%;justify-content:center}}
+
+@media (min-width:2560px) and (min-height:1200px){
+.jobs-erp-backdrop{padding:48px}.jobs-erp-panel{width:min(72vw,2760px);height:min(82dvh,1780px);border-radius:28px}
+.jobs-erp-header{padding:30px 40px}.jobs-erp-header h2{font-size:clamp(34px,1.2vw,45px)}.jobs-erp-header p{font-size:18px}.jobs-erp-kicker{font-size:14px}.jobs-erp-header select,.jobs-erp-header button{min-height:56px;font-size:18px}
+.jobs-erp-toolbar{padding:22px 32px}.jobs-erp-toolbar strong{font-size:21px}.jobs-erp-toolbar small{font-size:16px}.jobs-erp-button{min-height:52px;font-size:17px;padding:12px 20px}
+.jobs-erp-body{grid-template-columns:minmax(370px,470px) minmax(0,1fr)}.jobs-erp-rail-heading{font-size:17px;padding:24px}.jobs-erp-row{padding:24px}.jobs-erp-row[aria-current=true]{padding-left:20px}.jobs-erp-row strong{font-size:21px}.jobs-erp-row small{font-size:16px}.jobs-erp-record{padding:36px}
+.jobs-erp-record-head h3{font-size:38px}.jobs-erp-record-head p{font-size:18px}.jobs-erp-card{padding:30px;margin-bottom:22px}.jobs-erp-card h4{font-size:23px}.jobs-erp-grid{gap:20px}.jobs-erp-field{font-size:17px}.jobs-erp-field input,.jobs-erp-field select,.jobs-erp-field textarea{min-height:56px;font-size:18px}.jobs-erp-action-form h5{font-size:20px}.jobs-erp-action-form p,.jobs-erp-subrecord p,.jobs-erp-subrecord strong,.jobs-erp-safety-note,.jobs-erp-status{font-size:17px}.jobs-erp-footer{font-size:16px;padding:18px 30px}
+}
