@@ -8,6 +8,9 @@
 .jobs-erp-header select option{color:#162743}.jobs-erp-header button{cursor:pointer;display:grid;place-items:center}
 .jobs-erp-toolbar{background:#fff;border-bottom:1px solid #d8e2ef;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .jobs-erp-toolbar strong{font-size:14px}.jobs-erp-toolbar small{display:block;color:#66778d;font-size:11px;margin-top:3px}
+.jobs-erp-company-label,.jobs-erp-filter{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:750;white-space:nowrap}
+.jobs-erp-company-label{color:#e5f0ff}.jobs-erp-filter{color:#36506c}
+.jobs-erp-filter select{min-height:38px;min-width:116px;border:1px solid #b9c8dd;border-radius:10px;background:#fff;color:#173354;padding:7px 10px;font:650 12px/1.2 Inter,system-ui}
 .jobs-erp-button{min-height:38px;padding:9px 14px;border-radius:10px;border:1px solid #b9c8dd;background:#fff;color:#23436b;cursor:pointer;font-weight:750;font-size:12px}
 .jobs-erp-button.primary{background:#1764ad;border-color:#1764ad;color:#fff}
 .jobs-erp-button:disabled{opacity:.45;cursor:not-allowed}
