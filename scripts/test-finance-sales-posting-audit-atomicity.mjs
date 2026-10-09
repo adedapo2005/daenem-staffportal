@@ -8,7 +8,7 @@ const source = fs.readFileSync(new URL('worker/finance-sales-autopost.ts', root)
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 });
-const { postFulfilledSalesOrder } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+const { postFulfilledSalesOrder, recordFailure } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
 function fixture({ failAudit = false } = {}) {
   const db = new DatabaseSync(':memory:');
@@ -100,4 +100,17 @@ for (const table of ['journal_entries', 'journal_lines', 'finance_receivables', 
 }
 failed.db.close();
 
-console.log('PASS: sales posting writes correlated audit in the same transaction; forced audit failure rolls back all posting rows');
+for (const terminalStatus of ['posted', 'reversed']) {
+  const terminal = fixture();
+  terminal.db.prepare(`INSERT INTO finance_source_postings
+    (id,company_id,source_module,source_type,source_id,posted_amount_kobo,cost_amount_kobo,status,error_text,posted_at)
+    VALUES('source-a','company-a','sales','sales_order','sale-a',12500,0,?,NULL,CURRENT_TIMESTAMP)`)
+    .run(terminalStatus);
+  await recordFailure(terminal.env, 'sale-a', 'late failure from an older posting attempt');
+  const row = terminal.db.prepare(`SELECT status,error_text FROM finance_source_postings WHERE id='source-a'`).get();
+  assert.equal(row.status, terminalStatus, `${terminalStatus} posting must remain terminal`);
+  assert.equal(row.error_text, null, `${terminalStatus} posting evidence must not be overwritten`);
+  terminal.db.close();
+}
+
+console.log('PASS: sales posting audit rolls back atomically on failure; stale failure writes preserve posted and reversed terminal states');
