@@ -46,6 +46,7 @@ import { routeOffline } from './offline';
 import { routeSpend } from './spend';
 import { routeProcurement } from './procurement';
 import { routeAlerting } from './alerting';
+import { routeStorageMirror } from './storage-mirror';
 import { routeSmartBugManagement } from './smart-bug-management';
 
 interface Env extends SocialOAuthEnv {
@@ -235,6 +236,10 @@ export default {
       }
       if (url.pathname.startsWith('/api/admin/smart-bugs/')) {
         const response = await routeSmartBugManagement(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/admin/storage/')) {
+        const response = await routeStorageMirror(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/admin/')) {
