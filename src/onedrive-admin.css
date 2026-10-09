@@ -1,0 +1,25 @@
+.onedrive-admin { color: var(--text); }
+.onedrive-admin p { line-height: 1.55; }
+.onedrive-admin-overview { margin-top: 15px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.onedrive-admin-overview > div { min-width: 0; display: grid; gap: 5px; padding: 14px; border-radius: 13px; border: 1px solid var(--border); background: var(--surface-strong); }
+.onedrive-admin-overview svg { color: var(--accent); }
+.onedrive-admin-overview span, .onedrive-admin-overview small { font-size: 11px; color: var(--muted); }
+.onedrive-admin-overview strong { font-size: 14px; font-weight: 750; overflow-wrap: anywhere; }
+.onedrive-admin-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+.onedrive-admin button { display: inline-flex; justify-content: center; align-items: center; gap: 7px; border-radius: 10px; padding: 9px 12px; min-height: 40px; font-size: 12px; font-weight: 720; cursor: pointer; }
+.onedrive-admin button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.onedrive-admin button:disabled { opacity: .5; cursor: not-allowed; }
+.onedrive-admin-subsection { border-top: 1px solid var(--border); padding-top: 15px; margin-top: 17px; }
+.onedrive-admin-subsection h4 { font-size: 14px; margin: 0 0 9px; }
+.onedrive-admin-subsection p, .onedrive-admin-note { font-size: 12px; margin: 7px 0; color: var(--muted); }
+.onedrive-admin-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.onedrive-admin-counts > span { min-width: 0; padding: 11px; display: grid; gap: 6px; border: 1px solid var(--border); border-radius: 10px; font-size: 11px; background: var(--surface-strong); color: var(--muted); }
+.onedrive-admin-counts strong { color: var(--text); font-size: 19px; }
+.onedrive-admin-job-list { display: grid; gap: 8px; max-height: 320px; overflow-y: auto; }
+.onedrive-admin-job { padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-strong); }
+.onedrive-admin-job > div { min-width: 0; display: grid; gap: 5px; }
+.onedrive-admin-job strong { font-size: 12px; }
+.onedrive-admin-job span, .onedrive-admin-job small { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+@media(max-width:760px) { .onedrive-admin-overview { grid-template-columns: 1fr; } .onedrive-admin-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .onedrive-admin-job { align-items: stretch; flex-direction: column; } }
+@media(max-width:420px) { .onedrive-admin-counts { grid-template-columns: 1fr 1fr; } }
+@media(prefers-reduced-motion:reduce) { .onedrive-admin *, .onedrive-admin *::before, .onedrive-admin *::after { animation: none !important; transition: none !important; } }

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Bot, Building2, CheckCircle2, LocateFixed, MapPin, Palette, RefreshCw, Save, Settings2, ShieldCheck, X } from 'lucide-react';
 import { api, type WorkforceContext } from './auth';
 import { themeList } from './theme-system';
+import { OneDriveAdmin } from './onedrive-admin';
 import './admin-setup.css';
 
 type LocationRecord = {
@@ -268,6 +269,8 @@ export function AdminSetup({ context, onClose }: { context: WorkforceContext; on
           })}
         </div>
       </section>
+
+      {context.roles.some((role) => role.code === 'owner' || role.code === 'group_admin') && <OneDriveAdmin context={context} />}
 
       <section className="admin-setup-section admin-ai-tip">
         <Bot size={22} /><div><strong>AI-guided setup is being connected to this page.</strong><p>The AI Guide will explain each policy using your actual permissions and current configuration, while final changes remain under authorized human control.</p></div><Palette size={19} />
