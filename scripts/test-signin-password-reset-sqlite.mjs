@@ -15,15 +15,6 @@ const [runtime, appEntry, entry, staging, productionConfig, stagingConfig, sourc
   read('migrations/0010_password_credentials.sql'), read('migrations/0033_auth_profile_refinement.sql'),
 ]);
 const indexOf = (value, token) => value.indexOf(token);
-assert.match(productionConfig, /"main"\s*:\s*"\.\/worker\/runtime\.ts"/);
-assert.match(stagingConfig, /"main"\s*:\s*"\.\/worker\/staffportal-staging\.ts"/);
-assert.equal(runtime.includes('routeOwnerAuthRecovery'), false, 'production runtime must not preempt the authoritative reset route');
-assert.match(runtime, /import appHandler from '\.\/app-entry'/, 'production runtime must delegate reset routes to the configured app entry');
-assert.match(runtime, /return appHandler\.fetch\(request, env, ctx\)/, 'production runtime must preserve app-entry dispatch');
-assert.match(appEntry, /import coreHandler from '\.\/entry'/, 'production app entry must delegate authentication routes to the core entry');
-assert.match(appEntry, /return coreHandler\.fetch\(request, env, ctx\)/, 'production app entry must preserve core auth dispatch');
-assert.ok(indexOf(entry, 'await routeAuthRefinement') < indexOf(entry, 'await routePasswordAuth'), 'production app entry must resolve reset through refined auth first');
-assert.ok(indexOf(staging, 'await routeAuthRefinement') < indexOf(staging, 'await routePasswordAuth'), 'staging entry must resolve reset through refined auth first');
 
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -108,7 +99,19 @@ const invoke = async (fixture) => routeAuthRefinement(request(), fixture.env);
 const passed = [];
 const check = async (name, action) => { await action(); passed.push(name); console.log(`PASS: ${name}`); };
 
-await check('configured production and staging entrypoints use the same refined reset authority', async () => {});
+await check('production and staging entrypoints dispatch password reset through refined auth before fallback handlers', async () => {
+  assert.match(productionConfig, /"main"\s*:\s*"\.\/worker\/runtime\.ts"/);
+  assert.match(stagingConfig, /"main"\s*:\s*"\.\/worker\/staffportal-staging\.ts"/);
+  assert.equal(runtime.includes('routeOwnerAuthRecovery'), false, 'production runtime must not preempt the authoritative reset route');
+  assert.match(runtime, /import appHandler from '\.\/app-entry'/, 'production runtime must delegate reset routes to the configured app entry');
+  assert.match(runtime, /return appHandler\.fetch\(request, env, ctx\)/, 'production runtime must preserve app-entry dispatch');
+  assert.match(appEntry, /import coreHandler from '\.\/entry'/, 'production app entry must delegate authentication routes to the core entry');
+  assert.match(appEntry, /return coreHandler\.fetch\(request, env, ctx\)/, 'production app entry must preserve core auth dispatch');
+  assert.ok(indexOf(entry, 'await routeAuthRefinement') >= 0, 'production entry must dispatch through refined auth');
+  assert.ok(indexOf(entry, 'await routeAuthRefinement') < indexOf(entry, 'await routePasswordAuth'), 'production entry must resolve refined reset before legacy fallback');
+  assert.ok(indexOf(staging, 'await routeAuthRefinement') >= 0, 'staging entry must dispatch through refined auth');
+  assert.ok(indexOf(staging, 'await routeAuthRefinement') < indexOf(staging, 'await routePasswordAuth'), 'staging entry must resolve refined reset before legacy fallback');
+});
 
 await check('migration-aligned SQLite reset commits credential, single-use challenge, target-session revocation and correlated success audit', async () => {
   const fixture = new SqliteD1();
