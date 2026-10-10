@@ -44,7 +44,7 @@ const js=bundle.outputFiles.find(f=>f.path.endsWith('.js'))?.text;
 assert.ok(js&&js.length>100,'esbuild must produce an in-memory browser bundle');
 console.log('PASS owned UI esbuild production-like bundle in memory (not a full StaffPortal build)');
 const browser=await chromium.launch({headless:true});
-let errors=[],denied=false;
+let errors=[],denied=false,companyDenied=false,holdDetail=false,releaseDetail=null,holdStartResolve=null;
 const page=await browser.newPage({viewport:{width:1366,height:900},deviceScaleFactor:1});
 page.on('pageerror',err=>errors.push(err.message));
 await page.route('**/*',async route=>{
@@ -54,14 +54,20 @@ await page.route('**/*',async route=>{
     status:200,contentType:'text/html',
     body:'<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>*{box-sizing:border-box}html,body{margin:0;min-height:100%;}</style><style>'+css+'</style></head><body><div id="recruitment-root"></div></body></html>'
   });
-  if(u.pathname==='/api/recruitment/companies')
+  if(u.pathname==='/api/recruitment/companies'){
+    if(companyDenied)return json(403,{error:'Unavailable'});
     return json(200,{companies:[{id:'coA',name:'Test Company',code:'T',
       capabilities:{create:true,edit:true,approve:true}}]});
+  }
   if(u.pathname==='/api/recruitment/candidates')
     return json(200,{companyId:'coA',candidates:[{id:'candidateTest',
       companyId:'coA',fullName:'Synthetic Candidate',candidateRef:'QA-001',
       roleTitle:'Analyst',stage:'screening',revision:0,locationId:null}]});
   if(u.pathname==='/api/recruitment/candidates/candidateTest') {
+    if(holdDetail){
+      holdStartResolve?.();
+      await new Promise(resolve=>{releaseDetail=resolve;});
+    }
     if(denied)return json(404,{error:'Recruitment record unavailable.'});
     return json(200,{candidate:{id:'candidateTest',companyId:'coA',
       fullName:'Synthetic Candidate',candidateRef:'QA-001',roleTitle:'Analyst',
@@ -101,7 +107,23 @@ try{
       await page.screenshot({path:join(evidenceDir,'RECRUITMENT-UI-QA-'+width+'.png'),animations:'disabled'});
     console.log('PASS synthetic browser layout and record '+width+'px');
     if(width<=700){
+      assert.equal(await page.locator('.jobs-erp-rail').isVisible(),false,
+        'Mobile record must hide candidate navigation at '+width);
       await page.getByRole('button',{name:'Back to candidates'}).click();
+      await page.waitForFunction(()=>document.activeElement?.classList.contains('jobs-erp-row'));
+      assert.equal(await page.locator('.jobs-erp-rail').isVisible(),true,
+        'Mobile Back must restore candidate navigation at '+width);
+      assert.equal(await page.locator('.jobs-erp-record-detail').count(),0,
+        'Mobile Back must remove selected record at '+width);
+      console.log('PASS mobile List -> Record -> Back focus and privacy '+width+'px');
+      if(width===390){
+        await page.getByRole('button',{name:'New candidate'}).click();
+        await page.getByRole('heading',{name:'New Candidate'}).waitFor();
+        await page.getByRole('button',{name:'Back to candidates'}).click();
+        await page.waitForFunction(()=>document.activeElement?.textContent?.trim()==='New candidate');
+        assert.equal(await page.getByRole('heading',{name:'New Candidate'}).count(),0);
+        console.log('PASS mobile New Candidate -> Back restores toolbar focus');
+      }
     }else{
       await page.getByRole('button',{name:'New candidate'}).click();
     }
@@ -183,6 +205,39 @@ try{
   assert.equal(await page.getByText('private.qa@example.test').count(),0);
   assert.equal(await page.locator('.jobs-erp-row').count(),0);
   console.log('PASS synthetic browser permission-denial clears protected record and list');
+  denied=false;
+  await page.reload();
+  await page.addScriptTag({content:js});
+  await page.locator('.jobs-erp-row').first().click();
+  await page.getByText('private.qa@example.test').waitFor();
+  companyDenied=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await page.getByText('Recruitment access could not be verified.').waitFor();
+  assert.equal(await page.getByText('private.qa@example.test').count(),0);
+  assert.equal(await page.locator('.jobs-erp-row').count(),0);
+  console.log('PASS focus-triggered company grant revocation clears visible protected records');
+
+  companyDenied=false;
+  await page.reload();
+  await page.addScriptTag({content:js});
+  await page.locator('.jobs-erp-row').first().waitFor();
+  const detailStarted=new Promise(resolve=>{holdStartResolve=resolve;});
+  holdDetail=true;
+  await page.locator('.jobs-erp-row').first().click();
+  await detailStarted;
+  await page.getByText('Loading protected candidate record...').waitFor();
+  companyDenied=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await page.getByText('Recruitment access could not be verified.').waitFor();
+  holdDetail=false;
+  const lateDetailResponse=page.waitForResponse(
+    response=>response.url().includes('/api/recruitment/candidates/candidateTest')&&response.status()===200);
+  releaseDetail?.();
+  await lateDetailResponse;
+  await page.waitForTimeout(80);
+  assert.equal(await page.getByText('private.qa@example.test').count(),0);
+  assert.equal(await page.locator('.jobs-erp-row').count(),0);
+  console.log('PASS late pre-revocation candidate detail cannot resurrect protected records');
   assert.deepEqual(errors,[],'No browser JS runtime errors');
   console.log('PASS no browser runtime exceptions');
   console.log('RECRUITMENT BROWSER QA: 9 viewport checks + denial + runtime PASS; mocked APIs only, not authenticated Worker/D1/Owner acceptance.');

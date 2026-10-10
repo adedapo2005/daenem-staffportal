@@ -136,6 +136,7 @@ function CompanyBoard({company,timeZone}:{company:Company;timeZone:string}) {
   const [accessInvalid,setAccessInvalid]=useState(false);
   const listVersion=useRef(0),recordVersion=useRef(0);
   const pendingRequestKeys=useRef(new Map<string,string>());
+  const returnFocusRef=useRef<HTMLElement|null>(null);
   const invalidateAccess=useCallback(()=>{
     // Prevent an earlier in-flight successful GET from restoring revoked records.
     listVersion.current++;recordVersion.current++;pendingRequestKeys.current.clear();
@@ -213,7 +214,8 @@ function CompanyBoard({company,timeZone}:{company:Company;timeZone:string}) {
             {(Object.keys(stageLabel) as Stage[]).map(s=><option key={s} value={s}>{stageLabel[s]}</option>)}
           </select></label>
         <button className="jobs-erp-button" onClick={()=>void refreshList()}>Refresh</button>
-        {company.capabilities?.create&&<button className="jobs-erp-button primary" onClick={()=>{
+        {company.capabilities?.create&&<button className="jobs-erp-button primary" onClick={event=>{
+          returnFocusRef.current=event.currentTarget;
           setCreateOpen(true);setSelectedId('');setDetail(null);
         }}>New candidate</button>}
       </div>
@@ -224,13 +226,20 @@ function CompanyBoard({company,timeZone}:{company:Company;timeZone:string}) {
         <div className="jobs-erp-rail-heading">{loading?'Loading records...':rows.length+' authorized candidates'}</div>
         {!loading&&!rows.length&&<div className="jobs-erp-status">No candidate records found for this company and stage.</div>}
         {rows.map(row=><button type="button" className="jobs-erp-row" key={row.id}
-          aria-current={row.id===selectedId} onClick={()=>{setSelectedId(row.id);setCreateOpen(false);setDetail(null);}}>
+          aria-current={row.id===selectedId} onClick={event=>{
+            returnFocusRef.current=event.currentTarget;
+            setSelectedId(row.id);setCreateOpen(false);setDetail(null);
+          }}>
           <strong>{row.fullName}</strong><small>{row.roleTitle} / {stageLabel[row.stage]}</small>
           <small>{row.candidateRef}</small></button>)}
       </nav>
       <main className="jobs-erp-record">
         {(selectedId||createOpen)&&<button className="jobs-erp-button jobs-erp-back"
-          onClick={()=>{setSelectedId('');setCreateOpen(false);setDetail(null);}}>Back to candidates</button>}
+          onClick={()=>{
+            const previousControl=returnFocusRef.current;
+            setSelectedId('');setCreateOpen(false);setDetail(null);
+            requestAnimationFrame(()=>previousControl?.focus());
+          }}>Back to candidates</button>}
         {createOpen?<CreateCandidate companyId={companyId} disabled={busy}
           onSubmit={p=>submit('/candidates',p,true)}/>
         :recordLoading?<div className="jobs-erp-status" role="status">Loading protected candidate record...</div>
