@@ -10,7 +10,7 @@ const { outputText } = ts.transpileModule(source, {
 });
 const { postFulfilledSalesOrder, recordFailure } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
-function fixture({ failAudit = false, paymentStatus = 'unpaid', amountPaidKobo = 0 } = {}) {
+function fixture({ failAudit = false, paymentStatus = 'unpaid', amountPaidKobo = 0, beforeBatch } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(`
     PRAGMA foreign_keys = ON;
@@ -64,6 +64,7 @@ function fixture({ failAudit = false, paymentStatus = 'unpaid', amountPaidKobo =
       };
     },
     batch(statements) {
+      beforeBatch?.(db);
       db.exec('BEGIN IMMEDIATE');
       try {
         const results = statements.map((statement) => {
@@ -149,5 +150,21 @@ assert.equal(reversedSale.db.prepare('SELECT COUNT(*) AS count FROM journal_entr
 assert.equal(reversedSale.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 0);
 assert.equal(reversedSale.db.prepare(`SELECT status FROM finance_source_postings WHERE id='source-reversed'`).get().status, 'reversed');
 reversedSale.db.close();
+
+for (const [label, mutate] of [
+  ['sale cancellation', (db) => db.prepare(`UPDATE sales_orders SET status='cancelled' WHERE id='sale-a'`).run()],
+  ['sale refund', (db) => db.prepare(`UPDATE sales_orders SET payment_status='refunded' WHERE id='sale-a'`).run()],
+  ['fiscal period closure', (db) => db.prepare(`UPDATE fiscal_periods SET status='closed' WHERE id='period-a'`).run()],
+  ['order total change', (db) => db.prepare(`UPDATE sales_orders SET total_kobo=13000 WHERE id='sale-a'`).run()],
+  ['item cost change', (db) => db.prepare(`INSERT INTO sales_order_items(sales_order_id,quantity,unit_cost_kobo) VALUES('sale-a',1,2500)`).run()],
+]) {
+  const stale = fixture({ beforeBatch: mutate });
+  const staleResult = await postFulfilledSalesOrder(stale.env, 'sale-a');
+  assert.deepEqual(staleResult, { posted: false, reason: 'stale_eligibility' }, `${label} must be denied at the atomic claim boundary`);
+  for (const table of ['journal_entries', 'journal_lines', 'finance_receivables', 'finance_source_postings', 'audit_logs']) {
+    assert.equal(stale.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count, 0, `${label} must not create ${table}`);
+  }
+  stale.db.close();
+}
 
 console.log('PASS: sales posting audit rolls back atomically; paid flags/amounts do not create cash without cleared receipt evidence; reversed postings cannot be reposted');
