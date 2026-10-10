@@ -22,8 +22,8 @@ const checks = [
   [frontend.includes('This logs a deposit note only. It does not confirm money received or bank settlement.'), 'lead deposit note does not claim receipt'],
   [frontend.includes("type Tab='overview'|'vehicles'|'leads'|'workshop'") && frontend.includes("<Wrench size={16}/> Workshop"), 'Workshop capability remains reachable'],
   [css.includes('.autos-truth-note') && css.includes('.autos-payment-truth'), 'truth notices have dedicated non-success styling'],
-  [backend.includes("body.amountPaidNaira ?? body.depositNaira ?? 0") && backend.includes("paymentStatus = balance === 0 ? 'paid'"), 'backend still trusts client payment amounts, preserving the surfaced backend dependency'],
-  [backend.includes("['sold','delivered','retired'].includes(vehicle.status)") && !backend.includes("['reserved','sold','delivered','retired'].includes(vehicle.status)"), 'backend still allows reserved-vehicle resubmission, preserving the surfaced concurrency dependency'],
+  [backend.includes('const paid = 0;') && backend.includes("const paymentStatus = 'unpaid';") && backend.includes('deposit_kobo,amount_paid_kobo,balance_kobo') && backend.includes("salePrice, 0, paid, balance"), 'sale creation ignores client payment assertions and starts unpaid'],
+  [backend.includes("vehicle.status !== 'ready'") && backend.includes("AND status='ready' AND NOT EXISTS (SELECT 1 FROM auto_sales s WHERE s.vehicle_id=auto_vehicles.id AND s.company_id=auto_vehicles.company_id AND s.sale_status!='cancelled')") && backend.includes('WHERE changes()=1') && backend.includes('reservation.meta?.changes') && backend.includes('sale.meta?.changes'), 'ready-only vehicle reservation and sale insertion use a company-scoped database compare-and-set'],
 ];
 
 let passed=0;
