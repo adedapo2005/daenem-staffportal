@@ -3,14 +3,14 @@ import {reconcileFulfilledSalesOrders} from './finance-sales-autopost';
 
 interface Env extends AuthEnv {}
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
-const member=(context:SessionContext,companyId:string)=>context.roles.some(r=>r.code==='owner')||context.companies.some(c=>c.id===companyId);
-const canView=(context:SessionContext)=>hasPermission(context,'finance.ledger','view')||hasPermission(context,'finance.reports','view')||context.roles.some(r=>['owner','group_admin'].includes(r.code));
-const canRun=(context:SessionContext)=>hasPermission(context,'finance.journal','create')||hasPermission(context,'finance.journal','manage')||context.roles.some(r=>['owner','group_admin'].includes(r.code));
+const isOwner=(context:SessionContext)=>context.roles.some(r=>r.code==='owner');
+const member=(context:SessionContext,companyId:string)=>isOwner(context)||context.companies.some(c=>c.id===companyId);
+const canView=(context:SessionContext,companyId:string)=>isOwner(context)||hasPermission(context,'finance.ledger','view',companyId)||hasPermission(context,'finance.reports','view',companyId);
+const canRun=(context:SessionContext,companyId:string)=>isOwner(context)||hasPermission(context,'finance.journal','create',companyId)||hasPermission(context,'finance.journal','manage',companyId);
 
 async function status(request:Request,env:Env,context:SessionContext){
- if(!canView(context))return json({error:'Finance automation visibility is not assigned.'},403);
  const companyId=new URL(request.url).searchParams.get('companyId')||context.companies[0]?.id||'';
- if(!companyId||!member(context,companyId))return json({error:'Company access is not assigned.'},403);
+ if(!companyId||!member(context,companyId)||!canView(context,companyId))return json({error:'Access is not assigned.'},403);
  const [company,pending,posted,failed,recent]=await Promise.all([
    env.DB.prepare(`SELECT id,name FROM companies WHERE id=? AND active=1`).bind(companyId).first<{id:string;name:string}>(),
    env.DB.prepare(`SELECT COUNT(*) AS count,COALESCE(SUM(so.total_kobo),0) AS amountKobo FROM sales_orders so WHERE so.company_id=? AND so.status='fulfilled' AND so.payment_status!='refunded' AND NOT EXISTS(SELECT 1 FROM finance_source_postings p WHERE p.company_id=so.company_id AND p.source_module='sales' AND p.source_type='sales_order' AND p.source_id=so.id AND p.status='posted')`).bind(companyId).first<{count:number;amountKobo:number}>(),
@@ -23,9 +23,8 @@ async function status(request:Request,env:Env,context:SessionContext){
 }
 
 async function reconcile(request:Request,env:Env,context:SessionContext){
- if(!canRun(context))return json({error:'Finance Journal create/manage permission is required to run reconciliation.'},403);
  let body:{companyId?:string;limit?:number};try{body=await request.json()}catch{return json({error:'Invalid reconciliation request.'},400)}
- const companyId=String(body.companyId||context.companies[0]?.id||'');if(!companyId||!member(context,companyId))return json({error:'Company access is not assigned.'},403);
+ const companyId=String(body.companyId||context.companies[0]?.id||'');if(!companyId||!member(context,companyId)||!canRun(context,companyId))return json({error:'Access is not assigned.'},403);
  const result=await reconcileFulfilledSalesOrders(env,Math.max(1,Math.min(200,Number(body.limit||75))),companyId);
  await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,?,?,?,?,?,?)`).bind(`audit-${crypto.randomUUID()}`,context.employee.id,companyId,'finance','sales_reconciliation_run','finance_automation',companyId,JSON.stringify(result),'web').run();
  return json({ok:true,companyId,result})
