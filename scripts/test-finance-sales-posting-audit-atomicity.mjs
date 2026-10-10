@@ -10,7 +10,7 @@ const { outputText } = ts.transpileModule(source, {
 });
 const { postFulfilledSalesOrder, recordFailure } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
-function fixture({ failAudit = false, paymentStatus = 'unpaid', amountPaidKobo = 0, beforeBatch } = {}) {
+function fixture({ failAudit = false, paymentStatus = 'unpaid', amountPaidKobo = 0, periodStatus = 'open', includePeriod = true, beforeBatch } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(`
     PRAGMA foreign_keys = ON;
@@ -45,8 +45,8 @@ function fixture({ failAudit = false, paymentStatus = 'unpaid', amountPaidKobo =
     INSERT INTO finance_accounts VALUES
       ('cash-a','company-a','1000',1),('ar-a','company-a','1100',1),('inventory-a','company-a','1200',1),
       ('revenue-a','company-a','4000',1),('cogs-a','company-a','5000',1);
-    INSERT INTO fiscal_periods VALUES ('period-a','company-a','open','October 2026','2026-10-01','2026-10-31');
   `);
+  if (includePeriod) db.prepare(`INSERT INTO fiscal_periods VALUES ('period-a','company-a',?,'October 2026','2026-10-01','2026-10-31')`).run(periodStatus);
   db.prepare('UPDATE sales_orders SET payment_status=?,amount_paid_kobo=? WHERE id=?')
     .run(paymentStatus, amountPaidKobo, 'sale-a');
   if (failAudit) db.exec(`CREATE TRIGGER fail_finance_audit BEFORE INSERT ON audit_logs
@@ -101,7 +101,41 @@ await assert.rejects(postFulfilledSalesOrder(failed.env, 'sale-a'), /injected au
 for (const table of ['journal_entries', 'journal_lines', 'finance_receivables', 'finance_source_postings', 'audit_logs']) {
   assert.equal(failed.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count, 0, `${table} must roll back when audit insertion fails`);
 }
+assert.equal(failed.db.prepare('SELECT COUNT(*) AS count FROM fiscal_periods').get().count, 1,
+  'failed posting must not create or remove a fiscal period outside the atomic posting batch');
 failed.db.close();
+
+const missingPeriod = fixture({ includePeriod: false, failAudit: true });
+await assert.rejects(postFulfilledSalesOrder(missingPeriod.env, 'sale-a'), /open company fiscal period is required/);
+for (const table of ['fiscal_periods', 'journal_entries', 'journal_lines', 'finance_receivables', 'finance_source_postings', 'audit_logs']) {
+  assert.equal(missingPeriod.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count, 0,
+    `missing-period denial must leave ${table} unchanged`);
+}
+missingPeriod.db.close();
+
+const concurrentMissingPeriod = fixture({ includePeriod: false });
+const missingPeriodAttempts = await Promise.allSettled([
+  postFulfilledSalesOrder(concurrentMissingPeriod.env, 'sale-a'),
+  postFulfilledSalesOrder(concurrentMissingPeriod.env, 'sale-a'),
+]);
+assert.ok(missingPeriodAttempts.every((attempt) => attempt.status === 'rejected'),
+  'concurrent same-month attempts must both fail closed when no authorized open period exists');
+for (const table of ['fiscal_periods', 'journal_entries', 'journal_lines', 'finance_receivables', 'finance_source_postings', 'audit_logs']) {
+  assert.equal(concurrentMissingPeriod.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count, 0,
+    `concurrent missing-period attempts must leave ${table} unchanged`);
+}
+concurrentMissingPeriod.db.close();
+
+for (const status of ['soft_closed', 'closed']) {
+  const unavailablePeriod = fixture({ periodStatus: status });
+  await assert.rejects(postFulfilledSalesOrder(unavailablePeriod.env, 'sale-a'), new RegExp(`is ${status.replace('_', ' ')}`));
+  assert.equal(unavailablePeriod.db.prepare('SELECT COUNT(*) AS count FROM fiscal_periods').get().count, 1);
+  for (const table of ['journal_entries', 'journal_lines', 'finance_receivables', 'finance_source_postings', 'audit_logs']) {
+    assert.equal(unavailablePeriod.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count, 0,
+      `${status} period must not create ${table}`);
+  }
+  unavailablePeriod.db.close();
+}
 
 const concurrent = fixture();
 const concurrentResults = await Promise.all([
@@ -167,4 +201,4 @@ for (const [label, mutate] of [
   stale.db.close();
 }
 
-console.log('PASS: sales posting audit rolls back atomically; paid flags/amounts do not create cash without cleared receipt evidence; reversed postings cannot be reposted');
+console.log('PASS: sales posting requires an existing company open period; no period is created on missing/closed-period or audit-failure paths; audit rollback, payment truth, terminal state and single-winner assertions pass');
