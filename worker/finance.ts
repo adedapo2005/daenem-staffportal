@@ -48,6 +48,7 @@ async function receivePayment(request:Request,env:Env,context:SessionContext){
  try{b=await request.json()}catch{return json({error:'Invalid payment.'},400)}
  const row=await env.DB.prepare(`SELECT id,company_id AS companyId,balance_kobo AS balanceKobo,paid_kobo AS paidKobo FROM finance_receivables WHERE id=? AND status NOT IN ('paid','cancelled','written_off')`).bind(b.id||'').first<{id:string;companyId:string;balanceKobo:number;paidKobo:number}>();
  if(!row||!member(context,row.companyId)||!can(context,'finance.receivables','edit',row.companyId))return json({error:'Open receivable not found.'},404);
+ try{await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'finance','receivable_payment_verification_required','finance_receivable',?,?,'web',?)`).bind(uid('audit'),context.employee.id,row.companyId,row.id,JSON.stringify({outcome:'denied_attempt',reason:'verified_settlement_evidence_required'}),requestCorrelationId(request)).run()}catch{return json({error:'Payment verification is required. Try again later.'},503)}
  return json({error:'Payment must be verified through the authorized payment reconciliation process before updating this receivable.'},409);
 }
 
