@@ -14,7 +14,9 @@ assert.match(vault, /await encryptSocialSecret\(env, tokens\.accessToken\)/);
 assert.match(vault, /await encryptSocialSecret\(env, tokens\.refreshToken\)/);
 assert.match(vault, /await decryptSocialSecret\(env, row\.accessTokenCiphertext\)/);
 assert.match(vault, /await decryptSocialSecret\(env, row\.refreshTokenCiphertext\)/);
-assert.match(vault, /ON CONFLICT\(id\) DO UPDATE/);
+assert.match(vault, /ON CONFLICT\(id\) DO NOTHING/);
+assert.match(vault, /WHERE id='microsoft_onedrive' AND refresh_token_ciphertext=\?/);
+assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_STALE/);
 assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_DECRYPT_FAILED/);
 assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_METADATA_INVALID/);
 assert.match(vault, /ONEDRIVE_OAUTH_TOKEN_SCOPE_POLICY_INVALID/);
@@ -52,7 +54,7 @@ const env = {
         bind(...values) {
           return {
             async first() { return db.prepare(sql).get(...values); },
-            async run() { return db.prepare(sql).run(...values); }
+            async run() { return { meta: { changes: Number(db.prepare(sql).run(...values).changes) } }; }
           };
         }
       };
@@ -86,6 +88,10 @@ assert.equal(storedRow.id, 'microsoft_onedrive');
 assert.equal(storedRow.access_token_ciphertext, 'encrypted:access-secret-fixture');
 assert.equal(storedRow.refresh_token_ciphertext, 'encrypted:refresh-secret-fixture');
 assert.equal(storedRow.scopes_json, JSON.stringify(approvedTokens.scopes));
+await assert.rejects(storeOneDriveOAuthTokens(env, { ...approvedTokens, accessToken: 'overwrite-attempt' }),
+  error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_ALREADY_CONNECTED');
+assert.equal(db.prepare('SELECT access_token_ciphertext FROM storage_mirror_oauth_tokens').get().access_token_ciphertext,
+  'encrypted:access-secret-fixture', 'duplicate connection must not overwrite stored credentials');
 assert.throws(() => db.prepare("INSERT INTO storage_mirror_oauth_tokens(id,access_token_ciphertext,refresh_token_ciphertext,expires_at) VALUES('other-provider','a','b','x')").run(), /CHECK/);
 await assert.rejects(storeOneDriveOAuthTokens(env, { ...approvedTokens, scopes: ['Files.ReadWrite.All'] }),
   error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
@@ -106,6 +112,7 @@ await writeStoredRow(JSON.stringify(approvedTokens.scopes), 'encrypted:access', 
 await expectReadError({ env }, 'ONEDRIVE_OAUTH_TOKEN_EXPIRY_INVALID');
 await writeStoredRow(JSON.stringify(approvedTokens.scopes), 'encrypted:access', 'encrypted:refresh', '2020-01-01T00:00:00.000Z');
 assert.equal((await resolveOneDriveOAuthTokens(env)).refreshRequired, true);
+db.prepare('DELETE FROM storage_mirror_oauth_tokens').run(); // Isolated in-memory fixture reset.
 await storeOneDriveOAuthTokens(env, approvedTokens);
 const resolvedTokens = await resolveOneDriveOAuthTokens(env);
 assert.deepEqual(resolvedTokens, {
@@ -115,11 +122,30 @@ assert.deepEqual(resolvedTokens, {
   scopes: approvedTokens.scopes,
   refreshRequired: false
 });
-await storeOneDriveOAuthTokens(env, { ...approvedTokens, accessToken: 'rotated-access-fixture' });
-assert.equal(db.prepare('SELECT COUNT(*) AS count FROM storage_mirror_oauth_tokens').get().count, 1,
-  'token refresh upsert preserves the single-provider vault row');
+const originalCiphertext = db.prepare('SELECT refresh_token_ciphertext FROM storage_mirror_oauth_tokens').get().refresh_token_ciphertext;
+const competingRefreshes = await Promise.allSettled([
+  storeOneDriveOAuthTokens(env, { ...approvedTokens, accessToken: 'winner-access', refreshToken: 'winner-refresh' }, originalCiphertext),
+  storeOneDriveOAuthTokens(env, { ...approvedTokens, accessToken: 'loser-access', refreshToken: 'loser-refresh' }, originalCiphertext),
+]);
+assert.equal(competingRefreshes.filter((item) => item.status === 'fulfilled').length, 1,
+  'competing refresh rotations must have exactly one winner');
+assert.equal(competingRefreshes.filter((item) => item.status === 'rejected' &&
+  item.reason?.message === 'ONEDRIVE_OAUTH_TOKEN_STALE').length, 1);
+assert.equal(db.prepare('SELECT COUNT(*) AS count FROM storage_mirror_oauth_tokens').get().count, 1);
+const winningRow = db.prepare('SELECT access_token_ciphertext,refresh_token_ciphertext FROM storage_mirror_oauth_tokens').get();
+assert.equal(winningRow.access_token_ciphertext, 'encrypted:winner-access');
+assert.equal(winningRow.refresh_token_ciphertext, 'encrypted:winner-refresh');
+await assert.rejects(storeOneDriveOAuthTokens(env, { ...approvedTokens, accessToken: 'replayed-stale-access' }, originalCiphertext),
+  error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_STALE');
 assert.equal(db.prepare('SELECT access_token_ciphertext FROM storage_mirror_oauth_tokens').get().access_token_ciphertext,
-  'encrypted:rotated-access-fixture');
+  'encrypted:winner-access', 'losing refresh/replay must not change the new token');
+await assert.rejects(storeOneDriveOAuthTokens(env, approvedTokens, ''),
+  error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_ROTATION_GUARD_INVALID');
+db.prepare('DELETE FROM storage_mirror_oauth_tokens').run(); // Simulated revocation, in memory ONLY.
+await assert.rejects(storeOneDriveOAuthTokens(env, approvedTokens, winningRow.refresh_token_ciphertext),
+  error => error?.message === 'ONEDRIVE_OAUTH_TOKEN_STALE');
+assert.equal(db.prepare('SELECT COUNT(*) AS count FROM storage_mirror_oauth_tokens').get().count, 0,
+  'revoked OAuth connection must not be silently recreated by a late refresh');
 
 db.close();
 console.log('OneDrive OAuth token vault boundary: static assertions + isolated SQLite migration/store/read/error behavior PASS');
