@@ -4,8 +4,9 @@ import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
-const [source, coreMigration, payrollMigration, permissionOverridesMigration] = await Promise.all([
+const [source, authSource, coreMigration, payrollMigration, permissionOverridesMigration] = await Promise.all([
   read('../worker/payroll-bank-draft.ts'),
+  read('../worker/auth.ts'),
   read('../migrations/0001_core.sql'),
   read('../migrations/0035_group_erp_operational.sql'),
   read('../migrations/0019_employee_permission_overrides_v2.sql')
@@ -14,6 +15,10 @@ const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind
 const exports = {};
 new Function('exports', 'require', js)(exports, () => ({ hasPermission: (context, key, _level, companyId) => context.companyPermissions?.[companyId]?.[key] === 'edit' }));
 const { promoteVerifiedEmployeeBankAccount } = exports;
+const roleQuery = authSource.match(/const rolesResult = await env\.DB\.prepare\(`([\s\S]*?)`\)/)?.[1];
+const permissionQuery = authSource.match(/const permissionRows = await env\.DB\.prepare\(`([\s\S]*?)`\)/)?.[1];
+assert.ok(roleQuery, 'canonical session role query is present');
+assert.ok(permissionQuery, 'canonical session permission query is present');
 
 function migrationTable(sql, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -22,7 +27,7 @@ function migrationTable(sql, name) {
   return match[0];
 }
 
-function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, denyActorPermission = false, failAudit = false } = {}) {
+function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, deactivateActorRoleAfterPendingRead = false, denyActorPermission = false, failAudit = false, actorRoleCompanyId = 'company-a', actorRoleActive = 1, ownerRoleCompanyId = null } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys=ON; CREATE TABLE companies(id TEXT PRIMARY KEY); CREATE TABLE employees(id TEXT PRIMARY KEY); CREATE TABLE company_locations(id TEXT PRIMARY KEY);');
   db.exec(migrationTable(coreMigration, 'employee_company_memberships'));
@@ -31,13 +36,14 @@ function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendin
   db.exec(migrationTable(coreMigration, 'audit_logs'));
   db.exec(migrationTable(payrollMigration, 'employee_bank_accounts'));
   db.prepare('INSERT INTO companies(id) VALUES(?)').run('company-a');
+  db.prepare('INSERT INTO companies(id) VALUES(?)').run('company-b');
   db.prepare('INSERT INTO employees(id) VALUES(?)').run('employee-a');
   db.prepare('INSERT INTO employees(id) VALUES(?)').run('actor-a');
   db.prepare('INSERT INTO employees(id) VALUES(?)').run('owner-a');
   db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('membership-a', 'employee-a', 'company-a');
   db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('actor-membership-a', 'actor-a', 'company-a');
-  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,1)').run('payroll-role-a', 'company-a', 'payroll-manager', 'Payroll Manager');
-  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,1)').run('owner-role-a', null, 'owner', 'Owner');
+  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,?)').run('payroll-role-a', actorRoleCompanyId, 'payroll-manager', 'Payroll Manager', actorRoleActive);
+  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,1)').run('owner-role-a', ownerRoleCompanyId, 'owner', 'Owner');
   db.prepare('INSERT INTO permissions(id,code,module,action) VALUES(?,?,?,?)').run('payroll-access', 'payroll.access', 'payroll', 'access');
   db.prepare('INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,?,?)').run('payroll-role-grant', 'payroll-role-a', 'payroll-access', 'edit');
   db.prepare('INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES(?,?,?,?)').run('actor-payroll-role', 'actor-a', 'company-a', 'payroll-role-a');
@@ -66,6 +72,9 @@ function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendin
           }
           if (revokeActorGrantAfterPendingRead && sql.includes('FROM employee_bank_accounts candidate') && row && pendingReadCount++ === 0) {
             db.prepare('DELETE FROM employee_roles WHERE employee_id=? AND company_id=? AND role_id=?').run('actor-a', 'company-a', 'payroll-role-a');
+          }
+          if (deactivateActorRoleAfterPendingRead && sql.includes('FROM employee_bank_accounts candidate') && row && pendingReadCount++ === 0) {
+            db.prepare('UPDATE roles SET active=0 WHERE id=?').run('payroll-role-a');
           }
           return row;
         }
@@ -98,6 +107,32 @@ const context = {
   companyPermissions: { 'company-a': { 'payroll.access': 'edit' } }
 };
 const input = { companyId: 'company-a', employeeId: 'employee-a', bankAccountId: 'candidate-a', verificationSource: 'bank', verificationReference: 'promotion-123', verifiedAt: '2026-10-10T12:00:00.000Z' };
+
+{
+  const { db } = createDatabase();
+  const rows = db.prepare(permissionQuery).all('actor-a');
+  assert.deepEqual(rows.map(row => [row.companyId, row.code, row.accessLevel]), [['company-a', 'payroll.access', 'edit']], 'active role scoped to its assigned company contributes its permission');
+  assert.deepEqual(db.prepare(roleQuery).all('owner-a').map(row => row.code), ['owner'], 'global Owner role remains available to group Owner authority');
+  db.close();
+}
+
+{
+  const { db } = createDatabase({ actorRoleActive: 0 });
+  assert.equal(db.prepare(permissionQuery).all('actor-a').length, 0, 'inactive role grants no session permission');
+  db.close();
+}
+
+{
+  const { db } = createDatabase({ actorRoleCompanyId: 'company-b' });
+  assert.equal(db.prepare(permissionQuery).all('actor-a').length, 0, 'role scoped to another company grants no session permission');
+  db.close();
+}
+
+{
+  const { db } = createDatabase({ ownerRoleCompanyId: 'company-b' });
+  assert.equal(db.prepare(roleQuery).all('owner-a').length, 0, 'company-scoped Owner role cannot become group Owner authority');
+  db.close();
+}
 const request = new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-promotion-test' } });
 
 {
@@ -108,6 +143,16 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
   assert.equal(db.prepare("SELECT is_primary,verified_at FROM employee_bank_accounts WHERE id='candidate-a'").get().is_primary, 1);
   assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 1);
   assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE action='verify_employee_bank'").get().request_id, 'sqlite-promotion-test');
+  db.close();
+}
+
+{
+  const { db, adapter } = createDatabase({ ownerRoleCompanyId: 'company-b' });
+  const ownerContext = { ...context, employee: { id: 'owner-a' }, roles: [{ code: 'owner' }], companies: [], companyPermissions: {} };
+  const response = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, ownerContext, input);
+  assert.equal(response.status, 404, 'company-scoped Owner role cannot act as group Owner across companies');
+  assert.equal(db.prepare("SELECT is_primary FROM employee_bank_accounts WHERE id='primary-a'").get().is_primary, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 0);
   db.close();
 }
 
@@ -143,6 +188,25 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
 }
 
 {
+  const { db, adapter } = createDatabase({ deactivateActorRoleAfterPendingRead: true });
+  const response = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
+  assert.equal(response.status, 404, 'acting employee inactive Payroll role after preflight denies promotion');
+  assert.equal(db.prepare("SELECT is_primary FROM employee_bank_accounts WHERE id='primary-a'").get().is_primary, 1);
+  assert.equal(db.prepare("SELECT verified_at FROM employee_bank_accounts WHERE id='candidate-a'").get().verified_at, null);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 0);
+  db.close();
+}
+
+{
+  const { db, adapter } = createDatabase({ actorRoleCompanyId: 'company-b' });
+  const response = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
+  assert.equal(response.status, 404, 'Payroll role scoped to another company denies promotion');
+  assert.equal(db.prepare("SELECT is_primary FROM employee_bank_accounts WHERE id='primary-a'").get().is_primary, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 0);
+  db.close();
+}
+
+{
   const { db, adapter } = createDatabase({ denyActorPermission: true });
   const response = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
   assert.equal(response.status, 404, 'current explicit company deny overrides the stale session grant');
@@ -170,4 +234,4 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
   db.close();
 }
 
-console.log('PASS payroll bank promotion SQLite: authorized promotion, target and actor revocation, actor role revocation, deny-wins override, Owner group authority, and required-audit rollback (7 scenarios)');
+console.log('PASS payroll bank promotion SQLite: canonical active/company-scoped session grants, target and actor revocation, role deactivation and company mismatch, deny-wins override, Owner group authority, and required-audit rollback');

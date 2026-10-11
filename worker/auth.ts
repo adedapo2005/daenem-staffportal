@@ -463,15 +463,19 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
     SELECT r.id, r.code, r.name, er.company_id AS companyId
     FROM employee_roles er JOIN roles r ON r.id = er.role_id
     WHERE er.employee_id = ? AND r.active = 1
+      AND (r.company_id IS NULL OR r.company_id = er.company_id)
+      AND (r.code <> 'owner' OR r.company_id IS NULL)
     ORDER BY r.is_system DESC, r.name
   `).bind(employeeId).all<Record<string, unknown>>();
 
   const permissionRows = await env.DB.prepare(`
     SELECT er.company_id AS companyId, p.code, rp.access_level AS accessLevel
     FROM employee_roles er
+    JOIN roles r ON r.id = er.role_id AND r.active = 1
     JOIN role_permissions rp ON rp.role_id = er.role_id
     JOIN permissions p ON p.id = rp.permission_id
     WHERE er.employee_id = ?
+      AND (r.company_id IS NULL OR r.company_id = er.company_id)
   `).bind(employeeId).all<{ companyId?: string; code: string; accessLevel: AccessLevel }>();
 
   const legacyOverrides = await env.DB.prepare(`
