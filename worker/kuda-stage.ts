@@ -64,7 +64,16 @@ export async function getKudaStageBankList(
 
   if (!response.ok) throw new Error('Kuda stage bank reference data is unavailable.');
   try {
-    return { requestRef, payload: await response.json() as unknown };
+    const payload: unknown = await response.json();
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new Error('invalid response shape');
+    }
+    const envelope = payload as { status?: unknown; data?: unknown };
+    if (envelope.status !== true || !Array.isArray(envelope.data)
+      || envelope.data.some((bank) => !bank || typeof bank !== 'object' || Array.isArray(bank))) {
+      throw new Error('invalid response shape');
+    }
+    return { requestRef, payload };
   } catch {
     throw new Error('Kuda stage bank reference data is unavailable.');
   }

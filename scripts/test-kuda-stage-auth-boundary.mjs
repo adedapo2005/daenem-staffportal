@@ -78,4 +78,26 @@ assert.deepEqual(bankList.payload, { status: true, data: [{ bankCode: '999129', 
 await assert.rejects(() => getBankList(goodStage, async (url) => String(url).endsWith('/Account/GetToken')
   ? new Response('header.payload.signature', { status: 200 })
   : new Response('provider detail', { status: 502 })), /bank reference data is unavailable/);
+for (const [name, payload] of [
+  ['provider rejection', { status: false, message: 'synthetic provider rejection', data: null }],
+  ['missing status', { data: [{ bankCode: '999129', bankName: 'Synthetic UAT Bank' }] }],
+  ['missing bank list', { status: true }],
+  ['non-array bank list', { status: true, data: { bankCode: '999129' } }],
+  ['malformed bank row', { status: true, data: [null] }],
+]) {
+  let callsForFailure = 0;
+  await assert.rejects(() => getBankList(goodStage, async (url) => {
+    callsForFailure++;
+    return String(url).endsWith('/Account/GetToken')
+      ? new Response('header.payload.signature', { status: 200 })
+      : new Response(JSON.stringify(payload), { status: 200 });
+  }), (error) => {
+    assert.equal(error.message, 'Kuda stage bank reference data is unavailable.', `${name} uses a neutral error`);
+    for (const sensitive of ['synthetic provider rejection', 'header.payload.signature', 'nonsecret-test-value']) {
+      assert.equal(error.message.includes(sensitive), false, `${name} does not disclose provider or credential data`);
+    }
+    return true;
+  });
+  assert.equal(callsForFailure, 2, `${name} makes one fake token and one fake UAT request`);
+}
 console.log('PASS: Kuda stage auth guard blocks production/bootstrap and missing config; UAT-only auth and BANK_LIST request, reference, redirects, raw JWT validation, and neutral provider failures verified. No live provider call made.');
