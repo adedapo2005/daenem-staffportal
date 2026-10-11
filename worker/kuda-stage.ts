@@ -78,3 +78,53 @@ export async function getKudaStageBankList(
     throw new Error('Kuda stage bank reference data is unavailable.');
   }
 }
+
+/**
+ * Performs a read-only UAT account-name enquiry. The returned provider payload is
+ * evidence for a caller to validate; it does not itself authorize bank-account
+ * promotion or any payment state transition.
+ */
+export async function queryKudaStageNameEnquiry(
+  env: KudaStageEnv,
+  input: { accountNumber: string; bankCode: string },
+  fetcher: typeof fetch = fetch,
+): Promise<{ requestRef: string; payload: unknown }> {
+  const accountNumber = typeof input?.accountNumber === 'string' ? input.accountNumber.trim() : '';
+  const bankCode = typeof input?.bankCode === 'string' ? input.bankCode.trim() : '';
+  if (!accountNumber || !/^\d{1,32}$/.test(accountNumber) || !bankCode || !/^\d{1,32}$/.test(bankCode)) {
+    throw new Error('Kuda stage account validation input is invalid.');
+  }
+
+  const token = await getKudaStageAccessToken(env, fetcher);
+  const requestRef = `NAME${Date.now().toString(36).toUpperCase()}${crypto.randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase()}`;
+  let response: Response;
+  try {
+    response = await fetcher(KUDA_UAT_API_URL, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        serviceType: 'NAME_ENQUIRY',
+        requestRef,
+        data: { accountNumber, bankCode },
+      }),
+      redirect: 'error',
+    });
+  } catch {
+    throw new Error('Kuda stage account validation is unavailable.');
+  }
+
+  if (!response.ok) throw new Error('Kuda stage account validation is unavailable.');
+  try {
+    const payload: unknown = await response.json();
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload) ||
+        (payload as { status?: unknown }).status !== true || !('data' in payload)) {
+      throw new Error('invalid response shape');
+    }
+    return { requestRef, payload };
+  } catch {
+    throw new Error('Kuda stage account validation is unavailable.');
+  }
+}

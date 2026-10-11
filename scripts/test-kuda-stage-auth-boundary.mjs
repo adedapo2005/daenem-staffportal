@@ -14,8 +14,10 @@ const module = { exports: {} };
 vm.runInNewContext(compiled, { module, exports: module.exports, crypto: globalThis.crypto }, { filename: 'worker/kuda-stage.ts' });
 const getToken = module.exports.getKudaStageAccessToken;
 const getBankList = module.exports.getKudaStageBankList;
+const queryNameEnquiry = module.exports.queryKudaStageNameEnquiry;
 assert.equal(typeof getToken, 'function');
 assert.equal(typeof getBankList, 'function');
+assert.equal(typeof queryNameEnquiry, 'function');
 
 let calls = 0;
 let requestUrl = '';
@@ -100,4 +102,45 @@ for (const [name, payload] of [
   });
   assert.equal(callsForFailure, 2, `${name} makes one fake token and one fake UAT request`);
 }
-console.log('PASS: Kuda stage auth guard blocks production/bootstrap and missing config; UAT-only auth and BANK_LIST request, reference, redirects, raw JWT validation, and neutral provider failures verified. No live provider call made.');
+
+let enquiryCalls = 0;
+let enquiryRequest;
+const enquiryFetch = async (url, init) => {
+  enquiryCalls++;
+  if (String(url).endsWith('/Account/GetToken')) return new Response('header.payload.signature', { status: 200 });
+  enquiryRequest = { url: String(url), init };
+  return new Response(JSON.stringify({ status: true, data: { accountName: 'Synthetic UAT Beneficiary' } }), { status: 200 });
+};
+await assert.rejects(() => queryNameEnquiry({ ...goodStage, APP_STAGE: 'production' }, { accountNumber: '0123456789', bankCode: '999129' }, enquiryFetch), /outside an explicit stage/);
+assert.equal(enquiryCalls, 0, 'production enquiry is rejected before token acquisition');
+await assert.rejects(() => queryNameEnquiry(goodStage, { accountNumber: 'bad-account', bankCode: '999129' }, enquiryFetch), /input is invalid/);
+assert.equal(enquiryCalls, 0, 'invalid account identifiers are rejected before token acquisition');
+const enquiry = await queryNameEnquiry(goodStage, { accountNumber: '0123456789', bankCode: '999129' }, enquiryFetch);
+assert.equal(enquiryCalls, 2, 'name enquiry makes one fake token and one UAT request');
+assert.equal(enquiryRequest.url, 'https://kuda-openapi-uat.kudabank.com/v2.1');
+assert.equal(enquiryRequest.init.method, 'POST');
+assert.equal(enquiryRequest.init.redirect, 'error');
+assert.match(enquiryRequest.init.headers.authorization, /^Bearer header\.payload\.signature$/);
+const enquiryBody = JSON.parse(enquiryRequest.init.body);
+assert.equal(enquiryBody.serviceType, 'NAME_ENQUIRY');
+assert.match(enquiryBody.requestRef, /^NAME[A-Z0-9]+$/);
+assert.deepEqual(enquiryBody.data, { accountNumber: '0123456789', bankCode: '999129' });
+assert.deepEqual(enquiry.payload, { status: true, data: { accountName: 'Synthetic UAT Beneficiary' } });
+assert.equal(Object.hasOwn(enquiry, 'verified'), false, 'provider payload is not promoted into a StaffPortal verification decision');
+for (const [name, response] of [
+  ['provider rejection', new Response(JSON.stringify({ status: false, message: 'synthetic rejection', data: null }), { status: 200 })],
+  ['HTTP failure', new Response('synthetic provider detail', { status: 502 })],
+  ['invalid payload', new Response('{not-json', { status: 200 })],
+]) {
+  const start = enquiryCalls;
+  await assert.rejects(() => queryNameEnquiry(goodStage, { accountNumber: '0123456789', bankCode: '999129' }, async (url) =>
+    String(url).endsWith('/Account/GetToken') ? new Response('header.payload.signature', { status: 200 }) : response), (error) => {
+    assert.equal(error.message, 'Kuda stage account validation is unavailable.', `${name} uses a neutral error`);
+    for (const sensitive of ['synthetic rejection', 'synthetic provider detail', 'header.payload.signature', 'nonsecret-test-value']) {
+      assert.equal(error.message.includes(sensitive), false, `${name} does not disclose provider or credential data`);
+    }
+    return true;
+  });
+  assert.equal(enquiryCalls, start, `${name} uses its isolated fetcher`);
+}
+console.log('PASS: Kuda stage auth guard blocks production/bootstrap and missing config; UAT-only auth, BANK_LIST, and read-only NAME_ENQUIRY request references, redirects, bounded input, response failures, and neutral errors verified. No live provider call made.');
