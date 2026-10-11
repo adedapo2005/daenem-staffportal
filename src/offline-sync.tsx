@@ -110,6 +110,14 @@ function isNeedsAttention(state: OfflineOperationState) {
   return ['needs-review', 'failed-terminal'].includes(state);
 }
 
+// Mirror the actual Worker offline bootstrap grants; the Worker remains authoritative.
+function permitsOfflineKind(context: WorkforceContext, companyId: string, kind: OfflineOperation['kind']) {
+  if (!context.companies.some((company) => company.id === companyId)) return false;
+  if (context.roles.some((role) => role.code === 'owner')) return true;
+  const grant = context.companyPermissions?.[companyId]?.[kind === 'forms.submit' ? 'forms.access' : 'expense.requests'] || 'none';
+  return (kind === 'forms.submit' ? ['view', 'create', 'edit', 'approve', 'manage'] : ['create', 'edit', 'approve', 'manage']).includes(grant);
+}
+
 function formatTime(value?: string | null, timeZone?: string) {
   return formatPortalDateTime(value, timeZone) || 'Not recorded';
 }
@@ -146,7 +154,8 @@ function statusIcon(status: SyncStatus) {
 
 export function OfflinePlatformProvider({ context, children }: { context: WorkforceContext; children: ReactNode }) {
   const identities = useMemo(() => identitiesFor(context), [context]);
-  const scopeKey = identities.map((identity) => identity.employeeId + ':' + identity.companyId).sort().join('|');
+  // A same-company session, role or grant change must invalidate prior offline callbacks and local activity.
+  const scopeKey = identities.map((identity) => identity.employeeId + ':' + identity.companyId).sort().join('|') + ':' + JSON.stringify([context.sessionId, context.roles, context.permissions, context.companyPermissions]);
   const previousScope = useRef(scopeKey);
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
   const [operations, setOperations] = useState<OfflineOperation[]>([]);
@@ -167,6 +176,12 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
   useEffect(() => { onlineRef.current = online; }, [online]);
   useEffect(() => { lastSuccessfulRef.current = lastSuccessfulSync; }, [lastSuccessfulSync]);
 
+  const ensureCurrentGrant = useCallback((companyId: string, kind: OfflineOperation['kind']) => {
+    if (previousScope.current !== scopeKey || !permitsOfflineKind(context, companyId, kind)) {
+      throw new Error('Offline access for this company has changed. Refresh your permissions before continuing.');
+    }
+  }, [context, scopeKey]);
+
   const refreshOperations = useCallback(async () => {
     const generation = ++refreshGeneration.current;
     try {
@@ -180,7 +195,9 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
         const current = latestById.get(item.id);
         if (!current || item.updatedAt >= current.updatedAt) latestById.set(item.id, item);
       }
-      const next = [...latestById.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      const next = [...latestById.values()]
+        .filter((item) => permitsOfflineKind(context, item.companyId, item.kind))
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       // Broadcast notifications and sync completion can cause overlapping
       // IndexedDB reads. An older read must never put a stale waiting state
       // back over a newer synced result.
@@ -194,9 +211,10 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       if (receiptTimes.length) setLastSuccessfulSync(receiptTimes.sort().at(-1) || null);
       return next;
     } catch {
-      return operationsRef.current.filter((item) => identities.some((identity) => identity.employeeId === item.employeeId && identity.companyId === item.companyId));
+      return operationsRef.current.filter((item) => identities.some((identity) => identity.employeeId === item.employeeId && identity.companyId === item.companyId)
+        && permitsOfflineKind(context, item.companyId, item.kind));
     }
-  }, [identities, scopeKey]);
+  }, [context, identities, scopeKey]);
 
   const sendTelemetry = useCallback(async (nextStatus: SyncStatus, nextOperations: OfflineOperation[], successfulAt?: string) => {
     if (previousScope.current !== scopeKey || !onlineRef.current || Date.now() - lastTelemetryAt.current < 30_000) return;
@@ -254,7 +272,8 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
           await registerOfflineBackgroundSync();
           if (!sameScope()) return;
           // An already-started network operation still requires server revocation checks.
-          const result = await syncQueuedOperations(identity, { ignoreBackoff });
+          const allowedKinds = bootstrap.policy.allowedOperations.filter((kind) => permitsOfflineKind(context, identity.companyId, kind));
+          const result = await syncQueuedOperations(identity, { ignoreBackoff, allowedKinds, stillAuthorized: sameScope });
           if (!sameScope()) return;
           syncedCount += result.synced;
           if (result.authRequired > 0) authenticationRequired = true;
@@ -362,67 +381,87 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
 
   const queueDraft = useCallback(async (input: FormsDraftInput, companyId?: string) => {
     const identity = identityFor(context, companyId);
+    ensureCurrentGrant(identity.companyId, 'forms.submit');
     const current = await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'forms.submit');
     const policy = bootstrapByCompany.current.get(identity.companyId)?.policy;
     const activeCount = current.filter((item) => item.state !== 'synced' && item.state !== 'local-draft').length;
     if (policy && activeCount >= policy.maxQueueCount) throw new Error('Your offline queue is full. Retry existing work before adding another submission.');
     const result = await saveFormsDraft(identity, input);
     await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'forms.submit');
     await registerOfflineBackgroundSync();
     return result;
-  }, [context, refreshOperations]);
+  }, [context, ensureCurrentGrant, refreshOperations]);
 
   const queueSubmission = useCallback(async (input: FormsDraftInput, companyId?: string) => {
     if (!input.supportedForOfflineSubmit) throw new Error('This form is saved as a local draft because it requires a live connection.');
     const identity = identityFor(context, companyId);
+    ensureCurrentGrant(identity.companyId, 'forms.submit');
     const current = await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'forms.submit');
     const policy = bootstrapByCompany.current.get(identity.companyId)?.policy;
     const activeCount = current.filter((item) => item.state !== 'synced' && item.state !== 'local-draft').length;
     if (policy && activeCount >= policy.maxQueueCount) throw new Error('Your offline queue is full. Retry existing work before adding another submission.');
     const result = await queueFormsSubmission(identity, input);
     const next = await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'forms.submit');
     setStatus(navigator.onLine ? 'waiting' : 'offline');
     await sendTelemetry(navigator.onLine ? 'waiting' : 'offline', next);
+    ensureCurrentGrant(identity.companyId, 'forms.submit');
     await registerOfflineBackgroundSync();
     return result;
-  }, [context, refreshOperations, sendTelemetry]);
+  }, [context, ensureCurrentGrant, refreshOperations, sendTelemetry]);
 
   const queueExpenseDraft = useCallback(async (input: ExpenseDraftInput, companyId?: string) => {
     const identity = identityFor(context, companyId);
+    ensureCurrentGrant(identity.companyId, 'expense.draft.save');
     const current = await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'expense.draft.save');
     const policy = bootstrapByCompany.current.get(identity.companyId)?.policy;
     const activeCount = current.filter((item) => item.state !== 'synced' && item.state !== 'local-draft').length;
     if (policy && activeCount >= policy.maxQueueCount) throw new Error('Your offline queue is full. Retry existing work before adding another submission.');
     const result = await saveExpenseDraft(identity, input);
     await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'expense.draft.save');
     await registerOfflineBackgroundSync();
     return result;
-  }, [context, refreshOperations]);
+  }, [context, ensureCurrentGrant, refreshOperations]);
 
   const queueExpenseSubmit = useCallback(async (input: ExpenseDraftInput & { operationId?: string }, companyId?: string) => {
     const identity = identityFor(context, companyId);
+    ensureCurrentGrant(identity.companyId, 'expense.request.submit');
     const current = await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'expense.request.submit');
     const policy = bootstrapByCompany.current.get(identity.companyId)?.policy;
     const activeCount = current.filter((item) => item.state !== 'synced' && item.state !== 'local-draft').length;
     if (policy && activeCount >= policy.maxQueueCount) throw new Error('Your offline queue is full. Retry existing work before adding another submission.');
     const result = await queueExpenseSubmissionLocal(identity, input);
     const next = await refreshOperations();
+    ensureCurrentGrant(identity.companyId, 'expense.request.submit');
     setStatus(navigator.onLine ? 'waiting' : 'offline');
     await sendTelemetry(navigator.onLine ? 'waiting' : 'offline', next);
+    ensureCurrentGrant(identity.companyId, 'expense.request.submit');
     await registerOfflineBackgroundSync();
     return result;
-  }, [context, refreshOperations, sendTelemetry]);
+  }, [context, ensureCurrentGrant, refreshOperations, sendTelemetry]);
 
   const readDraft = useCallback(async (assignmentId: string, companyId?: string) => {
-    return readFormsDraft(identityFor(context, companyId), assignmentId);
-  }, [context]);
+    const identity = identityFor(context, companyId);
+    if (previousScope.current !== scopeKey || !permitsOfflineKind(context, identity.companyId, 'forms.submit')) return null;
+    const draft = await readFormsDraft(identity, assignmentId);
+    return previousScope.current === scopeKey && permitsOfflineKind(context, identity.companyId, 'forms.submit') ? draft : null;
+  }, [context, scopeKey]);
 
   // Scope-filter synchronously before render; an auth/company change must never
   // show the previous employee's queued titles, receipts or status counts.
   const visibleOperations = useMemo(() => {
+    // Never render old-session activity during a grant change, even for one frame.
+    if (previousScope.current !== scopeKey) return [];
     const permitted = new Set(identities.map((identity) => identity.employeeId + ':' + identity.companyId));
-    return operations.filter((item) => permitted.has(item.employeeId + ':' + item.companyId));
-  }, [identities, operations]);
+    return operations.filter((item) => permitted.has(item.employeeId + ':' + item.companyId)
+      && permitsOfflineKind(context, item.companyId, item.kind));
+  }, [context, identities, operations, scopeKey]);
   const waitingCount = visibleOperations.filter((item) => isPending(item.state)).length;
   const needsAttentionCount = visibleOperations.filter((item) => isNeedsAttention(item.state)).length;
   useEffect(() => {

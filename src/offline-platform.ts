@@ -746,7 +746,7 @@ export async function syncExpenseSubmission(identity: OfflineIdentity, operation
 
 type SyncRunResult = { processed: number; synced: number; needsReview: number; authRequired: number; retryable: number; skipped: boolean };
 
-export async function syncQueuedOperations(identity: OfflineIdentity, options: { ignoreBackoff?: boolean } = {}): Promise<SyncRunResult> {
+export async function syncQueuedOperations(identity: OfflineIdentity, options: { ignoreBackoff?: boolean; allowedKinds?: OfflineOperationKind[]; stillAuthorized?: () => boolean } = {}): Promise<SyncRunResult> {
   const empty: SyncRunResult = { processed: 0, synced: 0, needsReview: 0, authRequired: 0, retryable: 0, skipped: false };
   if (typeof navigator !== 'undefined' && !navigator.onLine) return empty;
   const namespace = namespaceFor(identity);
@@ -754,6 +754,9 @@ export async function syncQueuedOperations(identity: OfflineIdentity, options: {
   const execute = async () => {
     const operations = await namespaceOperations(identity);
     for (const operation of operations) {
+      if (options.stillAuthorized && !options.stillAuthorized()) break;
+      // Revoked or policy-disallowed kinds stay encrypted locally, not replayed.
+      if (options.allowedKinds && !options.allowedKinds.includes(operation.kind)) continue;
       if (!['waiting-to-sync', 'failed-retryable'].includes(operation.state)) continue;
       if (!options.ignoreBackoff && operation.nextAttemptAt && new Date(operation.nextAttemptAt).getTime() > Date.now()) continue;
       result = { ...result, processed: result.processed + 1 };

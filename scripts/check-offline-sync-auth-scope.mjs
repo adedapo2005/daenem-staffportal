@@ -30,7 +30,49 @@ check('all offline read identities remain employee and company scoped', () => as
 check('scope key captures employee and each assigned company', () => assert.match(source, /const scopeKey = identities\.map\(\(identity\) => identity\.employeeId \+ ':' \+ identity\.companyId\)/));
 check('scope changes invalidate outstanding IndexedDB refreshes', () => assert.match(source, /previousScope\.current = scopeKey;\s*refreshGeneration\.current \+= 1/));
 check('scope changes purge previous operation state and sync receipts', () => assert.match(source, /operationsRef\.current = \[\];[\s\S]*?setOperations\(\[\]\);\s*setLastSuccessfulSync\(null\)/));
-check('current render filters operations by employee and authorized company', () => assert.match(source, /return operations\.filter\(\(item\) => permitted\.has\(item\.employeeId \+ ':' \+ item\.companyId\)\)/));
+check('current render quarantines revoked Forms without hiding authorized Expense or crossing identity', () => {
+  // Execute the actual visibleOperations render callback and current grant predicate.
+  const parsed = ts.createSourceFile('offline-sync.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let renderCallback;
+  const findRender = (node) => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(parsed) === 'visibleOperations'
+      && node.initializer && ts.isCallExpression(node.initializer)) {
+      renderCallback = node.initializer.arguments[0];
+    }
+    ts.forEachChild(node, findRender);
+  };
+  findRender(parsed);
+  assert.ok(renderCallback && ts.isArrowFunction(renderCallback), 'visibleOperations render callback must exist');
+  const grantStart = source.indexOf('function permitsOfflineKind(');
+  const grantEnd = source.indexOf('function formatTime(', grantStart);
+  assert.ok(grantStart >= 0 && grantEnd > grantStart, 'current company grant predicate must exist');
+  const runnable = ts.transpileModule(
+    source.slice(grantStart, grantEnd) + '\nconst project = ' + renderCallback.getText(parsed) + ';',
+    { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } },
+  ).outputText;
+  const project = new Function('identities', 'operations', 'previousScope', 'scopeKey', 'context',
+    runnable + '\nreturn project();');
+  const revoked = {
+    employee, companies,
+    roles: [{ id: 'staff-a', code: 'staff', companyId: 'company-a' }],
+    companyPermissions: { 'company-a': { 'forms.access': 'none', 'expense.requests': 'create' } },
+  };
+  const queue = [
+    { id: 'revoked-form', employeeId: 'employee-a', companyId: 'company-a', kind: 'forms.submit' },
+    { id: 'authorized-expense', employeeId: 'employee-a', companyId: 'company-a', kind: 'expense.request.submit' },
+    { id: 'cross-company', employeeId: 'employee-a', companyId: 'company-hidden', kind: 'forms.submit' },
+    { id: 'cross-employee', employeeId: 'employee-hidden', companyId: 'company-a', kind: 'expense.request.submit' },
+  ];
+  const identities = identitiesFor(revoked);
+  const visible = (scope, current, auth) => project(identities, queue, { current: scope }, current, auth).map((item) => item.id);
+  assert.deepEqual(visible('session-a', 'session-a', revoked), ['authorized-expense'],
+    'revoked Forms, other company, and other employee must not render');
+  assert.deepEqual(visible('session-old', 'session-new', revoked), [],
+    'previous session activity must disappear synchronously');
+  const restored = { ...revoked, companyPermissions: { 'company-a': { 'forms.access': 'view', 'expense.requests': 'create' } } };
+  assert.deepEqual(visible('session-b', 'session-b', restored), ['revoked-form', 'authorized-expense'],
+    'restoring the grant must reveal legitimate encrypted work without duplicating it');
+});
 check('merged durable read excludes stale prior-company operations', () => assert.match(source, /operationsRef\.current\s*\.filter\(\(item\) => authorizedNamespaces\.has\(item\.employeeId \+ ':' \+ item\.companyId\)\)/));
 check('stale context telemetry fails closed', () => assert.match(source, /previousScope\.current !== scopeKey \|\| !onlineRef\.current/));
 check('old-scope sync refuses to continue after async bootstrap', () => assert.match(source, /const sameScope = \(\) => mounted\.current && previousScope\.current === scopeKey;[\s\S]*?await requestJson<OfflineBootstrap>[\s\S]*?if \(!sameScope\(\)\) return;[\s\S]*?bootstrapByCompany\.current\.set/));
@@ -75,5 +117,48 @@ check('revocation during pending bootstrap performs no cached auth or queue repl
   assert.deepEqual(sideEffects, ['status:syncing']);
   assert.equal(runtime.syncInFlight.current, false);
   assert.equal(runtime.bootstrapByCompany.current.size, 0);
+});
+// Execute the current auth-scope key and grant predicate against same-company revocation.
+const keyExpression = source.match(/const scopeKey = ([^;\r\n]+);/)?.[1];
+assert.ok(keyExpression, 'current authorization scope key is locatable');
+const scopeFor = new Function('identities', 'context', 'return (' + keyExpression + ');');
+const grantStart = source.indexOf('function permitsOfflineKind(');
+const grantEnd = source.indexOf('function formatTime(', grantStart);
+assert.ok(grantStart >= 0 && grantEnd > grantStart, 'current offline grant predicate is locatable');
+const grantCode = ts.transpileModule(source.slice(grantStart, grantEnd), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+}).outputText;
+const permitsOfflineKind = new Function(grantCode + '\nreturn permitsOfflineKind;')();
+const allowed = {
+  sessionId: 'session-1', employee, companies,
+  roles: [{ id: 'role-1', code: 'staff', companyId: 'company-a' }],
+  permissions: { 'forms.access': 'view', 'expense.requests': 'create' },
+  companyPermissions: { 'company-a': { 'forms.access': 'view', 'expense.requests': 'create' } },
+};
+const snapshot = structuredClone(allowed);
+check('unchanged session and grants preserve the offline scope', () => assert.equal(scopeFor(identitiesFor(allowed), allowed), scopeFor(identitiesFor(snapshot), snapshot)));
+snapshot.sessionId = 'session-2';
+check('same-company session rotation invalidates the offline scope', () => assert.notEqual(scopeFor(identitiesFor(allowed), allowed), scopeFor(identitiesFor(snapshot), snapshot)));
+snapshot.sessionId = allowed.sessionId;
+snapshot.roles[0].code = 'restricted';
+check('same-company role revocation invalidates the offline scope', () => assert.notEqual(scopeFor(identitiesFor(allowed), allowed), scopeFor(identitiesFor(snapshot), snapshot)));
+snapshot.roles = structuredClone(allowed.roles);
+snapshot.companyPermissions['company-a']['forms.access'] = 'none';
+check('same-company Forms action revocation invalidates offline scope', () => assert.notEqual(scopeFor(identitiesFor(allowed), allowed), scopeFor(identitiesFor(snapshot), snapshot)));
+check('revoked Forms activity fails closed but authorized expenses remain', () => {
+  assert.equal(permitsOfflineKind(snapshot, 'company-a', 'forms.submit'), false);
+  assert.equal(permitsOfflineKind(snapshot, 'company-a', 'expense.request.submit'), true);
+});
+check('restored Forms grant preserves legitimate encrypted work', () => {
+  snapshot.companyPermissions['company-a']['forms.access'] = 'view';
+  assert.equal(scopeFor(identitiesFor(allowed), allowed), scopeFor(identitiesFor(snapshot), snapshot));
+  assert.equal(permitsOfflineKind(snapshot, 'company-a', 'forms.submit'), true);
+});
+check('another company cannot inherit available offline authority', () => assert.equal(permitsOfflineKind(allowed, 'company-b', 'forms.submit'), false));
+check('revoked operation kind is filtered before replay by current policy', () => {
+  const platform = readFileSync('src/offline-platform.ts', 'utf8');
+  assert.match(source, /allowedKinds = bootstrap\.policy\.allowedOperations\.filter/);
+  assert.match(platform, /options\.allowedKinds && !options\.allowedKinds\.includes\(operation\.kind\)/);
+  assert.match(platform, /options\.stillAuthorized && !options\.stillAuthorized\(\)/);
 });
 console.log('OFFLINE_SCOPE_SECURITY_CHECKS=' + checks + '/' + checks + ' PASS');
