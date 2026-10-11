@@ -93,6 +93,19 @@ try {
       if (width === 390 || width === 3840) {
         const focusable = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
         assert.equal(await closeButton.evaluate(element => document.activeElement === element), true, 'modal must set initial keyboard focus');
+        // A body-level portal can appear after the modal opens; synchronous focus
+        // must stay inside and MutationObserver must inert it before the next paint.
+        const synchronousFocusContained = await page.evaluate(() => {
+          const late = document.createElement('button');
+          late.id = 'qa-access-late-portal';
+          late.textContent = 'Synthetic background action';
+          document.body.appendChild(late);
+          late.focus();
+          return Boolean(document.querySelector('#access-control-launcher [role="dialog"]')?.contains(document.activeElement));
+        });
+        assert.equal(synchronousFocusContained, true, 'programmatic focus must not escape to a newly inserted external portal');
+        await page.waitForFunction(() => document.getElementById('qa-access-late-portal')?.inert === true, null, { timeout: 3000 });
+        assert.equal(await closeButton.evaluate(element => document.activeElement === element), true, 'late background portal must not steal modal focus');
         await dialog.evaluate((shell, selector) => {
           const controls = [...shell.querySelectorAll(selector)].filter(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden');
           controls.at(-1).focus();
@@ -111,6 +124,8 @@ try {
         await dialog.waitFor({ state: 'detached', timeout: 3000 });
         assert.equal(await page.locator('#qa-access-focus-origin').evaluate(element => document.activeElement === element && !element.inert), true, 'close must restore previous focus and remove background inertness');
         assert.equal(await page.locator('.postauth-module-envelope').first().evaluate(element => !element.closest('[inert]')), true, 'close must restore application interactivity');
+        assert.equal(await page.locator('#qa-access-late-portal').evaluate(element => !element.inert), true, 'close must restore late portal interactivity');
+        await page.locator('#qa-access-late-portal').evaluate(element => element.remove());
         // Reopen the existing authorized Access Control entry directly: the Module Hub
         // can still be completing its earlier lazy launch after the dialog is visible.
         await page.evaluate(() => window.dispatchEvent(new Event('daenem:open-access-control')));

@@ -66,14 +66,31 @@ export function AccessControlCenter({context,onClose}:{context:WorkforceContext;
   const host=shell?.closest('#access-control-launcher');
   if(!shell||!host)return;
   const previousFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
-  const background=Array.from(document.body.children).filter(child=>child!==host).map(child=>({element:child as HTMLElement,wasInert:(child as HTMLElement).inert}));
+  const background=new Map<HTMLElement,boolean>();
+  const makeBackgroundInert=(element:Element)=>{
+   if(element===host||!(element instanceof HTMLElement))return;
+   if(!background.has(element))background.set(element,element.inert);
+   element.inert=true;
+  };
+  for(const child of Array.from(document.body.children))makeBackgroundInert(child);
+  // Body-level portals can mount after this modal; isolate them before the next paint.
+  const observer=new MutationObserver(records=>{
+   for(const record of records)for(const node of Array.from(record.addedNodes))if(node instanceof Element)makeBackgroundInert(node);
+  });
+  observer.observe(document.body,{childList:true});
+  // A synchronous programmatic focus can precede MutationObserver delivery.
+  const containFocus=(event:FocusEvent)=>{
+   if(dialogRef.current&&!dialogRef.current.contains(event.target as Node))closeButtonRef.current?.focus();
+  };
+  document.addEventListener('focusin',containFocus,true);
   const launcher=host.querySelector<HTMLElement>('.access-control-launcher');
   const launcherWasInert=launcher?.inert;
-  for(const {element} of background)element.inert=true;
   if(launcher)launcher.inert=true;
   closeButtonRef.current?.focus();
   return()=>{
-   for(const {element,wasInert} of background)if(element.isConnected)element.inert=wasInert;
+   observer.disconnect();
+   document.removeEventListener('focusin',containFocus,true);
+   for(const [element,wasInert] of background)element.inert=wasInert;
    if(launcher?.isConnected&&launcherWasInert!==undefined)launcher.inert=launcherWasInert;
    if(previousFocus?.isConnected&&!previousFocus.closest('[inert]'))previousFocus.focus();
   };
