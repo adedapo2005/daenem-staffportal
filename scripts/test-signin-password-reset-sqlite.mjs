@@ -40,10 +40,11 @@ class SqlStatement {
 }
 
 class SqliteD1 {
-  constructor({ credential = true, owner = false, staleBeforeBatch = false, databasePath = ':memory:', initialize = true } = {}) {
+  constructor({ credential = true, owner = false, staleBeforeBatch = false, beforeBatch = null, databasePath = ':memory:', initialize = true } = {}) {
     this.database = new DatabaseSync(databasePath);
     this.database.exec('PRAGMA busy_timeout=5000');
     this.staleBeforeBatch = staleBeforeBatch;
+    this.beforeBatch = beforeBatch;
     if (initialize) {
       this.database.exec(coreMigration);
       this.database.exec(identityMigration);
@@ -70,6 +71,7 @@ class SqliteD1 {
     } };
   }
   async batch(statements) {
+    await this.beforeBatch?.(this.database);
     if (this.staleBeforeBatch) {
       this.staleBeforeBatch = false;
       this.database.prepare("UPDATE employees SET employment_status='terminated' WHERE id='employee-a'").run();
@@ -144,6 +146,24 @@ await check('credentialless employee reset activates the current grant and write
   assert.equal((await invoke(fixture)).status, 200);
   assert.equal(fixture.scalar("SELECT status FROM employee_login_access_requests WHERE id='access-a'").status, 'activated');
   assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE event_type='login_access_activated' AND result='success'").count, 1);
+});
+
+await check('credentialless reset loses safely when its grant or Owner authority changes after preflight', async () => {
+  const cases = [
+    ['cancelled grant', { credential: false, beforeBatch: (database) => database.prepare("UPDATE employee_login_access_requests SET status='cancelled' WHERE id='access-a'").run() }],
+    ['expired grant', { credential: false, beforeBatch: (database) => database.prepare("UPDATE employee_login_access_requests SET expires_at=datetime('now','-1 minute') WHERE id='access-a'").run() }],
+    ['revoked company membership', { credential: false, beforeBatch: (database) => database.prepare("UPDATE employee_company_memberships SET active=0 WHERE employee_id='employee-a'").run() }],
+    ['revoked Owner role', { credential: false, owner: true, beforeBatch: (database) => database.prepare("DELETE FROM employee_roles WHERE employee_id='employee-a' AND role_id='role-owner'").run() }],
+  ];
+  for (const [name, options] of cases) {
+    const fixture = new SqliteD1(options);
+    const response = await invoke(fixture);
+    assert.notEqual(response.status, 200, name);
+    assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM employee_credentials WHERE employee_id='employee-a'").count, 0, name);
+    assert.equal(fixture.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null, name);
+    assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM auth_sessions WHERE employee_id='employee-a' AND revoked_at IS NOT NULL").count, 0, name);
+    assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE employee_id='employee-a' AND result='success'").count, 0, name);
+  }
 });
 
 await check('two simultaneous reset submissions produce exactly one winner and one durable success audit', async () => {
