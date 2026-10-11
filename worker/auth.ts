@@ -465,6 +465,12 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
     WHERE er.employee_id = ? AND r.active = 1
       AND (r.company_id IS NULL OR r.company_id = er.company_id)
       AND (r.code <> 'owner' OR r.company_id IS NULL)
+      AND (r.company_id IS NULL OR EXISTS (
+        SELECT 1 FROM employee_company_memberships m
+        JOIN companies c ON c.id = m.company_id
+        WHERE m.employee_id = er.employee_id AND m.company_id = er.company_id
+          AND m.active = 1 AND c.active = 1
+      ))
     ORDER BY r.is_system DESC, r.name
   `).bind(employeeId).all<Record<string, unknown>>();
 
