@@ -4,6 +4,7 @@ import {
   X,
 } from 'lucide-react';
 import type { WorkforceContext } from './auth';
+import { formatPortalDateTime, resolveStaffTimeZone } from './canonical-time';
 import {
   initOfflinePlatform,
   listOfflineOperations,
@@ -34,6 +35,7 @@ type OfflineContextValue = {
   waitingCount: number;
   needsAttentionCount: number;
   lastSuccessfulSync: string | null;
+  viewerTimezone: string;
   queueFormsDraft: (input: FormsDraftInput, companyId?: string) => Promise<OfflineOperation>;
   queueFormsSubmission: (input: FormsDraftInput, companyId?: string) => Promise<OfflineOperation>;
   queueExpenseDraft: (input: ExpenseDraftInput, companyId?: string) => Promise<OfflineOperation>;
@@ -50,6 +52,7 @@ const defaultValue: OfflineContextValue = {
   waitingCount: 0,
   needsAttentionCount: 0,
   lastSuccessfulSync: null,
+  viewerTimezone: 'UTC',
   queueFormsDraft: async () => { throw new Error('Offline platform is not ready.'); },
   queueFormsSubmission: async () => { throw new Error('Offline platform is not ready.'); },
   queueExpenseDraft: async () => { throw new Error('Offline platform is not ready.'); },
@@ -62,15 +65,15 @@ const defaultValue: OfflineContextValue = {
 const OfflineContext = createContext<OfflineContextValue>(defaultValue);
 
 function identityFor(context: WorkforceContext, companyId?: string): OfflineIdentity {
-  const candidate = companyId && context.companies.some((company) => company.id === companyId)
-    ? companyId
-    : context.companies.find((company) => company.primary)?.id || context.companies[0]?.id || 'group';
-  return { employeeId: context.employee.id, companyId: candidate };
+  const company = companyId
+    ? context.companies.find((item) => item.id === companyId)
+    : context.companies.find((item) => item.primary) || context.companies[0];
+  if (!company) throw new Error('This company is not available for offline work.');
+  return { employeeId: context.employee.id, companyId: company.id };
 }
 
 function identitiesFor(context: WorkforceContext) {
-  const ids = context.companies.map((company) => ({ employeeId: context.employee.id, companyId: company.id }));
-  return ids.length ? ids : [identityFor(context)];
+  return context.companies.map((company) => ({ employeeId: context.employee.id, companyId: company.id }));
 }
 
 async function requestJson<T>(path: string, options: RequestInit = {}) {
@@ -108,10 +111,7 @@ function isNeedsAttention(state: OfflineOperationState) {
 }
 
 function formatTime(value?: string | null, timeZone?: string) {
-  if (!value) return 'Not recorded';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not recorded';
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', ...(timeZone ? { timeZone } : {}) }).format(date);
+  return formatPortalDateTime(value, timeZone) || 'Not recorded';
 }
 
 function statusLabel(status: SyncStatus, waiting: number, needs: number) {
@@ -146,6 +146,8 @@ function statusIcon(status: SyncStatus) {
 
 export function OfflinePlatformProvider({ context, children }: { context: WorkforceContext; children: ReactNode }) {
   const identities = useMemo(() => identitiesFor(context), [context]);
+  const scopeKey = identities.map((identity) => identity.employeeId + ':' + identity.companyId).sort().join('|');
+  const previousScope = useRef(scopeKey);
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
   const [operations, setOperations] = useState<OfflineOperation[]>([]);
   const [status, setStatus] = useState<SyncStatus>(() => (typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'online'));
@@ -161,6 +163,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
   const bootstrapByCompany = useRef(new Map<string, OfflineBootstrap>());
   const syncRequested = useRef(false);
   const syncRequestedIgnoreBackoff = useRef(false);
+  const latestSyncNow = useRef<(ignoreBackoff?: boolean) => Promise<void>>(async () => undefined);
   useEffect(() => { onlineRef.current = online; }, [online]);
   useEffect(() => { lastSuccessfulRef.current = lastSuccessfulSync; }, [lastSuccessfulSync]);
 
@@ -168,8 +171,11 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     const generation = ++refreshGeneration.current;
     try {
       const lists = await Promise.all(identities.map((identity) => listOfflineOperations(identity)));
-      if (!mounted.current) return [];
-      const latestById = new Map(operationsRef.current.map((item) => [item.id, item]));
+      if (!mounted.current || previousScope.current !== scopeKey) return [];
+      const authorizedNamespaces = new Set(identities.map((identity) => identity.employeeId + ':' + identity.companyId));
+      const latestById = new Map(operationsRef.current
+        .filter((item) => authorizedNamespaces.has(item.employeeId + ':' + item.companyId))
+        .map((item) => [item.id, item]));
       for (const item of lists.flat()) {
         const current = latestById.get(item.id);
         if (!current || item.updatedAt >= current.updatedAt) latestById.set(item.id, item);
@@ -188,12 +194,12 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       if (receiptTimes.length) setLastSuccessfulSync(receiptTimes.sort().at(-1) || null);
       return next;
     } catch {
-      return operationsRef.current;
+      return operationsRef.current.filter((item) => identities.some((identity) => identity.employeeId === item.employeeId && identity.companyId === item.companyId));
     }
-  }, [identities]);
+  }, [identities, scopeKey]);
 
   const sendTelemetry = useCallback(async (nextStatus: SyncStatus, nextOperations: OfflineOperation[], successfulAt?: string) => {
-    if (!onlineRef.current || Date.now() - lastTelemetryAt.current < 30_000) return;
+    if (previousScope.current !== scopeKey || !onlineRef.current || Date.now() - lastTelemetryAt.current < 30_000) return;
     lastTelemetryAt.current = Date.now();
     const device = deviceInfo();
     const lastError = nextOperations.find((item) => item.lastErrorCategory)?.lastErrorCategory;
@@ -215,9 +221,12 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
         lastErrorCategory: lastError,
       }),
     }).catch(() => undefined)));
-  }, [identities]);
+  }, [identities, scopeKey]);
 
   const syncNow = useCallback(async (ignoreBackoff = false) => {
+    // A changed employee or company scope must not continue a previous queue run.
+    const sameScope = () => mounted.current && previousScope.current === scopeKey;
+    if (!sameScope()) return;
     if (syncInFlight.current) {
       syncRequested.current = true;
       syncRequestedIgnoreBackoff.current = syncRequestedIgnoreBackoff.current || ignoreBackoff;
@@ -235,19 +244,27 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       let syncedCount = 0;
       let authenticationRequired = false;
       for (const identity of identities) {
+        if (!sameScope()) return;
         try {
           const bootstrap = await requestJson<OfflineBootstrap>('/api/offline/bootstrap?companyId=' + encodeURIComponent(identity.companyId));
+          if (!sameScope()) return;
           bootstrapByCompany.current.set(identity.companyId, bootstrap);
           await saveCachedAuthContext(context, bootstrap);
+          if (!sameScope()) return;
           await registerOfflineBackgroundSync();
+          if (!sameScope()) return;
+          // An already-started network operation still requires server revocation checks.
           const result = await syncQueuedOperations(identity, { ignoreBackoff });
+          if (!sameScope()) return;
           syncedCount += result.synced;
           if (result.authRequired > 0) authenticationRequired = true;
         } catch (error) {
+          if (!sameScope()) return;
           if ((error as { status?: number }).status === 401) authenticationRequired = true;
         }
       }
       const next = await refreshOperations();
+      if (!sameScope()) return;
       const waiting = next.filter((item) => isPending(item.state)).length;
       const needs = next.filter((item) => isNeedsAttention(item.state)).length;
       if (authenticationRequired) setStatus('authentication-required');
@@ -260,6 +277,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       } else setStatus('online');
       await sendTelemetry(needs ? 'needs-attention' : waiting ? 'waiting' : syncedCount ? 'synced' : 'online', next, syncedCount ? new Date().toISOString() : undefined);
     } catch (error) {
+      if (!sameScope()) return;
       if (!navigator.onLine) {
         setOnline(false);
         setStatus('offline');
@@ -270,15 +288,32 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
       }
     } finally {
       syncInFlight.current = false;
-      const followUp = syncRequested.current && navigator.onLine;
+      const followUp = syncRequested.current && navigator.onLine && mounted.current;
       const followUpIgnoreBackoff = syncRequestedIgnoreBackoff.current;
       syncRequested.current = false;
       syncRequestedIgnoreBackoff.current = false;
-      if (followUp) {
-        window.setTimeout(() => void syncNow(followUpIgnoreBackoff), 0);
-      }
+      // Queue a current-scope refresh, never recurse into a stale auth closure.
+      if (followUp) window.setTimeout(() => void latestSyncNow.current(followUpIgnoreBackoff), 0);
     }
-  }, [context, identities, refreshOperations, sendTelemetry]);
+  }, [context, identities, refreshOperations, scopeKey, sendTelemetry]);
+
+  useEffect(() => { latestSyncNow.current = syncNow; }, [syncNow]);
+
+  useEffect(() => {
+    if (previousScope.current === scopeKey) return;
+    previousScope.current = scopeKey;
+    refreshGeneration.current += 1;
+    operationsRef.current = [];
+    bootstrapByCompany.current.clear();
+    lastSuccessfulRef.current = null;
+    lastTelemetryAt.current = 0;
+    syncRequested.current = false;
+    syncRequestedIgnoreBackoff.current = false;
+    setActivityOpen(false);
+    setOperations([]);
+    setLastSuccessfulSync(null);
+    setStatus(navigator.onLine ? 'online' : 'offline');
+  }, [scopeKey]);
 
   useEffect(() => {
     mounted.current = true;
@@ -382,24 +417,33 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     return readFormsDraft(identityFor(context, companyId), assignmentId);
   }, [context]);
 
-  const waitingCount = operations.filter((item) => isPending(item.state)).length;
-  const needsAttentionCount = operations.filter((item) => isNeedsAttention(item.state)).length;
+  // Scope-filter synchronously before render; an auth/company change must never
+  // show the previous employee's queued titles, receipts or status counts.
+  const visibleOperations = useMemo(() => {
+    const permitted = new Set(identities.map((identity) => identity.employeeId + ':' + identity.companyId));
+    return operations.filter((item) => permitted.has(item.employeeId + ':' + item.companyId));
+  }, [identities, operations]);
+  const waitingCount = visibleOperations.filter((item) => isPending(item.state)).length;
+  const needsAttentionCount = visibleOperations.filter((item) => isNeedsAttention(item.state)).length;
   useEffect(() => {
     // A sibling React root may complete the shared sync lease. Once this
     // provider has refreshed the durable queue, do not leave its indicator
     // stuck on a pre-ACK waiting state.
     if (!online || waitingCount || needsAttentionCount || status === 'syncing') return;
-    if (operations.some((item) => item.state === 'synced')) {
+    if (visibleOperations.some((item) => item.state === 'synced')) {
       setStatus('synced');
     }
-  }, [needsAttentionCount, online, operations, status, waitingCount]);
+  }, [needsAttentionCount, online, visibleOperations, status, waitingCount]);
+  const safeStatus = previousScope.current === scopeKey ? status : (online ? 'online' : 'offline');
+  const safeLastSuccessfulSync = previousScope.current === scopeKey ? lastSuccessfulSync : null;
   const value = useMemo<OfflineContextValue>(() => ({
-    status,
+    status: safeStatus,
     online,
-    operations,
+    operations: visibleOperations,
     waitingCount,
     needsAttentionCount,
-    lastSuccessfulSync,
+    lastSuccessfulSync: safeLastSuccessfulSync,
+    viewerTimezone: resolveStaffTimeZone(context.employee.timezone),
     queueFormsDraft: queueDraft,
     queueFormsSubmission: queueSubmission,
     queueExpenseDraft,
@@ -407,7 +451,7 @@ export function OfflinePlatformProvider({ context, children }: { context: Workfo
     readFormsDraft: readDraft,
     retryNow: () => syncNow(true),
     openActivity: () => setActivityOpen(true),
-  }), [lastSuccessfulSync, needsAttentionCount, online, operations, queueDraft, queueExpenseDraft, queueExpenseSubmit, queueSubmission, readDraft, status, syncNow, waitingCount]);
+  }), [context.employee.timezone, needsAttentionCount, online, queueDraft, queueExpenseDraft, queueExpenseSubmit, queueSubmission, readDraft, safeLastSuccessfulSync, safeStatus, syncNow, visibleOperations, waitingCount]);
 
   return <OfflineContext.Provider value={value}>
     {children}
@@ -436,25 +480,39 @@ export function OfflineSyncIndicator() {
 }
 
 function SyncActivitySheet({ onClose }: { onClose: () => void }) {
-  const { operations, status, waitingCount, needsAttentionCount, retryNow } = useOfflinePlatform();
+  const { operations, status, waitingCount, needsAttentionCount, retryNow, viewerTimezone } = useOfflinePlatform();
   const [retrying, setRetrying] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+    return () => { if (previousFocus?.isConnected) previousFocus.focus(); };
+  }, []);
   async function retry() {
     setRetrying(true);
     try { await retryNow(); } finally { setRetrying(false); }
   }
   return <div className="offline-sheet-backdrop" onClick={onClose}>
-    <section className="offline-sheet" role="dialog" aria-modal="true" aria-labelledby="offline-activity-title" onClick={(event) => event.stopPropagation()}>
+    <section className="offline-sheet" role="dialog" aria-modal="true" aria-labelledby="offline-activity-title" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); return; }
+      if (event.key !== 'Tab') return;
+      const items = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')]
+        .filter((item) => item.getClientRects().length > 0);
+      const first = items[0]; const last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }}>
       <header>
         <div><span className="eyebrow">PRIVATE TO THIS ACCOUNT</span><h2 id="offline-activity-title">My Sync Activity</h2><p>Offline work is kept in encrypted browser storage for this employee and scope. Reconnect triggers permission and server-state validation before submission.</p></div>
-        <button type="button" className="offline-close" onClick={onClose} aria-label="Close My Sync Activity"><X size={18} /></button>
+        <button ref={closeButtonRef} type="button" className="offline-close" onClick={onClose} aria-label="Close My Sync Activity"><X size={18} /></button>
       </header>
       <div className="offline-activity-summary" aria-live="polite"><span>{statusIcon(status)} {statusLabel(status, waitingCount, needsAttentionCount)}</span><button type="button" onClick={() => void retry()} disabled={retrying || status === 'offline'}><RefreshCw size={14} className={retrying ? 'offline-spin' : ''} /> {retrying ? 'Retrying…' : 'Retry Now'}</button></div>
       <div className="offline-activity-note"><Cloud size={17} /><span>Captured on device is evidence. Server received time is authoritative and shown in Daenem business time (Africa/Lagos) when available.</span></div>
       <main className="offline-activity-list">
         {operations.length === 0 ? <div className="offline-empty"><CheckCircle2 size={28} /><strong>No queued sync activity</strong><span>Supported Forms and expense work will appear here after you save or submit it offline.</span></div> : operations.map((operation) => <article className={'offline-activity-row state-' + operation.state} key={operation.id}>
           <div className="offline-row-icon">{operation.state === 'synced' ? <CheckCircle2 size={17} /> : isNeedsAttention(operation.state) ? <AlertCircle size={17} /> : operation.state === 'authentication-required' ? <LockKeyhole size={17} /> : <UploadCloud size={17} />}</div>
-          <div><strong>{operation.kind === 'forms.submit' ? 'Forms submission' : operation.kind === 'expense.draft.save' ? 'Expense draft' : 'Expense request submission'}</strong><span>{operation.state.replaceAll('-', ' ')} · {operation.attemptCount} attempt{operation.attemptCount === 1 ? '' : 's'}</span>{operation.lastErrorMessage && <small>{operation.lastErrorMessage}</small>}<small>Captured on device · {formatTime(operation.capturedAt, operation.clientTimezone)}</small>{operation.serverReceipt?.serverReceivedAt && <small>Received by server · {formatTime(String(operation.serverReceipt.serverReceivedAt), 'Africa/Lagos')}</small>}</div>
-          <time>{formatTime(operation.updatedAt)}</time>
+          <div><strong>{operation.kind === 'forms.submit' ? 'Forms submission' : operation.kind === 'expense.draft.save' ? 'Expense draft' : 'Expense request submission'}</strong><span>{operation.state.replaceAll('-', ' ')} · {operation.attemptCount} attempt{operation.attemptCount === 1 ? '' : 's'}</span>{operation.lastErrorMessage && <small>{operation.lastErrorMessage}</small>}<small>Captured on device · {formatTime(operation.capturedAt, viewerTimezone)} (your time)</small>{operation.serverReceipt?.serverReceivedAt && <small>Received by server · {formatTime(String(operation.serverReceipt.serverReceivedAt), 'Africa/Lagos')} (West Africa Time)</small>}</div>
+          <time>{formatTime(operation.updatedAt, viewerTimezone)} (your time)</time>
         </article>)}
       </main>
       <footer><span>Only your own permitted operations are shown. No passwords, tokens or file bodies are stored in this activity view.</span></footer>
