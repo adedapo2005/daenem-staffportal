@@ -20,6 +20,8 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
   ];
   const audits = duplicateAudit ? [{ entity_id: duplicateAudit.entityId, action: 'verify_employee_bank', after_json: JSON.stringify({ verificationSource: duplicateAudit.source, verificationReference: duplicateAudit.reference }), request_id: 'prior-request' }] : [];
   const membership = { employee_id: 'employee-a', company_id: 'company-a', active: 1 };
+  const actorMembership = { employee_id: 'actor-a', company_id: 'company-a', active: 1 };
+  const actorGrant = { active: true };
   const db = {
     accounts, audits, batchCalls: 0,
     prepare(sql) {
@@ -30,7 +32,7 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
           if (this.sql.includes('employee_bank_accounts')) {
             const candidate = accounts.find(row => row.id === this.args[0] && row.employee_id === this.args[1] && row.active === 1 && row.is_primary === 0 && row.verified_at === null);
             const primary = accounts.find(row => row.employee_id === this.args[1] && row.active === 1 && row.is_primary === 1);
-            onPendingRead?.(candidate, accounts, audits, membership);
+            onPendingRead?.(candidate, accounts, audits, membership, actorMembership, actorGrant);
             return candidate ? { id: candidate.id, priorPrimaryId: primary?.id ?? null } : null;
           }
           throw new Error(`Unexpected first query: ${this.sql}`);
@@ -45,14 +47,21 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
       try {
         const [update, insert, select] = statements;
         assert.match(update.sql, /^UPDATE employee_bank_accounts/);
-        const [targetId, _targetId2, verifiedAt, _targetId3, verification, employeeId, _targetId4, candidateId, candidateEmployeeId, expectedPrimaryId, _primaryEmployeeId, _expectedPrimaryIdAgain, _expectedPrimaryIdForExists, _primaryEmployeeIdForExists, memberEmployeeId, memberCompanyId, source, reference] = update.args;
+        const [targetId, _targetId2, verifiedAt, _targetId3, verification, employeeId, _targetId4, candidateId, candidateEmployeeId, expectedPrimaryId, _primaryEmployeeId, _expectedPrimaryIdAgain, _expectedPrimaryIdForExists, _primaryEmployeeIdForExists, memberEmployeeId, memberCompanyId] = update.args;
+        const actorOwnerId = update.args[16], actorMemberId = update.args[17], actorCompanyId = update.args[18];
+        const source = update.args[29], reference = update.args[30];
         const priorRefExists = audits.some(row => row.action === 'verify_employee_bank' && JSON.parse(row.after_json).verificationSource === source && JSON.parse(row.after_json).verificationReference === reference);
         const candidate = accounts.find(row => row.id === candidateId && row.employee_id === candidateEmployeeId && row.active === 1 && row.is_primary === 0 && row.verified_at === null);
         const currentPrimary = accounts.find(row => row.employee_id === employeeId && row.active === 1 && row.is_primary === 1);
         const primaryUnchanged = expectedPrimaryId == null ? !currentPrimary : currentPrimary?.id === expectedPrimaryId;
         assert.match(update.sql, /EXISTS \(SELECT 1 FROM employee_company_memberships WHERE employee_id=\? AND company_id=\? AND active=1\)/);
+        assert.match(update.sql, /JOIN role_permissions rp/);
+        assert.match(update.sql, /employee_permission_overrides_v2/);
+        assert.match(update.sql, /employee_permission_overrides o/);
         const currentMembership = membership.employee_id === memberEmployeeId && membership.company_id === memberCompanyId && membership.active === 1;
-        if (candidate && primaryUnchanged && currentMembership && !priorRefExists) {
+        const actorIsOwner = actorOwnerId === 'owner-a';
+        const actorAuthorized = actorIsOwner || (actorMembership.employee_id === actorMemberId && actorMembership.company_id === actorCompanyId && actorMembership.active === 1 && actorGrant.active);
+        if (candidate && primaryUnchanged && currentMembership && actorAuthorized && !priorRefExists) {
           const affected = accounts.filter(row => row.employee_id === employeeId && row.active === 1 && (row.id === targetId || row.is_primary === 1));
           for (const row of affected) {
             row.is_primary = row.id === targetId ? 1 : 0;
@@ -84,6 +93,8 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
     }
   };
   db.membership = membership;
+  db.actorMembership = actorMembership;
+  db.actorGrant = actorGrant;
   return db;
 }
 
