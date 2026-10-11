@@ -65,12 +65,57 @@ try {
     try {
       await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
       await page.locator('.postauth-module-envelope').first().waitFor({ state: 'attached', timeout: 15000 });
-      await page.evaluate(() => window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'access' } })));
+      await page.evaluate(() => {
+        const origin = document.createElement('button');
+        origin.id = 'qa-access-focus-origin';
+        origin.textContent = 'Return focus after Access Control';
+        origin.style.position = 'fixed';
+        origin.style.left = '0';
+        origin.style.top = '0';
+        document.body.appendChild(origin);
+        origin.focus();
+        window.dispatchEvent(new CustomEvent('daenem:launch-module', { detail: { id: 'access' } }));
+      });
       const launcher = page.locator('#access-control-launcher .access-control-launcher');
       // Module Hub opens this workspace by event; its independent floating
       // launcher can be intentionally hidden by the canonical shell.
       await page.locator('#access-control-launcher .access-shell').waitFor({ state: 'visible', timeout: 15000 });
       assert.match(await page.locator('#access-control-launcher').innerText(), /Alpha Test Company/);
+      const dialog = page.getByRole('dialog', { name: 'Roles, Permissions & View-Only Control' });
+      assert.equal(await page.locator('#access-control-launcher .access-shell').getAttribute('role'), 'dialog', 'live page must mount the changed dialog source');
+      assert.equal(await dialog.count(), 1, 'privileged workspace must expose a named accessible dialog');
+      assert.equal(await dialog.getAttribute('aria-modal'), 'true', 'privileged workspace must declare modal scope');
+      assert.equal(await page.getByRole('button', { name: 'Refresh access controls' }).count(), 1, 'refresh must have a readable accessible name');
+      const closeButton = page.getByRole('button', { name: 'Close Access Control' });
+      assert.equal(await closeButton.count(), 1, 'close must have a readable accessible name');
+      assert.equal(await page.locator('#qa-access-focus-origin').evaluate(element => element.inert), true, 'background focus origin must be inert while modal is open');
+      assert.equal(await page.locator('.postauth-module-envelope').first().evaluate(element => Boolean(element.closest('[inert]'))), true, 'main application must be inert while modal is open');
+      if (width === 390 || width === 3840) {
+        const focusable = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+        assert.equal(await closeButton.evaluate(element => document.activeElement === element), true, 'modal must set initial keyboard focus');
+        await dialog.evaluate((shell, selector) => {
+          const controls = [...shell.querySelectorAll(selector)].filter(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden');
+          controls.at(-1).focus();
+        }, focusable);
+        await page.keyboard.press('Tab');
+        assert.equal(await dialog.evaluate((shell, selector) => {
+          const controls = [...shell.querySelectorAll(selector)].filter(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden');
+          return document.activeElement === controls[0];
+        }, focusable), true, 'Tab from final modal control must wrap to first');
+        await page.keyboard.press('Shift+Tab');
+        assert.equal(await dialog.evaluate((shell, selector) => {
+          const controls = [...shell.querySelectorAll(selector)].filter(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden');
+          return document.activeElement === controls.at(-1);
+        }, focusable), true, 'Shift+Tab from first modal control must wrap to last');
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'detached', timeout: 3000 });
+        assert.equal(await page.locator('#qa-access-focus-origin').evaluate(element => document.activeElement === element && !element.inert), true, 'close must restore previous focus and remove background inertness');
+        assert.equal(await page.locator('.postauth-module-envelope').first().evaluate(element => !element.closest('[inert]')), true, 'close must restore application interactivity');
+        // Reopen the existing authorized Access Control entry directly: the Module Hub
+        // can still be completing its earlier lazy launch after the dialog is visible.
+        await page.evaluate(() => window.dispatchEvent(new Event('daenem:open-access-control')));
+        await dialog.waitFor({ state: 'visible', timeout: 3000 });
+      }
       const before = authCalls;
       holdAuth = true;
       await page.evaluate(() => window.dispatchEvent(new Event('focus')));
