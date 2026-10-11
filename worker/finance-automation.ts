@@ -25,9 +25,17 @@ async function status(request:Request,env:Env,context:SessionContext){
 async function reconcile(request:Request,env:Env,context:SessionContext){
  let body:{companyId?:string;limit?:number};try{body=await request.json()}catch{return json({error:'Invalid reconciliation request.'},400)}
  const companyId=String(body.companyId||context.companies[0]?.id||'');if(!companyId||!member(context,companyId)||!canRun(context,companyId))return json({error:'Access is not assigned.'},403);
- const result=await reconcileFulfilledSalesOrders(env,Math.max(1,Math.min(200,Number(body.limit||75))),companyId);
- await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,?,?,?,?,?,?)`).bind(`audit-${crypto.randomUUID()}`,context.employee.id,companyId,'finance','sales_reconciliation_run','finance_automation',companyId,JSON.stringify(result),'web').run();
- return json({ok:true,companyId,result})
+ const runId=`sales-reconciliation-${crypto.randomUUID()}`;
+ const requestId=(request.headers.get('x-request-id')||request.headers.get('cf-ray')||crypto.randomUUID()).slice(0,128);
+ const audit=(action:string,after:Record<string,unknown>)=>env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'finance',?,'finance_automation',?,?,'web',?)`).bind(`audit-${crypto.randomUUID()}`,context.employee.id,companyId,action,runId,JSON.stringify({runId,...after}),requestId).run();
+ try{await audit('sales_reconciliation_run_started',{phase:'started'});}catch{return json({error:'Reconciliation could not start because required audit evidence could not be recorded.'},503)}
+ let result:Awaited<ReturnType<typeof reconcileFulfilledSalesOrders>>;
+ try{result=await reconcileFulfilledSalesOrders(env,Math.max(1,Math.min(200,Number(body.limit||75))),companyId)}catch{
+  try{await audit('sales_reconciliation_run_failed',{phase:'failed',outcome:'reconciliation_failed'});}catch{return json({error:'Reconciliation stopped after its start was recorded, but the completion audit could not be recorded.',runId,runStatus:'interrupted'},503)}
+  return json({error:'Reconciliation could not be completed.',runId,runStatus:'failed'},503)
+ }
+ try{await audit('sales_reconciliation_run',{phase:'completed',result});}catch{return json({error:'Reconciliation completed, but its completion audit could not be recorded.',companyId,runId,runStatus:'completed_with_audit_failure',result},503)}
+ return json({ok:true,companyId,runId,result})
 }
 
 export async function routeFinanceAutomation(request:Request,env:Env,context:SessionContext):Promise<Response|null>{
