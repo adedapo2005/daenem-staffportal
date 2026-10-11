@@ -19,17 +19,18 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
     { id: 'candidate-b', employee_id: 'employee-a', active: 1, is_primary: 0, verified_at: null, verification_source: null }
   ];
   const audits = duplicateAudit ? [{ entity_id: duplicateAudit.entityId, action: 'verify_employee_bank', after_json: JSON.stringify({ verificationSource: duplicateAudit.source, verificationReference: duplicateAudit.reference }), request_id: 'prior-request' }] : [];
+  const membership = { employee_id: 'employee-a', company_id: 'company-a', active: 1 };
   const db = {
     accounts, audits, batchCalls: 0,
     prepare(sql) {
       return {
         sql, args: [], bind(...args) { this.args = args; return this; },
         async first() {
-          if (this.sql.includes('employee_company_memberships')) return { one: 1 };
+          if (this.sql.includes('employee_company_memberships')) return membership.active === 1 ? { one: 1 } : null;
           if (this.sql.includes('employee_bank_accounts')) {
             const candidate = accounts.find(row => row.id === this.args[0] && row.employee_id === this.args[1] && row.active === 1 && row.is_primary === 0 && row.verified_at === null);
             const primary = accounts.find(row => row.employee_id === this.args[1] && row.active === 1 && row.is_primary === 1);
-            onPendingRead?.(candidate, accounts, audits);
+            onPendingRead?.(candidate, accounts, audits, membership);
             return candidate ? { id: candidate.id, priorPrimaryId: primary?.id ?? null } : null;
           }
           throw new Error(`Unexpected first query: ${this.sql}`);
@@ -44,12 +45,14 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
       try {
         const [update, insert, select] = statements;
         assert.match(update.sql, /^UPDATE employee_bank_accounts/);
-        const [targetId, _targetId2, verifiedAt, _targetId3, verification, employeeId, _targetId4, candidateId, candidateEmployeeId, expectedPrimaryId, _primaryEmployeeId, _expectedPrimaryIdAgain, _expectedPrimaryIdForExists, _primaryEmployeeIdForExists, source, reference] = update.args;
+        const [targetId, _targetId2, verifiedAt, _targetId3, verification, employeeId, _targetId4, candidateId, candidateEmployeeId, expectedPrimaryId, _primaryEmployeeId, _expectedPrimaryIdAgain, _expectedPrimaryIdForExists, _primaryEmployeeIdForExists, memberEmployeeId, memberCompanyId, source, reference] = update.args;
         const priorRefExists = audits.some(row => row.action === 'verify_employee_bank' && JSON.parse(row.after_json).verificationSource === source && JSON.parse(row.after_json).verificationReference === reference);
         const candidate = accounts.find(row => row.id === candidateId && row.employee_id === candidateEmployeeId && row.active === 1 && row.is_primary === 0 && row.verified_at === null);
         const currentPrimary = accounts.find(row => row.employee_id === employeeId && row.active === 1 && row.is_primary === 1);
         const primaryUnchanged = expectedPrimaryId == null ? !currentPrimary : currentPrimary?.id === expectedPrimaryId;
-        if (candidate && primaryUnchanged && !priorRefExists) {
+        assert.match(update.sql, /EXISTS \(SELECT 1 FROM employee_company_memberships WHERE employee_id=\? AND company_id=\? AND active=1\)/);
+        const currentMembership = membership.employee_id === memberEmployeeId && membership.company_id === memberCompanyId && membership.active === 1;
+        if (candidate && primaryUnchanged && currentMembership && !priorRefExists) {
           const affected = accounts.filter(row => row.employee_id === employeeId && row.active === 1 && (row.id === targetId || row.is_primary === 1));
           for (const row of affected) {
             row.is_primary = row.id === targetId ? 1 : 0;
@@ -80,6 +83,7 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
       }
     }
   };
+  db.membership = membership;
   return db;
 }
 
@@ -198,6 +202,18 @@ const responseJson = response => response.json();
 }
 
 {
+  const db = createDb({ onPendingRead(candidate, _accounts, _audits, membership) {
+    if (candidate) membership.active = 0;
+  } });
+  const response = await promoteVerifiedEmployeeBankAccount(makeRequest('revoked-membership-request'), { DB: db }, context, input);
+  assert.equal(response.status, 404);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 1);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 0);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').verified_at, null);
+  assert.equal(auditCount(db), 0);
+}
+
+{
   const db = createDb();
   const noCompanyPermission = { ...context, companyPermissions: {} };
   const response = await promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, noCompanyPermission, { ...input, companyId: 'company-b' });
@@ -207,4 +223,4 @@ const responseJson = response => response.json();
   assert.equal(auditCount(db), 0);
 }
 
-console.log('PASS payroll bank promotion isolated runtime: positive, stale, replay, cross-account replay, source distinction, stale-candidate race, changed-primary lost race, audit rollback, and company authorization (9 scenarios)');
+console.log('PASS payroll bank promotion isolated runtime: positive, stale, replay, cross-account replay, source distinction, stale-candidate race, changed-primary lost race, audit rollback, post-preflight membership revocation, and company authorization (10 scenarios)');
