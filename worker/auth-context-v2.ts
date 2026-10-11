@@ -9,6 +9,36 @@ function stronger(a: AccessLevel = 'none', b: AccessLevel = 'none') {
   return levels.indexOf(b) > levels.indexOf(a) ? b : a;
 }
 
+type PermissionOverride = { companyId?: string | null; code: string; accessLevel: AccessLevel };
+
+export function applyPermissionOverrides(
+  companyPermissions: Record<string, Record<string, AccessLevel>>,
+  rows: PermissionOverride[],
+) {
+  for (const [companyId, permissions] of Object.entries(companyPermissions)) {
+    const applicable = rows.filter((row) => !row.companyId || row.companyId === companyId);
+    const codes = new Set(applicable.map((row) => row.code));
+    for (const code of codes) {
+      const matches = applicable.filter((row) => row.code === code);
+      // An explicit deny always wins across global and company-specific overrides.
+      if (matches.some((row) => row.accessLevel === 'none')) {
+        permissions[code] = 'none';
+        continue;
+      }
+
+      // A company setting takes precedence over a global setting. Duplicate global
+      // positives (possible because SQLite UNIQUE permits multiple NULL keys) use
+      // the least permissive value, so row order can never add authority.
+      const scoped = matches.filter((row) => row.companyId === companyId);
+      const selected = scoped.length ? scoped : matches;
+      permissions[code] = selected.reduce((least, row) =>
+        levels.indexOf(row.accessLevel) < levels.indexOf(least) ? row.accessLevel : least,
+      selected[0].accessLevel);
+    }
+  }
+  return companyPermissions;
+}
+
 export async function getEnhancedSessionContext(request: Request, env: AuthEnv): Promise<EnhancedSessionContext | null> {
   const base = await getSessionContext(request, env);
   if (!base) return null;
@@ -45,14 +75,7 @@ export async function getEnhancedSessionContext(request: Request, env: AuthEnv):
       ))
   `).bind(employeeId).all<{companyId?:string;code:string;accessLevel:AccessLevel}>();
 
-  for (const row of overrides.results || []) {
-    if (row.companyId) {
-      if (!companyPermissions[row.companyId]) continue;
-      companyPermissions[row.companyId][row.code] = row.accessLevel;
-    } else {
-      for (const companyId of Object.keys(companyPermissions)) companyPermissions[companyId][row.code] = row.accessLevel;
-    }
-  }
+  applyPermissionOverrides(companyPermissions, overrides.results || []);
 
   return { ...base, companyPermissions };
 }

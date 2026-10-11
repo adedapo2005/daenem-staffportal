@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import { createRequire } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 
 const source = readFileSync(new URL('../worker/auth-context-v2.ts', import.meta.url), 'utf8');
@@ -9,7 +11,22 @@ const roleQuery = source.match(/const roleRows = await env\.DB\.prepare\(`([\s\S
 const overrideQuery = source.match(/const overrides = await env\.DB\.prepare\(`([\s\S]*?)`\)/)?.[1];
 assert.ok(roleQuery, 'actual enhanced role query must be extractable');
 assert.ok(overrideQuery, 'actual permission override query must be extractable');
-assert.match(source, /if \(!companyPermissions\[row\.companyId\]\) continue;/g, 'projections must not create permission-map keys outside base companies');
+assert.match(source, /for \(const \[companyId, permissions\] of Object\.entries\(companyPermissions\)\)/, 'override projection must iterate only current base companies');
+assert.match(source, /applyPermissionOverrides\(companyPermissions, overrides\.results \|\| \[\]\)/, 'enhanced session must use the tested override projection');
+
+const require = createRequire(new URL('../package.json', import.meta.url));
+const ts = require('typescript');
+const compiled = ts.transpileModule(source, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const authContextModule = { exports: {} };
+vm.runInNewContext(compiled, {
+  module: authContextModule,
+  exports: authContextModule.exports,
+  require: () => ({ getSessionContext: async () => null }),
+}, { filename: 'worker/auth-context-v2.ts' });
+const applyPermissionOverrides = authContextModule.exports.applyPermissionOverrides;
+assert.equal(typeof applyPermissionOverrides, 'function', 'production override projection is testable');
 
 function ddl(sql, name) {
   const found = sql.match(new RegExp(`CREATE TABLE IF NOT EXISTS ${name}\\s*\\([\\s\\S]*?\\);`, 'i'));
@@ -85,7 +102,25 @@ try {
   assert.equal(Object.hasOwn(allowedCompanies, 'company-c'), false, 'global override does not synthesize an unauthorized company');
   console.log('PASS global override remains limited to base companies');
 
-  console.log('AUTH_CONTEXT_V2_COMPANY_SCOPE=8/8 PASS');
+  addOverride('global-deny', null, 'deny.access', 'none');
+  addOverride('scoped-grant-over-global-deny', 'company-a', 'deny.access', 'manage');
+  addOverride('global-grant', null, 'precedence.access', 'manage');
+  addOverride('scoped-deny-over-global-grant', 'company-a', 'precedence.access', 'none');
+  addOverride('global-positive-manage', null, 'duplicate-global.access', 'manage');
+  addOverride('global-positive-view', null, 'duplicate-global.access', 'view');
+  const precedenceRows = overrideRows();
+  const firstOrder = applyPermissionOverrides({ 'company-a': {}, 'company-b': {} }, precedenceRows);
+  const reverseOrder = applyPermissionOverrides({ 'company-a': {}, 'company-b': {} }, precedenceRows.slice().reverse());
+  assert.equal(firstOrder['company-a']['deny.access'], 'none', 'global explicit deny overrides scoped grant');
+  assert.equal(firstOrder['company-b']['deny.access'], 'none', 'global explicit deny applies to each authorized company');
+  assert.equal(firstOrder['company-a']['precedence.access'], 'none', 'scoped explicit deny overrides global grant');
+  assert.equal(firstOrder['company-b']['precedence.access'], 'manage', 'global grant applies to another authorized company');
+  assert.equal(firstOrder['company-a']['duplicate-global.access'], 'view', 'duplicate global grants resolve to least privilege');
+  assert.deepEqual(JSON.parse(JSON.stringify(reverseOrder)), JSON.parse(JSON.stringify(firstOrder)), 'override order cannot change effective permissions');
+  assert.equal(Object.hasOwn(firstOrder, 'company-c'), false, 'overrides cannot create a company outside the session');
+  console.log('PASS deterministic deny-wins override composition');
+
+  console.log('AUTH_CONTEXT_V2_COMPANY_SCOPE=9/9 PASS');
 } finally {
   db.close();
 }
