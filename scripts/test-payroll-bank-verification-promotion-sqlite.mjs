@@ -29,14 +29,16 @@ function migrationTable(sql, name) {
 
 function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, deactivateActorRoleAfterPendingRead = false, denyActorPermission = false, failAudit = false, actorRoleCompanyId = 'company-a', actorRoleActive = 1, ownerRoleCompanyId = null } = {}) {
   const db = new DatabaseSync(':memory:');
-  db.exec('PRAGMA foreign_keys=ON; CREATE TABLE companies(id TEXT PRIMARY KEY); CREATE TABLE employees(id TEXT PRIMARY KEY); CREATE TABLE company_locations(id TEXT PRIMARY KEY);');
+  db.exec('PRAGMA foreign_keys=ON;');
+  db.exec(migrationTable(coreMigration, 'companies'));
+  db.exec('CREATE TABLE employees(id TEXT PRIMARY KEY); CREATE TABLE company_locations(id TEXT PRIMARY KEY);');
   db.exec(migrationTable(coreMigration, 'employee_company_memberships'));
   for (const table of ['roles', 'employee_roles', 'permissions', 'role_permissions', 'employee_permission_overrides']) db.exec(migrationTable(coreMigration, table));
   db.exec(migrationTable(permissionOverridesMigration, 'employee_permission_overrides_v2'));
   db.exec(migrationTable(coreMigration, 'audit_logs'));
   db.exec(migrationTable(payrollMigration, 'employee_bank_accounts'));
-  db.prepare('INSERT INTO companies(id) VALUES(?)').run('company-a');
-  db.prepare('INSERT INTO companies(id) VALUES(?)').run('company-b');
+  db.prepare('INSERT INTO companies(id,code,name,business_type) VALUES(?,?,?,?)').run('company-a', 'COMPANY-A', 'Company A', 'other');
+  db.prepare('INSERT INTO companies(id,code,name,business_type) VALUES(?,?,?,?)').run('company-b', 'COMPANY-B', 'Company B', 'other');
   db.prepare('INSERT INTO employees(id) VALUES(?)').run('employee-a');
   db.prepare('INSERT INTO employees(id) VALUES(?)').run('actor-a');
   db.prepare('INSERT INTO employees(id) VALUES(?)').run('owner-a');
