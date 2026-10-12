@@ -27,6 +27,7 @@ import { DEFAULT_LAYOUT_ID, getLayoutProfile, normalizeLayoutPreference, readLoc
 import './theme-studio-entry';
 import { ZipDashboard, type LiveDataStatus, type ZipDashboardSummary } from './zip-dashboard';
 import { OfflinePlatformProvider } from './offline-sync';
+import { GenericReportBuilderLauncher } from './generic-report-builder';
 import { CANONICAL_LAYOUT_IDS, CANONICAL_VISUAL_FIXTURE, CanonicalDashboard, type StaffPortalLayoutId } from './canonical-postauth-v1';
 
 const FormsCenter = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
@@ -511,7 +512,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   else if (view === 'broadcasts') content = <BroadcastCenter context={context} companyId={company.id} />;
   else if (view === 'facilities') content = <FacilitiesCenter context={context} companyId={company.id} />;
   else if (view === 'security') content = <SecurityView context={context} companyId={company.id} />;
-  else if (view === 'help') content = <AiGuideView context={context} />;
+  else if (view === 'help') content = <div className="grb-help-host"><GenericReportBuilderLauncher companyId={company.id} /><AiGuideView context={context} /></div>;
   else content = <PlaceholderView view={view} context={context} />;
 
   return <div>
