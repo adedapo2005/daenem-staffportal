@@ -59,6 +59,11 @@ const mismatch = await verify(env, expected, fakeFetch(providerBody({ amountPaid
 assert.equal(mismatch.exactPaidMatch, false, 'amount mismatch cannot be treated as exact payment');
 console.log('PASS amount mismatch is not an exact paid match');
 
+const zeroPaid = await verify(env, expected, fakeFetch(providerBody({ amountPaid: '0.00' })).fetcher);
+assert.equal(zeroPaid.paymentStatus, 'PAID', 'provider status remains visible as a provider fact');
+assert.equal(zeroPaid.exactPaidMatch, false, 'zero amount cannot be exact evidence for a positive expectation');
+console.log('PASS zero paid amount cannot satisfy a positive payment expectation');
+
 const partial = await verify(env, expected, fakeFetch(providerBody({ paymentStatus: 'PARTIALLY_PAID' })).fetcher);
 assert.equal(partial.paymentStatus, 'PARTIALLY_PAID');
 assert.equal(partial.exactPaidMatch, false);
@@ -100,6 +105,11 @@ for (const [label, paidOn] of [
   ['missing', null],
   ['invalid', 'not-a-date'],
   ['impossible calendar date', '2026-02-30T14:00:00.000Z'],
+  ['invalid non-leap date', '2026-02-29T14:00:00.000Z'],
+  ['date-only impossible calendar date', '2026-02-30'],
+  ['date-only valid-looking value', '2026-10-12'],
+  ['timezone-ambiguous local timestamp', '2026-10-12T14:00:00'],
+  ['invalid timezone offset', '2026-10-12T14:00:00+25:00'],
 ]) {
   const unverified = await verify(env, expected, fakeFetch(providerBody({ paidOn })).fetcher);
   assert.equal(unverified.paymentStatus, 'PAID', `${label} timestamp does not rewrite provider status`);
@@ -108,9 +118,14 @@ for (const [label, paidOn] of [
   console.log(`PASS ${label} paidOn preserves provider status but withholds exact match`);
 }
 
+const leapDay = await verify(env, expected, fakeFetch(providerBody({ paidOn: '2024-02-29T14:00:00.000Z' })).fetcher);
+assert.equal(leapDay.paidOn, '2024-02-29T14:00:00.000Z');
+assert.equal(leapDay.exactPaidMatch, true, 'a valid Gregorian leap-day timestamp remains acceptable evidence');
+console.log('PASS valid leap-day UTC timestamp remains exact');
+
 const timezoneOffset = await verify(env, expected, fakeFetch(providerBody({ paidOn: '2026-10-12T00:30:00+01:00' })).fetcher);
 assert.equal(timezoneOffset.paidOn, '2026-10-11T23:30:00.000Z', 'valid offset timestamps normalize without changing their instant');
 assert.equal(timezoneOffset.exactPaidMatch, true, 'a valid timezone offset remains acceptable payment evidence');
 console.log('PASS valid timezone-offset paidOn remains exact after UTC normalization');
 
-console.log('MONNIFY_COLLECTIONS_VERIFICATION=15/15 PASS; fake-fetch only; no persistence or money movement');
+console.log('MONNIFY_COLLECTIONS_VERIFICATION=22/22 PASS; fake-fetch only; no persistence or money movement');
