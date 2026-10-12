@@ -120,7 +120,10 @@ export async function queryKudaStageNameEnquiry(
   try {
     const payload: unknown = await response.json();
     if (!payload || typeof payload !== 'object' || Array.isArray(payload) ||
-        (payload as { status?: unknown }).status !== true || !('data' in payload)) {
+        (payload as { status?: unknown }).status !== true ||
+        !('data' in payload) || !(payload as { data?: unknown }).data ||
+        typeof (payload as { data?: unknown }).data !== 'object' ||
+        Array.isArray((payload as { data?: unknown }).data)) {
       throw new Error('invalid response shape');
     }
     return { requestRef, payload };

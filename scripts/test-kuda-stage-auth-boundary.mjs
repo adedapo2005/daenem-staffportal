@@ -131,6 +131,10 @@ for (const [name, response] of [
   ['provider rejection', new Response(JSON.stringify({ status: false, message: 'synthetic rejection', data: null }), { status: 200 })],
   ['HTTP failure', new Response('synthetic provider detail', { status: 502 })],
   ['invalid payload', new Response('{not-json', { status: 200 })],
+  ['missing enquiry data', new Response(JSON.stringify({ status: true }), { status: 200 })],
+  ['null enquiry data', new Response(JSON.stringify({ status: true, data: null }), { status: 200 })],
+  ['array enquiry data', new Response(JSON.stringify({ status: true, data: [] }), { status: 200 })],
+  ['scalar enquiry data', new Response(JSON.stringify({ status: true, data: 'Synthetic UAT Beneficiary' }), { status: 200 })],
 ]) {
   const start = enquiryCalls;
   await assert.rejects(() => queryNameEnquiry(goodStage, { accountNumber: '0123456789', bankCode: '999129' }, async (url) =>
