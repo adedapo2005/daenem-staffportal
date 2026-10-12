@@ -122,6 +122,30 @@ assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get
 assert.equal(accepted.batches, 3);
 accepted.db.close();
 
+for (const [name, amountNaira] of [
+  ['fractional kobo', 1.001],
+  ['unsafe kobo magnitude', 100000000000000.01],
+  ['null amount', null],
+  ['string amount', '1.23'],
+]) {
+  const invalidAmount = fixture();
+  const response = await routeFinance(request({}, { ...payload, amountNaira }), invalidAmount.env, invalidAmount.context);
+  assert.equal(response.status, 400, `${name} is rejected before creating an obligation`);
+  assert.equal(invalidAmount.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 0,
+    `${name} creates no receivable`);
+  assert.equal(invalidAmount.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 0,
+    `${name} creates no success audit`);
+  assert.equal(invalidAmount.batches, 0, `${name} performs no write batch`);
+  invalidAmount.db.close();
+}
+
+const exactKobo = fixture();
+const exactKoboResponse = await routeFinance(request({}, { ...payload, amountNaira: 1.23 }), exactKobo.env, exactKobo.context);
+assert.equal(exactKoboResponse.status, 201, 'valid two-decimal NGN amounts remain accepted');
+assert.equal(exactKobo.db.prepare('SELECT amount_kobo AS amount FROM finance_receivables').get().amount, 123,
+  'two-decimal NGN amounts convert to exact integer kobo');
+exactKobo.db.close();
+
 const competing = fixture();
 const simultaneous = await Promise.all([
   routeFinance(request({ 'x-request-id': 'finance-create-race-9' }), competing.env, competing.context),
