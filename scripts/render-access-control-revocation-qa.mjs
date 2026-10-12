@@ -19,6 +19,8 @@ try {
     const page = await context.newPage();
     const errors = [], held = [];
     let companyId = 'company-a', authenticated = true, holdAuth = false, authCalls = 0;
+    const assignmentRace = width === 390 || width === 3840;
+    let releaseEmployeeA = null, releaseEmployeeB = null, assignmentMutationCount = 0;
     const authResponse = () => ({
       authenticated,
       context: authenticated ? {
@@ -51,10 +53,34 @@ try {
         return send(route, {
           company: { id: requestedCompany, name: requestedCompany === 'company-a' ? 'Alpha Test Company' : 'Beta Test Company' },
           roles: [{ id: 'qa-manager', code: 'manager', name: 'Manager', companyId: requestedCompany, description: '' }],
-          employees: [], rolePermissions: [], permissions: [], overrides: [],
+          employees: assignmentRace ? [
+            { id: 'employee-a', displayName: 'Employee A', status: 'active', roleIds: [], roleNames: [] },
+            { id: 'employee-b', displayName: 'Employee B', status: 'active', roleIds: [], roleNames: [] },
+          ] : [], rolePermissions: [], permissions: [], overrides: [],
           permissionLevels: ['none', 'view', 'create', 'edit', 'approve', 'manage'],
-          canManageBusinessAssignments: false, canManageGeneralRoles: false,
+          canManageBusinessAssignments: assignmentRace, canManageGeneralRoles: false,
         });
+      }
+      if (uri.pathname === '/api/access-control/business-assignments' && assignmentRace) {
+        const requestedEmployee = uri.searchParams.get('employeeId');
+        if (requestedEmployee === 'employee-a') await new Promise(resolve => { releaseEmployeeA = resolve; });
+        if (requestedEmployee === 'employee-b') await new Promise(resolve => { releaseEmployeeB = resolve; });
+        return send(route, {
+          employee: { id: requestedEmployee, displayName: requestedEmployee === 'employee-a' ? 'Employee A' : 'Employee B' },
+          companies: [
+            { id: 'company-a', code: 'A', name: 'Alpha Test Company' },
+            { id: 'company-b', code: 'B', name: 'Beta Test Company' },
+          ],
+          roles: [], assignments: [{
+            companyId: requestedEmployee === 'employee-a' ? 'company-a' : 'company-b',
+            isPrimary: 1, active: 1,
+            roleNames: [requestedEmployee === 'employee-a' ? 'ONLY EMPLOYEE A ROLE' : 'ONLY EMPLOYEE B ROLE'],
+          }],
+        });
+      }
+      if (uri.pathname === '/api/access-control/business-assignment' && assignmentRace) {
+        assignmentMutationCount++;
+        return send(route, { message: 'Synthetic assignment response' });
       }
       if (uri.pathname === '/api/access-control/history') return send(route, { changes: [] });
       if (uri.pathname === '/api/experience/layout') return send(route, { preference: { layoutId: 'focus-flow', density: 'standard', motion: 'reduced' }, canChoose: false });
@@ -131,6 +157,45 @@ try {
         await page.evaluate(() => window.dispatchEvent(new Event('daenem:open-access-control')));
         await dialog.waitFor({ state: 'visible', timeout: 3000 });
       }
+      if (assignmentRace) {
+        const employeeARequest = page.waitForRequest(request => request.url().includes('/api/access-control/business-assignments?') && request.url().includes('employeeId=employee-a'));
+        await dialog.getByRole('button', { name: 'Business Assignments' }).click();
+        await employeeARequest;
+        const employeeBRequest = page.waitForRequest(request => request.url().includes('/api/access-control/business-assignments?') && request.url().includes('employeeId=employee-b'));
+        await dialog.locator('.employee-list').getByRole('button', { name: /Employee B/ }).click();
+        await employeeBRequest;
+        await dialog.getByText('Loading business assignments…').waitFor({ state: 'visible', timeout: 3000 });
+        assert.equal(await dialog.getByRole('button', { name: 'Assign Business & Role' }).isDisabled(), true, 'employee switch must disable mutation until new scoped assignments arrive');
+        assert.equal(assignmentMutationCount, 0, 'pending Employee B read must not send an assignment mutation');
+        for (let attempt = 0; attempt < 50 && !releaseEmployeeB; attempt++) await page.waitForTimeout(10);
+        assert.ok(releaseEmployeeB, 'Employee B assignment response must be held during the mutation guard check');
+        const employeeBResponse = page.waitForResponse(response => response.url().includes('/api/access-control/business-assignments?') && response.url().includes('employeeId=employee-b'));
+        releaseEmployeeB();
+        releaseEmployeeB = null;
+        await employeeBResponse;
+        await dialog.locator('.assignment-list').getByText('ONLY EMPLOYEE B ROLE').waitFor({ state: 'visible', timeout: 3000 });
+        await dialog.locator('.business-assignment-form select').first().selectOption('company-b');
+        await page.waitForFunction(() => [...document.querySelectorAll('.assignment-buttons button')].some(button => button.textContent?.includes('Remove Business Access') && !button.disabled), null, { timeout: 3000 }).catch(async error => {
+          const state = await dialog.evaluate(shell => ({
+            selectedEmployee: shell.querySelector('.employee-list button.active')?.textContent,
+            assignmentStatus: shell.querySelector('.assignment-status')?.textContent,
+            buttons: [...shell.querySelectorAll('.assignment-buttons button')].map(button => ({ text: button.textContent, disabled: button.disabled })),
+            assignedBusiness: shell.querySelector('.assignment-list')?.textContent,
+            reasonLength: shell.querySelector('.assignment-reason input')?.value?.length,
+          }));
+          throw new Error('valid Employee B mutation controls not ready: ' + JSON.stringify(state) + '; ' + error.message);
+        });
+        assert.equal(assignmentMutationCount, 0, 'successful Employee B read must not trigger any assignment mutation');
+        for (let attempt = 0; attempt < 50 && !releaseEmployeeA; attempt++) await page.waitForTimeout(10);
+        assert.ok(releaseEmployeeA, 'old Employee A request must be held until Employee B is rendered');
+        const employeeAResponse = page.waitForResponse(response => response.url().includes('/api/access-control/business-assignments?') && response.url().includes('employeeId=employee-a'));
+        releaseEmployeeA();
+        releaseEmployeeA = null;
+        await employeeAResponse;
+        await page.waitForTimeout(100);
+        assert.equal(await dialog.locator('.assignment-list').getByText('ONLY EMPLOYEE A ROLE').count(), 0, 'late Employee A assignment must not display for selected Employee B');
+        assert.equal(await dialog.locator('.assignment-list').getByText('ONLY EMPLOYEE B ROLE').count(), 1, 'selected Employee B assignment must remain visible');
+      }
       const before = authCalls;
       holdAuth = true;
       await page.evaluate(() => window.dispatchEvent(new Event('focus')));
@@ -152,6 +217,8 @@ try {
       failures.push(width + ': ' + error.message);
       results.push({ width, failed: error.message, runtimeErrors: errors });
     } finally {
+      if (releaseEmployeeA) { releaseEmployeeA(); releaseEmployeeA = null; }
+      if (releaseEmployeeB) { releaseEmployeeB(); releaseEmployeeB = null; }
       for (const release of held.splice(0)) release();
       await context.close();
     }
