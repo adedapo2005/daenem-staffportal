@@ -71,7 +71,7 @@ export async function verifyMonnifyCollection(
   const apiKey = env.MONNIFY_STAGE_API_KEY?.trim();
   const secretKey = env.MONNIFY_STAGE_SECRET_KEY?.trim();
   if (!apiKey || !secretKey) throw new Error('Monnify stage verification is not configured.');
-  if (!REFERENCE.test(expected.paymentReference) || !Number.isSafeInteger(expected.expectedAmountKobo) || expected.expectedAmountKobo < 0 || expected.currencyCode !== 'NGN') {
+  if (!REFERENCE.test(expected.paymentReference) || !Number.isSafeInteger(expected.expectedAmountKobo) || expected.expectedAmountKobo <= 0 || expected.currencyCode !== 'NGN') {
     throw new Error('Monnify verification expectation is invalid.');
   }
 
@@ -112,6 +112,7 @@ export async function verifyMonnifyCollection(
     throw new Error('Monnify stage transaction response is invalid.');
   }
 
+  const paidOn = validDate(body.paidOn);
   return {
     provider: 'monnify',
     transactionReference,
@@ -119,7 +120,7 @@ export async function verifyMonnifyCollection(
     paymentStatus: status as MonnifyPaymentStatus,
     amountPaidKobo,
     currencyCode,
-    paidOn: validDate(body.paidOn),
-    exactPaidMatch: status === 'PAID' && paymentReference === expected.paymentReference && amountPaidKobo === expected.expectedAmountKobo && currencyCode === expected.currencyCode,
+    paidOn,
+    exactPaidMatch: status === 'PAID' && paymentReference === expected.paymentReference && amountPaidKobo === expected.expectedAmountKobo && currencyCode === expected.currencyCode && paidOn !== null,
   };
 }

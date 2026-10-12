@@ -91,4 +91,17 @@ await assert.rejects(() => verify(env, { ...expected, paymentReference: 'ORDER/.
 assert.equal(unsafeRef.requests.length, 0, 'invalid reference causes no provider call');
 console.log('PASS malformed reference rejected before fetch');
 
-console.log('MONNIFY_COLLECTIONS_VERIFICATION=10/10 PASS; fake-fetch only; no persistence or money movement');
+const zeroAmount = fakeFetch(providerBody({ amountPaid: '0.00' }));
+await assert.rejects(() => verify(env, { ...expected, expectedAmountKobo: 0 }, zeroAmount.fetcher), /expectation is invalid/);
+assert.equal(zeroAmount.requests.length, 0, 'zero-value expectation causes no provider call');
+console.log('PASS zero-value payment expectation rejected before fetch');
+
+for (const [label, paidOn] of [['missing', null], ['invalid', 'not-a-date']]) {
+  const unverified = await verify(env, expected, fakeFetch(providerBody({ paidOn })).fetcher);
+  assert.equal(unverified.paymentStatus, 'PAID', `${label} timestamp does not rewrite provider status`);
+  assert.equal(unverified.paidOn, null, `${label} timestamp remains absent from normalized provider facts`);
+  assert.equal(unverified.exactPaidMatch, false, `${label} timestamp cannot satisfy exact payment evidence`);
+  console.log(`PASS ${label} paidOn preserves provider status but withholds exact match`);
+}
+
+console.log('MONNIFY_COLLECTIONS_VERIFICATION=13/13 PASS; fake-fetch only; no persistence or money movement');
