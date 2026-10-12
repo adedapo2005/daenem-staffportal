@@ -96,7 +96,11 @@ await assert.rejects(() => verify(env, { ...expected, expectedAmountKobo: 0 }, z
 assert.equal(zeroAmount.requests.length, 0, 'zero-value expectation causes no provider call');
 console.log('PASS zero-value payment expectation rejected before fetch');
 
-for (const [label, paidOn] of [['missing', null], ['invalid', 'not-a-date']]) {
+for (const [label, paidOn] of [
+  ['missing', null],
+  ['invalid', 'not-a-date'],
+  ['impossible calendar date', '2026-02-30T14:00:00.000Z'],
+]) {
   const unverified = await verify(env, expected, fakeFetch(providerBody({ paidOn })).fetcher);
   assert.equal(unverified.paymentStatus, 'PAID', `${label} timestamp does not rewrite provider status`);
   assert.equal(unverified.paidOn, null, `${label} timestamp remains absent from normalized provider facts`);
@@ -104,4 +108,9 @@ for (const [label, paidOn] of [['missing', null], ['invalid', 'not-a-date']]) {
   console.log(`PASS ${label} paidOn preserves provider status but withholds exact match`);
 }
 
-console.log('MONNIFY_COLLECTIONS_VERIFICATION=13/13 PASS; fake-fetch only; no persistence or money movement');
+const timezoneOffset = await verify(env, expected, fakeFetch(providerBody({ paidOn: '2026-10-12T00:30:00+01:00' })).fetcher);
+assert.equal(timezoneOffset.paidOn, '2026-10-11T23:30:00.000Z', 'valid offset timestamps normalize without changing their instant');
+assert.equal(timezoneOffset.exactPaidMatch, true, 'a valid timezone offset remains acceptable payment evidence');
+console.log('PASS valid timezone-offset paidOn remains exact after UTC normalization');
+
+console.log('MONNIFY_COLLECTIONS_VERIFICATION=15/15 PASS; fake-fetch only; no persistence or money movement');

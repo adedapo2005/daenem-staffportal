@@ -49,7 +49,15 @@ function amountToKobo(value: unknown): number | null {
 
 function validDate(value: unknown): string | null {
   if (typeof value !== 'string' || !value || !Number.isFinite(Date.parse(value))) return null;
-  return new Date(value).toISOString();
+  const parsed = new Date(value);
+  const isoDate = /^(\d{4})-(\d{2})-(\d{2})(?:T|\s)/.exec(value);
+  if (isoDate) {
+    const year = Number(isoDate[1]), month = Number(isoDate[2]), day = Number(isoDate[3]);
+    const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) return null;
+  }
+  return parsed.toISOString();
 }
 
 async function readJson(response: Response, failure: string): Promise<unknown> {
