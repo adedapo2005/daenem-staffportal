@@ -31,6 +31,7 @@ function fixture({ auditFailure = false, ignoreAudit = false } = {}) {
       source TEXT NOT NULL, request_id TEXT
     );
   `);
+  db.exec(fs.readFileSync('migrations/0099_finance_receivable_create_idempotency.sql', 'utf8'));
   if (auditFailure) db.exec(`CREATE TRIGGER fail_finance_audit BEFORE INSERT ON audit_logs
     BEGIN SELECT RAISE(ABORT,'injected audit failure'); END;`);
   if (ignoreAudit) db.exec(`CREATE TRIGGER ignore_finance_audit BEFORE INSERT ON audit_logs
@@ -103,7 +104,36 @@ assert.deepEqual(JSON.parse(audit.after_json), {
 });
 assert.doesNotMatch(audit.after_json, /private note/);
 assert.equal(accepted.batches, 1, 'receivable and required audit use one atomic batch');
+const replay = await routeFinance(request({ 'x-request-id': 'finance-create-42' }), accepted.env, accepted.context);
+assert.equal(replay.status, 200, 'an identical company-scoped request identity replays as the original create');
+assert.equal((await replay.json()).id, created.id, 'retry returns the original receivable identity');
+assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 1,
+  'replay cannot create a second receivable');
+assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 1,
+  'replay cannot create duplicate success audit evidence');
+assert.equal(accepted.batches, 2);
+const conflictingReplay = await routeFinance(request({ 'x-request-id': 'finance-create-42' },
+  { ...payload, amountNaira: 851 }), accepted.env, accepted.context);
+assert.equal(conflictingReplay.status, 409, 'reusing the same request identity with a different payload conflicts');
+assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 1,
+  'conflicting replay creates no additional receivable');
+assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 1,
+  'conflicting replay creates no success audit');
+assert.equal(accepted.batches, 3);
 accepted.db.close();
+
+const competing = fixture();
+const simultaneous = await Promise.all([
+  routeFinance(request({ 'x-request-id': 'finance-create-race-9' }), competing.env, competing.context),
+  routeFinance(request({ 'x-request-id': 'finance-create-race-9' }), competing.env, competing.context),
+]);
+assert.deepEqual(simultaneous.map(response => response.status).sort(), [200, 201],
+  'competing identical create requests produce one create and one replay');
+assert.equal(competing.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 1,
+  'database uniqueness preserves one receivable under competing requests');
+assert.equal(competing.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 1,
+  'competing replay cannot duplicate success audit evidence');
+competing.db.close();
 
 const failedAudit = fixture({ auditFailure: true });
 const failed = await routeFinance(request(), failedAudit.env, failedAudit.context);
@@ -131,4 +161,4 @@ assert.equal(crossCompany.batches, 0, 'cross-company attempt performs no receiva
 assert.equal(crossCompany.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 0);
 crossCompany.db.close();
 
-console.log('PASS: Finance receivable creation and required audit are atomic; audit-failure rollback, request correlation, data minimization and cross-company zero-write checks pass. Duplicate retry identity remains outside this fixture because no approved key contract exists.');
+console.log('PASS: Finance receivable creation and required audit are atomic; same-key and competing replays return the original record, changed-payload replay conflicts without writes, audit-failure rollback, request correlation, data minimization and cross-company zero-write checks pass.');
