@@ -55,6 +55,7 @@ function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendin
     VALUES(?,?,'test-bank','Test Bank','cipher','iv','1234',?,?,?,1)`);
   insert.run('primary-a', 'employee-a', '2026-01-01T00:00:00.000Z', 'bank:old', 1);
   insert.run('candidate-a', 'employee-a', null, null, 0);
+  insert.run('candidate-b', 'employee-a', null, null, 0);
   if (failAudit) db.exec(`CREATE TRIGGER fail_bank_audit BEFORE INSERT ON audit_logs WHEN NEW.action='verify_employee_bank' BEGIN SELECT RAISE(ABORT,'forced audit failure'); END;`);
 
   let pendingReadCount = 0;
@@ -145,6 +146,36 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
   assert.equal(db.prepare("SELECT is_primary,verified_at FROM employee_bank_accounts WHERE id='candidate-a'").get().is_primary, 1);
   assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 1);
   assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE action='verify_employee_bank'").get().request_id, 'sqlite-promotion-test');
+  db.close();
+}
+
+{
+  const { db, adapter } = createDatabase();
+  const first = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
+  const replay = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
+  assert.equal(first.status, 200, 'first verified promotion succeeds');
+  assert.equal(replay.status, 404, 'replaying the consumed candidate is a neutral denial');
+  assert.equal(db.prepare("SELECT id FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().id, 'candidate-a');
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 1, 'replay creates no second success audit');
+  db.close();
+}
+
+{
+  const { db, adapter } = createDatabase();
+  const competingInput = { ...input, bankAccountId: 'candidate-b', verificationReference: 'promotion-456' };
+  const [first, second] = await Promise.all([
+    promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-race-a' } }), { DB: adapter }, context, input),
+    promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-race-b' } }), { DB: adapter }, context, competingInput)
+  ]);
+  const statuses = [first.status, second.status].sort();
+  assert.deepEqual(statuses, [200, 404], 'exactly one concurrent candidate promotion wins');
+  const winnerId = db.prepare("SELECT id FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().id;
+  assert.ok(['candidate-a', 'candidate-b'].includes(winnerId), 'one candidate is the sole primary');
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().count, 1, 'race leaves exactly one active primary');
+  const audits = db.prepare("SELECT entity_id,request_id FROM audit_logs WHERE action='verify_employee_bank'").all();
+  assert.equal(audits.length, 1, 'losing invocation creates no success audit');
+  assert.equal(audits[0].entity_id, winnerId, 'success audit belongs to the promoted candidate');
+  assert.ok(['sqlite-race-a', 'sqlite-race-b'].includes(audits[0].request_id), 'winner audit preserves request correlation');
   db.close();
 }
 
