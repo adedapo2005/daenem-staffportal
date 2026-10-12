@@ -196,6 +196,16 @@ try {
         assert.equal(await dialog.locator('.assignment-list').getByText('ONLY EMPLOYEE A ROLE').count(), 0, 'late Employee A assignment must not display for selected Employee B');
         assert.equal(await dialog.locator('.assignment-list').getByText('ONLY EMPLOYEE B ROLE').count(), 1, 'selected Employee B assignment must remain visible');
       }
+      // A request started before permission revocation must never repopulate
+      // the privileged workspace after the session becomes unauthorized.
+      if (assignmentRace) {
+        const revokedRead = page.waitForRequest(request => request.url().includes('/api/access-control/business-assignments?') && request.url().includes('employeeId=employee-a'));
+        await dialog.locator('.employee-list').getByRole('button', { name: /Employee A/ }).click();
+        await revokedRead;
+        await dialog.getByText('Loading business assignments…').waitFor({ state: 'visible', timeout: 3000 });
+        assert.equal(await dialog.locator('.assignment-list').getByText('ONLY EMPLOYEE B ROLE').count(), 0, 'pending Employee A read must clear previous Employee B data');
+        assert.equal(assignmentMutationCount, 0, 'pending revoked employee read must not cause a mutation');
+      }
       const before = authCalls;
       holdAuth = true;
       await page.evaluate(() => window.dispatchEvent(new Event('focus')));
@@ -205,6 +215,15 @@ try {
       await page.evaluate(() => window.dispatchEvent(new Event('daenem-auth-changed')));
       holdAuth = false;
       for (const release of held.splice(0)) release();
+      if (assignmentRace) {
+        for (let attempt = 0; attempt < 50 && !releaseEmployeeA; attempt++) await page.waitForTimeout(10);
+        assert.ok(releaseEmployeeA, 'revoked Employee A read must still be pending when authority is lost');
+        const revokedResponse = page.waitForResponse(response => response.url().includes('/api/access-control/business-assignments?') && response.url().includes('employeeId=employee-a'));
+        releaseEmployeeA();
+        releaseEmployeeA = null;
+        await revokedResponse;
+        assert.equal(await page.getByText('ONLY EMPLOYEE A ROLE').count(), 0, 'late employee data must not reappear after authorization revocation');
+      }
       await page.waitForTimeout(3200);
       assert.equal(await launcher.count(), 0, 'revocation must hide privileged launcher after stale response');
       assert.equal(await page.locator('#access-control-launcher .access-shell').count(), 0, 'revocation must purge visible privileged data');
