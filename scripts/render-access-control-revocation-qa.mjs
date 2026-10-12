@@ -18,6 +18,8 @@ try {
     });
     const page = await context.newPage();
     const errors = [], held = [];
+    let smartProviderRequests = 0;
+    page.on('request', request => { if (/\/api\/(smart-input|smart-compose|ai-suggest|ai-complete)/i.test(new URL(request.url()).pathname)) smartProviderRequests++; });
     let companyId = 'company-a', authenticated = true, holdAuth = false, authCalls = 0;
     const assignmentRace = width === 390 || width === 3840;
     let releaseEmployeeA = null, releaseEmployeeB = null, releaseEmployeeRole = null, assignmentMutationCount = 0, roleMutationCount = 0;
@@ -121,11 +123,38 @@ try {
       assert.equal(await page.getByRole('button', { name: 'Refresh access controls' }).count(), 1, 'refresh must have a readable accessible name');
       const closeButton = page.getByRole('button', { name: 'Close Access Control' });
       assert.equal(await closeButton.count(), 1, 'close must have a readable accessible name');
+      if (width === 390 || width === 3840) {
+        assert.equal(await closeButton.evaluate(element => document.activeElement === element), true, 'modal must set initial keyboard focus before Smart Input interaction');
+      }
+      if (width === 390 || width === 3840) {
+        const smart = dialog.getByRole('textbox', { name: 'Role description' });
+        await smart.fill('Responsible');
+        assert.equal(await smart.inputValue(), 'Responsible', 'ghost text must never silently change the actual field value');
+        assert.equal(await dialog.locator('.smart-input-ghost').textContent(), ' for assigned daily tasks', 'visible ghost text must use the approved neutral local fallback');
+        assert.equal(await smart.evaluate(element => getComputedStyle(element).backgroundColor), 'rgba(0, 0, 0, 0)', 'ghost text must not be concealed behind an opaque input');
+        await dialog.getByRole('button', { name: 'Accept local suggestion' }).click();
+        assert.equal(await smart.inputValue(), 'Responsible for assigned daily tasks', 'explicit acceptance inserts only a neutral local phrase');
+        await dialog.getByRole('button', { name: 'Undo accepted suggestion' }).click();
+        assert.equal(await smart.inputValue(), 'Responsible', 'accepted suggestion must be undoable');
+        await smart.fill('Coordinates');
+        await smart.press('Escape');
+        assert.equal(await dialog.count(), 1, 'dismissing ghost text must not close the authorized workspace');
+        assert.equal(await dialog.getByRole('button', { name: 'Accept local suggestion' }).count(), 0, 'dismissed ghost must stay dismissed');
+        await smart.fill('Supports');
+        await smart.press('End');
+        await smart.press('ArrowRight');
+        assert.equal(await smart.inputValue(), 'Supports assigned team activities', 'Right Arrow accepts at the end of the field');
+        await dialog.getByRole('button', { name: 'Toggle local writing suggestions' }).click();
+        await smart.fill('Responsible');
+        assert.equal(await dialog.getByRole('button', { name: 'Accept local suggestion' }).count(), 0, 'user opt-out suppresses local suggestions');
+        assert.equal(smartProviderRequests, 0, 'local Smart Input must not make any provider or suggestions API request');
+      }
       assert.equal(await page.locator('#qa-access-focus-origin').evaluate(element => element.inert), true, 'background focus origin must be inert while modal is open');
       assert.equal(await page.locator('.postauth-module-envelope').first().evaluate(element => Boolean(element.closest('[inert]'))), true, 'main application must be inert while modal is open');
       if (width === 390 || width === 3840) {
         const focusable = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
-        assert.equal(await closeButton.evaluate(element => document.activeElement === element), true, 'modal must set initial keyboard focus');
+        await closeButton.focus();
+        assert.equal(await closeButton.evaluate(element => document.activeElement === element), true, 'close control must regain focus after Smart Input interaction');
         // A body-level portal can appear after the modal opens; synchronous focus
         // must stay inside and MutationObserver must inert it before the next paint.
         const synchronousFocusContained = await page.evaluate(() => {
