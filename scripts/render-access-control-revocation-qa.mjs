@@ -20,7 +20,7 @@ try {
     const errors = [], held = [];
     let companyId = 'company-a', authenticated = true, holdAuth = false, authCalls = 0;
     const assignmentRace = width === 390 || width === 3840;
-    let releaseEmployeeA = null, releaseEmployeeB = null, assignmentMutationCount = 0;
+    let releaseEmployeeA = null, releaseEmployeeB = null, releaseEmployeeRole = null, assignmentMutationCount = 0, roleMutationCount = 0;
     const authResponse = () => ({
       authenticated,
       context: authenticated ? {
@@ -81,6 +81,13 @@ try {
       if (uri.pathname === '/api/access-control/business-assignment' && assignmentRace) {
         assignmentMutationCount++;
         return send(route, { message: 'Synthetic assignment response' });
+      }
+      if (uri.pathname === '/api/access-control/employee-role' && assignmentRace) {
+        const body = JSON.parse(route.request().postData() || '{}');
+        assert.equal(body.employeeId, 'employee-a', 'role mutation must remain bound to the initiating employee');
+        roleMutationCount++;
+        await new Promise(resolve => { releaseEmployeeRole = resolve; });
+        return route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'Employee A private role denial' }) });
       }
       if (uri.pathname === '/api/access-control/history') return send(route, { changes: [] });
       if (uri.pathname === '/api/experience/layout') return send(route, { preference: { layoutId: 'focus-flow', density: 'standard', motion: 'reduced' }, canChoose: false });
@@ -156,6 +163,29 @@ try {
         // can still be completing its earlier lazy launch after the dialog is visible.
         await page.evaluate(() => window.dispatchEvent(new Event('daenem:open-access-control')));
         await dialog.waitFor({ state: 'visible', timeout: 3000 });
+      }
+      // Late mutation failures must not surface under another employee, even after A -> B -> A.
+      if (assignmentRace) {
+        await dialog.getByRole('button', { name: 'Employee Overrides' }).click();
+        await dialog.locator('.employee-list').getByRole('button', { name: /Employee A/ }).click();
+        await dialog.locator('.role-assign select').selectOption('qa-manager');
+        const roleRequest = page.waitForRequest(request => request.url().includes('/api/access-control/employee-role'));
+        await dialog.locator('.role-assign').getByRole('button', { name: 'Assign role' }).click();
+        await roleRequest;
+        await dialog.locator('.employee-list').getByRole('button', { name: /Employee B/ }).click();
+        await dialog.locator('.matrix-title h3').getByText('Employee B').waitFor({ state: 'visible', timeout: 3000 });
+        for (let attempt = 0; attempt < 50 && !releaseEmployeeRole; attempt++) await page.waitForTimeout(10);
+        assert.ok(releaseEmployeeRole, 'Employee A role mutation failure must be held while B is selected');
+        assert.equal(roleMutationCount, 1, 'only the initiating employee role mutation may be sent');
+        const roleResponse = page.waitForResponse(response => response.url().includes('/api/access-control/employee-role'));
+        releaseEmployeeRole();
+        releaseEmployeeRole = null;
+        await roleResponse;
+        await page.waitForTimeout(150);
+        assert.equal(await dialog.getByText('Employee A private role denial', { exact: true }).count(), 0, 'late A failure must not appear in B workspace');
+        await dialog.locator('.employee-list').getByRole('button', { name: /Employee A/ }).click();
+        await page.waitForTimeout(100);
+        assert.equal(await dialog.getByText('Employee A private role denial', { exact: true }).count(), 0, 'obsolete A failure must not return after A -> B -> A');
       }
       if (assignmentRace) {
         const employeeARequest = page.waitForRequest(request => request.url().includes('/api/access-control/business-assignments?') && request.url().includes('employeeId=employee-a'));
@@ -238,6 +268,7 @@ try {
     } finally {
       if (releaseEmployeeA) { releaseEmployeeA(); releaseEmployeeA = null; }
       if (releaseEmployeeB) { releaseEmployeeB(); releaseEmployeeB = null; }
+      if (releaseEmployeeRole) { releaseEmployeeRole(); releaseEmployeeRole = null; }
       for (const release of held.splice(0)) release();
       await context.close();
     }

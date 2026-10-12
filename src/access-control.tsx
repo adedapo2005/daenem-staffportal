@@ -22,7 +22,14 @@ export function AccessControlCenter({context,onClose}:{context:WorkforceContext;
  const availableCompanies=context.companies.filter(company=>isOwner
    ||hasWorkforcePermission(context,'roles.access','manage',company.id)
    ||hasWorkforcePermission(context,'users.access','manage',company.id));
- const[companyId,setCompanyId]=useState(availableCompanies[0]?.id||''),[data,setData]=useState<Overview|null>(null),[selectedRole,setSelectedRole]=useState(''),[selectedEmployee,setSelectedEmployee]=useState(''),[history,setHistory]=useState<Change[]>([]),[tab,setTab]=useState<'roles'|'employees'|'businesses'|'history'>('roles'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const[companyId,setCompanyId]=useState(availableCompanies[0]?.id||''),[data,setData]=useState<Overview|null>(null),[selectedRole,setSelectedRole]=useState(''),[selectedEmployee,setSelectedEmployee]=useState(''),[history,setHistory]=useState<Change[]>([]),[tab,setTab]=useState<'roles'|'employees'|'businesses'|'history'>('roles'),[messageState,setMessageState]=useState<{scopeKey:string;value:string}|null>(null),[busy,setBusy]=useState(false);
+ // Keep asynchronous mutation feedback tied to the employee, role, tab, company, and live authority that initiated it.
+ const feedbackScopeKey=JSON.stringify([authorityKey,companyId,selectedEmployee,selectedRole,tab]);
+ const feedbackEpoch=useRef({key:feedbackScopeKey,serial:0});
+ if(feedbackEpoch.current.key!==feedbackScopeKey)feedbackEpoch.current={key:feedbackScopeKey,serial:feedbackEpoch.current.serial+1};
+ const feedbackToken=JSON.stringify([feedbackScopeKey,feedbackEpoch.current.serial]);
+ const message=messageState?.scopeKey===feedbackToken?messageState.value:'';
+ const setMessage=(value:string)=>setMessageState({scopeKey:feedbackToken,value});
  const loadSerial=useRef(0);
  const dataAuthority=useRef('');
  async function load(target=companyId){
