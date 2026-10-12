@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 
@@ -27,39 +30,9 @@ function migrationTable(sql, name) {
   return match[0];
 }
 
-function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, deactivateActorRoleAfterPendingRead = false, denyActorPermission = false, failAudit = false, actorRoleCompanyId = 'company-a', actorRoleActive = 1, ownerRoleCompanyId = null } = {}) {
-  const db = new DatabaseSync(':memory:');
-  db.exec('PRAGMA foreign_keys=ON;');
-  db.exec(migrationTable(coreMigration, 'companies'));
-  db.exec('CREATE TABLE employees(id TEXT PRIMARY KEY); CREATE TABLE company_locations(id TEXT PRIMARY KEY);');
-  db.exec(migrationTable(coreMigration, 'employee_company_memberships'));
-  for (const table of ['roles', 'employee_roles', 'permissions', 'role_permissions', 'employee_permission_overrides']) db.exec(migrationTable(coreMigration, table));
-  db.exec(migrationTable(permissionOverridesMigration, 'employee_permission_overrides_v2'));
-  db.exec(migrationTable(coreMigration, 'audit_logs'));
-  db.exec(migrationTable(payrollMigration, 'employee_bank_accounts'));
-  db.prepare('INSERT INTO companies(id,code,name,business_type) VALUES(?,?,?,?)').run('company-a', 'COMPANY-A', 'Company A', 'other');
-  db.prepare('INSERT INTO companies(id,code,name,business_type) VALUES(?,?,?,?)').run('company-b', 'COMPANY-B', 'Company B', 'other');
-  db.prepare('INSERT INTO employees(id) VALUES(?)').run('employee-a');
-  db.prepare('INSERT INTO employees(id) VALUES(?)').run('actor-a');
-  db.prepare('INSERT INTO employees(id) VALUES(?)').run('owner-a');
-  db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('membership-a', 'employee-a', 'company-a');
-  db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('actor-membership-a', 'actor-a', 'company-a');
-  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,?)').run('payroll-role-a', actorRoleCompanyId, 'payroll-manager', 'Payroll Manager', actorRoleActive);
-  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,1)').run('owner-role-a', ownerRoleCompanyId, 'owner', 'Owner');
-  db.prepare('INSERT INTO permissions(id,code,module,action) VALUES(?,?,?,?)').run('payroll-access', 'payroll.access', 'payroll', 'access');
-  db.prepare('INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,?,?)').run('payroll-role-grant', 'payroll-role-a', 'payroll-access', 'edit');
-  db.prepare('INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES(?,?,?,?)').run('actor-payroll-role', 'actor-a', 'company-a', 'payroll-role-a');
-  db.prepare('INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES(?,?,?,?)').run('owner-role-assignment', 'owner-a', 'company-a', 'owner-role-a');
-  if (denyActorPermission) db.prepare('INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by) VALUES(?,?,?,?,?,?,?)').run('actor-payroll-deny', 'actor-a', 'company-a', 'payroll-access', 'none', 'Fixture deny-wins check', 'owner-a');
-  const insert = db.prepare(`INSERT INTO employee_bank_accounts(id,employee_id,bank_key,bank_name,account_number_ciphertext,account_number_iv,account_number_last4,verified_at,verification_source,is_primary,active)
-    VALUES(?,?,'test-bank','Test Bank','cipher','iv','1234',?,?,?,1)`);
-  insert.run('primary-a', 'employee-a', '2026-01-01T00:00:00.000Z', 'bank:old', 1);
-  insert.run('candidate-a', 'employee-a', null, null, 0);
-  insert.run('candidate-b', 'employee-a', null, null, 0);
-  if (failAudit) db.exec(`CREATE TRIGGER fail_bank_audit BEFORE INSERT ON audit_logs WHEN NEW.action='verify_employee_bank' BEGIN SELECT RAISE(ABORT,'forced audit failure'); END;`);
-
+function adapterFor(db, { revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, deactivateActorRoleAfterPendingRead = false } = {}) {
   let pendingReadCount = 0;
-  const adapter = {
+  return {
     prepare(sql) {
       return {
         sql,
@@ -100,6 +73,40 @@ function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendin
       }
     }
   };
+}
+
+function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, deactivateActorRoleAfterPendingRead = false, denyActorPermission = false, failAudit = false, actorRoleCompanyId = 'company-a', actorRoleActive = 1, ownerRoleCompanyId = null } = {}, databasePath = ':memory:') {
+  const db = new DatabaseSync(databasePath);
+  db.exec('PRAGMA foreign_keys=ON;');
+  db.exec(migrationTable(coreMigration, 'companies'));
+  db.exec('CREATE TABLE employees(id TEXT PRIMARY KEY); CREATE TABLE company_locations(id TEXT PRIMARY KEY);');
+  db.exec(migrationTable(coreMigration, 'employee_company_memberships'));
+  for (const table of ['roles', 'employee_roles', 'permissions', 'role_permissions', 'employee_permission_overrides']) db.exec(migrationTable(coreMigration, table));
+  db.exec(migrationTable(permissionOverridesMigration, 'employee_permission_overrides_v2'));
+  db.exec(migrationTable(coreMigration, 'audit_logs'));
+  db.exec(migrationTable(payrollMigration, 'employee_bank_accounts'));
+  db.prepare('INSERT INTO companies(id,code,name,business_type) VALUES(?,?,?,?)').run('company-a', 'COMPANY-A', 'Company A', 'other');
+  db.prepare('INSERT INTO companies(id,code,name,business_type) VALUES(?,?,?,?)').run('company-b', 'COMPANY-B', 'Company B', 'other');
+  db.prepare('INSERT INTO employees(id) VALUES(?)').run('employee-a');
+  db.prepare('INSERT INTO employees(id) VALUES(?)').run('actor-a');
+  db.prepare('INSERT INTO employees(id) VALUES(?)').run('owner-a');
+  db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('membership-a', 'employee-a', 'company-a');
+  db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('actor-membership-a', 'actor-a', 'company-a');
+  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,?)').run('payroll-role-a', actorRoleCompanyId, 'payroll-manager', 'Payroll Manager', actorRoleActive);
+  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,1)').run('owner-role-a', ownerRoleCompanyId, 'owner', 'Owner');
+  db.prepare('INSERT INTO permissions(id,code,module,action) VALUES(?,?,?,?)').run('payroll-access', 'payroll.access', 'payroll', 'access');
+  db.prepare('INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,?,?)').run('payroll-role-grant', 'payroll-role-a', 'payroll-access', 'edit');
+  db.prepare('INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES(?,?,?,?)').run('actor-payroll-role', 'actor-a', 'company-a', 'payroll-role-a');
+  db.prepare('INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES(?,?,?,?)').run('owner-role-assignment', 'owner-a', 'company-a', 'owner-role-a');
+  if (denyActorPermission) db.prepare('INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by) VALUES(?,?,?,?,?,?,?)').run('actor-payroll-deny', 'actor-a', 'company-a', 'payroll-access', 'none', 'Fixture deny-wins check', 'owner-a');
+  const insert = db.prepare(`INSERT INTO employee_bank_accounts(id,employee_id,bank_key,bank_name,account_number_ciphertext,account_number_iv,account_number_last4,verified_at,verification_source,is_primary,active)
+    VALUES(?,?,'test-bank','Test Bank','cipher','iv','1234',?,?,?,1)`);
+  insert.run('primary-a', 'employee-a', '2026-01-01T00:00:00.000Z', 'bank:old', 1);
+  insert.run('candidate-a', 'employee-a', null, null, 0);
+  insert.run('candidate-b', 'employee-a', null, null, 0);
+  if (failAudit) db.exec(`CREATE TRIGGER fail_bank_audit BEFORE INSERT ON audit_logs WHEN NEW.action='verify_employee_bank' BEGIN SELECT RAISE(ABORT,'forced audit failure'); END;`);
+
+  const adapter = adapterFor(db, { revokeAfterPendingRead, revokeActorAfterPendingRead, revokeActorGrantAfterPendingRead, deactivateActorRoleAfterPendingRead });
   return { db, adapter };
 }
 
@@ -161,22 +168,32 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
 }
 
 {
-  const { db, adapter } = createDatabase();
-  const competingInput = { ...input, bankAccountId: 'candidate-b', verificationReference: 'promotion-456' };
-  const [first, second] = await Promise.all([
-    promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-race-a' } }), { DB: adapter }, context, input),
-    promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-race-b' } }), { DB: adapter }, context, competingInput)
-  ]);
-  const statuses = [first.status, second.status].sort();
-  assert.deepEqual(statuses, [200, 404], 'exactly one concurrent candidate promotion wins');
-  const winnerId = db.prepare("SELECT id FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().id;
-  assert.ok(['candidate-a', 'candidate-b'].includes(winnerId), 'one candidate is the sole primary');
-  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().count, 1, 'race leaves exactly one active primary');
-  const audits = db.prepare("SELECT entity_id,request_id FROM audit_logs WHERE action='verify_employee_bank'").all();
-  assert.equal(audits.length, 1, 'losing invocation creates no success audit');
-  assert.equal(audits[0].entity_id, winnerId, 'success audit belongs to the promoted candidate');
-  assert.ok(['sqlite-race-a', 'sqlite-race-b'].includes(audits[0].request_id), 'winner audit preserves request correlation');
-  db.close();
+  const directory = mkdtempSync(join(tmpdir(), 'staffportal-payroll-promotion-'));
+  const databasePath = join(directory, 'promotion.sqlite');
+  const { db, adapter } = createDatabase({}, databasePath);
+  const competingDb = new DatabaseSync(databasePath);
+  competingDb.exec('PRAGMA foreign_keys=ON;');
+  const competingAdapter = adapterFor(competingDb);
+  try {
+    const competingInput = { ...input, bankAccountId: 'candidate-b', verificationReference: 'promotion-456' };
+    const [first, second] = await Promise.all([
+      promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-race-a' } }), { DB: adapter }, context, input),
+      promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-race-b' } }), { DB: competingAdapter }, context, competingInput)
+    ]);
+    const statuses = [first.status, second.status].sort();
+    assert.deepEqual(statuses, [200, 404], 'exactly one independent-connection candidate promotion wins');
+    const winnerId = db.prepare("SELECT id FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().id;
+    assert.ok(['candidate-a', 'candidate-b'].includes(winnerId), 'one candidate is the sole primary');
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().count, 1, 'race leaves exactly one active primary');
+    const audits = db.prepare("SELECT entity_id,request_id FROM audit_logs WHERE action='verify_employee_bank'").all();
+    assert.equal(audits.length, 1, 'losing invocation creates no success audit');
+    assert.equal(audits[0].entity_id, winnerId, 'success audit belongs to the promoted candidate');
+    assert.ok(['sqlite-race-a', 'sqlite-race-b'].includes(audits[0].request_id), 'winner audit preserves request correlation');
+  } finally {
+    competingDb.close();
+    db.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 {
