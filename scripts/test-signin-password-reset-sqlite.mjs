@@ -91,6 +91,7 @@ class SqliteD1 {
   }
   scalar(sql, ...values) { return this.database.prepare(sql).get(...values); }
   failBefore(sql) { this.database.exec(`CREATE TRIGGER injected_failure BEFORE ${sql} BEGIN SELECT RAISE(ABORT, 'injected failure'); END`); }
+  ignoreBefore(sql) { this.database.exec(`CREATE TRIGGER injected_noop BEFORE ${sql} BEGIN SELECT RAISE(IGNORE); END`); }
 }
 
 const request = () => new Request('https://staffportal.test/api/auth/password/reset', {
@@ -206,6 +207,28 @@ for (const [name, table, action, options] of [
   await check(`forced ${name} SQL failure rolls the whole reset back`, async () => {
     const fixture = new SqliteD1(options);
     fixture.failBefore(`${action} ON ${table}`);
+    const response = await invoke(fixture);
+    assert.equal(response.status, 503);
+    assert.equal(fixture.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
+    const credential = fixture.scalar("SELECT password_hash FROM employee_credentials WHERE employee_id='employee-a'");
+    assert.equal(options.credential === false ? credential : credential.password_hash, options.credential === false ? undefined : 'old-hash');
+    assert.equal(fixture.scalar("SELECT status FROM employee_login_access_requests WHERE id='access-a'")?.status, options.credential === false ? 'ready' : undefined);
+    assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM auth_sessions WHERE employee_id='employee-a' AND revoked_at IS NOT NULL").count, 0);
+    assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE result='success'").count, 0);
+  });
+}
+
+for (const [name, table, action, options] of [
+  ['credential update', 'employee_credentials', 'UPDATE', {}],
+  ['credential insert', 'employee_credentials', 'INSERT', { credential: false }],
+  ['access-grant activation', 'employee_login_access_requests', 'UPDATE', { credential: false }],
+  ['challenge consume', 'password_reset_challenges', 'UPDATE', {}],
+  ['session revocation', 'auth_sessions', 'UPDATE', {}],
+  ['required success audit', 'security_logs', 'INSERT', {}],
+]) {
+  await check(`silent zero-row ${name} write rolls the whole reset back`, async () => {
+    const fixture = new SqliteD1(options);
+    fixture.ignoreBefore(`${action} ON ${table}`);
     const response = await invoke(fixture);
     assert.equal(response.status, 503);
     assert.equal(fixture.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
