@@ -3,6 +3,9 @@ import { getEnhancedSessionContext } from './auth-context-v2.js';
 import { routePasswordAuth, type PasswordAuthEnv } from './password-auth.js';
 import { routeAuthRefinement } from './auth-refinement.js';
 import { routeAdmin } from './admin.js';
+import { routeFinance } from './finance.js';
+import { routeFinanceAdvanced } from './finance-advanced.js';
+import { routeFinancialGateway } from './financial-gateway.js';
 import { routeCommunications } from './communications-service.js';
 import { routeCommunicationsWebhook, type CommunicationsWebhookEnv } from './communications-webhook.js';
 
@@ -56,7 +59,7 @@ function preflight(request:Request,env:Env){
     'access-control-allow-origin':origin,
     'access-control-allow-credentials':'true',
     'access-control-allow-methods':'GET,POST,OPTIONS',
-    'access-control-allow-headers':'Accept, Content-Type',
+    'access-control-allow-headers':'Accept, Content-Type, Idempotency-Key',
     'access-control-max-age':'600',
   });
   headers.set('vary','Origin');
@@ -90,6 +93,22 @@ export default {
       if(!context)return secure(json({error:'Authentication required.'},401),request,env);
       const response=await routeAdmin(request,env,context);
       return secure(response||json({error:'Admin route not found.'},404),request,env);
+    }
+
+    if(url.pathname.startsWith('/api/finance/')){
+      const context=await getSessionContext(request,env);
+      if(!context)return secure(json({error:'Authentication required.'},401),request,env);
+      const advanced=await routeFinanceAdvanced(request,env,context);
+      if(advanced)return secure(advanced,request,env);
+      const response=await routeFinance(request,env,context);
+      return secure(response||json({error:'Finance route not found.'},404),request,env);
+    }
+
+    if(url.pathname.startsWith('/api/financial-gateway/')){
+      const context=await getSessionContext(request,env);
+      if(!context)return secure(json({error:'Authentication required.'},401),request,env);
+      const response=await routeFinancialGateway(request,env,context);
+      return secure(response||json({error:'Financial Gateway route not found.'},404),request,env);
     }
 
     if(url.pathname.startsWith('/api/communications/')){
