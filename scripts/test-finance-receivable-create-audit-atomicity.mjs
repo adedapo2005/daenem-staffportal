@@ -84,7 +84,7 @@ function request(headers = {}, body = payload) {
 }
 
 const accepted = fixture();
-const success = await routeFinance(request({ 'x-request-id': 'finance-create-42' }), accepted.env, accepted.context);
+const success = await routeFinance(request({ 'idempotency-key': 'receivable-create-42', 'x-request-id': 'finance-create-trace-1' }), accepted.env, accepted.context);
 assert.equal(success.status, 201, 'a receivable is reported created only after both writes persist');
 const created = await success.json();
 assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 1);
@@ -97,14 +97,14 @@ assert.equal(audit.entity_type, 'finance_receivable');
 assert.equal(audit.entity_id, created.id);
 assert.equal(audit.before_json, null);
 assert.equal(audit.source, 'web');
-assert.equal(audit.request_id, 'finance-create-42');
+assert.equal(audit.request_id, 'finance-create-trace-1');
 assert.deepEqual(JSON.parse(audit.after_json), {
   customerName: 'Customer A', customerRef: 'customer-ref-a', invoiceNo: 'INV-001',
   amountKobo: 85000, currency: 'NGN', actorRoles: ['finance-clerk'], beforeStatus: null, afterStatus: 'open',
 });
 assert.doesNotMatch(audit.after_json, /private note/);
 assert.equal(accepted.batches, 1, 'receivable and required audit use one atomic batch');
-const replay = await routeFinance(request({ 'x-request-id': 'finance-create-42' }), accepted.env, accepted.context);
+const replay = await routeFinance(request({ 'idempotency-key': 'receivable-create-42', 'x-request-id': 'finance-create-trace-2' }), accepted.env, accepted.context);
 assert.equal(replay.status, 200, 'an identical company-scoped request identity replays as the original create');
 assert.equal((await replay.json()).id, created.id, 'retry returns the original receivable identity');
 assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 1,
@@ -112,7 +112,7 @@ assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM finance_receivab
 assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 1,
   'replay cannot create duplicate success audit evidence');
 assert.equal(accepted.batches, 2);
-const conflictingReplay = await routeFinance(request({ 'x-request-id': 'finance-create-42' },
+const conflictingReplay = await routeFinance(request({ 'idempotency-key': 'receivable-create-42', 'x-request-id': 'finance-create-trace-3' },
   { ...payload, amountNaira: 851 }), accepted.env, accepted.context);
 assert.equal(conflictingReplay.status, 409, 'reusing the same request identity with a different payload conflicts');
 assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 1,
@@ -121,6 +121,14 @@ assert.equal(accepted.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get
   'conflicting replay creates no success audit');
 assert.equal(accepted.batches, 3);
 accepted.db.close();
+
+const missingKey = fixture();
+const missingKeyResponse = await routeFinance(request({ 'x-request-id': 'trace-is-not-an-operation-key' }), missingKey.env, missingKey.context);
+assert.equal(missingKeyResponse.status, 400, 'transport correlation alone cannot authorize a logical create identity');
+assert.equal(missingKey.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 0);
+assert.equal(missingKey.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 0);
+assert.equal(missingKey.batches, 0);
+missingKey.db.close();
 
 for (const [name, amountNaira] of [
   ['fractional kobo', 1.001],
@@ -140,7 +148,7 @@ for (const [name, amountNaira] of [
 }
 
 const exactKobo = fixture();
-const exactKoboResponse = await routeFinance(request({}, { ...payload, amountNaira: 1.23 }), exactKobo.env, exactKobo.context);
+const exactKoboResponse = await routeFinance(request({ 'idempotency-key': 'exact-kobo-create' }, { ...payload, amountNaira: 1.23 }), exactKobo.env, exactKobo.context);
 assert.equal(exactKoboResponse.status, 201, 'valid two-decimal NGN amounts remain accepted');
 assert.equal(exactKobo.db.prepare('SELECT amount_kobo AS amount FROM finance_receivables').get().amount, 123,
   'two-decimal NGN amounts convert to exact integer kobo');
@@ -148,8 +156,8 @@ exactKobo.db.close();
 
 const competing = fixture();
 const simultaneous = await Promise.all([
-  routeFinance(request({ 'x-request-id': 'finance-create-race-9' }), competing.env, competing.context),
-  routeFinance(request({ 'x-request-id': 'finance-create-race-9' }), competing.env, competing.context),
+  routeFinance(request({ 'idempotency-key': 'finance-create-race-9', 'x-request-id': 'trace-race-a' }), competing.env, competing.context),
+  routeFinance(request({ 'idempotency-key': 'finance-create-race-9', 'x-request-id': 'trace-race-b' }), competing.env, competing.context),
 ]);
 assert.deepEqual(simultaneous.map(response => response.status).sort(), [200, 201],
   'competing identical create requests produce one create and one replay');
@@ -160,7 +168,7 @@ assert.equal(competing.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').ge
 competing.db.close();
 
 const failedAudit = fixture({ auditFailure: true });
-const failed = await routeFinance(request(), failedAudit.env, failedAudit.context);
+const failed = await routeFinance(request({ 'idempotency-key': 'audit-fail-create' }), failedAudit.env, failedAudit.context);
 assert.equal(failed.status, 503, 'audit failure returns bounded service-unavailable response');
 assert.equal(failedAudit.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 0,
   'receivable insert rolls back when required audit insert fails');
@@ -169,7 +177,7 @@ assert.equal(failedAudit.batches, 1);
 failedAudit.db.close();
 
 const ignoredAudit = fixture({ ignoreAudit: true });
-const ignored = await routeFinance(request(), ignoredAudit.env, ignoredAudit.context);
+const ignored = await routeFinance(request({ 'idempotency-key': 'ignored-audit-create' }), ignoredAudit.env, ignoredAudit.context);
 assert.equal(ignored.status, 409, 'silently ignored audit cannot produce success');
 assert.equal(ignoredAudit.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 0,
   'conditional receivable insert requires one written audit row');
@@ -179,10 +187,18 @@ ignoredAudit.db.close();
 const crossCompany = fixture();
 crossCompany.context.companyPermissions['company-b'] = { 'finance.receivables': 'create' };
 crossCompany.context.companies = [{ id: 'company-a' }];
-const denied = await routeFinance(request({}, { ...payload, companyId: 'company-b' }), crossCompany.env, crossCompany.context);
+const denied = await routeFinance(request({ 'idempotency-key': 'cross-company-create' }, { ...payload, companyId: 'company-b' }), crossCompany.env, crossCompany.context);
 assert.equal(denied.status, 403, 'company membership remains required before any write');
 assert.equal(crossCompany.batches, 0, 'cross-company attempt performs no receivable or audit write');
 assert.equal(crossCompany.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 0);
 crossCompany.db.close();
 
-console.log('PASS: Finance receivable creation and required audit are atomic; same-key and competing replays return the original record, changed-payload replay conflicts without writes, audit-failure rollback, request correlation, data minimization and cross-company zero-write checks pass.');
+const distinctCreates = fixture();
+const distinctOne = await routeFinance(request({ 'idempotency-key': 'user-action-one' }), distinctCreates.env, distinctCreates.context);
+const distinctTwo = await routeFinance(request({ 'idempotency-key': 'user-action-two' }), distinctCreates.env, distinctCreates.context);
+assert.deepEqual([distinctOne.status, distinctTwo.status], [201, 201], 'a distinct user action can record the same payload without invoice-number uniqueness inference');
+assert.equal(distinctCreates.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 2);
+assert.equal(distinctCreates.db.prepare('SELECT COUNT(*) AS count FROM audit_logs').get().count, 2);
+distinctCreates.db.close();
+
+console.log('PASS: Finance receivable creation requires a stable company-scoped operation key separate from request correlation; retries across changing traces return the original record, conflicting payloads fail closed, distinct actions remain allowed, required audit is atomic, and company scope/data minimization hold.');
