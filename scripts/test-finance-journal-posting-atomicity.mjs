@@ -11,8 +11,8 @@ const { outputText } = ts.transpileModule(executableSource, {
 });
 const { routeFinance } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
-function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', companyId = 'company-a', race = false, auditFailure = false, auditIgnored = false } = {}) {
-  const state = { status: 'draft', periodStatus, updateCount: 0, auditCount: 0, batchCount: 0 };
+function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', companyId = 'company-a', race = false, auditFailure = false, auditIgnored = false, staleAudit = false } = {}) {
+  const state = { status: 'draft', periodStatus, updateCount: 0, auditCount: staleAudit ? 1 : 0, currentAuditCount: 0, batchCount: 0 };
   const readers = [];
   const env = { DB: {
     prepare(sql) {
@@ -45,7 +45,11 @@ function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', company
       assert.match(update.sql, /company_id=\? AND status='draft' AND fiscal_period_id=\?/);
       assert.match(update.sql, /fiscal_periods WHERE id=\? AND company_id=\? AND status='open'/);
       assert.match(audit.sql, /WHERE changes\(\)=1/);
-      assert.match(invariant.sql, /json_extract\(CASE WHEN NOT EXISTS\([\s\S]*journal_entries[\s\S]*status='posted'[\s\S]*OR EXISTS\([\s\S]*audit_logs[\s\S]*action='post_journal'[\s\S]*THEN '\{\}' ELSE '\{' END,'\$'\)/);
+      assert.match(invariant.sql, /json_extract\(CASE WHEN NOT EXISTS\([\s\S]*journal_entries[\s\S]*status='posted'[\s\S]*approved_by=\?[\s\S]*OR NOT EXISTS\([\s\S]*audit_logs WHERE id=\?[\s\S]*actor_employee_id=\?[\s\S]*company_id=\?[\s\S]*action='post_journal'[\s\S]*entity_id=\?[\s\S]*source='web'[\s\S]*THEN '\{\}' ELSE '\{' END,'\$'\)/);
+      assert.equal(invariant.params[3], audit.params[0], 'rollback invariant is bound to this operation audit id');
+      assert.equal(invariant.params[4], audit.params[1], 'current audit actor must match the posting actor');
+      assert.equal(invariant.params[5], audit.params[2], 'current audit company must match the journal company');
+      assert.equal(invariant.params[6], audit.params[3], 'current audit entity must match the posted journal');
       const wasDraft = state.status === 'draft';
       const periodOpen = state.periodStatus === 'open' && periodCompanyId === companyId;
       const updateChanges = wasDraft && periodOpen ? 1 : 0;
@@ -56,7 +60,8 @@ function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', company
       }
       const auditChanges = auditIgnored ? 0 : updateChanges;
       state.auditCount += auditChanges;
-      if (state.status === 'posted' && state.auditCount === 0) {
+      state.currentAuditCount += auditChanges;
+      if (state.status === 'posted' && state.currentAuditCount !== 1) {
         Object.assign(state, before);
         throw new Error('required audit invariant failed');
       }
@@ -123,4 +128,12 @@ assert.equal(ignoredAudit.state.status, 'draft', 'the batch invariant rolls back
 assert.equal(ignoredAudit.state.updateCount, 0);
 assert.equal(ignoredAudit.state.auditCount, 0);
 
-console.log('PASS: Finance journal posting atomicity: open period, company scope, one-winner CAS, replay, and audit rollback');
+const ignoredAuditWithStaleMatch = fixture({ auditIgnored: true, staleAudit: true });
+const staleAuditResponse = await routeFinance(ignoredAuditWithStaleMatch.request(), ignoredAuditWithStaleMatch.env, ignoredAuditWithStaleMatch.context);
+assert.equal(staleAuditResponse.status, 503, 'a stale matching audit cannot satisfy the current posting audit invariant');
+assert.equal(ignoredAuditWithStaleMatch.state.status, 'draft', 'a stale audit cannot let a new posting commit');
+assert.equal(ignoredAuditWithStaleMatch.state.updateCount, 0);
+assert.equal(ignoredAuditWithStaleMatch.state.auditCount, 1, 'the unrelated preexisting audit remains unchanged');
+assert.equal(ignoredAuditWithStaleMatch.state.currentAuditCount, 0, 'the failed posting creates no current success audit');
+
+console.log('PASS: Finance journal posting atomicity: open period, company scope, one-winner CAS, replay, and current-operation audit rollback');
