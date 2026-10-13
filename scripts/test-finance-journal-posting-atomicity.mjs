@@ -193,4 +193,64 @@ for (const staleAudit of [false, true]) {
   assert.equal(sqliteFailure.db.prepare(`SELECT COUNT(*) AS count FROM audit_logs`).get().count, staleAudit ? 1 : 0);
 }
 
-console.log('PASS: Finance journal posting atomicity: source-derived SQLite success/replay, stale-audit rollback, open period, company scope, and one-winner CAS');
+function journalCreateFixture() {
+  const db = new DatabaseSync(':memory:');
+  db.exec(`
+    CREATE TABLE fiscal_periods(id TEXT PRIMARY KEY,company_id TEXT,start_date TEXT,end_date TEXT,status TEXT);
+    CREATE TABLE finance_accounts(id TEXT PRIMARY KEY,company_id TEXT,active INTEGER,allow_manual_posting INTEGER);
+    CREATE TABLE journal_entries(id TEXT PRIMARY KEY,company_id TEXT,fiscal_period_id TEXT,entry_no TEXT,entry_date TEXT,description TEXT,source_module TEXT,reference TEXT,status TEXT,prepared_by TEXT);
+    CREATE TABLE journal_lines(id TEXT PRIMARY KEY,journal_entry_id TEXT,account_id TEXT,description TEXT,debit_kobo INTEGER,credit_kobo INTEGER,cost_center TEXT);
+    INSERT INTO fiscal_periods VALUES('period-a','company-a','2026-10-01','2026-10-31','open');
+    INSERT INTO finance_accounts VALUES('debit-account','company-a',1,1),('credit-account','company-a',1,1);
+  `);
+  const env = { DB: {
+    prepare(sql) {
+      const bound = { sql, params: [], bind(...params) { this.params = params; return this; },
+        async first() { return db.prepare(sql).get(...bound.params); } };
+      return bound;
+    },
+    async batch(statements) {
+      db.exec('BEGIN');
+      try {
+        const results = statements.map(({ sql, params }) => {
+          const result = db.prepare(sql).run(...params);
+          return { meta: { changes: Number(result.changes) } };
+        });
+        db.exec('COMMIT');
+        return results;
+      } catch (error) {
+        db.exec('ROLLBACK');
+        throw error;
+      }
+    },
+  } };
+  const context = { employee: { id: 'employee-a' }, roles: [], companies: [{ id: 'company-a' }] };
+  const request = (lines) => new Request('https://staffportal.test/api/finance/journals', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ companyId: 'company-a', entryDate: '2026-10-10', description: 'Balanced journal', lines }),
+  });
+  return { db, env, context, request };
+}
+
+for (const lines of [
+  [{ accountId: 'debit-account', debitNaira: 1.001 }, { accountId: 'credit-account', creditNaira: 1.001 }],
+  [{ accountId: 'debit-account', debitNaira: 90071992547410 }, { accountId: 'credit-account', creditNaira: 90071992547410 }],
+  [{ accountId: 'debit-account', debitNaira: -1 }, { accountId: 'credit-account', creditNaira: -1 }],
+]) {
+  const invalid = journalCreateFixture();
+  const response = await routeFinance(invalid.request(lines), invalid.env, invalid.context);
+  assert.equal(response.status, 400, 'fractional-kobo, unsafe, or negative journal amounts are rejected');
+  assert.equal(invalid.db.prepare(`SELECT COUNT(*) AS count FROM journal_entries`).get().count, 0, 'invalid amounts create no journal');
+  assert.equal(invalid.db.prepare(`SELECT COUNT(*) AS count FROM journal_lines`).get().count, 0, 'invalid amounts create no journal lines');
+}
+
+const exactKobo = journalCreateFixture();
+const exactKoboResponse = await routeFinance(exactKobo.request([
+  { accountId: 'debit-account', debitNaira: 125.45 },
+  { accountId: 'credit-account', creditNaira: 125.45 },
+]), exactKobo.env, exactKobo.context);
+assert.equal(exactKoboResponse.status, 201, 'valid naira amounts map to exact integer kobo');
+assert.equal(exactKobo.db.prepare(`SELECT SUM(debit_kobo) AS kobo FROM journal_lines`).get().kobo, 12545);
+assert.equal(exactKobo.db.prepare(`SELECT SUM(credit_kobo) AS kobo FROM journal_lines`).get().kobo, 12545);
+
+console.log('PASS: Finance journal posting atomicity and integer-kobo creation: source-derived SQLite audit rollback, replay, scope, one-winner CAS, precision, and bounds');
