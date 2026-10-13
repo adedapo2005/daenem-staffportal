@@ -36,10 +36,15 @@ async function postJournal(request:Request,env:Env,context:SessionContext){
  if(!periodId||entry.periodStatus!=='open'||entry.periodCompanyId!==companyId||String(entry.periodStartDate||'')>entryDate||String(entry.periodEndDate||'')<entryDate)return json({error:'An open fiscal period is required to post this journal.'},409);
  const totals=await env.DB.prepare(`SELECT COALESCE(SUM(debit_kobo),0) AS debitKobo,COALESCE(SUM(credit_kobo),0) AS creditKobo FROM journal_lines WHERE journal_entry_id=?`).bind(b.id||'').first<{debitKobo:number;creditKobo:number}>();
  if(!totals||Number(totals.debitKobo)<=0||Number(totals.debitKobo)!==Number(totals.creditKobo))return json({error:'Journal is not balanced and cannot be posted.'},409);
- const results=await env.DB.batch([
-  env.DB.prepare(`UPDATE journal_entries SET status='posted',approved_by=?,approved_at=CURRENT_TIMESTAMP,posted_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status='draft' AND fiscal_period_id=? AND EXISTS(SELECT 1 FROM fiscal_periods WHERE id=? AND company_id=? AND status='open' AND start_date<=? AND end_date>=?)`).bind(context.employee.id,b.id||'',companyId,periodId,periodId,companyId,entryDate,entryDate),
-  env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) SELECT ?,?,?, 'finance','post_journal','journal_entry',?,?,'web' WHERE changes()=1`).bind(uid('audit'),context.employee.id,companyId,b.id||'',JSON.stringify({debitKobo:totals.debitKobo,creditKobo:totals.creditKobo}))
- ]);
+  const auditId=uid('audit');
+  let results:D1Result[];
+  try{results=await env.DB.batch([
+   env.DB.prepare(`UPDATE journal_entries SET status='posted',approved_by=?,approved_at=CURRENT_TIMESTAMP,posted_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status='draft' AND fiscal_period_id=? AND EXISTS(SELECT 1 FROM fiscal_periods WHERE id=? AND company_id=? AND status='open' AND start_date<=? AND end_date>=?)`).bind(context.employee.id,b.id||'',companyId,periodId,periodId,companyId,entryDate,entryDate),
+   env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) SELECT ?,?,?, 'finance','post_journal','journal_entry',?,?,'web' WHERE changes()=1`).bind(auditId,context.employee.id,companyId,b.id||'',JSON.stringify({debitKobo:totals.debitKobo,creditKobo:totals.creditKobo})),
+   // A zero-row audit insert is not a SQL error. Force the D1 batch to roll
+   // back unless the posting has matching formal audit evidence.
+   env.DB.prepare(`SELECT json_extract(CASE WHEN NOT EXISTS(SELECT 1 FROM journal_entries WHERE id=? AND company_id=? AND status='posted') OR EXISTS(SELECT 1 FROM journal_entries e JOIN audit_logs a ON a.entity_id=e.id AND a.company_id=e.company_id AND a.actor_employee_id=e.approved_by WHERE e.id=? AND e.company_id=? AND e.status='posted' AND a.module='finance' AND a.action='post_journal' AND a.entity_type='journal_entry' AND a.source='web') THEN '{}' ELSE '{' END,'$')`).bind(b.id||'',companyId,b.id||'',companyId)
+  ]);}catch{return json({error:'The journal could not be posted with its required audit record. Please try again.'},503)}
  if(Number(results?.[0]?.meta?.changes||0)!==1||Number(results?.[1]?.meta?.changes||0)!==1)return json({error:'The journal changed before it could be posted. Reload and try again.'},409);
  return json({ok:true,status:'posted'});
 }

@@ -11,7 +11,7 @@ const { outputText } = ts.transpileModule(executableSource, {
 });
 const { routeFinance } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
-function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', companyId = 'company-a', race = false, auditFailure = false } = {}) {
+function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', companyId = 'company-a', race = false, auditFailure = false, auditIgnored = false } = {}) {
   const state = { status: 'draft', periodStatus, updateCount: 0, auditCount: 0, batchCount: 0 };
   const readers = [];
   const env = { DB: {
@@ -40,21 +40,26 @@ function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', company
     },
     async batch(statements) {
       state.batchCount++;
-      const [update, audit] = statements;
+      const before = structuredClone(state);
+      const [update, audit, invariant] = statements;
       assert.match(update.sql, /company_id=\? AND status='draft' AND fiscal_period_id=\?/);
       assert.match(update.sql, /fiscal_periods WHERE id=\? AND company_id=\? AND status='open'/);
       assert.match(audit.sql, /WHERE changes\(\)=1/);
+      assert.match(invariant.sql, /json_extract\(CASE WHEN NOT EXISTS\([\s\S]*journal_entries[\s\S]*status='posted'[\s\S]*OR EXISTS\([\s\S]*audit_logs[\s\S]*action='post_journal'[\s\S]*THEN '\{\}' ELSE '\{' END,'\$'\)/);
       const wasDraft = state.status === 'draft';
       const periodOpen = state.periodStatus === 'open' && periodCompanyId === companyId;
       const updateChanges = wasDraft && periodOpen ? 1 : 0;
       if (updateChanges) { state.status = 'posted'; state.updateCount++; }
       if (auditFailure && updateChanges) {
-        state.status = 'draft';
-        state.updateCount--;
+        Object.assign(state, before);
         throw new Error('forced audit insert failure');
       }
-      const auditChanges = updateChanges;
+      const auditChanges = auditIgnored ? 0 : updateChanges;
       state.auditCount += auditChanges;
+      if (state.status === 'posted' && state.auditCount === 0) {
+        Object.assign(state, before);
+        throw new Error('required audit invariant failed');
+      }
       return [{ meta: { changes: updateChanges } }, { meta: { changes: auditChanges } }];
     },
   } };
@@ -106,9 +111,16 @@ assert.equal(denied.status, 404, 'cross-company denial remains neutral');
 assert.equal(crossCompany.state.batchCount, 0, 'cross-company denial performs no writes');
 
 const auditFailure = fixture({ auditFailure: true });
-await assert.rejects(routeFinance(auditFailure.request(), auditFailure.env, auditFailure.context), /forced audit insert failure/);
+assert.equal((await routeFinance(auditFailure.request(), auditFailure.env, auditFailure.context)).status, 503);
 assert.equal(auditFailure.state.status, 'draft', 'required audit failure rolls back the journal state');
 assert.equal(auditFailure.state.updateCount, 0);
 assert.equal(auditFailure.state.auditCount, 0);
+
+const ignoredAudit = fixture({ auditIgnored: true });
+const ignoredAuditResponse = await routeFinance(ignoredAudit.request(), ignoredAudit.env, ignoredAudit.context);
+assert.equal(ignoredAuditResponse.status, 503, 'a silently ignored required audit fails closed');
+assert.equal(ignoredAudit.state.status, 'draft', 'the batch invariant rolls back the successful status update');
+assert.equal(ignoredAudit.state.updateCount, 0);
+assert.equal(ignoredAudit.state.auditCount, 0);
 
 console.log('PASS: Finance journal posting atomicity: open period, company scope, one-winner CAS, replay, and audit rollback');
