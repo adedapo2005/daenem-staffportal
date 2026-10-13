@@ -55,9 +55,17 @@ export function GenericReportBuilderLauncher({ companyId }: { companyId: string 
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
+    // A scripted or browser-driven background focus change must not escape an open modal.
+    const onFocusIn = (event: FocusEvent) => {
+      if (event.target instanceof Node && dialogRef.current && !dialogRef.current.contains(event.target)) {
+        closeRef.current?.focus();
+      }
+    };
     document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('focusin', onFocusIn);
       document.body.style.overflow = previousOverflow;
       triggerRef.current?.focus();
     };

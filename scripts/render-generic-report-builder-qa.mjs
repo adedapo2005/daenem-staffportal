@@ -68,6 +68,9 @@ try {
       await page.keyboard.press('ArrowRight');
       assert.equal(await dialog.getByRole('tab', { name: /Columns/ }).getAttribute('aria-selected'), 'true');
       assert.equal(await dialog.getByRole('tab', { name: /Columns/ }).evaluate(el => document.activeElement === el), true);
+      // Background focus must not escape the open modal, including scripted focus changes.
+      await launcher.evaluate(element => element.focus());
+      assert.equal(await dialog.evaluate(element => element.contains(document.activeElement)), true, 'open report dialog must recapture background focus');
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
       assert.equal(overflow, false, 'modal must not create viewport horizontal overflow');
       assert.deepEqual(reportingRequests, [], 'unregistered report endpoints must never be contacted');
