@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 
 const source = fs.readFileSync('worker/finance.ts', 'utf8');
@@ -45,7 +46,7 @@ function fixture({ periodStatus = 'open', periodCompanyId = 'company-a', company
       assert.match(update.sql, /company_id=\? AND status='draft' AND fiscal_period_id=\?/);
       assert.match(update.sql, /fiscal_periods WHERE id=\? AND company_id=\? AND status='open'/);
       assert.match(audit.sql, /WHERE changes\(\)=1/);
-      assert.match(invariant.sql, /json_extract\(CASE WHEN NOT EXISTS\([\s\S]*journal_entries[\s\S]*status='posted'[\s\S]*approved_by=\?[\s\S]*OR NOT EXISTS\([\s\S]*audit_logs WHERE id=\?[\s\S]*actor_employee_id=\?[\s\S]*company_id=\?[\s\S]*action='post_journal'[\s\S]*entity_id=\?[\s\S]*source='web'[\s\S]*THEN '\{\}' ELSE '\{' END,'\$'\)/);
+      assert.match(invariant.sql, /json_extract\(CASE WHEN NOT EXISTS\([\s\S]*journal_entries[\s\S]*status='posted'[\s\S]*approved_by=\?[\s\S]*OR NOT EXISTS\([\s\S]*audit_logs WHERE id=\?[\s\S]*actor_employee_id=\?[\s\S]*company_id=\?[\s\S]*action='post_journal'[\s\S]*entity_id=\?[\s\S]*source='web'[\s\S]*THEN '\{' ELSE '\{\}' END,'\$'\)/);
       assert.equal(invariant.params[3], audit.params[0], 'rollback invariant is bound to this operation audit id');
       assert.equal(invariant.params[4], audit.params[1], 'current audit actor must match the posting actor');
       assert.equal(invariant.params[5], audit.params[2], 'current audit company must match the journal company');
@@ -136,4 +137,60 @@ assert.equal(ignoredAuditWithStaleMatch.state.updateCount, 0);
 assert.equal(ignoredAuditWithStaleMatch.state.auditCount, 1, 'the unrelated preexisting audit remains unchanged');
 assert.equal(ignoredAuditWithStaleMatch.state.currentAuditCount, 0, 'the failed posting creates no current success audit');
 
-console.log('PASS: Finance journal posting atomicity: open period, company scope, one-winner CAS, replay, and current-operation audit rollback');
+function sqliteRouteFixture({ auditIgnored = false, staleAudit = false } = {}) {
+  const db = new DatabaseSync(':memory:');
+  db.exec(`
+    CREATE TABLE fiscal_periods(id TEXT PRIMARY KEY,company_id TEXT,start_date TEXT,end_date TEXT,status TEXT);
+    CREATE TABLE journal_entries(id TEXT PRIMARY KEY,company_id TEXT,fiscal_period_id TEXT,entry_date TEXT,status TEXT,approved_by TEXT,approved_at TEXT,posted_at TEXT,updated_at TEXT);
+    CREATE TABLE journal_lines(journal_entry_id TEXT,debit_kobo INTEGER,credit_kobo INTEGER);
+    CREATE TABLE audit_logs(id TEXT PRIMARY KEY,actor_employee_id TEXT,company_id TEXT,module TEXT,action TEXT,entity_type TEXT,entity_id TEXT,after_json TEXT,source TEXT);
+    INSERT INTO fiscal_periods VALUES('period-a','company-a','2026-10-01','2026-10-31','open');
+    INSERT INTO journal_entries(id,company_id,fiscal_period_id,entry_date,status) VALUES('journal-a','company-a','period-a','2026-10-10','draft');
+    INSERT INTO journal_lines VALUES('journal-a',10000,10000);
+  `);
+  if (staleAudit) db.prepare(`INSERT INTO audit_logs VALUES('old-audit','employee-a','company-a','finance','post_journal','journal_entry','journal-a','{}','web')`).run();
+  if (auditIgnored) db.exec(`CREATE TRIGGER ignore_post_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(IGNORE); END;`);
+  const env = { DB: {
+    prepare(sql) {
+      const bound = { sql, params: [], bind(...params) { this.params = params; return this; },
+        async first() { return db.prepare(sql).get(...bound.params); } };
+      return bound;
+    },
+    async batch(statements) {
+      db.exec('BEGIN');
+      try {
+        const results = statements.map(({ sql, params }) => {
+          const result = db.prepare(sql).run(...params);
+          return { meta: { changes: Number(result.changes) } };
+        });
+        db.exec('COMMIT');
+        return results;
+      } catch (error) {
+        db.exec('ROLLBACK');
+        throw error;
+      }
+    },
+  } };
+  const context = { employee: { id: 'employee-a' }, roles: [], companies: [{ id: 'company-a' }] };
+  const request = () => new Request('https://staffportal.test/api/finance/journals/post', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: 'journal-a' }),
+  });
+  return { db, env, context, request };
+}
+
+const sqliteSuccess = sqliteRouteFixture();
+const sqliteSuccessResponse = await routeFinance(sqliteSuccess.request(), sqliteSuccess.env, sqliteSuccess.context);
+assert.equal(sqliteSuccessResponse.status, 200, 'actual extracted posting SQL commits with its exact success audit');
+assert.equal(sqliteSuccess.db.prepare(`SELECT status FROM journal_entries WHERE id='journal-a'`).get().status, 'posted');
+assert.equal(sqliteSuccess.db.prepare(`SELECT COUNT(*) AS count FROM audit_logs WHERE id!='old-audit'`).get().count, 1);
+assert.equal((await routeFinance(sqliteSuccess.request(), sqliteSuccess.env, sqliteSuccess.context)).status, 409, 'actual SQLite posting replay is denied');
+
+for (const staleAudit of [false, true]) {
+  const sqliteFailure = sqliteRouteFixture({ auditIgnored: true, staleAudit });
+  const response = await routeFinance(sqliteFailure.request(), sqliteFailure.env, sqliteFailure.context);
+  assert.equal(response.status, 503, `ignored audit rolls back with staleAudit=${staleAudit}`);
+  assert.equal(sqliteFailure.db.prepare(`SELECT status FROM journal_entries WHERE id='journal-a'`).get().status, 'draft');
+  assert.equal(sqliteFailure.db.prepare(`SELECT COUNT(*) AS count FROM audit_logs`).get().count, staleAudit ? 1 : 0);
+}
+
+console.log('PASS: Finance journal posting atomicity: source-derived SQLite success/replay, stale-audit rollback, open period, company scope, and one-winner CAS');
