@@ -385,6 +385,7 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
           : json({ error: 'The idempotency key is already assigned to different reconciliation evidence.' }, 409);
       }
       const importId = `fri-${crypto.randomUUID()}`;
+      const auditId = `audit-${crypto.randomUUID()}`;
       const statements = [
         env.DB.prepare(`INSERT INTO financial_reconciliation_imports(
           id,company_id,source_type,provider,source_reference,file_sha256,row_count,idempotency_key,created_by
@@ -397,15 +398,25 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
           row.description || null)),
         env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
           VALUES(?,?,?,'financial_gateway','stage_reconciliation_import','financial_reconciliation_import',?,?,'web')`)
-          .bind(`audit-${crypto.randomUUID()}`, context.employee.id, companyId, importId,
+          .bind(auditId, context.employee.id, companyId, importId,
             JSON.stringify({ sourceType, provider, sourceReference, rowCount: rows.length, fileSha256 })),
+        // D1 batch can complete when an INSERT trigger silently ignores the
+        // audit. Force a NOT NULL constraint failure unless this exact audit
+        // for this actor, company and import exists, rolling back all staging.
+        env.DB.prepare(`UPDATE financial_reconciliation_imports
+          SET status=CASE WHEN EXISTS(SELECT 1 FROM audit_logs WHERE id=? AND actor_employee_id=?
+            AND company_id=? AND module='financial_gateway' AND action='stage_reconciliation_import'
+            AND entity_type='financial_reconciliation_import' AND entity_id=? AND source='web')
+          THEN status ELSE NULL END
+          WHERE id=? AND company_id=?`)
+          .bind(auditId, context.employee.id, companyId, importId, importId, companyId),
       ];
       try { await env.DB.batch(statements); }
       catch {
         const replay = await env.DB.prepare(`SELECT id FROM financial_reconciliation_imports
           WHERE company_id=? AND source_type=? AND idempotency_key=? LIMIT 1`)
           .bind(companyId, sourceType, idempotencyKey).first<{ id: string }>();
-        if (!replay) return json({ error: 'Reconciliation evidence could not be staged.' }, 409);
+        if (!replay) return json({ error: 'Reconciliation evidence could not be staged.' }, 503);
         const replayImport = await env.DB.prepare(`SELECT row_count AS rowCount,provider,source_reference AS sourceReference,file_sha256 AS fileSha256
           FROM financial_reconciliation_imports WHERE id=? AND company_id=? LIMIT 1`)
           .bind(replay.id, companyId).first<{ rowCount: number; provider: string | null; sourceReference: string | null; fileSha256: string | null }>();
