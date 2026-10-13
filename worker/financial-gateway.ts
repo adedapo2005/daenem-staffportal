@@ -542,23 +542,47 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
     if (expectedStatus === nextStatus && expectedCandidateReference === candidateReference) {
       return json({ error: 'The reconciliation review must change the current classification.' }, 400);
     }
-    const now = new Date().toISOString();
-    const [updated] = await env.DB.batch([
-      env.DB.prepare(`UPDATE financial_reconciliation_import_rows
-        SET reconciliation_status=?,candidate_reference=?,reviewed_by=?,reviewed_at=?
-        WHERE import_id=? AND row_number=? AND reconciliation_status=? AND candidate_reference IS ?
-          AND EXISTS(SELECT 1 FROM financial_reconciliation_imports WHERE id=? AND company_id=?)`)
-        .bind(nextStatus, candidateReference, context.employee.id, now, importId, rowNumber,
-          expectedStatus, expectedCandidateReference, importId, companyId),
-      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source)
-        SELECT ?,?,?, 'financial_gateway','review_reconciliation_row','financial_reconciliation_import_row',?,?,?, 'web'
-        WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_reconciliation_imports WHERE id=? AND company_id=?)`)
-        .bind(`audit-${crypto.randomUUID()}`, context.employee.id, companyId, `${importId}:${rowNumber}`,
-          JSON.stringify({ status: expectedStatus, candidateReference: expectedCandidateReference }),
-          JSON.stringify({ status: nextStatus, candidateReference, reviewedAt: now }), importId, companyId),
-    ]);
-    if (Number(updated.meta?.changes || 0) !== 1) {
+    // Keep the persisted ISO timestamp unique per write so the rollback guard
+    // cannot mistake a concurrent winner's classification for this attempt.
+    const auditTimestampNonce = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, '0');
+    const now = new Date().toISOString().replace(/Z$/, `${auditTimestampNonce}Z`);
+    const auditId = `audit-${crypto.randomUUID()}`;
+    let results: Awaited<ReturnType<typeof env.DB.batch>>;
+    try {
+      results = await env.DB.batch([
+        env.DB.prepare(`UPDATE financial_reconciliation_import_rows
+          SET reconciliation_status=?,candidate_reference=?,reviewed_by=?,reviewed_at=?
+          WHERE import_id=? AND row_number=? AND reconciliation_status=? AND candidate_reference IS ?
+            AND EXISTS(SELECT 1 FROM financial_reconciliation_imports WHERE id=? AND company_id=?)`)
+          .bind(nextStatus, candidateReference, context.employee.id, now, importId, rowNumber,
+            expectedStatus, expectedCandidateReference, importId, companyId),
+        env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source)
+          SELECT ?,?,?, 'financial_gateway','review_reconciliation_row','financial_reconciliation_import_row',?,?,?, 'web'
+          WHERE changes()=1 AND EXISTS(SELECT 1 FROM financial_reconciliation_imports WHERE id=? AND company_id=?)`)
+          .bind(auditId, context.employee.id, companyId, `${importId}:${rowNumber}`,
+            JSON.stringify({ status: expectedStatus, candidateReference: expectedCandidateReference }),
+            JSON.stringify({ status: nextStatus, candidateReference, reviewedAt: now }), importId, companyId),
+        // D1 batches are transactional, but a successful batch does not imply
+        // that an INSERT OR trigger actually inserted its row. Force a SQL
+        // constraint failure if this operation's exact audit is absent so the
+        // preceding classification update rolls back with it.
+        env.DB.prepare(`UPDATE financial_reconciliation_import_rows SET reconciliation_status=NULL
+          WHERE import_id=? AND row_number=? AND reconciliation_status=? AND candidate_reference IS ?
+            AND reviewed_by=? AND reviewed_at=?
+            AND NOT EXISTS(SELECT 1 FROM audit_logs WHERE id=? AND actor_employee_id=? AND company_id=?
+              AND module='financial_gateway' AND action='review_reconciliation_row'
+              AND entity_type='financial_reconciliation_import_row' AND entity_id=? AND source='web')`)
+          .bind(importId, rowNumber, nextStatus, candidateReference, context.employee.id, now,
+            auditId, context.employee.id, companyId, `${importId}:${rowNumber}`),
+      ]);
+    } catch {
+      return json({ error: 'The reconciliation review could not be saved with its required audit evidence.' }, 503);
+    }
+    if (Number(results[0]?.meta?.changes || 0) !== 1) {
       return json({ error: 'The reconciliation row was not found or changed. Reload the evidence and try again.' }, 409);
+    }
+    if (Number(results[1]?.meta?.changes || 0) !== 1) {
+      return json({ error: 'The reconciliation review could not be saved with its required audit evidence.' }, 503);
     }
     return json({ ok: true, importId, companyId, rowNumber, status: nextStatus, candidateReference, reviewedAt: now });
   }

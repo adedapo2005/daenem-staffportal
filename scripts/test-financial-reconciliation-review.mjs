@@ -16,6 +16,9 @@ assert.match(route, /UPDATE financial_reconciliation_import_rows[\s\S]*reconcili
 assert.match(route, /expectedStatus, expectedCandidateReference/);
 assert.match(route, /INSERT INTO audit_logs[\s\S]*before_json,after_json[\s\S]*review_reconciliation_row/);
 assert.match(route, /WHERE changes\(\)=1/);
+assert.match(route, /const auditId = `audit-\$\{crypto\.randomUUID\(\)\}`/);
+assert.match(route, /SET reconciliation_status=NULL[\s\S]*NOT EXISTS\(SELECT 1 FROM audit_logs WHERE id=\?/);
+assert.match(route, /could not be saved with its required audit evidence[\s\S]*503/);
 assert.match(route, /reconciliation row was not found or changed/);
 assert.doesNotMatch(route, /INSERT INTO (journal_entries|journal_lines|receivables|sales_|payroll_)/);
 assert.doesNotMatch(route, /fetch\(|\.send\(/);
