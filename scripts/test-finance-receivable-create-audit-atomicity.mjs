@@ -193,6 +193,39 @@ assert.equal(crossCompany.batches, 0, 'cross-company attempt performs no receiva
 assert.equal(crossCompany.db.prepare('SELECT COUNT(*) AS count FROM finance_receivables').get().count, 0);
 crossCompany.db.close();
 
+const companyScopedKeys = fixture();
+const companyAResult = await routeFinance(
+  request({ 'idempotency-key': 'same-key-independent-businesses' }), companyScopedKeys.env, companyScopedKeys.context,
+);
+const companyBContext = {
+  ...companyScopedKeys.context,
+  companies: [{ id: 'company-b' }],
+  roles: [{ code: 'finance-clerk', companyId: 'company-b' }],
+  companyPermissions: { 'company-b': { 'finance.receivables': 'create' } },
+};
+const companyBResult = await routeFinance(
+  request({ 'idempotency-key': 'same-key-independent-businesses' }, { ...payload, companyId: 'company-b' }),
+  companyScopedKeys.env,
+  companyBContext,
+);
+assert.deepEqual([companyAResult.status, companyBResult.status], [201, 201],
+  'the same operation key is independent across separately authorized companies');
+const companyARecord = await companyAResult.json();
+const companyBRecord = await companyBResult.json();
+assert.notEqual(companyARecord.id, companyBRecord.id, 'company-scoped keys retain separate receivable identities');
+assert.deepEqual(
+  companyScopedKeys.db.prepare('SELECT company_id FROM finance_receivables ORDER BY company_id').all().map(row => row.company_id),
+  ['company-a', 'company-b'],
+  'same-key creates remain inside their authorized company ledgers',
+);
+assert.deepEqual(
+  companyScopedKeys.db.prepare('SELECT company_id FROM audit_logs ORDER BY company_id').all().map(row => row.company_id),
+  ['company-a', 'company-b'],
+  'each company receives only its own create audit evidence',
+);
+console.log('PASS identical operation keys remain isolated across authorized company ledgers');
+companyScopedKeys.db.close();
+
 const distinctCreates = fixture();
 const distinctOne = await routeFinance(request({ 'idempotency-key': 'user-action-one' }), distinctCreates.env, distinctCreates.context);
 const distinctTwo = await routeFinance(request({ 'idempotency-key': 'user-action-two' }), distinctCreates.env, distinctCreates.context);
