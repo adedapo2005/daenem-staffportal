@@ -74,6 +74,22 @@ try {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
       assert.equal(overflow, false, 'modal must not create viewport horizontal overflow');
       assert.deepEqual(reportingRequests, [], 'unregistered report endpoints must never be contacted');
+      // A 240px-tall reflow viewport exercises the constrained-height path used at high text zoom.
+      // This is NOT itself evidence of actual browser 200%-400% zoom.
+      await page.setViewportSize({ width, height: 240 });
+      const dialogScrolls = await dialog.evaluate(element => {
+        const style = getComputedStyle(element);
+        return style.overflowY === 'auto' && element.scrollHeight > element.clientHeight + 1;
+      });
+      assert.equal(dialogScrolls, true, 'short-height modal must scroll instead of clipping controls');
+      await dialog.getByRole('tab', { name: /Governance/ }).click();
+      assert.equal(await dialog.getByRole('tab', { name: /Governance/ }).getAttribute('aria-selected'), 'true');
+      await dialog.evaluate(element => { element.scrollTop = element.scrollHeight; });
+      const footerReachable = await dialog.getByRole('button', { name: 'Close', exact: true }).evaluate(element => {
+        const bounds = element.getBoundingClientRect(), modal = element.closest('.grb-dialog').getBoundingClientRect();
+        return bounds.top >= modal.top - 2 && bounds.bottom <= modal.bottom + 2;
+      });
+      assert.equal(footerReachable, true, 'short-height modal must keep footer actions scroll-reachable');
       await page.keyboard.press('Escape');
       await dialog.waitFor({ state: 'hidden' });
       assert.equal(await launcher.evaluate(el => document.activeElement === el), true, 'Escape must restore launcher focus');

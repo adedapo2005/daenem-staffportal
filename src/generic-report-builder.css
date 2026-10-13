@@ -76,6 +76,12 @@ body:has(.grb-backdrop) .postauth-navigation { visibility: hidden; pointer-event
   .grb-footer span { font-size: 11px; }
   .grb-actions button { min-height: 38px; padding: 7px 11px; font-size: 12px; }
 }
+/* At large text zoom the viewport can become shorter than the modal chrome. Keep every control scroll-reachable. */
+@media (max-height: 600px) {
+  .grb-dialog { overflow-y: auto; overscroll-behavior: contain; }
+  .grb-layout { flex: 0 0 auto; min-height: 260px; }
+  .grb-panel { min-height: 180px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .grb-workspace-action, .grb-dialog *, .grb-backdrop { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
