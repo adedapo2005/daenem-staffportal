@@ -8,8 +8,9 @@ import { routeCommunicationGovernance } from './communications-governance.js';
 import { routeCommunicationsInbox } from './communications-inbox.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
 import { readGoogleWeather } from './weather-provider.js';
+import { replaceGoogleWeatherCredentialWithAudit, revokeGoogleWeatherCredentialWithAudit } from './weather-credential-mutations.js';
 import type { Authorization, Channel, RequestContext } from './communications/types.js';
-import { deleteMetaCredential, isMetaCredentialKey, metaCredentialStatuses, saveMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
+import { deleteMetaCredential, isMetaCredentialKey, metaCredentialStatuses, saveMetaCredential, validateMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
 import {
   assertStaffPortalCompany,
   communicationBoundary,
@@ -235,13 +236,15 @@ async function weatherCredentialSetting(request:Request,env:Env,context:Enhanced
   if(request.method==='POST'){
     let body:{value?:string};try{body=await request.json()}catch{return json({error:'Invalid weather credential request.'},400)}
     if(!body||typeof body!=='object'||typeof body.value!=='string')return json({error:'A weather credential value is required.'},400);
+    const validationError=validateMetaCredential(key,body.value);
+    if(validationError)return json({error:validationError},400);
     try{
-      await saveMetaCredential(env,key,body.value,context.employee.id);
-      await auditCommunication(env,context,undefined,'replace_weather_provider_credential','weather_credential',key,{key,configured:true});
-    }catch(error){return json({error:(error as Error).message||'Weather credential could not be saved.'},400)}
+      await replaceGoogleWeatherCredentialWithAudit(env,body.value,context.employee.id,uid('audit'));
+    }catch(error){return json({error:(error as Error).message||'Weather credential could not be saved with audit evidence.'},409)}
   }else if(request.method==='DELETE'){
-    await deleteMetaCredential(env,key);
-    await auditCommunication(env,context,undefined,'revoke_weather_provider_credential','weather_credential',key,{key,configured:false});
+    try{
+      await revokeGoogleWeatherCredentialWithAudit(env,context.employee.id,uid('audit'));
+    }catch(error){return json({error:(error as Error).message||'Weather credential could not be revoked with audit evidence.'},409)}
   }else return null;
   const credential=(await metaCredentialStatuses(env)).find(item=>item.key===key);
   return json({ok:true,credential:credential?{key:credential.key,label:credential.label,configured:credential.configured,source:credential.source,updatedAt:credential.updatedAt}:null});
