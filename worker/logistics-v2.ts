@@ -13,7 +13,7 @@ function nigeriaDate(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/
 async function scopedDashboard(env:Env,context:SessionContext){
  const metrics:Record<string,number>={};
  const dispatchView=allowed(context,'logistics.dispatch','view');
- const driverScoped=context.roles.some(role=>role.code==='driver')&&!dispatchView;
+ const driverScoped=context.roles.some(role=>role.code==='driver'&&role.companyId===COMPANY)&&!dispatchView;
  if(allowed(context,'logistics.fleet','view')){
   const [fleet,docs]=await Promise.all([
    env.DB.prepare(`SELECT COUNT(*) AS total,SUM(CASE WHEN status='available' THEN 1 ELSE 0 END) AS available,SUM(CASE WHEN status IN ('maintenance','out_of_service') THEN 1 ELSE 0 END) AS unavailable FROM logistics_vehicles WHERE company_id=? AND status!='retired'`).bind(COMPANY).first<Record<string,number>>(),
@@ -38,7 +38,7 @@ async function scopedDashboard(env:Env,context:SessionContext){
 
 async function scopedShipments(env:Env,context:SessionContext){
  const dispatchView=allowed(context,'logistics.dispatch','view');
- const driverScoped=context.roles.some(role=>role.code==='driver')&&!dispatchView;
+ const driverScoped=context.roles.some(role=>role.code==='driver'&&role.companyId===COMPANY)&&!dispatchView;
  const financialColumns=dispatchView?',s.quoted_kobo AS quotedKobo,s.invoiced_kobo AS invoicedKobo,s.amount_paid_kobo AS amountPaidKobo':'';
  const rows=await env.DB.prepare(`
   SELECT s.id,s.shipment_no AS shipmentNo,s.reference,s.cargo_description AS cargoDescription,s.weight_kg AS weightKg,s.pieces,

@@ -32,7 +32,8 @@ const financial = { quotedKobo: 125000, invoicedKobo: 110000, amountPaidKobo: 40
 const context = ({ permissions = {}, globalPermissions = {}, companies = [companyId], roles = [] } = {}) => ({
   sessionId: 'session-test', employee: { id: 'employee-test', displayName: 'Test Employee', status: 'active' },
   companies: companies.map((id) => ({ id, code: 'LOGISTICS', name: 'Logistics', primary: true })),
-  roles, permissions: globalPermissions, companyPermissions: { [companyId]: permissions },
+  roles: roles.map((role) => ({ id: 'role-test', name: 'Test Role', companyId, ...role })),
+  permissions: globalPermissions, companyPermissions: { [companyId]: permissions },
 });
 
 class Statement {
@@ -57,6 +58,10 @@ const getShipments = async (ctx, db = env()) => {
   const response = await routeLogisticsV2(new Request('https://staffportal.test/api/logistics/shipments'), db, ctx);
   return { response, body: await response.json(), db };
 };
+const getDashboard = async (ctx, db = env()) => {
+  const response = await routeLogisticsV2(new Request('https://staffportal.test/api/logistics/dashboard'), db, ctx);
+  return { response, body: await response.json(), db };
+};
 const cases = [];
 const check = async (name, fn) => { await fn(); cases.push(name); console.log(`PASS: ${name}`); };
 
@@ -75,6 +80,26 @@ await check('assigned driver shipment view remains assignment scoped and omits f
   assert.equal('quotedKobo' in body.shipments[0], false);
   assert.match(db.DB.queries[0].sql, /EXISTS\([\s\S]*t\.driver_employee_id=\?/);
   assert.deepEqual(db.DB.queries[0].values, [companyId, 1, 'employee-test']);
+});
+
+await check('driver role from another company does not restrict Logistics shipment scope', async () => {
+  const ctx = context({
+    permissions: { 'logistics.shipments': 'view' },
+    roles: [{ code: 'driver', companyId: 'company-bakery' }],
+  });
+  const { body, db } = await getShipments(ctx);
+  assert.equal('quotedKobo' in body.shipments[0], false);
+  assert.deepEqual(db.DB.queries[0].values, [companyId, 0, 'employee-test']);
+});
+
+await check('driver role from another company does not restrict Logistics dashboard scope', async () => {
+  const ctx = context({
+    permissions: { 'logistics.shipments': 'view' },
+    roles: [{ code: 'driver', companyId: 'company-bakery' }],
+  });
+  const { response, db } = await getDashboard(ctx);
+  assert.equal(response.status, 200);
+  assert.deepEqual(db.DB.queries[0].values.slice(1), [companyId, 0, 'employee-test']);
 });
 
 await check('dispatch view in the target company receives financial projection', async () => {
