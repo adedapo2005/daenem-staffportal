@@ -21,7 +21,8 @@ function fixture({ auditIgnored = false, auditFailure = false, staleAudit = fals
     CREATE TABLE financial_reconciliation_imports (
       id TEXT PRIMARY KEY, company_id TEXT NOT NULL, source_type TEXT NOT NULL, provider TEXT,
       source_reference TEXT, file_sha256 TEXT, status TEXT NOT NULL DEFAULT 'staged',
-      row_count INTEGER NOT NULL, idempotency_key TEXT NOT NULL, created_by TEXT
+      row_count INTEGER NOT NULL, idempotency_key TEXT NOT NULL, created_by TEXT,
+      UNIQUE(company_id, source_type, idempotency_key)
     );
     CREATE TABLE financial_reconciliation_import_rows (
       id TEXT PRIMARY KEY, import_id TEXT NOT NULL REFERENCES financial_reconciliation_imports(id),
@@ -118,4 +119,36 @@ assert.equal(failedResponse.status, 503, 'a thrown audit insert fails closed');
 assert.deepEqual(failed.counts(), { imports: 0, rows: 0, audits: 0 }, 'insert failure rolls back evidence');
 failed.db.close();
 
-console.log('Financial reconciliation import audit atomicity SQLite runtime: 11 assertions PASS');
+globalThis.__financialGatewayTestUuidSequence = ['import-a', 'current-a', 'row-a', 'import-b', 'current-b', 'row-b'];
+const concurrent = fixture();
+const concurrentResponses = await Promise.all([
+  routeFinancialGateway(concurrent.request(), concurrent.env, concurrent.context),
+  routeFinancialGateway(concurrent.request(), concurrent.env, concurrent.context),
+]);
+assert.deepEqual(concurrentResponses.map((response) => response.status).sort(), [200, 201],
+  'one concurrent request creates the import and the other returns the idempotent replay');
+const concurrentBodies = await Promise.all(concurrentResponses.map((response) => response.json()));
+assert.equal(new Set(concurrentBodies.map((body) => body.id)).size, 1, 'both concurrent responses identify one import');
+assert.equal(concurrentBodies.filter((body) => body.idempotentReplay === true).length, 1);
+assert.deepEqual(concurrent.counts(), { imports: 1, rows: 1, audits: 1 },
+  'concurrent retries create only one import, row set and current-operation audit');
+concurrent.db.close();
+
+globalThis.__financialGatewayTestUuidSequence = ['unexpected-import'];
+const crossCompany = fixture();
+const crossCompanyContext = {
+  employee: { id: 'employee-company-a' }, roles: [], companies: [{ id: 'company-printing' }],
+};
+const crossCompanyRequest = () => new Request('https://staffportal.test/api/financial-gateway/reconciliation-imports', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+    companyId: 'company-bakery', sourceType: 'csv', idempotencyKey: 'company-b-import',
+    rows: [{ occurredAt: '2026-10-13T12:00:00.000Z', direction: 'credit', amountMinor: 1,
+      currency: 'NGN' }],
+  }),
+});
+const crossCompanyResponse = await routeFinancialGateway(crossCompanyRequest(), crossCompany.env, crossCompanyContext);
+assert.equal(crossCompanyResponse.status, 403, 'a non-Owner scoped to Company A cannot stage Company B evidence');
+assert.deepEqual(crossCompany.counts(), { imports: 0, rows: 0, audits: 0 }, 'cross-company denial performs no writes');
+crossCompany.db.close();
+
+console.log('Financial reconciliation import audit atomicity SQLite runtime: 19 assertions PASS');
