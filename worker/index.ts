@@ -3,6 +3,7 @@ import { readSignInConfig } from './theme-preferences';
 import { DASHBOARD_FIELD_PERMISSIONS, type DashboardAggregateField } from '../src/dashboard-capabilities';
 import { readGoogleWeather, readWeatherConfiguration } from './weather-provider';
 import { routeIncidentResponse } from './incident-response';
+import { routeWorkspaceShell } from './workspace-route';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -438,6 +439,9 @@ export default {
       if (url.pathname === '/api/admin/roles' && request.method === 'GET') return securityHeaders(await rolesForCompany(request, env, context));
       return securityHeaders(json({ error: 'API route not found.' }, 404));
     }
+
+    const workspaceResponse = await routeWorkspaceShell(request, env);
+    if (workspaceResponse) return securityHeaders(workspaceResponse);
 
     const response = await env.ASSETS.fetch(request);
     return securityHeaders(response);
