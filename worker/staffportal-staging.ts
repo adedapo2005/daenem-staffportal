@@ -1,17 +1,6 @@
-import { getSessionContext, routeAuth } from './auth.js';
-import { getEnhancedSessionContext } from './auth-context-v2.js';
-import { routePasswordAuth, type PasswordAuthEnv } from './password-auth.js';
-import { routeAuthRefinement } from './auth-refinement.js';
-import { routeAdmin } from './admin.js';
-import { routeFinance } from './finance.js';
-import { routeFinanceAdvanced } from './finance-advanced.js';
-import { routeFinancialGateway } from './financial-gateway.js';
-import { routeCommunications } from './communications-service.js';
-import { routeCommunicationsWebhook, type CommunicationsWebhookEnv } from './communications-webhook.js';
+import runtimeHandler from './runtime';
 
-interface Env extends CommunicationsWebhookEnv, PasswordAuthEnv {
-  AI?: Ai;
-  SOCIAL_AI_MODEL?: string;
+interface Env {
   STAFF_PORTAL_FRONTEND_ORIGIN?: string;
 }
 
@@ -24,11 +13,9 @@ const json=(body:Record<string,unknown>,status=200)=>new Response(JSON.stringify
   },
 });
 
-const DEFAULT_FRONTEND_ORIGIN='https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site';
-
 function corsOrigin(request:Request,env:Env){
   const origin=request.headers.get('origin');
-  const allowed=(env.STAFF_PORTAL_FRONTEND_ORIGIN||DEFAULT_FRONTEND_ORIGIN)
+  const allowed=(env.STAFF_PORTAL_FRONTEND_ORIGIN||'')
     .split(',')
     .map(value=>value.trim())
     .filter(Boolean);
@@ -67,57 +54,17 @@ function preflight(request:Request,env:Env){
 }
 
 export default {
-  async fetch(request:Request,env:Env):Promise<Response>{
+  async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
     if(request.method==='OPTIONS')return preflight(request,env);
     const url=new URL(request.url);
     if(url.pathname==='/health'){
       return secure(json({ok:true,service:'daenem-staffportal-api-staging',stage:'staging'}),request,env);
     }
 
-    const refinedAuthResponse=await routeAuthRefinement(request.clone() as unknown as Request,env);
-    if(refinedAuthResponse)return secure(refinedAuthResponse,request,env);
-
-    const passwordAuthResponse=await routePasswordAuth(request,env);
-    if(passwordAuthResponse)return secure(passwordAuthResponse,request,env);
-
-    const authResponse=await routeAuth(request,env);
-    if(authResponse)return secure(authResponse,request,env);
-
-    if(url.pathname==='/api/communications/webhooks/whatsapp'){
-      const response=await routeCommunicationsWebhook(request,env);
-      return secure(response||json({error:'Webhook route not found.'},404),request,env);
-    }
-
-    if(url.pathname.startsWith('/api/admin/')){
-      const context=await getSessionContext(request,env);
-      if(!context)return secure(json({error:'Authentication required.'},401),request,env);
-      const response=await routeAdmin(request,env,context);
-      return secure(response||json({error:'Admin route not found.'},404),request,env);
-    }
-
-    if(url.pathname.startsWith('/api/finance/')){
-      const context=await getSessionContext(request,env);
-      if(!context)return secure(json({error:'Authentication required.'},401),request,env);
-      const advanced=await routeFinanceAdvanced(request,env,context);
-      if(advanced)return secure(advanced,request,env);
-      const response=await routeFinance(request,env,context);
-      return secure(response||json({error:'Finance route not found.'},404),request,env);
-    }
-
-    if(url.pathname.startsWith('/api/financial-gateway/')){
-      const context=await getSessionContext(request,env);
-      if(!context)return secure(json({error:'Authentication required.'},401),request,env);
-      const response=await routeFinancialGateway(request,env,context);
-      return secure(response||json({error:'Financial Gateway route not found.'},404),request,env);
-    }
-
-    if(url.pathname.startsWith('/api/communications/')){
-      const context=await getEnhancedSessionContext(request,env);
-      if(!context)return secure(json({error:'Authentication required.'},401),request,env);
-      const response=await routeCommunications(request,env,context);
-      return secure(response||json({error:'Communications route not found.'},404),request,env);
-    }
-
-    return secure(json({error:'Not found.'},404),request,env);
+    // Keep staging on the same complete, authorization-aware route tree as the
+    // current Worker. Wrangler Assets serves the built client after API routing.
+    const runtimeEnv=env as unknown as Parameters<typeof runtimeHandler.fetch>[1];
+    const response=await runtimeHandler.fetch(request,runtimeEnv,ctx);
+    return secure(response,request,env);
   },
 };
