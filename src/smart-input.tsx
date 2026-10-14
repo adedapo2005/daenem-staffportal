@@ -38,15 +38,18 @@ export function SmartInput({
   const [enabled, setEnabled] = useState(true);
   const [dismissedValue, setDismissedValue] = useState<string | null>(null);
   const [undo, setUndo] = useState<{ before: string; after: string } | null>(null);
-  const [activeScope, setActiveScope] = useState(scopeKey);
+  // Revoke suggestions immediately when scope, authorization or field policy changes.
+  // Any prior undo/dismissed state belongs to the previous authority context.
+  const authorityKey = JSON.stringify([scopeKey, authorized, sensitivity, optOut, disabled]);
+  const [activeAuthorityKey, setActiveAuthorityKey] = useState(authorityKey);
   useEffect(() => {
-    setActiveScope(scopeKey);
+    setActiveAuthorityKey(authorityKey);
     setDismissedValue(null);
     setUndo(null);
-  }, [scopeKey]);
+  }, [authorityKey]);
 
-  const permitted = authorized && sensitivity === 'nonsensitive' && !optOut && !disabled;
-  const suffix = permitted && activeScope === scopeKey && enabled && dismissedValue !== value
+  const permitted = authorized && sensitivity === 'nonsensitive' && !optOut && !disabled && activeAuthorityKey === authorityKey;
+  const suffix = permitted && enabled && dismissedValue !== value
     ? localSmartSuffix(value) : '';
   const change = (next: string) => {
     setUndo(null);
@@ -88,12 +91,17 @@ export function SmartInput({
     }
   };
 
+  // A revoked caller must never retain a visible stale value or editable field.
+  if (!authorized) {
+    return <input aria-label={label} value="" disabled readOnly aria-disabled="true" autoComplete="off" />;
+  }
   if (!permitted) {
-    return <input aria-label={label} value={value} onChange={event => change(event.target.value)}
+    return <input type={sensitivity === 'secret' ? 'password' : 'text'} aria-label={label}
+      value={value} onChange={event => change(event.target.value)}
       placeholder={placeholder} required={required} disabled={disabled} autoComplete="off" />;
   }
 
-  return <div className="smart-input-root" data-smart-input-scope={scopeKey}>
+  return <div className="smart-input-root">
     <div className="smart-input-field">
       {suffix && <div aria-hidden="true" className="smart-input-preview">
         <span className="smart-input-typed">{value}</span><span className="smart-input-ghost">{suffix}</span>
