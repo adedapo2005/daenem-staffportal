@@ -15,7 +15,7 @@ const { outputText } = ts.transpileModule(executableSource, {
 });
 const { routeFinancialGateway } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
-function fixture({ auditIgnored = false, auditFailure = false, staleAudit = false } = {}) {
+function fixture({ auditIgnored = false, auditFailure = false, staleAudit = false, ignoredRowNumber = null } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(`
     CREATE TABLE financial_reconciliation_imports (
@@ -44,6 +44,8 @@ function fixture({ auditIgnored = false, auditFailure = false, staleAudit = fals
     WHEN NEW.id='audit-current' BEGIN SELECT RAISE(IGNORE); END;`);
   if (auditFailure) db.exec(`CREATE TRIGGER fail_import_audit BEFORE INSERT ON audit_logs
     WHEN NEW.id='audit-current' BEGIN SELECT RAISE(ABORT,'injected audit failure'); END;`);
+  if (ignoredRowNumber !== null) db.exec(`CREATE TRIGGER ignore_import_row BEFORE INSERT ON financial_reconciliation_import_rows
+    WHEN NEW.row_number=${Number(ignoredRowNumber)} BEGIN SELECT RAISE(IGNORE); END;`);
 
   const env = { DB: {
     prepare(sql) {
@@ -72,14 +74,14 @@ function fixture({ auditIgnored = false, auditFailure = false, staleAudit = fals
     },
   } };
   const context = { employee: { id: 'employee-owner' }, roles: [{ code: 'owner' }], companies: [] };
-  const request = () => new Request('https://staffportal.test/api/financial-gateway/reconciliation-imports', {
-    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
-      companyId: 'company-printing', sourceType: 'csv', sourceReference: 'statement-2026-10',
-      idempotencyKey: 'import-key-1', rows: [{ providerReference: 'bank-ref-1',
-        occurredAt: '2026-10-13T12:00:00.000Z', direction: 'credit', amountMinor: 12500,
-        currency: 'NGN', description: 'Customer payment' }],
-    }),
-  });
+  const request = (rows = [{ providerReference: 'bank-ref-1',
+    occurredAt: '2026-10-13T12:00:00.000Z', direction: 'credit', amountMinor: 12500,
+    currency: 'NGN', description: 'Customer payment' }]) => new Request('https://staffportal.test/api/financial-gateway/reconciliation-imports', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+        companyId: 'company-printing', sourceType: 'csv', sourceReference: 'statement-2026-10',
+        idempotencyKey: 'import-key-1', rows,
+      }),
+    });
   const counts = () => ({
     imports: Number(db.prepare('SELECT COUNT(*) AS count FROM financial_reconciliation_imports').get().count),
     rows: Number(db.prepare('SELECT COUNT(*) AS count FROM financial_reconciliation_import_rows').get().count),
@@ -119,6 +121,19 @@ assert.equal(failedResponse.status, 503, 'a thrown audit insert fails closed');
 assert.deepEqual(failed.counts(), { imports: 0, rows: 0, audits: 0 }, 'insert failure rolls back evidence');
 failed.db.close();
 
+globalThis.__financialGatewayTestUuidSequence = ['import-a', 'current', 'row-a', 'row-b'];
+const ignoredChild = fixture({ ignoredRowNumber: 2 });
+const ignoredChildResponse = await routeFinancialGateway(ignoredChild.request([
+  { providerReference: 'bank-ref-1', occurredAt: '2026-10-13T12:00:00.000Z', direction: 'credit',
+    amountMinor: 12500, currency: 'NGN', description: 'First statement row' },
+  { providerReference: 'bank-ref-2', occurredAt: '2026-10-13T12:01:00.000Z', direction: 'credit',
+    amountMinor: 8500, currency: 'NGN', description: 'Second statement row' },
+]), ignoredChild.env, ignoredChild.context);
+assert.equal(ignoredChildResponse.status, 503, 'a silently ignored child row fails the exact row-count invariant');
+assert.deepEqual(ignoredChild.counts(), { imports: 0, rows: 0, audits: 0 },
+  'a partial row set rolls back the parent, remaining rows and audit');
+ignoredChild.db.close();
+
 globalThis.__financialGatewayTestUuidSequence = ['import-a', 'current-a', 'row-a', 'import-b', 'current-b', 'row-b'];
 const concurrent = fixture();
 const concurrentResponses = await Promise.all([
@@ -151,4 +166,4 @@ assert.equal(crossCompanyResponse.status, 403, 'a non-Owner scoped to Company A 
 assert.deepEqual(crossCompany.counts(), { imports: 0, rows: 0, audits: 0 }, 'cross-company denial performs no writes');
 crossCompany.db.close();
 
-console.log('Financial reconciliation import audit atomicity SQLite runtime: 19 assertions PASS');
+console.log('Financial reconciliation import audit atomicity SQLite runtime: 21 assertions PASS');

@@ -400,16 +400,17 @@ export async function routeFinancialGateway(request: Request, env: FinancialGate
           VALUES(?,?,?,'financial_gateway','stage_reconciliation_import','financial_reconciliation_import',?,?,'web')`)
           .bind(auditId, context.employee.id, companyId, importId,
             JSON.stringify({ sourceType, provider, sourceReference, rowCount: rows.length, fileSha256 })),
-        // D1 batch can complete when an INSERT trigger silently ignores the
-        // audit. Force a NOT NULL constraint failure unless this exact audit
-        // for this actor, company and import exists, rolling back all staging.
+        // D1 batches can complete when an INSERT trigger silently ignores an
+        // audit or child row. Require this exact audit and the complete row
+        // set before allowing the parent insert to commit.
         env.DB.prepare(`UPDATE financial_reconciliation_imports
           SET status=CASE WHEN EXISTS(SELECT 1 FROM audit_logs WHERE id=? AND actor_employee_id=?
             AND company_id=? AND module='financial_gateway' AND action='stage_reconciliation_import'
             AND entity_type='financial_reconciliation_import' AND entity_id=? AND source='web')
+            AND (SELECT COUNT(*) FROM financial_reconciliation_import_rows WHERE import_id=?)=row_count
           THEN status ELSE NULL END
           WHERE id=? AND company_id=?`)
-          .bind(auditId, context.employee.id, companyId, importId, importId, companyId),
+          .bind(auditId, context.employee.id, companyId, importId, importId, importId, companyId),
       ];
       try { await env.DB.batch(statements); }
       catch {
