@@ -8,7 +8,7 @@ import { routeCommunicationGovernance } from './communications-governance.js';
 import { routeCommunicationsInbox } from './communications-inbox.js';
 import { renderPlaceholders } from './communications/whatsapp.js';
 import { readGoogleWeather } from './weather-provider.js';
-import { replaceGoogleWeatherCredentialWithAudit, revokeGoogleWeatherCredentialWithAudit } from './weather-credential-mutations.js';
+import { replaceGoogleWeatherCredentialWithAudit, revokeGoogleWeatherCredentialWithAudit, runGoogleWeatherProviderTestWithAudit } from './weather-credential-mutations.js';
 import type { Authorization, Channel, RequestContext } from './communications/types.js';
 import { deleteMetaCredential, isMetaCredentialKey, metaCredentialStatuses, saveMetaCredential, validateMetaCredential, type MetaCredentialEnv } from './meta-credentials.js';
 import {
@@ -224,9 +224,12 @@ async function weatherCredentialSetting(request:Request,env:Env,context:Enhanced
     if(typeof body.latitude!=='number'||typeof body.longitude!=='number'||!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180){
       return json({error:'Valid test coordinates are required.'},400);
     }
-    const result=await readGoogleWeather(env,latitude,longitude,'IMPERIAL',true);
+    let result:Awaited<ReturnType<typeof readGoogleWeather>>;
+    try{
+      result=await runGoogleWeatherProviderTestWithAudit(env,context.employee.id,()=>uid('audit'),
+        ()=>readGoogleWeather(env,latitude,longitude,'IMPERIAL',true));
+    }catch{return json({error:'Weather provider test could not be fully audited.'},503)}
     const ok=Boolean(result.data);
-    await auditCommunication(env,context,undefined,'test_weather_provider_connection','weather_provider',key,{providerStatus:result.providerStatus,ok});
     return json({ok,provider:'Google Weather',providerStatus:result.providerStatus},ok?200:503);
   }
   if(request.method==='GET'){

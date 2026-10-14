@@ -11,7 +11,7 @@ assert.notEqual(executable, source);
 const { outputText } = ts.transpileModule(executable, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 });
-const { replaceGoogleWeatherCredentialWithAudit, revokeGoogleWeatherCredentialWithAudit } =
+const { recordGoogleWeatherProviderTestWithAudit, replaceGoogleWeatherCredentialWithAudit, revokeGoogleWeatherCredentialWithAudit, runGoogleWeatherProviderTestWithAudit } =
   await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
 const db = new DatabaseSync(':memory:');
@@ -42,6 +42,7 @@ const env = {
         values: [],
         bind(...values) { this.values = values; return this; },
         async first() { return db.prepare(this.sql).get(...this.values); },
+        async run() { return { meta: { changes: Number(db.prepare(this.sql).run(...this.values).changes) } }; },
       };
     },
     async batch(statements) {
@@ -86,7 +87,47 @@ try {
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE id='audit-4'").get().n, 0);
   assert.equal(JSON.stringify(db.prepare('SELECT after_json FROM audit_logs').all()).includes('test-weather-credential'), false);
 
-  console.log('Google Weather credential audit atomicity: 13 assertions PASS (isolated SQLite; no provider or key access)');
+  await recordGoogleWeatherProviderTestWithAudit(env, 'owner-1', 'audit-weather-start', {
+    phase: 'started', providerStatus: 'pending', ok: null,
+  });
+  await recordGoogleWeatherProviderTestWithAudit(env, 'owner-1', 'audit-weather-result', {
+    phase: 'completed', providerStatus: 'fresh', ok: true,
+  });
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE action IN ('test_weather_provider_connection_started','test_weather_provider_connection')").get().n, 2);
+  assert.equal(JSON.stringify(db.prepare("SELECT after_json FROM audit_logs WHERE action LIKE 'test_weather_provider_connection%'").all()).includes('latitude'), false);
+
+  let providerCalls = 0;
+  await runGoogleWeatherProviderTestWithAudit(env, 'owner-1', () => `audit-weather-flow-${providerCalls === 0 ? 'start' : 'result'}`, async () => {
+    providerCalls += 1;
+    return { data: { temperature: 20 }, providerStatus: 'fresh' };
+  });
+  assert.equal(providerCalls, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE id IN ('audit-weather-flow-start','audit-weather-flow-result')").get().n, 2);
+
+  db.exec(`CREATE TRIGGER ignore_weather_test_start BEFORE INSERT ON audit_logs
+    WHEN NEW.id='audit-weather-ignored' BEGIN SELECT RAISE(IGNORE); END;`);
+  providerCalls = 0;
+  await assert.rejects(runGoogleWeatherProviderTestWithAudit(env, 'owner-1', () => 'audit-weather-ignored', async () => {
+    providerCalls += 1;
+    return { data: { temperature: 20 }, providerStatus: 'fresh' };
+  }));
+  assert.equal(providerCalls, 0);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE id='audit-weather-ignored'").get().n, 0);
+  db.exec('DROP TRIGGER ignore_weather_test_start');
+
+  db.exec(`CREATE TRIGGER ignore_weather_test_result BEFORE INSERT ON audit_logs
+    WHEN NEW.id='audit-weather-result-ignored' BEGIN SELECT RAISE(IGNORE); END;`);
+  providerCalls = 0;
+  await assert.rejects(runGoogleWeatherProviderTestWithAudit(env, 'owner-1', () =>
+    providerCalls === 0 ? 'audit-weather-result-start' : 'audit-weather-result-ignored', async () => {
+      providerCalls += 1;
+      return { data: { temperature: 20 }, providerStatus: 'fresh' };
+    }));
+  assert.equal(providerCalls, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE id='audit-weather-result-start' AND action='test_weather_provider_connection_started'").get().n, 1);
+  db.exec('DROP TRIGGER ignore_weather_test_result');
+
+  console.log('Google Weather credential and provider-test audit checks PASS (isolated SQLite; no provider or key access)');
 } finally {
   db.close();
 }
