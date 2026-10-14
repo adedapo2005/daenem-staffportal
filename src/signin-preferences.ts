@@ -751,9 +751,25 @@ async function requestJson<T>(path: string, options: RequestInit = {}): Promise<
 }
 
 export async function fetchPublicSignInContext(): Promise<PublicSignInContext> {
-  const result = await requestJson<PublicSignInContext>('/api/context/signin');
-  result.config = storeSignInPreferences(result.config);
-  return result;
+  const payload = await requestJson<unknown>('/api/context/signin');
+  const unavailable = () => new Error('Sign-In information is temporarily unavailable.');
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw unavailable();
+  const result = payload as Partial<PublicSignInContext>;
+  if (
+    !result.config || typeof result.config !== 'object' || Array.isArray(result.config)
+    || typeof result.inspiration !== 'string'
+    || typeof result.motivation !== 'string'
+    || typeof result.generatedAt !== 'string'
+    || (result.source !== 'live' && result.source !== 'fallback')
+    || !Array.isArray(result.news)
+    || !result.news.every((item) =>
+      item && typeof item === 'object' && !Array.isArray(item)
+      && typeof item.title === 'string'
+      && typeof item.category === 'string'
+      && typeof item.source === 'string'
+      && (item.url === undefined || typeof item.url === 'string'))
+  ) throw unavailable();
+  return { ...result, config: storeSignInPreferences(result.config) } as PublicSignInContext;
 }
 
 export async function fetchAdminSignInPreferences(): Promise<{ config: SignInExperiencePreferences; canManage: boolean }> {
