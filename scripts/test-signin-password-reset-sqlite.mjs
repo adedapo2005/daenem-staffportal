@@ -112,8 +112,9 @@ await check('production and staging entrypoints dispatch password reset through 
   assert.match(appEntry, /return coreHandler\.fetch\(request, env, ctx\)/, 'production app entry must preserve core auth dispatch');
   assert.ok(indexOf(entry, 'await routeAuthRefinement') >= 0, 'production entry must dispatch through refined auth');
   assert.ok(indexOf(entry, 'await routeAuthRefinement') < indexOf(entry, 'await routePasswordAuth'), 'production entry must resolve refined reset before legacy fallback');
-  assert.ok(indexOf(staging, 'await routeAuthRefinement') >= 0, 'staging entry must dispatch through refined auth');
-  assert.ok(indexOf(staging, 'await routeAuthRefinement') < indexOf(staging, 'await routePasswordAuth'), 'staging entry must resolve refined reset before legacy fallback');
+  assert.match(staging, /import runtimeHandler from '\.\/runtime'/, 'staging entry must reuse the shared runtime route tree');
+  assert.match(staging, /await runtimeHandler\.fetch\(request,runtimeEnv,ctx\)/, 'staging entry must preserve shared runtime dispatch');
+  assert.ok(indexOf(runtime, 'await routeAuthRefinement') < indexOf(runtime, 'await routePasswordAuth'), 'shared runtime must resolve refined reset before legacy fallback');
 });
 
 await check('migration-aligned SQLite reset commits credential, single-use challenge, target-session revocation and correlated success audit', async () => {
