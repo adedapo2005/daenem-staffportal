@@ -481,7 +481,7 @@ html[data-mode="night"] .dashboard-page.postauth-layout {
   padding: 13px 16px;
   border: 1px solid var(--sp-border-soft);
   border-radius: 16px;
-  background: color-mix(in srgb, var(--sp-bg-surface) 80%, transparent);
+  background: var(--sp-bg-surface);
   box-shadow: var(--sp-shadow-soft);
 }
 
@@ -495,6 +495,22 @@ html[data-mode="night"] .dashboard-page.postauth-layout {
   color: var(--sp-text-muted);
   font-size: 11px;
   font-weight: 650;
+}
+
+.postauth-breadcrumbs a {
+  color: var(--sp-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.postauth-breadcrumbs a:focus-visible {
+  outline: 2px solid #0C6F78;
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+html[data-mode="night"] .postauth-breadcrumbs a:focus-visible {
+  outline-color: #30C2C8;
 }
 
 .postauth-breadcrumbs li + li::before {

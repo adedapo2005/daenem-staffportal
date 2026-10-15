@@ -34,7 +34,7 @@ export function PostAuthContextualNavigation({ moduleLabel, canonicalPath, conte
   const definition = getSmartContext(contextKey, { title: moduleLabel, canonicalPath });
   return <nav className="postauth-contextual-page-navigation" data-contextual-page-navigation="true" data-contextual-context={definition.id} data-contextual-path={canonicalPath} aria-label="Page context navigation">
     <ol className="postauth-breadcrumbs">
-      <li>Staff Portal</li>
+      <li><a href="/workspace">Staff Portal</a></li>
       <li aria-current="page">{moduleLabel}</li>
     </ol>
     <div className="postauth-contextual-page-summary">
