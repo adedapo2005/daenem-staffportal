@@ -2963,3 +2963,76 @@
   background:#eef3f6;
 }
 .csp-layout-master-detail-workspace .csp-purpose{display:none!important}
+
+/* Owner Oct 15: opaque Midnight/Navy navigation on the Premium Daylight live canvas.
+   Scoped to the authenticated adapter: retained visual fixtures are untouched. */
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-root {
+  background: #f6f9fb;
+  color: #142233;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar {
+  background: linear-gradient(165deg, #071827 0%, #0b2d45 76%, #0c4855 100%);
+  border-right: 1px solid #16465a;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar-title,
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar-title b,
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar-title small {
+  color: #e8f4f6;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button {
+  color: #f2f8fa;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button svg {
+  color: inherit;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button:hover {
+  background: #16445a;
+  color: #ffffff;
+  transform: none;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button.active,
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button[aria-current="page"] {
+  position: relative;
+  color: #ffffff;
+  background: #0c6f78;
+  border-color: #20868c;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button.active::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: #30c2c8;
+  box-shadow: none;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button:focus-visible {
+  outline: 3px solid #30c2c8;
+  outline-offset: 2px;
+  color: #ffffff;
+}
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar .csp-purpose {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-sidebar nav button {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* An older Operational Cockpit layout-specific background uses !important.
+   Normalize only the authenticated canvas without modifying fixture layouts. */
+.canonical-postauth-runtime[data-canonical-fixture-mode="false"] .csp-layout-operational-cockpit {
+  background: #f6f9fb !important;
+}

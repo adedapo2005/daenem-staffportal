@@ -357,6 +357,57 @@ async function main() {
   const liveServer = startVite(4175, { fixtureMode: false, baselineMode: false });
   try {
     await Promise.all([waitForServer(4174, fixtureServer), waitForServer(4175, liveServer)]);
+    if (process.argv.includes('--premium-navigation-smoke')) {
+      // Changed-source live-adapter smoke only. Never treat simulated auth as a Cloudflare pass.
+      const smokeContext = await browser.newContext({ deviceScaleFactor: 1, colorScheme: 'light', reducedMotion: 'reduce' });
+      const smokePage = await smokeContext.newPage();
+      let activeLayout = 'executive-command';
+      await installApiRoutes(smokePage, { authenticated: true, getLayoutId: () => activeLayout });
+      const results = [];
+      const failures = [];
+      for (const layout of ['executive-command', 'operational-cockpit', 'board-pulse']) {
+        for (const [width, height] of [[390, 844], [1366, 1024], [3840, 2160]]) {
+          activeLayout = layout;
+          await smokePage.setViewportSize({ width, height });
+          await smokePage.goto(`http://127.0.0.1:4175/?canonicalLayout=${encodeURIComponent(layout)}`, { waitUntil: 'domcontentloaded' });
+          await smokePage.locator('.canonical-postauth-runtime[data-canonical-fixture-mode="false"] [data-canonical-staffportal-dashboard]').waitFor({ state: 'attached', timeout: 20_000 });
+          await smokePage.waitForFunction(expected => document.querySelector('[data-canonical-staffportal-dashboard]')?.getAttribute('data-layout-id') === expected, layout);
+          await smokePage.waitForLoadState('networkidle');
+          const result = await smokePage.evaluate(() => {
+            const scope = document.querySelector('.canonical-postauth-runtime[data-canonical-fixture-mode="false"]');
+            const root = scope?.querySelector('.csp-root');
+            const rail = scope?.querySelector('.csp-sidebar');
+            const active = rail?.querySelector('nav button[aria-current="page"]');
+            const promo = rail?.querySelector('.csp-purpose');
+            return {
+              layout: root?.getAttribute('data-layout-id') ?? null,
+              viewport: innerWidth,
+              canvas: root ? getComputedStyle(root).backgroundColor : null,
+              rail: rail ? getComputedStyle(rail).backgroundImage : null,
+              activeBackground: active ? getComputedStyle(active).backgroundColor : null,
+              activeText: active ? getComputedStyle(active).color : null,
+              activeLabel: active?.getAttribute('aria-label') ?? null,
+              promoDisplay: promo ? getComputedStyle(promo).display : null,
+              horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+            };
+          });
+          results.push(result);
+          if (result.layout !== layout || result.canvas !== 'rgb(246, 249, 251)' ||
+              !result.rail?.includes('rgb(7, 24, 39)') ||
+              result.activeBackground !== 'rgb(12, 111, 120)' ||
+              result.activeText !== 'rgb(255, 255, 255)' ||
+              result.promoDisplay !== 'none' || result.horizontalOverflow || !result.activeLabel) {
+            failures.push({ layout, width, result });
+          }
+          if (width === 1366) await smokePage.screenshot({ path: path.join(qaDir, `premium-live-nav-${layout}-1366.png`), fullPage: false });
+        }
+      }
+      fs.writeFileSync(path.join(qaDir, 'premium-live-nav-smoke.json'), JSON.stringify({ results, failures, syntheticAuth: true }, null, 2) + '\n');
+      await smokeContext.close();
+      if (failures.length) throw new Error(`Premium live navigation smoke failed ${failures.length}/${results.length}; see premium-live-nav-smoke.json`);
+      console.log(`PREMIUM_LIVE_NAV_SMOKE=${results.length}/${results.length} PASS (synthetic authentication)`);
+      return;
+    }
     const fixtureContext = await browser.newContext({ deviceScaleFactor: 1, colorScheme: 'light', reducedMotion: 'reduce' });
     const fixturePage = await fixtureContext.newPage();
     const sourcePage = await fixtureContext.newPage();
