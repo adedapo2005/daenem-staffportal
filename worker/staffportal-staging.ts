@@ -1,5 +1,5 @@
 import runtimeHandler from './runtime';
-import { getSessionContext, type AuthEnv } from './auth';
+import { routeWorkspaceShell } from './workspace-route';
 
 interface Env {
   STAFF_PORTAL_FRONTEND_ORIGIN?: string;
@@ -63,19 +63,11 @@ export default {
       return secure(json({ok:true,service:'daenem-staffportal-api-staging',stage:'staging'}),request,env);
     }
 
-    // Keep the authenticated app shell behind the canonical session lookup.
-    // Never let a direct URL fall through to an unprotected SPA asset.
-    if(request.method==='GET'&&(url.pathname==='/workspace'||url.pathname==='/workspace/')){
-      const runtimeEnv=env as unknown as AuthEnv;
-      const context=await getSessionContext(request,runtimeEnv);
-      if(!context)return secure(Response.redirect(new URL('/staff-portal-signin',url),302),request,env);
-      if(!env.ASSETS)return secure(json({error:'Not found.'},404),request,env);
-      const assetRequest=new Request(new URL('/workspace/index.html',url),{
-        method:'GET',
-        headers:{accept:'text/html'},
-      });
-      const asset=await env.ASSETS.fetch(assetRequest);
-      return secure(asset,request,env);
+    // Reuse the canonical session, company-hint and exact-asset guard. Never
+    // let a direct URL fall through to an unprotected SPA asset.
+    if(env.ASSETS){
+      const workspaceResponse=await routeWorkspaceShell(request,env as unknown as Parameters<typeof routeWorkspaceShell>[1]);
+      if(workspaceResponse)return secure(workspaceResponse,request,env);
     }
 
     // Keep staging on the same complete, authorization-aware route tree as the

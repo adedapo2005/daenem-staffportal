@@ -25,7 +25,7 @@ const runtimeHandler = {
 };
 const loaded = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
-  if (specifier === './auth') return { getSessionContext: async () => null };
+  if (specifier === './workspace-route') return { routeWorkspaceShell: async () => null };
   assert.equal(specifier, './runtime');
   return { __esModule: true, default: runtimeHandler };
 });

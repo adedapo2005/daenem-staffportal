@@ -45,8 +45,18 @@ export async function routeWorkspaceShell(request: Request, env: WorkspaceRouteE
     });
   }
 
+  if (!env.ASSETS) {
+    return new Response('Not found', {
+      status: 404,
+      headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' },
+    });
+  }
+
   const assetUrl = new URL('/workspace/index.html', request.url);
-  const assetRequest = new Request(assetUrl, request);
+  const assetRequest = new Request(assetUrl, {
+    method: request.method,
+    headers: { accept: request.headers.get('accept') || 'text/html' },
+  });
   const response = await env.ASSETS.fetch(assetRequest);
   const headers = new Headers(response.headers);
   headers.set('cache-control', 'no-store');

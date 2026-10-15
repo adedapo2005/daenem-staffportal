@@ -70,6 +70,8 @@ await check('canonical active session serves only workspace/index.html with no-s
   assert.equal(await response.text(), '<main>workspace</main>');
   assert.equal(new URL(assetRequests[0].url).pathname, '/workspace/index.html');
   assert.equal(new URL(assetRequests[0].url).search, '');
+  assert.equal(assetRequests[0].headers.get('cookie'), null);
+  assert.equal(assetRequests[0].headers.get('authorization'), null);
   assert.equal(response.headers.get('cache-control'), 'no-store');
 });
 

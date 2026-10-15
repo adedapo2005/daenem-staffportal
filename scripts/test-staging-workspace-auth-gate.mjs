@@ -13,6 +13,7 @@ const compiled = ts.transpileModule(source, {
 
 const runtimeCalls = [];
 const assetCalls = [];
+const workspaceCalls = [];
 let sessionContext = null;
 const runtimeHandler = {
   fetch: async (request) => {
@@ -23,7 +24,20 @@ const runtimeHandler = {
 const module = { exports: {} };
 const mockRequire = (specifier) => {
   if (specifier === './runtime') return { __esModule: true, default: runtimeHandler };
-  if (specifier === './auth') return { getSessionContext: async () => sessionContext };
+  if (specifier === './workspace-route') return {
+    routeWorkspaceShell: async (request, env) => {
+      workspaceCalls.push(new URL(request.url).pathname);
+      if (!['/workspace', '/workspace/'].includes(new URL(request.url).pathname)) return null;
+      if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Not found', { status: 404 });
+      if (!sessionContext) return new Response(null, { status: 303, headers: { location: '/', 'cache-control': 'no-store' } });
+      const companyId = new URL(request.url).searchParams.get('companyId');
+      if (companyId && !sessionContext.companies.some((company) => company.id === companyId)) {
+        return new Response(null, { status: 303, headers: { location: '/', 'cache-control': 'no-store' } });
+      }
+      if (!env.ASSETS) return new Response('Not found', { status: 404 });
+      return env.ASSETS.fetch(new Request(new URL('/workspace/index.html', request.url)));
+    },
+  };
   throw new Error(`Unexpected import: ${specifier}`);
 };
 new Function('require', 'module', 'exports', compiled)(mockRequire, module, module.exports);
@@ -54,8 +68,17 @@ const check = async (name, action) => {
 await check('unauthenticated direct workspace navigation redirects before asset or runtime access', async () => {
   sessionContext = null;
   const response = await fetch(request('/workspace'));
-  assert.equal(response.status, 302);
-  assert.equal(new URL(response.headers.get('location')).pathname, '/staff-portal-signin');
+  assert.equal(response.status, 303);
+  assert.equal(new URL(response.headers.get('location'), 'https://staffportal.test').pathname, '/');
+  assert.equal(assetCalls.length, 0);
+  assert.equal(runtimeCalls.length, 0);
+});
+
+await check('foreign-company workspace hint is denied before asset or runtime access', async () => {
+  sessionContext = { sessionId: 'session-test', employee: { id: 'employee-test' }, companies: [{ id: 'company-a' }] };
+  const response = await fetch(request('/workspace?companyId=company-b', { cookie: 'daenem_workforce_session=valid' }));
+  assert.equal(response.status, 303);
+  assert.equal(new URL(response.headers.get('location'), 'https://staffportal.test').pathname, '/');
   assert.equal(assetCalls.length, 0);
   assert.equal(runtimeCalls.length, 0);
 });
@@ -63,7 +86,8 @@ await check('unauthenticated direct workspace navigation redirects before asset 
 await check('revoked or expired session lookup denies the direct workspace shell', async () => {
   sessionContext = null;
   const response = await fetch(request('/workspace/', { cookie: 'daenem_workforce_session=revoked' }));
-  assert.equal(response.status, 302);
+  assert.equal(response.status, 303);
+  assert.equal(new URL(response.headers.get('location'), 'https://staffportal.test').pathname, '/');
   assert.equal(assetCalls.length, 0);
   assert.equal(runtimeCalls.length, 0);
 });
@@ -94,9 +118,9 @@ await check('auth API requests remain on the secured runtime route tree', async 
 
 await check('workspace shell is not served for non-GET methods', async () => {
   const response = await fetch(request('/workspace', {}, 'POST'));
-  assert.equal(response.status, 401);
+  assert.equal(response.status, 404);
   assert.equal(assetCalls.length, 1);
-  assert.equal(runtimeCalls.length, 2);
+  assert.equal(runtimeCalls.length, 1);
 });
 
 console.log(`Staging workspace auth gate: ${passed.length}/${passed.length} PASS`);
