@@ -4,7 +4,7 @@ export interface WorkspaceRouteEnv extends AuthEnv {
   ASSETS: Fetcher;
 }
 
-const protectedWorkspacePaths = new Set(['/workspace', '/workspace/']);
+const protectedWorkspacePaths = new Set(['/workspace', '/workspace/', '/workspace/index.html']);
 
 /**
  * Serve only the built workspace entry point, and only after the canonical

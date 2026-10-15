@@ -95,4 +95,42 @@ await check('configured Worker runtime dispatches this guard before the legacy S
   assert(guardIndex >= 0 && fallbackIndex > guardIndex, 'Workspace guard is not ahead of the SPA fallback');
 });
 
+// Explicit static HTML URLs must be guarded, not bypassed by the SPA asset fallback.
+await check('anonymous direct /workspace/index.html denies without disclosing an asset', async () => {
+  const before = assetRequests.length;
+  const result = await route(request('/workspace/index.html'), env);
+  assert.equal(result?.status, 303);
+  assert.equal(result?.headers.get('cache-control'), 'no-store');
+  assert.equal(assetRequests.length, before);
+});
+
+await check('revoked and foreign-company direct HTML requests never reach the asset binding', async () => {
+  const before = assetRequests.length;
+  const revoked = await route(request('/workspace/index.html', {
+    headers: { cookie: 'daenem_workforce_session=revoked-session' },
+  }), env);
+  const foreign = await route(request('/workspace/index.html?companyId=company-b', {
+    headers: { cookie: 'daenem_workforce_session=active-session' },
+  }), env);
+  assert.equal(revoked?.status, 303);
+  assert.equal(foreign?.status, 303);
+  assert.equal(assetRequests.length, before);
+});
+
+await check('authorized direct HTML access serves only the no-store sanitized workspace asset', async () => {
+  const before = assetRequests.length;
+  const result = await route(request('/workspace/index.html?companyId=company-a', {
+    headers: { cookie: 'daenem_workforce_session=active-session', authorization: 'Bearer should-not-forward' },
+  }), env);
+  assert.equal(result?.status, 200);
+  assert.equal(await result.text(), '<main>workspace</main>');
+  assert.equal(assetRequests.length, before + 1);
+  const asset = assetRequests.at(-1);
+  assert.equal(new URL(asset.url).pathname, '/workspace/index.html');
+  assert.equal(new URL(asset.url).search, '');
+  assert.equal(asset.headers.get('cookie'), null);
+  assert.equal(asset.headers.get('authorization'), null);
+  assert.equal(result.headers.get('cache-control'), 'no-store');
+});
+
 console.log(`Workspace route authorization: ${checks.length}/${checks.length} PASS`);
