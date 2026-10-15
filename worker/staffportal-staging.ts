@@ -29,7 +29,7 @@ function secure(response:Response,request:Request,env:Env){
   headers.set('referrer-policy','no-referrer');
   headers.set('x-frame-options','DENY');
   headers.set('x-content-type-options','nosniff');
-  headers.set('cache-control','no-store');
+  if(!(new URL(request.url).pathname==='/api/assets'&&response.status===200))headers.set('cache-control','no-store');
   const origin=corsOrigin(request,env);
   if(origin){
     headers.set('access-control-allow-origin',origin);

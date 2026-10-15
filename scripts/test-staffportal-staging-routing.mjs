@@ -11,6 +11,9 @@ const delegated = [];
 const runtimeHandler = {
   fetch: async (request) => {
     delegated.push(new URL(request.url).pathname);
+    if (new URL(request.url).pathname === '/api/assets') {
+      return new Response('{"assets":[]}', { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=60, s-maxage=300' } });
+    }
     if (new URL(request.url).pathname.startsWith('/api/finance/')) {
       return new Response('{"error":"Authentication required."}', { status: 401, headers: { 'content-type': 'application/json' } });
     }
@@ -22,6 +25,7 @@ const runtimeHandler = {
 };
 const loaded = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
+  if (specifier === './auth') return { getSessionContext: async () => null };
   assert.equal(specifier, './runtime');
   return { __esModule: true, default: runtimeHandler };
 });
@@ -61,6 +65,13 @@ await check('unrecognized API requests remain JSON 404 responses instead of SPA 
   assert.equal(response.status, 404);
   assert.match(response.headers.get('content-type'), /application\/json/);
   assert.deepEqual(await response.json(), { error: 'API route not found.' });
+});
+
+await check('safe public asset cache policy survives staging response hardening', async () => {
+  const response = await handler.fetch(request('/api/assets'), env, ctx);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('cache-control'), /max-age=60, s-maxage=300/);
+  assert.equal(delegated.at(-1), '/api/assets');
 });
 
 await check('approved preflight allows Idempotency-Key and rejects unknown origins', async () => {
