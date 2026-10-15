@@ -75,7 +75,7 @@ function adapterFor(db, { revokeAfterPendingRead = false, revokeActorAfterPendin
   };
 }
 
-function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, deactivateActorRoleAfterPendingRead = false, denyActorPermission = false, failAudit = false, actorRoleCompanyId = 'company-a', actorRoleActive = 1, ownerRoleCompanyId = null } = {}, databasePath = ':memory:') {
+function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendingRead = false, revokeActorGrantAfterPendingRead = false, deactivateActorRoleAfterPendingRead = false, denyActorPermission = false, failAudit = false, ignoreAudit = false, actorRoleCompanyId = 'company-a', actorRoleActive = 1, ownerRoleCompanyId = null } = {}, databasePath = ':memory:') {
   const db = new DatabaseSync(databasePath);
   db.exec('PRAGMA foreign_keys=ON;');
   db.exec(migrationTable(coreMigration, 'companies'));
@@ -105,6 +105,7 @@ function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendin
   insert.run('candidate-a', 'employee-a', null, null, 0);
   insert.run('candidate-b', 'employee-a', null, null, 0);
   if (failAudit) db.exec(`CREATE TRIGGER fail_bank_audit BEFORE INSERT ON audit_logs WHEN NEW.action='verify_employee_bank' BEGIN SELECT RAISE(ABORT,'forced audit failure'); END;`);
+  if (ignoreAudit) db.exec(`CREATE TRIGGER ignore_bank_audit BEFORE INSERT ON audit_logs WHEN NEW.action='verify_employee_bank' BEGIN SELECT RAISE(IGNORE); END;`);
 
   const adapter = adapterFor(db, { revokeAfterPendingRead, revokeActorAfterPendingRead, revokeActorGrantAfterPendingRead, deactivateActorRoleAfterPendingRead });
   return { db, adapter };
@@ -284,4 +285,17 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
   db.close();
 }
 
-console.log('PASS payroll bank promotion SQLite: canonical active/company-scoped session grants, target and actor revocation, role deactivation and company mismatch, deny-wins override, Owner group authority, and required-audit rollback');
+{
+  const { db, adapter } = createDatabase({ ignoreAudit: true });
+  await assert.rejects(promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input), /malformed JSON/,
+    'a silently ignored required audit must fail the batch');
+  assert.equal(db.prepare("SELECT is_primary FROM employee_bank_accounts WHERE id='primary-a'").get().is_primary, 1,
+    'silent audit failure preserves the existing primary');
+  assert.equal(db.prepare("SELECT is_primary,verified_at FROM employee_bank_accounts WHERE id='candidate-a'").get().is_primary, 0,
+    'silent audit failure rolls back candidate promotion');
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 0,
+    'silent audit failure records no success evidence');
+  db.close();
+}
+
+console.log('PASS payroll bank promotion SQLite: canonical active/company-scoped session grants, target and actor revocation, role deactivation and company mismatch, deny-wins override, Owner group authority, and required-audit rollback including silent audit suppression');

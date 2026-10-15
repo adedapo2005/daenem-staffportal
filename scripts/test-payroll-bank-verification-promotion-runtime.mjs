@@ -12,7 +12,7 @@ new Function('exports', 'require', js)(exports, (id) => {
 const { promoteVerifiedEmployeeBankAccount } = exports;
 assert.equal(typeof promoteVerifiedEmployeeBankAccount, 'function');
 
-function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
+function createDb({ duplicateAudit, onPendingRead, failAudit = false, ignoreAudit = false } = {}) {
   const accounts = [
     { id: 'primary-a', employee_id: 'employee-a', active: 1, is_primary: 1, verified_at: '2026-01-01T00:00:00.000Z', verification_source: 'bank:old' },
     { id: 'candidate-a', employee_id: 'employee-a', active: 1, is_primary: 0, verified_at: null, verification_source: null },
@@ -77,13 +77,16 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false } = {}) {
         const row = accounts.find(item => item.id === auditCandidateId && item.employee_id === auditEmployeeId && item.active === 1 && item.is_primary === 1 && item.verified_at !== null && item.verification_source === auditVerification);
         const duplicate = audits.some(item => item.action === 'verify_employee_bank' && JSON.parse(item.after_json).verificationSource === auditSource && JSON.parse(item.after_json).verificationReference === auditReference);
         if (failAudit) throw new Error('simulated audit insert failure');
-        if (changes > 0 && row && !duplicate) {
+        if (changes > 0 && row && !duplicate && !ignoreAudit) {
           audits.push({ id: auditId, actor_employee_id: actorId, company_id: companyId, entity_id: entityId, action: 'verify_employee_bank', after_json: afterJson, request_id: requestId });
-          changes = 1;
-        } else {
-          changes = 0;
         }
-        assert.match(select.sql, /^SELECT changes\(\) AS changed$/);
+        assert.match(select.sql, /^SELECT json_extract\(CASE WHEN EXISTS \(SELECT 1 FROM audit_logs WHERE id=\?\) THEN/);
+        const [requiredAuditId, expectedSource, expectedReference, promotedId, promotedEmployeeId, expectedVerifiedAt, expectedVerification] = select.args;
+        const auditPersisted = audits.some(item => item.id === requiredAuditId);
+        const sameReferenceAuditExists = audits.some(item => item.action === 'verify_employee_bank' && JSON.parse(item.after_json).verificationSource === expectedSource && JSON.parse(item.after_json).verificationReference === expectedReference);
+        const candidatePromoted = accounts.some(item => item.id === promotedId && item.employee_id === promotedEmployeeId && item.active === 1 && item.is_primary === 1 && item.verified_at === expectedVerifiedAt && item.verification_source === expectedVerification);
+        if (!auditPersisted && !sameReferenceAuditExists && candidatePromoted) throw new Error('malformed JSON: required audit was silently ignored');
+        changes = auditPersisted ? 1 : 0;
         return [{ results: [] }, { results: [] }, { results: [{ changed: changes }] }];
       } catch (error) {
         accounts.splice(0, accounts.length, ...originalAccounts);
@@ -213,6 +216,15 @@ const responseJson = response => response.json();
 }
 
 {
+  const db = createDb({ ignoreAudit: true });
+  await assert.rejects(promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, context, input), /silently ignored/);
+  assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 1);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 0);
+  assert.equal(db.accounts.find(row => row.id === 'candidate-a').verified_at, null);
+  assert.equal(auditCount(db), 0);
+}
+
+{
   const db = createDb({ onPendingRead(candidate, _accounts, _audits, membership) {
     if (candidate) membership.active = 0;
   } });
@@ -234,4 +246,4 @@ const responseJson = response => response.json();
   assert.equal(auditCount(db), 0);
 }
 
-console.log('PASS payroll bank promotion isolated runtime: positive, stale, replay, cross-account replay, source distinction, stale-candidate race, changed-primary lost race, audit rollback, post-preflight membership revocation, and company authorization (10 scenarios)');
+console.log('PASS payroll bank promotion isolated runtime: positive, stale, replay, cross-account replay, source distinction, stale-candidate race, changed-primary lost race, thrown and silently ignored audit rollback, post-preflight membership revocation, and company authorization (11 scenarios)');
