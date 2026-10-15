@@ -33,6 +33,18 @@ export async function routeWorkspaceShell(request: Request, env: WorkspaceRouteE
     });
   }
 
+  const requestedCompanyId = url.searchParams.get('companyId');
+  if (requestedCompanyId && !session.companies.some((company) => company.id === requestedCompanyId)) {
+    return new Response(null, {
+      status: 303,
+      headers: {
+        location: '/',
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  }
+
   const assetUrl = new URL('/workspace/index.html', request.url);
   const assetRequest = new Request(assetUrl, request);
   const response = await env.ASSETS.fetch(assetRequest);

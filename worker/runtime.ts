@@ -48,6 +48,7 @@ import { routeProcurement } from './procurement';
 import { routeAlerting } from './alerting';
 import { routeStorageMirror } from './storage-mirror';
 import { routeSmartBugManagement } from './smart-bug-management';
+import { routeWorkspaceShell } from './workspace-route';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -80,6 +81,9 @@ function secure(response: Response) {
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    const workspaceShellResponse = await routeWorkspaceShell(request, env);
+    if (workspaceShellResponse) return secure(workspaceShellResponse);
 
     // Legacy theme artwork was removed from the Staff Portal release. Block
     // stale Workers Assets copies so an old theme can never be served again.
