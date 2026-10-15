@@ -33,8 +33,9 @@ export async function routeWorkspaceShell(request: Request, env: WorkspaceRouteE
     });
   }
 
-  const requestedCompanyId = url.searchParams.get('companyId');
-  if (requestedCompanyId && !session.companies.some((company) => company.id === requestedCompanyId)) {
+  const companyHints = url.searchParams.getAll('companyId');
+  const requestedCompanyId = companyHints[0];
+  if (companyHints.length > 1 || (requestedCompanyId !== undefined && (!requestedCompanyId.trim() || !session.companies.some((company) => company.id === requestedCompanyId)))) {
     return new Response(null, {
       status: 303,
       headers: {

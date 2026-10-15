@@ -133,4 +133,13 @@ await check('authorized direct HTML access serves only the no-store sanitized wo
   assert.equal(result.headers.get('cache-control'), 'no-store');
 });
 
+await check('ambiguous or blank company hints are rejected before fetching workspace HTML', async () => {
+  const before = assetRequests.length;
+  for (const query of ['?companyId=company-a&companyId=company-b', '?companyId=&companyId=company-a', '?companyId=']) {
+    const response = await route(request(`/workspace/index.html${query}`, { headers: { cookie: 'daenem_workforce_session=active-session' } }), env);
+    assert.equal(response?.status, 303, `ambiguous company hint must be denied: ${query}`);
+  }
+  assert.equal(assetRequests.length, before);
+});
+
 console.log(`Workspace route authorization: ${checks.length}/${checks.length} PASS`);
