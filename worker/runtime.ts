@@ -49,6 +49,7 @@ import { routeAlerting } from './alerting';
 import { routeStorageMirror } from './storage-mirror';
 import { routeSmartBugManagement } from './smart-bug-management';
 import { routeWorkspaceShell } from './workspace-route';
+import { routeFinancialGateway } from './financial-gateway';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -190,6 +191,7 @@ export default {
       url.pathname.startsWith('/api/platform/') ||
       url.pathname.startsWith('/api/hr/workflows/') ||
       url.pathname.startsWith('/api/communications/') ||
+      url.pathname.startsWith('/api/financial-gateway/') ||
       url.pathname.startsWith('/api/admin/') ||
       url.pathname.startsWith('/api/offline/') ||
       url.pathname.startsWith('/api/procurement/') ||
@@ -202,6 +204,10 @@ export default {
 
       if (url.pathname.startsWith('/api/offline/')) {
         const response = await routeOffline(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/financial-gateway/')) {
+        const response = await routeFinancialGateway(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/alerting/')) {
