@@ -59,13 +59,24 @@ function canManage(context: SessionContext) {
   return isGroupOwner(context) || context.companies.some((company) => canManageCompany(context, company.id));
 }
 
-// Group-wide policy is limited to the Owner or a holder of the group-level Group Admin role. A
-// company-scoped role that reuses the code 'group_admin' does not qualify.
+// Group-wide policy is limited to the Owner or a CURRENT holder of the group-level Group Admin role,
+// evaluated from the database on every request:
+// - the role must be group-level (roles.company_id IS NULL) and active; a company-scoped role that
+//   reuses the code 'group_admin' does not qualify;
+// - the assignment must still exist (employee_roles has no active flag; withdrawal deletes the row);
+// - the employee must be active and still hold an active membership in the active company the role
+//   was assigned through, so offboarding or removing that membership withdraws group authority.
 async function isGroupAdministrator(env: AdminEnv, context: SessionContext) {
   if (isGroupOwner(context)) return true;
   const row = await env.DB.prepare(`
-    SELECT 1 AS ok FROM employee_roles er JOIN roles r ON r.id = er.role_id
+    SELECT 1 AS ok
+    FROM employee_roles er
+    JOIN roles r ON r.id = er.role_id
+    JOIN employees e ON e.id = er.employee_id
+    JOIN employee_company_memberships m ON m.employee_id = er.employee_id AND m.company_id = er.company_id AND m.active = 1
+    JOIN companies c ON c.id = er.company_id AND c.active = 1
     WHERE er.employee_id = ? AND r.code = 'group_admin' AND r.company_id IS NULL AND r.active = 1
+      AND e.employment_status = 'active'
     LIMIT 1
   `).bind(context.employee.id).first<{ ok: number }>();
   return Boolean(row);
@@ -110,9 +121,15 @@ const allowedSettings: Record<string, { type: 'string' | 'number' | 'boolean'; v
   'communications.provider_daily_limit': { type: 'number', validate: (value) => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 100000 },
 };
 
+// Group-wide settings a delegated single-company admin may READ: presentation and notification
+// preferences. Security, communications and AI controls are group-administration only for read and write.
+const DELEGATED_READABLE_SETTING_PREFIXES = ['ui.', 'notifications.'];
+
 async function getSettings(env: AdminEnv, context: SessionContext) {
   if (!canView(context)) return json({ error: 'Admin setup access is not assigned.' }, 403);
-  const keys = Object.keys(allowedSettings);
+  const groupAdministrator = await isGroupAdministrator(env, context);
+  const keys = Object.keys(allowedSettings).filter((key) => groupAdministrator
+    || DELEGATED_READABLE_SETTING_PREFIXES.some((prefix) => key.startsWith(prefix)));
   const placeholders = keys.map(() => '?').join(',');
   const result = await env.DB.prepare(`
     SELECT setting_key AS settingKey, setting_value AS settingValue, value_type AS valueType
@@ -123,7 +140,7 @@ async function getSettings(env: AdminEnv, context: SessionContext) {
     const decoded = decodeSetting(row.settingValue, row.valueType);
     settings[row.settingKey] = row.settingKey === 'ui.forced_theme' || row.settingKey === 'ui.default_theme' ? normalizeTheme(decoded) : decoded;
   }
-  return json({ settings });
+  return json({ settings, scope: groupAdministrator ? 'group' : 'delegated' });
 }
 
 async function updateSettings(request: Request, env: AdminEnv, context: SessionContext) {

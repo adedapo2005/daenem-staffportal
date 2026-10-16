@@ -79,11 +79,16 @@ grantPermission('rp-qa-security', 'role-qa-security-viewer', 'security.access', 
 grantPermission('rp-qa-fake-ga', 'role-qa-fake-group-admin', 'settings.access', 'manage');
 grantPermission('rp-qa-real-ga', 'role-group-admin', 'settings.access', 'manage');
 assert.equal(one("SELECT COUNT(*) AS n FROM role_permissions WHERE id IN ('rp-qa-settings','rp-qa-security','rp-qa-fake-ga')").n, 3, 'fixture permissions exist');
+// Group-wide keys of each class, so read-projection checks are meaningful.
+for (const [key, value, type] of [['security.login_location_mode', 'record', 'string'], ['communications.kill_switch', 'false', 'boolean'],
+  ['ai.smart_exception_detection', 'true', 'boolean'], ['ui.default_theme', 'lagos-sunrise', 'string'], ['notifications.role_data_reminders', 'true', 'boolean']]) {
+  run('INSERT INTO app_settings(setting_key,setting_value,value_type) VALUES(?,?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type=excluded.value_type', key, value, type);
+}
 
 const people = {
   owner: ['emp-owner', ['co-a']], mgrA: ['emp-mgr-a', ['co-a', 'co-b']], mgrB: ['emp-mgr-b', ['co-b']],
   viewerA: ['emp-viewer-a', ['co-a']], fakeGA: ['emp-fake-ga', ['co-a']], realGA: ['emp-real-ga', ['co-a']],
-  stale: ['emp-stale', ['co-a']],
+  staleGA: ['emp-stale-ga', ['co-a']], movedGA: ['emp-moved-ga', ['co-a', 'co-b']], stale: ['emp-stale', ['co-a']],
 };
 const tokens = {};
 for (const [key, [id, companies]] of Object.entries(people)) {
@@ -99,6 +104,11 @@ grant('er-mgr-b', 'emp-mgr-b', 'co-b', 'role-qa-settings-admin');
 grant('er-viewer-a', 'emp-viewer-a', 'co-a', 'role-qa-security-viewer');
 grant('er-fake-ga', 'emp-fake-ga', 'co-a', 'role-qa-fake-group-admin');
 grant('er-real-ga', 'emp-real-ga', 'co-a', 'role-group-admin');
+grant('er-stale-ga', 'emp-stale-ga', 'co-a', 'role-group-admin');
+// movedGA: Group Admin assigned through co-a, also a settings admin in co-b. Removing the co-a membership
+// must withdraw group authority even though the co-b settings role keeps the session admin-capable.
+grant('er-moved-ga', 'emp-moved-ga', 'co-a', 'role-group-admin');
+grant('er-moved-ga-settings-b', 'emp-moved-ga', 'co-b', 'role-qa-settings-admin');
 grant('er-stale', 'emp-stale', 'co-a', 'role-qa-settings-admin');
 
 // ---- helpers --------------------------------------------------------------------------------
@@ -118,11 +128,13 @@ const configure = (actor, locationId) => call(actor, 'POST', '/api/admin/locatio
   locationId, latitude: 6.5244, longitude: 3.3792, radiusM: 4000, requireClockGeofence: false, requireClockInPhoto: false, allowOfflineAttendance: true,
 });
 const listLocations = (actor) => call(actor, 'GET', '/api/admin/locations');
+const readSettings = (actor) => call(actor, 'GET', '/api/admin/settings');
 const updateGlobal = (actor) => call(actor, 'POST', '/api/admin/settings', { settings: { 'security.login_location_mode': 'off' } });
 const saveScoped = (actor, companyIds) => call(actor, 'POST', '/api/admin/scoped-settings', {
   settingKey: scoped.RECOVERY_SETTING_KEY, value: 'email', scope: 'companies', companyIds,
 });
 
+const GROUP_ONLY = /^(security|communications|ai)\./;
 const locationState = (locationId) => JSON.stringify({
   location: one('SELECT latitude,longitude,geofence_radius_m FROM company_locations WHERE id=?', locationId),
   policies: many('SELECT require_clock_geofence,require_clock_in_photo,allow_offline_attendance,geofence_radius_m FROM attendance_policies WHERE location_id=? ORDER BY id', locationId),
@@ -145,6 +157,11 @@ async function assertLocationDenied(actor, locationId) {
   assert.equal(locationState(locationId), before, 'geofence and attendance policy unchanged');
   assert.equal(denials(people[actor][0]), logsBefore + 1, 'denial recorded against the actor');
 }
+async function assertGroupWriteRefused(actor) {
+  const before = settingsState();
+  assert.equal((await updateGlobal(actor)).status, 403);
+  assert.equal(settingsState(), before, 'group-wide settings unchanged');
+}
 
 // ---- denied (must not write) ----------------------------------------------------------------
 await check('A-settings manager (also B member) cannot weaken B attendance geofence', () => assertLocationDenied('mgrA', 'loc-b'));
@@ -166,15 +183,26 @@ await check('location list excludes companies without admin view', async () => {
   const b = listedCompanies(await listLocations('mgrB'));
   assert.ok(b.has('co-b') && !b.has('co-a'), 'B manager sees B only');
 });
-await check('company manager cannot change group-wide settings', async () => {
-  const before = settingsState();
-  assert.equal((await updateGlobal('mgrA')).status, 403);
-  assert.equal(settingsState(), before);
+await check('single-company manager cannot read group security, communications or AI settings', async () => {
+  for (const actor of ['mgrA', 'viewerA', 'fakeGA']) {
+    const response = await readSettings(actor);
+    assert.equal(response.status, 200, `${actor} may still open admin setup`);
+    const leaked = Object.keys(response.body.settings || {}).filter((key) => GROUP_ONLY.test(key));
+    assert.deepEqual(leaked, [], `${actor} must not read ${leaked.join(', ')}`);
+    assert.equal(response.body.settings['ui.default_theme'], 'lagos-sunrise', `${actor} still reads presentation settings`);
+  }
 });
-await check('company-level role reusing group_admin code cannot change group-wide settings', async () => {
-  const before = settingsState();
-  assert.equal((await updateGlobal('fakeGA')).status, 403);
-  assert.equal(settingsState(), before);
+await check('company manager cannot change group-wide settings', () => assertGroupWriteRefused('mgrA'));
+await check('company-level role reusing group_admin code cannot change group-wide settings', () => assertGroupWriteRefused('fakeGA'));
+await check('Group Admin whose role assignment was withdrawn loses group authority', async () => {
+  run("DELETE FROM employee_roles WHERE id='er-stale-ga'");
+  await assertGroupWriteRefused('staleGA');
+});
+await check('Group Admin whose membership in the role company ended loses group authority', async () => {
+  run("UPDATE employee_company_memberships SET active=0 WHERE employee_id='emp-moved-ga' AND company_id='co-a'");
+  await assertGroupWriteRefused('movedGA');
+  const leaked = Object.keys((await readSettings('movedGA')).body.settings || {}).filter((key) => GROUP_ONLY.test(key));
+  assert.deepEqual(leaked, [], 'no longer reads group-only settings either');
 });
 await check('A manager cannot write B company-scoped settings', async () => {
   const before = scopedState();
@@ -195,10 +223,17 @@ await check('A manager can configure own-company location', async () => {
   assert.equal((await configure('mgrA', 'loc-a')).status, 200);
   assert.equal(one("SELECT geofence_radius_m AS r FROM company_locations WHERE id='loc-a'").r, 4000);
 });
-await check('A manager can still read settings and save own-company scoped settings', async () => {
-  assert.equal((await call('mgrA', 'GET', '/api/admin/settings')).status, 200);
+await check('A manager can save own-company scoped settings', async () => {
   assert.equal((await saveScoped('mgrA', ['co-a'])).status, 200);
   assert.ok(one("SELECT 1 AS ok FROM admin_scoped_settings WHERE scope_type='company' AND scope_id='co-a'"));
+});
+await check('Owner and current Group Admin read every group-wide setting', async () => {
+  for (const actor of ['owner', 'realGA']) {
+    const settings = (await readSettings(actor)).body.settings || {};
+    for (const key of ['security.login_location_mode', 'communications.kill_switch', 'ai.smart_exception_detection']) {
+      assert.ok(key in settings, `${actor} reads ${key}`);
+    }
+  }
 });
 await check('Owner can configure any company location and list all', async () => {
   assert.equal((await configure('owner', 'loc-b')).status, 200);
@@ -209,7 +244,7 @@ await check('Owner can change group-wide settings', async () => {
   assert.equal((await updateGlobal('owner')).status, 200);
   assert.equal(one("SELECT setting_value AS v FROM app_settings WHERE setting_key='security.login_location_mode'").v, 'off');
 });
-await check('group-level Group Admin can change group-wide settings', async () => {
+await check('current group-level Group Admin can change group-wide settings', async () => {
   run("UPDATE app_settings SET setting_value='record' WHERE setting_key='security.login_location_mode'");
   assert.equal((await updateGlobal('realGA')).status, 200);
   assert.equal(one("SELECT setting_value AS v FROM app_settings WHERE setting_key='security.login_location_mode'").v, 'off');
