@@ -24,6 +24,9 @@ const runtimeHandler = {
 const module = { exports: {} };
 const mockRequire = (specifier) => {
   if (specifier === './runtime') return { __esModule: true, default: runtimeHandler };
+  if (specifier === './v180-public-assets') return {
+    routeV180PublicAssets: async () => null,
+  };
   if (specifier === './workspace-route') return {
     routeWorkspaceShell: async (request, env) => {
       workspaceCalls.push(new URL(request.url).pathname);
