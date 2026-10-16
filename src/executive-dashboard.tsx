@@ -35,6 +35,14 @@ const percent=(current?:number,previous?:number):number|null=>hasValue(current)&
 const signedPercent=(value:number)=>`${value>=0?'+':''}${value.toFixed(1)}%`;
 const labelled=(value:number|undefined,text:string)=>hasValue(value)?`${value} ${text}`:NOT_AUTHORISED;
 const unauthorisedSignal=(label:string,detail:string):Signal=>({label,value:NOT_AUTHORISED,detail,state:'neutral'});
+// Alerts are complete only when every domain that feeds them is in the response. An omitted domain means "unknown", never "clear".
+const alertCompanies:Array<[CompanyKey,(company:Company)=>unknown]>=[['bakery',(c)=>c.wastePctOfSales],['autos',(c)=>c.followupsDue],['logistics',(c)=>c.expiringDocs],['properties',(c)=>c.arrearsKobo]];
+function alertsIncomplete(data:Intelligence){
+  const group=data.group;
+  if(!hasValue(group.highRiskSecurity)||!hasValue(group.lowStock)||!hasValue(group.incompleteAttendance))return true;
+  if(data.finance===undefined||data.construction===undefined)return true;
+  return alertCompanies.some(([key,pick])=>{if(!data.scope.companyIds.includes(`company-${key}`))return false;const company=data.companies[key];return company===undefined||pick(company)===undefined});
+}
 const periods:Array<{key:PeriodKey;label:string}>=[
   {key:'current_month',label:'Current month'},{key:'previous_month',label:'Previous month'},{key:'current_quarter',label:'Current quarter'},{key:'year_to_date',label:'Year to date'},{key:'last_12_months',label:'Last 12 months'},
 ];
@@ -77,6 +85,7 @@ export function GroupExecutiveDashboard({companyId}:{companyId:string|null}){
   const growth=percent(g?.revenueKobo,g?.previousRevenueKobo);
   const lowStock=g?.lowStock,incompleteAttendance=g?.incompleteAttendance,highRiskSecurity=g?.highRiskSecurity,overdueRequirements=g?.overdueRequirements;
   const present=g?.present,employees=g?.employees;
+  const incomplete=data?alertsIncomplete(data):false;
   const comparisonRows=rows.flatMap((row)=>row.revenue===undefined||row.previous===undefined?[]:[{key:row.key,name:row.code,current:row.revenue,previous:row.previous}]);
   const operatingSignals:Signal[]=data?[
     f?{label:'Overdue Receivables',value:String(f.overdueReceivables),detail:moneyFull(f.outstandingReceivablesKobo)+' outstanding',state:f.overdueReceivables?'critical':'healthy' as const}:unauthorisedSignal('Overdue Receivables','Finance'),
@@ -96,11 +105,11 @@ export function GroupExecutiveDashboard({companyId}:{companyId:string|null}){
         <Kpi label="Workforce today" value={hasValue(present)&&hasValue(employees)?`${present}/${employees}`:NOT_AUTHORISED} detail={hasValue(incompleteAttendance)?`${incompleteAttendance} incomplete attendance`:NOT_AUTHORISED} tone={incompleteAttendance?'amber':'green'} action="attendance"/>
         <Kpi label="Inventory value" value={money(g?.inventoryValueKobo)} detail={hasValue(lowStock)?`${lowStock} low-stock item(s)`:NOT_AUTHORISED} tone={lowStock?'amber':'blue'} action="inventory"/>
         <Kpi label="Construction spend" value={money(k?.spentKobo)} detail={k?`${k.activeProjects} active · ${money(k.remainingKobo)} balance`:NOT_AUTHORISED} tone={k?.overdueMilestones?'red':'blue'} action="construction"/>
-        <Kpi label="Action items" value={String(data.alerts.length)} detail={`${hasValue(highRiskSecurity)?`${highRiskSecurity} high-risk security`:'Security not authorised'} · ${hasValue(overdueRequirements)?`${overdueRequirements} overdue work`:'Work not authorised'}`} tone={data.alerts.length?'red':'green'} action="security"/>
+        <Kpi label="Action items" value={incomplete?NOT_AUTHORISED:String(data.alerts.length)} detail={`${hasValue(highRiskSecurity)?`${highRiskSecurity} high-risk security`:'Security not authorised'} · ${hasValue(overdueRequirements)?`${overdueRequirements} overdue work`:'Work not authorised'}`} tone={incomplete?'blue':data.alerts.length?'red':'green'} action="security"/>
       </div>
       <div className="xed-grid">
         <article className="xed-panel xed-performance"><header><div><span>COMPANY PERFORMANCE</span><h3>Recorded Revenue And Collections</h3></div><Building2 size={20}/></header><div className="xed-bars">{rows.map((row)=>{const Icon=row.icon;const change=percent(row.revenue,row.previous);return <button key={row.key} onClick={()=>openWorkspace(row.module)}><div className="xed-bar-title"><span><i><Icon size={16}/></i><b>{row.name}</b></span><strong>{moneyFull(row.revenue)}</strong></div><div className="xed-track"><i style={{width:`${row.revenue===undefined?0:Math.max(row.revenue?4:0,row.revenue/maxRevenue*100)}%`}}/></div><div className="xed-bar-meta"><span>{row.primary} · {row.secondary}</span><em className={change!==null&&change<0?'down':'up'}>{change===null?NOT_AUTHORISED:signedPercent(change)}</em></div></button>})}</div></article>
-        <article className="xed-panel xed-alerts"><header><div><span>OWNER ACTION CENTER</span><h3>Needs Review</h3></div><AlertTriangle size={20}/></header>{!data.alerts.length?<div className="xed-clear"><CheckCircle2 size={28}/><b>No Exception Alerts</b><span>No configured Group threshold currently requires review.</span></div>:<div className="xed-alert-list">{data.alerts.slice(0,8).map((alert)=><button key={alert.code} className={alert.severity} onClick={()=>openWorkspace(alert.action)}><i><AlertTriangle size={15}/></i><span><b>{alert.title}</b><small>{alert.company?`${alert.company} · `:''}{alert.detail}</small></span>{alert.action&&<ArrowRight size={14}/>}</button>)}</div>}</article>
+        <article className="xed-panel xed-alerts"><header><div><span>OWNER ACTION CENTER</span><h3>Needs Review</h3></div><AlertTriangle size={20}/></header>{!data.alerts.length?(incomplete?<div className="xed-message"><AlertTriangle size={17}/><span>Alerts incomplete for your access</span></div>:<div className="xed-clear"><CheckCircle2 size={28}/><b>No Exception Alerts</b><span>No configured Group threshold currently requires review.</span></div>):<><div className="xed-alert-list">{data.alerts.slice(0,8).map((alert)=><button key={alert.code} className={alert.severity} onClick={()=>openWorkspace(alert.action)}><i><AlertTriangle size={15}/></i><span><b>{alert.title}</b><small>{alert.company?`${alert.company} · `:''}{alert.detail}</small></span>{alert.action&&<ArrowRight size={14}/>}</button>)}</div>{incomplete&&<div className="xed-message"><AlertTriangle size={17}/><span>Alerts incomplete for your access</span></div>}</>}</article>
       </div>
       <div className="xed-analytics-upgrade" aria-label="Executive Analytics">
         <PerformanceComparison rows={comparisonRows} title="Company Performance Movement" subtitle={`Current recorded performance compared with ${data.period.comparisonLabel}.`} valueFormatter={money}/>
