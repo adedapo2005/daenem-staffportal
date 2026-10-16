@@ -161,8 +161,74 @@ async function sendTemporaryPasswordEmail(env: Env, employee: { email?: string; 
   return true;
 }
 
+const MANAGE_EMPLOYEES_PERMISSION = 'users.access';
+const NEUTRAL_TARGET_ERROR = 'Employee account not found or is not active.';
+
+// Session roles only contain an active, group-level Owner role (see sessionContextFromId in ./auth).
+function isGroupOwner(context: SessionContext) {
+  return context.roles.some((role) => role.code === 'owner');
+}
+
+// Companies where the actor currently holds Manage Employees. A grant in one company never
+// authorizes temporary-password administration for employees who only belong to another company.
+function managedCompanyIds(context: SessionContext) {
+  return context.companies
+    .filter((company) => hasPermission(context, MANAGE_EMPLOYEES_PERMISSION, 'manage', company.id))
+    .map((company) => company.id);
+}
+
+function canAdministerTemporaryPasswords(context: SessionContext) {
+  return isGroupOwner(context) || managedCompanyIds(context).length > 0;
+}
+
+// Owner accounts may only be reset, revoked or listed by a group Owner.
+const OWNER_TARGET_SQL = `EXISTS(
+  SELECT 1 FROM employee_roles oer LEFT JOIN roles orole ON orole.id=oer.role_id
+  WHERE oer.employee_id=e.id AND (oer.role_id='role-owner' OR orole.code='owner')
+)`;
+
+// Delegated scope: the target must currently hold an active membership in an active company where
+// the actor holds Manage Employees, and must not be an Owner. Expects employees aliased as `e`.
+function delegatedScopeSql(companyIds: string[]) {
+  return `AND NOT ${OWNER_TARGET_SQL} AND EXISTS(
+    SELECT 1 FROM employee_company_memberships sm JOIN companies sc ON sc.id=sm.company_id
+    WHERE sm.employee_id=e.id AND sm.active=1 AND sc.active=1
+      AND sm.company_id IN (${companyIds.map(() => '?').join(',')})
+  )`;
+}
+
+type TargetEmployee = { id: string; displayName: string; email?: string; status: string };
+
+async function authorizedTarget(env: Env, context: SessionContext, employeeId: string, requireActiveEmployee: boolean) {
+  if (!employeeId) return null;
+  const owner = isGroupOwner(context);
+  const companyIds = owner ? [] : managedCompanyIds(context);
+  if (!owner && !companyIds.length) return null;
+  const row = await env.DB.prepare(`
+    SELECT e.id,e.display_name AS displayName,e.email,e.employment_status AS status
+    FROM employees e
+    WHERE e.id=?
+      ${requireActiveEmployee ? "AND e.employment_status IN ('active','provisional')" : ''}
+      ${owner ? '' : delegatedScopeSql(companyIds)}
+    LIMIT 1
+  `).bind(employeeId, ...companyIds).first<TargetEmployee>();
+  return row || null;
+}
+
+// Neutral failure: an out-of-scope, Owner or unknown target is indistinguishable to the caller.
+// The denial is recorded against the actor without credentials, tokens or employee details.
+async function deniedTarget(env: Env, request: Request, context: SessionContext, action: 'issue' | 'revoke', employeeId: string) {
+  await security(env, request, context.employee.id, 'temporary_password_admin_denied', 'denied', {
+    action,
+    targetEmployeeId: employeeId ? employeeId.slice(0, 120) : null,
+  }, context.sessionId);
+  return json({ error: NEUTRAL_TARGET_ERROR }, 404);
+}
+
 async function listIssued(env: Env, context: SessionContext) {
-  if (!hasPermission(context, 'users.access', 'manage')) return json({ error: 'Manage Employees permission is required.' }, 403);
+  if (!canAdministerTemporaryPasswords(context)) return json({ error: 'Manage Employees permission is required.' }, 403);
+  const owner = isGroupOwner(context);
+  const companyIds = owner ? [] : managedCompanyIds(context);
   const rows = await env.DB.prepare(`
     SELECT t.id,t.employee_id AS employeeId,e.display_name AS displayName,e.email,t.credential_username AS username,
            t.delivery_method AS deliveryMethod,t.delivery_status AS deliveryStatus,t.issued_at AS issuedAt,
@@ -170,21 +236,21 @@ async function listIssued(env: Env, context: SessionContext) {
     FROM employee_temporary_passwords t
     JOIN employees e ON e.id=t.employee_id
     WHERE t.replaced_at IS NULL AND t.revoked_at IS NULL
+      ${owner ? '' : delegatedScopeSql(companyIds)}
     ORDER BY t.issued_at DESC LIMIT 250
-  `).all<Record<string, unknown>>();
+  `).bind(...companyIds).all<Record<string, unknown>>();
   return json({ temporaryPasswords: rows.results || [] });
 }
 
 async function issue(request: Request, env: Env, context: SessionContext) {
-  if (!hasPermission(context, 'users.access', 'manage')) return json({ error: 'Manage Employees permission is required.' }, 403);
+  if (!canAdministerTemporaryPasswords(context)) return json({ error: 'Manage Employees permission is required.' }, 403);
   let body: { employeeId?: string; sendEmail?: boolean; reason?: string; expiresHours?: number };
   try { body = await request.json(); } catch { return json({ error: 'Invalid temporary password request.' }, 400); }
   const employeeId = String(body.employeeId || '');
-  const employee = await env.DB.prepare(`
-    SELECT id,display_name AS displayName,email,employment_status AS status
-    FROM employees WHERE id=? AND employment_status IN ('active','provisional') LIMIT 1
-  `).bind(employeeId).first<{ id: string; displayName: string; email?: string; status: string }>();
-  if (!employee) return json({ error: 'Employee account not found or is not active.' }, 404);
+  // Authorize against the target's current company membership and Owner status before any
+  // credential, session or temporary-access write.
+  const employee = await authorizedTarget(env, context, employeeId, true);
+  if (!employee) return deniedTarget(env, request, context, 'issue', employeeId);
 
   const username = await chooseUsername(env, employee.id, employee.displayName, employee.email);
   const password = generateTemporaryPassword(16);
@@ -274,11 +340,16 @@ async function issue(request: Request, env: Env, context: SessionContext) {
 }
 
 async function revoke(request: Request, env: Env, context: SessionContext) {
-  if (!hasPermission(context, 'users.access', 'manage')) return json({ error: 'Manage Employees permission is required.' }, 403);
+  if (!canAdministerTemporaryPasswords(context)) return json({ error: 'Manage Employees permission is required.' }, 403);
   let body: { employeeId?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid revoke request.' }, 400); }
-  const employeeId = String(body.employeeId || '');
-  if (!employeeId) return json({ error: 'Employee is required.' }, 400);
+  const requestedEmployeeId = String(body.employeeId || '');
+  if (!requestedEmployeeId) return json({ error: 'Employee is required.' }, 400);
+  // Revocation also signs the employee out of every session, so it carries the same company and
+  // Owner protections as issuance. Inactive employees remain revocable by an authorized manager.
+  const target = await authorizedTarget(env, context, requestedEmployeeId, false);
+  if (!target) return deniedTarget(env, request, context, 'revoke', requestedEmployeeId);
+  const employeeId = target.id;
   await env.DB.prepare(`
     UPDATE employee_temporary_passwords SET revoked_at=CURRENT_TIMESTAMP,revoked_by=?
     WHERE employee_id=? AND replaced_at IS NULL AND revoked_at IS NULL
