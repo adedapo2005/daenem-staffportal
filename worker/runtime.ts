@@ -50,6 +50,8 @@ import { routeStorageMirror } from './storage-mirror';
 import { routeSmartBugManagement } from './smart-bug-management';
 import { routeWorkspaceShell } from './workspace-route';
 import { routeFinancialGateway } from './financial-gateway';
+import { routePrinting } from './printing';
+import { routePrintingProduction } from './printing-production';
 
 interface Env extends SocialOAuthEnv {
   ASSETS: Fetcher;
@@ -196,7 +198,8 @@ export default {
       url.pathname.startsWith('/api/offline/') ||
       url.pathname.startsWith('/api/procurement/') ||
       url.pathname.startsWith('/api/alerting/') ||
-      url.pathname.startsWith('/api/spend/');
+      url.pathname.startsWith('/api/spend/') ||
+      url.pathname.startsWith('/api/printing/');
 
     if (specialized) {
       const context = await getSessionContext(request, env);
@@ -216,6 +219,12 @@ export default {
       }
       if (url.pathname.startsWith('/api/spend/')) {
         const response = await routeSpend(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/printing/')) {
+        const production = await routePrintingProduction(request, env, context);
+        if (production) return secure(production);
+        const response = await routePrinting(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/procurement/')) {
