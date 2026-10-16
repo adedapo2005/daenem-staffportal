@@ -52,7 +52,19 @@ const [authSource, credentialSource, routeSource, ...migrations] = await Promise
 ]);
 const auth = instantiate(authSource, {});
 const credentials = instantiate(credentialSource, {});
-const route = instantiate(routeSource, { './auth': auth, './credential-security': credentials });
+// Real credential module, with a one-shot hook that runs inside the slow password derivation. Used to
+// withdraw a grant mid-request and prove the write is re-authorized against fresh grants.
+let duringDerivation = null;
+const credentialsWithHook = {
+  ...credentials,
+  async derivePasswordHash(...args) {
+    const hook = duringDerivation;
+    duringDerivation = null;
+    if (hook) await hook();
+    return credentials.derivePasswordHash(...args);
+  },
+};
+const route = instantiate(routeSource, { './auth': auth, './credential-security': credentialsWithHook });
 
 const database = new DatabaseSync(':memory:');
 for (const sql of migrations) database.exec(sql);
@@ -67,8 +79,8 @@ run("INSERT INTO roles(id,company_id,code,name) VALUES('role-qa-users-admin',NUL
 run("INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES('rp-qa-users','role-qa-users-admin','perm-users','manage'),('rp-qa-staff','role-qa-staff','perm-profile','view')");
 const people = {
   owner: ['emp-owner', ['co-a']], mgrA: ['emp-mgr-a', ['co-a', 'co-b']], mgrB: ['emp-mgr-b', ['co-b']],
-  mgrStale: ['emp-mgr-stale', ['co-a']], staffA: ['emp-staff-a', ['co-a']], staffB: ['emp-staff-b', ['co-b']],
-  shared: ['emp-shared', ['co-a', 'co-b']],
+  mgrAB: ['emp-mgr-ab', ['co-a', 'co-b']], mgrStale: ['emp-mgr-stale', ['co-a']], mgrRace: ['emp-mgr-race', ['co-a']],
+  staffA: ['emp-staff-a', ['co-a']], staffB: ['emp-staff-b', ['co-b']], shared: ['emp-shared', ['co-a', 'co-b']],
 };
 for (const [key, [id, companies]] of Object.entries(people)) {
   run('INSERT INTO employees(id,employee_no,display_name,email,employment_status) VALUES(?,?,?,?,?)', id, `QA-${key}`, `QA ${key}`, `${key.toLowerCase()}@example.test`, 'active');
@@ -80,7 +92,10 @@ grant('er-owner', 'emp-owner', 'co-a', 'role-owner');
 grant('er-mgr-a-users', 'emp-mgr-a', 'co-a', 'role-qa-users-admin');
 grant('er-mgr-a-staff-b', 'emp-mgr-a', 'co-b', 'role-qa-staff');
 grant('er-mgr-b-users', 'emp-mgr-b', 'co-b', 'role-qa-users-admin');
+grant('er-mgr-ab-a', 'emp-mgr-ab', 'co-a', 'role-qa-users-admin');
+grant('er-mgr-ab-b', 'emp-mgr-ab', 'co-b', 'role-qa-users-admin');
 grant('er-mgr-stale-users', 'emp-mgr-stale', 'co-a', 'role-qa-users-admin');
+grant('er-mgr-race-users', 'emp-mgr-race', 'co-a', 'role-qa-users-admin');
 
 const tokens = {};
 for (const [key, [id]] of Object.entries(people)) {
@@ -140,8 +155,16 @@ async function assertDeniedWithoutWrites(actor, action, targetId) {
 await check('A-grant + B-membership manager cannot issue for B-only employee', () => assertDeniedWithoutWrites('mgrA', 'issue', 'emp-staff-b'));
 await check('A-grant + B-membership manager cannot revoke B-only employee', () => assertDeniedWithoutWrites('mgrA', 'revoke', 'emp-staff-b'));
 await check('B-only manager cannot issue for A-only employee', () => assertDeniedWithoutWrites('mgrB', 'issue', 'emp-staff-a'));
+await check('A-only manager cannot reset an A+B employee (shared credential; B sessions untouched)', () => assertDeniedWithoutWrites('mgrA', 'issue', 'emp-shared'));
+await check('A-only manager cannot revoke an A+B employee or sign them out of B', () => assertDeniedWithoutWrites('mgrA', 'revoke', 'emp-shared'));
+await check('B-only manager cannot reset an A+B employee', () => assertDeniedWithoutWrites('mgrB', 'issue', 'emp-shared'));
 await check('delegated manager cannot issue for the Owner (same company)', () => assertDeniedWithoutWrites('mgrA', 'issue', 'emp-owner'));
 await check('delegated manager cannot revoke the Owner or sign the Owner out', () => assertDeniedWithoutWrites('mgrA', 'revoke', 'emp-owner'));
+await check('grant withdrawn during password derivation stops the reset with no writes', async () => {
+  duringDerivation = () => { run("DELETE FROM employee_roles WHERE id='er-mgr-race-users'"); };
+  await assertDeniedWithoutWrites('mgrRace', 'issue', 'emp-staff-a');
+  assert.equal(duringDerivation, null, 'the derivation hook actually ran');
+});
 await check('unknown employee gets the identical neutral response', async () => {
   const unknown = await issue('mgrA', 'emp-does-not-exist');
   const outOfScope = await issue('mgrA', 'emp-staff-b');
@@ -156,17 +179,14 @@ await check('denial audit holds no credential, token or employee details', () =>
   }
   assert.ok(deniedLogs('emp-mgr-a').length > 0, 'denials were recorded');
 });
-await check('delegated list excludes other-company and Owner temporary access', async () => {
-  const response = await list('mgrA');
-  assert.equal(response.status, 200);
-  const ids = listedIds(response);
-  assert.ok(ids.has('emp-staff-a') && ids.has('emp-shared'), 'own-company entries are listed');
-  assert.ok(!ids.has('emp-staff-b'), 'B-only employee is not listed');
-  assert.ok(!ids.has('emp-owner'), 'Owner is not listed to a delegated manager');
-});
-await check('B-only manager list excludes A-only employee', async () => {
-  const ids = listedIds(await list('mgrB'));
-  assert.ok(ids.has('emp-staff-b') && ids.has('emp-shared') && !ids.has('emp-staff-a') && !ids.has('emp-owner'));
+await check('delegated list shows only employees whose every company the actor manages', async () => {
+  const a = listedIds(await list('mgrA'));
+  assert.ok(a.has('emp-staff-a'), 'A-only employee listed to A manager');
+  assert.ok(!a.has('emp-shared') && !a.has('emp-staff-b') && !a.has('emp-owner'), 'A+B, B-only and Owner hidden from A manager');
+  const b = listedIds(await list('mgrB'));
+  assert.ok(b.has('emp-staff-b') && !b.has('emp-shared') && !b.has('emp-staff-a') && !b.has('emp-owner'));
+  const ab = listedIds(await list('mgrAB'));
+  assert.ok(ab.has('emp-staff-a') && ab.has('emp-staff-b') && ab.has('emp-shared') && !ab.has('emp-owner'), 'A+B manager sees all three, not Owner');
 });
 await check('withdrawn grant is refused at request time with no writes', async () => {
   run("DELETE FROM employee_roles WHERE id='er-mgr-stale-users'");
@@ -189,8 +209,9 @@ await check('same-company manager can issue: credential replaced, only target si
   assert.equal(activeSessions('emp-staff-b'), otherSessions, 'unrelated employee untouched');
   assert.equal(one("SELECT COUNT(*) AS n FROM employee_temporary_passwords WHERE employee_id='emp-staff-a' AND revoked_at IS NULL AND replaced_at IS NULL").n, 1);
 });
-await check('manager can issue for an employee shared with their company', async () => {
-  assert.equal((await issue('mgrA', 'emp-shared')).status, 200);
+await check('manager of every company of an A+B employee can reset them', async () => {
+  assert.equal((await issue('mgrAB', 'emp-shared')).status, 200);
+  assert.equal(activeSessions('emp-shared'), 0);
 });
 await check('Owner can issue for any company', async () => {
   assert.equal((await issue('owner', 'emp-staff-b')).status, 200);
@@ -203,6 +224,9 @@ await check('same-company manager can revoke', async () => {
   const response = await revoke('mgrA', 'emp-staff-a');
   assert.equal(response.status, 200);
   assert.equal(one("SELECT COUNT(*) AS n FROM employee_temporary_passwords WHERE employee_id='emp-staff-a' AND revoked_at IS NULL").n, 0);
+});
+await check('manager of every company of an A+B employee can revoke them', async () => {
+  assert.equal((await revoke('mgrAB', 'emp-shared')).status, 200);
 });
 await check('Owner can revoke the Owner record', async () => {
   assert.equal((await revoke('owner', 'emp-owner')).status, 200);

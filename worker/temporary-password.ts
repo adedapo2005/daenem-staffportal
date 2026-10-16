@@ -123,11 +123,18 @@ async function chooseUsername(env: Env, employeeId: string, displayName: string,
   return `employee.${crypto.randomUUID().slice(0, 8)}`;
 }
 
-async function saveCredential(env: Env, employeeId: string, username: string, password: string) {
+type DerivedCredential = { salt: string; hash: string; iterations: number };
+
+// Slow PBKDF2 derivation, kept separate from the write so callers can re-authorize in between.
+async function deriveCredential(env: Env, password: string): Promise<DerivedCredential> {
   const configured = Number(await setting(env, 'security.worker_safe_pbkdf2_iterations', String(WORKER_SAFE_PASSWORD_ITERATIONS)));
   const iterations = Number.isFinite(configured) && configured >= 1000 ? Math.min(configured, 20000) : WORKER_SAFE_PASSWORD_ITERATIONS;
   const salt = randomSaltHex();
-  const hash = await derivePasswordHash(env, password, salt, iterations);
+  return { salt, hash: await derivePasswordHash(env, password, salt, iterations), iterations };
+}
+
+async function saveCredential(env: Env, employeeId: string, username: string, password: string, derived?: DerivedCredential) {
+  const { salt, hash, iterations } = derived || await deriveCredential(env, password);
   const existing = await env.DB.prepare('SELECT employee_id FROM employee_credentials WHERE employee_id=? LIMIT 1')
     .bind(employeeId).first<{ employee_id: string }>();
   if (existing) {
@@ -187,14 +194,23 @@ const OWNER_TARGET_SQL = `EXISTS(
   WHERE oer.employee_id=e.id AND (oer.role_id='role-owner' OR orole.code='owner')
 )`;
 
-// Delegated scope: the target must currently hold an active membership in an active company where
-// the actor holds Manage Employees, and must not be an Owner. Expects employees aliased as `e`.
+// Delegated scope (deny-wins). An employee has ONE group-wide credential and one set of sessions, so a
+// reset or revoke affects every company they work in. A delegate may therefore act only when the
+// target has at least one active membership in an active company AND every such membership is in a
+// company where the actor holds Manage Employees, and the target is not an Owner. Managing only some
+// of a multi-company employee's companies is not enough; the group Owner (or a delegate who manages
+// all of them) must act. Expects employees aliased as `e`.
 function delegatedScopeSql(companyIds: string[]) {
-  return `AND NOT ${OWNER_TARGET_SQL} AND EXISTS(
-    SELECT 1 FROM employee_company_memberships sm JOIN companies sc ON sc.id=sm.company_id
-    WHERE sm.employee_id=e.id AND sm.active=1 AND sc.active=1
-      AND sm.company_id IN (${companyIds.map(() => '?').join(',')})
-  )`;
+  return `AND NOT ${OWNER_TARGET_SQL}
+    AND EXISTS(
+      SELECT 1 FROM employee_company_memberships sm JOIN companies sc ON sc.id=sm.company_id
+      WHERE sm.employee_id=e.id AND sm.active=1 AND sc.active=1
+    )
+    AND NOT EXISTS(
+      SELECT 1 FROM employee_company_memberships um JOIN companies uc ON uc.id=um.company_id
+      WHERE um.employee_id=e.id AND um.active=1 AND uc.active=1
+        AND um.company_id NOT IN (${companyIds.map(() => '?').join(',')})
+    )`;
 }
 
 type TargetEmployee = { id: string; displayName: string; email?: string; status: string };
@@ -262,7 +278,18 @@ async function issue(request: Request, env: Env, context: SessionContext) {
   let phase = 'derive_credential';
 
   try {
-    const saved = await saveCredential(env, employee.id, username, password);
+    // Derive first (slow), then re-authorize from fresh grants immediately before the first write, so a
+    // permission or membership withdrawn during derivation stops the reset with no credential,
+    // session or temporary-access change.
+    const derived = await deriveCredential(env, password);
+    phase = 'reauthorize';
+    const current = await getSessionContext(request, env);
+    if (!current || current.employee.id !== context.employee.id || !canAdministerTemporaryPasswords(current)
+      || !(await authorizedTarget(env, current, employee.id, true))) {
+      return deniedTarget(env, request, context, 'issue', employee.id);
+    }
+    phase = 'write_credential';
+    const saved = await saveCredential(env, employee.id, username, password, derived);
     phase = 'revoke_sessions';
     await env.DB.prepare('UPDATE auth_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE employee_id=? AND revoked_at IS NULL')
       .bind(employee.id).run();
