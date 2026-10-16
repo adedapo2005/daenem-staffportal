@@ -31,12 +31,44 @@ const json = (body: Record<string, unknown> | unknown[], status = 200) => new Re
 
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 
+const ADMIN_VIEW_PERMISSIONS = ['settings.access', 'tracking.access', 'security.access'];
+const ADMIN_MANAGE_PERMISSIONS = ['settings.access', 'tracking.access'];
+
+// Session roles only contain an active, group-level Owner role (see sessionContextFromId in ./auth).
+function isGroupOwner(context: SessionContext) {
+  return context.roles.some((role) => role.code === 'owner');
+}
+
+// Permission must be held in the specific company: a grant in one company never applies to another.
+function canViewCompany(context: SessionContext, companyId: string) {
+  return isGroupOwner(context) || (context.companies.some((company) => company.id === companyId)
+    && ADMIN_VIEW_PERMISSIONS.some((code) => hasPermission(context, code, 'view', companyId)));
+}
+
+function canManageCompany(context: SessionContext, companyId: string) {
+  return isGroupOwner(context) || (context.companies.some((company) => company.id === companyId)
+    && ADMIN_MANAGE_PERMISSIONS.some((code) => hasPermission(context, code, 'manage', companyId)));
+}
+
+// "Has admin view/manage in at least one company". Gates entry only; data and writes are re-checked per company.
 function canView(context: SessionContext) {
-  return hasPermission(context, 'settings.access', 'view') || hasPermission(context, 'tracking.access', 'view') || hasPermission(context, 'security.access', 'view');
+  return isGroupOwner(context) || context.companies.some((company) => canViewCompany(context, company.id));
 }
 
 function canManage(context: SessionContext) {
-  return hasPermission(context, 'settings.access', 'manage') || hasPermission(context, 'tracking.access', 'manage');
+  return isGroupOwner(context) || context.companies.some((company) => canManageCompany(context, company.id));
+}
+
+// Group-wide policy is limited to the Owner or a holder of the group-level Group Admin role. A
+// company-scoped role that reuses the code 'group_admin' does not qualify.
+async function isGroupAdministrator(env: AdminEnv, context: SessionContext) {
+  if (isGroupOwner(context)) return true;
+  const row = await env.DB.prepare(`
+    SELECT 1 AS ok FROM employee_roles er JOIN roles r ON r.id = er.role_id
+    WHERE er.employee_id = ? AND r.code = 'group_admin' AND r.company_id IS NULL AND r.active = 1
+    LIMIT 1
+  `).bind(context.employee.id).first<{ ok: number }>();
+  return Boolean(row);
 }
 
 function decodeSetting(value: string, type: string): unknown {
@@ -96,6 +128,8 @@ async function getSettings(env: AdminEnv, context: SessionContext) {
 
 async function updateSettings(request: Request, env: AdminEnv, context: SessionContext) {
   if (!canManage(context)) return json({ error: 'Manage Settings or Tracking permission is required.' }, 403);
+  // These app_settings keys apply to every company, so only group administration may change them.
+  if (!(await isGroupAdministrator(env, context))) return json({ error: 'Group Owner or Group Admin access is required for group-wide settings.' }, 403);
   let body: { settings?: Record<string, unknown> };
   try { body = await request.json(); } catch { return json({ error: 'Invalid settings request.' }, 400); }
   const entries = Object.entries(body.settings || {});
@@ -124,9 +158,6 @@ async function updateSettings(request: Request, env: AdminEnv, context: SessionC
   return json({ ok: true, settings: changed });
 }
 
-function isGroupAdmin(context:SessionContext){
-  return context.roles.some(role=>['owner','group_admin'].includes(role.code));
-}
 
 function hasDelegatedCommunicationsAccess(context:SessionContext,companyId:string,minimum:AccessLevel='view'){
   return hasPermission(context,'communications.hr.manage',minimum,companyId);
@@ -137,13 +168,13 @@ function canViewScopedSettings(context:SessionContext){
 }
 
 function canManageScopedCompany(context:SessionContext,companyId:string){
-  return canManage(context)||hasDelegatedCommunicationsAccess(context,companyId,'manage');
+  return canManageCompany(context,companyId)||hasDelegatedCommunicationsAccess(context,companyId,'manage');
 }
 
 function allowedCompanies(context:SessionContext){
   return context.companies.filter(company=>
     !/farm/i.test(`${company.id} ${company.code} ${company.name}`)&&
-    (canView(context)||hasDelegatedCommunicationsAccess(context,company.id,'view')),
+    (canViewCompany(context,company.id)||hasDelegatedCommunicationsAccess(context,company.id,'view')),
   );
 }
 
@@ -170,7 +201,7 @@ async function getScopedSettings(request:Request,env:AdminEnv,context:SessionCon
       value:overrides.has(company.id)?overrides.get(company.id):globalValue,
       source:overrides.has(company.id)?'company':'inherited',
     })),
-    canSetGlobal:isGroupAdmin(context),
+    canSetGlobal:await isGroupAdministrator(env,context),
     canManage:canManage(context)||companies.some(company=>hasDelegatedCommunicationsAccess(context,company.id,'manage')),
     canManageCompanyIds:companies.filter(company=>canManageScopedCompany(context,company.id)).map(company=>company.id),
   });
@@ -187,7 +218,7 @@ async function saveScopedSettings(request:Request,env:AdminEnv,context:SessionCo
   if(!definition||!definition.validate(body.value))return json({error:'Invalid scoped setting value.'},400);
   const encoded=encodeScopedValue(body.value,definition.type);
   if(body.scope==='global'){
-    if(!isGroupAdmin(context))return json({error:'Group Owner or Group Admin access is required for global policy.'},403);
+    if(!(await isGroupAdministrator(env,context)))return json({error:'Group Owner or Group Admin access is required for global policy.'},403);
     await env.DB.prepare(`
       INSERT INTO admin_scoped_settings(id,setting_key,scope_type,scope_id,setting_value,value_type,updated_by,updated_at)
       VALUES(?,?,'global','__global__',?,?,?,CURRENT_TIMESTAMP)
@@ -199,7 +230,7 @@ async function saveScopedSettings(request:Request,env:AdminEnv,context:SessionCo
     const companyIds=requestedCompanyIds.filter(id=>allowed.has(id));
     if(!companyIds.length)return json({error:'Select at least one authorized company.'},400);
     if(companyIds.length!==requestedCompanyIds.length)return json({error:'One or more selected companies are not in your authorized scope.'},403);
-    if(!canManage(context)&&companyIds.some(companyId=>!canManageScopedCompany(context,companyId)))return json({error:'Company-scoped communications administration access is not assigned.'},403);
+    if(companyIds.some(companyId=>!canManageScopedCompany(context,companyId)))return json({error:'Company-scoped communications administration access is not assigned.'},403);
     if(body.inherit){
       const marks=companyIds.map(()=>'?').join(',');
       await env.DB.prepare(`DELETE FROM admin_scoped_settings WHERE setting_key=? AND scope_type='company' AND scope_id IN (${marks})`)
@@ -223,6 +254,9 @@ async function saveScopedSettings(request:Request,env:AdminEnv,context:SessionCo
 
 async function listLocations(env: AdminEnv, context: SessionContext) {
   if (!canView(context)) return json({ error: 'Location administration access is not assigned.' }, 403);
+  // Only locations of companies where the actor holds admin view; the Owner sees every company.
+  const scopeIds = isGroupOwner(context) ? [] : context.companies.filter((company) => canViewCompany(context, company.id)).map((company) => company.id);
+  const scopeFilter = isGroupOwner(context) ? '' : `AND cl.company_id IN (${scopeIds.map(() => '?').join(',')})`;
   const result = await env.DB.prepare(`
     SELECT cl.id, cl.company_id AS companyId, c.code AS companyCode, c.name AS companyName,
            cl.name, cl.address_line AS addressLine, cl.city, cl.state,
@@ -236,8 +270,9 @@ async function listLocations(env: AdminEnv, context: SessionContext) {
     JOIN companies c ON c.id = cl.company_id
     LEFT JOIN attendance_policies ap ON ap.company_id = cl.company_id AND ap.location_id = cl.id AND ap.active = 1
     WHERE cl.active = 1 AND c.active = 1
+      ${scopeFilter}
     ORDER BY c.name, cl.name
-  `).all<LocationRow>();
+  `).bind(...scopeIds).all<LocationRow>();
   return json({ locations: (result.results || []).map((row) => ({
     ...row,
     configured: Number.isFinite(row.latitude) && Number.isFinite(row.longitude),
@@ -277,7 +312,15 @@ async function configureLocation(request: Request, env: AdminEnv, context: Sessi
     FROM company_locations cl JOIN companies c ON c.id = cl.company_id
     WHERE cl.id = ? AND cl.active = 1 LIMIT 1
   `).bind(locationId).first<{ id: string; companyId: string; companyName: string; name: string }>();
-  if (!location) return json({ error: 'Work location not found.' }, 404);
+  if (!location || !canManageCompany(context, location.companyId)) {
+    // Neutral failure: a location in a company the actor does not manage is indistinguishable from a
+    // missing one. Recorded against the actor before any geofence or policy write.
+    await env.DB.prepare(`
+      INSERT INTO security_logs (id, employee_id, company_id, session_id, event_type, severity, result, details_json)
+      VALUES (?, ?, NULL, ?, 'location_configuration_denied', 'high', 'denied', ?)
+    `).bind(uid('security'), context.employee.id, context.sessionId, JSON.stringify({ locationId: locationId.slice(0, 120) })).run().catch(() => undefined);
+    return json({ error: 'Work location not found.' }, 404);
+  }
 
   const policy = await env.DB.prepare(`
     SELECT id FROM attendance_policies WHERE company_id = ? AND location_id = ? AND active = 1 LIMIT 1
