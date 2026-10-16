@@ -85,6 +85,15 @@ try {
     assert.ok(db.prepare(
       "SELECT 1 FROM sqlite_master WHERE type='table' AND name='safety_incident_location_events'",
     ).get());
+    assert.equal(db.prepare(
+      "SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name IN ('safety_incident_locations')",
+    ).get().n, 0);
+    const canonical = db.prepare(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='safety_incidents'",
+    ).get().sql;
+    assert.match(canonical, /reporter_employee_id/);
+    assert.match(canonical, /location_status/);
+    assert.doesNotMatch(canonical, /incident_no|created_by|location_state/);
   });
 
   console.log(`SCOPE=isolated in-memory SQLite; no Wrangler, D1, provider, or production access`);
