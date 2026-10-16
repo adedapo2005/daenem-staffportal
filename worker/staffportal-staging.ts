@@ -1,5 +1,6 @@
 import runtimeHandler from './runtime';
 import { routeWorkspaceShell } from './workspace-route';
+import { routeV180PublicAssets } from './v180-public-assets';
 
 interface Env {
   STAFF_PORTAL_FRONTEND_ORIGIN?: string;
@@ -62,6 +63,9 @@ export default {
     if(url.pathname==='/health'){
       return secure(json({ok:true,service:'daenem-staffportal-api-staging',stage:'staging'}),request,env);
     }
+
+    const publicAssetsResponse=await routeV180PublicAssets(request);
+    if(publicAssetsResponse)return secure(publicAssetsResponse,request,env);
 
     // Reuse the canonical session, company-hint and exact-asset guard. Never
     // let a direct URL fall through to an unprotected SPA asset.

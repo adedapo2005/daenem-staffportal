@@ -42,6 +42,12 @@ const runtimeHandler = {
 const loaded = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
   if (specifier === './workspace-route') return { routeWorkspaceShell };
+  if (specifier === './v180-public-assets') return { routeV180PublicAssets: async (input) => {
+    if (new URL(input.url).pathname !== '/api/assets') return null;
+    return new Response('{"assets":[]}', { status: 200, headers: {
+      'content-type': 'application/json', 'cache-control': 'public, max-age=60, s-maxage=300',
+    } });
+  } };
   assert.equal(specifier, './runtime');
   return { __esModule: true, default: runtimeHandler };
 });
@@ -131,10 +137,12 @@ await check('unrecognized API requests remain JSON 404 responses instead of SPA 
 });
 
 await check('safe public asset cache policy survives staging response hardening', async () => {
+  const runtimeBefore = delegated.length;
   const response = await handler.fetch(request('/api/assets'), env, ctx);
   assert.equal(response.status, 200);
   assert.match(response.headers.get('cache-control'), /max-age=60, s-maxage=300/);
-  assert.equal(delegated.at(-1), '/api/assets');
+  assert.equal(await response.text(), '{"assets":[]}');
+  assert.equal(delegated.length, runtimeBefore, 'public asset feed is served by its explicit safe adapter');
 });
 
 await check('approved preflight allows Idempotency-Key and rejects unknown origins', async () => {
