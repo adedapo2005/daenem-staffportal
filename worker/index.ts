@@ -77,6 +77,8 @@ async function weather(request: Request, env: Env) {
     available: true,
     provider: 'Google Weather',
     providerStatus: result.providerStatus,
+    fetchedAt: result.fetchedAt,
+    cacheAgeSeconds: result.cacheAgeSeconds,
     unitsSystem,
     location: 'Current work location',
     temperature: number(weatherData.temperature),

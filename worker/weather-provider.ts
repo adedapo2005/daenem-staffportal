@@ -9,7 +9,7 @@ const PROVIDER_TIMEOUT_MS = 8_000;
 const inFlightWeather = new Map<string, Promise<GoogleWeatherResult>>();
 
 export type GoogleWeatherResult =
-  | { data: Record<string, unknown>; providerStatus: 'fresh' | 'cached' }
+  | { data: Record<string, unknown>; providerStatus: 'fresh' | 'cached'; fetchedAt: string; cacheAgeSeconds: number }
   | { data: null; providerStatus: 'cache_unavailable' | 'provider_required' | 'provider_unavailable' };
 
 export type WeatherConfiguration = {
@@ -59,7 +59,9 @@ export async function readGoogleWeather(
   const coordinates = `${latitude.toFixed(5)},${longitude.toFixed(5)},${selectedUnitsSystem}`;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(coordinates));
   const digestHex = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
-  const cacheKey = `weather:google:v1:${digestHex}`;
+  // Bump the namespace because prior entries contain raw provider data without
+  // the fetch timestamp needed to report truthful freshness.
+  const cacheKey = `weather:google:v2:${digestHex}`;
 
   if (!forceRefresh) {
     try {
@@ -68,7 +70,19 @@ export async function readGoogleWeather(
         if (cached.length > 64_000) return { data: null, providerStatus: 'cache_unavailable' };
         const parsed: unknown = JSON.parse(cached);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { data: null, providerStatus: 'cache_unavailable' };
-        return { data: parsed as Record<string, unknown>, providerStatus: 'cached' };
+        const entry = parsed as { data?: unknown; fetchedAtMs?: unknown };
+        const now = Date.now();
+        if (!entry.data || typeof entry.data !== 'object' || Array.isArray(entry.data) ||
+            typeof entry.fetchedAtMs !== 'number' || !Number.isSafeInteger(entry.fetchedAtMs) ||
+            entry.fetchedAtMs <= 0 || entry.fetchedAtMs > now) {
+          return { data: null, providerStatus: 'cache_unavailable' };
+        }
+        return {
+          data: entry.data as Record<string, unknown>,
+          providerStatus: 'cached',
+          fetchedAt: new Date(entry.fetchedAtMs).toISOString(),
+          cacheAgeSeconds: Math.floor((now - entry.fetchedAtMs) / 1000),
+        };
       }
     } catch {
       // Without a trustworthy cache read, fail closed to avoid an uncontrolled paid refresh.
@@ -113,11 +127,17 @@ async function fetchAndCacheWeather(
     if (!response.ok) return { data: null, providerStatus: 'provider_unavailable' };
     const data: unknown = await response.json();
     if (!data || typeof data !== 'object' || Array.isArray(data)) return { data: null, providerStatus: 'provider_unavailable' };
-    const value = JSON.stringify(data);
+    const fetchedAtMs = Date.now();
+    const value = JSON.stringify({ data, fetchedAtMs });
     if (value.length > 64_000) return { data: null, providerStatus: 'provider_unavailable' };
     try { await cache.put(cacheKey, value, { expirationTtl: cacheTtlSeconds }); }
     catch { return { data: null, providerStatus: 'provider_unavailable' }; }
-    return { data: data as Record<string, unknown>, providerStatus: 'fresh' };
+    return {
+      data: data as Record<string, unknown>,
+      providerStatus: 'fresh',
+      fetchedAt: new Date(fetchedAtMs).toISOString(),
+      cacheAgeSeconds: 0,
+    };
   } catch {
     return { data: null, providerStatus: 'provider_unavailable' };
   }

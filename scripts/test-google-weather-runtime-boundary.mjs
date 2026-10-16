@@ -15,6 +15,8 @@ assert.match(endpoint, /readGoogleWeather\(env, lat, lon, unitsSystem\)/);
 assert.match(endpoint, /rawUnitsSystem !== null && rawUnitsSystem !== 'IMPERIAL' && rawUnitsSystem !== 'METRIC'/);
 assert.match(endpoint, /unitsSystem,\n/);
 assert.match(endpoint, /providerStatus: result\.providerStatus/);
+assert.match(endpoint, /fetchedAt: result\.fetchedAt/);
+assert.match(endpoint, /cacheAgeSeconds: result\.cacheAgeSeconds/);
 assert.match(endpoint, /result\.providerStatus === 'provider_required' \? 200 : 502/);
 assert.match(provider, /resolveMetaCredential\(env, 'google_weather_api_key'\)/);
 assert.match(provider, /experience\.weather\.organization/);
@@ -42,7 +44,7 @@ assert.match(provider, /if \(!forceRefresh\) \{[\s\S]*?const cached = await cach
 assert.match(provider, /if \(!parsed \|\| typeof parsed !== 'object' \|\| Array\.isArray\(parsed\)\) return \{ data: null, providerStatus: 'cache_unavailable' \}/);
 assert.match(provider, /if \(cached\.length > 64_000\) return \{ data: null, providerStatus: 'cache_unavailable' \}/);
 assert.match(provider, /Without a trustworthy cache read, fail closed to avoid an uncontrolled paid refresh\.[\s\S]*?return \{ data: null, providerStatus: 'cache_unavailable' \}/);
-assert.match(provider, /weather:google:v1:\$\{digestHex\}/);
+assert.match(provider, /weather:google:v2:\$\{digestHex\}/);
 assert.match(provider, /cache\.get\(cacheKey\)/);
 assert.match(provider, /cache\.put\(cacheKey, value/);
 assert.match(provider, /providerStatus: 'cached'/);
