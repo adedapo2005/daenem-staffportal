@@ -1,0 +1,47 @@
+name: StaffPortal Staging Deploy
+
+on:
+  push:
+    branches:
+      - feature/staffportal-mobile-auth-takeover-01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staffportal-staging-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy StaffPortal staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: staffportal-api-staging
+      url: https://daenem-staffportal-api-staging.adedapo2005.workers.dev/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build StaffPortal
+        run: npm run build
+
+      - name: Deploy staging Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config wrangler.staffportal-staging.jsonc
+
+      - name: Verify staging health
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
