@@ -144,3 +144,31 @@
 @media (prefers-reduced-motion:reduce){
   .qa-v115-shell *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+.qa-v115-shell{overflow-x:hidden}
+.qa-v115-main,.qa-v115-content{min-width:0;overflow-x:hidden}
+.qa-v115-shell .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%;padding:0}
+.qa-v115-shell .kpi-card{min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 9px;padding:14px;border:1px solid var(--qa-line);border-radius:14px;background:linear-gradient(145deg,#ffffff,#f7fbfc);box-shadow:0 8px 18px #12354a08}
+.qa-v115-shell .kpi-card .kpi-icon{grid-row:1 / span 2;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:var(--qa-teal-soft);color:#147c78}
+.qa-v115-shell .kpi-card>span:not(.kpi-icon){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#678091;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.qa-v115-shell .kpi-card strong{min-width:0;color:var(--qa-ink);font-size:20px;line-height:1.05}
+.qa-v115-shell .kpi-card small{grid-column:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--qa-muted);font-size:10px}
+.qa-v115-shell .qa-v115-clock-panel .world-clocks{min-width:0}
+.qa-v115-shell .qa-v115-clock-panel .world-clocks-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.qa-v115-shell .qa-v115-clock-panel .world-clocks-heading strong{max-width:120px;color:var(--qa-muted);font-size:10px;text-align:right}
+.qa-v115-shell .qa-v115-clock-panel .world-clocks-grid{display:grid;grid-template-columns:1fr;gap:8px;max-height:410px;overflow:auto;padding:1px 2px 1px 0}
+.qa-v115-shell .qa-v115-clock-panel .world-clock{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:9px;min-width:0;padding:8px;border:1px solid var(--qa-line);border-radius:11px;background:#fbfdfe}
+.qa-v115-shell .qa-v115-clock-panel .analog-clock{width:42px;height:42px;min-width:42px}
+.qa-v115-shell .qa-v115-clock-panel .clock-info{min-width:0;display:grid;gap:2px}
+.qa-v115-shell .qa-v115-clock-panel .clock-location strong,.qa-v115-shell .qa-v115-clock-panel .clock-location span,.qa-v115-shell .qa-v115-clock-panel .clock-date,.qa-v115-shell .qa-v115-clock-panel .clock-weather{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qa-v115-shell .qa-v115-clock-panel .clock-location strong{font-size:11px}
+.qa-v115-shell .qa-v115-clock-panel .clock-location span,.qa-v115-shell .qa-v115-clock-panel .clock-timezone{color:var(--qa-muted);font-size:9px}
+.qa-v115-shell .qa-v115-clock-panel .clock-time{font-size:13px}
+.qa-v115-shell .qa-v115-clock-panel .clock-date,.qa-v115-shell .qa-v115-clock-panel .clock-weather{display:none}
+.qa-v115-shell .qa-v115-clock-panel .clock-day-state{font-size:9px}
+@media (max-width:1100px){
+  .qa-v115-shell .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:600px){
+  .qa-v115-shell .kpi-grid{grid-template-columns:1fr}
+}
