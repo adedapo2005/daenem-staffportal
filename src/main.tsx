@@ -578,6 +578,17 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   </div>;
 }
 
+function PostLoginRemoved({ onLogout }: { onLogout: () => Promise<void> }) {
+  return <main data-postlogin-shell="removed" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '2rem', background: '#f6f8fb', color: '#142033' }}>
+    <section style={{ maxWidth: '34rem', padding: '2rem', border: '1px solid #d9e1ec', borderRadius: '1rem', background: '#ffffff', boxShadow: '0 18px 50px rgba(20, 32, 51, 0.08)' }}>
+      <p style={{ margin: 0, fontSize: '0.75rem', letterSpacing: '0.14em', fontWeight: 700 }}>DAENEM STAFF PORTAL</p>
+      <h1 style={{ margin: '0.75rem 0 0', fontSize: '1.6rem' }}>Previous post-login shell removed</h1>
+      <p style={{ margin: '0.75rem 0 1.25rem', lineHeight: 1.6 }}>The rejected staging workspace is no longer being served. The approved post-login experience will be connected separately.</p>
+      <button type="button" onClick={() => void onLogout()} style={{ border: 0, borderRadius: '0.7rem', padding: '0.7rem 1rem', background: '#153b5b', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Sign out</button>
+    </section>
+  </main>;
+}
+
 function Root() {
   const auth = useAuth();
   useEffect(() => registerFreshServiceWorker(), []);
@@ -586,7 +597,7 @@ function Root() {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
   }} />;
-  return <OfflinePlatformProvider context={auth.context}><Workspace context={auth.context} onLogout={auth.logout} /></OfflinePlatformProvider>;
+  return <PostLoginRemoved onLogout={auth.logout} />;
 }
 
 function CanonicalBaseline() {
