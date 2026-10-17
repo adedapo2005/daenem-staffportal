@@ -15,7 +15,7 @@ import { themeList } from './theme-system';
 import { getMotionTokens, type LayoutDensity, type LayoutId, type LayoutProfile, type MotionPreset } from './layout-system';
 import { canSeeDashboardField, type DashboardAggregateField } from './dashboard-capabilities';
 import { getSmartContext } from './smart-context';
-import { PostAuthHomeBanner } from './post-auth-experience';
+import { PostAuthHomeBanner, PostAuthLayoutRenderer } from './post-auth-experience';
 import { PostAuthNavigation } from './postauth-navigation';
 import { OfflineSyncIndicator } from './offline-sync';
 
@@ -787,6 +787,7 @@ export function ZipDashboard(props: ZipDashboardProps) {
 
 function QaReviewPostAuthShell({
   context,
+  layoutProfile,
   view,
   content,
   company,
@@ -897,7 +898,7 @@ function QaReviewPostAuthShell({
       <div className="qa-v115-feature-content">{content}</div>
     </section>;
 
-  return <div className="qa-v115-shell" data-qa-reference="staffportal-qa-review-v115" data-authenticated-experience="staffportal" data-postauth-renderer="qa-review-v115">
+  return <div className="qa-v115-shell" data-qa-reference="staffportal-qa-review-v115" data-layout-profile={layoutProfile.id} data-layout-renderer="QaReviewV115Shell" data-authenticated-experience="staffportal" data-postauth-renderer="qa-review-v115">
     <aside className={'qa-v115-sidebar' + (sidebarOpen ? ' is-open' : '')}>
       <div className="qa-v115-brand"><span className="qa-v115-brand-mark">D</span><span className="qa-v115-brand-copy"><strong>DAENEM</strong><small>Staff Portal</small></span></div>
       <span className="qa-v115-sidebar-kicker">Workspace</span>
