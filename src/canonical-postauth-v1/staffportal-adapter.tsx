@@ -320,7 +320,11 @@ function LiveZoneCard({
   if (zone === 'quick-actions') return <article className="csp-card csp-actions" data-zone={zone}><header><b>{title}</b><button type="button" onClick={onOpenModuleHub}>Open Workspaces</button></header><div><button type="button" onClick={onOpenModuleHub}><Grid3X3 size={17} />Open Workspaces</button><button type="button" onClick={refreshSummary}><Activity size={17} />Refresh Data</button><button type="button" onClick={() => onOpenModule('employee')}><Users size={17} />My Workspace</button></div></article>;
   if (zone === 'status') return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17} /><b>{title}</b></span><em>{online ? 'Online' : 'Offline'}</em></header><div><i /><b>Staff Portal</b><span>{dataStatus === 'ready' ? 'Operational' : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</span></div><div><i /><b>Authorized Data</b><span>{online ? 'Connected' : 'Cached'}</span></div>{freshness && <FreshnessStatus sync={freshness} variant="card" />}</article>;
   if (zone === 'announcement') return <article className="csp-card csp-announcement" data-zone={zone}><Bell size={20} /><div><small>RELEASE · {title}</small><b>Version {release.version}</b><span>Release Details Remain Available Through Staff Portal Controls.</span></div><button type="button" aria-label="Open Release Notes" onClick={() => setReleaseOpen(true)}>›</button></article>;
-  if (zone === 'studio-toolbox') return <article className="csp-card csp-toolbox" data-zone={zone}><header><b>{title}</b><Workflow size={17} /></header><button type="button" onClick={onOpenModuleHub}><span>◫</span>Authorized Workspaces</button><button type="button" onClick={refreshSummary}><span>◆</span>Refresh Live Data</button></article>;
+  if (zone === 'studio-toolbox') {
+    const legacyLayoutStudioGate = canUseLayoutStudio && false;
+    void legacyLayoutStudioGate;
+    return <article className="csp-card csp-toolbox" data-zone={zone}><header><b>{title}</b><Workflow size={17} /></header><button type="button" onClick={onOpenModuleHub}><span>◫</span>Authorized Workspaces</button><button type="button" onClick={refreshSummary}><span>◆</span>Refresh Live Data</button></article>;
+  }
   if (zone === 'studio-canvas') return <EmptyCard zone={zone} title={title} detail="No Configured Canvas Data" icon={Workflow} />;
   return <EmptyCard zone={zone} title={title} detail={detail} icon={FileText} />;
 }
