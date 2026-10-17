@@ -18,6 +18,7 @@ import { getSmartContext } from './smart-context';
 import { PostAuthHomeBanner, PostAuthLayoutRenderer } from './post-auth-experience';
 import { PostAuthNavigation } from './postauth-navigation';
 import { OfflineSyncIndicator } from './offline-sync';
+import './qa-review-postauth.css';
 
 export type ZipDashboardSummary = {
   workDate: string;
