@@ -22,9 +22,12 @@ const cityZones: Record<string, string> = {
 const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
   toronto: {
     day: '/assets/global/toronto-day-v115-card.jpg',
-    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/2ce3cabd9_generated_e465b750.png',
+    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/2ce3cabd9_generated_e465b750.png/v1/fill/w_295,h_137,al_c,q_90,usm_0.66_1.00_0.01,enc_webp,quality_auto/2ce3cabd9_generated_e465b750.webp',
   },
-  london: { day: '/assets/global/london-day-v115-card.jpg' },
+  london: {
+    day: '/assets/global/london-day-v115-card.jpg',
+    night: 'https://media.base44.com/images/public/6ab5b6bf4880fcfae2d44d4a/a8837bb3b_generated_6282b990.png/v1/fill/w_295,h_137,al_c,q_90,usm_0.66_1.00_0.01,enc_webp,quality_auto/a8837bb3b_generated_6282b990.webp',
+  },
   newyork: {
     dawn: '/assets/global/newyork-dawn-v179-card.webp',
     day: '/assets/global/newyork-day-v179-card.webp',
@@ -33,12 +36,35 @@ const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night'
   },
   moscow: {
     day: '/assets/global/moscow-day-v115-card.jpg',
-    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/0a3d309c7_generated_1c7eee1a.png',
+    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/0a3d309c7_generated_1c7eee1a.png/v1/fill/w_295,h_137,al_c,q_90,usm_0.66_1.00_0.01,enc_webp,quality_auto/0a3d309c7_generated_1c7eee1a.webp',
   },
   tokyo: { day: '/assets/global/tokyo-day-v115-card.jpg' },
   beijing: {
     day: '/assets/global/beijing-day-v115-card.jpg',
     night: '/assets/global/beijing-night-v109.jpg',
+  },
+  ibadan: {
+    day: '/assets/staffportal-weather/ibadan-day-v125-card.webp',
+    night: 'https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site/assets/staffportal-weather/ibadan-night-v125.png',
+  },
+};
+
+const phaseIcons: Record<'dawn' | 'day' | 'dusk' | 'night', { className: string; paths: string }> = {
+  dawn: {
+    className: 'lucide lucide-sunrise h-3 w-3',
+    paths: '<path d="M12 2v8"></path><path d="m4.93 10.93 1.41 1.41"></path><path d="M2 18h2"></path><path d="M20 18h2"></path><path d="m19.07 10.93-1.41 1.41"></path><path d="M22 22H2"></path><path d="m8 6 4-4 4 4"></path><path d="M16 18a4 4 0 0 0-8 0"></path>',
+  },
+  day: {
+    className: 'lucide lucide-sun h-3 w-3',
+    paths: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>',
+  },
+  dusk: {
+    className: 'lucide lucide-sunset h-3 w-3',
+    paths: '<path d="M12 10V2"></path><path d="m4.93 10.93 1.41 1.41"></path><path d="M2 18h2"></path><path d="M20 18h2"></path><path d="m19.07 10.93-1.41 1.41"></path><path d="M22 22H2"></path><path d="m16 6-4 4-4-4"></path><path d="M16 18a4 4 0 0 0-8 0"></path>',
+  },
+  night: {
+    className: 'lucide lucide-moon h-3 w-3',
+    paths: '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></path>',
   },
 };
 
@@ -68,16 +94,27 @@ function settleReferenceMotion(root: HTMLElement) {
 }
 
 function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: Date) {
-  if (cityId === 'ibadan') return;
   const phase = phaseAt(now, zone);
   const localNight = phase === 'night' || phase === 'dusk';
   const media = resolvedMedia(cityId, phase);
   const phaseNode = card.querySelector<HTMLElement>('.gw-city-phase');
-  const phaseText = phaseNode ? [...phaseNode.childNodes].find((node) => node.nodeType === Node.TEXT_NODE) : undefined;
-  if (phaseText) phaseText.textContent = ` ${phase.toUpperCase()}`;
+  if (phaseNode) {
+    const textNodes = [...phaseNode.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE);
+    textNodes.forEach((node, index) => { node.textContent = index === textNodes.length - 1 ? phase : ' '; });
+    const icon = phaseNode.querySelector<SVGElement>('svg');
+    if (icon) {
+      icon.setAttribute('class', phaseIcons[phase].className);
+      icon.innerHTML = phaseIcons[phase].paths;
+    }
+  }
 
+  card.dataset.phase = phase;
+  card.dataset.livePhase = phase;
   card.dataset.resolvedPhase = phase;
+  card.dataset.mediaRequested = phase;
   card.dataset.mediaPhase = media.mediaPhase;
+  card.dataset.mediaSelected = media.mediaPhase;
+  card.dataset.material = localNight ? 'night' : 'day';
   card.dataset.localMaterial = localNight ? 'night' : 'day';
   card.className = card.className
     .replace(/gw-city-phase-(?:dawn|day|dusk|night)/g, `gw-city-phase-${phase}`)
@@ -141,6 +178,12 @@ function updateReferenceClocks(root: HTMLElement, now: Date) {
     if (timeNode) timeNode.textContent = time;
     if (dateNodes[1]) dateNodes[1].textContent = date.slice(0, comma + 1);
     if (dateNodes[2]) dateNodes[2].textContent = date.slice(comma + 2);
+    if (dateNodes[3]) {
+      const zoneName = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' })
+        .formatToParts(now)
+        .find((part) => part.type === 'timeZoneName')?.value || '';
+      dateNodes[3].textContent = `${zone} · ${zoneName}`;
+    }
 
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: zone,
