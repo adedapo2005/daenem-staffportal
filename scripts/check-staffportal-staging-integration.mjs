@@ -9,7 +9,7 @@ const wrangler = read('wrangler.staffportal-staging.jsonc');
 const delegated = staging.includes('runtimeHandler.fetch(request,runtimeEnv,ctx)');
 const checks = [
   ['password authentication routes are delegated', delegated && /import\s*\{\s*routePasswordAuth\b/.test(runtime) && /routePasswordAuth\(request,\s*env\)/.test(runtime)],
-  ['session and public auth routes are delegated', delegated && entry.includes('getSessionContext') && entry.includes('baseHandler.fetch(request, env, ctx)')],
+  ['session and public auth routes are delegated', delegated && entry.includes('getSessionContext') && /baseHandler\.fetch\(request,\s*env,\s*ctx\)/.test(entry)],
   ['preflight is handled before authenticated routes', staging.includes("request.method==='OPTIONS'") && /return preflight\(request,\s*env\)/.test(staging)],
   ['CORS credentials are enabled', staging.includes("'access-control-allow-credentials','true'")],
   ['CORS origin is exact and not wildcarded', staging.includes('allowed.includes(origin)') && !staging.includes("'access-control-allow-origin','*'")],
