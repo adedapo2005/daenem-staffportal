@@ -38,6 +38,7 @@ import { routeHrWorkflows } from './hr-workflows';
 import { routeCommunications } from './communications-service';
 import { dispatchDueCommunications } from './communications-dispatch-orchestrator';
 import { routeAdmin } from './admin';
+import { routeProfileManagement } from './profile-management';
 import { routeCommunicationsWebhook } from './communications-webhook';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
@@ -195,6 +196,7 @@ export default {
       url.pathname.startsWith('/api/communications/') ||
       url.pathname.startsWith('/api/financial-gateway/') ||
       url.pathname.startsWith('/api/admin/') ||
+      url.pathname.startsWith('/api/profile/') ||
       url.pathname.startsWith('/api/offline/') ||
       url.pathname.startsWith('/api/procurement/') ||
       url.pathname.startsWith('/api/alerting/') ||
@@ -259,6 +261,16 @@ export default {
       }
       if (url.pathname.startsWith('/api/admin/storage/')) {
         const response = await routeStorageMirror(request, env, context);
+        if (response) return secure(response);
+      }
+      if (
+        url.pathname.startsWith('/api/profile/') ||
+        url.pathname === '/api/admin/profile-completion' ||
+        url.pathname === '/api/admin/profile-completion/remind' ||
+        url.pathname === '/api/admin/login-access/create' ||
+        url.pathname === '/api/admin/employees/create'
+      ) {
+        const response = await routeProfileManagement(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/admin/')) {
