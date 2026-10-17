@@ -15,10 +15,10 @@ import { themeList } from './theme-system';
 import { getMotionTokens, type LayoutDensity, type LayoutId, type LayoutProfile, type MotionPreset } from './layout-system';
 import { canSeeDashboardField, type DashboardAggregateField } from './dashboard-capabilities';
 import { getSmartContext } from './smart-context';
-import { PostAuthContextualNavigation, PostAuthFeatureFrame, PostAuthHomeBanner, PostAuthLayoutRenderer } from './post-auth-experience';
+import { PostAuthHomeBanner, PostAuthLayoutRenderer } from './post-auth-experience';
 import { PostAuthNavigation } from './postauth-navigation';
 import { OfflineSyncIndicator } from './offline-sync';
-import { CanonicalStaffPortalAdapter } from './canonical-postauth-v1/staffportal-adapter';
+import './qa-review-postauth.css';
 
 export type ZipDashboardSummary = {
   workDate: string;
@@ -777,13 +777,21 @@ function ReleaseDialog({ release, onClose }: { release: ReleaseInfo; onClose: ()
   </section></div>;
 }
 
-export function ZipDashboard({
+export function ZipDashboard(props: ZipDashboardProps) {
+  useEffect(() => {
+    document.body.classList.add('dashboard-active');
+    return () => document.body.classList.remove('dashboard-active');
+  }, []);
+
+  return <QaReviewPostAuthShell {...props} />;
+}
+
+function QaReviewPostAuthShell({
   context,
+  layoutProfile,
   view,
   content,
   company,
-  companyChoices,
-  setCompany,
   summary,
   dataStatus,
   dataLastSyncedAt,
@@ -793,146 +801,137 @@ export function ZipDashboard({
   onNavigate,
   onOpenModule,
   onOpenModuleHub,
-  onOpenAdmin,
   onLogout,
   visibleNav,
-  theme,
-  modePreference,
-  setTheme,
-  setModePreference,
-  dashboardLayout,
-  themeName,
   clock,
   weather,
   temperatureUnit,
-  setTemperatureUnit,
-  canChangeWeatherUnit,
   enableLocation,
   online,
-  sidebarOpen,
-  setSidebarOpen,
   release,
   releaseOpen,
   setReleaseOpen,
-  activeErpId,
-  layoutId,
-  layoutProfile,
-  density,
-  motion,
-  canUseLayoutStudio,
-  onOpenLayoutStudio,
-  layoutPreview = false,
-  layoutPreviewCanApply = false,
-  layoutPreviewApplying = false,
-  layoutPreviewMessage = '',
-  onApplyLayoutPreview,
-  onExitLayoutPreview,
 }: ZipDashboardProps) {
-  useEffect(() => {
-    document.body.classList.add('dashboard-active');
-    return () => document.body.classList.remove('dashboard-active');
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const activeItem = visibleNav.find((item) => item.id === view);
+  const moduleLabel = activeItem?.label || (view === 'overview' ? 'Group Overview' : 'Staff Portal Workspace');
+  const moduleDescription = activeItem?.description || 'Your authorized Staff Portal workspace.';
+  const displayName = formatPersonName(context.employee.displayName);
+  const initialsValue = initials(displayName);
+  const roleLabel = context.roles[0]?.name || (context.employee.status === 'provisional' ? 'Provisional Employee' : 'Employee');
+  const liveLabel = dataStatus === 'ready' ? (online ? 'Connected' : 'Last synced') : dataStatus === 'error' ? 'Unavailable' : 'Syncing';
+  const liveDetail = dataError || (dataLastSyncedAt ? 'Updated ' + formatLastSyncedAt(dataLastSyncedAt) : 'Authorized Staff Portal data');
+  const isOwner = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
+  const isManager = context.roles.some((role) => ['owner', 'group_admin', 'company_admin', 'manager'].includes(role.code));
 
-  const activeView = view;
-  const moduleLabel = useMemo(() => visibleNav.find((item) => item.id === activeView)?.label || 'Overview', [activeView, visibleNav]);
-  const liveDataLabel = dataStatus === 'ready'
-    ? (online ? 'Live data' : 'Last synced')
-    : dataStatus === 'error'
-      ? 'Data unavailable'
-      : 'Syncing live data';
-  const liveDataDetail = dataError || (dataLastSyncedAt ? `Updated ${formatLastSyncedAt(dataLastSyncedAt)}` : 'Reading secured D1 records');
-  const motionTokens = getMotionTokens(motion);
-  const homeContext = context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) ? 'owner-home' : context.roles.some((role) => ['manager', 'company_admin'].includes(role.code)) ? 'manager-home' : 'employee-home';
-  const experienceStyle = { '--postauth-motion-duration': motionTokens.duration, '--postauth-motion-distance': motionTokens.distance, '--postauth-motion-ease': motionTokens.easing, '--postauth-motion-elevation': motionTokens.elevation } as CSSProperties;
+  const nav = <nav aria-label="Staff Portal workspace navigation">
+    {visibleNav.map((item) => {
+      const Icon = item.icon;
+      return <button
+        key={item.id}
+        type="button"
+        className={'qa-v115-nav-item' + (item.id === view ? ' active' : '')}
+        aria-current={item.id === view ? 'page' : undefined}
+        onClick={() => { setSidebarOpen(false); onNavigate(item.id); }}
+      >
+        <Icon size={16} aria-hidden="true" />
+        <span><strong>{item.label}</strong><small>{item.description}</small></span>
+      </button>;
+    })}
+    <button type="button" className="qa-v115-nav-item" onClick={() => { setSidebarOpen(false); onOpenModuleHub(); }}>
+      <Grid3X3 size={16} aria-hidden="true" />
+      <span><strong>Authorized Workspaces</strong><small>Open permitted ERP functions</small></span>
+    </button>
+  </nav>;
 
-  const scopedSummary = summary;
-
-  // Use the retained premium post-auth experience already present below. The rejected
-  // canonical adapter is not part of the authenticated runtime path.
-  return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} style={experienceStyle} data-authenticated-experience="staffportal" data-reference-status="PENDING_EXACT_STAFFPORTAL_REFERENCE_PNG" data-hybrid-navigation="true" data-layout-profile={layoutId} data-layout-contract-id={layoutProfile.id === 'master-detail' ? 'master-detail-workspace' : layoutProfile.id} data-layout-renderer={layoutProfile.structure.rendererId} data-layout-navigation-adapter={layoutProfile.structure.navigationAdapterId} data-layout-navigation-geometry={layoutProfile.structure.navigationGeometry} data-layout-content-mode={layoutProfile.structure.contentMode} data-layout-inspector-mode={layoutProfile.structure.inspectorMode} data-layout-mobile-transform={layoutProfile.structure.mobileTransform} data-layout-motion-personality={layoutProfile.structure.motionPersonality} data-layout-density={density} data-layout-motion={motion} data-layout-preview={layoutPreview ? 'true' : 'false'} data-active-erp={activeErpId}>
-    <PostAuthNavigation
-      layoutProfile={layoutProfile}
-      context={context}
-      company={company}
-      visibleNav={visibleNav}
-      activeView={activeView}
-      online={online}
-      sidebarOpen={sidebarOpen}
-      setSidebarOpen={setSidebarOpen}
-      onNavigate={onNavigate}
-      onOpenModuleHub={onOpenModuleHub}
-      onOpenModule={onOpenModule}
-      release={release}
-      setReleaseOpen={setReleaseOpen}
-    />
-    {sidebarOpen && <button className="mobile-backdrop" aria-label="Close Navigation" onClick={() => setSidebarOpen(false)} />}
-
-    <section className="dashboard-content">
-      {layoutPreview && <div className="layout-preview-banner" data-layout-preview-banner="true">
-        <span><strong>Previewing {layoutProfile.name}</strong><small>Your Saved Experience Is Unchanged Until You Apply This Layout.</small></span>
-        <div className="layout-preview-actions">
-          {layoutPreviewCanApply && <button type="button" className="primary-button" disabled={layoutPreviewApplying} onClick={() => void onApplyLayoutPreview?.()}>{layoutPreviewApplying ? 'Applying…' : "Apply To Me"}</button>}
-          <button type="button" className="secondary-button" onClick={onExitLayoutPreview}>Exit Preview</button>
+  const home = view === 'overview'
+    ? <div className="qa-v115-home">
+      <section className="qa-v115-home-hero" aria-labelledby="qa-v115-home-title">
+        <div>
+          <span className="eyebrow">AUTHORIZED STAFF PORTAL · {company.name}</span>
+          <h2 id="qa-v115-home-title">{isOwner ? 'Your command centre is ready.' : 'Your workspace is ready.'}</h2>
+          <p>Review the work assigned to you, move approved actions forward and keep every Staff Portal decision connected to its authorised source.</p>
+          <div className="qa-v115-hero-actions">
+            <button type="button" className="qa-v115-btn primary" onClick={onOpenModuleHub}><Grid3X3 size={15} /> Open Workspaces</button>
+            <button type="button" className="qa-v115-btn" onClick={refreshSummary}><RefreshCw size={15} /> Refresh Live Data</button>
+          </div>
         </div>
-        {layoutPreviewMessage && <small className="layout-preview-message" role="status">{layoutPreviewMessage}</small>}
-      </div>}
-      <ZipTopBar
-        context={context}
-        company={company}
-        visibleNav={visibleNav}
-        companyChoices={companyChoices}
-        setCompany={setCompany}
-        theme={theme}
-        modePreference={modePreference}
-        setTheme={setTheme}
-        setModePreference={setModePreference}
-        themeName={themeName}
-        clock={clock}
-        weather={weather}
-        temperatureUnit={temperatureUnit}
-        setTemperatureUnit={setTemperatureUnit}
-        canChangeWeatherUnit={canChangeWeatherUnit}
-        enableLocation={enableLocation}
-        onNavigate={onNavigate}
-        onOpenModuleHub={onOpenModuleHub}
-        onOpenModule={onOpenModule}
-        onOpenAdmin={onOpenAdmin}
-        onOpenLayoutStudio={onOpenLayoutStudio}
-        canUseLayoutStudio={canUseLayoutStudio}
-        onLogout={onLogout}
-        summary={summary}
-        release={release}
-        setReleaseOpen={setReleaseOpen}
-      />
-      <div className="mobile-dashboard-title"><button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open Navigation"><Menu size={18} /></button><div className="brand-mark"><img className="brand-mark-image animated-daenem-logo" src="/brand-assets/logo-mark.svg" alt="" /></div><span>{moduleLabel}</span></div>
-      <div className="dashboard-main">
-        {view !== 'overview' && <div className="dashboard-module-toolbar"><span className="eyebrow">DAENEM BUSINESS ERP · {moduleLabel}</span><button className="secondary-button" onClick={onOpenModuleHub}><LayoutDashboard size={15} /> Module Hub</button></div>}
-        <div className="dashboard-context-line"><span><MapPin size={14} /> {company.name}</span><span><Clock3Icon /> {clock}</span><button onClick={enableLocation}><CloudSun size={14} /> {weather.label}{weather.temperature !== undefined ? ` · ${formatWeatherTemperature(weather.temperature, temperatureUnit)}` : ''}</button><span className={`data-sync-chip data-sync-${dataStatus}`} title={liveDataDetail}><i /> {liveDataLabel}{dataLastSyncedAt && dataStatus !== 'loading' ? ` · ${formatLastSyncedAt(dataLastSyncedAt)}` : ''}</span></div>
-        <div className="company-switcher" role="list" aria-label="Company Filter">{companyChoices.map((item) => {
-          const Icon = item.icon;
-          return <button key={item.code} onClick={() => setCompany(item)} className={company.code === item.code ? 'active' : ''}><Icon size={15} /><span>{item.code}</span></button>;
-        })}</div>
-        {view === 'overview'
-          ? <><PostAuthContextualNavigation moduleLabel={moduleLabel} canonicalPath={'staff/people/employee-records/Group Overview'} contextKey={homeContext} /><PostAuthLayoutRenderer
-            profile={layoutProfile}
-            context={context}
-            smartContext={getSmartContext(homeContext)}
-            hero={<PostAuthHomeBanner context={context} summary={scopedSummary} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
-            pulse={<ErpPulseGrid context={context} company={company} summary={scopedSummary} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
-            loading={<SmartLoadingCard pending={dataStatus === 'loading'} />}
-            kpis={<KpiStrip summary={scopedSummary} company={company} context={context} />}
-            widgets={<><div className="widget-toolbar"><span><GripVertical size={15} /> Personalize The Workspace When You Are Ready</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh Data</button></div><DashboardWidgets widgets={initialWidgets} summary={scopedSummary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} /></>}
-            workspace={<WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />}
-            owner={context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) ? <OwnerCommandCenter context={context} company={company} summary={scopedSummary} online={online} onOpenAdmin={onOpenAdmin} onOpenModuleHub={onOpenModuleHub} /> : <ManagerCommandCenter context={context} company={company} summary={scopedSummary} onNavigate={onNavigate} onOpenModuleHub={onOpenModuleHub} />}
-            intelligence={liveIntelligence ? <section className="zip-live-intelligence" data-owner-business-intelligence="true"><div className="zip-section-heading"><span className="eyebrow">OWNER INTELLIGENCE</span><h2>Financial And Operational Performance</h2></div>{liveIntelligence}</section> : null}
-            clocks={<section className="dashboard-world-clock" aria-label="Global Operations World Clock"><WorldClocks /></section>}
-          /></> : <PostAuthFeatureFrame profile={layoutProfile} moduleLabel={moduleLabel} canonicalPath={'/workspace/' + activeView} context={context} contextKey={activeView} onOpenModuleHub={onOpenModuleHub} onNavigateHelp={() => onNavigate('help')}><div className="zip-module-content">{content}</div></PostAuthFeatureFrame>}
-        <footer className="dashboard-footer"><span>Daenem Business ERP · {activeErpId.toUpperCase()}</span><span>Live D1 Data · <b>{dataStatus === 'ready' ? (online ? 'Connected' : "Last Synced") : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</b></span></footer>
+        <aside className="qa-v115-hero-status" aria-label="Staff Portal live status">
+          <span>LIVE STAFF PORTAL STATUS</span>
+          <strong data-top-slot="sync-status">{liveLabel}</strong>
+          <small>{liveDetail}. Only authorised data is shown.</small>
+        </aside>
+      </section>
+      <div className="qa-v115-home-grid">
+        <div className="qa-v115-main-column">
+          <KpiStrip summary={summary} company={company} context={context} />
+          <section className="qa-v115-panel" aria-labelledby="qa-v115-workspaces-title">
+            <h3 id="qa-v115-workspaces-title">Authorized Workspaces</h3>
+            <p>Open the workspace that matches the work you need to complete.</p>
+            <WorkspaceOverviewStrip context={context} company={company} onNavigate={onNavigate} onOpenModule={onOpenModule} onOpenModuleHub={onOpenModuleHub} />
+          </section>
+          <section className="qa-v115-panel" aria-labelledby="qa-v115-signals-title">
+            <h3 id="qa-v115-signals-title">Workspace Signals</h3>
+            <DashboardWidgets widgets={initialWidgets} summary={summary} company={company} context={context} online={online} refreshSummary={refreshSummary} onNavigate={onNavigate} onOpenModule={onOpenModule} release={release} />
+          </section>
+          {liveIntelligence && <section className="qa-v115-panel" aria-label="Authorized business intelligence">{liveIntelligence}</section>}
+        </div>
+        <aside className="qa-v115-rail">
+          <section className="qa-v115-panel">
+            <h3>Live Data Status</h3>
+            <p>{liveDetail}</p>
+            <div className="qa-v115-status"><i /><strong>{online ? 'Staff Portal connected' : 'Offline mode'}</strong></div>
+            <button type="button" className="qa-v115-btn" onClick={refreshSummary}><RefreshCw size={14} /> Refresh</button>
+          </section>
+          <section className="qa-v115-panel qa-v115-clock-panel" aria-label="Global Operations World Clock">
+            <h3>Global Time</h3>
+            <WorldClocks />
+          </section>
+          {isManager && <section className="qa-v115-panel"><h3>{isOwner ? 'Owner Controls' : 'Manager Follow-Through'}</h3><p>Authorized actions remain available through the relevant workspace and preserve the existing permission boundary.</p><button type="button" className="qa-v115-btn" onClick={onOpenModuleHub}>View Authorized Actions</button></section>}
+        </aside>
       </div>
-    </section>
+    </div>
+    : <section className="qa-v115-panel qa-v115-feature-panel" aria-labelledby="qa-v115-feature-title">
+      <div className="qa-v115-feature-heading">
+        <div><span className="eyebrow">DAENEM STAFF PORTAL · AUTHORIZED WORKSPACE</span><h2 id="qa-v115-feature-title">{moduleLabel}</h2><p>{moduleDescription}</p></div>
+        <button type="button" className="qa-v115-btn" onClick={onOpenModuleHub}><Grid3X3 size={15} /> Switch Workspace</button>
+      </div>
+      <div className="qa-v115-feature-content">{content}</div>
+    </section>;
 
+  return <div className="qa-v115-shell" data-qa-reference="staffportal-qa-review-v115" data-layout-profile={layoutProfile.id} data-layout-renderer="QaReviewV115Shell" data-hybrid-navigation="true" data-authenticated-experience="staffportal" data-postauth-renderer="qa-review-v115">
+    <aside className={'qa-v115-sidebar' + (sidebarOpen ? ' is-open' : '')}>
+      <div className="qa-v115-brand"><span className="qa-v115-brand-mark">D</span><span className="qa-v115-brand-copy"><strong>DAENEM</strong><small>Staff Portal</small></span></div>
+      <span className="qa-v115-sidebar-kicker">Workspace</span>
+      {nav}
+      <div className="qa-v115-sidebar-bottom">
+        <div className="qa-v115-status"><i /><span>{online ? 'All systems operational' : 'Offline mode'}</span></div>
+        <button type="button" className="qa-v115-user" onClick={() => onOpenModule('profile')} aria-label="Open my profile"><span className="qa-v115-avatar">{initialsValue}</span><span><strong>{displayName}</strong><small>{roleLabel}</small></span><ChevronRight size={15} /></button>
+        <button type="button" className="qa-v115-btn" onClick={() => void onLogout()}><ArrowRight size={14} /> Sign Out</button>
+      </div>
+    </aside>
+    <div className="qa-v115-main">
+      <header className="qa-v115-topbar" data-hybrid-top-bar="true">
+        <div className="qa-v115-topbar-leading"><button type="button" className="qa-v115-mobile-menu" onClick={() => setSidebarOpen(true)} aria-label="Open Navigation"><Menu size={18} /></button><span>DAENEM Staff Portal</span></div>
+        <button type="button" className="qa-v115-command" data-top-slot="global-search" onClick={onOpenModuleHub} aria-label="Open Ask DAENEM search"><span className="qa-v115-command-orb"><Sparkles size={15} /></span><span className="qa-v115-command-copy"><strong data-top-slot="ai-command">Ask DAENEM</strong><small>Search your work areas and records</small></span><kbd>⌘ / Ctrl K</kbd></button>
+        <div className="qa-v115-top-actions">
+          <button type="button" className="qa-v115-top-action qa-v115-chip qa-v115-hide-mobile" onClick={enableLocation} aria-label="Open Weather"><CloudSun size={15} />{weather.temperature !== undefined ? formatWeatherTemperature(weather.temperature, temperatureUnit) : 'Weather'}</button>
+          <button type="button" className="qa-v115-top-action qa-v115-hide-mobile" onClick={() => setReleaseOpen(true)} aria-label="Open Release Details"><Radio size={16} />{release.version}</button>
+          <button type="button" className="qa-v115-top-action" onClick={() => onOpenModule('notifications')} aria-label="Open Notifications"><Bell size={17} /></button>
+          <button type="button" className="qa-v115-profile" onClick={() => onOpenModule('profile')} aria-label="Open My Profile"><span className="qa-v115-avatar">{initialsValue}</span><span className="qa-v115-profile-copy qa-v115-hide-mobile"><strong>{displayName}</strong><small>{roleLabel}</small></span><ChevronDown size={15} /></button>
+        </div>
+      </header>
+      <section className="qa-v115-context" aria-labelledby="qa-v115-workspace-title">
+        <nav className="qa-v115-breadcrumb" aria-label="Breadcrumb"><button type="button" onClick={() => onNavigate('overview')}>Staff Portal</button><ChevronRight size={13} /><strong aria-current="page">{moduleLabel}</strong></nav>
+        <div className="qa-v115-heading"><div><span className="qa-v115-scope"><MapPin size={13} /> {company.name || 'Assigned workspace'}</span><h1 id="qa-v115-workspace-title">{moduleLabel}</h1><p>{moduleDescription}</p></div><div className="qa-v115-heading-action"><button type="button" className="qa-v115-btn primary" onClick={onOpenModuleHub}><Grid3X3 size={14} /> Authorized Workspaces</button></div></div>
+      </section>
+      <div className="qa-v115-preview"><span><strong>DEVELOPMENT PREVIEW ONLY</strong> · Fictional records and authorised Staff Portal data</span><span>{release.version}</span></div>
+      <main className="qa-v115-content" id="main-content">{home}</main>
+      <footer className="qa-v115-footer"><span>DAENEM · Staff Portal</span><span>Staging · {release.version}</span><span>Authorised Staff Portal data only</span></footer>
+      <nav className="qa-v115-mobile-nav" aria-label="Mobile primary navigation"><button type="button" className={view === 'overview' ? 'active' : ''} onClick={() => onNavigate('overview')}><Gauge size={17} /><span>Overview</span></button><button type="button" onClick={onOpenModuleHub}><Grid3X3 size={17} /><span>Workspaces</span></button><button type="button" onClick={() => onOpenModule('profile')}><Users size={17} /><span>Profile</span></button></nav>
+    </div>
     {releaseOpen && <ReleaseDialog release={release} onClose={() => setReleaseOpen(false)} />}
-  </main>;
+  </div>;
 }
 
 function Clock3Icon() {

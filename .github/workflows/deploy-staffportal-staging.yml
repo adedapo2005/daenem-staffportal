@@ -56,12 +56,12 @@ jobs:
             echo "::error::A legacy view-specific post-auth shell branch is still present."
             exit 1
           fi
-          if grep -nF "return <CanonicalStaffPortalAdapter" src/zip-dashboard.tsx; then
-            echo "::error::Rejected canonical post-auth adapter is still reachable from the StaffPortal runtime."
+          if grep -nE 'CanonicalStaffPortalAdapter|data-reference-status="PENDING_EXACT_STAFFPORTAL_REFERENCE_PNG"|return <main className=\\`dashboard-page' src/zip-dashboard.tsx; then
+            echo "::error::Rejected canonical/legacy dashboard shell detected in the StaffPortal runtime surface."
             exit 1
           fi
-          if ! grep -nF 'return <main className={`dashboard-page' src/zip-dashboard.tsx; then
-            echo "::error::Approved premium post-auth shell is not the runtime return."
+          if ! grep -nF "return <QaReviewPostAuthShell" src/zip-dashboard.tsx; then
+            echo "::error::QA Review V115 post-auth shell is not the sole runtime return."
             exit 1
           fi
 

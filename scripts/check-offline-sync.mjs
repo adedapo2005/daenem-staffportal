@@ -54,7 +54,7 @@ must(owner.includes('Sync & Sessions') && owner.includes('networkLocation') && o
 must(hub.includes('strictOwnerOnly') && hub.includes('offline-sync-center-launcher') && hub.includes('Sync & Sessions'), 'Owner control is not registered through canonical Module Hub navigation');
 must(centers.includes('queueFormsSubmission') && centers.includes('saved offline') && centers.includes('draft-only') && centers.includes('data-forms-center'), 'Forms Center has no real offline draft/submission integration');
 must(main.includes('OfflinePlatformProvider') && zip.includes('OfflineSyncIndicator'), 'authenticated shell is not connected to the shared sync indicator');
-must(serviceWorker.includes("pathname.startsWith('/api/')") && serviceWorker.includes('isCacheableShellAsset') && serviceWorker.includes('precacheShell') && serviceWorker.includes('Response.error()') && serviceWorker.includes('daenem-workforce-shell-v9-approved-postauth-runtime-v1') && serviceWorker.includes('daenem-offline-sync'), 'service worker does not enforce shell-only caching or progressive sync notification');
+must(serviceWorker.includes("pathname.startsWith('/api/')") && serviceWorker.includes('isCacheableShellAsset') && serviceWorker.includes('precacheShell') && serviceWorker.includes('Response.error()') && serviceWorker.includes('daenem-workforce-shell-v10-approved-qa-review-v115') && serviceWorker.includes('daenem-offline-sync'), 'service worker does not enforce shell-only caching or progressive sync notification');
 must(!serviceWorker.includes('cache.put(request, copy)'), 'service worker must not cache arbitrary authenticated responses');
 must(!read('src/signin-experience.tsx').includes('offline'), 'sign-in composition contains no offline UI');
 

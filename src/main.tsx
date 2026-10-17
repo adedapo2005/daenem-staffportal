@@ -54,7 +54,7 @@ type SecurityEvent = {
 
 type CompanyChoice = { id: string | null; code: string; name: string; icon: React.ComponentType<{ size?: number }> };
 
-const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v9-approved-postauth-runtime-v1';
+const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v10-approved-qa-review-v115';
 
 function registerFreshServiceWorker() {
   if (!('serviceWorker' in navigator)) return () => undefined;
@@ -578,20 +578,6 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
   </div>;
 }
 
-function PostLoginRemoved({ onLogout }: { onLogout: () => Promise<void> }) {
-  return <main data-postlogin-shell="removed" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '2rem', background: '#f6f8fb', color: '#142033' }}>
-    <section style={{ maxWidth: '34rem', padding: '2rem', border: '1px solid #d9e1ec', borderRadius: '1rem', background: '#ffffff', boxShadow: '0 18px 50px rgba(20, 32, 51, 0.08)' }}>
-      <p style={{ margin: 0, fontSize: '0.75rem', letterSpacing: '0.14em', fontWeight: 700 }}>DAENEM STAFF PORTAL</p>
-      <h1 style={{ margin: '0.75rem 0 0', fontSize: '1.6rem' }}>Previous post-login shell removed</h1>
-      <p style={{ margin: '0.75rem 0 1.25rem', lineHeight: 1.6 }}>Your Cloudflare staging login is complete. The rejected workspace has been removed, and the approved post-login reference is ready for review.</p>
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <a href="https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site/home" target="_blank" rel="noreferrer" style={{ display: 'inline-block', borderRadius: '0.7rem', padding: '0.7rem 1rem', background: '#153b5b', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Open approved post-login reference</a>
-        <button type="button" onClick={() => void onLogout()} style={{ border: '1px solid #c8d3e0', borderRadius: '0.7rem', padding: '0.7rem 1rem', background: '#fff', color: '#153b5b', fontWeight: 700, cursor: 'pointer' }}>Sign out</button>
-      </div>
-    </section>
-  </main>;
-}
-
 function Root() {
   const auth = useAuth();
   useEffect(() => registerFreshServiceWorker(), []);
@@ -600,7 +586,7 @@ function Root() {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
   }} />;
-  return <PostLoginRemoved onLogout={auth.logout} />;
+  return <OfflinePlatformProvider context={auth.context}><Workspace context={auth.context} onLogout={auth.logout} /></OfflinePlatformProvider>;
 }
 
 function CanonicalBaseline() {
