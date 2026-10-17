@@ -469,7 +469,7 @@ function Workspace({ context, onLogout }: { context: WorkforceContext; onLogout:
     return () => window.removeEventListener('daenem:canonical-navigation', onCanonicalNavigation);
   }, [company.code, company.id, context, visibleNav]);
   const activeTheme = themeList.find((item) => item.id === theme) || themeList[0];
-  const effectiveLayoutPreference = layoutPreviewPreference || layoutPreference;
+  const effectiveLayoutPreference = normalizeLayoutPreference({ layoutId: DEFAULT_LAYOUT_ID, density: 'standard', motion: 'balanced' });
   const activeLayoutProfile = getLayoutProfile(effectiveLayoutPreference.layoutId);
   const canUseLayoutStudio = layoutAccess.canAccess;
   const executive = can(context, 'dashboard.access', 'manage', company.id) || context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
