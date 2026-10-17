@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const must = (condition, message) => { if (!condition) throw new Error('Approved StaffPortal experience lock failed: ' + message); };
-const gitBlobSha = (content) => crypto.createHash('sha1').update('blob ' + Buffer.byteLength(content) + '\\0' + content).digest('hex');
+const gitBlobSha = (content) => crypto.createHash('sha1').update('blob ' + Buffer.byteLength(content) + '\0' + content).digest('hex');
 
 const main = read('src/main.tsx');
 const dashboard = read('src/zip-dashboard.tsx');
