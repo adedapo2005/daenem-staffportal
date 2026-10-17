@@ -19,7 +19,6 @@
 .sp-hero-grid,.sp-hero-scrim,.sp-hero-content,.sp-install-app-hero,.sp-hero-pagination { z-index:2; }
 .sp-hero-content { position:absolute; top:50%; transform:translateY(-50%); }
 .sp-hero-brand-stage { margin-bottom:8px; }
-.sp-hero-content h1 span { color:#1c6688; }
 .sp-install-app-hero { position:absolute; top:14px; right:14px; z-index:8; display:flex; align-items:center; gap:10px; min-height:52px; padding:8px 10px; border:1px solid rgba(120,205,240,.55); border-radius:13px; color:#edfaff; background:linear-gradient(115deg,rgba(17,92,151,.94),rgba(23,117,145,.92)); box-shadow:inset 0 1px rgba(255,255,255,.25),0 15px 28px -18px rgba(9,49,79,.8); }
 .sp-install-app-hero > span { display:grid; text-align:left; }
 .sp-install-app-hero b { font-size:12px; }

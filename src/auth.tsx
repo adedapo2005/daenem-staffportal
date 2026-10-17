@@ -3,7 +3,7 @@ import {
   ArrowRight, Check, CheckCircle2, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck,
 } from 'lucide-react';
 import {
-  readThemeId, themeById, type ThemeId,
+  readThemeId, type ThemeId,
 } from './theme-system';
 import { SignInExperience } from './signin-experience';
 import { mountSignInLegacyFonts } from './signin-font-loader';
@@ -558,10 +558,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     };
   }, [mode, signupStep, recoveryStep, message, passwordPolicy, authLabels]);
 
-  useEffect(() => {
-    const theme = themeById(themeId);
-    document.title = `Daenem Unified ERP Portal · ${theme.name}`;
-  }, [themeId]);
+  useEffect(() => { document.title = 'DAENEM Staff Portal'; }, [themeId]);
 
   useEffect(() => {
     panelRef.current?.scrollTo({ top: 0, behavior: 'auto' });
@@ -1007,3 +1004,4 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   return <SignInExperience authPanel={authPanel} themeId={themeId} onInstall={() => void installApp()} />;
 }
+

@@ -27,6 +27,8 @@ requireText(signin, 'data-approved-project={APPROVED_SIGNIN.project}', 'Approved
 requireText(signin, '523474f7b839919c258da85be6fcf53edd38810d', 'Approved Sign-In source commit is missing.');
 requireText(signin, 'sp-layout sp-reference-layout', 'Approved V180 Sign-In structure is missing.');
 requireText(signin, 'sp-lower-right-rail sp-lower-right-rail-v86', 'Approved V180 lower access/weather placement is missing.');
+requireText(signin, 'sp-hero-statement-v173', 'Approved V180 hero typography contract is missing.');
+requireText(signin, "id: 'beijing', city: 'Beijing'", 'Approved V180 six-city operations set is missing Beijing.');
 requireText(signinCss, "@import './approved-signin-v180/staff-portal.css'", 'Exact V180 base stylesheet snapshot is not imported.');
 requireText(signinCss, "@import './approved-signin-v180/staff-portal-v3.css'", 'Exact V180 final stylesheet snapshot is not imported.');
 rejectText(signin, 'Frontend sign-in preview complete', 'Preview-only fake sign-in behavior is present.');
