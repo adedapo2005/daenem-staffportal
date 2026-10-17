@@ -34,7 +34,7 @@ must(postLogin.includes('data-approved-postlogin="qa-review-v115"'), 'approved Q
 must(postLogin.includes('data-source-commit="09bd2051d118242bce095be012a3a763cc1f8a33"'), 'approved QA Review source provenance changed');
 must(postLoginCss.includes('.qa115-app') && postLoginCss.includes('.qa115-sidebar') && postLoginCss.includes('.qa115-main'), 'approved QA Review V115 shell styling is incomplete');
 must(!postLogin.includes('premium-lab') && !postLogin.includes('ZipDashboard') && !postLogin.includes('PostLoginRemoved'), 'rejected post-login source is present in the approved runtime');
-must(workflow.includes('ApprovedPostLoginV115') && workflow.includes('Authenticated Root still mounts the rejected Workspace or ZipDashboard shell'), 'staging deployment gate is not locked to the approved direct post-login mount');
+must(workflow.includes('ApprovedPostLoginV115') && workflow.includes('Authenticated Root still mounts the rejected Workspace shell'), 'staging deployment gate is not locked to the approved direct post-login mount');
 
 console.log('APPROVED_SIGNIN_V180_LOCK=PASS');
 console.log('WORKER_BACKED_SIGNIN_RUNTIME_LOCK=PASS');
