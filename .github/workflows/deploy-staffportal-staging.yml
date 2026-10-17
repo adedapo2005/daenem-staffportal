@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: staffportal-staging-deploy
+  group: staffportal-staging-deploy-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
