@@ -137,14 +137,29 @@ function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: D
   }
   if (!imageLayer) return;
   imageLayer.className = imageLayer.className.replace(/gw-city-image-phase-(?:dawn|day|dusk|night)/g, `gw-city-image-phase-${phase}`);
-  let image = imageLayer.querySelector<HTMLImageElement>('img');
-  if (!image) {
-    image = document.createElement('img');
+  const usesApprovedImageWrapper = cityId === 'toronto' || cityId === 'london' || cityId === 'moscow';
+  let image: HTMLImageElement;
+  if (usesApprovedImageWrapper) {
+    let outer = imageLayer.querySelector<HTMLElement>('span[data-base44-image]');
+    if (!outer) outer = document.createElement('span');
+    outer.className = 'relative block h-full w-full object-cover transition-transform duration-1000 group-hover:scale-[1.025]';
+    outer.dataset.base44Image = '';
+    outer.dataset.base44ImageSrc = media.src;
+    let inner = outer.querySelector<HTMLElement>('span');
+    if (!inner) inner = document.createElement('span');
+    inner.className = 'block relative w-full h-full overflow-hidden';
+    image = inner.querySelector<HTMLImageElement>('img') || document.createElement('img');
+    image.className = 'w-full h-full inset-0 absolute object-cover';
+    inner.replaceChildren(image);
+    outer.replaceChildren(inner);
+    imageLayer.replaceChildren(outer);
+  } else {
+    image = imageLayer.querySelector<HTMLImageElement>(':scope > img') || document.createElement('img');
     image.className = 'block h-full w-full object-cover transition-transform duration-1000 group-hover:scale-[1.025]';
-    image.loading = 'eager';
-    image.decoding = 'async';
-    imageLayer.appendChild(image);
+    imageLayer.replaceChildren(image);
   }
+  image.loading = 'eager';
+  image.decoding = 'async';
   if (image.getAttribute('src') !== media.src) image.src = media.src;
   const city = card.querySelector<HTMLElement>('.gw-city-name')?.textContent?.trim() || cityId;
   image.alt = `${city} at ${phase} (${media.mediaPhase} media)`;
