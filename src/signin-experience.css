@@ -5530,7 +5530,27 @@ html[data-mode="night"] .usp-social-buttons button {
   }
 
   .usp-top-chip {
-    display: none;
+    display: inline-flex;
+    max-width: 175px;
+    overflow: visible;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+
+  .usp-top-install {
+    width: auto;
+    min-width: 42px;
+    padding: 0 10px;
+  }
+
+  .usp-top-install span {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: nowrap;
+    font-size: 10px;
   }
 
   .usp-brand-copy span {
