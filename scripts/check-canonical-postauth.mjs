@@ -116,7 +116,7 @@ const authoredSub9 = [
 must(authoredSub9.length === 0, 'canonical authored UI contains sub-9px text declarations: ' + authoredSub9.map((match) => match[0]).join(', '));
 must(main.indexOf("import './canonical-postauth-v1/canonical-dashboard.css';") > main.indexOf("import './postauth-readiness.css';"), 'canonical CSS is not loaded after legacy authenticated CSS');
 must(dashboardEntry.includes('return <main className={`dashboard-page') && !dashboardEntry.includes('return <CanonicalStaffPortalAdapter'), 'approved premium post-auth shell is not the sole authenticated boundary');
-must(dashboardEntry.indexOf('return <CanonicalStaffPortalAdapter') < dashboardEntry.indexOf('return <main className={'), 'legacy dashboard return is not unreachable behind the canonical boundary');
+must(!dashboardEntry.includes('return <CanonicalStaffPortalAdapter') && dashboardEntry.includes('return <main className={`dashboard-page'), 'rejected canonical adapter remains reachable');
 must(layoutSystem.includes("'master-detail': 'master-detail-workspace'"), 'accepted stored master-detail compatibility mapping is missing');
 
 const recordInteractionStart = dashboard.indexOf('function MasterRecords');
