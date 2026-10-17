@@ -1,0 +1,367 @@
+/* Premium Daylight front door. The legacy Webflow composition remains the
+ * functional source; this layer establishes the QA visual contract without
+ * introducing a second authentication architecture. */
+
+.erp-shell.is-day {
+  --daylight-ink: #102a43;
+  --daylight-muted: #60758a;
+  --daylight-line: #cfdae4;
+  --daylight-blue: #2769d8;
+  --daylight-teal: #128f91;
+  --daylight-frost: #f4f8fb;
+  display: grid;
+  height: 100dvh;
+  min-height: 700px;
+  overflow: hidden;
+  padding: 14px clamp(18px, 2vw, 38px) 10px;
+  grid-template-rows: 64px minmax(0, 1fr) 22px;
+  gap: 10px;
+  color: var(--daylight-ink);
+  background:
+    radial-gradient(circle at 17% 13%, rgba(39, 105, 216, .11), transparent 28%),
+    radial-gradient(circle at 87% 84%, rgba(18, 143, 145, .10), transparent 30%),
+    linear-gradient(145deg, #edf3f7, #ffffff 50%, #eef5f6);
+}
+
+.erp-shell.is-day .erp-bg {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-position: 50% 48%;
+  opacity: .07;
+  filter: grayscale(.72) saturate(.5) contrast(.86) brightness(1.16);
+  transform: none;
+}
+.erp-shell.is-day .erp-bg-night { display: none; }
+.erp-shell.is-day .erp-tint {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(247, 250, 252, .96), rgba(255, 255, 255, .88) 52%, rgba(244, 248, 250, .95)),
+    linear-gradient(rgba(24, 57, 86, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 57, 86, .035) 1px, transparent 1px);
+  background-size: auto, 42px 42px, 42px 42px;
+}
+
+.erp-shell.is-day .erp-header {
+  height: 64px;
+  align-items: center;
+}
+.erp-shell.is-day .brand-card {
+  width: auto;
+  max-width: 370px;
+  min-height: 60px;
+  gap: 12px;
+  padding: 8px 15px 8px 9px;
+  border: 1px solid rgba(180, 197, 211, .9);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 14px 36px rgba(25, 57, 85, .10), inset 0 1px #fff;
+  backdrop-filter: blur(18px) saturate(120%);
+}
+.erp-shell.is-day .brand-mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border-color: rgba(79, 155, 204, .38);
+  box-shadow: 0 8px 22px rgba(39, 105, 216, .20), inset 7px 6px 13px rgba(255,255,255,.38);
+  transform: none;
+}
+.erp-shell.is-day .brand-title-1 { color: #122f4b; font-size: 18px; text-shadow: none; }
+.erp-shell.is-day .brand-subtitle { color: #397080; }
+.erp-shell.is-day .brand-tagline-1 { color: #6c8091; }
+.erp-shell.is-day .header-actions { gap: 8px; }
+.erp-shell.is-day :is(.status-pill, .install-pill) {
+  min-height: 38px;
+  border: 1px solid #c9d6e0;
+  color: #31506b;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 8px 20px rgba(25, 57, 85, .08), inset 0 1px #fff;
+  font: inherit;
+  font-size: 11px;
+  cursor: default;
+}
+.erp-shell.is-day .install-pill { cursor: pointer; transition: border-color .18s ease, background .18s ease, color .18s ease; }
+.erp-shell.is-day .install-pill:hover { border-color: #7eb9bc; color: #126b70; background: #f0fafa; }
+.erp-shell.is-day .status-pill i { background: #2d78d0; box-shadow: 0 0 0 4px rgba(45, 120, 208, .10); }
+
+.erp-shell.is-day .hero-grid {
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  grid-template-columns: minmax(280px, .72fr) minmax(320px, .9fr) minmax(400px, 1fr);
+  column-gap: clamp(14px, 1.7vw, 30px);
+}
+
+.erp-shell.is-day .weather-card,
+.erp-shell.is-day .hero-copy,
+.erp-shell.is-day .auth-card {
+  width: 100%;
+  max-width: none;
+  border: 1px solid rgba(190, 204, 216, .92);
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 24px 58px rgba(26, 57, 84, .10), inset 0 1px #fff;
+  backdrop-filter: blur(22px) saturate(118%);
+}
+
+.erp-shell.is-day .weather-card {
+  min-height: 0;
+  padding: 18px;
+  border-radius: 22px;
+}
+.erp-shell.is-day :is(.weather-place, .day-chip) { color: #31566e; }
+.erp-shell.is-day .weather-place svg { color: var(--daylight-teal); }
+.erp-shell.is-day .day-chip {
+  border-color: #c1d9db;
+  color: #286f73;
+  background: #eff8f8;
+}
+.erp-shell.is-day .weather-main-1 { border-color: #d8e2e9; }
+.erp-shell.is-day .ibadan-time,
+.erp-shell.is-day .temp-value { color: #133553; }
+.erp-shell.is-day .ibadan-date,
+.erp-shell.is-day .temp-condition { color: #6b7f90; }
+.erp-shell.is-day .weather-icon,
+.erp-shell.is-day .weather-viz svg { color: #357ebd; stroke: #4c94c9; }
+.erp-shell.is-day .metric-1 {
+  border-color: #d7e1e8;
+  background: linear-gradient(145deg, #f8fbfc, #edf4f6);
+  box-shadow: none;
+}
+.erp-shell.is-day .metric-icon { color: #397aa9; }
+.erp-shell.is-day .metric-label-1 { color: #718493; }
+.erp-shell.is-day .metric-value-1-2 { color: #29465e; }
+
+.erp-shell.is-day .hero-copy {
+  margin: 0;
+  padding: clamp(24px, 3.2vw, 48px);
+  border-radius: 26px;
+  text-align: left;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(51, 135, 198, .14), transparent 33%),
+    linear-gradient(145deg, rgba(255,255,255,.90), rgba(238,246,249,.92));
+}
+.erp-shell.is-day .hero-kicker { color: #247778; letter-spacing: .17em; }
+.erp-shell.is-day .hero-title {
+  margin: 18px 0 7px;
+  color: #112f4c;
+  font-size: clamp(34px, 3vw, 58px);
+  line-height: .99;
+  text-align: left;
+  text-shadow: none;
+}
+.erp-shell.is-day .hero-subtitle { color: #2f6fa9; }
+.erp-shell.is-day .hero-text { margin: 13px 0 22px; color: #5b7184; font-size: 15px; }
+.erp-shell.is-day .hero-pillars { margin: 0; }
+.erp-shell.is-day .pillar { justify-items: start; border-color: #cfdee7; }
+.erp-shell.is-day .pillar-icon-v2 { color: #217f83; }
+.erp-shell.is-day .pillar-copy { color: #4c667b; }
+.erp-shell.is-day .hero-globe { opacity: .22; }
+
+.erp-shell.is-day .auth-card {
+  max-height: calc(100dvh - 118px);
+  align-self: center;
+  overflow: auto;
+  padding: 18px 20px 20px;
+  border-color: #bbcbd8;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, .94);
+  scrollbar-width: thin;
+  scrollbar-color: #b6c7d3 transparent;
+}
+.erp-shell.is-day .auth-card :is(.usp-auth-panel, .v3-auth-card),
+.erp-shell.is-day .auth-card :is(.usp-panel-heading h1, .usp-panel-heading p, .usp-field, .usp-remember-row, .usp-social-note, .usp-legal-copy),
+.erp-shell.is-day .auth-card :is(.v3-auth-heading h2, .v3-auth-heading p, .v3-auth-heading > .p-kicker, .v3-auth-card .p-field, .v3-auth-card .p-check, .v3-note, .v3-match, .v3-requirements li, .v3-security-note) {
+  color: var(--daylight-ink);
+}
+.erp-shell.is-day .auth-card .usp-panel-heading p,
+.erp-shell.is-day .auth-card :is(.usp-social-note, .usp-legal-copy, .v3-auth-heading p, .v3-note, .v3-match, .v3-security-note) { color: var(--daylight-muted); }
+.erp-shell.is-day .auth-card .usp-panel-eyebrow { color: #216c72; }
+.erp-shell.is-day .auth-card .usp-mfa-chip {
+  color: #27659a;
+  border-color: #c6d9e8;
+  background: #eef5fb;
+}
+.erp-shell.is-day .auth-card .usp-tabs {
+  border-color: #ccd8e1;
+  background: #edf2f6;
+}
+.erp-shell.is-day .auth-card .usp-tabs button { color: #60758a; }
+.erp-shell.is-day .auth-card .usp-tabs button.active {
+  color: #fff;
+  background: linear-gradient(112deg, #245fae, #168e93);
+  box-shadow: 0 7px 18px rgba(34, 103, 155, .18);
+}
+.erp-shell.is-day .auth-card :is(.usp-field input, .usp-password-field input, .v3-auth-card .p-field input, .v3-auth-card .v3-password input) {
+  min-height: 44px;
+  color: #183650;
+  border-color: #bdcbd6;
+  background: #f8fafb;
+}
+.erp-shell.is-day .auth-card :is(.usp-field input, .usp-password-field input, .v3-auth-card .p-field input, .v3-auth-card .v3-password input):focus {
+  border-color: #438eaa;
+  box-shadow: 0 0 0 3px rgba(54, 138, 164, .14);
+}
+.erp-shell.is-day .auth-card :is(.usp-field input, .usp-password-field input, .v3-auth-card .p-field input)::placeholder { color: #8799a8; }
+.erp-shell.is-day .auth-card :is(.usp-forgot-link, .v3-password > button, .p-inline-link) { color: #236fa0; }
+.erp-shell.is-day .auth-card .usp-forgot-link {
+  min-height: 24px;
+  padding-block: 2px;
+  display: inline-flex;
+  align-items: center;
+}
+.erp-shell.is-day .auth-card .usp-primary-button,
+.erp-shell.is-day .auth-card .v3-submit {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(112deg, #245fae, #168e93);
+  box-shadow: 0 11px 24px rgba(32, 102, 146, .22);
+}
+.erp-shell.is-day .auth-card .usp-social-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.erp-shell.is-day .auth-card .usp-social-buttons button,
+.erp-shell.is-day .auth-card .usp-whatsapp-account {
+  min-height: 40px;
+  color: #29465e;
+  border: 1px solid #cad6df;
+  background: #f8fafb;
+}
+.erp-shell.is-day .auth-card :is(.usp-whatsapp-button, .usp-whatsapp-account) { color: #126f73; }
+.erp-shell.is-day .auth-card .usp-whatsapp-account {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  border-radius: 10px;
+  font-weight: 750;
+}
+.erp-shell.is-day .auth-card .usp-panel-footer { border-color: #d6e1e8; }
+.erp-shell.is-day .auth-card .usp-operational-pill { color: #60758a; }
+.erp-shell.is-day .auth-card .usp-operational-pill i { background: #2d78d0; box-shadow: none; }
+.erp-shell.is-day .auth-card .usp-legal-copy {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  text-align: center;
+}
+.erp-shell.is-day .auth-card .usp-legal-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.erp-shell.is-day .auth-card .usp-legal-actions button {
+  appearance: none;
+  min-height: 24px;
+  padding: 2px;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  color: #236fa0;
+  background: transparent;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  text-decoration-color: rgba(35, 111, 160, .35);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.erp-shell.is-day .auth-card .usp-legal-actions button:hover {
+  color: #126f73;
+  text-decoration-color: currentColor;
+}
+.erp-shell.is-day .auth-card :is(button, input, [data-slot="checkbox"]):focus-visible {
+  outline: 3px solid rgba(28, 126, 145, .28);
+  outline-offset: 2px;
+}
+
+.erp-shell.is-day .showcase-row,
+.erp-shell.is-day .global-ribbon { display: none; }
+.erp-shell.is-day .erp-footer {
+  height: 22px;
+  grid-row: 3;
+  color: #687c8d;
+  font-size: 9px;
+}
+.erp-shell.is-day .erp-footer span:nth-child(2) { color: #2a7075; }
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .erp-shell.is-day {
+    height: 100dvh;
+    min-height: 680px;
+    overflow: hidden;
+    padding: 12px 14px 9px;
+    grid-template-rows: 58px minmax(0, 1fr) 20px;
+  }
+  .erp-shell.is-day .erp-header { height: 58px; }
+  .erp-shell.is-day .brand-card { min-height: 54px; }
+  .erp-shell.is-day .hero-grid {
+    display: grid;
+    height: 100%;
+    margin: 0;
+    grid-template-columns: minmax(260px, .72fr) minmax(390px, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "weather auth";
+    gap: 14px;
+  }
+  .erp-shell.is-day .hero-grid > .weather-card { grid-area: weather; }
+  .erp-shell.is-day .hero-grid > .auth-card { grid-area: auth; }
+  .erp-shell.is-day .hero-grid > .hero-copy { display: none; }
+  .erp-shell.is-day .weather-card { align-self: center; }
+  .erp-shell.is-day .auth-card { max-height: calc(100dvh - 112px); }
+}
+
+/* The legacy narrow-desktop layer assigns named two-row grid areas through
+ * 1365px. Reset those inherited areas so Daylight's three-column command
+ * front door does not push the hero below the viewport at 1200–1365px. */
+@media (min-width: 1181px) and (max-width: 1365px) {
+  .erp-shell.is-day .hero-grid {
+    grid-template-areas: "weather hero auth";
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .erp-shell.is-day .hero-grid > .weather-card,
+  .erp-shell.is-day .hero-grid > .hero-copy,
+  .erp-shell.is-day .hero-grid > .auth-card {
+    grid-area: auto;
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .erp-shell.is-day .hero-copy { display: block; margin: 0; }
+}
+
+@media (max-width: 767px) {
+  .erp-shell.is-day {
+    display: block;
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding: 10px;
+  }
+  .erp-shell.is-day .erp-header { height: auto; align-items: stretch; }
+  .erp-shell.is-day .brand-card { min-height: 58px; }
+  .erp-shell.is-day .hero-grid { display: flex; height: auto; margin-top: 10px; gap: 10px; }
+  .erp-shell.is-day .auth-card { max-height: none; overflow: visible; }
+  .erp-shell.is-day .hero-copy { padding: 22px; }
+  .erp-shell.is-day .hero-title { font-size: 30px; }
+  .erp-shell.is-day .erp-footer { height: auto; margin-top: 10px; padding: 10px 2px; }
+}
+
+@media (max-width: 479px) {
+  .erp-shell.is-day .header-actions { flex-wrap: nowrap; }
+  .erp-shell.is-day :is(.status-pill, .install-pill) { flex: 1; justify-content: center; }
+  .erp-shell.is-day .auth-card { padding: 13px 14px 18px; border-radius: 20px; }
+  .erp-shell.is-day .auth-card .usp-social-buttons { grid-template-columns: 1fr; }
+  .erp-shell.is-day .weather-metrics-1 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .erp-shell.is-day .metric-1 { min-height: 42px; padding: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erp-shell.is-day *,
+  .erp-shell.is-day *::before,
+  .erp-shell.is-day *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

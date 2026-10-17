@@ -13,7 +13,8 @@ const dashboardWorker = read('worker/index.ts');
 const workerEntry = read('worker/entry.ts');
 const aiGuide = read('worker/ai-guide.ts');
 const employeeSelfService = read('worker/employee-self-service.ts');
-const approvedPostLogin = read('src/approved-postlogin-v115.tsx');
+const approvedPostLogin = read('src/qa-review-v115-runtime.tsx');
+const approvedPortalModel = read('src/qa-review-v115/app/experience/model.ts');
 const postAuth = read('src/post-auth-experience.tsx');
 const smartHelp = read('src/guidance-center.tsx');
 const dashboard = read('src/dashboard-capabilities.ts');
@@ -30,8 +31,8 @@ must(workerEntry.includes('routeSmartSearch') && workerEntry.includes("url.pathn
 must(aiGuide.includes('visibleFunctions') && aiGuide.includes('selectedCompany') && aiGuide.includes('AUTHORIZED FUNCTION CATALOG'), 'AI Guide must be permission and company scoped');
 must(employeeSelfService.includes('employee_id=?') && employeeSelfService.includes('routeEmployeeSelfService'), 'notifications and Self Service must remain employee scoped');
 
-must(approvedPostLogin.includes('hasWorkforcePermission'), 'approved primary navigation must use effective permissions');
-must(approvedPostLogin.includes('permittedNavigation(context)'), 'approved primary navigation must be filtered before rendering');
+must(approvedPostLogin.includes('WorkforceContext') && approvedPostLogin.includes('sessionForProfile'), 'approved Portal must be entered only through the authenticated Worker context adapter');
+must(approvedPortalModel.includes('effectiveLevel') && approvedPortalModel.includes('canView') && approvedPortalModel.includes('authorizedRecords'), 'approved primary navigation and records must use the complete V115 authorization projection');
 must(postAuth.includes('canSeeDashboardField'), 'Home must use field-level dashboard authorization');
 must(smartHelp.includes('hasWorkforcePermission'), 'Smart Help must use effective permissions');
 must(dashboard.includes('canSeeDashboardField'), 'dashboard capability helper must be shared by renderers');

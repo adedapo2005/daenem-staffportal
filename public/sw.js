@@ -1,4 +1,4 @@
-const CACHE = 'daenem-workforce-shell-v13-approved-sites-v180-qa-v115';
+const CACHE = 'daenem-workforce-shell-v14-complete-sites-v180-qa-v115';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 function isCacheableShellAsset(request, url) {

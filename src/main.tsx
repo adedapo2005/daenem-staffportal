@@ -1,13 +1,14 @@
 import '@fontsource-variable/inter';
 import '@fontsource-variable/manrope';
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthScreen, useAuth } from './auth';
-import { ApprovedPostLoginV115 } from './approved-postlogin-v115';
 import { OfflinePlatformProvider } from './offline-sync';
 import './signin-experience.css';
 
-const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v13-approved-sites-v180-qa-v115';
+const ApprovedPostLoginV115 = lazy(() => import('./qa-review-v115-runtime'));
+
+const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v14-complete-sites-v180-qa-v115';
 
 function registerFreshServiceWorker() {
   if (!('serviceWorker' in navigator)) return () => undefined;
@@ -56,7 +57,13 @@ function Root() {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
   }} />;
-  return <OfflinePlatformProvider context={auth.context}><ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} /></OfflinePlatformProvider>;
+  return (
+    <OfflinePlatformProvider context={auth.context}>
+      <Suspense fallback={<LoadingScreen />}>
+        <ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} />
+      </Suspense>
+    </OfflinePlatformProvider>
+  );
 }
 
 createRoot(document.getElementById('root')!).render(<React.StrictMode><Root /></React.StrictMode>);

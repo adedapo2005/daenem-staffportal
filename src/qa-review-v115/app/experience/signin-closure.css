@@ -1,0 +1,44 @@
+/* Final Sign-In closure layer. This loads after the legacy theme styles so the
+   shared renderer—not the retired composition—owns sizing and typography. */
+.s17-shell{height:100dvh!important;min-height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;padding:0!important}
+.s17-shell>.v3-brand{flex:0 0 58px;min-height:58px;padding:7px 2.2vw!important}
+.s17-shell>.sf-composition{flex:1 1 auto;height:auto!important;min-height:0!important;overflow:hidden}
+.s17-shell>.v3-auth-footer{display:flex!important;flex:0 0 30px;min-height:30px;padding:3px 2.2vw!important;background:#031128a8!important;border:0!important;color:#c7d9ee!important;font-size:12px!important}
+.s17-shell>.v3-auth-footer .sf-published{min-height:22px;margin:0;padding:2px 8px;font-size:12px!important}
+.s17-shell .s17-widget-auth>.v3-auth-card[data-auth-stage=signin]{height:auto!important;max-height:100%!important;overflow:visible!important;scrollbar-width:none!important}
+.s17-shell .s17-widget-auth>.v3-auth-card[data-auth-stage=signin]::-webkit-scrollbar{display:none!important}
+.s17-shell .s17-widget-auth>.v3-auth-card:not([data-auth-stage=signin]){height:100%!important;max-height:100%!important;overflow:auto!important;overscroll-behavior:contain}
+.s17-shell :is(.sf-label,.sf-live,.sf-demo,.sf-published,.sf-theme-name,.sf-governance,.sf-news-controls,.v3-security-note,.v3-review-controls summary,.v3-federation>span,.v3-federation small,.v3-note,.v3-match,.v3-requirements li,.v15-availability,.v15-availability small){font-size:12px!important}
+.s17-shell .v3-auth-card .p-field,.s17-shell .v3-auth-card .p-check,.s17-shell .v3-auth-options>button{font-size:13px!important}
+.s17-shell .v3-auth-card input{font-size:16px!important}
+.sf-search-dialog :is(span,small,p,button,[cmdk-group-heading]),.p-modal :is(span,small,p,button,label){font-size:12px!important}
+.sf-search-dialog :is(input,[cmdk-input]){font-size:16px!important}
+.sf-search-dialog .sf-safe-recent,.sf-search-dialog .sf-search-empty span{font-size:12px!important}
+.sf-search-dialog button,.p-modal button{min-height:44px}
+
+@media(max-width:620px){
+ .s17-shell>.v3-brand{flex-basis:48px;min-height:48px;padding:3px 7px!important}
+ .s17-shell>.v3-brand .p-logo.big svg{width:34px;height:34px}.s17-shell>.v3-brand .p-logo.big>span{font-size:16px}
+ .s17-shell>.v3-auth-footer{display:flex!important;flex-basis:24px;min-height:24px;padding:1px 6px!important;justify-content:center;gap:0;flex-wrap:nowrap!important;overflow:hidden}
+ .s17-shell>.v3-auth-footer .s17-footer-owner,.s17-shell>.v3-auth-footer .s17-footer-review,.s17-shell>.v3-auth-footer>a{display:none!important}
+ .s17-shell>.v3-auth-footer .s17-mobile-freshness{display:block!important;min-width:0;width:100%}
+ .s17-shell>.v3-auth-footer .sf-published{display:flex!important;justify-content:center;min-height:20px;padding:0 5px;max-width:none;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+ .s17-shell .s17-widget-auth>[data-auth-stage=signin]{padding:4px 10px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-auth-heading{margin:0!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-auth-heading h2{font-size:20px!important;line-height:1.05!important;margin:0 0 2px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] form{display:grid;gap:1px}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .p-field{margin:0!important;font-size:13px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .p-field input{height:36px!important;min-height:36px!important;padding:6px 9px!important;font-size:16px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-password button{height:36px!important;min-height:36px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-auth-options{height:44px;min-height:44px;margin:0!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .p-check{min-height:44px!important;font-size:13px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] [data-slot=checkbox]{width:19px!important;min-width:19px!important;max-width:19px!important;height:19px!important;min-height:19px!important;max-height:19px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-submit{height:44px!important;min-height:44px!important;margin:0!important;padding:7px 10px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-federation{margin:1px 0!important;padding:0!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-federation>div{margin:0!important;gap:4px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-federation button{height:32px!important;min-height:32px!important;padding:3px!important;font-size:12px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-activation-link{height:30px!important;min-height:30px!important;margin:0 auto!important;font-size:12px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-security-note{min-height:20px;padding:1px 0 0!important;font-size:12px!important}
+ .s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-trusted,.s17-shell .s17-widget-auth [data-auth-stage=signin]>.sf-published,.s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-review-controls,.s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-auth-heading p,.s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-auth-symbol,.s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-auth-heading .p-kicker,.s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-federation>span,.s17-shell .s17-widget-auth [data-auth-stage=signin] .v3-federation>small{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){.s17-shell *,.sf-search-dialog *,.p-modal *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

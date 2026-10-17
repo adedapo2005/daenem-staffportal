@@ -4,7 +4,8 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const auth = read('worker/auth.ts');
 const api = read('worker/index.ts');
 const clientAuth = read('src/auth.tsx');
-const approvedPostLogin = read('src/approved-postlogin-v115.tsx');
+const approvedPostLogin = read('src/qa-review-v115-runtime.tsx');
+const approvedPortalModel = read('src/qa-review-v115/app/experience/model.ts');
 const moduleHub = read('src/module-hub.tsx');
 const packageJson = JSON.parse(read('package.json'));
 const businessWorkers = {
@@ -32,8 +33,8 @@ check('explicit business overrides apply last', auth.indexOf('for (const row of 
 check('server permission helper accepts a company', auth.includes("companyId?: string | null") && auth.includes('context.companyPermissions[companyId]'));
 check('client permission helper accepts a company', clientAuth.includes('hasWorkforcePermission') && clientAuth.includes('context.companyPermissions?.[companyId]'));
 check('background tabs reuse cached identity', clientAuth.includes("document.visibilityState === 'hidden'") && clientAuth.includes('authMeCache.value'));
-check('approved sidebar is permission filtered', approvedPostLogin.includes('hasWorkforcePermission(context, item.permission)') && approvedPostLogin.includes('visibleNavigation'));
-check('permission-only navigation redirects safely', approvedPostLogin.includes('visibleNavigation.some((item) => item.id === active)') && approvedPostLogin.includes("setActive(visibleNavigation[0]?.id || 'self-service')"));
+check('approved Portal receives only an authenticated Worker context', approvedPostLogin.includes('WorkforceContext') && approvedPostLogin.includes('sessionForProfile'));
+check('approved sidebar and records are permission projected', approvedPortalModel.includes('effectiveLevel') && approvedPortalModel.includes('canView') && approvedPortalModel.includes('authorizedRecords'));
 check('employee approvals are constrained by business', auth.includes('requested_company_id IN (${placeholders})'));
 check('approval writes recheck business permission', auth.includes("hasPermission(context, 'users.access', 'manage', companyId)"));
 check('dashboard group queries stay within authorized businesses', (api.includes('dashboardCompanyIds') && api.includes('company_id IN (${companyPlaceholders})')) || (api.includes('permittedDashboardCompanyIds') && ['employeeCompanyIds', 'attendanceCompanyIds', 'incompleteCompanyIds', 'approvalCompanyIds', 'securityCompanyIds', 'overdueCompanyIds', 'facilitiesCompanyIds'].every((name) => api.includes('sqlList(' + name + ')'))));

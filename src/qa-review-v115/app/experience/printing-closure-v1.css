@@ -1,0 +1,164 @@
+.p-printing-capacity {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.p-printing-capacity > section {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  border: 1px solid #d7e2eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #61758a;
+  padding: 0.85rem 0.9rem;
+}
+
+.p-printing-capacity span {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.p-printing-capacity strong {
+  color: #29425b;
+  font-size: 0.78rem;
+}
+
+.p-printing-capacity small {
+  color: #7f8fa0;
+  font-size: 0.7rem;
+}
+
+.p-printing-authority {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(34rem, 1fr);
+  gap: 1.4rem;
+  align-items: center;
+  border: 1px solid #ccd9e4;
+  border-radius: 10px;
+  background: #f7fafc;
+  margin-bottom: 1.4rem;
+  padding: 1.35rem 1.45rem;
+}
+
+.p-printing-search {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--p-muted);
+  font-size: 0.75rem;
+}
+
+.p-printing-search input {
+  min-width: 17rem;
+  min-height: 2.4rem;
+  border: 1px solid var(--p-line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--p-ink);
+  padding: 0.55rem 0.7rem;
+}
+
+.p-printing-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.p-printing-authority-copy h3 {
+  color: var(--p-ink);
+  font-size: 1.05rem;
+  margin: 0.45rem 0 0.4rem;
+}
+
+.p-printing-authority-copy p,
+.p-printing-lifecycle-note {
+  color: var(--p-muted);
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.p-printing-authority dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.p-printing-authority dl > div {
+  min-width: 0;
+  border: 1px solid #d8e2ea;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.8rem;
+}
+
+.p-printing-authority dt {
+  color: #344b64;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.p-printing-authority dd {
+  color: #738398;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  margin: 0.35rem 0 0;
+}
+
+.p-printing-lifecycle-note {
+  border-top: 1px solid var(--p-line);
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+}
+
+@media (max-width: 1100px) {
+  .p-printing-capacity {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .p-printing-authority {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .p-printing-capacity {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .p-printing-authority {
+    padding: 1.1rem;
+  }
+
+  .p-printing-authority dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .p-printing-search {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .p-printing-search input {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p-printing-authority *,
+  .p-printing-authority *::before,
+  .p-printing-authority *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
