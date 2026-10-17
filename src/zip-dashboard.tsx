@@ -847,47 +847,8 @@ export function ZipDashboard({
 
   const scopedSummary = summary;
 
-  // One canonical authenticated shell is used for every StaffPortal workspace view.
-  // The former post-auth fallback is intentionally unreachable and cannot reappear on navigation.
-  return <CanonicalStaffPortalAdapter
-      context={context}
-      view={activeView}
-      company={company}
-      companyChoices={companyChoices}
-      setCompany={setCompany}
-      summary={scopedSummary}
-      dataStatus={dataStatus}
-      dataLastSyncedAt={dataLastSyncedAt}
-      dataError={dataError}
-      liveIntelligence={liveIntelligence}
-      refreshSummary={refreshSummary}
-      onNavigate={onNavigate}
-      onOpenModule={onOpenModule}
-      onOpenModuleHub={onOpenModuleHub}
-      onOpenAdmin={onOpenAdmin}
-      onLogout={onLogout}
-      visibleNav={visibleNav}
-      clock={clock}
-      weather={weather}
-      temperatureUnit={temperatureUnit}
-      enableLocation={enableLocation}
-      online={online}
-      layoutId={layoutId}
-      layoutProfile={layoutProfile}
-      density={density}
-      motion={motion}
-      canUseLayoutStudio={canUseLayoutStudio}
-      onOpenLayoutStudio={onOpenLayoutStudio}
-      release={release}
-      setReleaseOpen={setReleaseOpen}
-      layoutPreview={layoutPreview}
-      layoutPreviewCanApply={layoutPreviewCanApply}
-      layoutPreviewApplying={layoutPreviewApplying}
-      layoutPreviewMessage={layoutPreviewMessage}
-      onApplyLayoutPreview={onApplyLayoutPreview}
-      onExitLayoutPreview={onExitLayoutPreview}
-    />;
-
+  // Use the retained premium post-auth experience already present below. The rejected
+  // canonical adapter is not part of the authenticated runtime path.
   return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} style={experienceStyle} data-authenticated-experience="staffportal" data-reference-status="PENDING_EXACT_STAFFPORTAL_REFERENCE_PNG" data-hybrid-navigation="true" data-layout-profile={layoutId} data-layout-contract-id={layoutProfile.id === 'master-detail' ? 'master-detail-workspace' : layoutProfile.id} data-layout-renderer={layoutProfile.structure.rendererId} data-layout-navigation-adapter={layoutProfile.structure.navigationAdapterId} data-layout-navigation-geometry={layoutProfile.structure.navigationGeometry} data-layout-content-mode={layoutProfile.structure.contentMode} data-layout-inspector-mode={layoutProfile.structure.inspectorMode} data-layout-mobile-transform={layoutProfile.structure.mobileTransform} data-layout-motion-personality={layoutProfile.structure.motionPersonality} data-layout-density={density} data-layout-motion={motion} data-layout-preview={layoutPreview ? 'true' : 'false'} data-active-erp={activeErpId}>
     <PostAuthNavigation
       layoutProfile={layoutProfile}
