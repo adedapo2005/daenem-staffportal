@@ -40,7 +40,7 @@ export async function readGoogleWeather(
   env: WeatherProviderEnv,
   latitude: number,
   longitude: number,
-  unitsSystem?: 'IMPERIAL' | 'METRIC',
+  unitsSystem: 'IMPERIAL' | 'METRIC' = 'IMPERIAL',
   forceRefresh = false,
 ): Promise<GoogleWeatherResult> {
   const configuration = await readWeatherConfiguration(env);
