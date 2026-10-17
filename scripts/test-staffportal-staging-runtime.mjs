@@ -42,23 +42,20 @@ const mainScriptUrl = new URL(moduleScriptMatch[1], rootUrl).toString();
 const mainScriptResponse = await read(mainScriptUrl);
 assert.equal(mainScriptResponse.status, 200, 'deployed main module status ' + mainScriptResponse.status);
 const mainScript = await mainScriptResponse.text();
-assert.ok(mainScript.includes('qa-review-v115'), 'deployed main bundle is missing the approved QA Review V115 post-login marker');
-assert.ok(!mainScript.includes('staffportal-qa-review-v115'), 'deployed main bundle still contains the rejected QA Review wrapper shell marker');
-assert.ok(!mainScript.includes('data-postauth-renderer'), 'deployed main bundle still contains the rejected post-auth shell renderer');
-const authModuleMatch = mainScript.match(/from["']\.\/(auth-[^"'\x60]+\.js)["']/);
-assert.ok(authModuleMatch?.[1], 'deployed-auth-module import is missing from the main bundle');
-const authModuleUrl = new URL(authModuleMatch[1], mainScriptUrl).toString();
-const authModuleResponse = await read(authModuleUrl);
-assert.equal(authModuleResponse.status, 200, 'deployed-auth-module status ' + authModuleResponse.status);
-const authModule = await authModuleResponse.text();
-assert.ok(authModule.includes('/api/auth/login'), 'deployed-auth-module does not call the Worker login route');
-assert.ok(authModule.includes('/api/auth/me'), 'deployed-auth-module does not verify the created session');
+assert.ok(mainScript.includes('sites-v180'), 'deployed bundle is missing the approved Sites V180 Sign-In marker');
+assert.ok(mainScript.includes('523474f7b839919c258da85be6fcf53edd38810d'), 'deployed bundle is missing the approved Sites V180 source identity');
+assert.ok(mainScript.includes('qa-review-v115'), 'deployed bundle is missing the approved QA Review V115 post-login marker');
+assert.ok(mainScript.includes('09bd2051d118242bce095be012a3a763cc1f8a33'), 'deployed bundle is missing the approved QA Review V115 source identity');
+assert.ok(mainScript.includes('/api/auth/login'), 'deployed bundle does not call the Worker login route');
+assert.ok(mainScript.includes('/api/auth/me'), 'deployed bundle does not verify the Worker session');
+assert.ok(!mainScript.includes('staffportal-qa-review-v115'), 'deployed bundle still contains the rejected QA Review wrapper shell marker');
+assert.ok(!mainScript.includes('data-postauth-renderer'), 'deployed bundle still contains the rejected post-auth shell renderer');
 for (const forbidden of [
   'Frontend sign-in preview complete',
   'No credentials were sent',
   'no session was created',
 ]) {
-  assert.ok(!authModule.includes(forbidden), 'deployed-auth-module contains preview-only behavior: ' + forbidden);
+  assert.ok(!mainScript.includes(forbidden), 'deployed bundle contains preview-only behavior: ' + forbidden);
 }
 
 const workspace = await read(workspaceUrl);
@@ -89,12 +86,12 @@ console.log(JSON.stringify({
     'current-vite-root',
     'legacy-next-vinext-rejected',
     'staging-auth-bridge-rejected',
+    'approved-signin-v180-runtime',
+    'approved-postlogin-v115-runtime',
+    'real-worker-auth-routes-in-bundle',
+    'rejected-postlogin-shell-absent',
     'unauthenticated-workspace-guard',
     'unauthenticated-session-contract',
     'empty-login-contract',
-    'deployed-auth-module',
-    'worker-session-verification',
-    'approved-postlogin-v115-runtime',
-    'rejected-postlogin-shell-absent',
   ],
 }, null, 2));
