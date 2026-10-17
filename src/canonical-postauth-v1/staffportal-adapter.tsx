@@ -114,6 +114,10 @@ const ZONE_TITLES: Partial<Record<CanonicalZoneId, string>> = {
 
 const ANALYTICAL_ZONES = new Set<CanonicalZoneId>(['executive-analytics', 'horizon-global', 'board-trend']);
 
+function canonicalLayoutId(value: LayoutId): StaffPortalLayoutId {
+  return value === 'master-detail' ? 'master-detail-workspace' : value;
+}
+
 function storedLayoutId(value: StaffPortalLayoutId): LayoutId {
   return value === 'master-detail-workspace' ? 'master-detail' : value;
 }
