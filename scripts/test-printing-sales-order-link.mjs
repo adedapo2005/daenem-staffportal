@@ -12,9 +12,16 @@ assert.match(source, /INSERT OR IGNORE INTO sales_orders/);
 assert.match(source, /INSERT OR IGNORE INTO sales_order_items/);
 assert.match(source, /INSERT OR IGNORE INTO audit_logs/);
 assert.match(source, /'approved','unpaid','NGN'/);
+assert.match(source, /UPDATE sales_orders SET status='approved'.*production_status='customer_approved'/);
+assert.match(source, /if\(to==='completed'\)/);
+assert.match(source, /UPDATE sales_orders SET status='completed'.*status IN \('approved','processing'\).*payment_status!='refunded'/);
+assert.match(source, /production_status='delivered' AND sales_order_id=\?/);
+assert.match(source, /completed_sales_order_eligible/);
 assert.match(source, /paymentStatus:existing\?\.paymentStatus\|\|'unpaid'/);
 assert.match(source, /requestCorrelationId\(request\)/);
 assert.match(source, /if\(to==='customer_approved'&&from==='customer_approved'\)/);
+const financeAutopost = readFileSync(new URL('../worker/finance-sales-autopost.ts', import.meta.url), 'utf8');
+assert.match(financeAutopost, /so\.status='completed'/);
 
 const db = new DatabaseSync(':memory:');
 db.exec(`
@@ -108,6 +115,56 @@ function approve(jobId, actor = 'approver-a', requestId = 'request-a', failAudit
   }
 }
 
+function complete(jobId, actor = 'approver-a', requestId = 'request-complete', failAudit = false) {
+  const job = db.prepare('SELECT * FROM print_jobs WHERE id=? AND company_id=?').get(jobId, 'company-printing');
+  if (!job) return { ok: false, status: 404 };
+  if (job.production_status !== 'delivered' || !job.sales_order_id) return { ok: false, status: 409 };
+  const order = db.prepare('SELECT status,payment_status FROM sales_orders WHERE id=? AND company_id=?').get(job.sales_order_id, 'company-printing');
+  if (!order || !['approved', 'processing'].includes(order.status) || order.payment_status === 'refunded') return { ok: false, status: 409 };
+  try {
+    db.exec('BEGIN');
+    db.prepare(`UPDATE sales_orders SET status='completed' WHERE id=? AND company_id='company-printing'
+      AND status IN ('approved','processing') AND payment_status!='refunded'
+      AND EXISTS(SELECT 1 FROM print_jobs WHERE id=? AND company_id='company-printing'
+        AND production_status='delivered' AND sales_order_id=?)`)
+      .run(job.sales_order_id, jobId, job.sales_order_id);
+    db.prepare(`UPDATE print_jobs SET production_status='completed' WHERE id=? AND company_id='company-printing'
+      AND production_status='delivered' AND sales_order_id=?
+      AND EXISTS(SELECT 1 FROM sales_orders WHERE id=? AND company_id='company-printing'
+        AND status='completed' AND payment_status!='refunded')`)
+      .run(jobId, job.sales_order_id, job.sales_order_id);
+    db.prepare(`INSERT OR IGNORE INTO print_job_status_events
+      (id,print_job_id,from_status,to_status,changed_by,note)
+      SELECT ?,id,'delivered','completed',?,'Delivered Printing job completed and linked sale made Finance eligible'
+      FROM print_jobs WHERE id=? AND company_id='company-printing'
+        AND production_status='completed' AND sales_order_id=?`)
+      .run(`print-event-completed-${jobId}`, actor, jobId, job.sales_order_id);
+    if (failAudit) db.exec(`CREATE TRIGGER deny_completion_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'audit unavailable'); END`);
+    db.prepare(`INSERT OR IGNORE INTO audit_logs
+      (id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source,request_id)
+      SELECT ?,?,'company-printing','printing','completed_sales_order_eligible','print_job',?,
+        '{"status":"delivered"}',?,'web',? FROM print_jobs pj JOIN sales_orders so
+        ON so.id=pj.sales_order_id AND so.company_id=pj.company_id
+      WHERE pj.id=? AND pj.company_id='company-printing' AND pj.production_status='completed'
+        AND pj.sales_order_id=? AND so.status='completed' AND so.payment_status!='refunded'`)
+      .run(`print-audit-completed-${jobId}`, actor, jobId,
+        JSON.stringify({ status: 'completed', salesOrderId: job.sales_order_id, paymentStatus: order.payment_status }),
+        requestId, jobId, job.sales_order_id);
+    if (failAudit) db.exec('DROP TRIGGER deny_completion_audit');
+    db.exec('COMMIT');
+    const linked = db.prepare(`SELECT pj.sales_order_id,so.status,so.payment_status FROM print_jobs pj
+      JOIN sales_orders so ON so.id=pj.sales_order_id AND so.company_id=pj.company_id
+      WHERE pj.id=? AND pj.company_id='company-printing' AND pj.production_status='completed'`).get(jobId);
+    return linked?.sales_order_id === job.sales_order_id && linked.status === 'completed' && linked.payment_status !== 'refunded'
+      ? { ok: true, salesOrderId: linked.sales_order_id }
+      : { ok: false, status: 409 };
+  } catch {
+    try { db.exec('ROLLBACK'); } catch {}
+    try { db.exec('DROP TRIGGER IF EXISTS deny_completion_audit'); } catch {}
+    return { ok: false, status: 503 };
+  }
+}
+
 const created = approve('job-a');
 assert.deepEqual(created, { ok: true, salesOrderId: 'print-order-job-a' });
 assert.deepEqual({ ...db.prepare('SELECT status,payment_status,total_kobo,amount_paid_kobo FROM sales_orders WHERE id=?').get(created.salesOrderId) }, {
@@ -118,6 +175,49 @@ assert.equal(db.prepare('SELECT COUNT(*) AS count FROM audit_logs WHERE entity_i
 assert.deepEqual(approve('job-a'), created, 'retry returns the existing canonical link');
 assert.equal(db.prepare('SELECT COUNT(*) AS count FROM sales_orders WHERE notes=?').get('Printing job job-a').count, 1);
 assert.equal(approve('job-b').status, 404, 'foreign-company job is concealed');
+
+// A delivered Printing job completes its same-company canonical sale without changing payment truth.
+db.prepare(`UPDATE print_jobs SET production_status='delivered' WHERE id='job-a'`).run();
+assert.deepEqual(complete('job-a'), { ok: true, salesOrderId: 'print-order-job-a' });
+assert.deepEqual({ ...db.prepare('SELECT status,payment_status,total_kobo,amount_paid_kobo FROM sales_orders WHERE id=?').get('print-order-job-a') }, {
+  status: 'completed', payment_status: 'unpaid', total_kobo: 125000, amount_paid_kobo: 0,
+});
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM sales_orders WHERE company_id='company-printing'
+  AND status='completed' AND payment_status!='refunded' AND id=?`).get('print-order-job-a').count, 1,
+  'existing Finance autopost candidate query can now see the completed sale');
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM audit_logs WHERE entity_id='job-a'
+  AND action='completed_sales_order_eligible' AND request_id='request-complete'`).get().count, 1);
+assert.deepEqual(complete('job-a'), { ok: false, status: 409 }, 'completion replay is denied after the terminal transition');
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM print_job_status_events WHERE print_job_id='job-a' AND to_status='completed'`).get().count, 1);
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM audit_logs WHERE entity_id='job-a' AND action='completed_sales_order_eligible'`).get().count, 1);
+
+db.prepare(`INSERT INTO sales_orders(id,company_id,location_id,customer_id,order_no,channel,order_date,status,payment_status,currency,subtotal_kobo,discount_kobo,tax_kobo,total_kobo,amount_paid_kobo,notes,created_by)
+  VALUES('foreign-order','company-bakery',NULL,NULL,'BAK-1','other',date('now'),'approved','unpaid','NGN',1000,0,0,1000,0,NULL,'employee-b')`).run();
+db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,customer_id,job_no,title,quantity,quoted_kobo,production_status,sales_order_id,created_by)
+  VALUES('job-cross','company-printing','loc-a',NULL,'DP-X','Cross-company order',1,1000,'delivered','foreign-order','employee-a')`).run();
+assert.equal(complete('job-cross').status, 409, 'cross-company sales order cannot complete a Printing job');
+assert.equal(db.prepare(`SELECT status FROM sales_orders WHERE id='foreign-order'`).get().status, 'approved');
+
+db.prepare(`INSERT INTO sales_orders(id,company_id,location_id,customer_id,order_no,channel,order_date,status,payment_status,currency,subtotal_kobo,discount_kobo,tax_kobo,total_kobo,amount_paid_kobo,notes,created_by)
+  VALUES('refunded-order','company-printing',NULL,NULL,'PRINT-R','other',date('now'),'approved','refunded','NGN',1000,0,0,1000,0,NULL,'employee-a')`).run();
+db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,customer_id,job_no,title,quantity,quoted_kobo,production_status,sales_order_id,created_by)
+  VALUES('job-refunded','company-printing','loc-a',NULL,'DP-R','Refunded order',1,1000,'delivered','refunded-order','employee-a')`).run();
+assert.equal(complete('job-refunded').status, 409, 'refunded sales order cannot be made Finance eligible');
+assert.equal(db.prepare(`SELECT production_status FROM print_jobs WHERE id='job-refunded'`).get().production_status, 'delivered');
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,customer_id,job_no,title,quantity,quoted_kobo,production_status,sales_order_id,created_by)
+  VALUES('job-no-link','company-printing','loc-a',NULL,'DP-N','Missing link',1,1000,'delivered',NULL,'employee-a')`).run();
+assert.equal(complete('job-no-link').status, 409, 'unlinked Printing job cannot become a Finance posting candidate');
+
+db.prepare(`INSERT INTO sales_orders(id,company_id,location_id,customer_id,order_no,channel,order_date,status,payment_status,currency,subtotal_kobo,discount_kobo,tax_kobo,total_kobo,amount_paid_kobo,notes,created_by)
+  VALUES('failed-completion-order','company-printing',NULL,NULL,'PRINT-F','other',date('now'),'approved','unpaid','NGN',3000,0,0,3000,0,NULL,'employee-a')`).run();
+db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,customer_id,job_no,title,quantity,quoted_kobo,production_status,sales_order_id,created_by)
+  VALUES('job-failed-completion','company-printing','loc-a',NULL,'DP-F','Audit rollback',1,3000,'delivered','failed-completion-order','employee-a')`).run();
+assert.equal(complete('job-failed-completion', 'approver-a', 'request-failed-completion', true).status, 503);
+assert.equal(db.prepare(`SELECT production_status FROM print_jobs WHERE id='job-failed-completion'`).get().production_status, 'delivered');
+assert.equal(db.prepare(`SELECT status FROM sales_orders WHERE id='failed-completion-order'`).get().status, 'approved');
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM print_job_status_events WHERE print_job_id='job-failed-completion'`).get().count, 0);
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM audit_logs WHERE entity_id='job-failed-completion'`).get().count, 0);
 
 db.prepare(`INSERT INTO print_jobs VALUES ('job-fail','company-printing','loc-a',NULL,'DP-002','Flyer',1,4000,'quoted',NULL,'employee-a')`).run();
 assert.equal(approve('job-fail', 'approver-a', 'request-fail', true).status, 503);
@@ -131,4 +231,4 @@ assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM sales_orders WHERE id='pr
 db.prepare(`INSERT INTO print_jobs VALUES ('job-zero','company-printing','loc-a',NULL,'DP-004','Unquoted job',1,0,'quoted',NULL,'employee-a')`).run();
 assert.equal(approve('job-zero').status, 409);
 assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM sales_orders WHERE id='print-order-job-zero'`).get().count, 0);
-console.log('Printing customer-approval sales-order link: 27/27 assertions PASS (isolated SQLite transaction)');
+console.log('Printing customer approval, delivered completion, and Finance handoff: PASS (isolated SQLite transaction)');
