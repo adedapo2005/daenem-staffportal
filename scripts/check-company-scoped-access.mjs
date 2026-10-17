@@ -26,7 +26,7 @@ function check(name, condition) {
   if (!condition) process.exitCode = 1;
 }
 
-check('release version and approved shell identity are synchronized', /^7\.0\.0-alpha\.\d+$/.test(packageJson.version) && approvedPostLogin.includes('data-approved-postlogin="qa-review-v115"') && approvedPostLogin.includes('data-approved-version="115"'));
+check('release version and approved shell identity are synchronized', /^7\.0\.0-alpha\.\d+$/.test(packageJson.version) && approvedPostLogin.includes('data-approved-postlogin="qa-review-v115"') && approvedPostLogin.includes("version: '115'") && approvedPostLogin.includes('09bd2051d118242bce095be012a3a763cc1f8a33'));
 check('session returns company permission maps', auth.includes('companyPermissions,') && auth.includes('employee_permission_overrides_v2'));
 check('general roles apply across assigned businesses', auth.includes('const targets = row.companyId ? [String(row.companyId)] : companyIds'));
 check('explicit business overrides apply last', auth.indexOf('for (const row of scopedOverrides.results || [])') > auth.indexOf('for (const row of permissionRows.results || [])'));
