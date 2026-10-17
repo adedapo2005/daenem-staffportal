@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import { forwardRef, memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { ThemeId } from './theme-system';
 import approvedSignInMarkup from './approved-signin-v180/reference-v180.html?raw';
 
@@ -18,6 +18,10 @@ const cityZones: Record<string, string> = {
   beijing: 'Asia/Shanghai',
   ibadan: 'Africa/Lagos',
 };
+
+const ApprovedSignInSource = memo(forwardRef<HTMLDivElement>(function ApprovedSignInSource(_, ref) {
+  return <div ref={ref} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: approvedSignInMarkup }} />;
+}));
 
 function updateReferenceClocks(root: HTMLElement, now: Date) {
   root.querySelectorAll<HTMLElement>('[data-city-id]').forEach((card) => {
@@ -95,26 +99,16 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
   onInstall: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const authRootRef = useRef<Root | null>(null);
+  const [authMount, setAuthMount] = useState<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     const mount = root.querySelector<HTMLElement>('#staffportal-auth-mount');
     if (!mount) return;
-    const authRoot = createRoot(mount);
-    authRootRef.current = authRoot;
-    authRoot.render(authPanel);
+    setAuthMount(mount);
     updateReferenceClocks(root, new Date());
-    return () => {
-      authRootRef.current = null;
-      authRoot.unmount();
-    };
   }, []);
-
-  useEffect(() => {
-    authRootRef.current?.render(authPanel);
-  }, [authPanel]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -145,6 +139,7 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
 
   return <>
     <link rel="stylesheet" href="/approved-signin-v180.css" />
-    <div ref={rootRef} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: approvedSignInMarkup }} />
+    <ApprovedSignInSource ref={rootRef} />
+    {authMount ? createPortal(authPanel, authMount) : null}
   </>;
 }
