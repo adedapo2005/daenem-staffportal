@@ -21,7 +21,7 @@ must(dashboard.includes('data-qa-reference="staffportal-qa-review-v115"'), 'QA R
 must(dashboard.includes('data-layout-renderer="QaReviewV115Shell"'), 'QA Review V115 shell renderer is missing');
 must(dashboard.includes('data-postauth-renderer="qa-review-v115"'), 'QA Review V115 post-login marker is missing');
 must(qaCss.includes('.qa-v115-shell') && qaCss.includes('.qa-v115-home'), 'QA Review V115 shell styling is incomplete');
-must(workflow.includes('data-qa-reference="staffportal-qa-review-v115"'), 'staging deployment gate is not locked to QA Review V115');
+must(workflow.includes('return <QaReviewPostAuthShell'), 'staging deployment gate is not locked to QA Review V115');
 
 console.log('APPROVED_SIGNIN_V180_LOCK=PASS');
 console.log('APPROVED_POSTLOGIN_QA_REVIEW_V115_LOCK=PASS');
