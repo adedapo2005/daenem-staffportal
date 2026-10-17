@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { ThemeId } from './theme-system';
 import approvedSignInMarkup from './approved-signin-v180/reference-v180.html?raw';
 
+// Presentation is copied from the approved Sites V180 source; runtime code only wires live data and real authentication into it.
 const APPROVED_SIGNIN = Object.freeze({
   project: 'appgprj_6abbab3d45848191b6344993cc010bd7',
   version: 180,
