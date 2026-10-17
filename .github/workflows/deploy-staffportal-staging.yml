@@ -37,6 +37,14 @@ jobs:
       - name: Build StaffPortal
         run: npm run build
 
+      - name: Reject legacy client shell and auth bridge
+        shell: bash
+        run: |
+          if rg -n --hidden --glob 'src/**' --glob 'worker/**' --glob 'public/**' --glob 'index.html' --glob 'vite*.ts'             'v180-staging-auth-bridge|vinext.navigationRuntime|/_next/static/|location\.assign\(["'\''"]/workspace/' .; then
+            echo "::error::Legacy Next/Vinext or hard-redirect auth bridge detected in the deploy source."
+            exit 1
+          fi
+
       - name: Normalize Cloudflare account ID
         env:
           CLOUDFLARE_ACCOUNT_ID_RAW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -59,3 +67,8 @@ jobs:
 
       - name: Verify staging health
         run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
+
+      - name: Verify staging runtime and auth route contract
+        env:
+          STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
+        run: node scripts/test-staffportal-staging-runtime.mjs
