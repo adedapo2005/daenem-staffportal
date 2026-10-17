@@ -54,7 +54,7 @@ type SecurityEvent = {
 
 type CompanyChoice = { id: string | null; code: string; name: string; icon: React.ComponentType<{ size?: number }> };
 
-const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v8-offline-foundation-v1';
+const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v9-approved-postauth-runtime-v1';
 
 function registerFreshServiceWorker() {
   if (!('serviceWorker' in navigator)) return () => undefined;
