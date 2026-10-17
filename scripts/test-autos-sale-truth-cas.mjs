@@ -32,7 +32,7 @@ function fixture(status = 'ready') {
     CREATE TABLE customers(id TEXT PRIMARY KEY, company_id TEXT NOT NULL);
   `);
   sqlite.exec(activeSaleMigration);
-  sqlite.prepare(`INSERT INTO auto_vehicles(id,company_id,status,minimum_price_kobo,landed_cost_kobo) VALUES('vehicle-1','company-autos',?,NULL,90000)`).run(status);
+  sqlite.prepare(`INSERT INTO auto_vehicles(id,company_id,status,minimum_price_kobo,landed_cost_kobo) VALUES('vehicle-1','company-autos',?,NULL,90000),('vehicle-2','company-autos',?,NULL,110000)`).run(status, status);
   const statement = (sql, values = []) => ({ sql, values,
     bind(...args) { return statement(sql, args); },
     async first() { return sqlite.prepare(sql).get(...values); },
@@ -95,6 +95,16 @@ const race = await Promise.all([
 assert.deepEqual(race.map((response) => response.status).sort(), [201, 409]);
 assert.equal(competing.sqlite.prepare('SELECT COUNT(*) AS count FROM auto_sales').get().count, 1);
 assert.equal(competing.sqlite.prepare(`SELECT status FROM auto_vehicles WHERE id='vehicle-1'`).get().status, 'reserved');
+
+const separateVehicles = fixture();
+const independentSales = await Promise.all([
+  createSale(separateVehicles.env, { vehicleId: 'vehicle-1', salePriceNaira: 1200 }),
+  createSale(separateVehicles.env, { vehicleId: 'vehicle-2', salePriceNaira: 1500 }),
+]);
+assert.deepEqual(independentSales.map((response) => response.status), [201, 201],
+  'independent vehicle sales do not compete for a count-derived sale number');
+const uniqueSaleNumbers = separateVehicles.sqlite.prepare('SELECT COUNT(DISTINCT sale_no) AS count FROM auto_sales').get().count;
+assert.equal(uniqueSaleNumbers, 2, 'each concurrent sale receives a distinct immutable reference');
 
 const preReserved = fixture('reserved');
 const denied = await createSale(preReserved.env, { vehicleId: 'vehicle-1', salePriceNaira: 1200 });
