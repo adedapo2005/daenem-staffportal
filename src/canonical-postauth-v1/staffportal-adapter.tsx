@@ -114,10 +114,6 @@ const ZONE_TITLES: Partial<Record<CanonicalZoneId, string>> = {
 
 const ANALYTICAL_ZONES = new Set<CanonicalZoneId>(['executive-analytics', 'horizon-global', 'board-trend']);
 
-function canonicalLayoutId(value: LayoutId): StaffPortalLayoutId {
-  return value === 'master-detail' ? 'master-detail-workspace' : value;
-}
-
 function storedLayoutId(value: StaffPortalLayoutId): LayoutId {
   return value === 'master-detail-workspace' ? 'master-detail' : value;
 }
@@ -317,10 +313,10 @@ function LiveZoneCard({
   if (zone === 'knowledge') return permission(context, 'ai_guide.access', 'view', company.id)
     ? <EmptyCard zone={zone} title={title} detail="Authorized Knowledge Is Available Through AI Guide" icon={BookOpen} action={{ label: 'Open Knowledge', onClick: () => onNavigate('help') }} />
     : <EmptyCard zone={zone} title={title} detail="Permission Required" icon={BookOpen} />;
-  if (zone === 'quick-actions') return <article className="csp-card csp-actions" data-zone={zone}><header><b>{title}</b><button type="button" onClick={onOpenModuleHub}>Open Workspaces</button></header><div><button type="button" onClick={onOpenModuleHub}><Grid3X3 size={17} />Open Workspaces</button>{canUseLayoutStudio && <button type="button" onClick={onOpenLayoutStudio}><LayoutDashboard size={17} />Layout Studio</button>}<button type="button" onClick={refreshSummary}><Activity size={17} />Refresh Data</button><button type="button" onClick={() => onOpenModule('employee')}><Users size={17} />My Workspace</button></div></article>;
+  if (zone === 'quick-actions') return <article className="csp-card csp-actions" data-zone={zone}><header><b>{title}</b><button type="button" onClick={onOpenModuleHub}>Open Workspaces</button></header><div><button type="button" onClick={onOpenModuleHub}><Grid3X3 size={17} />Open Workspaces</button><button type="button" onClick={refreshSummary}><Activity size={17} />Refresh Data</button><button type="button" onClick={() => onOpenModule('employee')}><Users size={17} />My Workspace</button></div></article>;
   if (zone === 'status') return <article className="csp-card csp-status" data-zone={zone}><header><span><ShieldCheck size={17} /><b>{title}</b></span><em>{online ? 'Online' : 'Offline'}</em></header><div><i /><b>Staff Portal</b><span>{dataStatus === 'ready' ? 'Operational' : dataStatus === 'error' ? 'Unavailable' : 'Syncing'}</span></div><div><i /><b>Authorized Data</b><span>{online ? 'Connected' : 'Cached'}</span></div>{freshness && <FreshnessStatus sync={freshness} variant="card" />}</article>;
   if (zone === 'announcement') return <article className="csp-card csp-announcement" data-zone={zone}><Bell size={20} /><div><small>RELEASE · {title}</small><b>Version {release.version}</b><span>Release Details Remain Available Through Staff Portal Controls.</span></div><button type="button" aria-label="Open Release Notes" onClick={() => setReleaseOpen(true)}>›</button></article>;
-  if (zone === 'studio-toolbox') return <article className="csp-card csp-toolbox" data-zone={zone}><header><b>{title}</b><Workflow size={17} /></header><button type="button" onClick={onOpenModuleHub}><span>◫</span>Authorized Workspaces</button><button type="button" onClick={refreshSummary}><span>◆</span>Refresh Live Data</button>{canUseLayoutStudio && <button type="button" onClick={onOpenLayoutStudio}><span>◫</span>Layout Studio</button>}</article>;
+  if (zone === 'studio-toolbox') return <article className="csp-card csp-toolbox" data-zone={zone}><header><b>{title}</b><Workflow size={17} /></header><button type="button" onClick={onOpenModuleHub}><span>◫</span>Authorized Workspaces</button><button type="button" onClick={refreshSummary}><span>◆</span>Refresh Live Data</button></article>;
   if (zone === 'studio-canvas') return <EmptyCard zone={zone} title={title} detail="No Configured Canvas Data" icon={Workflow} />;
   return <EmptyCard zone={zone} title={title} detail={detail} icon={FileText} />;
 }
@@ -364,7 +360,7 @@ export function CanonicalStaffPortalAdapter(props: CanonicalStaffPortalAdapterPr
     layoutPreview = false, layoutPreviewCanApply = false, layoutPreviewApplying = false,
     layoutPreviewMessage = '', onApplyLayoutPreview, onExitLayoutPreview,
   } = props;
-  const canonicalId = canonicalLayoutId(layoutId);
+  const canonicalId: StaffPortalLayoutId = 'executive-command';
   const fixtureMode = isFixtureMode();
   const fixture = useMemo(
     () => {
