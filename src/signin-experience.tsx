@@ -23,11 +23,11 @@ const cityZones: Record<string, string> = {
 const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
   toronto: {
     day: '/assets/global/toronto-day-v115-card.jpg',
-    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/2ce3cabd9_generated_e465b750.png/v1/fill/w_295,h_137,al_c,q_90,usm_0.66_1.00_0.01,enc_webp,quality_auto/2ce3cabd9_generated_e465b750.webp',
+    night: '/assets/global/toronto-night-v180-card.webp',
   },
   london: {
     day: '/assets/global/london-day-v115-card.jpg',
-    night: 'https://media.base44.com/images/public/6ab5b6bf4880fcfae2d44d4a/a8837bb3b_generated_6282b990.png/v1/fill/w_295,h_137,al_c,q_90,usm_0.66_1.00_0.01,enc_webp,quality_auto/a8837bb3b_generated_6282b990.webp',
+    night: '/assets/global/london-night-v180-card.webp',
   },
   newyork: {
     dawn: '/assets/global/newyork-dawn-v179-card.webp',
@@ -37,7 +37,7 @@ const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night'
   },
   moscow: {
     day: '/assets/global/moscow-day-v115-card.jpg',
-    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/0a3d309c7_generated_1c7eee1a.png/v1/fill/w_295,h_137,al_c,q_90,usm_0.66_1.00_0.01,enc_webp,quality_auto/0a3d309c7_generated_1c7eee1a.webp',
+    night: '/assets/global/moscow-night-v180-card.webp',
   },
   tokyo: { day: '/assets/global/tokyo-day-v115-card.jpg' },
   beijing: {
@@ -46,7 +46,7 @@ const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night'
   },
   ibadan: {
     day: '/assets/staffportal-weather/ibadan-day-v125-card.webp',
-    night: 'https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site/assets/staffportal-weather/ibadan-night-v125.png',
+    night: '/assets/staffportal-weather/ibadan-night-v125.png',
   },
 };
 
