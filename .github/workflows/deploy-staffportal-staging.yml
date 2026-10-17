@@ -40,7 +40,7 @@ jobs:
       - name: Reject legacy client shell and auth bridge
         shell: bash
         run: |
-          if rg -n --hidden --glob 'src/**' --glob 'worker/**' --glob 'public/**' --glob 'index.html' --glob 'vite*.ts'             'v180-staging-auth-bridge|vinext.navigationRuntime|/_next/static/|location\.assign\(["'\''"]/workspace/' .; then
+          if grep -R -nE 'v180-staging-auth-bridge|vinext.navigationRuntime|/_next/static/|location[.]assign[(][^)]*/workspace/' src worker public index.html vite*.ts; then
             echo "::error::Legacy Next/Vinext or hard-redirect auth bridge detected in the deploy source."
             exit 1
           fi
