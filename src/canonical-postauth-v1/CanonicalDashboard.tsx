@@ -103,77 +103,6 @@ const heroSignals: Record<StaffPortalLayoutId, { signal: string[]; quote: string
 
 function TopBar({ fixture, layoutId, onLayoutChange, onWorkspace, onSearch, onAskAi, onQuickCreate, onNotifications, onProfile }: { fixture: CanonicalFixture; layoutId: StaffPortalLayoutId; onLayoutChange: (id: StaffPortalLayoutId) => void; onWorkspace?: () => void; onSearch?: (query?:string)=>void; onAskAi?:()=>void; onQuickCreate?:()=>void; onNotifications?:()=>void; onProfile?:()=>void }) {
   const [query,setQuery] = useState('');
-  const [layoutOpen, setLayoutOpen] = useState(false);
-  const [highlightedLayout, setHighlightedLayout] = useState<StaffPortalLayoutId>(layoutId);
-  const selectorRef = useRef<HTMLDivElement>(null);
-  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-
-  useEffect(() => { setHighlightedLayout(layoutId); }, [layoutId]);
-  useEffect(() => {
-    if (!layoutOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!selectorRef.current?.contains(event.target as Node)) setLayoutOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        setLayoutOpen(false);
-        selectorRef.current?.querySelector<HTMLButtonElement>('.csp-layout-trigger')?.focus();
-      }
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [layoutOpen]);
-
-  const openLayoutMenu = () => {
-    setHighlightedLayout(layoutId);
-    setLayoutOpen(true);
-  };
-  const focusLayoutOption = (id: StaffPortalLayoutId) => {
-    setHighlightedLayout(id);
-    requestAnimationFrame(() => optionRefs.current[CANONICAL_LAYOUT_IDS.indexOf(id)]?.focus());
-  };
-  const selectLayout = (id: StaffPortalLayoutId) => {
-    onLayoutChange(id);
-    setHighlightedLayout(id);
-    setLayoutOpen(false);
-    selectorRef.current?.querySelector<HTMLButtonElement>('.csp-layout-trigger')?.focus();
-  };
-  const onTriggerKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      if (!layoutOpen) openLayoutMenu();
-      else focusLayoutOption(highlightedLayout);
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      if (!layoutOpen) openLayoutMenu();
-      else focusLayoutOption(highlightedLayout);
-    }
-  };
-  const onOptionKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, id: StaffPortalLayoutId) => {
-    const index = CANONICAL_LAYOUT_IDS.indexOf(id);
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      const next = (index + (event.key === 'ArrowDown' ? 1 : -1) + CANONICAL_LAYOUT_IDS.length) % CANONICAL_LAYOUT_IDS.length;
-      focusLayoutOption(CANONICAL_LAYOUT_IDS[next]);
-    } else if (event.key === 'Home' || event.key === 'End') {
-      event.preventDefault();
-      focusLayoutOption(CANONICAL_LAYOUT_IDS[event.key === 'Home' ? 0 : CANONICAL_LAYOUT_IDS.length - 1]);
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      selectLayout(id);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      setLayoutOpen(false);
-      selectorRef.current?.querySelector<HTMLButtonElement>('.csp-layout-trigger')?.focus();
-    }
-  };
-  const customSelector = layoutId === 'operational-cockpit' || layoutId === 'insight-magazine' || layoutId === 'master-detail-workspace';
   return <header className="csp-topbar" data-canonical-topbar>
     <div className="csp-brand"><span className="csp-brand-mark"><img src="/brand-assets/logo-mark.svg" alt="" /></span><span><b>STAFFPORTAL.DAENEM.COM</b><small>People · Systems · A Stronger Tomorrow</small></span></div>
     <button type="button" className="csp-workspace" onClick={onWorkspace}><BriefcaseBusiness size={16}/><span><b>{fixture.workspace.name}</b><small>{fixture.workspace.subtitle}</small></span></button>
@@ -185,16 +114,6 @@ function TopBar({ fixture, layoutId, onLayoutChange, onWorkspace, onSearch, onAs
       <span className="csp-weather-chip"><WeatherIcon condition={fixture.weather.condition} size={18}/><span><b>{layoutId === 'executive-command' ? fixture.weather.city : (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C`)}</b><small>{layoutId === 'executive-command' ? (fixture.weather.tempC === null ? 'Not Available' : `${fixture.weather.tempC}°C · ${fixture.weather.condition}`) : fixture.weather.city}</small></span></span>
       <FreshnessStatus sync={fixture.sync} variant="topbar"/>
       <span className="csp-release"><b>{fixture.release.version}</b><small>{fixture.release.label}</small></span>
-      {customSelector ? <div className={`csp-layout-select${layoutOpen ? ' is-open' : ''}`} ref={selectorRef}>
-        <button type="button" className="csp-layout-trigger" aria-haspopup="listbox" aria-expanded={layoutOpen} aria-controls="canonical-layout-options" onClick={()=>layoutOpen ? setLayoutOpen(false) : openLayoutMenu()} onKeyDown={onTriggerKeyDown}>
-          <Grid3X3 size={16}/><span className="csp-layout-current">{CANONICAL_LAYOUT_SPECS[layoutId].name}</span><ChevronDown size={13} aria-hidden="true"/>
-        </button>
-        {layoutOpen && <div className="csp-layout-menu" id="canonical-layout-options" role="listbox" aria-label="Dashboard Layout">
-          {CANONICAL_LAYOUT_IDS.map((id, index) => <button type="button" role="option" aria-selected={id === layoutId} tabIndex={id === highlightedLayout ? 0 : -1} ref={(node)=>{ optionRefs.current[index] = node; }} className={`csp-layout-option${id === layoutId ? ' active' : ''}`} key={id} onClick={()=>selectLayout(id)} onFocus={()=>setHighlightedLayout(id)} onKeyDown={(event)=>onOptionKeyDown(event,id)}>
-            <Grid3X3 size={14}/><span>{CANONICAL_LAYOUT_SPECS[id].name}</span>{id === layoutId && <span className="csp-layout-check" aria-hidden="true">✓</span>}
-          </button>)}
-        </div>}
-      </div> : <label className="csp-layout-select"><Grid3X3 size={16}/><span className="csp-layout-current" aria-hidden="true">{CANONICAL_LAYOUT_SPECS[layoutId].name}</span><select aria-label="Dashboard Layout" value={layoutId} onChange={(e)=>onLayoutChange(e.target.value as StaffPortalLayoutId)}>{CANONICAL_LAYOUT_IDS.map((id)=><option key={id} value={id}>{CANONICAL_LAYOUT_SPECS[id].name}</option>)}</select></label>}
       <button type="button" className="csp-profile" onClick={onProfile} aria-label={`Open Profile For ${formatPersonName(fixture.viewer.displayName)}`}><span className="csp-avatar">{initialsFromPersonName(fixture.viewer.displayName)}</span><span className="csp-profile-copy"><b>{formatPersonName(fixture.viewer.displayName)}</b><small>{formatUiLabel(fixture.viewer.role)}</small></span></button>
     </div>
   </header>;
@@ -217,7 +136,7 @@ function SideNav({ layoutId, navigation, activeNavigationId }: { layoutId: Staff
   const scopedItems = identityItem ? [baseItems[0],{id:identityItem[0],label:identityItem[0],icon:identityItem[1]},...baseItems.slice(1)] : baseItems;
   const items: CanonicalNavigationItem[] = navigation !== undefined ? navigation : scopedItems;
   return <aside className="csp-sidebar" data-canonical-sidebar>
-    <div className="csp-sidebar-title"><Command size={18}/><span><b>{CANONICAL_LAYOUT_SPECS[layoutId].name}</b><small>Selectable Premium Layout</small></span></div>
+    <div className="csp-sidebar-title"><Command size={18}/><span><b>{CANONICAL_LAYOUT_SPECS[layoutId].name}</b><small>Staff Portal Workspace</small></span></div>
     <nav>{items.map((item,index)=>{const Icon=item.icon || LayoutDashboard;const active=activeNavigationId ? item.id===activeNavigationId : navigation===undefined && (workspace || identityItem) ? index===1 : index===0;return <button type="button" key={item.id} className={active?'active':''} onClick={item.onSelect} aria-label={formatUiLabel(item.label)} aria-current={active?'page':undefined}><Icon size={17}/><span>{formatUiLabel(item.label)}</span>{item.badge && <em>{item.badge}</em>}</button>})}</nav>
     <div className="csp-purpose"><span>{workspace ? 'Build' : 'One Team'}</span><b>{workspace ? <>Create<br/>Grow<br/>Together.</> : 'A Brighter Tomorrow'}</b><small>{workspace ? 'Good People · Great Possibilities' : 'Build · Empower · Grow'}</small><ChevronRight size={18}/></div>
     {workspace && <div className="csp-workspace-side-brand"><Command size={18}/><span><b>Daenem Global</b><small>A Brighter Tomorrow</small></span></div>}
@@ -277,10 +196,6 @@ function WorkspaceHero({ fixture, onLayoutChange }: { fixture: CanonicalFixture;
     <span className="csp-workspace-signal" aria-hidden="true"><b>Good People</b><em>Greater Possibilities</em></span>
     <div className="csp-workspace-time"><small>{fixture.dateTime.date}</small><strong>{fixture.dateTime.time}</strong><span>{fixture.dateTime.zone}</span></div>
     <div className="csp-workspace-orbs" aria-hidden="true"><Globe2/><Globe2/><span>A More Connected<br/>Brighter Tomorrow</span></div>
-    <section className="csp-workspace-layout-chooser" aria-label="Dashboard Layout">
-      <header><b>Layout</b></header>
-      <div>{choices.map(({id,label})=><button type="button" className={id==='workspace-canvas'?'active':''} key={id} onClick={()=>onLayoutChange?.(id)} aria-label={`Switch To ${label}`} aria-pressed={id==='workspace-canvas'}><Grid3X3 size={17}/><span>{label}</span></button>)}</div>
-    </section>
   </section>;
 }
 
