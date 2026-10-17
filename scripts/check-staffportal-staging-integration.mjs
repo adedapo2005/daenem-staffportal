@@ -13,7 +13,7 @@ const checks = [
   ['preflight is handled before authenticated routes', staging.includes("request.method==='OPTIONS'") && /return preflight\(request,\s*env\)/.test(staging)],
   ['CORS credentials are enabled', staging.includes("'access-control-allow-credentials','true'")],
   ['CORS origin is exact and not wildcarded', staging.includes('allowed.includes(origin)') && !staging.includes("'access-control-allow-origin','*'")],
-  ['retained Sites origin is explicit', wrangler.includes('https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site')],
+  ['approved Sign-In Sites origin is explicit and rejected Premium Lab is absent', wrangler.includes('https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site') && !wrangler.includes('premium-lab')],
   ['owner-only QA mirror origin is explicitly configured', wrangler.includes('https://daenem-staffportal-qa-review.daenem-group-9873.chatgpt.site')],
   ['configured origins are parsed as exact allowlist entries', staging.includes("env.STAFF_PORTAL_FRONTEND_ORIGIN||") && staging.includes(".split(',')") && staging.includes('.trim()') && staging.includes('allowed.includes(origin)')],
   ['unrelated origins cannot match configured allowlist entries', staging.includes(".split(',')") && staging.includes('.trim()') && staging.includes('allowed.includes(origin)')],
