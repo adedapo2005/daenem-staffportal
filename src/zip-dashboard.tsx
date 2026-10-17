@@ -857,7 +857,7 @@ function QaReviewPostAuthShell({
         </div>
         <aside className="qa-v115-hero-status" aria-label="Staff Portal live status">
           <span>LIVE STAFF PORTAL STATUS</span>
-          <strong>{liveLabel}</strong>
+          <strong data-top-slot="sync-status">{liveLabel}</strong>
           <small>{liveDetail}. Only authorised data is shown.</small>
         </aside>
       </section>
@@ -898,7 +898,7 @@ function QaReviewPostAuthShell({
       <div className="qa-v115-feature-content">{content}</div>
     </section>;
 
-  return <div className="qa-v115-shell" data-qa-reference="staffportal-qa-review-v115" data-layout-profile={layoutProfile.id} data-layout-renderer="QaReviewV115Shell" data-authenticated-experience="staffportal" data-postauth-renderer="qa-review-v115">
+  return <div className="qa-v115-shell" data-qa-reference="staffportal-qa-review-v115" data-layout-profile={layoutProfile.id} data-layout-renderer="QaReviewV115Shell" data-hybrid-navigation="true" data-authenticated-experience="staffportal" data-postauth-renderer="qa-review-v115">
     <aside className={'qa-v115-sidebar' + (sidebarOpen ? ' is-open' : '')}>
       <div className="qa-v115-brand"><span className="qa-v115-brand-mark">D</span><span className="qa-v115-brand-copy"><strong>DAENEM</strong><small>Staff Portal</small></span></div>
       <span className="qa-v115-sidebar-kicker">Workspace</span>
@@ -910,9 +910,9 @@ function QaReviewPostAuthShell({
       </div>
     </aside>
     <div className="qa-v115-main">
-      <header className="qa-v115-topbar">
+      <header className="qa-v115-topbar" data-hybrid-top-bar="true">
         <div className="qa-v115-topbar-leading"><button type="button" className="qa-v115-mobile-menu" onClick={() => setSidebarOpen(true)} aria-label="Open Navigation"><Menu size={18} /></button><span>DAENEM Staff Portal</span></div>
-        <button type="button" className="qa-v115-command" onClick={onOpenModuleHub} aria-label="Open Ask DAENEM search"><span className="qa-v115-command-orb"><Sparkles size={15} /></span><span className="qa-v115-command-copy"><strong>Ask DAENEM</strong><small>Search your work areas and records</small></span><kbd>⌘ / Ctrl K</kbd></button>
+        <button type="button" className="qa-v115-command" data-top-slot="global-search" onClick={onOpenModuleHub} aria-label="Open Ask DAENEM search"><span className="qa-v115-command-orb"><Sparkles size={15} /></span><span className="qa-v115-command-copy"><strong data-top-slot="ai-command">Ask DAENEM</strong><small>Search your work areas and records</small></span><kbd>⌘ / Ctrl K</kbd></button>
         <div className="qa-v115-top-actions">
           <button type="button" className="qa-v115-top-action qa-v115-chip qa-v115-hide-mobile" onClick={enableLocation} aria-label="Open Weather"><CloudSun size={15} />{weather.temperature !== undefined ? formatWeatherTemperature(weather.temperature, temperatureUnit) : 'Weather'}</button>
           <button type="button" className="qa-v115-top-action qa-v115-hide-mobile" onClick={() => setReleaseOpen(true)} aria-label="Open Release Details"><Radio size={16} />{release.version}</button>
