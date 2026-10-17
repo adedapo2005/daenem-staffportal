@@ -21,6 +21,8 @@ assert.match(source, /completed_sales_order_eligible/);
 assert.match(source, /paymentStatus:existing\?\.paymentStatus\|\|'unpaid'/);
 assert.match(source, /requestCorrelationId\(request\)/);
 assert.match(source, /if\(to==='customer_approved'&&from==='customer_approved'\)/);
+assert.match(source, /SELECT id,company_id AS companyId,status,payment_status AS paymentStatus,total_kobo AS totalKobo FROM sales_orders WHERE id=\? AND company_id=\?/);
+assert.match(source, /linked\.status!=='approved'\|\|linked\.paymentStatus==='refunded'\|\|Number\(linked\.totalKobo\)!==Number\(job\.quotedKobo\|\|0\)/);
 const financeAutopost = readFileSync(new URL('../worker/finance-sales-autopost.ts', import.meta.url), 'utf8');
 assert.match(financeAutopost, /so\.status='completed'/);
 
@@ -65,7 +67,12 @@ db.exec(`
 function approve(jobId, actor = 'approver-a', requestId = 'request-a', failAudit = false) {
   const job = db.prepare('SELECT * FROM print_jobs WHERE id=? AND company_id=?').get(jobId, 'company-printing');
   if (!job) return { ok: false, status: 404 };
-  if (job.production_status === 'customer_approved') return { ok: true, salesOrderId: job.sales_order_id };
+  if (job.production_status === 'customer_approved') {
+    const linked = job.sales_order_id && db.prepare(`SELECT id,company_id,status,payment_status,total_kobo FROM sales_orders WHERE id=? AND company_id=?`)
+      .get(job.sales_order_id, 'company-printing');
+    if (!linked || linked.status !== 'approved' || linked.payment_status === 'refunded' || Number(linked.total_kobo) !== Number(job.quoted_kobo || 0)) return { ok: false, status: 409 };
+    return { ok: true, salesOrderId: linked.id };
+  }
   if (job.production_status !== 'quoted' || !Number(job.quoted_kobo)) return { ok: false, status: 409 };
   const salesOrderId = `print-order-${jobId}`;
   const orderNo = `PRINT-${job.job_no}`;
@@ -176,6 +183,16 @@ assert.equal(db.prepare('SELECT COUNT(*) AS count FROM audit_logs WHERE entity_i
 assert.deepEqual(approve('job-a'), created, 'retry returns the existing canonical link');
 assert.equal(db.prepare('SELECT COUNT(*) AS count FROM sales_orders WHERE notes=?').get('Printing job job-a').count, 1);
 assert.equal(approve('job-b').status, 404, 'foreign-company job is concealed');
+
+db.prepare(`INSERT INTO sales_orders(id,company_id,location_id,customer_id,order_no,channel,order_date,status,payment_status,currency,subtotal_kobo,discount_kobo,tax_kobo,total_kobo,amount_paid_kobo,notes,created_by)
+  VALUES('foreign-replay-order','company-bakery',NULL,NULL,'BAK-9','other',date('now'),'approved','unpaid','NGN',125000,0,0,125000,0,NULL,'employee-b')`).run();
+db.prepare(`INSERT INTO print_jobs VALUES ('job-cross-link','company-printing','loc-a',NULL,'DP-X','Corrupt cross-company link',1,125000,'customer_approved','foreign-replay-order','employee-a')`).run();
+assert.equal(approve('job-cross-link').status, 409, 'approval replay does not disclose or accept a foreign-company linked order');
+
+db.prepare(`INSERT INTO sales_orders(id,company_id,location_id,customer_id,order_no,channel,order_date,status,payment_status,currency,subtotal_kobo,discount_kobo,tax_kobo,total_kobo,amount_paid_kobo,notes,created_by)
+  VALUES('wrong-total-order','company-printing',NULL,NULL,'PRINT-BAD','other',date('now'),'approved','unpaid','NGN',1,0,0,1,0,NULL,'employee-a')`).run();
+db.prepare(`INSERT INTO print_jobs VALUES ('job-wrong-total-link','company-printing','loc-a',NULL,'DP-W','Mismatched linked order',1,125000,'customer_approved','wrong-total-order','employee-a')`).run();
+assert.equal(approve('job-wrong-total-link').status, 409, 'approval replay rejects an order whose amount no longer matches the job quote');
 
 // A delivered Printing job completes its same-company canonical sale without changing payment truth.
 db.prepare(`UPDATE print_jobs SET production_status='delivered' WHERE id='job-a'`).run();
