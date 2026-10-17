@@ -557,7 +557,6 @@ function ExecutiveFooter({ fixture, onAction, onLayoutChange }: { fixture: Canon
   return <article className="csp-executive-footer" data-zone="announcement">
     <button type="button" className="csp-executive-announcement" onClick={()=>onAction?.('announcement','open')}><Bell size={18}/><span><small>NEW · LATEST ANNOUNCEMENTS</small><b>Latest Update From {fixture.workspace.name}</b><em>{fixture.dateTime.date} · {fixture.dateTime.zone}</em></span><ChevronRight size={16}/></button>
     <section className="csp-executive-layout-identity"><Command size={22}/><span><b>Executive Command</b><small>Flagship Owner Command Surface</small></span></section>
-    <section className="csp-executive-layout-chooser"><header><Grid3X3 size={15}/><b>Dashboard Layout</b></header><div>{choices.map((id)=><button type="button" className={id==='executive-command'?'active':''} key={id} onClick={()=>onLayoutChange?.(id)} aria-label={'Switch To ' + CANONICAL_LAYOUT_SPECS[id].name}><i aria-hidden="true"/><span>{CANONICAL_LAYOUT_SPECS[id].name}</span></button>)}</div></section>
   </article>;
 }
 
