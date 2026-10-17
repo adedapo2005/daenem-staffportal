@@ -179,7 +179,9 @@ function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const availableModules = useMemo(() => moduleDefinitions.filter((module) => isModuleVisible(context, module, company.id, company.code)), [company.code, company.id, context]);
+  const availableModules = useMemo(() => moduleDefinitions
+    .filter((module) => module.id !== 'layout-studio')
+    .filter((module) => isModuleVisible(context, module, company.id, company.code)), [company.code, company.id, context]);
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const viewResults = visibleNav.map((item) => ({ kind: 'view' as const, id: item.id, label: item.label, detail: item.description }));
@@ -845,8 +847,9 @@ export function ZipDashboard({
 
   const scopedSummary = summary;
 
-  if (activeView === 'overview') {
-    return <CanonicalStaffPortalAdapter
+  // One canonical authenticated shell is used for every StaffPortal workspace view.
+  // The former post-auth fallback is intentionally unreachable and cannot reappear on navigation.
+  return <CanonicalStaffPortalAdapter
       context={context}
       view={activeView}
       company={company}
@@ -884,7 +887,6 @@ export function ZipDashboard({
       onApplyLayoutPreview={onApplyLayoutPreview}
       onExitLayoutPreview={onExitLayoutPreview}
     />;
-  }
 
   return <main className={`dashboard-page dashboard-${dashboardLayout} dashboard-view-${activeView} postauth-layout postauth-layout-${layoutId} postauth-density-${density} postauth-motion-${motion}`} style={experienceStyle} data-authenticated-experience="staffportal" data-reference-status="PENDING_EXACT_STAFFPORTAL_REFERENCE_PNG" data-hybrid-navigation="true" data-layout-profile={layoutId} data-layout-contract-id={layoutProfile.id === 'master-detail' ? 'master-detail-workspace' : layoutProfile.id} data-layout-renderer={layoutProfile.structure.rendererId} data-layout-navigation-adapter={layoutProfile.structure.navigationAdapterId} data-layout-navigation-geometry={layoutProfile.structure.navigationGeometry} data-layout-content-mode={layoutProfile.structure.contentMode} data-layout-inspector-mode={layoutProfile.structure.inspectorMode} data-layout-mobile-transform={layoutProfile.structure.mobileTransform} data-layout-motion-personality={layoutProfile.structure.motionPersonality} data-layout-density={density} data-layout-motion={motion} data-layout-preview={layoutPreview ? 'true' : 'false'} data-active-erp={activeErpId}>
     <PostAuthNavigation
