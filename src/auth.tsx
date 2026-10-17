@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, Check, CheckCircle2, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck,
+  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound,
 } from 'lucide-react';
 import {
   readThemeId, type ThemeId,
 } from './theme-system';
-import { SignInExperience } from './signin-experience';
+import { Brand, SignInExperience } from './signin-experience';
 import { mountSignInLegacyFonts } from './signin-font-loader';
 import { clearOfflineActiveEmployee, readCachedAuthContext, setOfflineActiveEmployee } from './offline-platform';
 import {
@@ -110,10 +110,21 @@ export function clearPortalAuthCache() {
 }
 
 function WhatsAppMark({ size = 20 }: { size?: number }) {
-  return <svg viewBox="0 0 32 32" width={size} height={size} fill="none" aria-hidden="true" focusable="false">
-    <path d="M16 3.2c-7 0-12.7 5.6-12.7 12.6 0 2.2.6 4.4 1.7 6.2l-1.8 6.8 7-1.8c1.8 1 3.8 1.5 5.8 1.5 7 0 12.7-5.6 12.7-12.6S23 3.2 16 3.2Z" fill="#25D366" />
-    <path d="M22.2 18.6c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.8.2-.2.3-.9 1-1.1 1.2-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-1-1.6-2.1-1.8-2.4-.2-.3 0-.5.1-.7.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2.1-.4 0-.6-.1-.2-.8-1.8-1-2.5-.2-.6-.5-.5-.8-.5h-.7c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7 0 1.6 1.2 3.2 1.3 3.4.2.2 2.3 3.5 5.6 4.8.8.3 1.4.5 1.9.6.8.3 1.6.2 2.2.1.7-.1 1.9-.8 2.1-1.6.3-.8.3-1.5.2-1.6-.1-.1-.3-.2-.6-.4Z" fill="white" />
+  return <svg viewBox="0 0 24 24" width={size} height={size} className="sp-provider-mark sp-provider-mark-whatsapp" aria-hidden="true" focusable="false">
+    <path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.5 4.2 1.6 6L.2 24l6.3-1.7a11.8 11.8 0 0 0 5.6 1.4h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.4Z" fill="#25D366" />
+    <path d="M17.4 14.4c-.3-.2-1.6-.8-1.8-.9-.2-.1-.4-.1-.6.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-1.6-.8-2.6-1.5-3.6-3.3-.3-.5.3-.5.8-1.6.1-.2.1-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4 0 1.4 1 2.8 1.1 3 .1.2 2 3.1 4.9 4.3 1.8.8 2.2.9 3 .8.8-.1 1.5-.1 2.1-.1.6-.2 1.6-.7 1.8-1.3.2-.6.2-1.2.1-1.3-.1-.1-.3-.2-.6-.3Z" fill="#fff" />
   </svg>;
+}
+
+function MicrosoftMark() {
+  return <svg viewBox="0 0 24 24" className="sp-provider-mark sp-provider-mark-microsoft" aria-hidden="true">
+    <path d="M2 3h9v9H2z" fill="#F25022" /><path d="M13 3h9v9h-9z" fill="#7FBA00" />
+    <path d="M2 14h9v9H2z" fill="#00A4EF" /><path d="M13 14h9v9h-9z" fill="#FFB900" />
+  </svg>;
+}
+
+function GoogleMark() {
+  return <svg viewBox="0 0 24 24" className="sp-provider-mark" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>;
 }
 
 export function isNetworkTransportFailure(error: unknown) {
@@ -846,7 +857,32 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
               : authLabels.forgotPasswordDescription,
         };
 
-  const authPanel = (
+  const approvedSignInPanel = (
+    <div ref={(node) => { panelRef.current = node; }} className="sp-auth-runtime" data-approved-auth-placement="sites-v180">
+      <div className="sp-auth-topline"><Brand compact className="sp-auth-logo-v101" /><span className="sp-secure-chip"><ShieldCheck size={14} /> Private Staff Access</span></div>
+      <div className="sp-auth-copy"><p className="sp-eyebrow">DAENEM Staff Portal</p><h2 id="sp-auth-heading">Welcome Back</h2><p>Sign in to continue to your assigned workspace.</p></div>
+      <div className="sp-auth-tabs" role="tablist" aria-label="Staff access mode"><button type="button" className="is-active" role="tab" aria-selected="true"><UserRound size={16} /> Sign In</button><button type="button" role="tab" aria-selected="false" onClick={() => switchMode('signup')}><UserPlus size={16} /> Create Account</button></div>
+      {message && <div className={`sp-auth-notice ${message.type === 'error' ? 'is-error' : message.type === 'success' ? 'is-success' : ''}`} role="alert"><span>{message.text}</span>{message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}{message.action && <button type="button" className="sp-text-button" onClick={message.action.onClick}>{message.action.label}</button>}</div>}
+      <form className="sp-auth-form" autoComplete="off" onSubmit={signIn} noValidate>
+        <label><span className="sp-field-label">Email Or Username</span><span className={`sp-input-shell sp-credential-shell is-${identityStatus === 'invalid' && showIdentityStatus ? 'error' : identity ? 'success' : 'idle'}`} data-credential-state={identityStatus}><UserRound size={16} /><input type="text" autoComplete="username" value={identity} onChange={(event) => setIdentity(event.target.value)} onBlur={() => setIdentityTouched(true)} placeholder="Enter Your Email Or Username" aria-invalid={identityStatus === 'invalid' && showIdentityStatus} /></span>{showIdentityStatus && identityStatus !== 'empty' ? <span className={`sp-field-status sp-credential-status is-${identityStatus === 'invalid' ? 'error' : 'success'}`}>{identityStatus === 'invalid' ? authLabels.identifierInvalid : identityStatus === 'email' ? authLabels.identifierEmailValid : authLabels.identifierUsernameValid}</span> : null}</label>
+        <label><span className="sp-field-label">Password</span><span className="sp-input-shell sp-credential-shell"><KeyRound size={16} /><input type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter Your Password" /><button type="button" className="sp-show-password" aria-label={showPassword ? authLabels.hidePassword : authLabels.showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}<span className="sp-show-password-label">{showPassword ? 'Hide' : 'Show'}</span></button></span></label>
+        <div className="sp-auth-options"><label className="sp-remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Remember Me</span></label><button type="button" className="sp-forgot" onClick={() => switchMode('forgot')}><KeyRound size={14} /> Forgot Password?</button></div>
+        <button type="submit" className={`sp-primary-button ${busy ? 'is-loading' : 'is-idle'}`} disabled={busy}><span>{busy ? 'Connecting…' : 'Sign In'}</span><ArrowRight size={16} /></button>
+      </form>
+      {whatsAppSignInChallenge && <div className="sp-provider-flow-panel is-verify" role="status"><div className="sp-provider-flow-head"><span className="sp-provider-flow-icon"><WhatsAppMark size={17} /></span><span><b>WhatsApp Verification</b><small>Code sent to {whatsAppSignInDestination}</small></span></div><label><span className="sp-field-label">Verification Code</span><span className="sp-input-shell"><KeyRound size={16} /><input value={whatsAppSignInCode} onChange={(event) => setWhatsAppSignInCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Enter 6-digit code" /></span></label><button type="button" className="sp-provider-flow-action" disabled={busy || whatsAppSignInCode.length !== 6} onClick={() => void verifyWhatsAppSignIn()}>Verify WhatsApp Code <ArrowRight size={14} /></button></div>}
+      <div className="sp-auth-divider"><span /><b>Or Continue With</b><span /></div>
+      <div className="sp-social-grid sp-auth-provider-list sp-auth-provider-signin" aria-label="Sign in with another provider">
+        <button type="button" className="sp-social-button" onClick={() => unavailableOAuth('Microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">Microsoft</span></button>
+        <button type="button" className="sp-social-button" onClick={() => unavailableOAuth('Google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">Google</span></button>
+        <button type="button" className="sp-social-button" onClick={() => void startWhatsAppSignIn()}><span className="sp-social-icon"><WhatsAppMark size={19} /></span><span className="sp-social-label">WhatsApp</span></button>
+        <p className="sp-auth-provider-status"><LockKeyhole size={12} /> Secure provider connections use the configured Cloudflare staging environment.</p>
+      </div>
+      <button type="button" className="sp-install-card sp-install-card-v101" onClick={() => void installApp()}><span className="sp-install-icon"><Download size={16} /></span><span className="sp-install-copy"><b>Install StaffPortal App</b><small>Fast Access From Your Home Screen</small></span><span className="sp-install-state">Shortcut</span></button>
+      <div className="sp-auth-policy"><p>By Continuing, You Agree To The DAENEM Staff Portal <a href="/terms-and-conditions.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a> And <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p><small>{secureServiceLabel}</small></div>
+    </div>
+  );
+
+  const legacyAuthPanel = (
     <section ref={panelRef} aria-label="Employee authentication" data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
       <div className="usp-panel-heading">
         <div>
@@ -1002,6 +1038,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     </section>
   );
 
-  return <SignInExperience authPanel={authPanel} themeId={themeId} onInstall={() => void installApp()} />;
+  const authPanel = mode === 'signin' ? approvedSignInPanel : legacyAuthPanel;
+  return <SignInExperience authPanel={authPanel} authMode={mode} themeId={themeId} onInstall={() => void installApp()} />;
 }
 
