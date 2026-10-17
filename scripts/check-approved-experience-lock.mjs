@@ -56,6 +56,9 @@ rejectText(postLogin, 'eo-truth-strip', 'Hand-recreated banking truth strip rema
 
 requireSha256('../src/approved-signin-v180/reference-v180.html', '00984e096a08ffd936780f6cde928912db0ff30678922962d85574dd526395d7');
 requireSha256('../public/approved-signin-v180.css', '45d1861fd9e885325f98275e502e0c343ac58788f9eed5b8093bf254c0ecf92d');
+requireSha256('../public/assets/global/newyork-dawn-v179-card.webp', '82c592cf44b00e27a1da84f4777626d657840a02b0c6c4021d8726e2caac31fc');
+requireSha256('../public/assets/global/newyork-dusk-v179-card.webp', '9d5b19c718c1cbe13d3311a62dd6708d35389cb0b16264c406055dc1fe59cdd7');
+requireSha256('../public/assets/global/beijing-night-v109.jpg', 'f0b39460ae2ae69c429c56a9468c779006cf2743425eaa24420b03248286e3b2');
 requireSha256('../src/approved-signin-v180/staff-portal.css', '4e2219dbf73b44951dba44413db1e79faadb5da1b999d8f16fd8dd7ec4d4e4a7');
 requireSha256('../src/approved-signin-v180/staff-portal-v3.css', '193c4c2dc78e579b88f8c7b18a335a7dd67e32fe31352b35db0268c9a394a455');
 for (const [file, hash] of Object.entries({

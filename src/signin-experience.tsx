@@ -19,6 +19,99 @@ const cityZones: Record<string, string> = {
   ibadan: 'Africa/Lagos',
 };
 
+const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
+  toronto: {
+    day: '/assets/global/toronto-day-v115-card.jpg',
+    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/2ce3cabd9_generated_e465b750.png',
+  },
+  london: { day: '/assets/global/london-day-v115-card.jpg' },
+  newyork: {
+    dawn: '/assets/global/newyork-dawn-v179-card.webp',
+    day: '/assets/global/newyork-day-v179-card.webp',
+    dusk: '/assets/global/newyork-dusk-v179-card.webp',
+    night: '/assets/global/newyork-night-v179-card.webp',
+  },
+  moscow: {
+    day: '/assets/global/moscow-day-v115-card.jpg',
+    night: 'https://media.base44.com/images/public/6ab5ccef159888436a51d726/0a3d309c7_generated_1c7eee1a.png',
+  },
+  tokyo: { day: '/assets/global/tokyo-day-v115-card.jpg' },
+  beijing: {
+    day: '/assets/global/beijing-day-v115-card.jpg',
+    night: '/assets/global/beijing-night-v109.jpg',
+  },
+};
+
+function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
+  const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', hourCycle: 'h23' }).format(now));
+  if (hour >= 5 && hour < 7) return 'dawn';
+  if (hour >= 7 && hour < 17) return 'day';
+  if (hour >= 17 && hour < 19) return 'dusk';
+  return 'night';
+}
+
+function resolvedMedia(cityId: string, phase: 'dawn' | 'day' | 'dusk' | 'night') {
+  const media = cityMedia[cityId] || {};
+  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : [phase] as const;
+  const mediaPhase = order.find((item) => media[item]);
+  return mediaPhase ? { src: media[mediaPhase] || '', mediaPhase } : { src: '', mediaPhase: 'none' };
+}
+
+function settleReferenceMotion(root: HTMLElement) {
+  const hero = root.querySelector<HTMLElement>('.sp-hero-content');
+  if (!hero) return;
+  [hero, ...hero.querySelectorAll<HTMLElement>('[style*="opacity:0"]')].forEach((element) => {
+    element.style.opacity = '1';
+    if (element.style.transform) element.style.transform = 'none';
+    if (element.style.clipPath) element.style.clipPath = 'inset(0 0 0 0)';
+  });
+}
+
+function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: Date) {
+  if (cityId === 'ibadan') return;
+  const phase = phaseAt(now, zone);
+  const localNight = phase === 'night' || phase === 'dusk';
+  const media = resolvedMedia(cityId, phase);
+  const phaseNode = card.querySelector<HTMLElement>('.gw-city-phase');
+  const phaseText = phaseNode ? [...phaseNode.childNodes].find((node) => node.nodeType === Node.TEXT_NODE) : undefined;
+  if (phaseText) phaseText.textContent = ` ${phase.toUpperCase()}`;
+
+  card.dataset.resolvedPhase = phase;
+  card.dataset.mediaPhase = media.mediaPhase;
+  card.dataset.localMaterial = localNight ? 'night' : 'day';
+  card.className = card.className
+    .replace(/gw-city-phase-(?:dawn|day|dusk|night)/g, `gw-city-phase-${phase}`)
+    .replace(/gw-city-(?:day|night)-(?:bright_glass|precision)/g, `gw-city-${localNight ? 'night-precision' : 'day-bright_glass'}`);
+  const atmosphere = card.querySelector<HTMLElement>('.gw-city-atmosphere');
+  if (atmosphere) atmosphere.className = atmosphere.className.replace(/gw-city-atmosphere-phase-(?:dawn|day|dusk|night)/g, `gw-city-atmosphere-phase-${phase}`);
+
+  const mediaContainer = card.firstElementChild;
+  let imageLayer = mediaContainer?.querySelector<HTMLElement>('.gw-city-image-layer') || null;
+  if (!media.src) {
+    imageLayer?.remove();
+    return;
+  }
+  if (!imageLayer && mediaContainer) {
+    imageLayer = document.createElement('div');
+    imageLayer.className = `absolute inset-0 gw-city-image-layer gw-city-image-phase-${phase} [&_img]:block`;
+    imageLayer.style.opacity = '1';
+    mediaContainer.insertBefore(imageLayer, mediaContainer.firstChild);
+  }
+  if (!imageLayer) return;
+  imageLayer.className = imageLayer.className.replace(/gw-city-image-phase-(?:dawn|day|dusk|night)/g, `gw-city-image-phase-${phase}`);
+  let image = imageLayer.querySelector<HTMLImageElement>('img');
+  if (!image) {
+    image = document.createElement('img');
+    image.className = 'block h-full w-full object-cover transition-transform duration-1000 group-hover:scale-[1.025]';
+    image.loading = 'eager';
+    image.decoding = 'async';
+    imageLayer.appendChild(image);
+  }
+  if (image.getAttribute('src') !== media.src) image.src = media.src;
+  const city = card.querySelector<HTMLElement>('.gw-city-name')?.textContent?.trim() || cityId;
+  image.alt = `${city} at ${phase} (${media.mediaPhase} media)`;
+}
+
 const ApprovedSignInSource = memo(forwardRef<HTMLDivElement>(function ApprovedSignInSource(_, ref) {
   return <div ref={ref} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: approvedSignInMarkup }} />;
 }));
@@ -27,6 +120,7 @@ function updateReferenceClocks(root: HTMLElement, now: Date) {
   root.querySelectorAll<HTMLElement>('[data-city-id]').forEach((card) => {
     const zone = cityZones[card.dataset.cityId || ''];
     if (!zone) return;
+    updateCityPhase(card, card.dataset.cityId || '', zone, now);
     const time = new Intl.DateTimeFormat('en-US', {
       timeZone: zone,
       hour: 'numeric',
@@ -107,6 +201,7 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
     const mount = root.querySelector<HTMLElement>('#staffportal-auth-mount');
     if (!mount) return;
     setAuthMount(mount);
+    settleReferenceMotion(root);
     updateReferenceClocks(root, new Date());
   }, []);
 
