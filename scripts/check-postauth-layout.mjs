@@ -43,7 +43,7 @@ must(main.includes('layoutPreviewPreference') && main.includes('effectiveLayoutP
 must(zip.includes('layoutPreviewCanApply') && zip.includes('onApplyLayoutPreview') && main.includes('applyLayoutPreview') && main.includes('/api/experience/layout/preference'), 'active preview must provide an explicit Apply to Me action');
 must(studio.includes('rollback') && studio.includes('History'), 'layout rollback/history is missing');
 must(shell.includes('layoutProfile') && shell.includes('data-layout-profile') && shell.includes('postauth-layout.css'), 'authenticated shell is not connected to layout engine');
-must((zip.match(/<PostAuthHomeBanner/g) || []).length === 1, 'Home must render exactly one primary hero');
+must((zip.match(/qa-v115-home-hero/g) || []).length === 1, 'QA Review V115 home must render exactly one primary hero');
 must(home.includes('postauth-composition-kpis') && home.includes('{intelligence}{owner}{pulse') && !home.includes('{intelligence}{owner}{kpis}{pulse'), 'Owner Executive Command must render one primary KPI strip');
 must(zip.includes('data-primary-kpi-grid'), 'primary KPI strip must have a stable structural marker');
 must(zip.includes('Your Profile') && zip.includes('Your Access') && zip.includes('isManagerial'), 'employee overview must avoid unauthorized aggregate access disclosure');
