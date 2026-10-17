@@ -56,14 +56,23 @@ jobs:
             echo "::error::Approved QA Review V115 is not the authenticated root."
             exit 1
           fi
-          if grep -nE 'premium-lab|PostLoginRemoved|ZipDashboard' src/approved-postlogin-v115.tsx; then
+          if [ -e src/approved-postlogin-v115.tsx ] || [ -e src/approved-postlogin-v115.css ]; then
+            echo "::error::Reduced post-login placeholder files are still present."
+            exit 1
+          fi
+          if grep -nE 'premium-lab|PostLoginRemoved|ZipDashboard' src/qa-review-v115-runtime.tsx; then
             echo "::error::Rejected post-login source is present in the approved runtime."
             exit 1
           fi
-          if ! grep -nF 'data-source-commit="09bd2051d118242bce095be012a3a763cc1f8a33"' src/approved-postlogin-v115.tsx; then
+          if ! grep -nF '09bd2051d118242bce095be012a3a763cc1f8a33' src/qa-review-v115-runtime.tsx; then
             echo "::error::Approved QA Review V115 source provenance is missing."
             exit 1
           fi
+          if [ "$(find src/qa-review-v115/app/experience -type f | wc -l | tr -d ' ')" != "129" ]; then
+            echo "::error::Complete approved QA Review V115 experience source is missing."
+            exit 1
+          fi
+          node scripts/check-approved-experience-lock.mjs
 
       - name: Normalize Cloudflare account ID
         env:
