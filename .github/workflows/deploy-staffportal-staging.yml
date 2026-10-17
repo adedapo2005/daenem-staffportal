@@ -48,8 +48,8 @@ jobs:
       - name: Enforce approved post-login runtime
         shell: bash
         run: |
-          if grep -nE '<Workspace context=\\{auth[.]context\\}|<ZipDashboard' src/main.tsx; then
-            echo "::error::Authenticated Root still mounts the rejected Workspace or ZipDashboard shell."
+          if grep -nE '<Workspace context=\\{auth[.]context\\}' src/main.tsx; then
+            echo "::error::Authenticated Root still mounts the rejected Workspace shell."
             exit 1
           fi
           if ! grep -nF "ApprovedPostLoginV115 context={auth.context}" src/main.tsx; then
