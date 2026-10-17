@@ -45,6 +45,14 @@ jobs:
             exit 1
           fi
 
+      - name: Reject obsolete post-auth presentation controls
+        shell: bash
+        run: |
+          if grep -R -nE 'Dashboard Layout|Layout Studio|csp-layout-select|csp-layout-menu|layout-chooser' src/canonical-postauth-v1/CanonicalDashboard.tsx src/canonical-postauth-v1/staffportal-adapter.tsx src/zip-dashboard.tsx; then
+            echo "::error::Obsolete post-auth layout controls detected in the StaffPortal runtime surface."
+            exit 1
+          fi
+
       - name: Normalize Cloudflare account ID
         env:
           CLOUDFLARE_ACCOUNT_ID_RAW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
