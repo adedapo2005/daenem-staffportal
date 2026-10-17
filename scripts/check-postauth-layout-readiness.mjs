@@ -70,7 +70,7 @@ must((renderer.match(/export function PostAuthLayoutRenderer/g) || []).length ==
 must(renderer.includes('data-layout-renderer') && renderer.includes('data-layout-content-mode') && renderer.includes('data-layout-mobile-transform'), 'rendered layouts must expose structural identity');
 must(ids.slice(1).every((id) => renderer.includes("profile.id === '" + id + "'")), 'all non-default layouts need explicit renderer compositions');
 must(renderer.includes('PostAuthContextualNavigation') && renderer.includes('data-contextual-page-navigation'), 'contextual page navigation slot is missing');
-must(dashboard.includes('PostAuthLayoutRenderer') && dashboard.includes('data-hybrid-navigation="true"') && dashboard.includes('data-qa-reference="staffportal-qa-review-v115"'), 'authenticated shell is not connected to the canonical layout renderer');
+must(dashboard.includes('PostAuthLayoutRenderer') && dashboard.includes('data-hybrid-navigation="true"') && dashboard.includes('data-reference-status="PENDING_EXACT_STAFFPORTAL_REFERENCE_PNG"'), 'authenticated shell is not connected to the canonical layout renderer');
 must(dashboard.includes('data-hybrid-top-bar="true"') && dashboard.includes('data-top-slot="global-search"') && dashboard.includes('data-top-slot="ai-command"') && dashboard.includes('data-top-slot="sync-status"'), 'hybrid top-bar slots are incomplete');
 must(navigation.includes('data-navigation-adapter') && ids.every((id) => navigation.includes(id === 'master-detail' ? 'master-detail-navigation' : id === 'focus-flow' ? 'contextual' : id)), 'role-aware side/rail navigation adapters are incomplete');
 
