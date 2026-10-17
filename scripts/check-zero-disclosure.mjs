@@ -13,7 +13,7 @@ const dashboardWorker = read('worker/index.ts');
 const workerEntry = read('worker/entry.ts');
 const aiGuide = read('worker/ai-guide.ts');
 const employeeSelfService = read('worker/employee-self-service.ts');
-const main = read('src/main.tsx');
+const approvedPostLogin = read('src/approved-postlogin-v115.tsx');
 const postAuth = read('src/post-auth-experience.tsx');
 const smartHelp = read('src/guidance-center.tsx');
 const dashboard = read('src/dashboard-capabilities.ts');
@@ -30,7 +30,8 @@ must(workerEntry.includes('routeSmartSearch') && workerEntry.includes("url.pathn
 must(aiGuide.includes('visibleFunctions') && aiGuide.includes('selectedCompany') && aiGuide.includes('AUTHORIZED FUNCTION CATALOG'), 'AI Guide must be permission and company scoped');
 must(employeeSelfService.includes('employee_id=?') && employeeSelfService.includes('routeEmployeeSelfService'), 'notifications and Self Service must remain employee scoped');
 
-must(main.includes('hasWorkforcePermission'), 'primary navigation must use effective permissions');
+must(approvedPostLogin.includes('hasWorkforcePermission'), 'approved primary navigation must use effective permissions');
+must(approvedPostLogin.includes('permittedNavigation(context)'), 'approved primary navigation must be filtered before rendering');
 must(postAuth.includes('canSeeDashboardField'), 'Home must use field-level dashboard authorization');
 must(smartHelp.includes('hasWorkforcePermission'), 'Smart Help must use effective permissions');
 must(dashboard.includes('canSeeDashboardField'), 'dashboard capability helper must be shared by renderers');
@@ -40,3 +41,4 @@ must(!worker.includes("return json({ permissions: '*'"), 'worker must not expose
 must(!worker.includes("return json({ data: '*'"), 'worker must not expose wildcard data');
 console.log('ZERO_DISCLOSURE_CONTRACT=PASS');
 console.log('ZERO_DISCLOSURE_SURFACES=module-route-search-api-home-smart-help');
+

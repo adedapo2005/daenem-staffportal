@@ -1,4 +1,4 @@
-const CACHE = 'daenem-workforce-shell-v12-approved-postlogin-v115';
+const CACHE = 'daenem-workforce-shell-v13-approved-sites-v180-qa-v115';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 function isCacheableShellAsset(request, url) {
@@ -76,3 +76,4 @@ self.addEventListener('sync', (event) => {
     Promise.all(clients.map((client) => client.postMessage({ type: 'daenem-offline-sync' })))
   ));
 });
+
