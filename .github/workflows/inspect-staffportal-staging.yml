@@ -45,3 +45,42 @@ jobs:
 
       - name: Verify staging health
         run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
+
+      - name: Probe login endpoint without credentials
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --output /tmp/login-response.json --write-out '%{http_code}' \
+            --request POST \
+            --header 'content-type: application/json' \
+            --data '{"identifier":"","password":""}' \
+            https://daenem-staffportal-api-staging.adedapo2005.workers.dev/api/auth/login)"
+          echo "LOGIN_CONTRACT_STATUS=$status"
+          tr '\n' ' ' < /tmp/login-response.json | cut -c 1-500
+          echo
+          case "$status" in
+            400|401|422|503) ;;
+            *) echo "::error::Unexpected login contract status"; exit 1 ;;
+          esac
+
+      - name: Probe auth CORS and session endpoints
+        run: |
+          set -euo pipefail
+          for origin in \
+            'https://daenem-staffportal-qa-review.daenem-group-9873.chatgpt.site' \
+            'https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site'
+          do
+            echo "CORS_ORIGIN=$origin"
+            curl --silent --show-error --include --output /tmp/cors-response.txt \
+              --request OPTIONS \
+              --header "Origin: $origin" \
+              --header 'Access-Control-Request-Method: POST' \
+              --header 'Access-Control-Request-Headers: content-type' \
+              https://daenem-staffportal-api-staging.adedapo2005.workers.dev/api/auth/login
+            grep -iE '^(HTTP/|access-control-allow-origin:|access-control-allow-credentials:|access-control-allow-methods:)' /tmp/cors-response.txt || true
+          done
+          session_status="$(curl --silent --show-error --output /tmp/session-response.json --write-out '%{http_code}' \
+            https://daenem-staffportal-api-staging.adedapo2005.workers.dev/api/auth/session)"
+          echo "SESSION_STATUS=$session_status"
+          tr '\n' ' ' < /tmp/session-response.json | cut -c 1-500
+          echo
+          test "$session_status" = "200"
