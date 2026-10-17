@@ -94,17 +94,19 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
   themeId: ThemeId;
   onInstall: () => void;
 }) {
-  const [root, setRoot] = useState<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [authMount, setAuthMount] = useState<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
+    const root = rootRef.current;
     if (!root) return;
     const mount = root.querySelector<HTMLElement>('#staffportal-auth-mount');
     setAuthMount(mount);
     updateReferenceClocks(root, new Date());
-  }, [root]);
+  }, []);
 
   useEffect(() => {
+    const root = rootRef.current;
     if (!root) return undefined;
     const tick = () => updateReferenceClocks(root, new Date());
     const timer = window.setInterval(tick, 1000);
@@ -117,7 +119,7 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
       window.clearInterval(timer);
       root.removeEventListener('click', onClick);
     };
-  }, [root, onInstall]);
+  }, [onInstall]);
 
   useEffect(() => {
     if (!authMount) return;
@@ -131,7 +133,7 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
 
   return <>
     <link rel="stylesheet" href="/approved-signin-v180.css" />
-    <div ref={setRoot} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: approvedSignInMarkup }} />
+    <div ref={rootRef} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: approvedSignInMarkup }} />
     {authMount ? createPortal(authPanel, authMount) : null}
   </>;
 }
