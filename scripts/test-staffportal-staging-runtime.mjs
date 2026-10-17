@@ -19,7 +19,7 @@ assert.equal(healthBody.service, 'daenem-staffportal-api-staging', 'health must 
 
 const root = await read(rootUrl);
 assert.equal(root.status, 200, 'root status ' + root.status);
-assert.match(root.headers.get('content-type') || '', /text\\/html/i, 'root must be HTML');
+assert.match(root.headers.get('content-type') || '', new RegExp('text/html', 'i'), 'root must be HTML');
 const html = await root.text();
 for (const forbidden of [
   '/v180-staging-auth-bridge.js',
@@ -29,7 +29,11 @@ for (const forbidden of [
 ]) {
   assert.ok(!html.includes(forbidden), 'staging served forbidden legacy marker: ' + forbidden);
 }
-assert.match(html, /<script[^>]+type="module"[^>]+src="\\/assets\\//i, 'root must serve the current Vite build');
+assert.match(
+  html,
+  new RegExp('<script[^>]+type="module"[^>]+src="/assets/', 'i'),
+  'root must serve the current Vite build',
+);
 
 const workspace = await read(workspaceUrl);
 assert.equal(workspace.status, 303, 'unauthenticated /workspace/ must return 303, got ' + workspace.status);
@@ -37,7 +41,7 @@ assert.equal(workspace.headers.get('location'), '/', 'unauthenticated /workspace
 
 const me = await read(meUrl, { headers: { accept: 'application/json' } });
 assert.equal(me.status, 401, 'unauthenticated /api/auth/me must return 401, got ' + me.status);
-assert.match(me.headers.get('content-type') || '', /application\\/json/i, '/api/auth/me must return JSON');
+assert.match(me.headers.get('content-type') || '', new RegExp('application/json', 'i'), '/api/auth/me must return JSON');
 
 const missingLogin = await read(loginUrl, {
   method: 'POST',
@@ -45,7 +49,7 @@ const missingLogin = await read(loginUrl, {
   body: '{}',
 });
 assert.equal(missingLogin.status, 400, 'empty login must return 400, got ' + missingLogin.status);
-assert.match(missingLogin.headers.get('content-type') || '', /application\\/json/i, 'login contract must return JSON');
+assert.match(missingLogin.headers.get('content-type') || '', new RegExp('application/json', 'i'), 'login contract must return JSON');
 
 console.log(JSON.stringify({
   ok: true,
