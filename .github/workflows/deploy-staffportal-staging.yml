@@ -52,6 +52,14 @@ jobs:
             echo "::error::Obsolete post-auth layout controls detected in the StaffPortal runtime surface."
             exit 1
           fi
+          if grep -nF "if (activeView === 'overview')" src/zip-dashboard.tsx; then
+            echo "::error::A legacy view-specific post-auth shell branch is still present."
+            exit 1
+          fi
+          if ! grep -nF "return <CanonicalStaffPortalAdapter" src/zip-dashboard.tsx; then
+            echo "::error::Canonical post-auth shell is not the sole runtime return."
+            exit 1
+          fi
 
       - name: Normalize Cloudflare account ID
         env:
