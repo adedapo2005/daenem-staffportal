@@ -26,6 +26,7 @@ import './canonical-postauth-v1/canonical-dashboard.css';
 import { DEFAULT_LAYOUT_ID, getLayoutProfile, normalizeLayoutPreference, readLocalLayoutPreference, writeLocalLayoutPreference, type LayoutPreference } from './layout-system';
 import './theme-studio-entry';
 import { ZipDashboard, type LiveDataStatus, type ZipDashboardSummary } from './zip-dashboard';
+import { ApprovedPostLoginV115 } from './approved-postlogin-v115';
 import { OfflinePlatformProvider } from './offline-sync';
 import { GenericReportBuilderLauncher } from './generic-report-builder';
 import { CANONICAL_LAYOUT_IDS, CANONICAL_VISUAL_FIXTURE, CanonicalDashboard, type StaffPortalLayoutId } from './canonical-postauth-v1';
@@ -54,7 +55,7 @@ type SecurityEvent = {
 
 type CompanyChoice = { id: string | null; code: string; name: string; icon: React.ComponentType<{ size?: number }> };
 
-const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v11-worker-auth-required';
+const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v12-approved-postlogin-v115';
 
 function registerFreshServiceWorker() {
   if (!('serviceWorker' in navigator)) return () => undefined;
@@ -586,7 +587,7 @@ function Root() {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
   }} />;
-  return <OfflinePlatformProvider context={auth.context}><Workspace context={auth.context} onLogout={auth.logout} /></OfflinePlatformProvider>;
+  return <OfflinePlatformProvider context={auth.context}><ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} /></OfflinePlatformProvider>;
 }
 
 function CanonicalBaseline() {

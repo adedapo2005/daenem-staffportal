@@ -1,4 +1,4 @@
-const CACHE = 'daenem-workforce-shell-v11-worker-auth-required';
+const CACHE = 'daenem-workforce-shell-v12-approved-postlogin-v115';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 function isCacheableShellAsset(request, url) {

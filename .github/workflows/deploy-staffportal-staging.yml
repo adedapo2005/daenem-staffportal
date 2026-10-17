@@ -45,23 +45,23 @@ jobs:
             exit 1
           fi
 
-      - name: Reject obsolete post-auth presentation controls
+      - name: Enforce approved post-login runtime
         shell: bash
         run: |
-          if grep -R -nE 'Dashboard Layout|Layout Studio|csp-layout-select|csp-layout-menu|layout-chooser' src/canonical-postauth-v1/CanonicalDashboard.tsx src/canonical-postauth-v1/staffportal-adapter.tsx src/zip-dashboard.tsx; then
-            echo "::error::Obsolete post-auth layout controls detected in the StaffPortal runtime surface."
+          if grep -nE '<Workspace context=\\{auth[.]context\\}|<ZipDashboard' src/main.tsx; then
+            echo "::error::Authenticated Root still mounts the rejected Workspace or ZipDashboard shell."
             exit 1
           fi
-          if grep -nF "if (activeView === 'overview')" src/zip-dashboard.tsx; then
-            echo "::error::A legacy view-specific post-auth shell branch is still present."
+          if ! grep -nF "ApprovedPostLoginV115 context={auth.context}" src/main.tsx; then
+            echo "::error::Approved QA Review V115 is not the authenticated root."
             exit 1
           fi
-          if grep -nE 'CanonicalStaffPortalAdapter|data-reference-status="PENDING_EXACT_STAFFPORTAL_REFERENCE_PNG"|return <main className=\\`dashboard-page' src/zip-dashboard.tsx; then
-            echo "::error::Rejected canonical/legacy dashboard shell detected in the StaffPortal runtime surface."
+          if grep -nE 'premium-lab|PostLoginRemoved|ZipDashboard' src/approved-postlogin-v115.tsx; then
+            echo "::error::Rejected post-login source is present in the approved runtime."
             exit 1
           fi
-          if ! grep -nF "return <QaReviewPostAuthShell" src/zip-dashboard.tsx; then
-            echo "::error::QA Review V115 post-auth shell is not the sole runtime return."
+          if ! grep -nF 'data-source-commit="09bd2051d118242bce095be012a3a763cc1f8a33"' src/approved-postlogin-v115.tsx; then
+            echo "::error::Approved QA Review V115 source provenance is missing."
             exit 1
           fi
 

@@ -42,6 +42,9 @@ const mainScriptUrl = new URL(moduleScriptMatch[1], rootUrl).toString();
 const mainScriptResponse = await read(mainScriptUrl);
 assert.equal(mainScriptResponse.status, 200, 'deployed main module status ' + mainScriptResponse.status);
 const mainScript = await mainScriptResponse.text();
+assert.ok(mainScript.includes('qa-review-v115'), 'deployed main bundle is missing the approved QA Review V115 post-login marker');
+assert.ok(!mainScript.includes('staffportal-qa-review-v115'), 'deployed main bundle still contains the rejected QA Review wrapper shell marker');
+assert.ok(!mainScript.includes('data-postauth-renderer'), 'deployed main bundle still contains the rejected post-auth shell renderer');
 const authModuleMatch = mainScript.match(/from["']\.\/(auth-[^"'\x60]+\.js)["']/);
 assert.ok(authModuleMatch?.[1], 'deployed-auth-module import is missing from the main bundle');
 const authModuleUrl = new URL(authModuleMatch[1], mainScriptUrl).toString();
@@ -91,5 +94,7 @@ console.log(JSON.stringify({
     'empty-login-contract',
     'deployed-auth-module',
     'worker-session-verification',
+    'approved-postlogin-v115-runtime',
+    'rejected-postlogin-shell-absent',
   ],
 }, null, 2));
