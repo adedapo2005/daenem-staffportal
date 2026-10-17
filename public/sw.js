@@ -1,4 +1,4 @@
-const CACHE = 'daenem-workforce-shell-v8-offline-foundation-v1';
+const CACHE = 'daenem-workforce-shell-v9-approved-postauth-runtime-v1';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 function isCacheableShellAsset(request, url) {
