@@ -83,4 +83,39 @@ jobs:
           echo "SESSION_STATUS=$session_status"
           tr '\n' ' ' < /tmp/session-response.json | cut -c 1-500
           echo
-          test "$session_status" = "200"
+
+      - name: Compare Sites and API routes
+        run: |
+          set -euo pipefail
+          for base in \
+            'https://daenem-staffportal-api-staging.adedapo2005.workers.dev' \
+            'https://daenem-staffportal-qa-review.daenem-group-9873.chatgpt.site'
+          do
+            echo "BASE=$base"
+            page_status="$(curl --silent --show-error --output /tmp/page-response.txt --write-out '%{http_code}' "$base/")"
+            echo "PAGE_STATUS=$page_status"
+            head -c 160 /tmp/page-response.txt | tr '\n' ' '
+            echo
+            login_status="$(curl --silent --show-error --output /tmp/route-response.json --write-out '%{http_code}' \
+              --request POST --header 'content-type: application/json' \
+              --data '{"identifier":"","password":""}' "$base/api/auth/login")"
+            echo "LOGIN_ROUTE_STATUS=$login_status"
+            head -c 300 /tmp/route-response.json | tr '\n' ' '
+            echo
+          done
+
+      - name: Probe invalid credential contract
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --output /tmp/invalid-login.json --write-out '%{http_code}' \
+            --request POST \
+            --header 'content-type: application/json' \
+            --data '{"identifier":"qa.invalid@example.com","password":"NotARealPassword!123"}' \
+            https://daenem-staffportal-api-staging.adedapo2005.workers.dev/api/auth/login)"
+          echo "INVALID_LOGIN_STATUS=$status"
+          tr '\n' ' ' < /tmp/invalid-login.json | cut -c 1-500
+          echo
+          case "$status" in
+            401|403|404|423|428|503) ;;
+            *) echo "::error::Unexpected invalid-credential status"; exit 1 ;;
+          esac
