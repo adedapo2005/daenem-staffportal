@@ -344,6 +344,7 @@ function navigationItems(
     onSelect: () => onNavigate(item.id),
   }));
   const modules = moduleDefinitions
+    .filter((module) => module.id !== 'layout-studio')
     .filter((module) => isModuleVisible(context, module, company.id, company.code))
     .filter((module) => !items.some((item) => item.label === module.label))
     .slice(0, 18)
