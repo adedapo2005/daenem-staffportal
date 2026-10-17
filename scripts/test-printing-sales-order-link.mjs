@@ -10,7 +10,8 @@ assert.match(source, /sales_order_id IS NULL/);
 assert.match(source, /production_status=\? AND \$\{linkGuard\}/);
 assert.match(source, /INSERT OR IGNORE INTO sales_orders/);
 assert.match(source, /INSERT OR IGNORE INTO sales_order_items/);
-assert.match(source, /INSERT OR IGNORE INTO audit_logs/);
+assert.equal((source.match(/INSERT INTO audit_logs\(/g) || []).length >= 2, true, 'required Printing audit writes must fail the transaction on ID collision');
+assert.doesNotMatch(source, /INSERT OR IGNORE INTO audit_logs/);
 assert.match(source, /'approved','unpaid','NGN'/);
 assert.match(source, /UPDATE sales_orders SET status='approved'.*production_status='customer_approved'/);
 assert.match(source, /if\(to==='completed'\)/);
@@ -94,7 +95,7 @@ function approve(jobId, actor = 'approver-a', requestId = 'request-a', failAudit
       FROM print_jobs WHERE id=? AND company_id='company-printing' AND production_status='customer_approved' AND sales_order_id=?`)
       .run(`print-event-customer-approved-${jobId}`, actor, jobId, salesOrderId);
     if (failAudit) db.exec(`CREATE TRIGGER deny_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'audit unavailable'); END`);
-    db.prepare(`INSERT OR IGNORE INTO audit_logs
+    db.prepare(`INSERT INTO audit_logs
       (id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source,request_id)
       SELECT ?,?,'company-printing','printing','customer_approved_order_link','print_job',?,
         '{"status":"quoted"}',?, 'web',? FROM print_jobs
@@ -140,7 +141,7 @@ function complete(jobId, actor = 'approver-a', requestId = 'request-complete', f
         AND production_status='completed' AND sales_order_id=?`)
       .run(`print-event-completed-${jobId}`, actor, jobId, job.sales_order_id);
     if (failAudit) db.exec(`CREATE TRIGGER deny_completion_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'audit unavailable'); END`);
-    db.prepare(`INSERT OR IGNORE INTO audit_logs
+    db.prepare(`INSERT INTO audit_logs
       (id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source,request_id)
       SELECT ?,?,'company-printing','printing','completed_sales_order_eligible','print_job',?,
         '{"status":"delivered"}',?,'web',? FROM print_jobs pj JOIN sales_orders so
@@ -225,6 +226,14 @@ assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM sales_orders WHERE id='pr
 assert.equal(db.prepare(`SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-fail'`).get().production_status, 'quoted');
 assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM print_job_status_events WHERE print_job_id='job-fail'`).get().count, 0);
 assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM audit_logs WHERE entity_id='job-fail'`).get().count, 0);
+
+db.prepare(`INSERT INTO print_jobs VALUES ('job-audit-collision','company-printing','loc-a',NULL,'DP-005','Audit collision',1,4500,'quoted',NULL,'employee-a')`).run();
+db.prepare(`INSERT INTO audit_logs(id,entity_id,action) VALUES('print-audit-customer-approved-job-audit-collision','unrelated','unrelated')`).run();
+assert.equal(approve('job-audit-collision').status, 503, 'audit ID collision must fail closed');
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM sales_orders WHERE id='print-order-job-audit-collision'`).get().count, 0);
+assert.deepEqual({ ...db.prepare(`SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-audit-collision'`).get() },
+  { production_status: 'quoted', sales_order_id: null }, 'audit collision rolls back the linked order and job transition');
+assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM print_job_status_events WHERE print_job_id='job-audit-collision'`).get().count, 0);
 db.prepare(`INSERT INTO print_jobs VALUES ('job-stale','company-printing','loc-a',NULL,'DP-003','Stale job',1,4000,'cancelled',NULL,'employee-a')`).run();
 assert.equal(approve('job-stale').status, 409);
 assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM sales_orders WHERE id='print-order-job-stale'`).get().count, 0);
