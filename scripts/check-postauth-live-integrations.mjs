@@ -21,6 +21,9 @@ if (!credentials.includes("google_weather_api_key:'GOOGLE_WEATHER_API_KEY'")) fa
 if (!stagingConfig.includes('"WEATHER_PROVIDER_ENABLED": "true"')) fail('staging weather provider flag is not enabled');
 
 if (!runtime.includes('LivePostLoginEnhancementsV116')) fail('runtime enhancement mount is missing');
+if (!runtime.includes('v116-release-manifest') || !runtime.includes('Completed work included')) fail('official Release Details dialog is missing the staging manifest');
+if (runtime.includes('StaffPortal staging deployment details')) fail('redundant floating staging details shell remains');
+if (!styles.includes('.v116-release-manifest')) fail('Release Details manifest styling is missing');
 if (!runtime.includes('09bd2051d118242bce095be012a3a763cc1f8a33')) fail('approved V115 source provenance changed');
 if (!worker.includes("url.pathname === '/api/context/postlogin'")) fail('authenticated post-login context route is missing');
 if (worker.indexOf("url.pathname === '/api/context/postlogin'") < worker.indexOf('getSessionContext(request, env)')) fail('post-login context route is not behind authentication');
