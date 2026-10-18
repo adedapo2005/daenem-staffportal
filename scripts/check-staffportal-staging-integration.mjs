@@ -29,6 +29,7 @@ const checks = [
   ['CORS origin is exact and not wildcarded', staging.includes('allowed.includes(origin)') && !staging.includes("'access-control-allow-origin','*'")],
   ['allowlist comes only from configuration', staging.includes("(env.STAFF_PORTAL_FRONTEND_ORIGIN||'')") && staging.includes(".split(',')") && staging.includes('.trim()') && staging.includes('.filter(Boolean)')],
   ['configured allowlist has no wildcard entries', configuredOrigins.length > 0 && configuredOrigins.every((origin) => /^https:\/\/[^*\s/]+$/.test(origin))],
+  ['configured allowlist has no duplicate origins', new Set(configuredOrigins).size === configuredOrigins.length],
   ['cross-origin session cookies are SameSite=None', staging.includes('SameSite=None')],
   ['admin routes require an authenticated session', runtime.includes("url.pathname.startsWith('/api/admin/')") && /const context = await getSessionContext\(request, env\);\s*if \(!context\) return secure\(json\(\{ error: 'Authentication required\.' \}, 401\)\);/.test(runtime)],
   ['communications routes use the enhanced session context', /if \(url\.pathname\.startsWith\('\/api\/communications\/'\)\) \{\s*const enhanced = await getEnhancedSessionContext\(request, env\);\s*if \(!enhanced\) return secure/.test(runtime)],
