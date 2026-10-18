@@ -13,8 +13,10 @@ const expectedTypes = {
   '.webp': /image\/webp/i,
 };
 
+const responsiveSceneryWidths = [640, 1280, 2560, 3840];
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const extension = (pathname) => Object.keys(expectedTypes).find((value) => pathname.endsWith(value));
+const isScriptAsset = (pathname) => /\.(?:js|mjs)$/.test(pathname);
 
 async function responseFor(url) {
   return fetch(url, { headers: { accept: '*/*', 'cache-control': 'no-cache' }, redirect: 'manual' });
@@ -34,7 +36,21 @@ async function verifyOnce() {
     for (const match of text.matchAll(assetPattern)) {
       const value = match[0];
       const url = new URL(value.startsWith('assets/') ? `/${value}` : value, parent);
-      if (url.origin === base.origin && !checked.has(url.pathname)) queue.push(url);
+      if (url.origin !== base.origin || checked.has(url.pathname)) continue;
+
+      // The approved V115 bundle keeps /assets/scenery/*.jpg strings as source/provenance
+      // keys. Runtime helpers replace each key with responsive WebP derivatives before
+      // assigning an image src/srcset. Verify the four files users actually request.
+      if (isScriptAsset(parent.pathname) && /^\/assets\/scenery\/[A-Za-z0-9_.-]+\.jpg$/.test(url.pathname)) {
+        for (const width of responsiveSceneryWidths) {
+          const derivative = new URL(url);
+          derivative.pathname = url.pathname.replace(/\.jpg$/, `-${width}.webp`);
+          if (!checked.has(derivative.pathname)) queue.push(derivative);
+        }
+        continue;
+      }
+
+      queue.push(url);
     }
   };
   addReferences(rootHtml, root);
