@@ -104,6 +104,7 @@ jobs:
               state,
               context: 'Staff Portal CI / verify',
               description: state === 'success' ? 'All StaffPortal verification gates passed' : 'One or more StaffPortal verification gates failed',
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
 
 # This workflow intentionally contains no deployment, remote migration,
