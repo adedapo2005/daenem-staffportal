@@ -321,9 +321,6 @@ function queueDraftPersistence() {
   const draft = cloneSignInConfig();
   signInDraftSaveQueue = signInDraftSaveQueue.then(() => saveSignInDraft(draft).then(() => undefined).catch(() => undefined));
 }
-function clearPersistedDraft() {
-  signInDraftSaveQueue = signInDraftSaveQueue.then(() => saveSignInDraft(null).then(() => undefined).catch(() => undefined));
-}
 function reviewFrameUrl() {
   return reviewSurface === 'signin-v180' ? '/staff-portal-signin?studioReview=signin-v180' : '/workspace/?studioReview=postlogin-v115';
 }
