@@ -1,5 +1,6 @@
 name: Staff Portal CI
 
+# Fix and security branches must receive the same non-production release gates.
 on:
   push:
     branches:
