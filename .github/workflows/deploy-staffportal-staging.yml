@@ -40,7 +40,7 @@ jobs:
           VITE_STAFFPORTAL_BUILD_REF: ${{ github.ref_name }}
           VITE_STAFFPORTAL_BUILD_RUN_ID: ${{ github.run_id }}
         run: |
-          printf 'VITE_STAFFPORTAL_DEPLOYED_AT=%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+          export VITE_STAFFPORTAL_DEPLOYED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           npm run build
 
       - name: Reject legacy client shell and auth bridge
