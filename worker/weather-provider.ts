@@ -28,7 +28,7 @@ export async function readWeatherConfiguration(env: WeatherProviderEnv): Promise
     if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
     const value = settings as Record<string, unknown>;
     return {
-      enabled: value.enabled === true,
+      enabled: env.WEATHER_PROVIDER_ENABLED === 'true' || value.enabled === true,
       defaultUnits: value.defaultUnits === 'METRIC' ? 'METRIC' : 'IMPERIAL',
       refreshIntervalSeconds: Number.isInteger(value.refreshIntervalSeconds) && Number(value.refreshIntervalSeconds) >= CACHE_TTL_SECONDS && Number(value.refreshIntervalSeconds) <= 86_400
         ? Number(value.refreshIntervalSeconds) : CACHE_TTL_SECONDS,
