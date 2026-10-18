@@ -1,5 +1,6 @@
 import appHandler from './app-entry';
 import { routePasswordAuth } from './password-auth';
+import { routeProviderAuth, type ProviderAuthEnv } from './provider-auth';
 import { getSessionContext } from './auth';
 import { getEnhancedSessionContext } from './auth-context-v2';
 import { routeDirectory } from './directory';
@@ -54,7 +55,7 @@ import { routeFinancialGateway } from './financial-gateway';
 import { routePrinting } from './printing';
 import { routePrintingProduction } from './printing-production';
 
-interface Env extends SocialOAuthEnv {
+interface Env extends SocialOAuthEnv, ProviderAuthEnv {
   ASSETS: Fetcher;
   TIMEZONE: string;
   SOCIAL_WEBHOOK_VERIFY_TOKEN?: string;
@@ -136,6 +137,9 @@ export default {
       if (response) return secure(response);
       return secure(json({ error: 'Business website route not found.' }, 404));
     }
+
+    const providerAuthResponse = await routeProviderAuth(request, env);
+    if (providerAuthResponse) return secure(providerAuthResponse);
 
     if (url.pathname === '/api/social/webhooks/whatsapp') {
       const response = await routeWhatsAppWebhook(request, env);
