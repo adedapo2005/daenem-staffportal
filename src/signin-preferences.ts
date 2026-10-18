@@ -794,6 +794,19 @@ export async function saveSignInPreferences(value: unknown): Promise<SignInExper
   return storeSignInPreferences(result.config);
 }
 
+export async function fetchAdminSignInDraft(): Promise<{ draft: SignInExperiencePreferences | null; canManage: boolean }> {
+  const result = await requestJson<{ draft?: unknown | null; canManage: boolean }>('/api/theme/signin/draft');
+  return { draft: result.draft ? normalizeSignInPreferences(result.draft) : null, canManage: Boolean(result.canManage) };
+}
+
+export async function saveSignInDraft(value: unknown | null): Promise<SignInExperiencePreferences | null> {
+  const result = await requestJson<{ draft?: unknown | null }>('/api/theme/signin/draft', {
+    method: 'POST',
+    body: JSON.stringify({ config: value == null ? null : normalizeSignInPreferences(value) }),
+  });
+  return result.draft ? normalizeSignInPreferences(result.draft) : null;
+}
+
 export function readWorldClockPreferences(): WorldClockPreferences {
   if (typeof window === 'undefined') return { style: DEFAULT_SIGNIN_PREFERENCES.clockStyle, visibleZones: DEFAULT_SIGNIN_PREFERENCES.clockZones };
   try {
