@@ -19,7 +19,6 @@ import { PostAuthHomeBanner, PostAuthLayoutRenderer } from './post-auth-experien
 import { PostAuthNavigation } from './postauth-navigation';
 import { OfflineSyncIndicator } from './offline-sync';
 import './qa-review-postauth.css';
-import './staffportal-premium-shell.css';
 
 export type ZipDashboardSummary = {
   workDate: string;
