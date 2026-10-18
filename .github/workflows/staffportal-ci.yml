@@ -5,10 +5,13 @@ on:
     branches:
       - main
       - "feature/**"
+      - "fix/**"
+      - "security/**"
       - "infra/**"
   pull_request:
     branches:
       - main
+      - automation/staffportal-autonomous-worker-01
   workflow_dispatch:
 
 permissions:
