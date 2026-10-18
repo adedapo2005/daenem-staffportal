@@ -66,15 +66,19 @@ jobs:
         run: node scripts/test-communications-remediation.mjs
 
       - name: TypeScript
+        if: always()
         run: npm run typecheck
 
       - name: Build
+        if: always()
         run: npm run build
 
       - name: Diff hygiene
+        if: always()
         run: git diff --check
 
       - name: Safety assertion
+        if: always()
         shell: bash
         run: |
           test "$(node -p "require('./delivery/current-state.json').farmsAccessAllowed")" = "false"
