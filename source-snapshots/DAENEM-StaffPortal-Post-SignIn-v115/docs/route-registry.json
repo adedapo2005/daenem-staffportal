@@ -1,0 +1,2565 @@
+[
+  {
+    "id": "home",
+    "title": "Overview",
+    "family": "Global",
+    "purpose": "Understand priorities across your authorized scope.",
+    "primary": "Review attention queue",
+    "archetype": "Executive Command",
+    "kind": "home",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Open",
+      "In Review",
+      "Resolved"
+    ],
+    "fields": [
+      "Priority",
+      "Company",
+      "Owner"
+    ]
+  },
+  {
+    "id": "cockpit",
+    "title": "Operational Cockpit",
+    "family": "Global",
+    "purpose": "Resolve operational exceptions and keep work moving.",
+    "primary": "Inspect exception",
+    "archetype": "Map & Exception Control Room",
+    "kind": "cockpit",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Open",
+      "Investigating",
+      "Resolved"
+    ],
+    "fields": [
+      "Severity",
+      "Source",
+      "Owner"
+    ]
+  },
+  {
+    "id": "workspace",
+    "title": "My Workspace",
+    "family": "Staff ERP",
+    "purpose": "Complete your own work and personal requests.",
+    "primary": "Resume next task",
+    "archetype": "Focus & Flow",
+    "kind": "work",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "To Do",
+      "In Progress",
+      "Done"
+    ],
+    "fields": [
+      "Due Date",
+      "Assigned To",
+      "Priority"
+    ]
+  },
+  {
+    "id": "profile",
+    "title": "My Profile",
+    "family": "Staff ERP",
+    "purpose": "Manage your identity, employment and self-service information.",
+    "primary": "Complete profile",
+    "archetype": "Identity & Self-Service",
+    "kind": "profile",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Action Required",
+      "Verified"
+    ],
+    "fields": [
+      "Work Email",
+      "Phone",
+      "Emergency Contact"
+    ]
+  },
+  {
+    "id": "people",
+    "title": "People & HR",
+    "family": "Staff ERP",
+    "purpose": "Find assigned employees and follow up on missing information.",
+    "primary": "Open employee record",
+    "archetype": "People Directory & Record Inspector",
+    "kind": "people",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Active",
+      "Onboarding",
+      "On Leave"
+    ],
+    "fields": [
+      "Employee ID",
+      "Job Title",
+      "Department",
+      "Manager",
+      "Start Date"
+    ]
+  },
+  {
+    "id": "hr-records",
+    "title": "HR Master Records",
+    "family": "Staff ERP",
+    "purpose": "Maintain authorized employment and statutory records.",
+    "primary": "Review HR record",
+    "archetype": "Controlled HR Record Ledger",
+    "kind": "records",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Missing Information",
+      "In Review",
+      "Verified"
+    ],
+    "fields": [
+      "Employment Type",
+      "Emergency Contact",
+      "Pension",
+      "PAYE",
+      "Payroll Bank"
+    ]
+  },
+  {
+    "id": "attendance",
+    "title": "Attendance & Location",
+    "family": "Staff ERP",
+    "purpose": "Record required attendance events and resolve incomplete days.",
+    "primary": "Clock in",
+    "archetype": "Shift Timeline & Location Validation",
+    "kind": "attendance",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Not Started",
+      "Incomplete",
+      "Present",
+      "Late"
+    ],
+    "fields": [
+      "Clock In",
+      "Clock Out",
+      "Location",
+      "Photo",
+      "Override Reason"
+    ]
+  },
+  {
+    "id": "leave",
+    "title": "Leave Management",
+    "family": "Staff ERP",
+    "purpose": "Request time away and check team coverage before decisions.",
+    "primary": "Request leave",
+    "archetype": "Absence Calendar & Request Rail",
+    "kind": "calendar",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Draft",
+      "Submitted",
+      "Approved",
+      "Returned"
+    ],
+    "fields": [
+      "Leave Type",
+      "Start Date",
+      "End Date",
+      "Reason"
+    ]
+  },
+  {
+    "id": "performance",
+    "title": "Performance Reviews",
+    "family": "Staff ERP",
+    "purpose": "Complete assigned reviews, commentary and acknowledgement.",
+    "primary": "Open review",
+    "archetype": "Review Cycle & Scorecard",
+    "kind": "reviews",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Not Started",
+      "Self Review",
+      "Manager Review",
+      "Acknowledged"
+    ],
+    "fields": [
+      "Cycle",
+      "Goals",
+      "Self Rating",
+      "Manager Commentary"
+    ]
+  },
+  {
+    "id": "hr-cases",
+    "title": "HR Cases",
+    "family": "Staff ERP",
+    "purpose": "Handle scoped confidential employment cases and evidence.",
+    "primary": "Open case",
+    "archetype": "Confidential Case Timeline",
+    "kind": "cases",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Open",
+      "Investigating",
+      "Action Required",
+      "Closed"
+    ],
+    "fields": [
+      "Case Type",
+      "Confidentiality",
+      "Assignee",
+      "Case Notes"
+    ]
+  },
+  {
+    "id": "lifecycle",
+    "title": "Onboarding & Offboarding",
+    "family": "Staff ERP",
+    "purpose": "Coordinate accountable employee lifecycle tasks.",
+    "primary": "Create checklist",
+    "archetype": "Lifecycle Checklist & Responsibility Map",
+    "kind": "lifecycle",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Identity",
+      "Assignment",
+      "Payroll",
+      "Acknowledgement",
+      "Complete"
+    ],
+    "fields": [
+      "Employee",
+      "Lifecycle Type",
+      "Task Owner",
+      "Due Date"
+    ]
+  },
+  {
+    "id": "forms",
+    "title": "Forms Center",
+    "family": "Staff ERP",
+    "purpose": "Complete assigned forms and keep evidence with each submission.",
+    "primary": "Start form",
+    "archetype": "Document Shelf & Form Workspace",
+    "kind": "forms",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Draft",
+      "Submitted",
+      "Returned",
+      "Approved"
+    ],
+    "fields": [
+      "Form Type",
+      "Purpose",
+      "Required Response"
+    ],
+    "required": "Required Response"
+  },
+  {
+    "id": "tasks",
+    "title": "Tasks & Approvals",
+    "family": "Staff ERP",
+    "purpose": "Move assigned work forward with clear ownership.",
+    "primary": "Create task",
+    "archetype": "Workstream Board",
+    "kind": "board",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "To Do",
+      "In Progress",
+      "Review",
+      "Done"
+    ],
+    "fields": [
+      "Priority",
+      "Assigned To",
+      "Due Date"
+    ]
+  },
+  {
+    "id": "payroll",
+    "title": "Payroll Control",
+    "family": "Staff ERP",
+    "purpose": "Validate readiness and prepare controlled payroll batches.",
+    "primary": "Prepare payroll",
+    "archetype": "Readiness Gates & Payroll Worksheet",
+    "kind": "payroll",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Prepare",
+      "Validate",
+      "Review",
+      "Approved",
+      "Draft Export"
+    ],
+    "fields": [
+      "Period",
+      "Gross Pay",
+      "Deductions",
+      "Net Pay",
+      "Bank Validation"
+    ]
+  },
+  {
+    "id": "payslips",
+    "title": "My Payslips",
+    "family": "Staff ERP",
+    "purpose": "Inspect your payroll statements and payment status.",
+    "primary": "View payslip",
+    "archetype": "Statement Reader & Period Archive",
+    "kind": "payslips",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Available",
+      "Payment Pending",
+      "Paid"
+    ],
+    "fields": [
+      "Period",
+      "Gross Pay",
+      "Deductions",
+      "Net Pay"
+    ]
+  },
+  {
+    "id": "payroll-batches",
+    "title": "Bank Payment Batches",
+    "family": "Staff ERP",
+    "purpose": "Inspect batch evidence and prepare a draft export.",
+    "primary": "Prepare draft batch",
+    "archetype": "Payment Batch Control Ledger",
+    "kind": "records",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Draft",
+      "Validation",
+      "Approval",
+      "Draft Export"
+    ],
+    "fields": [
+      "Period",
+      "Payment Count",
+      "Bank Validation",
+      "Approval"
+    ]
+  },
+  {
+    "id": "applications",
+    "title": "Job Applications",
+    "family": "Jobs ERP",
+    "purpose": "Review candidates and move authorized applications through stages.",
+    "primary": "Review candidate",
+    "archetype": "Candidate Pipeline",
+    "kind": "recruitment",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Applied",
+      "Screening",
+      "Interview",
+      "Offer",
+      "Hired"
+    ],
+    "fields": [
+      "Role",
+      "Source",
+      "Application Date",
+      "Reviewer"
+    ]
+  },
+  {
+    "id": "interviews",
+    "title": "Interview Pipeline",
+    "family": "Jobs ERP",
+    "purpose": "Coordinate interview schedules and scorecards.",
+    "primary": "Schedule interview",
+    "archetype": "Interview Calendar & Scorecards",
+    "kind": "calendar",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Scheduled",
+      "Interviewed",
+      "Scorecard Due",
+      "Reviewed"
+    ],
+    "fields": [
+      "Candidate",
+      "Interviewer",
+      "Interview Date",
+      "Scorecard"
+    ]
+  },
+  {
+    "id": "hiring",
+    "title": "Hiring Workflow",
+    "family": "Jobs ERP",
+    "purpose": "Prepare approved candidate handoff to onboarding.",
+    "primary": "Review hiring readiness",
+    "archetype": "Offer-to-Onboarding Handoff",
+    "kind": "lifecycle",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Approved",
+      "Offer Draft",
+      "Offer Accepted",
+      "Onboarding"
+    ],
+    "fields": [
+      "Candidate",
+      "Approver",
+      "Start Date",
+      "Onboarding Owner"
+    ]
+  },
+  {
+    "id": "printing",
+    "title": "Printing Production",
+    "family": "Printing & Technology",
+    "purpose": "Keep jobs, proofs, material usage and QC connected.",
+    "primary": "Create print job",
+    "archetype": "Production Lanes & Machine Load",
+    "kind": "printing",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "printing",
+    "stages": [
+      "Enquiry",
+      "Quote",
+      "Approval",
+      "Artwork",
+      "Proof",
+      "Proof Approval",
+      "Job Card",
+      "Material Issue",
+      "Printing",
+      "Finishing",
+      "QC",
+      "Delivery",
+      "Invoice",
+      "Payment",
+      "Complete"
+    ],
+    "fields": [
+      "Customer",
+      "Quantity",
+      "Paper Stock",
+      "Machine",
+      "Material Usage"
+    ],
+    "required": "Material Usage"
+  },
+  {
+    "id": "print-orders",
+    "title": "Customers & Print Orders",
+    "family": "Printing & Technology",
+    "purpose": "Track enquiries, quotes and customer commitments.",
+    "primary": "Create quotation",
+    "archetype": "Quotation Ledger & Customer Inspector",
+    "kind": "records",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "printing",
+    "stages": [
+      "Enquiry",
+      "Quoted",
+      "Approved",
+      "Ordered"
+    ],
+    "fields": [
+      "Customer",
+      "Branch",
+      "Quantity",
+      "Quote Value",
+      "Delivery Date"
+    ]
+  },
+  {
+    "id": "print-materials",
+    "title": "Print Materials & Costing",
+    "family": "Printing & Technology",
+    "purpose": "Reconcile issued stock, actual use and job profitability.",
+    "primary": "Record material use",
+    "archetype": "Consumption & Job Cost Worksheet",
+    "kind": "costing",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "printing",
+    "stages": [
+      "Issued",
+      "Usage Pending",
+      "Reconciled"
+    ],
+    "fields": [
+      "Job ID",
+      "Material",
+      "Issued Quantity",
+      "Actual Usage",
+      "Waste"
+    ]
+  },
+  {
+    "id": "bakery",
+    "title": "Bakery Production",
+    "family": "Bakery ERP",
+    "purpose": "Record ingredients and actual yield before completing batches.",
+    "primary": "Plan batch",
+    "archetype": "Batch Timeline & Yield Reconciliation",
+    "kind": "bakery",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "bakery",
+    "stages": [
+      "Planned",
+      "Ingredient Issue",
+      "Baking",
+      "Yield Required",
+      "QC",
+      "Complete"
+    ],
+    "fields": [
+      "Recipe",
+      "Expected Yield",
+      "Actual Yield",
+      "Waste",
+      "Oven"
+    ],
+    "required": "Actual Yield"
+  },
+  {
+    "id": "bakery-recipes",
+    "title": "Recipes & Ingredients",
+    "family": "Bakery ERP",
+    "purpose": "Maintain recipes and inspect ingredient availability.",
+    "primary": "Create recipe",
+    "archetype": "BOM & Ingredient Inspector",
+    "kind": "recipes",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "bakery",
+    "stages": [
+      "Draft",
+      "Reviewed",
+      "Active"
+    ],
+    "fields": [
+      "Recipe",
+      "Ingredient",
+      "Quantity",
+      "Unit",
+      "Expected Yield"
+    ]
+  },
+  {
+    "id": "bakery-sales",
+    "title": "Bakery Orders & Remittance",
+    "family": "Bakery ERP",
+    "purpose": "Reconcile wholesale orders, dispatch, returns and remittance.",
+    "primary": "Create wholesale order",
+    "archetype": "Dispatch-to-Remittance Reconciliation",
+    "kind": "costing",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "bakery",
+    "stages": [
+      "Pre-order",
+      "Dispatch",
+      "Delivered",
+      "Remittance Due",
+      "Reconciled"
+    ],
+    "fields": [
+      "Customer",
+      "Order Type",
+      "Quantity",
+      "Returns",
+      "Remittance"
+    ]
+  },
+  {
+    "id": "autos",
+    "title": "Vehicle Sales",
+    "family": "Autos ERP",
+    "purpose": "Manage inventory from acquisition to customer delivery.",
+    "primary": "Add vehicle",
+    "archetype": "Vehicle Inventory & Sales Inspector",
+    "kind": "autos",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "autos",
+    "stages": [
+      "Acquired",
+      "Documentation",
+      "Available",
+      "Reserved",
+      "Sold",
+      "Delivered"
+    ],
+    "fields": [
+      "VIN / Chassis",
+      "Model Year",
+      "Landed Cost",
+      "Asking Price",
+      "Documentation"
+    ]
+  },
+  {
+    "id": "auto-leads",
+    "title": "Auto Leads & Sales",
+    "family": "Autos ERP",
+    "purpose": "Track prospects, showings, deposits and outstanding balances.",
+    "primary": "Create lead",
+    "archetype": "Vehicle Sales Pipeline",
+    "kind": "board",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "autos",
+    "stages": [
+      "New Lead",
+      "Showing",
+      "Test Drive",
+      "Deposit",
+      "Sale",
+      "Delivery"
+    ],
+    "fields": [
+      "Prospect",
+      "Vehicle",
+      "Test Drive",
+      "Deposit",
+      "Outstanding Balance"
+    ]
+  },
+  {
+    "id": "auto-history",
+    "title": "Historical Workshop Records",
+    "family": "Autos ERP",
+    "purpose": "Read historical service records and their audit history.",
+    "primary": "Inspect historical record",
+    "archetype": "Read-only Service Archive",
+    "kind": "archive",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "autos",
+    "stages": [
+      "Archived"
+    ],
+    "fields": [
+      "Vehicle",
+      "Historical Work",
+      "Archived Date",
+      "Audit Reference"
+    ]
+  },
+  {
+    "id": "logistics",
+    "title": "Logistics Dispatch",
+    "family": "Logistics ERP",
+    "purpose": "Dispatch trips and inspect route progress and delivery proof.",
+    "primary": "Create booking",
+    "archetype": "Route Map & Dispatch Queue",
+    "kind": "logistics",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "logistics",
+    "stages": [
+      "Booked",
+      "Assigned",
+      "In Transit",
+      "POD Required",
+      "Delivered",
+      "Closed"
+    ],
+    "fields": [
+      "Driver",
+      "Vehicle",
+      "Origin",
+      "Destination",
+      "Proof of Delivery"
+    ],
+    "required": "Proof of Delivery"
+  },
+  {
+    "id": "fleet",
+    "title": "Fleet & Drivers",
+    "family": "Logistics ERP",
+    "purpose": "Review fleet readiness, fuel, maintenance and expiring documents.",
+    "primary": "Open vehicle",
+    "archetype": "Fleet Readiness Matrix",
+    "kind": "fleet",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "logistics",
+    "stages": [
+      "Available",
+      "Assigned",
+      "Maintenance",
+      "Document Due"
+    ],
+    "fields": [
+      "Driver",
+      "Vehicle",
+      "Fuel",
+      "Licence Expiry",
+      "Maintenance Due"
+    ]
+  },
+  {
+    "id": "trip-costs",
+    "title": "Trip Expenses & Collections",
+    "family": "Logistics ERP",
+    "purpose": "Review fuel, collections, trip expenses and profitability.",
+    "primary": "Capture trip expense",
+    "archetype": "Trip Profitability Worksheet",
+    "kind": "costing",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "logistics",
+    "stages": [
+      "Draft",
+      "Submitted",
+      "Reviewed",
+      "Reconciled"
+    ],
+    "fields": [
+      "Trip ID",
+      "Fuel",
+      "Other Expenses",
+      "Collections",
+      "Revenue"
+    ]
+  },
+  {
+    "id": "properties",
+    "title": "Homes & Properties",
+    "family": "Homes & Properties",
+    "purpose": "Inspect portfolio occupancy, income and maintenance priorities.",
+    "primary": "Open property",
+    "archetype": "Portfolio Mosaic & Occupancy Grid",
+    "kind": "properties",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "properties",
+    "stages": [
+      "Occupied",
+      "Available",
+      "Maintenance"
+    ],
+    "fields": [
+      "Property",
+      "Units",
+      "Occupancy",
+      "Rent Due",
+      "Service Charges"
+    ]
+  },
+  {
+    "id": "leases",
+    "title": "Leases & Rent Schedules",
+    "family": "Homes & Properties",
+    "purpose": "Track lease periods, payment schedules, arrears and receipts.",
+    "primary": "Create lease",
+    "archetype": "Lease Timeline & Receivables",
+    "kind": "calendar",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "properties",
+    "stages": [
+      "Draft",
+      "Active",
+      "Expiring",
+      "Renewed"
+    ],
+    "fields": [
+      "Tenant",
+      "Unit",
+      "Lease Start",
+      "Lease End",
+      "Rent"
+    ]
+  },
+  {
+    "id": "property-leads",
+    "title": "Property Sales & Leads",
+    "family": "Homes & Properties",
+    "purpose": "Coordinate listings, inspections, agents and commissions.",
+    "primary": "Create lead",
+    "archetype": "Listing-to-Inspection Pipeline",
+    "kind": "board",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "properties",
+    "stages": [
+      "Enquiry",
+      "Inspection",
+      "Negotiation",
+      "Contract",
+      "Completed"
+    ],
+    "fields": [
+      "Listing",
+      "Agent",
+      "Buyer",
+      "Inspection Date",
+      "Commission"
+    ]
+  },
+  {
+    "id": "finance",
+    "title": "Finance Workspace",
+    "family": "Finance & Operations",
+    "purpose": "Trace ledger movement and reconcile posting exceptions.",
+    "primary": "Create journal",
+    "archetype": "Ledger & Financial Analysis",
+    "kind": "finance",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Draft",
+      "Pending Review",
+      "Posted",
+      "Reconciliation"
+    ],
+    "fields": [
+      "Account",
+      "Debit",
+      "Credit",
+      "Reference",
+      "Fiscal Period"
+    ]
+  },
+  {
+    "id": "receivables",
+    "title": "Receivables",
+    "family": "Finance & Operations",
+    "purpose": "Prioritize collection by aging, due date and company.",
+    "primary": "Inspect invoice",
+    "archetype": "Aging Ladder & Receivable Ledger",
+    "kind": "receivables",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Current",
+      "1–30 Days",
+      "31–60 Days",
+      "61+ Days",
+      "Paid"
+    ],
+    "fields": [
+      "Customer",
+      "Invoice",
+      "Due Date",
+      "Outstanding",
+      "Receipt"
+    ]
+  },
+  {
+    "id": "finance-posting",
+    "title": "Finance Posting",
+    "family": "Finance & Operations",
+    "purpose": "Inspect posting state, exceptions and source traceability.",
+    "primary": "Review exception",
+    "archetype": "Posting Event Trace",
+    "kind": "audit",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Queued",
+      "Validation Failed",
+      "Posted",
+      "Reconciled"
+    ],
+    "fields": [
+      "Source",
+      "Posting Reference",
+      "Exception",
+      "Result"
+    ]
+  },
+  {
+    "id": "budgets",
+    "title": "Budgets & Fiscal Periods",
+    "family": "Finance & Operations",
+    "purpose": "Compare authorized budgets and govern reporting periods.",
+    "primary": "Open budget",
+    "archetype": "Budget Variance & Period Control",
+    "kind": "budget",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Draft",
+      "Reviewed",
+      "Active",
+      "Closed"
+    ],
+    "fields": [
+      "Cost Centre",
+      "Fiscal Period",
+      "Budget",
+      "Actual",
+      "Funding"
+    ]
+  },
+  {
+    "id": "expenses",
+    "title": "My Expense Requests",
+    "family": "Finance & Operations",
+    "purpose": "Submit documented requests and track their decisions.",
+    "primary": "Create expense request",
+    "archetype": "Request Register & Evidence Composer",
+    "kind": "expenses",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Draft",
+      "Submitted",
+      "Approved",
+      "Returned",
+      "Rejected"
+    ],
+    "fields": [
+      "Category",
+      "Supplier",
+      "Cost Centre",
+      "Amount",
+      "Purpose",
+      "Receipt"
+    ],
+    "required": "Receipt"
+  },
+  {
+    "id": "expense-approvals",
+    "title": "Expense Approval Queue",
+    "family": "Finance & Operations",
+    "purpose": "Inspect evidence before a maker-checker decision.",
+    "primary": "Review request",
+    "archetype": "Queue–Evidence–Decision Desk",
+    "kind": "approvals",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Submitted",
+      "Approved",
+      "Returned",
+      "Rejected"
+    ],
+    "fields": [
+      "Maker",
+      "Category",
+      "Purpose",
+      "Amount",
+      "Receipt"
+    ],
+    "required": "Receipt"
+  },
+  {
+    "id": "spend",
+    "title": "Spend & Profit Intelligence",
+    "family": "Finance & Operations",
+    "purpose": "Investigate cost exposure by company and category.",
+    "primary": "Trace cost driver",
+    "archetype": "Spend Treemap & Profit Bridge",
+    "kind": "spend",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Evidence Due",
+      "Reviewed",
+      "Reconciled"
+    ],
+    "fields": [
+      "Company",
+      "Supplier",
+      "Category",
+      "Treatment",
+      "Business Impact"
+    ]
+  },
+  {
+    "id": "cost-admin",
+    "title": "Cost Intelligence Administration",
+    "family": "Finance & Operations",
+    "purpose": "Maintain categories, suppliers, cost centres and evidence rules.",
+    "primary": "Create category",
+    "archetype": "Cost Governance Workbench",
+    "kind": "policy",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Draft",
+      "Reviewed",
+      "Active"
+    ],
+    "fields": [
+      "Category",
+      "Supplier",
+      "Cost Centre",
+      "Evidence Rule"
+    ]
+  },
+  {
+    "id": "inventory",
+    "title": "Inventory",
+    "family": "Finance & Operations",
+    "purpose": "Track stock, movement, issues, transfers and reorder risk.",
+    "primary": "Record stock movement",
+    "archetype": "Availability Matrix & Movement Ledger",
+    "kind": "inventory",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Available",
+      "Low Stock",
+      "Reserved",
+      "In Transit"
+    ],
+    "fields": [
+      "Item",
+      "Location",
+      "On Hand",
+      "Reorder Level",
+      "Movement Type"
+    ]
+  },
+  {
+    "id": "projects",
+    "title": "Construction & Projects",
+    "family": "Finance & Operations",
+    "purpose": "Track milestones, evidence and budget responsibility.",
+    "primary": "Create project",
+    "archetype": "Milestone Schedule & Budget Rail",
+    "kind": "projects",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Planning",
+      "In Progress",
+      "At Risk",
+      "Complete"
+    ],
+    "fields": [
+      "Site",
+      "Budget",
+      "Actual",
+      "Milestone",
+      "Responsible Person"
+    ]
+  },
+  {
+    "id": "facilities",
+    "title": "Facilities & Maintenance",
+    "family": "Finance & Operations",
+    "purpose": "Prioritize defects, inspections and preventive work.",
+    "primary": "Create work order",
+    "archetype": "Asset Health & Maintenance Board",
+    "kind": "facilities",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Reported",
+      "Assigned",
+      "In Progress",
+      "Resolved"
+    ],
+    "fields": [
+      "Building",
+      "Asset",
+      "Priority",
+      "Reading",
+      "Due Date"
+    ]
+  },
+  {
+    "id": "social",
+    "title": "Social Engine",
+    "family": "Social & Web",
+    "purpose": "Prepare content and review it before simulated publishing.",
+    "primary": "Draft content",
+    "archetype": "Editorial Calendar & Content Canvas",
+    "kind": "social",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Draft",
+      "In Review",
+      "Approved",
+      "Published (Demo)"
+    ],
+    "fields": [
+      "Channel",
+      "Campaign",
+      "Caption",
+      "Publication Date",
+      "Approval"
+    ]
+  },
+  {
+    "id": "social-controls",
+    "title": "Social Controls",
+    "family": "Social & Web",
+    "purpose": "Configure approval, automation and publishing guardrails.",
+    "primary": "Review guardrail",
+    "archetype": "Publishing Policy Studio",
+    "kind": "policy",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Draft",
+      "Reviewed",
+      "Active"
+    ],
+    "fields": [
+      "Approval Required",
+      "Allowed Channel",
+      "Automation Rule"
+    ]
+  },
+  {
+    "id": "social-accounts",
+    "title": "Social Accounts",
+    "family": "Social & Web",
+    "purpose": "Inspect provider connection scopes and availability.",
+    "primary": "Inspect connection",
+    "archetype": "Provider Connection Register",
+    "kind": "integrations",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Unavailable"
+    ],
+    "fields": [
+      "Provider",
+      "Permission Scope",
+      "Connection State"
+    ]
+  },
+  {
+    "id": "social-sync",
+    "title": "ERP Social Sync",
+    "family": "Social & Web",
+    "purpose": "Review ERP content conversion and sync exceptions.",
+    "primary": "Review sync item",
+    "archetype": "Conversion Queue & Source Trace",
+    "kind": "sync",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Queued",
+      "Needs Review",
+      "Approved",
+      "Simulated Sync"
+    ],
+    "fields": [
+      "Source Record",
+      "Destination",
+      "Conversion",
+      "Exception"
+    ]
+  },
+  {
+    "id": "marketing",
+    "title": "Marketing Command",
+    "family": "Social & Web",
+    "purpose": "Compare campaign outcomes and audience conversion.",
+    "primary": "Open campaign",
+    "archetype": "Audience Funnel & Campaign Comparison",
+    "kind": "marketing",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Draft",
+      "Active",
+      "Review",
+      "Completed"
+    ],
+    "fields": [
+      "Audience",
+      "Campaign",
+      "Channel",
+      "Budget",
+      "Conversions"
+    ]
+  },
+  {
+    "id": "inbox",
+    "title": "Community Inbox",
+    "family": "Social & Web",
+    "purpose": "Assign conversations and prepare appropriate responses.",
+    "primary": "Open conversation",
+    "archetype": "Conversation Inbox & Context Rail",
+    "kind": "inbox",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Unassigned",
+      "Assigned",
+      "Replied (Demo)",
+      "Escalated",
+      "Closed"
+    ],
+    "fields": [
+      "Channel",
+      "Customer",
+      "Assignee",
+      "Message",
+      "Response"
+    ]
+  },
+  {
+    "id": "website",
+    "title": "Website Administration",
+    "family": "Social & Web",
+    "purpose": "Review pages, media, revisions and publishing approval.",
+    "primary": "Edit draft page",
+    "archetype": "Page Tree & Revision Workspace",
+    "kind": "website",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Draft",
+      "In Review",
+      "Approved",
+      "Published (Demo)"
+    ],
+    "fields": [
+      "Page Title",
+      "Path",
+      "Body",
+      "Revision",
+      "Approval"
+    ]
+  },
+  {
+    "id": "communications",
+    "title": "Notice Board",
+    "family": "Communications",
+    "purpose": "Read authorized announcements and acknowledge notices.",
+    "primary": "Read announcement",
+    "archetype": "Announcement Editorial Board",
+    "kind": "communications",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Unread",
+      "Read",
+      "Acknowledged"
+    ],
+    "fields": [
+      "Audience",
+      "Message",
+      "Acknowledgement Required"
+    ]
+  },
+  {
+    "id": "broadcasts",
+    "title": "Broadcast Center",
+    "family": "Communications",
+    "purpose": "Choose audience, push intent and acknowledgement explicitly.",
+    "primary": "Draft broadcast",
+    "archetype": "Audience Composer & Acknowledgement Monitor",
+    "kind": "broadcast",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Draft",
+      "Preview",
+      "Approved",
+      "Published (Demo)"
+    ],
+    "fields": [
+      "Audience",
+      "Message",
+      "Push Requested",
+      "Acknowledgement Required"
+    ]
+  },
+  {
+    "id": "encouragement",
+    "title": "Daily Staff Encouragement",
+    "family": "Communications",
+    "purpose": "Generate, review and approve encouragement before publishing.",
+    "primary": "Generate draft",
+    "archetype": "Human-Approval Writing Desk",
+    "kind": "encouragement",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "stages": [
+      "Generate",
+      "Preview",
+      "Approved",
+      "Published (Demo)"
+    ],
+    "fields": [
+      "Message",
+      "Audience",
+      "Approval"
+    ]
+  },
+  {
+    "id": "notifications",
+    "title": "Action Center",
+    "family": "Global",
+    "purpose": "Resolve permitted alerts and required actions.",
+    "primary": "Open action",
+    "archetype": "Priority Inbox",
+    "kind": "notifications",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Unread",
+      "In Progress",
+      "Resolved"
+    ],
+    "fields": [
+      "Priority",
+      "Source",
+      "Action Required"
+    ]
+  },
+  {
+    "id": "help",
+    "title": "AI Guide",
+    "family": "Global",
+    "purpose": "Get guidance for the current authorized workspace.",
+    "primary": "Ask for guidance",
+    "archetype": "Contextual Help Conversation",
+    "kind": "help",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Draft",
+      "Answered"
+    ],
+    "fields": [
+      "Question",
+      "Context"
+    ]
+  },
+  {
+    "id": "security",
+    "title": "Security Center",
+    "family": "Security, Access & Admin",
+    "purpose": "Investigate sign-in events, failed access and session risk.",
+    "primary": "Investigate event",
+    "archetype": "Security Event Timeline & Risk Matrix",
+    "kind": "security",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Open",
+      "Investigating",
+      "Reviewed"
+    ],
+    "fields": [
+      "Severity",
+      "Device",
+      "Session",
+      "Result",
+      "Review Notes"
+    ]
+  },
+  {
+    "id": "access",
+    "title": "Access Control",
+    "family": "Security, Access & Admin",
+    "purpose": "Explain effective permissions and scoped overrides.",
+    "primary": "Inspect effective access",
+    "archetype": "Permission Matrix & Explanation Inspector",
+    "kind": "access",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Draft",
+      "Applied",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Role",
+      "Company Scope",
+      "Module",
+      "Access Level",
+      "Override"
+    ]
+  },
+  {
+    "id": "admin",
+    "title": "Admin Setup",
+    "family": "Security, Access & Admin",
+    "purpose": "Manage organization policies with scope and change history.",
+    "primary": "Review policy",
+    "archetype": "Organization Policy Workbench",
+    "kind": "policy",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Draft",
+      "Preview",
+      "Applied",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Policy",
+      "Company Scope",
+      "Value",
+      "Reason"
+    ]
+  },
+  {
+    "id": "recovery",
+    "title": "Temporary Password Recovery",
+    "family": "Security, Access & Admin",
+    "purpose": "Represent audited recovery issuance and revocation.",
+    "primary": "Prepare recovery",
+    "archetype": "Recovery Issue & Revocation Desk",
+    "kind": "recovery",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Requested",
+      "Issued (Demo)",
+      "Expired",
+      "Revoked"
+    ],
+    "fields": [
+      "Employee",
+      "Expiry",
+      "Reason",
+      "Status"
+    ]
+  },
+  {
+    "id": "support",
+    "title": "User Support Centre",
+    "family": "Security, Access & Admin",
+    "purpose": "Inspect assigned access and employee-approved support.",
+    "primary": "Open support request",
+    "archetype": "Support Case & Consent Inspector",
+    "kind": "support",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Awaiting Consent",
+      "Authorized",
+      "In Progress",
+      "Resolved"
+    ],
+    "fields": [
+      "Employee",
+      "Issue",
+      "Consent",
+      "Support Action"
+    ]
+  },
+  {
+    "id": "resources",
+    "title": "Resource Monitoring",
+    "family": "Security, Access & Admin",
+    "purpose": "Inspect service availability and diagnostic context.",
+    "primary": "Inspect service",
+    "archetype": "Service Topology & Health Grid",
+    "kind": "resources",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Unavailable"
+    ],
+    "fields": [
+      "Service",
+      "Availability",
+      "Diagnostic",
+      "Last Seen"
+    ]
+  },
+  {
+    "id": "sync",
+    "title": "Sync & Sessions",
+    "family": "Security, Access & Admin",
+    "purpose": "Resolve pending changes and conflicts without losing drafts.",
+    "primary": "Review pending changes",
+    "archetype": "Sync Queue & Conflict Comparator",
+    "kind": "sync",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Waiting to Sync",
+      "Syncing",
+      "Synced (Demo)",
+      "Conflict"
+    ],
+    "fields": [
+      "Record",
+      "Local Version",
+      "Remote Version",
+      "Resolution"
+    ]
+  },
+  {
+    "id": "audit",
+    "title": "Activity & Audit",
+    "family": "Security, Access & Admin",
+    "purpose": "Trace business changes by actor, object and result.",
+    "primary": "Inspect event",
+    "archetype": "Audit Explorer & Event Detail",
+    "kind": "audit",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Recorded"
+    ],
+    "fields": [
+      "Actor",
+      "Time",
+      "Object",
+      "Action",
+      "Result"
+    ]
+  },
+  {
+    "id": "toolbox",
+    "title": "Advanced Toolbox",
+    "family": "Security, Access & Admin",
+    "purpose": "Inspect readiness and controlled maintenance plans.",
+    "primary": "Run demo readiness check",
+    "archetype": "Readiness Diagnostic Workbench",
+    "kind": "toolbox",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Not Run",
+      "Needs Attention",
+      "Checked (Demo)"
+    ],
+    "fields": [
+      "Check",
+      "Result",
+      "Reason",
+      "Authorized Action"
+    ]
+  },
+  {
+    "id": "integrations",
+    "title": "API & Integrations",
+    "family": "Security, Access & Admin",
+    "purpose": "Inspect safe metadata and unavailable provider states.",
+    "primary": "Inspect integration",
+    "archetype": "Integration Catalogue & Request Inspector",
+    "kind": "integrations",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Unavailable"
+    ],
+    "fields": [
+      "Provider",
+      "Capability",
+      "State",
+      "Last Request"
+    ]
+  },
+  {
+    "id": "hub",
+    "title": "Module Hub",
+    "family": "Global",
+    "purpose": "Find and open workspaces available to your role and company.",
+    "primary": "Launch workspace",
+    "archetype": "Authorized Module Atlas",
+    "kind": "hub",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Available"
+    ],
+    "fields": [
+      "Family",
+      "Module",
+      "Purpose"
+    ]
+  },
+  {
+    "id": "theme",
+    "title": "Theme Studio",
+    "family": "Personalization",
+    "purpose": "Preview and apply permitted appearance preferences.",
+    "primary": "Preview theme",
+    "archetype": "Appearance Gallery",
+    "kind": "studio",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Preview",
+      "Applied"
+    ],
+    "fields": [
+      "Theme",
+      "Scope"
+    ]
+  },
+  {
+    "id": "navigation",
+    "title": "Navigation Studio",
+    "family": "Personalization",
+    "purpose": "Choose a navigation model for your authorized work.",
+    "primary": "Preview navigation",
+    "archetype": "Navigation Workbench",
+    "kind": "studio",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Preview",
+      "Applied"
+    ],
+    "fields": [
+      "Navigation Style",
+      "Pinned Modules",
+      "Scope"
+    ]
+  },
+  {
+    "id": "layout",
+    "title": "Layout Studio",
+    "family": "Personalization",
+    "purpose": "Preview ten compositions and apply a scoped preference.",
+    "primary": "Preview layout",
+    "archetype": "Composition Studio & Policy Inspector",
+    "kind": "studio",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ],
+    "stages": [
+      "Preview",
+      "Applied",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Layout",
+      "Density",
+      "Motion",
+      "Scope"
+    ]
+  },
+  {
+    "id": "signin-design",
+    "title": "Sign-In Personalization",
+    "family": "Personalization",
+    "purpose": "Configure approved image treatment, clocks, logo and widgets.",
+    "primary": "Preview sign-in",
+    "archetype": "Sign-In Composition Inspector",
+    "kind": "signin-studio",
+    "roles": [
+      "Owner"
+    ],
+    "stages": [
+      "Preview",
+      "Applied"
+    ],
+    "fields": [
+      "Background",
+      "Logo Scale",
+      "Clock Selection",
+      "Motion",
+      "Weather Density"
+    ]
+  },
+  {
+    "id": "procurement",
+    "title": "Procurement",
+    "family": "Finance & Operations",
+    "purpose": "Move evidenced requisitions through review and sourcing.",
+    "primary": "Create requisition",
+    "archetype": "Requisition & Sourcing Desk",
+    "kind": "procurement",
+    "stages": [
+      "Draft",
+      "Submitted",
+      "Approved",
+      "Sourcing",
+      "Converted",
+      "Cancelled"
+    ],
+    "fields": [
+      "Supplier",
+      "Quantity",
+      "Unit Cost",
+      "Purpose",
+      "Receipt"
+    ],
+    "required": "Receipt",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "purchase-orders",
+    "title": "Purchase Orders",
+    "family": "Finance & Operations",
+    "purpose": "Separate approval from committed supplier orders.",
+    "primary": "Create purchase order",
+    "archetype": "Commitment Ledger & Order Inspector",
+    "kind": "purchase-orders",
+    "stages": [
+      "Draft",
+      "Submitted",
+      "Approved",
+      "Ordered",
+      "Partially Received",
+      "Received",
+      "Closed",
+      "Cancelled"
+    ],
+    "fields": [
+      "Supplier",
+      "Quantity",
+      "Unit Cost",
+      "Received Quantity",
+      "Source Requisition",
+      "Decision Reason"
+    ],
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "goods-receipts",
+    "title": "Goods Receipts",
+    "family": "Finance & Operations",
+    "purpose": "Receive ordered stock with accepted quantities and evidence.",
+    "primary": "Record goods receipt",
+    "archetype": "Receipt Worksheet & Acceptance Gate",
+    "kind": "goods-receipts",
+    "stages": [
+      "Draft",
+      "Inspected",
+      "Accepted",
+      "Posted",
+      "Cancelled"
+    ],
+    "fields": [
+      "Purchase Order",
+      "Item",
+      "Quantity",
+      "Accepted Quantity",
+      "Rejected Quantity",
+      "Location",
+      "Receipt"
+    ],
+    "required": "Receipt",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "stock-transfers",
+    "title": "Stock Transfers",
+    "family": "Finance & Operations",
+    "purpose": "Track stock custody between authorized locations.",
+    "primary": "Create stock transfer",
+    "archetype": "Transfer Custody Timeline",
+    "kind": "stock-transfers",
+    "stages": [
+      "Draft",
+      "Approved",
+      "Dispatched",
+      "In Transit",
+      "Received",
+      "Closed",
+      "Cancelled"
+    ],
+    "fields": [
+      "Item",
+      "Quantity",
+      "From Location",
+      "To Location",
+      "Received Quantity",
+      "Receipt"
+    ],
+    "required": "Receipt",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "stock-borrowing",
+    "title": "Stock Borrowing",
+    "family": "Finance & Operations",
+    "purpose": "Keep borrowed quantities and return accountability linked.",
+    "primary": "Create borrow request",
+    "archetype": "Borrow & Return Register",
+    "kind": "stock-borrowing",
+    "stages": [
+      "Draft",
+      "Submitted",
+      "Approved",
+      "Issued",
+      "Partially Returned",
+      "Returned",
+      "Closed"
+    ],
+    "fields": [
+      "Item",
+      "Quantity",
+      "Borrowing Team",
+      "Return Due",
+      "Returned Quantity"
+    ],
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "bakery-accountability",
+    "title": "Bakery Accountability",
+    "family": "Bakery ERP",
+    "purpose": "Reconcile every loaf and every remittance before closure.",
+    "primary": "Create custody ledger",
+    "archetype": "Loaf & Money Accountability Desk",
+    "kind": "bakery-accountability",
+    "stages": [
+      "Draft",
+      "Dispatched",
+      "Remittance Due",
+      "Investigating",
+      "Resolved",
+      "Reconciled"
+    ],
+    "fields": [
+      "Actual Yield",
+      "Dispatched",
+      "Store Balance",
+      "Agent Sold",
+      "Returns",
+      "Damaged",
+      "Promo",
+      "Staff",
+      "In Transit",
+      "Unit Price",
+      "Remittance",
+      "Resolution Quantity",
+      "Resolution Amount",
+      "Decision Reason"
+    ],
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "bakery"
+  },
+  {
+    "id": "technology-services",
+    "title": "Technology Services",
+    "family": "Printing & Technology",
+    "purpose": "Manage technology service requests within Printing & Technology.",
+    "primary": "Create service request",
+    "archetype": "Service Queue & SLA Timeline",
+    "kind": "technology-services",
+    "stages": [
+      "New",
+      "Triaged",
+      "Assigned",
+      "In Progress",
+      "Customer Review",
+      "Resolved",
+      "Closed"
+    ],
+    "fields": [
+      "Customer",
+      "Service Type",
+      "Priority",
+      "SLA Due",
+      "Assigned To",
+      "Resolution"
+    ],
+    "required": "Resolution",
+    "roles": [
+      "Owner",
+      "Manager"
+    ],
+    "company": "printing"
+  },
+  {
+    "id": "vacancies",
+    "title": "Vacancies",
+    "family": "Jobs ERP",
+    "purpose": "Publish approved vacancies and connect candidates to hiring.",
+    "primary": "Create vacancy",
+    "archetype": "Vacancy Brief & Recruitment Readiness",
+    "kind": "vacancies",
+    "stages": [
+      "Draft",
+      "Approved",
+      "Open",
+      "Interviewing",
+      "Filled",
+      "Closed"
+    ],
+    "fields": [
+      "Job Title",
+      "Department",
+      "Hiring Manager",
+      "Headcount",
+      "Description",
+      "Approval"
+    ],
+    "required": "Approval",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "staff-messaging",
+    "title": "Staff Messaging",
+    "family": "Communications",
+    "purpose": "Communicate with authorized employees, teams and company channels.",
+    "primary": "Start conversation",
+    "archetype": "Internal Staff Messaging",
+    "kind": "staff-messaging",
+    "stages": [
+      "Draft",
+      "Sent",
+      "Acknowledged",
+      "Archived"
+    ],
+    "fields": [
+      "Company",
+      "Department",
+      "Channel",
+      "Recipient",
+      "Message",
+      "Attachment",
+      "Mention"
+    ],
+    "required": "Message",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ]
+  },
+  {
+    "id": "productivity",
+    "title": "Work Effectiveness",
+    "family": "Staff ERP",
+    "purpose": "Use governed workflow measures to improve work without surveillance.",
+    "primary": "Open effectiveness review",
+    "archetype": "Governed Productivity Scorecard",
+    "kind": "platform",
+    "stages": [
+      "Current",
+      "Reviewed",
+      "Action Planned"
+    ],
+    "fields": [
+      "Metric Definition",
+      "Source",
+      "Scope",
+      "Business Purpose",
+      "Permission"
+    ],
+    "required": "Business Purpose",
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ]
+  },
+  {
+    "id": "work-location",
+    "title": "Work-Location Policy",
+    "family": "Security, Access & Admin",
+    "purpose": "Configure designated work-location policy with privacy, consent and retention controls.",
+    "primary": "Create location policy",
+    "archetype": "Location Policy & Privacy Workbench",
+    "kind": "platform",
+    "stages": [
+      "Draft",
+      "Review",
+      "Approved",
+      "Active",
+      "Expired"
+    ],
+    "fields": [
+      "Company",
+      "Site",
+      "Roles",
+      "Users",
+      "Purpose",
+      "Effective Date",
+      "Work Hours",
+      "GPS Eligibility",
+      "Privacy Explanation",
+      "Consent",
+      "Retention",
+      "Exceptions"
+    ],
+    "required": "Privacy Explanation",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "salary-adjustments",
+    "title": "Salary Adjustments",
+    "family": "Staff ERP",
+    "purpose": "Prepare controlled compensation changes with approval and audit.",
+    "primary": "Create salary adjustment",
+    "archetype": "Compensation Change Control",
+    "kind": "platform",
+    "stages": [
+      "Draft",
+      "Review",
+      "Approved",
+      "Payroll Ready",
+      "Visible",
+      "Cancelled"
+    ],
+    "fields": [
+      "Employee",
+      "Effective Date",
+      "Reason",
+      "Current Amount",
+      "Proposed Amount",
+      "Initiator",
+      "Reviewer",
+      "Approval",
+      "Payroll Impact",
+      "Employee Visibility"
+    ],
+    "required": "Reason",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "data-import",
+    "title": "Controlled Data Import",
+    "family": "Finance & Operations",
+    "purpose": "Validate authorized CSV or XLSX rows before a local import simulation.",
+    "primary": "Start import",
+    "archetype": "Import Mapping & Validation Workbench",
+    "kind": "platform",
+    "stages": [
+      "Choose Entity",
+      "Upload",
+      "Map",
+      "Validate",
+      "Duplicate Review",
+      "Dry Run",
+      "Imported"
+    ],
+    "fields": [
+      "Entity",
+      "File Type",
+      "Columns",
+      "Mapping",
+      "Duplicates",
+      "Error Rows",
+      "Idempotency",
+      "Audit",
+      "Permission Scope"
+    ],
+    "required": "Mapping",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "dashboard-personalization",
+    "title": "Dashboard Personalization",
+    "family": "Personalization",
+    "purpose": "Compose permitted widgets while respecting required, role and company defaults.",
+    "primary": "Customize dashboard",
+    "archetype": "Widget Composition & Defaults",
+    "kind": "platform",
+    "stages": [
+      "Draft",
+      "Preview",
+      "Saved",
+      "Restored"
+    ],
+    "fields": [
+      "Widget",
+      "Source",
+      "Position",
+      "Size",
+      "Visibility",
+      "Required",
+      "Role Default",
+      "Company Default",
+      "Scope"
+    ],
+    "required": "Widget",
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  },
+  {
+    "id": "files",
+    "title": "File Manager",
+    "family": "Global",
+    "purpose": "Inspect permitted evidence, versions and local file governance.",
+    "primary": "Inspect file",
+    "archetype": "Evidence Library & Preview Inspector",
+    "kind": "files",
+    "stages": [
+      "Available"
+    ],
+    "fields": [
+      "Filename",
+      "MIME Type",
+      "Size",
+      "Checksum",
+      "Retention"
+    ],
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ]
+  },
+  {
+    "id": "saved-views",
+    "title": "Saved Views",
+    "family": "Global",
+    "purpose": "Keep permission-filtered views and favorites within your scope.",
+    "primary": "Create saved view",
+    "archetype": "Personal View Library",
+    "kind": "saved-views",
+    "stages": [
+      "Draft",
+      "Saved"
+    ],
+    "fields": [
+      "Name",
+      "Module",
+      "Filters",
+      "Scope"
+    ],
+    "roles": [
+      "Owner",
+      "Manager",
+      "Employee"
+    ]
+  },
+  {
+    "id": "field-builder",
+    "title": "Field Configuration",
+    "family": "Security, Access & Admin",
+    "purpose": "Define governed field metadata and safe validation.",
+    "primary": "Create field draft",
+    "archetype": "Schema Configuration Canvas",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Target Module",
+      "Field Type",
+      "Required",
+      "Validation"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "form-builder",
+    "title": "Form Builder",
+    "family": "Security, Access & Admin",
+    "purpose": "Compose forms from permitted fields with versioned review.",
+    "primary": "Create form draft",
+    "archetype": "Form Canvas & Property Inspector",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Target Module",
+      "Field Type",
+      "Required",
+      "Validation"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "workflow-builder",
+    "title": "Workflow Builder",
+    "family": "Security, Access & Admin",
+    "purpose": "Simulate versioned workflow changes without bypassing invariants.",
+    "primary": "Create workflow draft",
+    "archetype": "State Canvas & Transition Inspector",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Target Module",
+      "From State",
+      "To State",
+      "Required Role"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "report-builder",
+    "title": "Report Builder",
+    "family": "Security, Access & Admin",
+    "purpose": "Build scoped reports from permitted fields and safe metrics.",
+    "primary": "Create report draft",
+    "archetype": "Report Query Canvas & Result Preview",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Target Module",
+      "Metric",
+      "Grouping",
+      "Scope"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "widget-builder",
+    "title": "Widget Builder",
+    "family": "Security, Access & Admin",
+    "purpose": "Preview dashboard widgets sourced from authorized records.",
+    "primary": "Create widget draft",
+    "archetype": "Widget Gallery & Data Inspector",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Target Module",
+      "Metric",
+      "Visualization",
+      "Scope"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "theme-builder",
+    "title": "Theme Builder",
+    "family": "Security, Access & Admin",
+    "purpose": "Govern semantic tokens, contrast and appearance versions.",
+    "primary": "Create theme draft",
+    "archetype": "Semantic Token Canvas & Contrast Inspector",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Primary Color",
+      "Surface Color",
+      "Text Color",
+      "Scope"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "business-rules",
+    "title": "Business Rules",
+    "family": "Security, Access & Admin",
+    "purpose": "Review invariant rules and simulate safe business conditions.",
+    "primary": "Create rule draft",
+    "archetype": "Rule Condition & Validation Workbench",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Target Module",
+      "Condition",
+      "Required Role",
+      "Reason"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "notification-rules",
+    "title": "Notification Policies",
+    "family": "Security, Access & Admin",
+    "purpose": "Govern events, recipients and channel availability explicitly.",
+    "primary": "Create notification draft",
+    "archetype": "Event-to-Audience Routing Desk",
+    "kind": "builder",
+    "stages": [
+      "Draft",
+      "Validated",
+      "Simulated",
+      "Published",
+      "Rolled Back"
+    ],
+    "fields": [
+      "Name",
+      "Target Module",
+      "Event",
+      "Audience",
+      "Channel"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "session-analytics",
+    "title": "Sessions & Usage",
+    "family": "Security, Access & Admin",
+    "purpose": "Inspect transparent session metadata without covert monitoring.",
+    "primary": "Inspect session",
+    "archetype": "Session Timeline & Consent Inspector",
+    "kind": "session-analytics",
+    "stages": [
+      "Active",
+      "Revoked"
+    ],
+    "fields": [
+      "Device",
+      "Session",
+      "Last Activity",
+      "Consent",
+      "IP Source"
+    ],
+    "roles": [
+      "Owner"
+    ]
+  },
+  {
+    "id": "reports",
+    "title": "Report Center",
+    "family": "Finance & Operations",
+    "purpose": "Trace permitted metrics back to their underlying records.",
+    "primary": "Open report",
+    "archetype": "Metric Library & Source Explorer",
+    "kind": "reports",
+    "stages": [
+      "Available"
+    ],
+    "fields": [
+      "Name",
+      "Source",
+      "Metric",
+      "Scope"
+    ],
+    "roles": [
+      "Owner",
+      "Manager"
+    ]
+  }
+]

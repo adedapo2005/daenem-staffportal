@@ -1,0 +1,15 @@
+SCOPE,QUERY_STAGE,RULE
+GROUP,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+COMPANY,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+BANK_ACCOUNT,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+BRANCH,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+DEPARTMENT,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+BUSINESS_UNIT,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+COST_CENTRE,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+PAYROLL_BATCH,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+TRANSACTION,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+REPORT,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+SITE,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+TEAM,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+OWN,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent
+ASSIGNED,Before query/count/search/AI/notification/export/render,Out-of-scope records are nonexistent

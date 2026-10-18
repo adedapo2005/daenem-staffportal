@@ -1,0 +1,120 @@
+{
+  "testedAt": "2026-09-11T18:41:22.234Z",
+  "passed": 28,
+  "total": 28,
+  "scope": "Source contract tests. Not browser, screenshot, visual or production security certification.",
+  "results": [
+    {
+      "name": "Route identifiers are unique",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee cannot view payroll control, finance, security or access",
+      "status": "PASS"
+    },
+    {
+      "name": "Company restriction prevents cross-company module access",
+      "status": "PASS"
+    },
+    {
+      "name": "Company restriction prevents record leaks",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee sees only their own requests",
+      "status": "PASS"
+    },
+    {
+      "name": "No Access override removes authorized registry and records",
+      "status": "PASS"
+    },
+    {
+      "name": "View override cannot create, edit or approve",
+      "status": "PASS"
+    },
+    {
+      "name": "Create override cannot edit or approve",
+      "status": "PASS"
+    },
+    {
+      "name": "Employees cannot change payslips",
+      "status": "PASS"
+    },
+    {
+      "name": "Historical workshop records are read-only",
+      "status": "PASS"
+    },
+    {
+      "name": "printing required evidence gates completion",
+      "status": "PASS"
+    },
+    {
+      "name": "bakery required evidence gates completion",
+      "status": "PASS"
+    },
+    {
+      "name": "logistics required evidence gates completion",
+      "status": "PASS"
+    },
+    {
+      "name": "expenses required evidence gates completion",
+      "status": "PASS"
+    },
+    {
+      "name": "Typed receipt alone does not substitute for an attachment",
+      "status": "PASS"
+    },
+    {
+      "name": "Maker cannot approve their own request",
+      "status": "PASS"
+    },
+    {
+      "name": "Approval requires a recorded reason",
+      "status": "PASS"
+    },
+    {
+      "name": "Global search and counts exclude other employees’ private payslips",
+      "status": "PASS"
+    },
+    {
+      "name": "Draft expenses cannot be approved before submission",
+      "status": "PASS"
+    },
+    {
+      "name": "Approval desk and expense register share request identity",
+      "status": "PASS"
+    },
+    {
+      "name": "Out-of-scope mutation is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Negative expense and yield values are rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Unbalanced journals cannot be posted",
+      "status": "PASS"
+    },
+    {
+      "name": "Publication cannot bypass human approval",
+      "status": "PASS"
+    },
+    {
+      "name": "Layout precedence is forced, personal, role, ERP, organization, fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "Authored experience CSS has no font-size below 12px at default base",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced motion, keyboard focus and mobile record strategy are declared",
+      "status": "PASS"
+    },
+    {
+      "name": "Current native-resolution sign-in sources exist",
+      "status": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "status": "INCOMPLETE",
+  "files": [
+    {
+      "file": "daenem-signin-duet-1920.jpg",
+      "bytes": 210198,
+      "sha256": "48903465ef43136cacdef6fb61b98256afc5a90ab6768c6a21c661c9041daf21"
+    },
+    {
+      "file": "daenem-signin-horizon-1920.jpg",
+      "bytes": 229475,
+      "sha256": "900e63ef2668604cb1f8065debd4054f1810367b4f0f4882224188874a9a7d3d"
+    },
+    {
+      "file": "daenem-signin-mobile-390.jpg",
+      "bytes": 81832,
+      "sha256": "c4fbb0504076f90d76526957fd23dd457f7cf194a44472eebba2b84c27db6b90"
+    },
+    {
+      "file": "daenem-signin-nightfall-1920.jpg",
+      "bytes": 205828,
+      "sha256": "03fc942159b0584375d4ca943fb174692d34701019189a3f990ff0abb6c40bb1"
+    },
+    {
+      "file": "daenem-signin-vertical-1920.jpg",
+      "bytes": 196889,
+      "sha256": "a65cb8725d232eee1b6ab7dc0b759e45140a250c90116d0ad9c63cbc1181d690"
+    }
+  ],
+  "missing": [
+    "all-ten final 1920x1080 captures",
+    "768x1024",
+    "2560x1440",
+    "3840x2160",
+    "complete day/night and interaction captures"
+  ]
+}

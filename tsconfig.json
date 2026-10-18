@@ -18,7 +18,7 @@
     "types": ["@cloudflare/workers-types", "node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/qa-review-v115/*"],
+      "@/*": ["source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/*"],
       "next/navigation": ["src/next-navigation-shim.ts"],
       "next/link": ["src/next-link-shim.tsx"]
     }

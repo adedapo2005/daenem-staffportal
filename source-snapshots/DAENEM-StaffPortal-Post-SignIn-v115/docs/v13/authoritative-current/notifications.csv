@@ -1,0 +1,237 @@
+EVENT,DOMAIN,AUDIENCE,CHANNEL,ZERO_DISCLOSURE
+self-service.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+self-service.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+home.assignment,Global,Assigned staff,In-app,Re-authorize before enqueue and render
+home.exception,Global,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+cockpit.assignment,Global,Assigned staff,In-app,Re-authorize before enqueue and render
+cockpit.exception,Global,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+workspace.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+workspace.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+profile.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+profile.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+people.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+people.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+hr-records.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+hr-records.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+attendance.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+attendance.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+leave.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+leave.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+performance.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+performance.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+hr-cases.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+hr-cases.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+lifecycle.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+lifecycle.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+forms.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+forms.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+tasks.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+tasks.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+payroll.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+payroll.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+payslips.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+payslips.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+payroll-batches.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+payroll-batches.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+applications.assignment,Jobs ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+applications.exception,Jobs ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+interviews.assignment,Jobs ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+interviews.exception,Jobs ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+hiring.assignment,Jobs ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+hiring.exception,Jobs ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+printing.assignment,Printing & Technology,Assigned staff,In-app,Re-authorize before enqueue and render
+printing.exception,Printing & Technology,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+print-orders.assignment,Printing & Technology,Assigned staff,In-app,Re-authorize before enqueue and render
+print-orders.exception,Printing & Technology,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+print-materials.assignment,Printing & Technology,Assigned staff,In-app,Re-authorize before enqueue and render
+print-materials.exception,Printing & Technology,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+bakery.assignment,Bakery ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+bakery.exception,Bakery ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+bakery-recipes.assignment,Bakery ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+bakery-recipes.exception,Bakery ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+bakery-sales.assignment,Bakery ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+bakery-sales.exception,Bakery ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+autos.assignment,Autos ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+autos.exception,Autos ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+auto-leads.assignment,Autos ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+auto-leads.exception,Autos ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+auto-history.assignment,Autos ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+auto-history.exception,Autos ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+logistics.assignment,Logistics ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+logistics.exception,Logistics ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+fleet.assignment,Logistics ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+fleet.exception,Logistics ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+trip-costs.assignment,Logistics ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+trip-costs.exception,Logistics ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+properties.assignment,Homes & Properties,Assigned staff,In-app,Re-authorize before enqueue and render
+properties.exception,Homes & Properties,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+leases.assignment,Homes & Properties,Assigned staff,In-app,Re-authorize before enqueue and render
+leases.exception,Homes & Properties,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+property-leads.assignment,Homes & Properties,Assigned staff,In-app,Re-authorize before enqueue and render
+property-leads.exception,Homes & Properties,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+finance.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+finance.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+receivables.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+receivables.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+finance-posting.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+finance-posting.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+budgets.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+budgets.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+expenses.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+expenses.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+expense-approvals.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+expense-approvals.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+spend.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+spend.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+cost-admin.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+cost-admin.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+inventory.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+inventory.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+projects.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+projects.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+facilities.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+facilities.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+social.assignment,Social & Web,Assigned staff,In-app,Re-authorize before enqueue and render
+social.exception,Social & Web,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+social-controls.assignment,Social & Web,Assigned staff,In-app,Re-authorize before enqueue and render
+social-controls.exception,Social & Web,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+social-accounts.assignment,Social & Web,Assigned staff,In-app,Re-authorize before enqueue and render
+social-accounts.exception,Social & Web,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+social-sync.assignment,Social & Web,Assigned staff,In-app,Re-authorize before enqueue and render
+social-sync.exception,Social & Web,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+marketing.assignment,Social & Web,Assigned staff,In-app,Re-authorize before enqueue and render
+marketing.exception,Social & Web,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+inbox.assignment,Social & Web,Assigned staff,In-app,Re-authorize before enqueue and render
+inbox.exception,Social & Web,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+website.assignment,Social & Web,Assigned staff,In-app,Re-authorize before enqueue and render
+website.exception,Social & Web,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+communications.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+communications.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+broadcasts.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+broadcasts.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+encouragement.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+encouragement.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+notifications.assignment,Global,Assigned staff,In-app,Re-authorize before enqueue and render
+notifications.exception,Global,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+help.assignment,Global,Assigned staff,In-app,Re-authorize before enqueue and render
+help.exception,Global,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+security.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+security.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+access.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+access.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+admin.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+admin.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+recovery.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+recovery.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+support.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+support.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+resources.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+resources.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+sync.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+sync.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+audit.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+audit.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+toolbox.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+toolbox.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+integrations.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+integrations.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+hub.assignment,Global,Assigned staff,In-app,Re-authorize before enqueue and render
+hub.exception,Global,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+theme.assignment,Personalization,Assigned staff,In-app,Re-authorize before enqueue and render
+theme.exception,Personalization,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+navigation.assignment,Personalization,Assigned staff,In-app,Re-authorize before enqueue and render
+navigation.exception,Personalization,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+layout.assignment,Personalization,Assigned staff,In-app,Re-authorize before enqueue and render
+layout.exception,Personalization,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+signin-design.assignment,Personalization,Assigned staff,In-app,Re-authorize before enqueue and render
+signin-design.exception,Personalization,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+procurement.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+procurement.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+purchase-orders.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+purchase-orders.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+goods-receipts.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+goods-receipts.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+stock-transfers.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+stock-transfers.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+stock-borrowing.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+stock-borrowing.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+bakery-accountability.assignment,Bakery ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+bakery-accountability.exception,Bakery ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+technology-services.assignment,Printing & Technology,Assigned staff,In-app,Re-authorize before enqueue and render
+technology-services.exception,Printing & Technology,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+vacancies.assignment,Jobs ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+vacancies.exception,Jobs ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+staff-messaging.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+staff-messaging.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+productivity.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+productivity.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+work-location.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+work-location.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+salary-adjustments.assignment,Staff ERP,Assigned staff,In-app,Re-authorize before enqueue and render
+salary-adjustments.exception,Staff ERP,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+data-import.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+data-import.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+dashboard-personalization.assignment,Personalization,Assigned staff,In-app,Re-authorize before enqueue and render
+dashboard-personalization.exception,Personalization,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+files.assignment,Global,Assigned staff,In-app,Re-authorize before enqueue and render
+files.exception,Global,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+saved-views.assignment,Global,Assigned staff,In-app,Re-authorize before enqueue and render
+saved-views.exception,Global,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+field-builder.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+field-builder.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+form-builder.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+form-builder.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+workflow-builder.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+workflow-builder.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+report-builder.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+report-builder.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+widget-builder.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+widget-builder.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+theme-builder.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+theme-builder.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+business-rules.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+business-rules.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+notification-rules.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+notification-rules.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+session-analytics.assignment,"Security, Access & Admin",Assigned staff,In-app,Re-authorize before enqueue and render
+session-analytics.exception,"Security, Access & Admin",Assigned operator/checker,In-app,"No restricted count, title or identifier"
+reports.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+reports.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+customer-communications.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+customer-communications.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+communication-queues.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+communication-queues.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+whatsapp-numbers.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+whatsapp-numbers.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+communication-analytics.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+communication-analytics.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+communication-preferences.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+communication-preferences.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+ai-letterhead-generator.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+ai-letterhead-generator.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+communication-audit.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+communication-audit.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+unified-inbox.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+unified-inbox.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+communication-automation.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+communication-automation.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+communication-templates.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+communication-templates.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+letterheads.assignment,Communications,Assigned staff,In-app,Re-authorize before enqueue and render
+letterheads.exception,Communications,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+banking-operations.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+banking-operations.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+treasury.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+treasury.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+payment-verification.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+payment-verification.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+transfers.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+transfers.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+beneficiaries.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+beneficiaries.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+payroll-execution.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+payroll-execution.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+reconciliation.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+reconciliation.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"
+financial-reports.assignment,Finance & Operations,Assigned staff,In-app,Re-authorize before enqueue and render
+financial-reports.exception,Finance & Operations,Assigned operator/checker,In-app,"No restricted count, title or identifier"

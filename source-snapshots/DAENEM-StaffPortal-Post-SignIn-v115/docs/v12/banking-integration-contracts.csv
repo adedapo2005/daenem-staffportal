@@ -1,0 +1,6 @@
+CONTRACT,REQUIRED_CONTROLS,FRONTEND_SECRET,SITE_STATE
+Outbound provider request,Worker/server adapter|signed request|secret binding|idempotency|rate limit|audit,PROHIBITED,CONTRACT_ONLY
+Inbound provider webhook,raw-body signature|timestamp/replay guard|event idempotency|schema validation|audit,PROHIBITED,CONTRACT_ONLY
+Balance/statement fetch,assigned account|server token|cache truth state|rate limit|audit,PROHIBITED,CONTRACT_ONLY
+Transfer submission,approved state|execute permission|maker-checker|beneficiary validation|limit|idempotency,PROHIBITED,SIMULATION_ONLY
+Credential lifecycle,secret manager|rotation|least privilege|revocation|access audit,PROHIBITED,BLOCKED_PRODUCTION

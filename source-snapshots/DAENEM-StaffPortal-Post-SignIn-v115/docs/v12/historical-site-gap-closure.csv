@@ -1,0 +1,9 @@
+GAP_ID,GAP,STATUS,EVIDENCE
+SITE-01,Zero Disclosure,PASS_VERIFIED,"V3 1,159 profile/scope checks; V5 safeguard tests; V12 account and communications scope tests"
+SITE-02,Workflow Depth,PASS_VERIFIED,"Linked scenario workflows plus controlled communication, payment, transfer, payroll and reconciliation transitions"
+SITE-03,Builders,PASS_VERIFIED,"Field, form, workflow, report, widget, theme, rule and notification builders retained with version/governance guards"
+SITE-04,Import/Export,PASS_VERIFIED,"Quoted CSV, XLSX parity, atomic validation, duplicate headers, safe cells and separate export permission"
+SITE-05,Files,PASS_VERIFIED,"Evidence bytes/metadata projection, legal hold, retention, immutable final-state evidence and file authorization"
+SITE-06,Administration,PASS_VERIFIED,"Access, policies, sign-in studio, sessions, builders, cost administration and audit retained"
+SITE-07,Fixture Coherence,PASS_VERIFIED,"Recruitment, printing, bakery, logistics, properties, procurement, inventory, finance, payroll, attendance and expense scenarios linked"
+SITE-08,Visual/Accessibility/Performance,PASS_VERIFIED,"25 sign-in screenshots, 70/70 viewport matrix, reduced motion, responsive derivatives and current build"

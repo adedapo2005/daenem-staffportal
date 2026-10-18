@@ -1,0 +1,486 @@
+{
+  "verifiedAt": "2026-09-11T16:32:17.241Z",
+  "policy": "Minimum native original 3840 × 2160; no upscaling; responsive delivery variants are downsampled; uploaded dashboard screenshots are not used as backgrounds.",
+  "selectionNote": "Nine international photographs plus one verified Lagos original; written requirements take priority over reference mockups.",
+  "assets": [
+    {
+      "id": "01-manhattan-day",
+      "path": "/assets/scenery/01-manhattan-day.jpg",
+      "source_page_url": "https://unsplash.com/photos/city-skyline-under-blue-sky-during-daytime-TQBDoQY2MhA",
+      "image_url": "https://images.unsplash.com/photo-1620937172170-cbe52f778e1f",
+      "credit": "Amir Hanna / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 6000,
+        "height": 4000
+      },
+      "byte_size": 3819696,
+      "category": "Daylight skyline",
+      "location": "Manhattan, New York, United States",
+      "crop_suggestion": "Sign-in: 50% 42%, keep One World Trade Center near center. Header: 50% 40%, keeping pale cloud sky and tower tip; avoid overemphasizing crowded lower city. Use solid white form panel, not text across skyline.",
+      "visual_suitability": "Clear, naturally airy blue sky, silver-blue architecture, precise skyline detail, no obvious readable branding at inspected display scale. More detailed than other selections, so best as one contained hero rather than repeated tiles.",
+      "theme": "horizon",
+      "sha256": "16ff6ea1b86b0aa7a7ec6aa424eef34e403f6320fec65d7b32aefd230dcec981",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/01-manhattan-day-640.webp",
+          "bytes": 35400
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/01-manhattan-day-1280.webp",
+          "bytes": 123100
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/01-manhattan-day-2560.webp",
+          "bytes": 368808
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/01-manhattan-day-3840.webp",
+          "bytes": 637114
+        }
+      ]
+    },
+    {
+      "id": "03-shanghai-glass",
+      "path": "/assets/scenery/03-shanghai-glass.jpg",
+      "source_page_url": "https://unsplash.com/photos/modern-glass-building-against-a-clear-blue-sky-LdLxQxpU6k8",
+      "image_url": "https://images.unsplash.com/photo-1773637780517-d9beab4419a4",
+      "credit": "Declan Sun / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 9313,
+        "height": 6336
+      },
+      "byte_size": 7166696,
+      "category": "Modern glass campus architecture",
+      "location": "Hongqiaozhen, Shanghai, China",
+      "crop_suggestion": "Sign-in: 62% 48%, use white framing and blue glass as diagonal focal geometry. Header: 50% 45%, retain corner and sky. Excellent for a right-side visual panel.",
+      "visual_suitability": "Strongest architecture match: clean white concrete edges, royal-blue glass, cloudless blue sky, crisp lines, no crowds, no visible branding.",
+      "theme": "editorial",
+      "sha256": "501a310c5ea74d3641b77362eec4d2f207ead9dbca5586b81fe0e66f98400141",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/03-shanghai-glass-640.webp",
+          "bytes": 27120
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/03-shanghai-glass-1280.webp",
+          "bytes": 76776
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/03-shanghai-glass-2560.webp",
+          "bytes": 244518
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/03-shanghai-glass-3840.webp",
+          "bytes": 492150
+        }
+      ]
+    },
+    {
+      "id": "05-singapore-blue-hour",
+      "path": "/assets/scenery/05-singapore-blue-hour.jpg",
+      "source_page_url": "https://unsplash.com/photos/singapores-skyline-at-night-is-beautiful-cnHUiuAolpg",
+      "image_url": "https://images.unsplash.com/photo-1752741030430-64060158be27",
+      "credit": "Wesley Pribadi / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 13578,
+        "height": 5212
+      },
+      "byte_size": 10520891,
+      "category": "Blue-hour city panorama",
+      "location": "Marina Bay, Singapore",
+      "crop_suggestion": "Native panoramic aspect ratio 2.61:1. Hero/header: 45% 50%, retain Marina Bay Sands, ArtScience Museum and water reflections. For tall sign-in compositions crop toward 35% 50%, not dead center. Avoid transparent form panels over lights.",
+      "visual_suitability": "Exceptional panoramic resolution and clear landmark separation, deep royal-blue sky, still water, restrained warm city lights. Intentionally the one night option; keep other UI surfaces bright and white.",
+      "theme": "nightfall",
+      "sha256": "6607a49e977bbd35af7b5b91cc36bb4c8c66b042c5c4a9e6a465597b9aa90861",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/05-singapore-blue-hour-640.webp",
+          "bytes": 21938
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/05-singapore-blue-hour-1280.webp",
+          "bytes": 68366
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/05-singapore-blue-hour-2560.webp",
+          "bytes": 204864
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/05-singapore-blue-hour-3840.webp",
+          "bytes": 379378
+        }
+      ]
+    },
+    {
+      "id": "04-white-atrium",
+      "path": "/assets/scenery/04-white-atrium.jpg",
+      "source_page_url": "https://unsplash.com/photos/modern-hotel-atrium-with-glass-ceiling-and-balconies-soVJrlvGRk0",
+      "image_url": "https://images.unsplash.com/photo-1778597578374-c37a703bca27",
+      "credit": "Intricate Explorer / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 6336,
+        "height": 9504
+      },
+      "byte_size": 6129450,
+      "category": "Architectural atrium",
+      "location": "Grand Hyatt Washington atrium, Washington DC, United States",
+      "crop_suggestion": "Portrait original is ideal for a tall sign-in side panel. Sign-in: 50% 35%. Header: 50% 30%, crop to white walls and blue skylight; omit brown floor-edge detail. Do not rotate the photo.",
+      "visual_suitability": "High-key white architecture with an airy ice-blue glass ceiling and elegant symmetry. No legible hotel branding or visible crowd. Use contained image area so architectural detail never competes with form fields.",
+      "theme": "atrium",
+      "sha256": "2b28394637b6301877cbfaf644b2ad6b43c9c088035f5a23d4fb635908a1ca9d",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/04-white-atrium-640.webp",
+          "bytes": 98262
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/04-white-atrium-1280.webp",
+          "bytes": 314782
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/04-white-atrium-2560.webp",
+          "bytes": 1577250
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/04-white-atrium-3840.webp",
+          "bytes": 3569390
+        }
+      ]
+    },
+    {
+      "id": "02-pudong-glass",
+      "path": "/assets/scenery/02-pudong-glass.jpg",
+      "source_page_url": "https://unsplash.com/photos/modern-glass-building-against-a-clear-blue-sky-MFHkVKYhWxE",
+      "image_url": "https://images.unsplash.com/photo-1771678040485-7dba32f0d225",
+      "credit": "Declan Sun / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 7110,
+        "height": 5814
+      },
+      "byte_size": 4091015,
+      "category": "Executive glass architecture; quality-led substitute for second daylight skyline",
+      "location": "Pudong, Shanghai, China",
+      "crop_suggestion": "Sign-in: 50% 44%, retain three cantilevered glass volumes. Header: 50% 38%, showing roof geometry with airy sky. White text only on a contrast-tested overlay; form stays on white.",
+      "visual_suitability": "Crisp, uncluttered architectural geometry, cool blue glass and pale blue sky, no visible people or legible building logos. The facade is a darker blue; do not make it the full post-login background.",
+      "theme": "vertical",
+      "sha256": "0e83e6a5bb75e54fcc6fb7e122250b18d006b99ab284fdecc795b099dda4c9ae",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/02-pudong-glass-640.webp",
+          "bytes": 28534
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/02-pudong-glass-1280.webp",
+          "bytes": 77846
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/02-pudong-glass-2560.webp",
+          "bytes": 218340
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/02-pudong-glass-3840.webp",
+          "bytes": 378342
+        }
+      ]
+    },
+    {
+      "id": "06-mediterranean-blue",
+      "path": "/assets/scenery/06-mediterranean-blue.jpg",
+      "source_page_url": "https://unsplash.com/photos/a-calm-blue-ocean-meets-a-clear-light-blue-sky-OmbE1-whGa8",
+      "image_url": "https://images.unsplash.com/photo-1786040358693-c8947150a060",
+      "credit": "Oleg Zarevennyi / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 7728,
+        "height": 4344
+      },
+      "byte_size": 5775325,
+      "category": "Quiet coast / open waterfront",
+      "location": "Mediterranean Sea",
+      "crop_suggestion": "50% 50% in almost any aspect ratio, preserving straight horizon. Sign-in panel may favor 50% 35% to expose more pale sky. Header can be 50% 52% for horizon and fine wave texture.",
+      "visual_suitability": "Minimal, premium, clutter-free ice-blue sky and finely textured deep-blue water. No people, boats, branding or distracting landmark. Strongest calm negative-space asset for enterprise UI.",
+      "theme": "panorama",
+      "sha256": "4f9236249318a2a56ea2a994aa15d17c703c01b1841535859ee3a0ddcae95020",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/06-mediterranean-blue-640.webp",
+          "bytes": 15936
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/06-mediterranean-blue-1280.webp",
+          "bytes": 68638
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/06-mediterranean-blue-2560.webp",
+          "bytes": 294740
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/06-mediterranean-blue-3840.webp",
+          "bytes": 639668
+        }
+      ]
+    },
+    {
+      "id": "07-hintersee-winter",
+      "path": "/assets/scenery/07-hintersee-winter.jpg",
+      "source_page_url": "https://unsplash.com/photos/snowy-mountain-and-frozen-lake-landscape-WVa3a36JBE4",
+      "image_url": "https://images.unsplash.com/photo-1742845918799-00756661ef14",
+      "credit": "Philipp (@picture_scape) / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 8620,
+        "height": 6081
+      },
+      "byte_size": 13375943,
+      "category": "Snowy alpine lake and forest",
+      "location": "Hintersee, Ramsau bei Berchtesgaden, Germany",
+      "crop_suggestion": "Sign-in: 54% 45%, show snowy peak and pale lake. Header: 55% 34%, emphasize mountain ridge/forest and exclude most foreground log. Accent tile: 65% 65% for crystalline lake texture.",
+      "visual_suitability": "Strongest landscape match: bright white snow, pale blue sky and ice, exact fine natural detail, forest accents, no crowds or branding. Foreground log is a natural element, not ideal under text.",
+      "theme": "duet",
+      "sha256": "6afbe40bea49d9815b5c723b9284db65fefa0cc4bc99f715d8b841193f8d9c5a",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/07-hintersee-winter-640.webp",
+          "bytes": 52574
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/07-hintersee-winter-1280.webp",
+          "bytes": 186914
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/07-hintersee-winter-2560.webp",
+          "bytes": 588730
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/07-hintersee-winter-3840.webp",
+          "bytes": 1313304
+        }
+      ]
+    },
+    {
+      "id": "lagos-bridge-drive",
+      "source_page_url": "https://unsplash.com/photos/ri22VY7Cm8U",
+      "image_url": "https://images.unsplash.com/photo-1696339058184-2e6d1da36ad3",
+      "credit": "Ben Iwara / Unsplash",
+      "license": "Unsplash License",
+      "location": "Lagos, Nigeria",
+      "crop_suggestion": "41% 46%; bridge pylons and sunset, not the foreground windscreen.",
+      "visual_suitability": "Native-resolution Nigerian infrastructure scene; used only for the dusk command composition.",
+      "theme": "command",
+      "path": "/assets/scenery/lagos-bridge-drive.jpg",
+      "native_dimensions": {
+        "width": 6637,
+        "height": 4425
+      },
+      "byte_size": 2538789,
+      "sha256": "94298544c5d65744820bae72e0e9dc7e23cb6786a6db9196167f9e049604b339",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/lagos-bridge-drive-640.webp",
+          "bytes": 12238
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/lagos-bridge-drive-1280.webp",
+          "bytes": 31900
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/lagos-bridge-drive-2560.webp",
+          "bytes": 78314
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/lagos-bridge-drive-3840.webp",
+          "bytes": 135896
+        }
+      ]
+    },
+    {
+      "id": "08-moraine-lake",
+      "path": "/assets/scenery/08-moraine-lake.jpg",
+      "source_page_url": "https://unsplash.com/photos/a-blue-lake-surrounded-by-mountains-and-trees-mng2Ko7FaB0",
+      "image_url": "https://images.unsplash.com/photo-1639074430765-d87212afbfb9",
+      "credit": "Tim Woolliscroft / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 6248,
+        "height": 7960
+      },
+      "byte_size": 6548406,
+      "category": "Alpine lake and forest",
+      "location": "Moraine Lake, Banff National Park, Canada",
+      "crop_suggestion": "Portrait original works elegantly in tall visual panel: 50% 52%. Header: 50% 46%, frame the mountain/lake meeting point and pine-lined shore. Entire source width still supports a 4K-wide landscape crop without enlargement.",
+      "visual_suitability": "Premium quiet composition: vivid glacial blue water, reflected sky, warm sunlit mountain faces, clean forest edge, no people or structures. More saturated than Hintersee; best with ample white UI.",
+      "theme": "gallery",
+      "sha256": "e3a54617f7dd85684370e7a70a913c487ad57157af29cb9fffd6c6ec45f8a8be",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/08-moraine-lake-640.webp",
+          "bytes": 43640
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/08-moraine-lake-1280.webp",
+          "bytes": 157916
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/08-moraine-lake-2560.webp",
+          "bytes": 562896
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/08-moraine-lake-3840.webp",
+          "bytes": 1093104
+        }
+      ]
+    },
+    {
+      "id": "10-olympic-sunrise",
+      "path": "/assets/scenery/10-olympic-sunrise.jpg",
+      "source_page_url": "https://unsplash.com/photos/body-of-water-with-golden-time-i0K3-IHiXYI",
+      "image_url": "https://images.unsplash.com/photo-1524623243236-187b50e18f9f",
+      "credit": "Dave Hoefler / Unsplash",
+      "license": "Unsplash License",
+      "native_dimensions": {
+        "width": 5507,
+        "height": 3442
+      },
+      "byte_size": 1425996,
+      "category": "Quiet warm morning landscape",
+      "location": "Olympic Mountains seen from Deception Pass, Washington, United States",
+      "crop_suggestion": "Sign-in: 50% 50%. Header: 50% 58%, hold the snowy ridge and smooth water reflection. The subject's deliberate long-exposure softness must be retained; do not sharpen or upscale.",
+      "visual_suitability": "Minimal long-exposure dawn landscape with clean layered blue ridges and quiet peach-pink light. Intentional soft cloud/water rendering, not a crisp-detail architectural image; suitable specifically as a tranquil atmospheric panel or restrained header.",
+      "theme": "focus",
+      "sha256": "dd7ac37cf2164261c4c48415b5f888efa01b5f9cae93c17bd72e7923130abc2a",
+      "license_url": "https://unsplash.com/license",
+      "original_unmodified": true,
+      "variants": [
+        {
+          "width": 640,
+          "path": "/assets/scenery/10-olympic-sunrise-640.webp",
+          "bytes": 5396
+        },
+        {
+          "width": 1280,
+          "path": "/assets/scenery/10-olympic-sunrise-1280.webp",
+          "bytes": 14612
+        },
+        {
+          "width": 2560,
+          "path": "/assets/scenery/10-olympic-sunrise-2560.webp",
+          "bytes": 41322
+        },
+        {
+          "width": 3840,
+          "path": "/assets/scenery/10-olympic-sunrise-3840.webp",
+          "bytes": 79860
+        }
+      ]
+    }
+  ],
+  "rejections": [
+    {
+      "file": "01-singapore-sunrise.jpg",
+      "reason": "Native 7728x5152 but dark, hazy and strongly yellow; not bright premium enterprise direction."
+    },
+    {
+      "file": "candidate-marina-sunrise.jpg",
+      "reason": "Native 6000x4000 but skyline is too silhouetted and dark."
+    },
+    {
+      "file": "candidate-singapore-day.jpg",
+      "reason": "Native 5835x4151 but dark foreground, tinted low-key atmosphere and weak crop for the direction."
+    },
+    {
+      "file": "02-keppel-bay-day.jpg",
+      "reason": "3244x4000: width fails strict 3840 minimum."
+    },
+    {
+      "file": "06-puri-coast.jpg",
+      "reason": "2268x4032: width fails strict 3840 minimum."
+    },
+    {
+      "file": "candidate-cornwall.jpg",
+      "reason": "3740x5610: width fails strict 3840 minimum."
+    },
+    {
+      "file": "candidate-morning-field.jpg",
+      "reason": "1976x3512: width fails strict 3840 minimum."
+    },
+    {
+      "file": "candidate-forest-reflection.jpg",
+      "reason": "2760x4361: width fails strict 3840 minimum."
+    },
+    {
+      "file": "08-alpine-lake.jpg",
+      "reason": "Native 4829x7240 but muted, hazy and somber; weaker than final alpine choices."
+    },
+    {
+      "file": "candidate-gosauseen.jpg",
+      "reason": "Native 6240x4160 but moody yellow-green tint and dark water; not bright clean brief."
+    },
+    {
+      "file": "candidate-turquoise-coast.jpg",
+      "reason": "Native 4672x6772 but dark and moody cliff landscape; portrait crop adds limitations."
+    },
+    {
+      "file": "candidate-san-diego.jpg",
+      "reason": "Native 5736x3824, but readable Merrill Lynch branding found in 2400px detail preview; also less crisp than main skyline. Excluded from final selection."
+    }
+  ]
+}

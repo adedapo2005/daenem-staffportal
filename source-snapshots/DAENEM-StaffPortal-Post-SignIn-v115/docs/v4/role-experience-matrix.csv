@@ -1,0 +1,11 @@
+PROFILE,AUTHORIZED_MODULES,HOME,COMPANY,LIMIT
+Owner,99,Owner,group,Fixture only; no self-selected production roles
+Group Admin,95,Owner,group,Fixture only; no self-selected production roles
+Manager,59,Manager,printing,Fixture only; no self-selected production roles
+Employee,23,Employee,printing,Fixture only; no self-selected production roles
+Provisional,0,Neutral account,printing,Fixture only; no self-selected production roles
+Multi-role,59,Manager,printing,Fixture only; no self-selected production roles
+Multi-company,90,Owner,group,Fixture only; no self-selected production roles
+No permission,0,Neutral account,printing,Fixture only; no self-selected production roles
+Expired override,99,Owner,group,Fixture only; no self-selected production roles
+Reduced override,99,Owner,group,Fixture only; no self-selected production roles

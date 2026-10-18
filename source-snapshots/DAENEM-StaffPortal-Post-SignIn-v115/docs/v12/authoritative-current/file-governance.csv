@@ -1,0 +1,6 @@
+CONTROL,RULE,SITE_STATE,PRODUCTION_MAPPING
+Authorization,"File metadata, bytes, history and previews require record and field authorization",Implemented fixture projection,Object access policy
+Upload,"MIME, extension, size and content policy; fake paths rejected",Implemented safeguards,R2 quarantine and scanner
+Versioning,Immutable historical versions and current pointer,Design-lab model,D1 metadata plus R2 objects
+Retention,Retention and legal hold block deletion or replacement,Implemented safeguards,Scheduled policy enforcement
+Export,Separate explicit permission and safe CSV cells,Implemented,Async export service

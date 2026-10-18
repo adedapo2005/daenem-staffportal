@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-09-12T05:21:07Z",
+  "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "version": "13",
+  "sourceCommit": "11ff1fe76005b1afea8bfb2fe90c29af0f688029",
+  "sourceSnapshotSha256": "93bf8ba0b73cb44a689f1dd7520d7220fac75c2b60bde685d5124b5bb116818d",
+  "hashScope": "app/, components/, public/, scripts/, package and build configuration; generated docs excluded",
+  "counts": {
+    "modules": 118,
+    "fixtures": 222,
+    "semanticOperations": 350,
+    "entities": 52,
+    "workflowTransitions": 381,
+    "businessRules": 141,
+    "validations": 788,
+    "metrics": 242,
+    "auditEvents": 472,
+    "notifications": 236,
+    "fileClasses": 20,
+    "integrations": 35,
+    "relationships": 65,
+    "requirements": 6127,
+    "requirementsByStatus": {
+      "NOT_APPLICABLE": 2,
+      "IMPLEMENTED_UNVERIFIED": 6091,
+      "BLOCKED_PRODUCTION": 12,
+      "PASS_VERIFIED": 22,
+      "TOTAL_REQUIREMENTS": 6127
+    },
+    "signInBrowserMeasurements": 105,
+    "visualCaptures": 94
+  }
+}

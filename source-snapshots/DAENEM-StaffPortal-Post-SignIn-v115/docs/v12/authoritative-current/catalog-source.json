@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-09-12T03:53:23Z",
+  "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "baselineCommit": "0c7e90a4950016f145b461db9c0b936302d4b736",
+  "sourceInputSha256": "f6d9214730cb80226368592e8eccf470c158f8523dbc0d2b467ff5fe41b6790f",
+  "hashScope": "app/, components/, public/, scripts/, package.json, pnpm-lock.yaml, vite.config.ts, tsconfig.json; generated catalogs excluded",
+  "modules": 111,
+  "fixtures": 210,
+  "requirements": 6106
+}

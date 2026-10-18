@@ -1,0 +1,141 @@
+PROFILE,SURFACE,RESULT,ASSERTION,TEST_EVIDENCE
+Owner,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Owner,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Group Admin,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Manager,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Employee,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Provisional,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+No permission,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-role,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Multi-company,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Reduced override,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,navigation,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,search,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,AI,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,notifications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,widgets,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,records,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,fields,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,forms,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,reports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,files,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,exports,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,deep links,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,banking,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68
+Expired override,communications,PASS,Authorization-filtered registry/record projection; neutral missing-resource behavior,V3-1159|V5-61|V12-68

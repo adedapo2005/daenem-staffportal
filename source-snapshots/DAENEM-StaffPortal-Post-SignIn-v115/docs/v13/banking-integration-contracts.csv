@@ -1,0 +1,6 @@
+CONTRACT,CONTROLS,FRONTEND_SECRET,SITE_STATE
+Provider request,Server adapter|signature|replay|idempotency|rate limit|audit,PROHIBITED,CONTRACT_ONLY
+Provider webhook,Server adapter|signature|replay|idempotency|rate limit|audit,PROHIBITED,CONTRACT_ONLY
+Balance/statement fetch,Server adapter|signature|replay|idempotency|rate limit|audit,PROHIBITED,CONTRACT_ONLY
+Transfer submission,Server adapter|signature|replay|idempotency|rate limit|audit,PROHIBITED,CONTRACT_ONLY
+Credential lifecycle,Server adapter|signature|replay|idempotency|rate limit|audit,PROHIBITED,CONTRACT_ONLY

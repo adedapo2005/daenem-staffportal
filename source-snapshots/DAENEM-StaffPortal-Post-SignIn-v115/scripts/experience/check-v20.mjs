@@ -1,0 +1,57 @@
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const shared = dirname(root);
+const text = async path => readFile(join(root,path), "utf8");
+const exists = async path => { try { return (await stat(join(root,path))).size > 0; } catch { return false; } };
+const checks = [];
+const check = (id, name, pass, evidence) => checks.push({ id, name, pass: Boolean(pass), evidence });
+
+const registry = await text("app/experience/signin-unified-registry.ts");
+const studio = await text("app/experience/signin-studio-v20.tsx");
+const renderer = await text("app/experience/unified-signin-renderer.tsx");
+const auth = await text("app/experience/auth-v3.tsx");
+const builder = await text("app/experience/signin-builder-v16.tsx");
+const runtime = await text("app/experience/signin-theme-runtime.tsx");
+const mobileCss = await text("app/experience/signin-v19.css");
+const enterprise = await text("app/experience/enterprise-v3.tsx");
+const model = await text("app/experience/model.ts");
+const ledger = await text("requirements-ledger.csv");
+const imported = await readdir(join(root,"app/experience/staffportal-import"));
+const assets = await readdir(join(root,"public/reference-images/signin"));
+const screenshots = (await readdir(shared)).filter(name => name.startsWith("v20-") && name.endsWith(".jpg"));
+
+check("S01","Pinned production commit",registry.includes("839dc56a0a593fc08cc3f806daa3aa6fb0c0548f"),"Exact GitHub source baseline is recorded.");
+check("S02","Pinned Sites V19 commit",registry.includes("58e17866070d0d0874560e9417663928146d3b60"),"Exact V19 source baseline is recorded.");
+check("S03","Staff Portal theme discovery",(await text("app/experience/staffportal-import/theme-system.ts")).match(/signInLayout:/g)?.length===11,"Theme interface plus ten theme definitions found.");
+check("S04","Sites theme preservation",(await text("app/experience/auth-contract.ts")).match(/\{id:'/g)?.length>=10,"Ten V19 sign-in presets retained.");
+check("S05","Production default identity",registry.includes('STAFFPORTAL_DEFAULT_THEME_ID = "staffportal:lagos-sunrise"'),"Default is not coupled to previews.");
+check("S06","Seven Staff Portal backgrounds",(registry.match(/assetId: "/g)||[]).length===7,"Seven source assets retain names, paths and focal metadata.");
+check("S07","Exact imported source boundary",["signin-experience.tsx","signin-experience.css","signin-preferences.ts","signin-font-loader.ts","theme-system.ts"].every(name=>imported.includes(name))&&!imported.includes("auth.tsx"),"Sign-In sources imported; production post-auth/auth orchestration not imported.");
+check("S08","Approved asset catalogue",assets.filter(name=>!name.includes("thumb")).length===7&&assets.includes("daenem-unified-daylight-4k.webp"),`${assets.length} full and thumbnail assets present.`);
+check("S09","Canonical registry fields",["THEME_ID","DISPLAY_NAME","SOURCE_PROVENANCE","SOURCE_VERSION","ART_DIRECTION","BREAKPOINT_LAYOUTS","MOTION_PROFILE","AUTH_TREATMENT","PARENT_THEME","IS_DEFAULT","IS_DRAFT","IS_ACTIVE","IS_ARCHIVED"].every(field=>registry.includes(field)),"Required uppercase contract fields are defined.");
+check("S10","One renderer boundary",renderer.includes("SignInExperience")&&renderer.includes("SignInRuntimeRenderer")&&renderer.includes('RENDERER_FAMILY === "STAFFPORTAL_EXACT"'),"Unified renderer dispatches imported and Sites families.");
+check("S11","Current Sites admin shell",enterprise.includes("SignInStudioV20")&&model.includes("Sign-In Experience / Sign-In Studio"),"Studio is mounted in current after-login experience.");
+check("S12","Isolated preview",studio.includes('src={`/signin?experience=${encodeURIComponent(record.THEME_ID)}&studioPreview=1`}')&&studio.includes("Preview does not activate"),"Studio preview uses the public route without activation.");
+check("S13","Canonical preview dimensions",["390 × 844","768 × 1024","1920 × 1080","3840 × 2160"].every(value=>studio.includes(value)),"Mobile, Tablet, Desktop and 4K controls present.");
+check("S14","Breakpoint independence",runtime.includes('Record<SignInBreakpoint')&&builder.includes("Independently Persisted Layouts"),"Separate layout objects and browser controls retained.");
+check("S15","Real widget creation",builder.includes("addWidget")&&builder.includes("typed renderer")&&!builder.includes("PUBLIC CONTENT placeholder"),"Enabled Add actions use typed registry renderers.");
+check("S16","Custom widget governance",studio.includes("No arbitrary HTML, JavaScript, secrets, keys or backend calls"),"Safe composable boundary is explicit.");
+check("S17","Wording controls",studio.includes("WORDING & COPY CONTROL")&&builder.includes("Reset To Default"),"Live wording and reset controls present.");
+check("S18","Style controls",studio.includes("VISUAL STYLE STUDIO")&&builder.includes("Horizontal Focal Point")&&builder.includes("Brightness"),"Asset, focal and visual token controls present.");
+check("S19","Motion controls",studio.includes("MOTION STUDIO")&&(studio.match(/"Fade"|"Slide"|"Scale"/g)||[]).length>=3&&builder.includes("function MotionEditor")&&builder.includes("`${name} level`"),"Governed motion surface and live editor present.");
+check("S20","Reduced motion",mobileCss.includes("prefers-reduced-motion")||renderer.includes("prefers-reduced-motion"),"Decorative motion has a mandatory device override.");
+check("S21","Mobile closure grid",mobileCss.includes("repeat(25,minmax(0,1fr))")&&runtime.includes("Mobile: { columns: 4, rows: 25"),"V20 mobile hierarchy uses the expanded 25-row composition.");
+check("S22","Authentication security",builder.includes("Authentication cannot be removed or hidden")&&auth.includes("UnifiedSignInRenderer"),"Mandatory auth remains in the shared renderer.");
+check("S23","Green semantic policy",studio.includes("GREEN_SEMANTIC_ONLY")&&ledger.includes("GREEN_SEMANTIC_ONLY"),"Green remains status-semantic only.");
+check("S24","Future module ledger only",ledger.includes("AFTERSIGNIN-STUDIO-001")&&ledger.includes("QUEUED_AFTER_SIGNIN_98_GATE")&&!enterprise.includes("AfterSignInStudio"),"Future module is recorded but not implemented.");
+check("S25","No publish evidence",studio.includes("NOT PUBLISHED")&&studio.includes("Integration Pending"),"Public and production actions remain separated and pending.");
+check("S26","Direct evidence files",await Promise.all(["signin-unified-theme-inventory.csv","final-signin-browser-matrix.csv","signin-builder-behavior-results.json","signin-owner-reference-audit.csv","signin-requirement-scorecard.csv","signin-changed-files.txt","source-diff-excerpts.md"].map(exists)).then(values=>values.every(Boolean)),"All seven required direct evidence attachments exist.");
+check("S27","Screenshot evidence",screenshots.length>=35,`${screenshots.length} direct browser screenshots present.`);
+
+const report = { generatedAt:new Date().toISOString(), total:checks.length, passed:checks.filter(row=>row.pass).length, failed:checks.filter(row=>!row.pass).length, verdict:checks.every(row=>row.pass)?"PASS":"FAIL", results:checks };
+await writeFile(join(root,"signin-v20-source-checks.json"),JSON.stringify(report,null,2)+"\n");
+console.log(JSON.stringify(report,null,2));
+if(report.failed) process.exitCode=1;

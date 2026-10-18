@@ -1,0 +1,12 @@
+STATE,SCREENS,REPRESENTATION,BROWSER STATUS
+Loading,All workspaces,Skeleton + finish demo loading control,Not tested — blocked
+Empty,All workspaces,No authorized records; return control,Not tested — blocked
+Error,All workspaces,Retry copy and retained draft explanation,Not tested — blocked
+Offline,All workspaces / Sync,Device-local draft persistence and explicit demo offline mode,Not tested — blocked
+Stale,All workspaces,Stale banner with fixture update time,Not tested — blocked
+Permission denied,All workspaces,Route gate with no target content,Not tested — blocked
+No results,All workspaces / search,Filtered empty state,Not tested — blocked
+Success,"Record, approval, attendance, preferences",Toast and local state/audit changes,Not tested — blocked
+Warning,Required evidence and incomplete attendance,Explanation and resolution action,Not tested — blocked
+Sync conflict,Sync & Sessions,Local vs remote fixture comparator,Not tested — blocked
+Unavailable integration,API & Integrations / Social Accounts / Resources,No invented health/credentials,Not tested — blocked

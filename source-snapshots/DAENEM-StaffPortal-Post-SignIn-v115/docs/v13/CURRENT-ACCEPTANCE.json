@@ -1,0 +1,16 @@
+{
+  "generatedAt": "2026-09-12T05:21:07Z",
+  "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "version": "13",
+  "signInNoScroll": "70/70 PASS",
+  "authenticationStates": "35/35 PASS",
+  "visualCaptures": 94,
+  "zeroDisclosure": "13/13 restricted runtime assertions PASS; production server boundary pending mapping",
+  "communications": "PASS_DESIGN_LAB",
+  "bankingTreasury": "PASS_DESIGN_LAB",
+  "accessibility": "SUPPORTED CHECKS PASS; browser zoom and full visual contrast certification BLOCKED",
+  "performance": "SUPPORTED LOCAL MEASUREMENTS RECORDED; Core Web Vitals BLOCKED",
+  "siteOwnedFail": 0,
+  "criticalSiteGaps": 0,
+  "highSiteGaps": 0
+}

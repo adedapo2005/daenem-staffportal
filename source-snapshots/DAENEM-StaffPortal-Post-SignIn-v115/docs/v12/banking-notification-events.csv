@@ -1,0 +1,7 @@
+EVENT,AUTHORIZED_AUDIENCE,DATA_MINIMIZATION
+payment.match_failed,Assigned reconciliation queue,"No unassigned account, balance, person, count or reference"
+transfer.awaiting_approval,Eligible independent checker,"No unassigned account, balance, person, count or reference"
+transfer.failed,Assigned transfer operator and checker,"No unassigned account, balance, person, count or reference"
+beneficiary.high_risk_change,Authorized beneficiary reviewer,"No unassigned account, balance, person, count or reference"
+payroll.employee_failed,Assigned payroll exception team,"No unassigned account, balance, person, count or reference"
+reconciliation.variance,Assigned reconciliation team,"No unassigned account, balance, person, count or reference"

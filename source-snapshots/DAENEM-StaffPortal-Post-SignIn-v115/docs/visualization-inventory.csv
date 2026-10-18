@@ -1,0 +1,19 @@
+PAGE,VISUALIZATION TYPE,METRIC/QUESTION,WHY APPROPRIATE,INTERACTIONS
+Overview,Area,Revenue and operating cost over time,Compare movement in a selected fixture period,Period selector; tooltip; drill-down
+Operational Cockpit,Multi-series line,Operational performance vs comparison,Monitor operational movement,Tooltip; workspace drill-down
+Attendance,Calendar heatmap,"Complete, incomplete and no-event days",Expose temporal attendance exceptions,Day selection; explicit clock events
+Payroll,Bullet/proportional bars,"Gross, deduction and net composition",Keep preparation financially legible,Readiness stages; record review
+Recruitment,Funnel & stage lanes,Candidate movement,Keep review stage visible,Candidate details; filtering
+Printing,Production lanes & utilization bars,WIP and machine load,Show lifecycle and resource context,Job details; material gate
+Bakery,Batch timeline & grouped bars,Expected/actual yield and ingredient consumption,Support accountability and production chronology,Batch selection; record edit
+Autos,Aging bars & grouped bars,"Inventory age, landed cost and asking price",Compare capital tied up and prospective margin,Vehicle selection; record drill-down
+Logistics,Route schematic & progress timeline,Trip relationships and required POD,Join route context with queue,Route node and queue selection; trip detail
+Properties,Unit occupancy matrix,Occupied and available units,Expose portfolio composition,Unit launch to leases
+Finance,Area & waterfall,Opening + inflow - outflow = closing,Show cash movement and reconciliation,Period selection; tabs; records
+Receivables,Horizontal aging bars,Outstanding receivables by aging bucket,Prioritize collection attention,Record drill-down
+Spend,Treemap,Spend distribution by company,Compare contribution to spend exposure,Source record drill-down
+Projects,Gantt-style timeline,Milestones and completion,Align chronology with ownership,Project selection
+Inventory,Availability bars,Stock and movement priority,Surface inventory risks,Record drill-down
+Marketing,Conversion funnel & scatter/bubble,Audience journey and spend/response,Show conversion and comparative results,Campaign drill-down; tooltip
+Security,Event line & severity matrix,Sign-in events and review risk,Support investigation,Event drill-down
+Profile,Radial-like completeness number & progress bar,Required profile completion,Prioritize missing employee information,Section links and forms

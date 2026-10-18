@@ -1,0 +1,11 @@
+EVENT,BUSINESS_MEANING,CHANNELS,IDEMPOTENCY,PRODUCTION_STATE
+invoice.issued,Invoice issued,WhatsApp|Email|Both,invoice.issued+customer+channel+template_version,CONTRACT_ONLY
+invoice.paid,Authoritative payment completed,WhatsApp|Email|Both,invoice.paid+customer+channel+template_version,CONTRACT_ONLY
+order.completed,Order completed,WhatsApp|Email|Both,order.completed+customer+channel+template_version,CONTRACT_ONLY
+delivery.completed,Delivery completed,WhatsApp|Email|Both,delivery.completed+customer+channel+template_version,CONTRACT_ONLY
+collection.ready,Collection ready,WhatsApp|Email|Both,collection.ready+customer+channel+template_version,CONTRACT_ONLY
+payment.verified,Payment matched and authoritative,WhatsApp|Email|Both,payment.verified+customer+channel+template_version,CONTRACT_ONLY
+feedback.requested,Approved feedback request,WhatsApp|Email|Both,feedback.requested+customer+channel+template_version,CONTRACT_ONLY
+complaint.received,Complaint received,WhatsApp|Email|Both,complaint.received+customer+channel+template_version,CONTRACT_ONLY
+support.followup,Approved support follow-up,WhatsApp|Email|Both,support.followup+customer+channel+template_version,CONTRACT_ONLY
+campaign.approved,Approved campaign publication,WhatsApp|Email|Both,campaign.approved+customer+channel+template_version,CONTRACT_ONLY

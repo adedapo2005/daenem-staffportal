@@ -1,0 +1,171 @@
+{
+  "generatedAt": "2026-09-13T05:51:01.548Z",
+  "total": 27,
+  "passed": 27,
+  "failed": 0,
+  "verdict": "PASS",
+  "results": [
+    {
+      "id": "S01",
+      "name": "Pinned production commit",
+      "pass": true,
+      "evidence": "Exact GitHub source baseline is recorded."
+    },
+    {
+      "id": "S02",
+      "name": "Pinned Sites V19 commit",
+      "pass": true,
+      "evidence": "Exact V19 source baseline is recorded."
+    },
+    {
+      "id": "S03",
+      "name": "Staff Portal theme discovery",
+      "pass": true,
+      "evidence": "Theme interface plus ten theme definitions found."
+    },
+    {
+      "id": "S04",
+      "name": "Sites theme preservation",
+      "pass": true,
+      "evidence": "Ten V19 sign-in presets retained."
+    },
+    {
+      "id": "S05",
+      "name": "Production default identity",
+      "pass": true,
+      "evidence": "Default is not coupled to previews."
+    },
+    {
+      "id": "S06",
+      "name": "Seven Staff Portal backgrounds",
+      "pass": true,
+      "evidence": "Seven source assets retain names, paths and focal metadata."
+    },
+    {
+      "id": "S07",
+      "name": "Exact imported source boundary",
+      "pass": true,
+      "evidence": "Sign-In sources imported; production post-auth/auth orchestration not imported."
+    },
+    {
+      "id": "S08",
+      "name": "Approved asset catalogue",
+      "pass": true,
+      "evidence": "13 full and thumbnail assets present."
+    },
+    {
+      "id": "S09",
+      "name": "Canonical registry fields",
+      "pass": true,
+      "evidence": "Required uppercase contract fields are defined."
+    },
+    {
+      "id": "S10",
+      "name": "One renderer boundary",
+      "pass": true,
+      "evidence": "Unified renderer dispatches imported and Sites families."
+    },
+    {
+      "id": "S11",
+      "name": "Current Sites admin shell",
+      "pass": true,
+      "evidence": "Studio is mounted in current after-login experience."
+    },
+    {
+      "id": "S12",
+      "name": "Isolated preview",
+      "pass": true,
+      "evidence": "Studio preview uses the public route without activation."
+    },
+    {
+      "id": "S13",
+      "name": "Canonical preview dimensions",
+      "pass": true,
+      "evidence": "Mobile, Tablet, Desktop and 4K controls present."
+    },
+    {
+      "id": "S14",
+      "name": "Breakpoint independence",
+      "pass": true,
+      "evidence": "Separate layout objects and browser controls retained."
+    },
+    {
+      "id": "S15",
+      "name": "Real widget creation",
+      "pass": true,
+      "evidence": "Enabled Add actions use typed registry renderers."
+    },
+    {
+      "id": "S16",
+      "name": "Custom widget governance",
+      "pass": true,
+      "evidence": "Safe composable boundary is explicit."
+    },
+    {
+      "id": "S17",
+      "name": "Wording controls",
+      "pass": true,
+      "evidence": "Live wording and reset controls present."
+    },
+    {
+      "id": "S18",
+      "name": "Style controls",
+      "pass": true,
+      "evidence": "Asset, focal and visual token controls present."
+    },
+    {
+      "id": "S19",
+      "name": "Motion controls",
+      "pass": true,
+      "evidence": "Governed motion surface and live editor present."
+    },
+    {
+      "id": "S20",
+      "name": "Reduced motion",
+      "pass": true,
+      "evidence": "Decorative motion has a mandatory device override."
+    },
+    {
+      "id": "S21",
+      "name": "Mobile closure grid",
+      "pass": true,
+      "evidence": "V20 mobile hierarchy uses the expanded 25-row composition."
+    },
+    {
+      "id": "S22",
+      "name": "Authentication security",
+      "pass": true,
+      "evidence": "Mandatory auth remains in the shared renderer."
+    },
+    {
+      "id": "S23",
+      "name": "Green semantic policy",
+      "pass": true,
+      "evidence": "Green remains status-semantic only."
+    },
+    {
+      "id": "S24",
+      "name": "Future module ledger only",
+      "pass": true,
+      "evidence": "Future module is recorded but not implemented."
+    },
+    {
+      "id": "S25",
+      "name": "No publish evidence",
+      "pass": true,
+      "evidence": "Public and production actions remain separated and pending."
+    },
+    {
+      "id": "S26",
+      "name": "Direct evidence files",
+      "pass": true,
+      "evidence": "All seven required direct evidence attachments exist."
+    },
+    {
+      "id": "S27",
+      "name": "Screenshot evidence",
+      "pass": true,
+      "evidence": "65 direct browser screenshots present."
+    }
+  ]
+}

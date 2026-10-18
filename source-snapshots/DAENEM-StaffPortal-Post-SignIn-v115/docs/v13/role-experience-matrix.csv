@@ -1,0 +1,11 @@
+PROFILE,ROLE,COMPANY,VISIBLE_MODULES,AUTHORITY_SOURCE,RESULT
+Owner,Owner,group,118,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Group Admin,Owner,group,106,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Manager,Manager,printing,69,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Employee,Employee,printing,23,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Provisional,Employee,printing,0,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Multi-role,Manager,printing,69,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Multi-company,Owner,group,109,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+No permission,Employee,printing,0,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Expired override,Owner,group,118,Current security-contract.ts export,PASS_SOURCE_PROJECTION
+Reduced override,Owner,group,118,Current security-contract.ts export,PASS_SOURCE_PROJECTION

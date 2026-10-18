@@ -1,14 +1,16 @@
 import { useMemo, type MouseEvent as ReactMouseEvent } from 'react';
 import type { WorkforceContext } from './auth';
-import Portal from './qa-review-v115/app/experience/Portal';
-import { sessionForProfile } from './qa-review-v115/app/experience/security-contract';
-import type { Company, Session } from './qa-review-v115/app/experience/model';
-import './qa-review-v115/app/globals.css';
+import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal';
+import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/security-contract';
+import type { Company, Session } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
+import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
   version: '115',
   commit: '09bd2051d118242bce095be012a3a763cc1f8a33',
+  exportFiles: '683',
+  archiveSha256: 'c52773eb05c01be8fb84810b4c2cc3b42e73416e02d71372f5046cef9dea2fb4',
 } as const;
 
 function companyFor(context: WorkforceContext): Company {
@@ -66,6 +68,8 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       data-approved-project={APPROVED_SOURCE.project}
       data-approved-version={APPROVED_SOURCE.version}
       data-source-commit={APPROVED_SOURCE.commit}
+      data-export-file-count={APPROVED_SOURCE.exportFiles}
+      data-export-archive-sha256={APPROVED_SOURCE.archiveSha256}
       onClickCapture={(event) => {
         if (!isConfirmedSignOut(event)) return;
         event.preventDefault();

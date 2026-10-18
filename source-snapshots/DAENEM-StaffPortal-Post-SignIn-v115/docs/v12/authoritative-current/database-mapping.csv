@@ -1,0 +1,13 @@
+TABLE,PURPOSE,KEY_SCOPE,SITE_SOURCE,PRODUCTION_STATE
+communication_conversations,Queue and assignment state,"company_id, site_id, business_number_id",customer-communications fixtures,D1 schema/migration required
+communication_messages,"Direction, content, provider and delivery state","conversation_id, company_id",conversation UI,D1 schema/migration required
+communication_templates,Versioned channel templates,"company_id, channel, version",template fixtures,D1 schema/migration required
+letterheads,Versioned approved document identity,"company_id, document_type, version",letterhead fixtures,D1 schema/migration required
+bank_accounts,Assigned account metadata and masked identity,"company_id, bank_account_id",banking fixtures,D1 schema/migration required
+bank_transactions,Provider and ledger transaction state,"bank_account_id, transaction_id",transaction monitor,D1 schema/migration required
+payment_matches,Provider event to ERP obligation,"provider_event_id, related_record_id",verification pipeline,D1 schema/migration required
+transfers,Controlled payout lifecycle,"source_account_id, transfer_id",transfer control,D1 schema/migration required
+beneficiaries,Governed payout destinations,"company_id, beneficiary_id",beneficiary register,D1 schema/migration required
+payroll_batches,Payroll banking lifecycle,"company_id, payroll_batch_id",payroll operations,D1 schema/migration required
+employee_payments,Per-employee payment finality,"payroll_batch_id, employee_id",payroll table,D1 schema/migration required
+reconciliations,Bank/provider/ledger comparison,"bank_account_id, period",reconciliation desk,D1 schema/migration required

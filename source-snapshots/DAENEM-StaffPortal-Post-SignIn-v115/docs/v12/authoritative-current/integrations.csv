@@ -1,0 +1,7 @@
+INTEGRATION,DIRECTION,SITE_STATE,PRODUCTION_AUTHORITY,SECURITY
+WhatsApp Business,Inbound and outbound,UNAVAILABLE / simulated,Server-side provider adapter,"Signature, replay, idempotency, consent, opt-out"
+Email,Outbound and delivery updates,UNAVAILABLE / simulated,Server-side email adapter,"Template version, idempotency, audit"
+Banking providers,"Events, balances, statements, transfers",UNAVAILABLE / fixtures,Server-side bank adapters,"Signed requests, webhooks, secrets, rate limits"
+Weather,Public context,DEMO,Weather provider,Truth state and cache policy
+News,Public context,UNAVAILABLE,News provider,Source attribution and safe links
+AI,Drafts/search,EDITORIAL DEMO,Governed AI gateway,Authorization before retrieval; human approval before send/publish

@@ -1,0 +1,37 @@
+{
+  "SITE_PROJECT_ID": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "SITE_TITLE": "DAENEM STAFF PORTAL — PREMIUM EXPERIENCE LAB",
+  "CURRENT_VERSION": "13",
+  "PUBLISHED_VERSION": "13",
+  "SOURCE_COMMIT": "11ff1fe76005b1afea8bfb2fe90c29af0f688029",
+  "SOURCE_SNAPSHOT_SHA256": "93bf8ba0b73cb44a689f1dd7520d7220fac75c2b60bde685d5124b5bb116818d",
+  "SOURCE_HASH_SCOPE": "app/, components/, public/, scripts/, package and build configuration; generated docs excluded",
+  "LIVE_SITE_URL": "https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site",
+  "DEPLOYMENT_ID": "PENDING_SITES_DEPLOYMENT",
+  "LAST_PUBLISHED_AT": "PENDING_SITES_DEPLOYMENT",
+  "LAST_PUBLISHED_TIMEZONE": "America/New_York",
+  "GENERATED_AT": "2026-09-12T05:21:07Z",
+  "IDENTITY_CHECKPOINTS": [
+    {
+      "stage": "baseline",
+      "result": "PASS",
+      "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2"
+    },
+    {
+      "stage": "browser measurement",
+      "result": "PASS",
+      "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2"
+    },
+    {
+      "stage": "visual evidence",
+      "result": "PASS",
+      "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2"
+    },
+    {
+      "stage": "package generation",
+      "result": "PASS",
+      "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2"
+    }
+  ],
+  "REJECTED_PREVIEW_DRIFT": "A shared preview temporarily showed another project; it was rejected and no evidence was accepted until the exact Staff Portal title/project was restored."
+}

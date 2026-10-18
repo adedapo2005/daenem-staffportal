@@ -1,0 +1,135 @@
+MODULE,FIELD_OR_RULE,TYPE,VALIDATION,EVIDENCE
+self-service,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+home,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+cockpit,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+workspace,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+profile,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+people,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+hr-records,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+attendance,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+leave,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+performance,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+hr-cases,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+lifecycle,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+forms,Required Response,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+tasks,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+payroll,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+payslips,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+payroll-batches,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+applications,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+interviews,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+hiring,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+printing,Material Usage,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+print-orders,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+print-materials,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+bakery,Actual Yield,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+bakery-recipes,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+bakery-sales,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+autos,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+auto-leads,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+auto-history,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+logistics,Proof of Delivery,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+fleet,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+trip-costs,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+properties,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+leases,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+property-leads,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+finance,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+receivables,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+finance-posting,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+budgets,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+expenses,Receipt,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+expense-approvals,Receipt,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+spend,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+cost-admin,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+inventory,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+projects,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+facilities,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+social,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+social-controls,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+social-accounts,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+social-sync,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+marketing,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+inbox,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+website,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+communications,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+broadcasts,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+encouragement,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+notifications,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+help,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+security,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+access,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+admin,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+recovery,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+support,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+resources,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+sync,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+audit,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+toolbox,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+integrations,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+hub,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+theme,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+navigation,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+layout,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+signin-design,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+procurement,Receipt,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+purchase-orders,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+goods-receipts,Receipt,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+stock-transfers,Receipt,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+stock-borrowing,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+bakery-accountability,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+technology-services,Resolution,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+vacancies,Approval,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+staff-messaging,Message,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+productivity,Business Purpose,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+work-location,Privacy Explanation,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+salary-adjustments,Reason,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+data-import,Mapping,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+dashboard-personalization,Widget,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+files,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+saved-views,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+field-builder,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+form-builder,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+workflow-builder,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+report-builder,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+widget-builder,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+theme-builder,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+business-rules,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+notification-rules,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+session-analytics,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+reports,,SCHEMA,Typed field and workflow validation,SOURCE_AND_FIXTURE_TEST
+customer-communications,Last Message,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+communication-automation,Event,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+communication-templates,Body,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+letterheads,Document Type,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+banking-operations,Institution,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+treasury,Scope,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+payment-verification,Provider Event,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+transfers,Reason,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+beneficiaries,Change Reason,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+payroll-execution,Payroll Batch,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+reconciliation,Account,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+financial-reports,Report Type,REQUIRED_EVIDENCE,Required before controlled completion,SOURCE_AND_FIXTURE_TEST
+attendance,BR-001,BUSINESS_INVARIANT,Present requires successful clock-in and clock-out.,REGRESSION_TESTED
+printing,BR-002,BUSINESS_INVARIANT,Complete requires actual material usage and QC evidence.,REGRESSION_TESTED
+bakery,BR-003,BUSINESS_INVARIANT,Completion requires nonnegative actual yield; expected yield is never substituted.,REGRESSION_TESTED
+bakery-accountability,BR-004,BUSINESS_INVARIANT,Unexplained quantity or cash variance blocks reconciliation.,REGRESSION_TESTED
+logistics,BR-005,BUSINESS_INVARIANT,A trip cannot be delivered or closed without POD evidence.,REGRESSION_TESTED
+shared,BR-006,BUSINESS_INVARIANT,Maker cannot approve their own controlled request; decision reason is required.,REGRESSION_TESTED
+finance,BR-007,BUSINESS_INVARIANT,Posting requires finite equal debit and credit values in an open period.,REGRESSION_TESTED
+purchase-orders,BR-008,BUSINESS_INVARIANT,Approval alone creates no active commitment. Ordered and partial-received balances do.,REGRESSION_TESTED
+goods-receipts,BR-009,BUSINESS_INVARIANT,Accepted plus rejected quantity equals delivered quantity.,REGRESSION_TESTED
+social,BR-010,BUSINESS_INVARIANT,Human approval and explicit Publish permission precede any simulated publication.,REGRESSION_TESTED
+security,BR-011,BUSINESS_INVARIANT,No assignment means no disclosure; missing and unauthorized resources share a neutral result.,REGRESSION_TESTED
+security,BR-012,BUSINESS_INVARIANT,"Export, Pay, Publish and other specialized actions are explicit, never implied by a level.",REGRESSION_TESTED
+builders,BR-013,BUSINESS_INVARIANT,No arbitrary SQL/JavaScript; protected business invariants cannot be disabled.,REGRESSION_TESTED
+stock-transfers,BR-014,BUSINESS_INVARIANT,Transfer closure requires received quantity equal to dispatched quantity.,REGRESSION_TESTED
+stock-borrowing,BR-015,BUSINESS_INVARIANT,Closure requires the full issued quantity returned.,REGRESSION_TESTED
+payroll,BR-016,BUSINESS_INVARIANT,"Net pay, bank validation, statutory configuration and approval are separate gates.",REGRESSION_TESTED
+customer-communications,BR-017,BUSINESS_INVARIANT,"Opening a screen never sends a message; sends require an authorized event or an approved manual flow with idempotency, consent and audit.",REGRESSION_TESTED
+customer-communications,BR-018,BUSINESS_INVARIANT,"AI may draft, but a manually initiated customer communication follows Generate, Preview, Edit, Approve, Send.",REGRESSION_TESTED
+integrations,BR-019,BUSINESS_INVARIANT,"Provider credentials, signatures, webhook verification and retries belong in production server-side adapters, never the frontend.",REGRESSION_TESTED
+payment-verification,BR-020,BUSINESS_INVARIANT,"A bank notification alone cannot activate service; verified provider event, match, authoritative payment state and applicable business rule are all required.",REGRESSION_TESTED
+transfers,BR-021,BUSINESS_INVARIANT,"Create, approve, execute and reconcile are separate grants; a maker cannot approve their own controlled transfer.",REGRESSION_TESTED
+payroll-execution,BR-022,BUSINESS_INVARIANT,Batch submission does not mark employees paid; success or reversal is applied per employee and reconciled before final state.,REGRESSION_TESTED
+banking-operations,BR-023,BUSINESS_INVARIANT,"Unassigned accounts, balances, transactions, beneficiaries, payroll batches, reports and their derived counts are absent from every surface.",REGRESSION_TESTED

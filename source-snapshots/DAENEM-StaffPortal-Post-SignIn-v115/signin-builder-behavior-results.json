@@ -1,0 +1,223 @@
+{
+  "generatedAt": "2026-09-13T05:44:36.580Z",
+  "mode": "browser-e2e",
+  "total": 35,
+  "passed": 35,
+  "failed": 0,
+  "results": [
+    {
+      "id": "B01",
+      "name": "Production-default imported card",
+      "pass": true,
+      "evidence": "Exact provenance-aware default ID visible"
+    },
+    {
+      "id": "B02",
+      "name": "Staff Portal themes selectable",
+      "pass": true,
+      "evidence": "10 Staff Portal cards"
+    },
+    {
+      "id": "B03",
+      "name": "Sites themes selectable",
+      "pass": true,
+      "evidence": "10 Sites cards"
+    },
+    {
+      "id": "B04",
+      "name": "Unified inventory preserved",
+      "pass": true,
+      "evidence": "21 total theme cards including recovered custom drafts"
+    },
+    {
+      "id": "B05",
+      "name": "Source provenance visible",
+      "pass": true,
+      "evidence": "STAFFPORTAL and SITES data provenance present on every canonical card"
+    },
+    {
+      "id": "B06",
+      "name": "Custom draft recovery visible",
+      "pass": true,
+      "evidence": "1 recovered custom card"
+    },
+    {
+      "id": "B07",
+      "name": "Sites theme selection",
+      "pass": true,
+      "evidence": "Preview iframe requested sites:editorial"
+    },
+    {
+      "id": "B08",
+      "name": "Live preview does not activate public",
+      "pass": true,
+      "evidence": "Active rail unchanged: SITES LAB ACTIVESunlit Meridian"
+    },
+    {
+      "id": "B09",
+      "name": "Explicit local activation boundary",
+      "pass": true,
+      "evidence": "Only explicit laboratory Activate Preview is enabled"
+    },
+    {
+      "id": "B10",
+      "name": "Return to production default",
+      "pass": true,
+      "evidence": "Permanent return control visible"
+    },
+    {
+      "id": "B11",
+      "name": "Mobile preview mode",
+      "pass": true,
+      "evidence": "390 × 844 device shell selected"
+    },
+    {
+      "id": "B12",
+      "name": "Tablet preview mode",
+      "pass": true,
+      "evidence": "768 × 1024 device shell selected"
+    },
+    {
+      "id": "B13",
+      "name": "Desktop preview mode",
+      "pass": true,
+      "evidence": "1920 × 1080 device shell selected"
+    },
+    {
+      "id": "B14",
+      "name": "4K preview mode",
+      "pass": true,
+      "evidence": "3840 × 2160 device shell selected"
+    },
+    {
+      "id": "B15",
+      "name": "Fit and 100 percent preview",
+      "pass": true,
+      "evidence": "Fit and 100% controls rendered"
+    },
+    {
+      "id": "B16",
+      "name": "Zoom control",
+      "pass": true,
+      "evidence": "10–100% range control rendered"
+    },
+    {
+      "id": "B17",
+      "name": "Full-screen preview",
+      "pass": true,
+      "evidence": "Full Screen control rendered"
+    },
+    {
+      "id": "B18",
+      "name": "Same public renderer contract",
+      "pass": true,
+      "evidence": "Studio iframe uses /signin route"
+    },
+    {
+      "id": "B19",
+      "name": "No-code edit workspace",
+      "pass": true,
+      "evidence": "Preserved V19 builder embedded in current Sites shell"
+    },
+    {
+      "id": "B20",
+      "name": "Independent breakpoint layouts",
+      "pass": true,
+      "evidence": "Mobile, Tablet, Desktop and 4K selector rendered"
+    },
+    {
+      "id": "B21",
+      "name": "Full layout controls",
+      "pass": true,
+      "evidence": "17 selected-widget movement, size, visibility, layer, lock, group and removal controls"
+    },
+    {
+      "id": "B22",
+      "name": "Governed widget library",
+      "pass": true,
+      "evidence": "Typed public-safe registry is live"
+    },
+    {
+      "id": "B23",
+      "name": "Restricted widgets blocked",
+      "pass": true,
+      "evidence": "Restricted pre-auth examples disabled"
+    },
+    {
+      "id": "B24",
+      "name": "Custom widget creation",
+      "pass": true,
+      "evidence": "Add To Canvas opened the live canvas with 11 rendered widgets and selected the new Custom Admin Text instance"
+    },
+    {
+      "id": "B25",
+      "name": "Wording edit updates live preview",
+      "pass": true,
+      "evidence": "Typed heading appeared in shared renderer"
+    },
+    {
+      "id": "B26",
+      "name": "Wording reset to default",
+      "pass": true,
+      "evidence": "Custom widget wording restored safely"
+    },
+    {
+      "id": "B27",
+      "name": "Breakpoint independence",
+      "pass": true,
+      "evidence": "New Desktop widget remains hidden on Mobile after breakpoint switch"
+    },
+    {
+      "id": "B28",
+      "name": "Draft save and autosave recovery",
+      "pass": true,
+      "evidence": "Saved declarative draft staffportal-lagos-sunrise-variant with per-breakpoint layouts"
+    },
+    {
+      "id": "B29",
+      "name": "Background switching",
+      "pass": true,
+      "evidence": "/assets/scenery/03-shanghai-glass-1280.webp → /assets/scenery/nigeria-ibadan-senate-1280.webp"
+    },
+    {
+      "id": "B30",
+      "name": "Image focal edit",
+      "pass": true,
+      "evidence": "Focal controls persisted 64% / 41%"
+    },
+    {
+      "id": "B31",
+      "name": "Style edit",
+      "pass": true,
+      "evidence": "Brightness token set to 87"
+    },
+    {
+      "id": "B32",
+      "name": "Motion edit",
+      "pass": true,
+      "evidence": "Fade control reports Enhanced"
+    },
+    {
+      "id": "B33",
+      "name": "Draft reload recovery",
+      "pass": true,
+      "evidence": "Full reload recovered staffportal-lagos-sunrise-variant and custom widget state"
+    },
+    {
+      "id": "B34",
+      "name": "Theme compare",
+      "pass": true,
+      "evidence": "Distinct IDs compared as UNIQUE"
+    },
+    {
+      "id": "B35",
+      "name": "Version history and governed rollback",
+      "pass": true,
+      "evidence": "3 milestones; production rollback disabled pending integration"
+    }
+  ],
+  "verdict": "PASS",
+  "execution": "Chromium browser E2E against the V20 local Sites preview",
+  "productionWrites": 0,
+  "publicActivationDuringPreviewTests": false
+}

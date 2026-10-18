@@ -1,0 +1,119 @@
+ROUTE,ARCHETYPE,EVIDENCE,STATUS
+/self-service,Personal Service Desk,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/home,Executive Command,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/cockpit,Map & Exception Control Room,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/workspace,Focus & Flow,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/profile,Identity & Self-Service,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/people,People Directory & Record Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/hr-records,Controlled HR Record Ledger,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/attendance,Shift Timeline & Location Validation,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/leave,Absence Calendar & Request Rail,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/performance,Review Cycle & Scorecard,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/hr-cases,Confidential Case Timeline,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/lifecycle,Lifecycle Checklist & Responsibility Map,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/forms,Document Shelf & Form Workspace,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/tasks,Workstream Board,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/payroll,Readiness Gates & Payroll Worksheet,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/payslips,Statement Reader & Period Archive,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/payroll-batches,Payment Batch Control Ledger,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/applications,Candidate Pipeline,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/interviews,Interview Calendar & Scorecards,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/hiring,Offer-to-Onboarding Handoff,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/printing,Production Lanes & Machine Load,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/print-orders,Quotation Ledger & Customer Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/print-materials,Consumption & Job Cost Worksheet,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/bakery,Batch Timeline & Yield Reconciliation,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/bakery-recipes,BOM & Ingredient Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/bakery-sales,Dispatch-to-Remittance Reconciliation,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/autos,Vehicle Inventory & Sales Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/auto-leads,Vehicle Sales Pipeline,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/auto-history,Read-only Service Archive,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/logistics,Route Map & Dispatch Queue,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/fleet,Fleet Readiness Matrix,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/trip-costs,Trip Profitability Worksheet,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/properties,Portfolio Mosaic & Occupancy Grid,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/leases,Lease Timeline & Receivables,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/property-leads,Listing-to-Inspection Pipeline,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/finance,Ledger & Financial Analysis,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/receivables,Aging Ladder & Receivable Ledger,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/finance-posting,Posting Event Trace,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/budgets,Budget Variance & Period Control,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/expenses,Request Register & Evidence Composer,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/expense-approvals,Queue–Evidence–Decision Desk,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/spend,Spend Treemap & Profit Bridge,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/cost-admin,Cost Governance Workbench,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/inventory,Availability Matrix & Movement Ledger,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/projects,Milestone Schedule & Budget Rail,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/facilities,Asset Health & Maintenance Board,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/social,Editorial Calendar & Content Canvas,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/social-controls,Publishing Policy Studio,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/social-accounts,Provider Connection Register,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/social-sync,Conversion Queue & Source Trace,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/marketing,Audience Funnel & Campaign Comparison,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/inbox,Conversation Inbox & Context Rail,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/website,Page Tree & Revision Workspace,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/communications,Announcement Editorial Board,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/broadcasts,Audience Composer & Acknowledgement Monitor,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/encouragement,Human-Approval Writing Desk,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/notifications,Priority Inbox,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/help,Contextual Help Conversation,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/security,Security Event Timeline & Risk Matrix,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/access,Permission Matrix & Explanation Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/admin,Organization Policy Workbench,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/recovery,Recovery Issue & Revocation Desk,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/support,Support Case & Consent Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/resources,Service Topology & Health Grid,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/sync,Sync Queue & Conflict Comparator,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/audit,Audit Explorer & Event Detail,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/toolbox,Readiness Diagnostic Workbench,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/integrations,Integration Catalogue & Request Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/hub,Authorized Module Atlas,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/theme,Appearance Gallery,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/navigation,Navigation Workbench,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/layout,Composition Studio & Policy Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/signin-design,Sign-In Composition Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/procurement,Requisition & Sourcing Desk,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/purchase-orders,Commitment Ledger & Order Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/goods-receipts,Receipt Worksheet & Acceptance Gate,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/stock-transfers,Transfer Custody Timeline,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/stock-borrowing,Borrow & Return Register,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/bakery-accountability,Loaf & Money Accountability Desk,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/technology-services,Service Queue & SLA Timeline,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/vacancies,Vacancy Brief & Recruitment Readiness,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/staff-messaging,Internal Staff Messaging,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/productivity,Governed Productivity Scorecard,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/work-location,Location Policy & Privacy Workbench,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/salary-adjustments,Compensation Change Control,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/data-import,Import Mapping & Validation Workbench,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/dashboard-personalization,Widget Composition & Defaults,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/files,Evidence Library & Preview Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/saved-views,Personal View Library,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/field-builder,Schema Configuration Canvas,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/form-builder,Form Canvas & Property Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/workflow-builder,State Canvas & Transition Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/report-builder,Report Query Canvas & Result Preview,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/widget-builder,Widget Gallery & Data Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/theme-builder,Semantic Token Canvas & Contrast Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/business-rules,Rule Condition & Validation Workbench,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/notification-rules,Event-to-Audience Routing Desk,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/session-analytics,Session Timeline & Consent Inspector,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/reports,Metric Library & Source Explorer,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/customer-communications,Omnichannel Queue & Customer Context,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/communication-queues,Queue Routing & Assignment Command,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/whatsapp-numbers,Business Number Registry & Health,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/communication-analytics,"Delivery, Read & Queue Intelligence",docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/communication-preferences,Consent & Preference Register,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/ai-letterhead-generator,AI Letterhead Proposal & Preview Studio,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/communication-audit,Communication Lifecycle & Audit Explorer,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/unified-inbox,Future Omnichannel Adapter Shell,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/communication-automation,Authoritative Event Automation Studio,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/communication-templates,Template Governance Studio,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/letterheads,Company Identity & Letterhead Studio,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/banking-operations,Account Cards & Transaction Command,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/treasury,Cash Position & Forecast Command,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/payment-verification,"Verification, Matching & Activation Gate",docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/transfers,Transfer Control & Approval Rail,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/beneficiaries,Beneficiary Risk & Verification Register,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/payroll-execution,Payroll Banking & Exception Command,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/reconciliation,Source Comparison & Exception Resolution,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB
+/financial-reports,Financial Metric & Export Governance,docs/v13/evidence/erp where captured,IMPLEMENTED_DESIGN_LAB

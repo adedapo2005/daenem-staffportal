@@ -1,0 +1,328 @@
+OPERATION,METHOD,PATH,MODULE,AUTHORIZATION,STATE
+list_self_service,GET,/api/self-service,self-service,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_self_service,GET,/api/self-service,self-service,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_self_service,POST,/api/self-service,self-service,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_home,GET,/api/home,home,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_home,GET,/api/home,home,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_home,POST,/api/home,home,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_cockpit,GET,/api/cockpit,cockpit,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_cockpit,GET,/api/cockpit,cockpit,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_cockpit,POST,/api/cockpit,cockpit,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_workspace,GET,/api/workspace,workspace,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_workspace,GET,/api/workspace,workspace,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_workspace,POST,/api/workspace,workspace,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_profile,GET,/api/profile,profile,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_profile,GET,/api/profile,profile,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_profile,POST,/api/profile,profile,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_people,GET,/api/people,people,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_people,GET,/api/people,people,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_people,POST,/api/people,people,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_hr_records,GET,/api/hr-records,hr-records,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_hr_records,GET,/api/hr-records,hr-records,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_hr_records,POST,/api/hr-records,hr-records,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_attendance,GET,/api/attendance,attendance,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_attendance,GET,/api/attendance,attendance,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_attendance,POST,/api/attendance,attendance,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_leave,GET,/api/leave,leave,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_leave,GET,/api/leave,leave,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_leave,POST,/api/leave,leave,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_performance,GET,/api/performance,performance,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_performance,GET,/api/performance,performance,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_performance,POST,/api/performance,performance,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_hr_cases,GET,/api/hr-cases,hr-cases,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_hr_cases,GET,/api/hr-cases,hr-cases,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_hr_cases,POST,/api/hr-cases,hr-cases,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_lifecycle,GET,/api/lifecycle,lifecycle,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_lifecycle,GET,/api/lifecycle,lifecycle,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_lifecycle,POST,/api/lifecycle,lifecycle,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_forms,GET,/api/forms,forms,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_forms,GET,/api/forms,forms,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_forms,POST,/api/forms,forms,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_tasks,GET,/api/tasks,tasks,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_tasks,GET,/api/tasks,tasks,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_tasks,POST,/api/tasks,tasks,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_payroll,GET,/api/payroll,payroll,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_payroll,GET,/api/payroll,payroll,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_payroll,POST,/api/payroll,payroll,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_payslips,GET,/api/payslips,payslips,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_payslips,GET,/api/payslips,payslips,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_payslips,POST,/api/payslips,payslips,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_payroll_batches,GET,/api/payroll-batches,payroll-batches,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_payroll_batches,GET,/api/payroll-batches,payroll-batches,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_payroll_batches,POST,/api/payroll-batches,payroll-batches,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_applications,GET,/api/applications,applications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_applications,GET,/api/applications,applications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_applications,POST,/api/applications,applications,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_interviews,GET,/api/interviews,interviews,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_interviews,GET,/api/interviews,interviews,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_interviews,POST,/api/interviews,interviews,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_hiring,GET,/api/hiring,hiring,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_hiring,GET,/api/hiring,hiring,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_hiring,POST,/api/hiring,hiring,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_printing,GET,/api/printing,printing,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_printing,GET,/api/printing,printing,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_printing,POST,/api/printing,printing,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_print_orders,GET,/api/print-orders,print-orders,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_print_orders,GET,/api/print-orders,print-orders,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_print_orders,POST,/api/print-orders,print-orders,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_print_materials,GET,/api/print-materials,print-materials,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_print_materials,GET,/api/print-materials,print-materials,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_print_materials,POST,/api/print-materials,print-materials,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_bakery,GET,/api/bakery,bakery,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_bakery,GET,/api/bakery,bakery,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_bakery,POST,/api/bakery,bakery,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_bakery_recipes,GET,/api/bakery-recipes,bakery-recipes,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_bakery_recipes,GET,/api/bakery-recipes,bakery-recipes,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_bakery_recipes,POST,/api/bakery-recipes,bakery-recipes,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_bakery_sales,GET,/api/bakery-sales,bakery-sales,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_bakery_sales,GET,/api/bakery-sales,bakery-sales,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_bakery_sales,POST,/api/bakery-sales,bakery-sales,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_autos,GET,/api/autos,autos,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_autos,GET,/api/autos,autos,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_autos,POST,/api/autos,autos,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_auto_leads,GET,/api/auto-leads,auto-leads,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_auto_leads,GET,/api/auto-leads,auto-leads,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_auto_leads,POST,/api/auto-leads,auto-leads,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_auto_history,GET,/api/auto-history,auto-history,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_auto_history,GET,/api/auto-history,auto-history,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+list_logistics,GET,/api/logistics,logistics,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_logistics,GET,/api/logistics,logistics,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_logistics,POST,/api/logistics,logistics,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_fleet,GET,/api/fleet,fleet,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_fleet,GET,/api/fleet,fleet,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_fleet,POST,/api/fleet,fleet,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_trip_costs,GET,/api/trip-costs,trip-costs,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_trip_costs,GET,/api/trip-costs,trip-costs,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_trip_costs,POST,/api/trip-costs,trip-costs,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_properties,GET,/api/properties,properties,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_properties,GET,/api/properties,properties,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_properties,POST,/api/properties,properties,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_leases,GET,/api/leases,leases,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_leases,GET,/api/leases,leases,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_leases,POST,/api/leases,leases,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_property_leads,GET,/api/property-leads,property-leads,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_property_leads,GET,/api/property-leads,property-leads,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_property_leads,POST,/api/property-leads,property-leads,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_finance,GET,/api/finance,finance,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_finance,GET,/api/finance,finance,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_finance,POST,/api/finance,finance,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_receivables,GET,/api/receivables,receivables,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_receivables,GET,/api/receivables,receivables,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_receivables,POST,/api/receivables,receivables,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_finance_posting,GET,/api/finance-posting,finance-posting,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_finance_posting,GET,/api/finance-posting,finance-posting,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+list_budgets,GET,/api/budgets,budgets,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_budgets,GET,/api/budgets,budgets,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_budgets,POST,/api/budgets,budgets,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_expenses,GET,/api/expenses,expenses,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_expenses,GET,/api/expenses,expenses,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_expenses,POST,/api/expenses,expenses,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_expense_approvals,GET,/api/expense-approvals,expense-approvals,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_expense_approvals,GET,/api/expense-approvals,expense-approvals,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_expense_approvals,POST,/api/expense-approvals,expense-approvals,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_spend,GET,/api/spend,spend,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_spend,GET,/api/spend,spend,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_spend,POST,/api/spend,spend,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_cost_admin,GET,/api/cost-admin,cost-admin,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_cost_admin,GET,/api/cost-admin,cost-admin,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_cost_admin,POST,/api/cost-admin,cost-admin,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_inventory,GET,/api/inventory,inventory,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_inventory,GET,/api/inventory,inventory,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_inventory,POST,/api/inventory,inventory,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_projects,GET,/api/projects,projects,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_projects,GET,/api/projects,projects,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_projects,POST,/api/projects,projects,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_facilities,GET,/api/facilities,facilities,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_facilities,GET,/api/facilities,facilities,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_facilities,POST,/api/facilities,facilities,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_social,GET,/api/social,social,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_social,GET,/api/social,social,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_social,POST,/api/social,social,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_social_controls,GET,/api/social-controls,social-controls,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_social_controls,GET,/api/social-controls,social-controls,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_social_controls,POST,/api/social-controls,social-controls,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_social_accounts,GET,/api/social-accounts,social-accounts,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_social_accounts,GET,/api/social-accounts,social-accounts,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+list_social_sync,GET,/api/social-sync,social-sync,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_social_sync,GET,/api/social-sync,social-sync,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_social_sync,POST,/api/social-sync,social-sync,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_marketing,GET,/api/marketing,marketing,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_marketing,GET,/api/marketing,marketing,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_marketing,POST,/api/marketing,marketing,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_inbox,GET,/api/inbox,inbox,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_inbox,GET,/api/inbox,inbox,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_inbox,POST,/api/inbox,inbox,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_website,GET,/api/website,website,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_website,GET,/api/website,website,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_website,POST,/api/website,website,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_communications,GET,/api/communications,communications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_communications,GET,/api/communications,communications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_communications,POST,/api/communications,communications,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_broadcasts,GET,/api/broadcasts,broadcasts,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_broadcasts,GET,/api/broadcasts,broadcasts,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_broadcasts,POST,/api/broadcasts,broadcasts,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_encouragement,GET,/api/encouragement,encouragement,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_encouragement,GET,/api/encouragement,encouragement,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_encouragement,POST,/api/encouragement,encouragement,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_notifications,GET,/api/notifications,notifications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_notifications,GET,/api/notifications,notifications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_notifications,POST,/api/notifications,notifications,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_help,GET,/api/help,help,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_help,GET,/api/help,help,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_help,POST,/api/help,help,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_security,GET,/api/security,security,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_security,GET,/api/security,security,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_security,POST,/api/security,security,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_access,GET,/api/access,access,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_access,GET,/api/access,access,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_access,POST,/api/access,access,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_admin,GET,/api/admin,admin,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_admin,GET,/api/admin,admin,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_admin,POST,/api/admin,admin,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_recovery,GET,/api/recovery,recovery,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_recovery,GET,/api/recovery,recovery,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_recovery,POST,/api/recovery,recovery,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_support,GET,/api/support,support,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_support,GET,/api/support,support,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_support,POST,/api/support,support,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_resources,GET,/api/resources,resources,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_resources,GET,/api/resources,resources,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+list_sync,GET,/api/sync,sync,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_sync,GET,/api/sync,sync,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_sync,POST,/api/sync,sync,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_audit,GET,/api/audit,audit,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_audit,GET,/api/audit,audit,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+list_toolbox,GET,/api/toolbox,toolbox,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_toolbox,GET,/api/toolbox,toolbox,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_toolbox,POST,/api/toolbox,toolbox,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_integrations,GET,/api/integrations,integrations,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_integrations,GET,/api/integrations,integrations,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+list_hub,GET,/api/hub,hub,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_hub,GET,/api/hub,hub,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_hub,POST,/api/hub,hub,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_theme,GET,/api/theme,theme,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_theme,GET,/api/theme,theme,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_theme,POST,/api/theme,theme,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_navigation,GET,/api/navigation,navigation,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_navigation,GET,/api/navigation,navigation,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_navigation,POST,/api/navigation,navigation,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_layout,GET,/api/layout,layout,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_layout,GET,/api/layout,layout,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_layout,POST,/api/layout,layout,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_signin_design,GET,/api/signin-design,signin-design,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_signin_design,GET,/api/signin-design,signin-design,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_signin_design,POST,/api/signin-design,signin-design,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_procurement,GET,/api/procurement,procurement,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_procurement,GET,/api/procurement,procurement,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_procurement,POST,/api/procurement,procurement,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_purchase_orders,GET,/api/purchase-orders,purchase-orders,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_purchase_orders,GET,/api/purchase-orders,purchase-orders,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_purchase_orders,POST,/api/purchase-orders,purchase-orders,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_goods_receipts,GET,/api/goods-receipts,goods-receipts,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_goods_receipts,GET,/api/goods-receipts,goods-receipts,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_goods_receipts,POST,/api/goods-receipts,goods-receipts,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_stock_transfers,GET,/api/stock-transfers,stock-transfers,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_stock_transfers,GET,/api/stock-transfers,stock-transfers,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_stock_transfers,POST,/api/stock-transfers,stock-transfers,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_stock_borrowing,GET,/api/stock-borrowing,stock-borrowing,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_stock_borrowing,GET,/api/stock-borrowing,stock-borrowing,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_stock_borrowing,POST,/api/stock-borrowing,stock-borrowing,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_bakery_accountability,GET,/api/bakery-accountability,bakery-accountability,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_bakery_accountability,GET,/api/bakery-accountability,bakery-accountability,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_bakery_accountability,POST,/api/bakery-accountability,bakery-accountability,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_technology_services,GET,/api/technology-services,technology-services,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_technology_services,GET,/api/technology-services,technology-services,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_technology_services,POST,/api/technology-services,technology-services,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_vacancies,GET,/api/vacancies,vacancies,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_vacancies,GET,/api/vacancies,vacancies,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_vacancies,POST,/api/vacancies,vacancies,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_staff_messaging,GET,/api/staff-messaging,staff-messaging,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_staff_messaging,GET,/api/staff-messaging,staff-messaging,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_staff_messaging,POST,/api/staff-messaging,staff-messaging,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_productivity,GET,/api/productivity,productivity,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_productivity,GET,/api/productivity,productivity,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_productivity,POST,/api/productivity,productivity,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_work_location,GET,/api/work-location,work-location,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_work_location,GET,/api/work-location,work-location,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_work_location,POST,/api/work-location,work-location,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_salary_adjustments,GET,/api/salary-adjustments,salary-adjustments,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_salary_adjustments,GET,/api/salary-adjustments,salary-adjustments,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_salary_adjustments,POST,/api/salary-adjustments,salary-adjustments,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_data_import,GET,/api/data-import,data-import,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_data_import,GET,/api/data-import,data-import,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_data_import,POST,/api/data-import,data-import,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_dashboard_personalization,GET,/api/dashboard-personalization,dashboard-personalization,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_dashboard_personalization,GET,/api/dashboard-personalization,dashboard-personalization,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_dashboard_personalization,POST,/api/dashboard-personalization,dashboard-personalization,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_files,GET,/api/files,files,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_files,GET,/api/files,files,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_files,POST,/api/files,files,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_saved_views,GET,/api/saved-views,saved-views,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_saved_views,GET,/api/saved-views,saved-views,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_saved_views,POST,/api/saved-views,saved-views,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_field_builder,GET,/api/field-builder,field-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_field_builder,GET,/api/field-builder,field-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_field_builder,POST,/api/field-builder,field-builder,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_form_builder,GET,/api/form-builder,form-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_form_builder,GET,/api/form-builder,form-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_form_builder,POST,/api/form-builder,form-builder,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_workflow_builder,GET,/api/workflow-builder,workflow-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_workflow_builder,GET,/api/workflow-builder,workflow-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_workflow_builder,POST,/api/workflow-builder,workflow-builder,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_report_builder,GET,/api/report-builder,report-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_report_builder,GET,/api/report-builder,report-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_report_builder,POST,/api/report-builder,report-builder,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_widget_builder,GET,/api/widget-builder,widget-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_widget_builder,GET,/api/widget-builder,widget-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_widget_builder,POST,/api/widget-builder,widget-builder,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_theme_builder,GET,/api/theme-builder,theme-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_theme_builder,GET,/api/theme-builder,theme-builder,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_theme_builder,POST,/api/theme-builder,theme-builder,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_business_rules,GET,/api/business-rules,business-rules,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_business_rules,GET,/api/business-rules,business-rules,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_business_rules,POST,/api/business-rules,business-rules,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_notification_rules,GET,/api/notification-rules,notification-rules,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_notification_rules,GET,/api/notification-rules,notification-rules,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_notification_rules,POST,/api/notification-rules,notification-rules,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_session_analytics,GET,/api/session-analytics,session-analytics,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_session_analytics,GET,/api/session-analytics,session-analytics,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_session_analytics,POST,/api/session-analytics,session-analytics,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_reports,GET,/api/reports,reports,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_reports,GET,/api/reports,reports,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_reports,POST,/api/reports,reports,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_customer_communications,GET,/api/customer-communications,customer-communications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_customer_communications,GET,/api/customer-communications,customer-communications,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_customer_communications,POST,/api/customer-communications,customer-communications,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_communication_automation,GET,/api/communication-automation,communication-automation,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_communication_automation,GET,/api/communication-automation,communication-automation,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_communication_automation,POST,/api/communication-automation,communication-automation,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_communication_templates,GET,/api/communication-templates,communication-templates,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_communication_templates,GET,/api/communication-templates,communication-templates,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_communication_templates,POST,/api/communication-templates,communication-templates,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_letterheads,GET,/api/letterheads,letterheads,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_letterheads,GET,/api/letterheads,letterheads,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_letterheads,POST,/api/letterheads,letterheads,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_banking_operations,GET,/api/banking-operations,banking-operations,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_banking_operations,GET,/api/banking-operations,banking-operations,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_banking_operations,POST,/api/banking-operations,banking-operations,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_treasury,GET,/api/treasury,treasury,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_treasury,GET,/api/treasury,treasury,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_treasury,POST,/api/treasury,treasury,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_payment_verification,GET,/api/payment-verification,payment-verification,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_payment_verification,GET,/api/payment-verification,payment-verification,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_payment_verification,POST,/api/payment-verification,payment-verification,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_transfers,GET,/api/transfers,transfers,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_transfers,GET,/api/transfers,transfers,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_transfers,POST,/api/transfers,transfers,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_beneficiaries,GET,/api/beneficiaries,beneficiaries,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_beneficiaries,GET,/api/beneficiaries,beneficiaries,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_beneficiaries,POST,/api/beneficiaries,beneficiaries,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_payroll_execution,GET,/api/payroll-execution,payroll-execution,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_payroll_execution,GET,/api/payroll-execution,payroll-execution,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_payroll_execution,POST,/api/payroll-execution,payroll-execution,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_reconciliation,GET,/api/reconciliation,reconciliation,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_reconciliation,GET,/api/reconciliation,reconciliation,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_reconciliation,POST,/api/reconciliation,reconciliation,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY
+list_financial_reports,GET,/api/financial-reports,financial-reports,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+get_financial_reports,GET,/api/financial-reports,financial-reports,Requires module plus record/field scope; production server adapter required,CONTRACT_ONLY
+mutate_financial_reports,POST,/api/financial-reports,financial-reports,"Requires assigned action, invariant validation and audit",CONTRACT_ONLY

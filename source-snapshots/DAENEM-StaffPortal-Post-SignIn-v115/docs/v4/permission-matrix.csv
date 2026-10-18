@@ -1,0 +1,991 @@
+PROFILE,MODULE,VIEW,ASSIGNMENT_SOURCE
+Owner,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Owner,home,YES,security-contract.sessionForProfile; fictional assignments
+Owner,cockpit,YES,security-contract.sessionForProfile; fictional assignments
+Owner,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Owner,profile,YES,security-contract.sessionForProfile; fictional assignments
+Owner,people,YES,security-contract.sessionForProfile; fictional assignments
+Owner,hr-records,YES,security-contract.sessionForProfile; fictional assignments
+Owner,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Owner,leave,YES,security-contract.sessionForProfile; fictional assignments
+Owner,performance,YES,security-contract.sessionForProfile; fictional assignments
+Owner,hr-cases,YES,security-contract.sessionForProfile; fictional assignments
+Owner,lifecycle,YES,security-contract.sessionForProfile; fictional assignments
+Owner,forms,YES,security-contract.sessionForProfile; fictional assignments
+Owner,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Owner,payroll,YES,security-contract.sessionForProfile; fictional assignments
+Owner,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Owner,payroll-batches,YES,security-contract.sessionForProfile; fictional assignments
+Owner,applications,YES,security-contract.sessionForProfile; fictional assignments
+Owner,interviews,YES,security-contract.sessionForProfile; fictional assignments
+Owner,hiring,YES,security-contract.sessionForProfile; fictional assignments
+Owner,printing,YES,security-contract.sessionForProfile; fictional assignments
+Owner,print-orders,YES,security-contract.sessionForProfile; fictional assignments
+Owner,print-materials,YES,security-contract.sessionForProfile; fictional assignments
+Owner,bakery,YES,security-contract.sessionForProfile; fictional assignments
+Owner,bakery-recipes,YES,security-contract.sessionForProfile; fictional assignments
+Owner,bakery-sales,YES,security-contract.sessionForProfile; fictional assignments
+Owner,autos,YES,security-contract.sessionForProfile; fictional assignments
+Owner,auto-leads,YES,security-contract.sessionForProfile; fictional assignments
+Owner,auto-history,YES,security-contract.sessionForProfile; fictional assignments
+Owner,logistics,YES,security-contract.sessionForProfile; fictional assignments
+Owner,fleet,YES,security-contract.sessionForProfile; fictional assignments
+Owner,trip-costs,YES,security-contract.sessionForProfile; fictional assignments
+Owner,properties,YES,security-contract.sessionForProfile; fictional assignments
+Owner,leases,YES,security-contract.sessionForProfile; fictional assignments
+Owner,property-leads,YES,security-contract.sessionForProfile; fictional assignments
+Owner,finance,YES,security-contract.sessionForProfile; fictional assignments
+Owner,receivables,YES,security-contract.sessionForProfile; fictional assignments
+Owner,finance-posting,YES,security-contract.sessionForProfile; fictional assignments
+Owner,budgets,YES,security-contract.sessionForProfile; fictional assignments
+Owner,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Owner,expense-approvals,YES,security-contract.sessionForProfile; fictional assignments
+Owner,spend,YES,security-contract.sessionForProfile; fictional assignments
+Owner,cost-admin,YES,security-contract.sessionForProfile; fictional assignments
+Owner,inventory,YES,security-contract.sessionForProfile; fictional assignments
+Owner,projects,YES,security-contract.sessionForProfile; fictional assignments
+Owner,facilities,YES,security-contract.sessionForProfile; fictional assignments
+Owner,social,YES,security-contract.sessionForProfile; fictional assignments
+Owner,social-controls,YES,security-contract.sessionForProfile; fictional assignments
+Owner,social-accounts,YES,security-contract.sessionForProfile; fictional assignments
+Owner,social-sync,YES,security-contract.sessionForProfile; fictional assignments
+Owner,marketing,YES,security-contract.sessionForProfile; fictional assignments
+Owner,inbox,YES,security-contract.sessionForProfile; fictional assignments
+Owner,website,YES,security-contract.sessionForProfile; fictional assignments
+Owner,communications,YES,security-contract.sessionForProfile; fictional assignments
+Owner,broadcasts,YES,security-contract.sessionForProfile; fictional assignments
+Owner,encouragement,YES,security-contract.sessionForProfile; fictional assignments
+Owner,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Owner,help,YES,security-contract.sessionForProfile; fictional assignments
+Owner,security,YES,security-contract.sessionForProfile; fictional assignments
+Owner,access,YES,security-contract.sessionForProfile; fictional assignments
+Owner,admin,YES,security-contract.sessionForProfile; fictional assignments
+Owner,recovery,YES,security-contract.sessionForProfile; fictional assignments
+Owner,support,YES,security-contract.sessionForProfile; fictional assignments
+Owner,resources,YES,security-contract.sessionForProfile; fictional assignments
+Owner,sync,YES,security-contract.sessionForProfile; fictional assignments
+Owner,audit,YES,security-contract.sessionForProfile; fictional assignments
+Owner,toolbox,YES,security-contract.sessionForProfile; fictional assignments
+Owner,integrations,YES,security-contract.sessionForProfile; fictional assignments
+Owner,hub,YES,security-contract.sessionForProfile; fictional assignments
+Owner,theme,YES,security-contract.sessionForProfile; fictional assignments
+Owner,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Owner,layout,YES,security-contract.sessionForProfile; fictional assignments
+Owner,signin-design,YES,security-contract.sessionForProfile; fictional assignments
+Owner,procurement,YES,security-contract.sessionForProfile; fictional assignments
+Owner,purchase-orders,YES,security-contract.sessionForProfile; fictional assignments
+Owner,goods-receipts,YES,security-contract.sessionForProfile; fictional assignments
+Owner,stock-transfers,YES,security-contract.sessionForProfile; fictional assignments
+Owner,stock-borrowing,YES,security-contract.sessionForProfile; fictional assignments
+Owner,bakery-accountability,YES,security-contract.sessionForProfile; fictional assignments
+Owner,technology-services,YES,security-contract.sessionForProfile; fictional assignments
+Owner,vacancies,YES,security-contract.sessionForProfile; fictional assignments
+Owner,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Owner,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Owner,work-location,YES,security-contract.sessionForProfile; fictional assignments
+Owner,salary-adjustments,YES,security-contract.sessionForProfile; fictional assignments
+Owner,data-import,YES,security-contract.sessionForProfile; fictional assignments
+Owner,dashboard-personalization,YES,security-contract.sessionForProfile; fictional assignments
+Owner,files,YES,security-contract.sessionForProfile; fictional assignments
+Owner,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Owner,field-builder,YES,security-contract.sessionForProfile; fictional assignments
+Owner,form-builder,YES,security-contract.sessionForProfile; fictional assignments
+Owner,workflow-builder,YES,security-contract.sessionForProfile; fictional assignments
+Owner,report-builder,YES,security-contract.sessionForProfile; fictional assignments
+Owner,widget-builder,YES,security-contract.sessionForProfile; fictional assignments
+Owner,theme-builder,YES,security-contract.sessionForProfile; fictional assignments
+Owner,business-rules,YES,security-contract.sessionForProfile; fictional assignments
+Owner,notification-rules,YES,security-contract.sessionForProfile; fictional assignments
+Owner,session-analytics,YES,security-contract.sessionForProfile; fictional assignments
+Owner,reports,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,home,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,cockpit,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,profile,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,people,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,hr-records,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,leave,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,performance,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,hr-cases,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,lifecycle,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,forms,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,payroll,NO,security-contract.sessionForProfile; fictional assignments
+Group Admin,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,payroll-batches,NO,security-contract.sessionForProfile; fictional assignments
+Group Admin,applications,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,interviews,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,hiring,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,printing,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,print-orders,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,print-materials,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,bakery,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,bakery-recipes,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,bakery-sales,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,autos,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,auto-leads,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,auto-history,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,logistics,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,fleet,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,trip-costs,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,properties,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,leases,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,property-leads,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,finance,NO,security-contract.sessionForProfile; fictional assignments
+Group Admin,receivables,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,finance-posting,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,budgets,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,expense-approvals,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,spend,NO,security-contract.sessionForProfile; fictional assignments
+Group Admin,cost-admin,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,inventory,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,projects,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,facilities,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,social,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,social-controls,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,social-accounts,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,social-sync,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,marketing,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,inbox,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,website,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,communications,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,broadcasts,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,encouragement,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,help,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,security,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,access,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,admin,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,recovery,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,support,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,resources,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,sync,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,audit,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,toolbox,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,integrations,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,hub,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,theme,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,layout,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,signin-design,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,procurement,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,purchase-orders,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,goods-receipts,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,stock-transfers,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,stock-borrowing,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,bakery-accountability,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,technology-services,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,vacancies,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,work-location,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,salary-adjustments,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,data-import,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,dashboard-personalization,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,files,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,field-builder,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,form-builder,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,workflow-builder,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,report-builder,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,widget-builder,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,theme-builder,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,business-rules,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,notification-rules,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,session-analytics,YES,security-contract.sessionForProfile; fictional assignments
+Group Admin,reports,YES,security-contract.sessionForProfile; fictional assignments
+Manager,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Manager,home,YES,security-contract.sessionForProfile; fictional assignments
+Manager,cockpit,YES,security-contract.sessionForProfile; fictional assignments
+Manager,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Manager,profile,YES,security-contract.sessionForProfile; fictional assignments
+Manager,people,YES,security-contract.sessionForProfile; fictional assignments
+Manager,hr-records,YES,security-contract.sessionForProfile; fictional assignments
+Manager,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Manager,leave,YES,security-contract.sessionForProfile; fictional assignments
+Manager,performance,YES,security-contract.sessionForProfile; fictional assignments
+Manager,hr-cases,YES,security-contract.sessionForProfile; fictional assignments
+Manager,lifecycle,YES,security-contract.sessionForProfile; fictional assignments
+Manager,forms,YES,security-contract.sessionForProfile; fictional assignments
+Manager,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Manager,payroll,NO,security-contract.sessionForProfile; fictional assignments
+Manager,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Manager,payroll-batches,NO,security-contract.sessionForProfile; fictional assignments
+Manager,applications,YES,security-contract.sessionForProfile; fictional assignments
+Manager,interviews,YES,security-contract.sessionForProfile; fictional assignments
+Manager,hiring,YES,security-contract.sessionForProfile; fictional assignments
+Manager,printing,YES,security-contract.sessionForProfile; fictional assignments
+Manager,print-orders,YES,security-contract.sessionForProfile; fictional assignments
+Manager,print-materials,YES,security-contract.sessionForProfile; fictional assignments
+Manager,bakery,NO,security-contract.sessionForProfile; fictional assignments
+Manager,bakery-recipes,NO,security-contract.sessionForProfile; fictional assignments
+Manager,bakery-sales,NO,security-contract.sessionForProfile; fictional assignments
+Manager,autos,NO,security-contract.sessionForProfile; fictional assignments
+Manager,auto-leads,NO,security-contract.sessionForProfile; fictional assignments
+Manager,auto-history,NO,security-contract.sessionForProfile; fictional assignments
+Manager,logistics,NO,security-contract.sessionForProfile; fictional assignments
+Manager,fleet,NO,security-contract.sessionForProfile; fictional assignments
+Manager,trip-costs,NO,security-contract.sessionForProfile; fictional assignments
+Manager,properties,NO,security-contract.sessionForProfile; fictional assignments
+Manager,leases,NO,security-contract.sessionForProfile; fictional assignments
+Manager,property-leads,NO,security-contract.sessionForProfile; fictional assignments
+Manager,finance,NO,security-contract.sessionForProfile; fictional assignments
+Manager,receivables,YES,security-contract.sessionForProfile; fictional assignments
+Manager,finance-posting,NO,security-contract.sessionForProfile; fictional assignments
+Manager,budgets,NO,security-contract.sessionForProfile; fictional assignments
+Manager,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Manager,expense-approvals,YES,security-contract.sessionForProfile; fictional assignments
+Manager,spend,NO,security-contract.sessionForProfile; fictional assignments
+Manager,cost-admin,NO,security-contract.sessionForProfile; fictional assignments
+Manager,inventory,YES,security-contract.sessionForProfile; fictional assignments
+Manager,projects,YES,security-contract.sessionForProfile; fictional assignments
+Manager,facilities,YES,security-contract.sessionForProfile; fictional assignments
+Manager,social,YES,security-contract.sessionForProfile; fictional assignments
+Manager,social-controls,NO,security-contract.sessionForProfile; fictional assignments
+Manager,social-accounts,YES,security-contract.sessionForProfile; fictional assignments
+Manager,social-sync,YES,security-contract.sessionForProfile; fictional assignments
+Manager,marketing,YES,security-contract.sessionForProfile; fictional assignments
+Manager,inbox,YES,security-contract.sessionForProfile; fictional assignments
+Manager,website,YES,security-contract.sessionForProfile; fictional assignments
+Manager,communications,YES,security-contract.sessionForProfile; fictional assignments
+Manager,broadcasts,YES,security-contract.sessionForProfile; fictional assignments
+Manager,encouragement,YES,security-contract.sessionForProfile; fictional assignments
+Manager,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Manager,help,YES,security-contract.sessionForProfile; fictional assignments
+Manager,security,NO,security-contract.sessionForProfile; fictional assignments
+Manager,access,NO,security-contract.sessionForProfile; fictional assignments
+Manager,admin,NO,security-contract.sessionForProfile; fictional assignments
+Manager,recovery,NO,security-contract.sessionForProfile; fictional assignments
+Manager,support,NO,security-contract.sessionForProfile; fictional assignments
+Manager,resources,NO,security-contract.sessionForProfile; fictional assignments
+Manager,sync,YES,security-contract.sessionForProfile; fictional assignments
+Manager,audit,NO,security-contract.sessionForProfile; fictional assignments
+Manager,toolbox,NO,security-contract.sessionForProfile; fictional assignments
+Manager,integrations,NO,security-contract.sessionForProfile; fictional assignments
+Manager,hub,YES,security-contract.sessionForProfile; fictional assignments
+Manager,theme,YES,security-contract.sessionForProfile; fictional assignments
+Manager,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Manager,layout,YES,security-contract.sessionForProfile; fictional assignments
+Manager,signin-design,NO,security-contract.sessionForProfile; fictional assignments
+Manager,procurement,YES,security-contract.sessionForProfile; fictional assignments
+Manager,purchase-orders,YES,security-contract.sessionForProfile; fictional assignments
+Manager,goods-receipts,YES,security-contract.sessionForProfile; fictional assignments
+Manager,stock-transfers,YES,security-contract.sessionForProfile; fictional assignments
+Manager,stock-borrowing,YES,security-contract.sessionForProfile; fictional assignments
+Manager,bakery-accountability,NO,security-contract.sessionForProfile; fictional assignments
+Manager,technology-services,YES,security-contract.sessionForProfile; fictional assignments
+Manager,vacancies,YES,security-contract.sessionForProfile; fictional assignments
+Manager,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Manager,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Manager,work-location,YES,security-contract.sessionForProfile; fictional assignments
+Manager,salary-adjustments,YES,security-contract.sessionForProfile; fictional assignments
+Manager,data-import,YES,security-contract.sessionForProfile; fictional assignments
+Manager,dashboard-personalization,YES,security-contract.sessionForProfile; fictional assignments
+Manager,files,YES,security-contract.sessionForProfile; fictional assignments
+Manager,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Manager,field-builder,NO,security-contract.sessionForProfile; fictional assignments
+Manager,form-builder,NO,security-contract.sessionForProfile; fictional assignments
+Manager,workflow-builder,NO,security-contract.sessionForProfile; fictional assignments
+Manager,report-builder,NO,security-contract.sessionForProfile; fictional assignments
+Manager,widget-builder,NO,security-contract.sessionForProfile; fictional assignments
+Manager,theme-builder,NO,security-contract.sessionForProfile; fictional assignments
+Manager,business-rules,NO,security-contract.sessionForProfile; fictional assignments
+Manager,notification-rules,NO,security-contract.sessionForProfile; fictional assignments
+Manager,session-analytics,NO,security-contract.sessionForProfile; fictional assignments
+Manager,reports,YES,security-contract.sessionForProfile; fictional assignments
+Employee,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Employee,home,YES,security-contract.sessionForProfile; fictional assignments
+Employee,cockpit,NO,security-contract.sessionForProfile; fictional assignments
+Employee,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Employee,profile,YES,security-contract.sessionForProfile; fictional assignments
+Employee,people,NO,security-contract.sessionForProfile; fictional assignments
+Employee,hr-records,NO,security-contract.sessionForProfile; fictional assignments
+Employee,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Employee,leave,YES,security-contract.sessionForProfile; fictional assignments
+Employee,performance,YES,security-contract.sessionForProfile; fictional assignments
+Employee,hr-cases,NO,security-contract.sessionForProfile; fictional assignments
+Employee,lifecycle,NO,security-contract.sessionForProfile; fictional assignments
+Employee,forms,YES,security-contract.sessionForProfile; fictional assignments
+Employee,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Employee,payroll,NO,security-contract.sessionForProfile; fictional assignments
+Employee,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Employee,payroll-batches,NO,security-contract.sessionForProfile; fictional assignments
+Employee,applications,NO,security-contract.sessionForProfile; fictional assignments
+Employee,interviews,NO,security-contract.sessionForProfile; fictional assignments
+Employee,hiring,NO,security-contract.sessionForProfile; fictional assignments
+Employee,printing,NO,security-contract.sessionForProfile; fictional assignments
+Employee,print-orders,NO,security-contract.sessionForProfile; fictional assignments
+Employee,print-materials,NO,security-contract.sessionForProfile; fictional assignments
+Employee,bakery,NO,security-contract.sessionForProfile; fictional assignments
+Employee,bakery-recipes,NO,security-contract.sessionForProfile; fictional assignments
+Employee,bakery-sales,NO,security-contract.sessionForProfile; fictional assignments
+Employee,autos,NO,security-contract.sessionForProfile; fictional assignments
+Employee,auto-leads,NO,security-contract.sessionForProfile; fictional assignments
+Employee,auto-history,NO,security-contract.sessionForProfile; fictional assignments
+Employee,logistics,NO,security-contract.sessionForProfile; fictional assignments
+Employee,fleet,NO,security-contract.sessionForProfile; fictional assignments
+Employee,trip-costs,NO,security-contract.sessionForProfile; fictional assignments
+Employee,properties,NO,security-contract.sessionForProfile; fictional assignments
+Employee,leases,NO,security-contract.sessionForProfile; fictional assignments
+Employee,property-leads,NO,security-contract.sessionForProfile; fictional assignments
+Employee,finance,NO,security-contract.sessionForProfile; fictional assignments
+Employee,receivables,NO,security-contract.sessionForProfile; fictional assignments
+Employee,finance-posting,NO,security-contract.sessionForProfile; fictional assignments
+Employee,budgets,NO,security-contract.sessionForProfile; fictional assignments
+Employee,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Employee,expense-approvals,NO,security-contract.sessionForProfile; fictional assignments
+Employee,spend,NO,security-contract.sessionForProfile; fictional assignments
+Employee,cost-admin,NO,security-contract.sessionForProfile; fictional assignments
+Employee,inventory,NO,security-contract.sessionForProfile; fictional assignments
+Employee,projects,NO,security-contract.sessionForProfile; fictional assignments
+Employee,facilities,NO,security-contract.sessionForProfile; fictional assignments
+Employee,social,NO,security-contract.sessionForProfile; fictional assignments
+Employee,social-controls,NO,security-contract.sessionForProfile; fictional assignments
+Employee,social-accounts,NO,security-contract.sessionForProfile; fictional assignments
+Employee,social-sync,NO,security-contract.sessionForProfile; fictional assignments
+Employee,marketing,NO,security-contract.sessionForProfile; fictional assignments
+Employee,inbox,NO,security-contract.sessionForProfile; fictional assignments
+Employee,website,NO,security-contract.sessionForProfile; fictional assignments
+Employee,communications,YES,security-contract.sessionForProfile; fictional assignments
+Employee,broadcasts,NO,security-contract.sessionForProfile; fictional assignments
+Employee,encouragement,NO,security-contract.sessionForProfile; fictional assignments
+Employee,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Employee,help,YES,security-contract.sessionForProfile; fictional assignments
+Employee,security,NO,security-contract.sessionForProfile; fictional assignments
+Employee,access,NO,security-contract.sessionForProfile; fictional assignments
+Employee,admin,NO,security-contract.sessionForProfile; fictional assignments
+Employee,recovery,NO,security-contract.sessionForProfile; fictional assignments
+Employee,support,NO,security-contract.sessionForProfile; fictional assignments
+Employee,resources,NO,security-contract.sessionForProfile; fictional assignments
+Employee,sync,YES,security-contract.sessionForProfile; fictional assignments
+Employee,audit,NO,security-contract.sessionForProfile; fictional assignments
+Employee,toolbox,NO,security-contract.sessionForProfile; fictional assignments
+Employee,integrations,NO,security-contract.sessionForProfile; fictional assignments
+Employee,hub,YES,security-contract.sessionForProfile; fictional assignments
+Employee,theme,YES,security-contract.sessionForProfile; fictional assignments
+Employee,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Employee,layout,YES,security-contract.sessionForProfile; fictional assignments
+Employee,signin-design,NO,security-contract.sessionForProfile; fictional assignments
+Employee,procurement,NO,security-contract.sessionForProfile; fictional assignments
+Employee,purchase-orders,NO,security-contract.sessionForProfile; fictional assignments
+Employee,goods-receipts,NO,security-contract.sessionForProfile; fictional assignments
+Employee,stock-transfers,NO,security-contract.sessionForProfile; fictional assignments
+Employee,stock-borrowing,NO,security-contract.sessionForProfile; fictional assignments
+Employee,bakery-accountability,NO,security-contract.sessionForProfile; fictional assignments
+Employee,technology-services,NO,security-contract.sessionForProfile; fictional assignments
+Employee,vacancies,NO,security-contract.sessionForProfile; fictional assignments
+Employee,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Employee,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Employee,work-location,NO,security-contract.sessionForProfile; fictional assignments
+Employee,salary-adjustments,NO,security-contract.sessionForProfile; fictional assignments
+Employee,data-import,NO,security-contract.sessionForProfile; fictional assignments
+Employee,dashboard-personalization,NO,security-contract.sessionForProfile; fictional assignments
+Employee,files,YES,security-contract.sessionForProfile; fictional assignments
+Employee,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Employee,field-builder,NO,security-contract.sessionForProfile; fictional assignments
+Employee,form-builder,NO,security-contract.sessionForProfile; fictional assignments
+Employee,workflow-builder,NO,security-contract.sessionForProfile; fictional assignments
+Employee,report-builder,NO,security-contract.sessionForProfile; fictional assignments
+Employee,widget-builder,NO,security-contract.sessionForProfile; fictional assignments
+Employee,theme-builder,NO,security-contract.sessionForProfile; fictional assignments
+Employee,business-rules,NO,security-contract.sessionForProfile; fictional assignments
+Employee,notification-rules,NO,security-contract.sessionForProfile; fictional assignments
+Employee,session-analytics,NO,security-contract.sessionForProfile; fictional assignments
+Employee,reports,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,self-service,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,home,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,cockpit,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,workspace,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,profile,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,people,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,hr-records,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,attendance,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,leave,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,performance,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,hr-cases,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,lifecycle,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,forms,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,tasks,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,payroll,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,payslips,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,payroll-batches,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,applications,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,interviews,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,hiring,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,printing,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,print-orders,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,print-materials,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,bakery,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,bakery-recipes,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,bakery-sales,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,autos,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,auto-leads,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,auto-history,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,logistics,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,fleet,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,trip-costs,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,properties,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,leases,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,property-leads,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,finance,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,receivables,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,finance-posting,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,budgets,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,expenses,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,expense-approvals,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,spend,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,cost-admin,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,inventory,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,projects,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,facilities,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,social,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,social-controls,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,social-accounts,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,social-sync,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,marketing,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,inbox,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,website,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,communications,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,broadcasts,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,encouragement,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,notifications,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,help,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,security,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,access,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,admin,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,recovery,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,support,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,resources,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,sync,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,audit,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,toolbox,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,integrations,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,hub,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,theme,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,navigation,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,layout,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,signin-design,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,procurement,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,purchase-orders,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,goods-receipts,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,stock-transfers,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,stock-borrowing,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,bakery-accountability,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,technology-services,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,vacancies,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,staff-messaging,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,productivity,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,work-location,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,salary-adjustments,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,data-import,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,dashboard-personalization,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,files,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,saved-views,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,field-builder,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,form-builder,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,workflow-builder,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,report-builder,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,widget-builder,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,theme-builder,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,business-rules,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,notification-rules,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,session-analytics,NO,security-contract.sessionForProfile; fictional assignments
+Provisional,reports,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,home,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,cockpit,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,profile,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,people,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,hr-records,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,leave,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,performance,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,hr-cases,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,lifecycle,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,forms,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,payroll,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,payroll-batches,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,applications,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,interviews,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,hiring,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,printing,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,print-orders,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,print-materials,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,bakery,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,bakery-recipes,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,bakery-sales,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,autos,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,auto-leads,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,auto-history,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,logistics,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,fleet,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,trip-costs,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,properties,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,leases,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,property-leads,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,finance,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,receivables,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,finance-posting,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,budgets,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,expense-approvals,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,spend,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,cost-admin,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,inventory,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,projects,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,facilities,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,social,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,social-controls,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,social-accounts,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,social-sync,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,marketing,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,inbox,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,website,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,communications,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,broadcasts,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,encouragement,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,help,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,security,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,access,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,admin,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,recovery,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,support,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,resources,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,sync,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,audit,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,toolbox,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,integrations,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,hub,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,theme,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,layout,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,signin-design,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,procurement,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,purchase-orders,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,goods-receipts,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,stock-transfers,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,stock-borrowing,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,bakery-accountability,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,technology-services,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,vacancies,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,work-location,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,salary-adjustments,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,data-import,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,dashboard-personalization,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,files,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Multi-role,field-builder,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,form-builder,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,workflow-builder,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,report-builder,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,widget-builder,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,theme-builder,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,business-rules,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,notification-rules,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,session-analytics,NO,security-contract.sessionForProfile; fictional assignments
+Multi-role,reports,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,home,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,cockpit,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,profile,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,people,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,hr-records,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,leave,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,performance,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,hr-cases,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,lifecycle,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,forms,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,payroll,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,payroll-batches,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,applications,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,interviews,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,hiring,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,printing,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,print-orders,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,print-materials,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,bakery,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,bakery-recipes,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,bakery-sales,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,autos,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,auto-leads,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,auto-history,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,logistics,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,fleet,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,trip-costs,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,properties,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,leases,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,property-leads,NO,security-contract.sessionForProfile; fictional assignments
+Multi-company,finance,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,receivables,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,finance-posting,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,budgets,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,expense-approvals,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,spend,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,cost-admin,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,inventory,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,projects,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,facilities,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,social,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,social-controls,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,social-accounts,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,social-sync,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,marketing,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,inbox,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,website,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,communications,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,broadcasts,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,encouragement,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,help,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,security,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,access,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,admin,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,recovery,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,support,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,resources,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,sync,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,audit,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,toolbox,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,integrations,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,hub,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,theme,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,layout,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,signin-design,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,procurement,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,purchase-orders,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,goods-receipts,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,stock-transfers,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,stock-borrowing,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,bakery-accountability,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,technology-services,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,vacancies,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,work-location,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,salary-adjustments,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,data-import,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,dashboard-personalization,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,files,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,field-builder,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,form-builder,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,workflow-builder,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,report-builder,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,widget-builder,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,theme-builder,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,business-rules,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,notification-rules,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,session-analytics,YES,security-contract.sessionForProfile; fictional assignments
+Multi-company,reports,YES,security-contract.sessionForProfile; fictional assignments
+No permission,self-service,NO,security-contract.sessionForProfile; fictional assignments
+No permission,home,NO,security-contract.sessionForProfile; fictional assignments
+No permission,cockpit,NO,security-contract.sessionForProfile; fictional assignments
+No permission,workspace,NO,security-contract.sessionForProfile; fictional assignments
+No permission,profile,NO,security-contract.sessionForProfile; fictional assignments
+No permission,people,NO,security-contract.sessionForProfile; fictional assignments
+No permission,hr-records,NO,security-contract.sessionForProfile; fictional assignments
+No permission,attendance,NO,security-contract.sessionForProfile; fictional assignments
+No permission,leave,NO,security-contract.sessionForProfile; fictional assignments
+No permission,performance,NO,security-contract.sessionForProfile; fictional assignments
+No permission,hr-cases,NO,security-contract.sessionForProfile; fictional assignments
+No permission,lifecycle,NO,security-contract.sessionForProfile; fictional assignments
+No permission,forms,NO,security-contract.sessionForProfile; fictional assignments
+No permission,tasks,NO,security-contract.sessionForProfile; fictional assignments
+No permission,payroll,NO,security-contract.sessionForProfile; fictional assignments
+No permission,payslips,NO,security-contract.sessionForProfile; fictional assignments
+No permission,payroll-batches,NO,security-contract.sessionForProfile; fictional assignments
+No permission,applications,NO,security-contract.sessionForProfile; fictional assignments
+No permission,interviews,NO,security-contract.sessionForProfile; fictional assignments
+No permission,hiring,NO,security-contract.sessionForProfile; fictional assignments
+No permission,printing,NO,security-contract.sessionForProfile; fictional assignments
+No permission,print-orders,NO,security-contract.sessionForProfile; fictional assignments
+No permission,print-materials,NO,security-contract.sessionForProfile; fictional assignments
+No permission,bakery,NO,security-contract.sessionForProfile; fictional assignments
+No permission,bakery-recipes,NO,security-contract.sessionForProfile; fictional assignments
+No permission,bakery-sales,NO,security-contract.sessionForProfile; fictional assignments
+No permission,autos,NO,security-contract.sessionForProfile; fictional assignments
+No permission,auto-leads,NO,security-contract.sessionForProfile; fictional assignments
+No permission,auto-history,NO,security-contract.sessionForProfile; fictional assignments
+No permission,logistics,NO,security-contract.sessionForProfile; fictional assignments
+No permission,fleet,NO,security-contract.sessionForProfile; fictional assignments
+No permission,trip-costs,NO,security-contract.sessionForProfile; fictional assignments
+No permission,properties,NO,security-contract.sessionForProfile; fictional assignments
+No permission,leases,NO,security-contract.sessionForProfile; fictional assignments
+No permission,property-leads,NO,security-contract.sessionForProfile; fictional assignments
+No permission,finance,NO,security-contract.sessionForProfile; fictional assignments
+No permission,receivables,NO,security-contract.sessionForProfile; fictional assignments
+No permission,finance-posting,NO,security-contract.sessionForProfile; fictional assignments
+No permission,budgets,NO,security-contract.sessionForProfile; fictional assignments
+No permission,expenses,NO,security-contract.sessionForProfile; fictional assignments
+No permission,expense-approvals,NO,security-contract.sessionForProfile; fictional assignments
+No permission,spend,NO,security-contract.sessionForProfile; fictional assignments
+No permission,cost-admin,NO,security-contract.sessionForProfile; fictional assignments
+No permission,inventory,NO,security-contract.sessionForProfile; fictional assignments
+No permission,projects,NO,security-contract.sessionForProfile; fictional assignments
+No permission,facilities,NO,security-contract.sessionForProfile; fictional assignments
+No permission,social,NO,security-contract.sessionForProfile; fictional assignments
+No permission,social-controls,NO,security-contract.sessionForProfile; fictional assignments
+No permission,social-accounts,NO,security-contract.sessionForProfile; fictional assignments
+No permission,social-sync,NO,security-contract.sessionForProfile; fictional assignments
+No permission,marketing,NO,security-contract.sessionForProfile; fictional assignments
+No permission,inbox,NO,security-contract.sessionForProfile; fictional assignments
+No permission,website,NO,security-contract.sessionForProfile; fictional assignments
+No permission,communications,NO,security-contract.sessionForProfile; fictional assignments
+No permission,broadcasts,NO,security-contract.sessionForProfile; fictional assignments
+No permission,encouragement,NO,security-contract.sessionForProfile; fictional assignments
+No permission,notifications,NO,security-contract.sessionForProfile; fictional assignments
+No permission,help,NO,security-contract.sessionForProfile; fictional assignments
+No permission,security,NO,security-contract.sessionForProfile; fictional assignments
+No permission,access,NO,security-contract.sessionForProfile; fictional assignments
+No permission,admin,NO,security-contract.sessionForProfile; fictional assignments
+No permission,recovery,NO,security-contract.sessionForProfile; fictional assignments
+No permission,support,NO,security-contract.sessionForProfile; fictional assignments
+No permission,resources,NO,security-contract.sessionForProfile; fictional assignments
+No permission,sync,NO,security-contract.sessionForProfile; fictional assignments
+No permission,audit,NO,security-contract.sessionForProfile; fictional assignments
+No permission,toolbox,NO,security-contract.sessionForProfile; fictional assignments
+No permission,integrations,NO,security-contract.sessionForProfile; fictional assignments
+No permission,hub,NO,security-contract.sessionForProfile; fictional assignments
+No permission,theme,NO,security-contract.sessionForProfile; fictional assignments
+No permission,navigation,NO,security-contract.sessionForProfile; fictional assignments
+No permission,layout,NO,security-contract.sessionForProfile; fictional assignments
+No permission,signin-design,NO,security-contract.sessionForProfile; fictional assignments
+No permission,procurement,NO,security-contract.sessionForProfile; fictional assignments
+No permission,purchase-orders,NO,security-contract.sessionForProfile; fictional assignments
+No permission,goods-receipts,NO,security-contract.sessionForProfile; fictional assignments
+No permission,stock-transfers,NO,security-contract.sessionForProfile; fictional assignments
+No permission,stock-borrowing,NO,security-contract.sessionForProfile; fictional assignments
+No permission,bakery-accountability,NO,security-contract.sessionForProfile; fictional assignments
+No permission,technology-services,NO,security-contract.sessionForProfile; fictional assignments
+No permission,vacancies,NO,security-contract.sessionForProfile; fictional assignments
+No permission,staff-messaging,NO,security-contract.sessionForProfile; fictional assignments
+No permission,productivity,NO,security-contract.sessionForProfile; fictional assignments
+No permission,work-location,NO,security-contract.sessionForProfile; fictional assignments
+No permission,salary-adjustments,NO,security-contract.sessionForProfile; fictional assignments
+No permission,data-import,NO,security-contract.sessionForProfile; fictional assignments
+No permission,dashboard-personalization,NO,security-contract.sessionForProfile; fictional assignments
+No permission,files,NO,security-contract.sessionForProfile; fictional assignments
+No permission,saved-views,NO,security-contract.sessionForProfile; fictional assignments
+No permission,field-builder,NO,security-contract.sessionForProfile; fictional assignments
+No permission,form-builder,NO,security-contract.sessionForProfile; fictional assignments
+No permission,workflow-builder,NO,security-contract.sessionForProfile; fictional assignments
+No permission,report-builder,NO,security-contract.sessionForProfile; fictional assignments
+No permission,widget-builder,NO,security-contract.sessionForProfile; fictional assignments
+No permission,theme-builder,NO,security-contract.sessionForProfile; fictional assignments
+No permission,business-rules,NO,security-contract.sessionForProfile; fictional assignments
+No permission,notification-rules,NO,security-contract.sessionForProfile; fictional assignments
+No permission,session-analytics,NO,security-contract.sessionForProfile; fictional assignments
+No permission,reports,NO,security-contract.sessionForProfile; fictional assignments
+Expired override,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,home,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,cockpit,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,profile,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,people,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,hr-records,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,leave,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,performance,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,hr-cases,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,lifecycle,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,forms,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,payroll,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,payroll-batches,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,applications,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,interviews,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,hiring,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,printing,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,print-orders,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,print-materials,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,bakery,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,bakery-recipes,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,bakery-sales,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,autos,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,auto-leads,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,auto-history,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,logistics,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,fleet,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,trip-costs,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,properties,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,leases,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,property-leads,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,finance,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,receivables,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,finance-posting,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,budgets,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,expense-approvals,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,spend,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,cost-admin,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,inventory,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,projects,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,facilities,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,social,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,social-controls,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,social-accounts,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,social-sync,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,marketing,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,inbox,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,website,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,communications,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,broadcasts,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,encouragement,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,help,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,security,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,access,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,admin,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,recovery,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,support,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,resources,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,sync,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,audit,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,toolbox,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,integrations,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,hub,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,theme,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,layout,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,signin-design,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,procurement,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,purchase-orders,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,goods-receipts,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,stock-transfers,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,stock-borrowing,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,bakery-accountability,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,technology-services,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,vacancies,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,work-location,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,salary-adjustments,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,data-import,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,dashboard-personalization,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,files,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,field-builder,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,form-builder,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,workflow-builder,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,report-builder,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,widget-builder,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,theme-builder,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,business-rules,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,notification-rules,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,session-analytics,YES,security-contract.sessionForProfile; fictional assignments
+Expired override,reports,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,self-service,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,home,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,cockpit,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,workspace,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,profile,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,people,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,hr-records,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,attendance,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,leave,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,performance,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,hr-cases,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,lifecycle,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,forms,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,tasks,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,payroll,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,payslips,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,payroll-batches,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,applications,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,interviews,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,hiring,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,printing,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,print-orders,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,print-materials,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,bakery,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,bakery-recipes,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,bakery-sales,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,autos,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,auto-leads,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,auto-history,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,logistics,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,fleet,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,trip-costs,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,properties,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,leases,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,property-leads,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,finance,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,receivables,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,finance-posting,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,budgets,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,expenses,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,expense-approvals,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,spend,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,cost-admin,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,inventory,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,projects,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,facilities,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,social,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,social-controls,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,social-accounts,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,social-sync,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,marketing,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,inbox,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,website,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,communications,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,broadcasts,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,encouragement,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,notifications,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,help,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,security,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,access,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,admin,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,recovery,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,support,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,resources,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,sync,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,audit,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,toolbox,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,integrations,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,hub,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,theme,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,navigation,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,layout,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,signin-design,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,procurement,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,purchase-orders,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,goods-receipts,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,stock-transfers,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,stock-borrowing,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,bakery-accountability,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,technology-services,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,vacancies,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,staff-messaging,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,productivity,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,work-location,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,salary-adjustments,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,data-import,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,dashboard-personalization,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,files,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,saved-views,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,field-builder,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,form-builder,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,workflow-builder,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,report-builder,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,widget-builder,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,theme-builder,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,business-rules,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,notification-rules,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,session-analytics,YES,security-contract.sessionForProfile; fictional assignments
+Reduced override,reports,YES,security-contract.sessionForProfile; fictional assignments

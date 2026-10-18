@@ -1,0 +1,11 @@
+OPERATION,MEANING,PERMISSION,SITE_STATE
+account.list,List assigned accounts only,View Balance,SIMULATED / CONTRACT_ONLY
+transaction.list,List transactions for assigned accounts,View Transactions,SIMULATED / CONTRACT_ONLY
+statement.read,Read authorized statement,View Statements,SIMULATED / CONTRACT_ONLY
+transfer.create,Prepare a transfer without submission,Create Transfers,SIMULATED / CONTRACT_ONLY
+transfer.approve,Independent approval,Approve Transfers,SIMULATED / CONTRACT_ONLY
+transfer.execute,Submit an approved transfer,Execute Transfers,SIMULATED / CONTRACT_ONLY
+transfer.reconcile,Match provider and ledger finality,Reconcile Payroll or treasury authority,SIMULATED / CONTRACT_ONLY
+beneficiary.manage,Govern destination lifecycle,Manage Beneficiaries,SIMULATED / CONTRACT_ONLY
+payroll.submit,Submit approved banking batch,Execute Payroll,SIMULATED / CONTRACT_ONLY
+report.export,Export authorized projection,Export Reports,SIMULATED / CONTRACT_ONLY

@@ -1,0 +1,202 @@
+{
+  "siteProjectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "capturedAt": "2026-09-12T05:03:43.879Z",
+  "environment": "Local managed Chromium preview; not production network telemetry",
+  "limitations": [
+    "No invented Core Web Vitals",
+    "Browser resource timing and layout-shift APIs unavailable in the supported evaluation realm",
+    "Production RUM and repository performance budgets remain unmapped"
+  ],
+  "measurements": [
+    {
+      "scenario": "Sign-In",
+      "screen": "signin",
+      "viewport": "1920×1080",
+      "renderTransitionMs": 1039,
+      "ready": true,
+      "document": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "domNodes": 402,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    },
+    {
+      "scenario": "Owner Home",
+      "screen": "home",
+      "viewport": "1920×1080",
+      "renderTransitionMs": 1075,
+      "ready": true,
+      "document": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "domNodes": 394,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    },
+    {
+      "scenario": "Large Table",
+      "screen": "payroll",
+      "viewport": "1920×1080",
+      "renderTransitionMs": 1866,
+      "ready": true,
+      "document": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "domNodes": 388,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    },
+    {
+      "scenario": "Chart Dashboard",
+      "screen": "cockpit",
+      "viewport": "1920×1080",
+      "renderTransitionMs": 1449,
+      "ready": true,
+      "document": {
+        "clientHeight": 1080,
+        "clientWidth": 1905,
+        "domNodes": 699,
+        "scrollHeight": 2960,
+        "scrollWidth": 1905
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    },
+    {
+      "scenario": "Communications",
+      "screen": "communication-analytics",
+      "viewport": "1920×1080",
+      "renderTransitionMs": 979,
+      "ready": true,
+      "document": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "domNodes": 388,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    },
+    {
+      "scenario": "Banking Treasury",
+      "screen": "banking-operations",
+      "viewport": "1920×1080",
+      "renderTransitionMs": 980,
+      "ready": true,
+      "document": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "domNodes": 389,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    },
+    {
+      "scenario": "Mobile",
+      "screen": "home",
+      "viewport": "390×844",
+      "renderTransitionMs": 1935,
+      "ready": true,
+      "document": {
+        "clientHeight": 844,
+        "clientWidth": 375,
+        "domNodes": 806,
+        "scrollHeight": 4293,
+        "scrollWidth": 375
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    },
+    {
+      "scenario": "4K",
+      "screen": "signin",
+      "viewport": "3840×2160",
+      "renderTransitionMs": 1032,
+      "ready": true,
+      "document": {
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "domNodes": 402,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "renderedListItems": 0,
+      "assetPayload": {
+        "status": "BLOCKED",
+        "reason": "Performance/resource timing is not exposed in the managed evaluation realm; build asset sizes recorded separately"
+      },
+      "layoutShift": {
+        "status": "BLOCKED",
+        "reason": "PerformanceObserver/layout-shift entries are not exposed in the managed evaluation realm"
+      }
+    }
+  ],
+  "summary": {
+    "scenarios": 8,
+    "ready": 8,
+    "maxTransitionMs": 1935,
+    "maxDomNodes": 806
+  }
+}

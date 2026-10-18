@@ -1,0 +1,131 @@
+{
+  "scope": "Bounded local-fixture regression tests; not whole-platform authorization certification",
+  "total": 31,
+  "passed": 31,
+  "results": [
+    {
+      "name": "Role label without assignments grants nothing",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot edit another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot approve another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot manage another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot export another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot close another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "Hidden monetary value is removed from source projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Hidden evidence has neither names nor bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "Secret visibility override cannot reveal secrets",
+      "status": "PASS"
+    },
+    {
+      "name": "Receipt acceptance creates no stock or PO movement",
+      "status": "PASS"
+    },
+    {
+      "name": "Posting updates PO and stock together exactly once",
+      "status": "PASS"
+    },
+    {
+      "name": "Repeated posted edit does not duplicate effects",
+      "status": "PASS"
+    },
+    {
+      "name": "Stale receipt rejects without partial write",
+      "status": "PASS"
+    },
+    {
+      "name": "Posted receipt cannot be reopened",
+      "status": "PASS"
+    },
+    {
+      "name": "Posted quantity immutable",
+      "status": "PASS"
+    },
+    {
+      "name": "Unlinked receipt rejected atomically",
+      "status": "PASS"
+    },
+    {
+      "name": "Overreceipt rejected atomically",
+      "status": "PASS"
+    },
+    {
+      "name": "Evidence required for acceptance",
+      "status": "PASS"
+    },
+    {
+      "name": "Dispatch removes source stock once",
+      "status": "PASS"
+    },
+    {
+      "name": "Cannot reset dispatched transfer to redispatch",
+      "status": "PASS"
+    },
+    {
+      "name": "Transfer conserves stock across locations",
+      "status": "PASS"
+    },
+    {
+      "name": "Published report target authorization before metadata",
+      "status": "PASS"
+    },
+    {
+      "name": "Individual config requires assigned identity",
+      "status": "PASS"
+    },
+    {
+      "name": "Only latest configuration revision is active",
+      "status": "PASS"
+    },
+    {
+      "name": "Configuration rollback selects restored revision",
+      "status": "PASS"
+    },
+    {
+      "name": "Published evidence guard executes",
+      "status": "PASS"
+    },
+    {
+      "name": "Payroll approval cannot skip readiness",
+      "status": "PASS"
+    },
+    {
+      "name": "Canonical edit preserves hidden monetary evidence and history data",
+      "status": "PASS"
+    },
+    {
+      "name": "Wrong purchase-order item rejected before movement",
+      "status": "PASS"
+    },
+    {
+      "name": "Wildcard specialized restriction enforced",
+      "status": "PASS"
+    },
+    {
+      "name": "Bakery resolution cannot be prepared and approved by the same action",
+      "status": "PASS"
+    }
+  ]
+}

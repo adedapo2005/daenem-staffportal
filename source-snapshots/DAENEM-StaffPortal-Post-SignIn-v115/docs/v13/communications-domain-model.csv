@@ -1,0 +1,7 @@
+ENTITY,SCOPE,KEY_FIELDS,RELATIONSHIPS,ZERO_DISCLOSURE
+Conversation,company_id|site_id|business_number_id,customer_id|queue_id|assignee_id|priority|status|unread,See relationship-map.csv,Filter before metadata/count
+Message,company_id|conversation_id,provider_message_id|channel|direction|body|delivery_state|read_state,See relationship-map.csv,Filter before metadata/count
+BusinessNumber,company_id|site_id,provider|display_number|health_state|scope,See relationship-map.csv,Filter before metadata/count
+CommunicationPreference,company_id|customer_id,channel|purpose|consent_state|opt_out_at,See relationship-map.csv,Filter before metadata/count
+CommunicationTemplate,company_id,channel|purpose|variables|version|state,See relationship-map.csv,Filter before metadata/count
+LetterheadVersion,company_id,document_type|layout|typography|sections|version|state,See relationship-map.csv,Filter before metadata/count

@@ -1,0 +1,7 @@
+"EVENT CONCEPT","RECIPIENT CONCEPT","CHANNEL","CURRENT IMPLEMENTATION","PRODUCTION CONTRACT"
+"request.submitted","Assigned reviewers","In-app / email policy","Attention queue from authorized record state","PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION"
+"request.decided","Maker and assigned reviewers","In-app / email policy","Record state and local activity only","PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION"
+"evidence.required","Responsible record owner","In-app policy","Attention queue; no delivery service","PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION"
+"assignment.changed","Affected identity","In-app / email policy","Preview configuration only","PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION"
+"security.session.revoked","Identity and authorized security staff","Security policy","No production delivery","PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION"
+"daily.encouragement","Eligible staff within assigned scope","In-app / email policy","Fictional encouragement UI; no scheduler","PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION"

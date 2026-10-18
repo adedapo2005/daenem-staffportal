@@ -1,0 +1,119 @@
+ROUTE,COMPONENT,CURRENT_SOURCE,SEMANTIC_OPERATION_PREFIX,BACKEND_MAPPING
+/self-service,Personal Service Desk,app/experience,staff_erp.self_service,PENDING_REPOSITORY_DISCOVERY
+/home,Executive Command,app/experience,global.home,PENDING_REPOSITORY_DISCOVERY
+/cockpit,Map & Exception Control Room,app/experience,global.cockpit,PENDING_REPOSITORY_DISCOVERY
+/workspace,Focus & Flow,app/experience,staff_erp.workspace,PENDING_REPOSITORY_DISCOVERY
+/profile,Identity & Self-Service,app/experience,staff_erp.profile,PENDING_REPOSITORY_DISCOVERY
+/people,People Directory & Record Inspector,app/experience,staff_erp.people,PENDING_REPOSITORY_DISCOVERY
+/hr-records,Controlled HR Record Ledger,app/experience,staff_erp.hr_records,PENDING_REPOSITORY_DISCOVERY
+/attendance,Shift Timeline & Location Validation,app/experience,staff_erp.attendance,PENDING_REPOSITORY_DISCOVERY
+/leave,Absence Calendar & Request Rail,app/experience,staff_erp.leave,PENDING_REPOSITORY_DISCOVERY
+/performance,Review Cycle & Scorecard,app/experience,staff_erp.performance,PENDING_REPOSITORY_DISCOVERY
+/hr-cases,Confidential Case Timeline,app/experience,staff_erp.hr_cases,PENDING_REPOSITORY_DISCOVERY
+/lifecycle,Lifecycle Checklist & Responsibility Map,app/experience,staff_erp.lifecycle,PENDING_REPOSITORY_DISCOVERY
+/forms,Document Shelf & Form Workspace,app/experience,staff_erp.forms,PENDING_REPOSITORY_DISCOVERY
+/tasks,Workstream Board,app/experience,staff_erp.tasks,PENDING_REPOSITORY_DISCOVERY
+/payroll,Readiness Gates & Payroll Worksheet,app/experience,staff_erp.payroll,PENDING_REPOSITORY_DISCOVERY
+/payslips,Statement Reader & Period Archive,app/experience,staff_erp.payslips,PENDING_REPOSITORY_DISCOVERY
+/payroll-batches,Payment Batch Control Ledger,app/experience,staff_erp.payroll_batches,PENDING_REPOSITORY_DISCOVERY
+/applications,Candidate Pipeline,app/experience,jobs_erp.applications,PENDING_REPOSITORY_DISCOVERY
+/interviews,Interview Calendar & Scorecards,app/experience,jobs_erp.interviews,PENDING_REPOSITORY_DISCOVERY
+/hiring,Offer-to-Onboarding Handoff,app/experience,jobs_erp.hiring,PENDING_REPOSITORY_DISCOVERY
+/printing,Production Lanes & Machine Load,app/experience,printing_&_technology.printing,PENDING_REPOSITORY_DISCOVERY
+/print-orders,Quotation Ledger & Customer Inspector,app/experience,printing_&_technology.print_orders,PENDING_REPOSITORY_DISCOVERY
+/print-materials,Consumption & Job Cost Worksheet,app/experience,printing_&_technology.print_materials,PENDING_REPOSITORY_DISCOVERY
+/bakery,Batch Timeline & Yield Reconciliation,app/experience,bakery_erp.bakery,PENDING_REPOSITORY_DISCOVERY
+/bakery-recipes,BOM & Ingredient Inspector,app/experience,bakery_erp.bakery_recipes,PENDING_REPOSITORY_DISCOVERY
+/bakery-sales,Dispatch-to-Remittance Reconciliation,app/experience,bakery_erp.bakery_sales,PENDING_REPOSITORY_DISCOVERY
+/autos,Vehicle Inventory & Sales Inspector,app/experience,autos_erp.autos,PENDING_REPOSITORY_DISCOVERY
+/auto-leads,Vehicle Sales Pipeline,app/experience,autos_erp.auto_leads,PENDING_REPOSITORY_DISCOVERY
+/auto-history,Read-only Service Archive,app/experience,autos_erp.auto_history,PENDING_REPOSITORY_DISCOVERY
+/logistics,Route Map & Dispatch Queue,app/experience,logistics_erp.logistics,PENDING_REPOSITORY_DISCOVERY
+/fleet,Fleet Readiness Matrix,app/experience,logistics_erp.fleet,PENDING_REPOSITORY_DISCOVERY
+/trip-costs,Trip Profitability Worksheet,app/experience,logistics_erp.trip_costs,PENDING_REPOSITORY_DISCOVERY
+/properties,Portfolio Mosaic & Occupancy Grid,app/experience,homes_&_properties.properties,PENDING_REPOSITORY_DISCOVERY
+/leases,Lease Timeline & Receivables,app/experience,homes_&_properties.leases,PENDING_REPOSITORY_DISCOVERY
+/property-leads,Listing-to-Inspection Pipeline,app/experience,homes_&_properties.property_leads,PENDING_REPOSITORY_DISCOVERY
+/finance,Ledger & Financial Analysis,app/experience,finance_&_operations.finance,PENDING_REPOSITORY_DISCOVERY
+/receivables,Aging Ladder & Receivable Ledger,app/experience,finance_&_operations.receivables,PENDING_REPOSITORY_DISCOVERY
+/finance-posting,Posting Event Trace,app/experience,finance_&_operations.finance_posting,PENDING_REPOSITORY_DISCOVERY
+/budgets,Budget Variance & Period Control,app/experience,finance_&_operations.budgets,PENDING_REPOSITORY_DISCOVERY
+/expenses,Request Register & Evidence Composer,app/experience,finance_&_operations.expenses,PENDING_REPOSITORY_DISCOVERY
+/expense-approvals,Queue–Evidence–Decision Desk,app/experience,finance_&_operations.expense_approvals,PENDING_REPOSITORY_DISCOVERY
+/spend,Spend Treemap & Profit Bridge,app/experience,finance_&_operations.spend,PENDING_REPOSITORY_DISCOVERY
+/cost-admin,Cost Governance Workbench,app/experience,finance_&_operations.cost_admin,PENDING_REPOSITORY_DISCOVERY
+/inventory,Availability Matrix & Movement Ledger,app/experience,finance_&_operations.inventory,PENDING_REPOSITORY_DISCOVERY
+/projects,Milestone Schedule & Budget Rail,app/experience,finance_&_operations.projects,PENDING_REPOSITORY_DISCOVERY
+/facilities,Asset Health & Maintenance Board,app/experience,finance_&_operations.facilities,PENDING_REPOSITORY_DISCOVERY
+/social,Editorial Calendar & Content Canvas,app/experience,social_&_web.social,PENDING_REPOSITORY_DISCOVERY
+/social-controls,Publishing Policy Studio,app/experience,social_&_web.social_controls,PENDING_REPOSITORY_DISCOVERY
+/social-accounts,Provider Connection Register,app/experience,social_&_web.social_accounts,PENDING_REPOSITORY_DISCOVERY
+/social-sync,Conversion Queue & Source Trace,app/experience,social_&_web.social_sync,PENDING_REPOSITORY_DISCOVERY
+/marketing,Audience Funnel & Campaign Comparison,app/experience,social_&_web.marketing,PENDING_REPOSITORY_DISCOVERY
+/inbox,Conversation Inbox & Context Rail,app/experience,social_&_web.inbox,PENDING_REPOSITORY_DISCOVERY
+/website,Page Tree & Revision Workspace,app/experience,social_&_web.website,PENDING_REPOSITORY_DISCOVERY
+/communications,Announcement Editorial Board,app/experience,communications.communications,PENDING_REPOSITORY_DISCOVERY
+/broadcasts,Audience Composer & Acknowledgement Monitor,app/experience,communications.broadcasts,PENDING_REPOSITORY_DISCOVERY
+/encouragement,Human-Approval Writing Desk,app/experience,communications.encouragement,PENDING_REPOSITORY_DISCOVERY
+/notifications,Priority Inbox,app/experience,global.notifications,PENDING_REPOSITORY_DISCOVERY
+/help,Contextual Help Conversation,app/experience,global.help,PENDING_REPOSITORY_DISCOVERY
+/security,Security Event Timeline & Risk Matrix,app/experience,"security,_access_&_admin.security",PENDING_REPOSITORY_DISCOVERY
+/access,Permission Matrix & Explanation Inspector,app/experience,"security,_access_&_admin.access",PENDING_REPOSITORY_DISCOVERY
+/admin,Organization Policy Workbench,app/experience,"security,_access_&_admin.admin",PENDING_REPOSITORY_DISCOVERY
+/recovery,Recovery Issue & Revocation Desk,app/experience,"security,_access_&_admin.recovery",PENDING_REPOSITORY_DISCOVERY
+/support,Support Case & Consent Inspector,app/experience,"security,_access_&_admin.support",PENDING_REPOSITORY_DISCOVERY
+/resources,Service Topology & Health Grid,app/experience,"security,_access_&_admin.resources",PENDING_REPOSITORY_DISCOVERY
+/sync,Sync Queue & Conflict Comparator,app/experience,"security,_access_&_admin.sync",PENDING_REPOSITORY_DISCOVERY
+/audit,Audit Explorer & Event Detail,app/experience,"security,_access_&_admin.audit",PENDING_REPOSITORY_DISCOVERY
+/toolbox,Readiness Diagnostic Workbench,app/experience,"security,_access_&_admin.toolbox",PENDING_REPOSITORY_DISCOVERY
+/integrations,Integration Catalogue & Request Inspector,app/experience,"security,_access_&_admin.integrations",PENDING_REPOSITORY_DISCOVERY
+/hub,Authorized Module Atlas,app/experience,global.hub,PENDING_REPOSITORY_DISCOVERY
+/theme,Appearance Gallery,app/experience,personalization.theme,PENDING_REPOSITORY_DISCOVERY
+/navigation,Navigation Workbench,app/experience,personalization.navigation,PENDING_REPOSITORY_DISCOVERY
+/layout,Composition Studio & Policy Inspector,app/experience,personalization.layout,PENDING_REPOSITORY_DISCOVERY
+/signin-design,Sign-In Composition Inspector,app/experience,personalization.signin_design,PENDING_REPOSITORY_DISCOVERY
+/procurement,Requisition & Sourcing Desk,app/experience,finance_&_operations.procurement,PENDING_REPOSITORY_DISCOVERY
+/purchase-orders,Commitment Ledger & Order Inspector,app/experience,finance_&_operations.purchase_orders,PENDING_REPOSITORY_DISCOVERY
+/goods-receipts,Receipt Worksheet & Acceptance Gate,app/experience,finance_&_operations.goods_receipts,PENDING_REPOSITORY_DISCOVERY
+/stock-transfers,Transfer Custody Timeline,app/experience,finance_&_operations.stock_transfers,PENDING_REPOSITORY_DISCOVERY
+/stock-borrowing,Borrow & Return Register,app/experience,finance_&_operations.stock_borrowing,PENDING_REPOSITORY_DISCOVERY
+/bakery-accountability,Loaf & Money Accountability Desk,app/experience,bakery_erp.bakery_accountability,PENDING_REPOSITORY_DISCOVERY
+/technology-services,Service Queue & SLA Timeline,app/experience,printing_&_technology.technology_services,PENDING_REPOSITORY_DISCOVERY
+/vacancies,Vacancy Brief & Recruitment Readiness,app/experience,jobs_erp.vacancies,PENDING_REPOSITORY_DISCOVERY
+/staff-messaging,Internal Staff Messaging,app/experience,communications.staff_messaging,PENDING_REPOSITORY_DISCOVERY
+/productivity,Governed Productivity Scorecard,app/experience,staff_erp.productivity,PENDING_REPOSITORY_DISCOVERY
+/work-location,Location Policy & Privacy Workbench,app/experience,"security,_access_&_admin.work_location",PENDING_REPOSITORY_DISCOVERY
+/salary-adjustments,Compensation Change Control,app/experience,staff_erp.salary_adjustments,PENDING_REPOSITORY_DISCOVERY
+/data-import,Import Mapping & Validation Workbench,app/experience,finance_&_operations.data_import,PENDING_REPOSITORY_DISCOVERY
+/dashboard-personalization,Widget Composition & Defaults,app/experience,personalization.dashboard_personalization,PENDING_REPOSITORY_DISCOVERY
+/files,Evidence Library & Preview Inspector,app/experience,global.files,PENDING_REPOSITORY_DISCOVERY
+/saved-views,Personal View Library,app/experience,global.saved_views,PENDING_REPOSITORY_DISCOVERY
+/field-builder,Schema Configuration Canvas,app/experience,"security,_access_&_admin.field_builder",PENDING_REPOSITORY_DISCOVERY
+/form-builder,Form Canvas & Property Inspector,app/experience,"security,_access_&_admin.form_builder",PENDING_REPOSITORY_DISCOVERY
+/workflow-builder,State Canvas & Transition Inspector,app/experience,"security,_access_&_admin.workflow_builder",PENDING_REPOSITORY_DISCOVERY
+/report-builder,Report Query Canvas & Result Preview,app/experience,"security,_access_&_admin.report_builder",PENDING_REPOSITORY_DISCOVERY
+/widget-builder,Widget Gallery & Data Inspector,app/experience,"security,_access_&_admin.widget_builder",PENDING_REPOSITORY_DISCOVERY
+/theme-builder,Semantic Token Canvas & Contrast Inspector,app/experience,"security,_access_&_admin.theme_builder",PENDING_REPOSITORY_DISCOVERY
+/business-rules,Rule Condition & Validation Workbench,app/experience,"security,_access_&_admin.business_rules",PENDING_REPOSITORY_DISCOVERY
+/notification-rules,Event-to-Audience Routing Desk,app/experience,"security,_access_&_admin.notification_rules",PENDING_REPOSITORY_DISCOVERY
+/session-analytics,Session Timeline & Consent Inspector,app/experience,"security,_access_&_admin.session_analytics",PENDING_REPOSITORY_DISCOVERY
+/reports,Metric Library & Source Explorer,app/experience,finance_&_operations.reports,PENDING_REPOSITORY_DISCOVERY
+/customer-communications,Omnichannel Queue & Customer Context,app/experience,communications.customer_communications,PENDING_REPOSITORY_DISCOVERY
+/communication-queues,Queue Routing & Assignment Command,app/experience,communications.communication_queues,PENDING_REPOSITORY_DISCOVERY
+/whatsapp-numbers,Business Number Registry & Health,app/experience,communications.whatsapp_numbers,PENDING_REPOSITORY_DISCOVERY
+/communication-analytics,"Delivery, Read & Queue Intelligence",app/experience,communications.communication_analytics,PENDING_REPOSITORY_DISCOVERY
+/communication-preferences,Consent & Preference Register,app/experience,communications.communication_preferences,PENDING_REPOSITORY_DISCOVERY
+/ai-letterhead-generator,AI Letterhead Proposal & Preview Studio,app/experience,communications.ai_letterhead_generator,PENDING_REPOSITORY_DISCOVERY
+/communication-audit,Communication Lifecycle & Audit Explorer,app/experience,communications.communication_audit,PENDING_REPOSITORY_DISCOVERY
+/unified-inbox,Future Omnichannel Adapter Shell,app/experience,communications.unified_inbox,PENDING_REPOSITORY_DISCOVERY
+/communication-automation,Authoritative Event Automation Studio,app/experience,communications.communication_automation,PENDING_REPOSITORY_DISCOVERY
+/communication-templates,Template Governance Studio,app/experience,communications.communication_templates,PENDING_REPOSITORY_DISCOVERY
+/letterheads,Company Identity & Letterhead Studio,app/experience,communications.letterheads,PENDING_REPOSITORY_DISCOVERY
+/banking-operations,Account Cards & Transaction Command,app/experience,finance_&_operations.banking_operations,PENDING_REPOSITORY_DISCOVERY
+/treasury,Cash Position & Forecast Command,app/experience,finance_&_operations.treasury,PENDING_REPOSITORY_DISCOVERY
+/payment-verification,"Verification, Matching & Activation Gate",app/experience,finance_&_operations.payment_verification,PENDING_REPOSITORY_DISCOVERY
+/transfers,Transfer Control & Approval Rail,app/experience,finance_&_operations.transfers,PENDING_REPOSITORY_DISCOVERY
+/beneficiaries,Beneficiary Risk & Verification Register,app/experience,finance_&_operations.beneficiaries,PENDING_REPOSITORY_DISCOVERY
+/payroll-execution,Payroll Banking & Exception Command,app/experience,finance_&_operations.payroll_execution,PENDING_REPOSITORY_DISCOVERY
+/reconciliation,Source Comparison & Exception Resolution,app/experience,finance_&_operations.reconciliation,PENDING_REPOSITORY_DISCOVERY
+/financial-reports,Financial Metric & Export Governance,app/experience,finance_&_operations.financial_reports,PENDING_REPOSITORY_DISCOVERY

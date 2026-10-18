@@ -1,0 +1,11 @@
+FROM,TO,GATE,EMPLOYEE_PAID
+Preparation,Validation,"Earnings, deductions and employee bank validation",NO
+Validation,Awaiting Approval,Batch checks complete,NO
+Awaiting Approval,Approved,Independent payroll approval,NO
+Approved,Submitted,Banking batch and execute permission,NO
+Submitted,Processing,Provider accepted idempotent batch,NO
+Processing,Awaiting Confirmation,Employee result pending,NO
+Awaiting Confirmation,Successful,Verified per-employee success,YES
+Processing,Failed,Verified employee failure,NO
+Successful,Reversed,Verified reversal linked to original,NO
+Successful,Reconciled,Bank/provider/ledger match,NO

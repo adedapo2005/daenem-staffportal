@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-09-11T18:29:12.724Z",
+  "status": "STAFFPORTAL_SITES_REFINEMENT_INCOMPLETE",
+  "modules": 98,
+  "requirementSourceClauses": 3160,
+  "sourceChecks": 1029,
+  "sourceChecksPassed": 1029,
+  "boundedAuthorizationChecks": 990,
+  "logicalEntities": 20,
+  "semanticOperations": 22,
+  "businessRules": 16,
+  "gapAreas": 15,
+  "authMeasurements": 70,
+  "homeMeasurements": 20,
+  "native4kOriginals": 10,
+  "independentAcceptance": false
+}

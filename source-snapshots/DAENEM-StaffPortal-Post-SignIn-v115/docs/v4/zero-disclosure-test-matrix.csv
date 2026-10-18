@@ -1,0 +1,211 @@
+TEST_ID,PROFILE,SURFACE,EXPECTED,RESULT,EVIDENCE
+ZD-Owner-navigation,Owner,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-Module Hub,Owner,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-search,Owner,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-AI,Owner,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-command palette,Owner,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-home,Owner,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-widgets,Owner,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-KPIs,Owner,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-records,Owner,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-fields,Owner,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-forms,Owner,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-reports,Owner,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-files,Owner,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-notifications,Owner,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-favorites,Owner,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-bookmarks,Owner,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-recents,Owner,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-saved views,Owner,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-deep links,Owner,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-exports,Owner,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Owner-actions,Owner,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-navigation,Group Admin,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-Module Hub,Group Admin,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-search,Group Admin,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-AI,Group Admin,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-command palette,Group Admin,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-home,Group Admin,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-widgets,Group Admin,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-KPIs,Group Admin,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-records,Group Admin,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-fields,Group Admin,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-forms,Group Admin,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-reports,Group Admin,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-files,Group Admin,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-notifications,Group Admin,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-favorites,Group Admin,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-bookmarks,Group Admin,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-recents,Group Admin,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-saved views,Group Admin,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-deep links,Group Admin,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-exports,Group Admin,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Group Admin-actions,Group Admin,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-navigation,Manager,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-Module Hub,Manager,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-search,Manager,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-AI,Manager,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-command palette,Manager,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-home,Manager,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-widgets,Manager,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-KPIs,Manager,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-records,Manager,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-fields,Manager,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-forms,Manager,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-reports,Manager,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-files,Manager,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-notifications,Manager,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-favorites,Manager,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-bookmarks,Manager,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-recents,Manager,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-saved views,Manager,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-deep links,Manager,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-exports,Manager,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Manager-actions,Manager,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-navigation,Employee,navigation,Absent if unauthorized,PASS,Bounded browser observations; other cells not tested
+ZD-Employee-Module Hub,Employee,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-search,Employee,search,Absent if unauthorized,PASS,Bounded browser observations; other cells not tested
+ZD-Employee-AI,Employee,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-command palette,Employee,command palette,Absent if unauthorized,PASS,Bounded browser observations; other cells not tested
+ZD-Employee-home,Employee,home,Absent if unauthorized,PASS,Bounded browser observations; other cells not tested
+ZD-Employee-widgets,Employee,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-KPIs,Employee,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-records,Employee,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-fields,Employee,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-forms,Employee,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-reports,Employee,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-files,Employee,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-notifications,Employee,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-favorites,Employee,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-bookmarks,Employee,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-recents,Employee,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-saved views,Employee,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-deep links,Employee,deep links,Absent if unauthorized,PASS,Bounded browser observations; other cells not tested
+ZD-Employee-exports,Employee,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Employee-actions,Employee,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-navigation,Provisional,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-Module Hub,Provisional,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-search,Provisional,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-AI,Provisional,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-command palette,Provisional,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-home,Provisional,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-widgets,Provisional,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-KPIs,Provisional,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-records,Provisional,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-fields,Provisional,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-forms,Provisional,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-reports,Provisional,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-files,Provisional,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-notifications,Provisional,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-favorites,Provisional,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-bookmarks,Provisional,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-recents,Provisional,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-saved views,Provisional,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-deep links,Provisional,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-exports,Provisional,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Provisional-actions,Provisional,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-navigation,Multi-role,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-Module Hub,Multi-role,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-search,Multi-role,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-AI,Multi-role,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-command palette,Multi-role,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-home,Multi-role,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-widgets,Multi-role,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-KPIs,Multi-role,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-records,Multi-role,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-fields,Multi-role,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-forms,Multi-role,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-reports,Multi-role,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-files,Multi-role,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-notifications,Multi-role,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-favorites,Multi-role,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-bookmarks,Multi-role,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-recents,Multi-role,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-saved views,Multi-role,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-deep links,Multi-role,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-exports,Multi-role,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-role-actions,Multi-role,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-navigation,Multi-company,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-Module Hub,Multi-company,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-search,Multi-company,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-AI,Multi-company,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-command palette,Multi-company,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-home,Multi-company,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-widgets,Multi-company,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-KPIs,Multi-company,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-records,Multi-company,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-fields,Multi-company,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-forms,Multi-company,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-reports,Multi-company,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-files,Multi-company,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-notifications,Multi-company,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-favorites,Multi-company,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-bookmarks,Multi-company,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-recents,Multi-company,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-saved views,Multi-company,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-deep links,Multi-company,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-exports,Multi-company,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Multi-company-actions,Multi-company,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-navigation,No permission,navigation,Absent if unauthorized,PASS,Bounded browser observations; other cells not tested
+ZD-No permission-Module Hub,No permission,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-search,No permission,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-AI,No permission,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-command palette,No permission,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-home,No permission,home,Absent if unauthorized,PASS,Bounded browser observations; other cells not tested
+ZD-No permission-widgets,No permission,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-KPIs,No permission,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-records,No permission,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-fields,No permission,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-forms,No permission,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-reports,No permission,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-files,No permission,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-notifications,No permission,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-favorites,No permission,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-bookmarks,No permission,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-recents,No permission,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-saved views,No permission,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-deep links,No permission,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-exports,No permission,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-No permission-actions,No permission,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-navigation,Expired override,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-Module Hub,Expired override,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-search,Expired override,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-AI,Expired override,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-command palette,Expired override,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-home,Expired override,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-widgets,Expired override,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-KPIs,Expired override,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-records,Expired override,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-fields,Expired override,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-forms,Expired override,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-reports,Expired override,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-files,Expired override,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-notifications,Expired override,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-favorites,Expired override,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-bookmarks,Expired override,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-recents,Expired override,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-saved views,Expired override,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-deep links,Expired override,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-exports,Expired override,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Expired override-actions,Expired override,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-navigation,Reduced override,navigation,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-Module Hub,Reduced override,Module Hub,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-search,Reduced override,search,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-AI,Reduced override,AI,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-command palette,Reduced override,command palette,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-home,Reduced override,home,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-widgets,Reduced override,widgets,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-KPIs,Reduced override,KPIs,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-records,Reduced override,records,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-fields,Reduced override,fields,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-forms,Reduced override,forms,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-reports,Reduced override,reports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-files,Reduced override,files,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-notifications,Reduced override,notifications,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-favorites,Reduced override,favorites,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-bookmarks,Reduced override,bookmarks,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-recents,Reduced override,recents,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-saved views,Reduced override,saved views,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-deep links,Reduced override,deep links,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-exports,Reduced override,exports,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested
+ZD-Reduced override-actions,Reduced override,actions,Absent if unauthorized,BLOCKED,Bounded browser observations; other cells not tested

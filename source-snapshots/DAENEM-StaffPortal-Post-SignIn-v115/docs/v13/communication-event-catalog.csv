@@ -1,0 +1,11 @@
+EVENT,SOURCE_OF_TRUTH,CHANNELS,IDEMPOTENCY,SEND_RULE
+invoice.issued,Authoritative ERP event,WhatsApp|Email|Both,invoice.issued+customer+channel+template_version,Consent + hours + approved template + assigned scope
+invoice.paid,Authoritative ERP event,WhatsApp|Email|Both,invoice.paid+customer+channel+template_version,Consent + hours + approved template + assigned scope
+order.completed,Authoritative ERP event,WhatsApp|Email|Both,order.completed+customer+channel+template_version,Consent + hours + approved template + assigned scope
+delivery.completed,Authoritative ERP event,WhatsApp|Email|Both,delivery.completed+customer+channel+template_version,Consent + hours + approved template + assigned scope
+collection.ready,Authoritative ERP event,WhatsApp|Email|Both,collection.ready+customer+channel+template_version,Consent + hours + approved template + assigned scope
+payment.verified,Authoritative ERP event,WhatsApp|Email|Both,payment.verified+customer+channel+template_version,Consent + hours + approved template + assigned scope
+feedback.requested,Authoritative ERP event,WhatsApp|Email|Both,feedback.requested+customer+channel+template_version,Consent + hours + approved template + assigned scope
+complaint.received,Authoritative ERP event,WhatsApp|Email|Both,complaint.received+customer+channel+template_version,Consent + hours + approved template + assigned scope
+support.followup,Authoritative ERP event,WhatsApp|Email|Both,support.followup+customer+channel+template_version,Consent + hours + approved template + assigned scope
+campaign.approved,Authoritative ERP event,WhatsApp|Email|Both,campaign.approved+customer+channel+template_version,Consent + hours + approved template + assigned scope

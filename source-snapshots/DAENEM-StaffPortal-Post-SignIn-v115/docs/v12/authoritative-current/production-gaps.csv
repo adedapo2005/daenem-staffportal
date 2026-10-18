@@ -1,0 +1,9 @@
+GAP_ID,DOMAIN,GAP,STATUS,NEXT_ACTION
+PG-V12-001,Communications,WhatsApp Business provider verification and send adapter,BLOCKED_PRODUCTION,"Configure official provider, secrets, verified webhooks, retry and audit"
+PG-V12-002,Communications,Email delivery provider,BLOCKED_PRODUCTION,Configure server-side provider and delivery webhooks
+PG-V12-003,Banking,Bank and aggregator contracts,BLOCKED_PRODUCTION,Provider diligence and commercial approval
+PG-V12-004,Banking,"Verified balances, statements and transaction feeds",BLOCKED_PRODUCTION,Implement server-side adapter and reconciliation jobs
+PG-V12-005,Transfers,Real payout execution,BLOCKED_PRODUCTION,"HSM/secret custody, dual authorization, provider submission"
+PG-V12-006,Payroll,Real payroll banking batch,BLOCKED_PRODUCTION,Approved payroll integration and per-employee callbacks
+PG-V12-007,Identity,"Production authentication, MFA and device/network policy",BLOCKED_PRODUCTION,Map approved identity provider
+PG-V12-008,Storage,D1/R2 durable records and evidence,BLOCKED_PRODUCTION,Implement schema migrations and governed object storage

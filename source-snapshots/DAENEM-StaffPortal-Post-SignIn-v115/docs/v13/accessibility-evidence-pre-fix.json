@@ -1,0 +1,721 @@
+{
+  "siteProjectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "capturedAt": "2026-09-12T05:00:05.381Z",
+  "method": "Managed Chromium runtime plus supported source assertions",
+  "tests": [
+    {
+      "test": "Keyboard traversal",
+      "status": "PASS",
+      "evidence": "12 Tab advances captured from rendered authenticated portal"
+    },
+    {
+      "test": "Tab order",
+      "status": "PASS",
+      "evidence": "Demo role → Demo company → Open responsive review workbench → Demo data state → Inspect this experience → Return to sign-in review → Close → Acceptance profile → Demo role → Demo company → Open responsive review workbench → Demo data state"
+    },
+    {
+      "test": "Visible focus",
+      "status": "PASS",
+      "evidence": "Computed 3px focus outlines captured"
+    },
+    {
+      "test": "Dialogs",
+      "status": "PASS",
+      "evidence": "Development preview dialog opened and closed with Escape"
+    },
+    {
+      "test": "Drawers",
+      "status": "PASS",
+      "evidence": "AI Guide sheet opened with an accessible dialog name and closed with Escape"
+    },
+    {
+      "test": "Escape",
+      "status": "PASS",
+      "evidence": "Dialog and sheet both dismissed with Escape"
+    },
+    {
+      "test": "Form labels",
+      "status": "FAIL",
+      "evidence": "Rendered sign-in form label associations inspected"
+    },
+    {
+      "test": "Errors",
+      "status": "PASS",
+      "evidence": "Rendered role=alert error containers and source assertions; no real authentication submitted"
+    },
+    {
+      "test": "200% zoom",
+      "status": "BLOCKED",
+      "evidence": "Managed browser API does not expose a reliable browser-zoom control"
+    },
+    {
+      "test": "Reflow",
+      "status": "PASS",
+      "evidence": "Sign-in and authenticated home inspected at 390×844"
+    },
+    {
+      "test": "Contrast",
+      "status": "BLOCKED",
+      "evidence": "Full image/glass contrast certification requires dedicated visual contrast tooling"
+    },
+    {
+      "test": "Touch target size",
+      "status": "FAIL",
+      "evidence": "Rendered 390×844 focusable controls inspected against 32px lab minimum; failures=14"
+    },
+    {
+      "test": "Reduced motion",
+      "status": "PASS",
+      "evidence": "Runtime components and CSS include prefers-reduced-motion guards; media emulation unavailable"
+    },
+    {
+      "test": "Screen-reader names",
+      "status": "FAIL",
+      "evidence": "Accessible-name sources inspected for rendered focusable controls; missing=1"
+    }
+  ],
+  "raw": {
+    "signIn390": [
+      {
+        "focusable": true,
+        "height": 56,
+        "name": "Skip to content",
+        "tag": "A",
+        "width": 145
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Install Daenem ERP App",
+        "tag": "BUTTON",
+        "width": 40
+      },
+      {
+        "focusable": true,
+        "height": 43,
+        "name": "Ask or find sign-in help⌘ / Ctrl K",
+        "tag": "BUTTON",
+        "width": 370
+      },
+      {
+        "focusable": true,
+        "height": 44,
+        "name": "Username or email",
+        "tag": "INPUT",
+        "width": 338
+      },
+      {
+        "focusable": true,
+        "height": 44,
+        "name": "Password",
+        "tag": "INPUT",
+        "width": 338
+      },
+      {
+        "focusable": true,
+        "height": 31,
+        "name": "Show password",
+        "tag": "BUTTON",
+        "width": 31
+      },
+      {
+        "focusable": true,
+        "height": 16,
+        "name": "Remember me",
+        "tag": "BUTTON",
+        "width": 16
+      },
+      {
+        "focusable": false,
+        "height": 16,
+        "name": "",
+        "tag": "INPUT",
+        "width": 16
+      },
+      {
+        "focusable": true,
+        "height": 21,
+        "name": "Forgot password?",
+        "tag": "BUTTON",
+        "width": 122
+      },
+      {
+        "focusable": true,
+        "height": 47,
+        "name": "Sign in",
+        "tag": "BUTTON",
+        "width": 338
+      },
+      {
+        "focusable": true,
+        "height": 32,
+        "name": "Microsoft",
+        "tag": "BUTTON",
+        "width": 166
+      },
+      {
+        "focusable": true,
+        "height": 32,
+        "name": "Google",
+        "tag": "BUTTON",
+        "width": 166
+      },
+      {
+        "focusable": true,
+        "height": 17,
+        "name": "Create account / claim employee identity",
+        "tag": "BUTTON",
+        "width": 235
+      },
+      {
+        "focusable": true,
+        "height": 41,
+        "name": "Sign-in experience",
+        "tag": "BUTTON",
+        "width": 161
+      },
+      {
+        "focusable": true,
+        "height": 41,
+        "name": "Authentication scenario",
+        "tag": "BUTTON",
+        "width": 147
+      },
+      {
+        "focusable": true,
+        "height": 41,
+        "name": "Preview role",
+        "tag": "BUTTON",
+        "width": 93
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Open isolated Owner preview",
+        "tag": "BUTTON",
+        "width": 232
+      },
+      {
+        "focusable": true,
+        "height": 74,
+        "name": "Seven-location world clock",
+        "tag": "BUTTON",
+        "width": 77
+      },
+      {
+        "focusable": true,
+        "height": 74,
+        "name": "Weather",
+        "tag": "BUTTON",
+        "width": 55
+      },
+      {
+        "focusable": true,
+        "height": 74,
+        "name": "Inspiration",
+        "tag": "BUTTON",
+        "width": 55
+      },
+      {
+        "focusable": true,
+        "height": 74,
+        "name": "Motivation",
+        "tag": "BUTTON",
+        "width": 55
+      },
+      {
+        "focusable": true,
+        "height": 74,
+        "name": "News",
+        "tag": "BUTTON",
+        "width": 55
+      },
+      {
+        "focusable": true,
+        "height": 74,
+        "name": "Status",
+        "tag": "BUTTON",
+        "width": 55
+      }
+    ],
+    "ownerHome390": [
+      {
+        "focusable": true,
+        "height": 56,
+        "name": "Skip to content",
+        "tag": "A",
+        "width": 145
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Open navigation",
+        "tag": "BUTTON",
+        "width": 40
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Open sync status",
+        "tag": "BUTTON",
+        "width": 34
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Open notifications",
+        "tag": "BUTTON",
+        "width": 34
+      },
+      {
+        "focusable": true,
+        "height": 35,
+        "name": "Open my profile",
+        "tag": "BUTTON",
+        "width": 35
+      },
+      {
+        "focusable": true,
+        "height": 18,
+        "name": "Owner · Demo Data",
+        "tag": "BUTTON",
+        "width": 129
+      },
+      {
+        "focusable": true,
+        "height": 15,
+        "name": "S.aderogba / Wikimedia Commons",
+        "tag": "A",
+        "width": 196
+      },
+      {
+        "focusable": true,
+        "height": 15,
+        "name": "License",
+        "tag": "A",
+        "width": 44
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Edit widgets",
+        "tag": "BUTTON",
+        "width": 139
+      },
+      {
+        "focusable": true,
+        "height": 58,
+        "name": "Work filter",
+        "tag": "BUTTON",
+        "width": 124
+      },
+      {
+        "focusable": true,
+        "height": 36,
+        "name": "Daenem Printing & Technology174 records",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 36,
+        "name": "Daenem Bakery13 records",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 36,
+        "name": "Daenem Autos6 records",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 36,
+        "name": "Daenem Logistics9 records",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 36,
+        "name": "Daenem Homes & Properties9 records",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 290,
+        "name": "",
+        "tag": "svg",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "printing 174",
+        "tag": "BUTTON",
+        "width": 94
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "bakery 13",
+        "tag": "BUTTON",
+        "width": 84
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "autos 6",
+        "tag": "BUTTON",
+        "width": 72
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "logistics 9",
+        "tag": "BUTTON",
+        "width": 87
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "properties 9",
+        "tag": "BUTTON",
+        "width": 97
+      },
+      {
+        "focusable": true,
+        "height": 34,
+        "name": "printing: 174",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 34,
+        "name": "bakery: 13",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 34,
+        "name": "autos: 6",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 34,
+        "name": "logistics: 9",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 34,
+        "name": "properties: 9",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 21,
+        "name": "View all 50",
+        "tag": "BUTTON",
+        "width": 92
+      },
+      {
+        "focusable": true,
+        "height": 72,
+        "name": "01Aminat Bello · employmentIn Review · Daniel Obi",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 72,
+        "name": "02Daniel Obi · emergency contactIn Review · Chiamaka Eze",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 72,
+        "name": "03Medical appointmentSubmitted · Chiamaka Eze",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 72,
+        "name": "04September review · Daniel ObiManager Review · Daniel Obi",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 71,
+        "name": "05Q3 goals · Chiamaka EzeSelf Review · Chiamaka Eze",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 64,
+        "name": "PPrinting3 source records0 to review",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 64,
+        "name": "BBakery3 source records1 to review",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 64,
+        "name": "AAutos3 source records0 to review",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 64,
+        "name": "LLogistics3 source records1 to review",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 63,
+        "name": "PProperties3 source records0 to review",
+        "tag": "BUTTON",
+        "width": 306
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Preview demo weather",
+        "tag": "BUTTON",
+        "width": 167
+      },
+      {
+        "focusable": true,
+        "height": 40,
+        "name": "Inspect metadata",
+        "tag": "BUTTON",
+        "width": 130
+      },
+      {
+        "focusable": true,
+        "height": 18,
+        "name": "Secure sign out",
+        "tag": "BUTTON",
+        "width": 110
+      }
+    ],
+    "focusSequence": [
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(23, 35, 55, 0.46) 0px 0px 0px 1.37176px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+        "name": "Demo role",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(23, 35, 55, 0.694) 0px 0px 0px 2.0835px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+        "name": "Demo company",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "none",
+        "name": "Open responsive review workbench",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "A"
+      },
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(23, 35, 55, 0.694) 0px 0px 0px 2.0868px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+        "name": "Demo data state",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "rgba(47, 95, 213, 0.173) 0px 8px 20px 0px",
+        "name": "Inspect this experience",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "none",
+        "name": "Return to sign-in review",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 255, 255) 0px 0px 0px 2px, rgb(23, 35, 55) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+        "name": "Close",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(23, 35, 55, 0.694) 0px 0px 0px 2.0835px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+        "name": "Acceptance profile",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(23, 35, 55, 0.46) 0px 0px 0px 1.37176px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+        "name": "Demo role",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(23, 35, 55, 0.835) 0px 0px 0px 2.51075px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+        "name": "Demo company",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      },
+      {
+        "boxShadow": "none",
+        "name": "Open responsive review workbench",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "A"
+      },
+      {
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(23, 35, 55, 0.694) 0px 0px 0px 2.0868px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+        "name": "Demo data state",
+        "outline": "rgb(68, 167, 147) solid 3px",
+        "tag": "BUTTON"
+      }
+    ],
+    "dialog": {
+      "open": true,
+      "escapeClosed": true
+    },
+    "drawer": {
+      "name": "AI Guide",
+      "open": true,
+      "escapeClosed": true
+    },
+    "touchFailures": [
+      {
+        "focusable": true,
+        "height": 31,
+        "name": "Show password",
+        "tag": "BUTTON",
+        "width": 31
+      },
+      {
+        "focusable": true,
+        "height": 16,
+        "name": "Remember me",
+        "tag": "BUTTON",
+        "width": 16
+      },
+      {
+        "focusable": true,
+        "height": 21,
+        "name": "Forgot password?",
+        "tag": "BUTTON",
+        "width": 122
+      },
+      {
+        "focusable": true,
+        "height": 17,
+        "name": "Create account / claim employee identity",
+        "tag": "BUTTON",
+        "width": 235
+      },
+      {
+        "focusable": true,
+        "height": 18,
+        "name": "Owner · Demo Data",
+        "tag": "BUTTON",
+        "width": 129
+      },
+      {
+        "focusable": true,
+        "height": 15,
+        "name": "S.aderogba / Wikimedia Commons",
+        "tag": "A",
+        "width": 196
+      },
+      {
+        "focusable": true,
+        "height": 15,
+        "name": "License",
+        "tag": "A",
+        "width": 44
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "printing 174",
+        "tag": "BUTTON",
+        "width": 94
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "bakery 13",
+        "tag": "BUTTON",
+        "width": 84
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "autos 6",
+        "tag": "BUTTON",
+        "width": 72
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "logistics 9",
+        "tag": "BUTTON",
+        "width": 87
+      },
+      {
+        "focusable": true,
+        "height": 29,
+        "name": "properties 9",
+        "tag": "BUTTON",
+        "width": 97
+      },
+      {
+        "focusable": true,
+        "height": 21,
+        "name": "View all 50",
+        "tag": "BUTTON",
+        "width": 92
+      },
+      {
+        "focusable": true,
+        "height": 18,
+        "name": "Secure sign out",
+        "tag": "BUTTON",
+        "width": 110
+      }
+    ],
+    "nameFailures": [
+      {
+        "focusable": true,
+        "height": 290,
+        "name": "",
+        "tag": "svg",
+        "width": 306
+      }
+    ]
+  },
+  "summary": {
+    "pass": 9,
+    "fail": 3,
+    "blocked": 2
+  }
+}

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "prebuild": "node scripts/check-approved-experience-lock.mjs && node scripts/check-zero-disclosure.mjs && node scripts/check-staffportal-staging-integration.mjs && tsc --noEmit",
+    "prebuild": "node scripts/check-complete-v115-export.mjs && node scripts/check-approved-experience-lock.mjs && node scripts/check-zero-disclosure.mjs && node scripts/check-staffportal-staging-integration.mjs && tsc --noEmit",
     "build": "vite build",
     "preview": "npm run build && vite preview",
     "check:next-phase": "node scripts/check-next-phase.mjs",

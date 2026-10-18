@@ -68,10 +68,11 @@ jobs:
             echo "::error::Approved QA Review V115 source provenance is missing."
             exit 1
           fi
-          if [ "$(find src/qa-review-v115/app/experience -type f | wc -l | tr -d ' ')" != "129" ]; then
-            echo "::error::Complete approved QA Review V115 experience source is missing."
+          if [ "$(find source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience -type f | wc -l | tr -d ' ')" != "117" ]; then
+            echo "::error::Official post-Sign-In QA Review V115 experience source is missing."
             exit 1
           fi
+          node scripts/check-complete-v115-export.mjs
           node scripts/check-approved-experience-lock.mjs
 
       - name: Normalize Cloudflare account ID

@@ -1,0 +1,5 @@
+"EVENT FAMILY","CURRENT PAYLOAD","TRIGGER","CURRENT STORAGE","LIMIT"
+"Business record action","actor; company; target; action; before; after; reason; time; session; correlation","Portal mutate","Browser localStorage","Some history is status-only; not immutable or tamper resistant"
+"Preview context change","previous/new role/profile; reason; actor; timestamp","Development preview selection","Browser localStorage","Simulation event only"
+"Configuration lifecycle","actor; action; time; reason; version","Validate/simulate/publish/rollback","Browser localStorage","Not authoritative deployment audit"
+"Attendance correction","original events retained; correction reason","Local correction UI","Record JSON / localStorage","Full manager approval workflow incomplete"

@@ -1,0 +1,66 @@
+FROM_ENTITY,TO_ENTITY,CARDINALITY,RULE,PRODUCTION_STATUS
+Employee,AttendanceDay,1:N,Employee scope,REQUIRES_BACKEND_DISCOVERY
+AttendanceDay,ClockEvent,1:N,Accepted chronological events,REQUIRES_BACKEND_DISCOVERY
+Employee,PayrollBatch,N:M,EmployeePayment joins,REQUIRES_BACKEND_DISCOVERY
+PayrollBatch,EmployeePayment,1:N,Per-employee finality,REQUIRES_BACKEND_DISCOVERY
+Candidate,Application,1:N,Candidate lineage,REQUIRES_BACKEND_DISCOVERY
+Application,Interview,1:N,Application stage,REQUIRES_BACKEND_DISCOVERY
+PrintJob,MaterialIssue,1:N,Material custody,REQUIRES_BACKEND_DISCOVERY
+PrintJob,QCRecord,1:N,QC gate,REQUIRES_BACKEND_DISCOVERY
+BakeryBatch,BakeryDispatch,1:N,Batch custody,REQUIRES_BACKEND_DISCOVERY
+BakeryBatch,BakeryReconciliation,1:1,Loaf/money conservation,REQUIRES_BACKEND_DISCOVERY
+BakeryReconciliation,AccountabilityInvestigation,1:N,Unresolved variance,REQUIRES_BACKEND_DISCOVERY
+Vehicle,Trip,1:N,Assigned vehicle,REQUIRES_BACKEND_DISCOVERY
+Trip,POD,1:1,Delivery evidence,REQUIRES_BACKEND_DISCOVERY
+Property,Unit,1:N,Property inventory,REQUIRES_BACKEND_DISCOVERY
+Unit,Lease,1:N,Lease history,REQUIRES_BACKEND_DISCOVERY
+Customer,Order,1:N,Existing customer truth,REQUIRES_BACKEND_DISCOVERY
+Order,Invoice,1:N,Order billing,REQUIRES_BACKEND_DISCOVERY
+Invoice,Payment,1:N,Authoritative balance,REQUIRES_BACKEND_DISCOVERY
+PurchaseRequisition,PurchaseOrder,1:1,Approval before order,REQUIRES_BACKEND_DISCOVERY
+PurchaseOrder,GoodsReceipt,1:N,Receipt quantities,REQUIRES_BACKEND_DISCOVERY
+GoodsReceipt,InventoryMovement,1:N,Atomic stock posting,REQUIRES_BACKEND_DISCOVERY
+Customer,Conversation,1:N,Communications wraps customer truth,REQUIRES_BACKEND_DISCOVERY
+Conversation,Message,1:N,Message lifecycle,REQUIRES_BACKEND_DISCOVERY
+BusinessNumber,Conversation,1:N,Number/company/site scope,REQUIRES_BACKEND_DISCOVERY
+CommunicationPreference,Message,1:N,Consent before send,REQUIRES_BACKEND_DISCOVERY
+BankAccount,BankTransaction,1:N,Account assignment,REQUIRES_BACKEND_DISCOVERY
+ProviderEvent,PaymentMatch,1:N,Verified event matching,REQUIRES_BACKEND_DISCOVERY
+PaymentMatch,Payment,N:1,No duplicate finance truth,REQUIRES_BACKEND_DISCOVERY
+Beneficiary,Transfer,1:N,Verified destination,REQUIRES_BACKEND_DISCOVERY
+Transfer,TransferApproval,1:N,Maker-checker,REQUIRES_BACKEND_DISCOVERY
+BankTransaction,Reconciliation,N:M,Bank/ledger match,REQUIRES_BACKEND_DISCOVERY
+FileObject,AuditEvent,1:N,File access audit,REQUIRES_BACKEND_DISCOVERY
+Employee,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+AttendanceDay,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+ClockEvent,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+LeaveRequest,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+PayrollBatch,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+EmployeePayment,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Candidate,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Application,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Interview,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+PrintJob,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+MaterialIssue,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+QCRecord,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+BakeryBatch,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+BakeryDispatch,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+BakeryReconciliation,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+AccountabilityInvestigation,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Vehicle,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Trip,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+POD,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Property,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Unit,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Lease,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Customer,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Order,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Invoice,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Payment,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+ExpenseRequest,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+PurchaseRequisition,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+PurchaseOrder,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+GoodsReceipt,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+InventoryItem,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+InventoryMovement,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY
+Project,AuditEvent,1:N,Lifecycle and access evidence,REQUIRES_BACKEND_DISCOVERY

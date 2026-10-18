@@ -1,0 +1,38 @@
+{
+  "validatedAt": "2026-09-11T04:35:12.246978+00:00",
+  "typecheck": {
+    "command": "node node_modules/typescript/bin/tsc --noEmit",
+    "status": "PASS"
+  },
+  "sourceContracts": {
+    "command": "node scripts/experience/check-contract.mjs",
+    "status": "PASS",
+    "passed": 28,
+    "total": 28
+  },
+  "frameworkBuild": {
+    "command": "node /root/.codex/plugins/cache/openai-curated-remote/sites/0.1.56/scripts/build-site.mjs",
+    "status": "PASS"
+  },
+  "browserQA": {
+    "status": "NOT RUN",
+    "reason": "Cloud Browser URL access policy blocked the managed local preview. No bypass was attempted."
+  },
+  "screenshots": {
+    "status": "NOT RUN"
+  },
+  "responsiveViewports": {
+    "status": "NOT RUN",
+    "sizes": [
+      "390x844",
+      "768x1024",
+      "1024x1366",
+      "1672x941",
+      "1920x1080",
+      "2560x1440",
+      "3840x2160"
+    ]
+  },
+  "independentReview": "PENDING",
+  "acceptance": "NOT CLAIMED"
+}

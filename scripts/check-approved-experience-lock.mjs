@@ -11,8 +11,8 @@ const signinCss = read('../src/signin-experience.css');
 const signinReference = read('../src/approved-signin-v180/reference-v180.html');
 const signinCompiledCss = read('../public/approved-signin-v180.css');
 const postLogin = read('../src/qa-review-v115-runtime.tsx');
-const approvedPortal = read('../src/qa-review-v115/app/experience/Portal.tsx');
-const approvedWorkspaces = read('../src/qa-review-v115/app/experience/workspaces.tsx');
+const approvedPortal = read('../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx');
+const approvedWorkspaces = read('../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/workspaces.tsx');
 
 const failures = [];
 const requireText = (source, expected, message) => { if (!source.includes(expected)) failures.push(message); };
@@ -21,7 +21,7 @@ const requireSha256 = (path, expected) => {
   const actual = createHash('sha256').update(readFileSync(new URL(path, import.meta.url))).digest('hex');
   if (actual !== expected) failures.push(`Approved source snapshot changed: ${path}`);
 };
-const approvedSourceRoot = fileURLToPath(new URL('../src/qa-review-v115/', import.meta.url));
+const approvedSourceRoot = fileURLToPath(new URL('../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/', import.meta.url));
 const sourceRoots = ['app/experience', 'components/ui', 'hooks', 'lib', 'vendor'];
 const sourceFiles = [];
 const walk = (directory) => {
@@ -63,8 +63,8 @@ rejectText(signinCss, 'sp-adapter-', 'Hand-recreated Sign-In adapter styles rema
 
 requireText(postLogin, 'data-approved-postlogin="qa-review-v115"', 'Approved QA Review V115 marker is missing.');
 requireText(postLogin, '09bd2051d118242bce095be012a3a763cc1f8a33', 'Approved QA Review source commit is missing.');
-requireText(postLogin, "import Portal from './qa-review-v115/app/experience/Portal'", 'The complete approved Portal is not mounted.');
-requireText(postLogin, "import './qa-review-v115/app/globals.css'", 'The approved global design system is not mounted.');
+requireText(postLogin, "import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal'", 'The complete approved Portal is not mounted.');
+requireText(postLogin, "import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css'", 'The approved global design system is not mounted.');
 requireText(postLogin, "sessionStorage.setItem('daenem-demo-session-v3'", 'Authenticated Worker context is not bridged into the approved Portal session.');
 requireText(approvedPortal, 'data-premium-shell-contract="premium-shell-reset-v1"', 'Approved V115 premium shell contract is missing.');
 requireText(approvedPortal, 'const Workspace = lazy(() => import("./workspaces"))', 'Approved V115 complete workspace loader is missing.');
@@ -76,8 +76,8 @@ rejectText(postLogin, 'qa115-', 'Hand-recreated qa115 shell classes remain in th
 rejectText(postLogin, 'p-adapter-', 'Hand-recreated post-login adapter classes remain.');
 rejectText(postLogin, 'eo-product-icon', 'Hand-recreated banking product icon remains.');
 rejectText(postLogin, 'eo-truth-strip', 'Hand-recreated banking truth strip remains.');
-if (sourceFiles.length !== 195) failures.push(`Approved V115 source tree is incomplete: expected 195 files, found ${sourceFiles.length}.`);
-if (sourceFingerprint !== '2d046227d0efc128f9d9f892c880739628ba4eebaabee1002a8885aaa1416f29') failures.push('Approved V115 complete source tree changed from the locked QA Review V115 snapshot.');
+if (sourceFiles.length !== 183) failures.push(`Approved V115 post-Sign-In source tree is incomplete: expected 183 files, found ${sourceFiles.length}.`);
+if (sourceFingerprint !== 'e1b0945b73b03939aab01cbeef39ac4b22aecf6f880813180f2007066c443365') failures.push('Approved V115 post-Sign-In source tree changed from the official 683-file export.');
 
 requireSha256('../src/approved-signin-v180/reference-v180.html', '00984e096a08ffd936780f6cde928912db0ff30678922962d85574dd526395d7');
 requireSha256('../public/approved-signin-v180.css', '45d1861fd9e885325f98275e502e0c343ac58788f9eed5b8093bf254c0ecf92d');
@@ -99,4 +99,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Approved experience lock passed: exact Sites V180 + complete QA Review V115 (${sourceFiles.length} locked source files), real Worker auth retained.`);
+console.log(`Approved experience lock passed: exact Sites V180 + official 683-file QA Review V115 export (${sourceFiles.length} locked runtime files), real Worker auth retained.`);

@@ -1,0 +1,98 @@
+{
+  "retrieved_at_utc": "2026-09-11T04:30:31.582183+00:00",
+  "repository": "https://github.com/google/fonts",
+  "repository_ref": "main",
+  "modifications": "None; downloaded files preserved byte-for-byte.",
+  "fonts": [
+    {
+      "family": "Inter",
+      "font_family_name": "Inter",
+      "filename": "inter-variable.ttf",
+      "original_filename": "Inter[opsz,wght].ttf",
+      "type": "TrueType/OpenType variable font",
+      "style": "normal",
+      "axes": [
+        {
+          "tag": "opsz",
+          "min": 14.0,
+          "default": 14.0,
+          "max": 32.0
+        },
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "default": 400.0,
+          "max": 900.0
+        }
+      ],
+      "font_version": "Version 4.001;git-66647c0bb",
+      "font_copyright": "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)",
+      "font_license_description": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://openfontlicense.org",
+      "font_license_url": "https://openfontlicense.org",
+      "bytes": 876576,
+      "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "source_page": "https://github.com/google/fonts/tree/main/ofl/inter",
+      "source_download": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+      "license": "SIL Open Font License 1.1",
+      "supporting_files": [
+        {
+          "filename": "inter-OFL.txt",
+          "source_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt",
+          "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57"
+        },
+        {
+          "filename": "inter-METADATA.pb",
+          "source_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/METADATA.pb",
+          "sha256": "79e4721ef4f72251c6080a40dfd9efb6728b4df1fc690f0c70eb4b1b5303a5b0"
+        },
+        {
+          "filename": "inter-upstream_info.md",
+          "source_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/upstream_info.md",
+          "sha256": "2b8024ee190a7033708ab7d65523496c392e93cdcfd8c3a236627ae003848532"
+        }
+      ]
+    },
+    {
+      "family": "Manrope",
+      "font_family_name": "Manrope ExtraLight",
+      "filename": "manrope-variable.ttf",
+      "original_filename": "Manrope[wght].ttf",
+      "type": "TrueType/OpenType variable font",
+      "style": "normal",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 200.0,
+          "default": 200.0,
+          "max": 800.0
+        }
+      ],
+      "font_version": "Version 4.504",
+      "font_copyright": "Copyright 2019 The Manrope Project Authors (https://github.com/sharanda/manrope)",
+      "font_license_description": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL",
+      "font_license_url": "http://scripts.sil.org/OFL",
+      "bytes": 165420,
+      "sha256": "d0639be45d0af36e798172419d7bd173c4bd4f29e2b76cbb69db1d11bf8b0a40",
+      "source_page": "https://github.com/google/fonts/tree/main/ofl/manrope",
+      "source_download": "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/Manrope%5Bwght%5D.ttf",
+      "license": "SIL Open Font License 1.1",
+      "supporting_files": [
+        {
+          "filename": "manrope-OFL.txt",
+          "source_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/OFL.txt",
+          "sha256": "e01b637272e0cbdfb240184dd98ea5cc671556d9894dae2668d92ab2c906787c"
+        },
+        {
+          "filename": "manrope-METADATA.pb",
+          "source_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/METADATA.pb",
+          "sha256": "368beda3aa55b0afe90edc142d67cf37e743258c76481d520172afbc148c6cca"
+        },
+        {
+          "filename": "manrope-upstream_info.md",
+          "source_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/upstream_info.md",
+          "sha256": "5bb033857080fcca81d1a63ec35b8870832a9d7aab4f3347fa0f6312cfb74b15"
+        }
+      ]
+    }
+  ]
+}

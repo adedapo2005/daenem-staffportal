@@ -1,0 +1,11 @@
+EVENT,PAYLOAD,RETENTION
+provider.event_verified,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+payment.matched,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+transfer.created,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+transfer.approved,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+transfer.executed,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+transfer.failed,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+beneficiary.changed,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+payroll.submitted,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+employee.payment_changed,Actor|company|account projection|reference|state|reason|correlation,Production policy required
+reconciliation.completed,Actor|company|account projection|reference|state|reason|correlation,Production policy required

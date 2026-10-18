@@ -1,0 +1,6 @@
+EVENT,AUDIENCE,RULE
+payment.match_failed,Assigned reconciliation team,Re-authorize before enqueue/render
+transfer.awaiting_approval,Eligible independent checker,Re-authorize before enqueue/render
+transfer.failed,Assigned transfer team,Re-authorize before enqueue/render
+payroll.employee_failed,Assigned payroll exceptions,Re-authorize before enqueue/render
+reconciliation.variance,Assigned reconciliation team,Re-authorize before enqueue/render

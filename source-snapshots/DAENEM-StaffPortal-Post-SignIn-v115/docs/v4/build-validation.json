@@ -1,0 +1,9 @@
+{
+  "typescript": "PASS",
+  "build": "PASS",
+  "source_checks": "1039/1039",
+  "targeted_regressions": "31/31",
+  "viewport_measurements": 203,
+  "horizontal_overflow_failures": 0,
+  "full_product_acceptance": "INCOMPLETE"
+}

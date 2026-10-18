@@ -1,0 +1,7 @@
+# Transfer notes
+
+The Site uses React on the existing Vinext starter. Preserve production logic and map accepted frontend behavior through real Daenem adapters later. Recharts and business workspaces are lazy-loaded; Inter and Manrope font files and their license notices are bundled; Lucide provides icons; installed Radix/Shadcn primitives provide interaction semantics. The historical cycle-1 page and styles are preserved for comparison.
+
+Records are local demo objects. Expense approval and employee expense views share the same request objects. Only submitted requests enter the pending decision queue; request makers cannot decide their own requests. Global search and counts use the same authorized record union as the workspace views. Returned requests can be corrected and resubmitted. Required material usage, yield, POD and receipts gate completion. Payroll values and statutory configuration are illustrative; no real statutory calculation or payment is performed. Attendance requires separate explicit clock-in and clock-out. Profile, selected draft composers and preference history use local storage. Device data is not cross-device durable and is not a substitute for the existing offline engine.
+
+Transfer only owner-accepted designs. Do not transfer the role simulator, fake credentials, simulated consent, fixture telemetry, synthetic chart values or browser-review controls into production.

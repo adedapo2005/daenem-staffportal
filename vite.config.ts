@@ -9,7 +9,7 @@ export default defineConfig({
     alias: [
       { find: 'next/navigation', replacement: fileURLToPath(new URL('./src/next-navigation-shim.ts', import.meta.url)) },
       { find: 'next/link', replacement: fileURLToPath(new URL('./src/next-link-shim.tsx', import.meta.url)) },
-      { find: '@', replacement: fileURLToPath(new URL('./src/qa-review-v115', import.meta.url)) },
+      { find: '@', replacement: fileURLToPath(new URL('./source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115', import.meta.url)) },
     ],
   },
   server: {

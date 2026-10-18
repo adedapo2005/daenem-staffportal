@@ -1,0 +1,361 @@
+MODULE,FROM_STATE,TO_STATE,CONTROL
+home,Open,In Review,Assigned transition; business invariants and audit required
+home,In Review,Resolved,Assigned transition; business invariants and audit required
+cockpit,Open,Investigating,Assigned transition; business invariants and audit required
+cockpit,Investigating,Resolved,Assigned transition; business invariants and audit required
+workspace,To Do,In Progress,Assigned transition; business invariants and audit required
+workspace,In Progress,Done,Assigned transition; business invariants and audit required
+profile,Action Required,Verified,Assigned transition; business invariants and audit required
+people,Active,Onboarding,Assigned transition; business invariants and audit required
+people,Onboarding,On Leave,Assigned transition; business invariants and audit required
+hr-records,Missing Information,In Review,Assigned transition; business invariants and audit required
+hr-records,In Review,Verified,Assigned transition; business invariants and audit required
+attendance,Not Started,Incomplete,Assigned transition; business invariants and audit required
+attendance,Incomplete,Present,Assigned transition; business invariants and audit required
+attendance,Present,Late,Assigned transition; business invariants and audit required
+leave,Draft,Submitted,Assigned transition; business invariants and audit required
+leave,Submitted,Approved,Assigned transition; business invariants and audit required
+leave,Approved,Returned,Assigned transition; business invariants and audit required
+performance,Not Started,Self Review,Assigned transition; business invariants and audit required
+performance,Self Review,Manager Review,Assigned transition; business invariants and audit required
+performance,Manager Review,Acknowledged,Assigned transition; business invariants and audit required
+hr-cases,Open,Investigating,Assigned transition; business invariants and audit required
+hr-cases,Investigating,Action Required,Assigned transition; business invariants and audit required
+hr-cases,Action Required,Closed,Assigned transition; business invariants and audit required
+lifecycle,Identity,Assignment,Assigned transition; business invariants and audit required
+lifecycle,Assignment,Payroll,Assigned transition; business invariants and audit required
+lifecycle,Payroll,Acknowledgement,Assigned transition; business invariants and audit required
+lifecycle,Acknowledgement,Complete,Assigned transition; business invariants and audit required
+forms,Draft,Submitted,Assigned transition; business invariants and audit required
+forms,Submitted,Returned,Assigned transition; business invariants and audit required
+forms,Returned,Approved,Assigned transition; business invariants and audit required
+tasks,To Do,In Progress,Assigned transition; business invariants and audit required
+tasks,In Progress,Review,Assigned transition; business invariants and audit required
+tasks,Review,Done,Assigned transition; business invariants and audit required
+payroll,Prepare,Validate,Assigned transition; business invariants and audit required
+payroll,Validate,Review,Assigned transition; business invariants and audit required
+payroll,Review,Approved,Assigned transition; business invariants and audit required
+payroll,Approved,Draft Export,Assigned transition; business invariants and audit required
+payslips,Available,Payment Pending,Assigned transition; business invariants and audit required
+payslips,Payment Pending,Paid,Assigned transition; business invariants and audit required
+payroll-batches,Draft,Validation,Assigned transition; business invariants and audit required
+payroll-batches,Validation,Approval,Assigned transition; business invariants and audit required
+payroll-batches,Approval,Draft Export,Assigned transition; business invariants and audit required
+applications,Applied,Screening,Assigned transition; business invariants and audit required
+applications,Screening,Interview,Assigned transition; business invariants and audit required
+applications,Interview,Offer,Assigned transition; business invariants and audit required
+applications,Offer,Hired,Assigned transition; business invariants and audit required
+interviews,Scheduled,Interviewed,Assigned transition; business invariants and audit required
+interviews,Interviewed,Scorecard Due,Assigned transition; business invariants and audit required
+interviews,Scorecard Due,Reviewed,Assigned transition; business invariants and audit required
+hiring,Approved,Offer Draft,Assigned transition; business invariants and audit required
+hiring,Offer Draft,Offer Accepted,Assigned transition; business invariants and audit required
+hiring,Offer Accepted,Onboarding,Assigned transition; business invariants and audit required
+printing,Enquiry,Quote,Assigned transition; business invariants and audit required
+printing,Quote,Approval,Assigned transition; business invariants and audit required
+printing,Approval,Artwork,Assigned transition; business invariants and audit required
+printing,Artwork,Proof,Assigned transition; business invariants and audit required
+printing,Proof,Proof Approval,Assigned transition; business invariants and audit required
+printing,Proof Approval,Job Card,Assigned transition; business invariants and audit required
+printing,Job Card,Material Issue,Assigned transition; business invariants and audit required
+printing,Material Issue,Printing,Assigned transition; business invariants and audit required
+printing,Printing,Finishing,Assigned transition; business invariants and audit required
+printing,Finishing,QC,Assigned transition; business invariants and audit required
+printing,QC,Delivery,Assigned transition; business invariants and audit required
+printing,Delivery,Invoice,Assigned transition; business invariants and audit required
+printing,Invoice,Payment,Assigned transition; business invariants and audit required
+printing,Payment,Complete,Assigned transition; business invariants and audit required
+print-orders,Enquiry,Quoted,Assigned transition; business invariants and audit required
+print-orders,Quoted,Approved,Assigned transition; business invariants and audit required
+print-orders,Approved,Ordered,Assigned transition; business invariants and audit required
+print-materials,Issued,Usage Pending,Assigned transition; business invariants and audit required
+print-materials,Usage Pending,Reconciled,Assigned transition; business invariants and audit required
+bakery,Planned,Ingredient Issue,Assigned transition; business invariants and audit required
+bakery,Ingredient Issue,Baking,Assigned transition; business invariants and audit required
+bakery,Baking,Yield Required,Assigned transition; business invariants and audit required
+bakery,Yield Required,QC,Assigned transition; business invariants and audit required
+bakery,QC,Complete,Assigned transition; business invariants and audit required
+bakery-recipes,Draft,Reviewed,Assigned transition; business invariants and audit required
+bakery-recipes,Reviewed,Active,Assigned transition; business invariants and audit required
+bakery-sales,Pre-order,Dispatch,Assigned transition; business invariants and audit required
+bakery-sales,Dispatch,Delivered,Assigned transition; business invariants and audit required
+bakery-sales,Delivered,Remittance Due,Assigned transition; business invariants and audit required
+bakery-sales,Remittance Due,Reconciled,Assigned transition; business invariants and audit required
+autos,Acquired,Documentation,Assigned transition; business invariants and audit required
+autos,Documentation,Available,Assigned transition; business invariants and audit required
+autos,Available,Reserved,Assigned transition; business invariants and audit required
+autos,Reserved,Sold,Assigned transition; business invariants and audit required
+autos,Sold,Delivered,Assigned transition; business invariants and audit required
+auto-leads,New Lead,Showing,Assigned transition; business invariants and audit required
+auto-leads,Showing,Test Drive,Assigned transition; business invariants and audit required
+auto-leads,Test Drive,Deposit,Assigned transition; business invariants and audit required
+auto-leads,Deposit,Sale,Assigned transition; business invariants and audit required
+auto-leads,Sale,Delivery,Assigned transition; business invariants and audit required
+logistics,Booked,Assigned,Assigned transition; business invariants and audit required
+logistics,Assigned,In Transit,Assigned transition; business invariants and audit required
+logistics,In Transit,POD Required,Assigned transition; business invariants and audit required
+logistics,POD Required,Delivered,Assigned transition; business invariants and audit required
+logistics,Delivered,Closed,Assigned transition; business invariants and audit required
+fleet,Available,Assigned,Assigned transition; business invariants and audit required
+fleet,Assigned,Maintenance,Assigned transition; business invariants and audit required
+fleet,Maintenance,Document Due,Assigned transition; business invariants and audit required
+trip-costs,Draft,Submitted,Assigned transition; business invariants and audit required
+trip-costs,Submitted,Reviewed,Assigned transition; business invariants and audit required
+trip-costs,Reviewed,Reconciled,Assigned transition; business invariants and audit required
+properties,Occupied,Available,Assigned transition; business invariants and audit required
+properties,Available,Maintenance,Assigned transition; business invariants and audit required
+leases,Draft,Active,Assigned transition; business invariants and audit required
+leases,Active,Expiring,Assigned transition; business invariants and audit required
+leases,Expiring,Renewed,Assigned transition; business invariants and audit required
+property-leads,Enquiry,Inspection,Assigned transition; business invariants and audit required
+property-leads,Inspection,Negotiation,Assigned transition; business invariants and audit required
+property-leads,Negotiation,Contract,Assigned transition; business invariants and audit required
+property-leads,Contract,Completed,Assigned transition; business invariants and audit required
+finance,Draft,Pending Review,Assigned transition; business invariants and audit required
+finance,Pending Review,Posted,Assigned transition; business invariants and audit required
+finance,Posted,Reconciliation,Assigned transition; business invariants and audit required
+receivables,Current,1–30 Days,Assigned transition; business invariants and audit required
+receivables,1–30 Days,31–60 Days,Assigned transition; business invariants and audit required
+receivables,31–60 Days,61+ Days,Assigned transition; business invariants and audit required
+receivables,61+ Days,Paid,Assigned transition; business invariants and audit required
+finance-posting,Queued,Validation Failed,Assigned transition; business invariants and audit required
+finance-posting,Validation Failed,Posted,Assigned transition; business invariants and audit required
+finance-posting,Posted,Reconciled,Assigned transition; business invariants and audit required
+budgets,Draft,Reviewed,Assigned transition; business invariants and audit required
+budgets,Reviewed,Active,Assigned transition; business invariants and audit required
+budgets,Active,Closed,Assigned transition; business invariants and audit required
+expenses,Draft,Submitted,Assigned transition; business invariants and audit required
+expenses,Submitted,Approved,Assigned transition; business invariants and audit required
+expenses,Approved,Returned,Assigned transition; business invariants and audit required
+expenses,Returned,Rejected,Assigned transition; business invariants and audit required
+expense-approvals,Submitted,Approved,Assigned transition; business invariants and audit required
+expense-approvals,Approved,Returned,Assigned transition; business invariants and audit required
+expense-approvals,Returned,Rejected,Assigned transition; business invariants and audit required
+spend,Evidence Due,Reviewed,Assigned transition; business invariants and audit required
+spend,Reviewed,Reconciled,Assigned transition; business invariants and audit required
+cost-admin,Draft,Reviewed,Assigned transition; business invariants and audit required
+cost-admin,Reviewed,Active,Assigned transition; business invariants and audit required
+inventory,Available,Low Stock,Assigned transition; business invariants and audit required
+inventory,Low Stock,Reserved,Assigned transition; business invariants and audit required
+inventory,Reserved,In Transit,Assigned transition; business invariants and audit required
+projects,Planning,In Progress,Assigned transition; business invariants and audit required
+projects,In Progress,At Risk,Assigned transition; business invariants and audit required
+projects,At Risk,Complete,Assigned transition; business invariants and audit required
+facilities,Reported,Assigned,Assigned transition; business invariants and audit required
+facilities,Assigned,In Progress,Assigned transition; business invariants and audit required
+facilities,In Progress,Resolved,Assigned transition; business invariants and audit required
+social,Draft,In Review,Assigned transition; business invariants and audit required
+social,In Review,Approved,Assigned transition; business invariants and audit required
+social,Approved,Published (Demo),Assigned transition; business invariants and audit required
+social-controls,Draft,Reviewed,Assigned transition; business invariants and audit required
+social-controls,Reviewed,Active,Assigned transition; business invariants and audit required
+social-sync,Queued,Needs Review,Assigned transition; business invariants and audit required
+social-sync,Needs Review,Approved,Assigned transition; business invariants and audit required
+social-sync,Approved,Simulated Sync,Assigned transition; business invariants and audit required
+marketing,Draft,Active,Assigned transition; business invariants and audit required
+marketing,Active,Review,Assigned transition; business invariants and audit required
+marketing,Review,Completed,Assigned transition; business invariants and audit required
+inbox,Unassigned,Assigned,Assigned transition; business invariants and audit required
+inbox,Assigned,Replied (Demo),Assigned transition; business invariants and audit required
+inbox,Replied (Demo),Escalated,Assigned transition; business invariants and audit required
+inbox,Escalated,Closed,Assigned transition; business invariants and audit required
+website,Draft,In Review,Assigned transition; business invariants and audit required
+website,In Review,Approved,Assigned transition; business invariants and audit required
+website,Approved,Published (Demo),Assigned transition; business invariants and audit required
+communications,Unread,Read,Assigned transition; business invariants and audit required
+communications,Read,Acknowledged,Assigned transition; business invariants and audit required
+broadcasts,Draft,Preview,Assigned transition; business invariants and audit required
+broadcasts,Preview,Approved,Assigned transition; business invariants and audit required
+broadcasts,Approved,Published (Demo),Assigned transition; business invariants and audit required
+encouragement,Generate,Preview,Assigned transition; business invariants and audit required
+encouragement,Preview,Approved,Assigned transition; business invariants and audit required
+encouragement,Approved,Published (Demo),Assigned transition; business invariants and audit required
+notifications,Unread,In Progress,Assigned transition; business invariants and audit required
+notifications,In Progress,Resolved,Assigned transition; business invariants and audit required
+help,Draft,Answered,Assigned transition; business invariants and audit required
+security,Open,Investigating,Assigned transition; business invariants and audit required
+security,Investigating,Reviewed,Assigned transition; business invariants and audit required
+access,Draft,Applied,Assigned transition; business invariants and audit required
+access,Applied,Rolled Back,Assigned transition; business invariants and audit required
+admin,Draft,Preview,Assigned transition; business invariants and audit required
+admin,Preview,Applied,Assigned transition; business invariants and audit required
+admin,Applied,Rolled Back,Assigned transition; business invariants and audit required
+recovery,Requested,Issued (Demo),Assigned transition; business invariants and audit required
+recovery,Issued (Demo),Expired,Assigned transition; business invariants and audit required
+recovery,Expired,Revoked,Assigned transition; business invariants and audit required
+support,Awaiting Consent,Authorized,Assigned transition; business invariants and audit required
+support,Authorized,In Progress,Assigned transition; business invariants and audit required
+support,In Progress,Resolved,Assigned transition; business invariants and audit required
+sync,Waiting to Sync,Syncing,Assigned transition; business invariants and audit required
+sync,Syncing,Synced (Demo),Assigned transition; business invariants and audit required
+sync,Synced (Demo),Conflict,Assigned transition; business invariants and audit required
+toolbox,Not Run,Needs Attention,Assigned transition; business invariants and audit required
+toolbox,Needs Attention,Checked (Demo),Assigned transition; business invariants and audit required
+theme,Preview,Applied,Assigned transition; business invariants and audit required
+navigation,Preview,Applied,Assigned transition; business invariants and audit required
+layout,Preview,Applied,Assigned transition; business invariants and audit required
+layout,Applied,Rolled Back,Assigned transition; business invariants and audit required
+signin-design,Preview,Applied,Assigned transition; business invariants and audit required
+procurement,Draft,Submitted,Assigned transition; business invariants and audit required
+procurement,Submitted,Approved,Assigned transition; business invariants and audit required
+procurement,Approved,Sourcing,Assigned transition; business invariants and audit required
+procurement,Sourcing,Converted,Assigned transition; business invariants and audit required
+procurement,Converted,Cancelled,Assigned transition; business invariants and audit required
+purchase-orders,Draft,Submitted,Assigned transition; business invariants and audit required
+purchase-orders,Submitted,Approved,Assigned transition; business invariants and audit required
+purchase-orders,Approved,Ordered,Assigned transition; business invariants and audit required
+purchase-orders,Ordered,Partially Received,Assigned transition; business invariants and audit required
+purchase-orders,Partially Received,Received,Assigned transition; business invariants and audit required
+purchase-orders,Received,Closed,Assigned transition; business invariants and audit required
+purchase-orders,Closed,Cancelled,Assigned transition; business invariants and audit required
+goods-receipts,Draft,Inspected,Assigned transition; business invariants and audit required
+goods-receipts,Inspected,Accepted,Assigned transition; business invariants and audit required
+goods-receipts,Accepted,Posted,Assigned transition; business invariants and audit required
+goods-receipts,Posted,Cancelled,Assigned transition; business invariants and audit required
+stock-transfers,Draft,Approved,Assigned transition; business invariants and audit required
+stock-transfers,Approved,Dispatched,Assigned transition; business invariants and audit required
+stock-transfers,Dispatched,In Transit,Assigned transition; business invariants and audit required
+stock-transfers,In Transit,Received,Assigned transition; business invariants and audit required
+stock-transfers,Received,Closed,Assigned transition; business invariants and audit required
+stock-transfers,Closed,Cancelled,Assigned transition; business invariants and audit required
+stock-borrowing,Draft,Submitted,Assigned transition; business invariants and audit required
+stock-borrowing,Submitted,Approved,Assigned transition; business invariants and audit required
+stock-borrowing,Approved,Issued,Assigned transition; business invariants and audit required
+stock-borrowing,Issued,Partially Returned,Assigned transition; business invariants and audit required
+stock-borrowing,Partially Returned,Returned,Assigned transition; business invariants and audit required
+stock-borrowing,Returned,Closed,Assigned transition; business invariants and audit required
+bakery-accountability,Draft,Dispatched,Assigned transition; business invariants and audit required
+bakery-accountability,Dispatched,Remittance Due,Assigned transition; business invariants and audit required
+bakery-accountability,Remittance Due,Investigating,Assigned transition; business invariants and audit required
+bakery-accountability,Investigating,Resolved,Assigned transition; business invariants and audit required
+bakery-accountability,Resolved,Reconciled,Assigned transition; business invariants and audit required
+technology-services,New,Triaged,Assigned transition; business invariants and audit required
+technology-services,Triaged,Assigned,Assigned transition; business invariants and audit required
+technology-services,Assigned,In Progress,Assigned transition; business invariants and audit required
+technology-services,In Progress,Customer Review,Assigned transition; business invariants and audit required
+technology-services,Customer Review,Resolved,Assigned transition; business invariants and audit required
+technology-services,Resolved,Closed,Assigned transition; business invariants and audit required
+vacancies,Draft,Approved,Assigned transition; business invariants and audit required
+vacancies,Approved,Open,Assigned transition; business invariants and audit required
+vacancies,Open,Interviewing,Assigned transition; business invariants and audit required
+vacancies,Interviewing,Filled,Assigned transition; business invariants and audit required
+vacancies,Filled,Closed,Assigned transition; business invariants and audit required
+staff-messaging,Draft,Sent,Assigned transition; business invariants and audit required
+staff-messaging,Sent,Acknowledged,Assigned transition; business invariants and audit required
+staff-messaging,Acknowledged,Archived,Assigned transition; business invariants and audit required
+productivity,Current,Reviewed,Assigned transition; business invariants and audit required
+productivity,Reviewed,Action Planned,Assigned transition; business invariants and audit required
+work-location,Draft,Review,Assigned transition; business invariants and audit required
+work-location,Review,Approved,Assigned transition; business invariants and audit required
+work-location,Approved,Active,Assigned transition; business invariants and audit required
+work-location,Active,Expired,Assigned transition; business invariants and audit required
+salary-adjustments,Draft,Review,Assigned transition; business invariants and audit required
+salary-adjustments,Review,Approved,Assigned transition; business invariants and audit required
+salary-adjustments,Approved,Payroll Ready,Assigned transition; business invariants and audit required
+salary-adjustments,Payroll Ready,Visible,Assigned transition; business invariants and audit required
+salary-adjustments,Visible,Cancelled,Assigned transition; business invariants and audit required
+data-import,Choose Entity,Upload,Assigned transition; business invariants and audit required
+data-import,Upload,Map,Assigned transition; business invariants and audit required
+data-import,Map,Validate,Assigned transition; business invariants and audit required
+data-import,Validate,Duplicate Review,Assigned transition; business invariants and audit required
+data-import,Duplicate Review,Dry Run,Assigned transition; business invariants and audit required
+data-import,Dry Run,Imported,Assigned transition; business invariants and audit required
+dashboard-personalization,Draft,Preview,Assigned transition; business invariants and audit required
+dashboard-personalization,Preview,Saved,Assigned transition; business invariants and audit required
+dashboard-personalization,Saved,Restored,Assigned transition; business invariants and audit required
+saved-views,Draft,Saved,Assigned transition; business invariants and audit required
+field-builder,Draft,Validated,Assigned transition; business invariants and audit required
+field-builder,Validated,Simulated,Assigned transition; business invariants and audit required
+field-builder,Simulated,Published,Assigned transition; business invariants and audit required
+field-builder,Published,Rolled Back,Assigned transition; business invariants and audit required
+form-builder,Draft,Validated,Assigned transition; business invariants and audit required
+form-builder,Validated,Simulated,Assigned transition; business invariants and audit required
+form-builder,Simulated,Published,Assigned transition; business invariants and audit required
+form-builder,Published,Rolled Back,Assigned transition; business invariants and audit required
+workflow-builder,Draft,Validated,Assigned transition; business invariants and audit required
+workflow-builder,Validated,Simulated,Assigned transition; business invariants and audit required
+workflow-builder,Simulated,Published,Assigned transition; business invariants and audit required
+workflow-builder,Published,Rolled Back,Assigned transition; business invariants and audit required
+report-builder,Draft,Validated,Assigned transition; business invariants and audit required
+report-builder,Validated,Simulated,Assigned transition; business invariants and audit required
+report-builder,Simulated,Published,Assigned transition; business invariants and audit required
+report-builder,Published,Rolled Back,Assigned transition; business invariants and audit required
+widget-builder,Draft,Validated,Assigned transition; business invariants and audit required
+widget-builder,Validated,Simulated,Assigned transition; business invariants and audit required
+widget-builder,Simulated,Published,Assigned transition; business invariants and audit required
+widget-builder,Published,Rolled Back,Assigned transition; business invariants and audit required
+theme-builder,Draft,Validated,Assigned transition; business invariants and audit required
+theme-builder,Validated,Simulated,Assigned transition; business invariants and audit required
+theme-builder,Simulated,Published,Assigned transition; business invariants and audit required
+theme-builder,Published,Rolled Back,Assigned transition; business invariants and audit required
+business-rules,Draft,Validated,Assigned transition; business invariants and audit required
+business-rules,Validated,Simulated,Assigned transition; business invariants and audit required
+business-rules,Simulated,Published,Assigned transition; business invariants and audit required
+business-rules,Published,Rolled Back,Assigned transition; business invariants and audit required
+notification-rules,Draft,Validated,Assigned transition; business invariants and audit required
+notification-rules,Validated,Simulated,Assigned transition; business invariants and audit required
+notification-rules,Simulated,Published,Assigned transition; business invariants and audit required
+notification-rules,Published,Rolled Back,Assigned transition; business invariants and audit required
+session-analytics,Active,Revoked,Assigned transition; business invariants and audit required
+customer-communications,Unassigned,Assigned,Assigned transition; business invariants and audit required
+customer-communications,Assigned,Waiting,Assigned transition; business invariants and audit required
+customer-communications,Waiting,Replied,Assigned transition; business invariants and audit required
+customer-communications,Replied,Escalated,Assigned transition; business invariants and audit required
+customer-communications,Escalated,Closed,Assigned transition; business invariants and audit required
+communication-automation,Draft,Review,Assigned transition; business invariants and audit required
+communication-automation,Review,Approved,Assigned transition; business invariants and audit required
+communication-automation,Approved,Active,Assigned transition; business invariants and audit required
+communication-automation,Active,Paused,Assigned transition; business invariants and audit required
+communication-automation,Paused,Archived,Assigned transition; business invariants and audit required
+communication-templates,Draft,Review,Assigned transition; business invariants and audit required
+communication-templates,Review,Approved,Assigned transition; business invariants and audit required
+communication-templates,Approved,Published,Assigned transition; business invariants and audit required
+communication-templates,Published,Archived,Assigned transition; business invariants and audit required
+letterheads,Draft,Review,Assigned transition; business invariants and audit required
+letterheads,Review,Approved,Assigned transition; business invariants and audit required
+letterheads,Approved,Published,Assigned transition; business invariants and audit required
+letterheads,Published,Archived,Assigned transition; business invariants and audit required
+banking-operations,Available,Pending,Assigned transition; business invariants and audit required
+banking-operations,Pending,Degraded,Assigned transition; business invariants and audit required
+banking-operations,Degraded,Unavailable,Assigned transition; business invariants and audit required
+treasury,Current,Review,Assigned transition; business invariants and audit required
+treasury,Review,Approved Forecast,Assigned transition; business invariants and audit required
+payment-verification,RECEIVED,PENDING,Assigned transition; business invariants and audit required
+payment-verification,PENDING,PROCESSING,Assigned transition; business invariants and audit required
+payment-verification,PROCESSING,COMPLETED,Assigned transition; business invariants and audit required
+payment-verification,COMPLETED,FAILED,Assigned transition; business invariants and audit required
+payment-verification,FAILED,REVERSED,Assigned transition; business invariants and audit required
+payment-verification,REVERSED,REFUNDED,Assigned transition; business invariants and audit required
+payment-verification,REFUNDED,CANCELLED,Assigned transition; business invariants and audit required
+transfers,Draft,Awaiting Approval,Assigned transition; business invariants and audit required
+transfers,Awaiting Approval,Approved,Assigned transition; business invariants and audit required
+transfers,Approved,Submitted,Assigned transition; business invariants and audit required
+transfers,Submitted,Processing,Assigned transition; business invariants and audit required
+transfers,Processing,Completed,Assigned transition; business invariants and audit required
+transfers,Completed,Failed,Assigned transition; business invariants and audit required
+transfers,Failed,Reversed,Assigned transition; business invariants and audit required
+transfers,Reversed,Reconciled,Assigned transition; business invariants and audit required
+transfers,Reconciled,Cancelled,Assigned transition; business invariants and audit required
+beneficiaries,Draft,Review,Assigned transition; business invariants and audit required
+beneficiaries,Review,Verified,Assigned transition; business invariants and audit required
+beneficiaries,Verified,Active,Assigned transition; business invariants and audit required
+beneficiaries,Active,Inactive,Assigned transition; business invariants and audit required
+beneficiaries,Inactive,Rejected,Assigned transition; business invariants and audit required
+payroll-execution,Preparation,Validation,Assigned transition; business invariants and audit required
+payroll-execution,Validation,Awaiting Approval,Assigned transition; business invariants and audit required
+payroll-execution,Awaiting Approval,Approved,Assigned transition; business invariants and audit required
+payroll-execution,Approved,Submitted,Assigned transition; business invariants and audit required
+payroll-execution,Submitted,Processing,Assigned transition; business invariants and audit required
+payroll-execution,Processing,Awaiting Confirmation,Assigned transition; business invariants and audit required
+payroll-execution,Awaiting Confirmation,Successful,Assigned transition; business invariants and audit required
+payroll-execution,Successful,Failed,Assigned transition; business invariants and audit required
+payroll-execution,Failed,Reversed,Assigned transition; business invariants and audit required
+payroll-execution,Reversed,Reconciled,Assigned transition; business invariants and audit required
+reconciliation,Open,Investigating,Assigned transition; business invariants and audit required
+reconciliation,Investigating,Matched,Assigned transition; business invariants and audit required
+reconciliation,Matched,Exception,Assigned transition; business invariants and audit required
+reconciliation,Exception,Reviewed,Assigned transition; business invariants and audit required
+reconciliation,Reviewed,Reconciled,Assigned transition; business invariants and audit required
+financial-reports,Draft,Available,Assigned transition; business invariants and audit required
+financial-reports,Available,Scheduled,Assigned transition; business invariants and audit required
+financial-reports,Scheduled,Archived,Assigned transition; business invariants and audit required

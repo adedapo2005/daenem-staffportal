@@ -1,0 +1,113 @@
+ROUTE,EXPERIENCE,VISUALIZATION,EVIDENCE
+signin,Immersive authentication,"4K responsive image, glass, world context, AI orb",25 synchronized screenshots
+customer-communications,Communication operating center,"queue, thread, context, governance steps",Current source build
+banking-operations,Account cards and transaction monitor,"assigned balances, states, timeline",Current source build
+treasury,Cash command,money in/out/position and forecast,Current source build
+payroll-execution,Payroll operations,"KPIs, trend, processing table",Current source build
+self-service,Personal Service Desk,Shared premium portal surfaces,V3/V5 regression and current build
+home,Executive Command,Shared premium portal surfaces,V3/V5 regression and current build
+cockpit,Map & Exception Control Room,Shared premium portal surfaces,V3/V5 regression and current build
+workspace,Focus & Flow,Shared premium portal surfaces,V3/V5 regression and current build
+profile,Identity & Self-Service,Shared premium portal surfaces,V3/V5 regression and current build
+people,People Directory & Record Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+hr-records,Controlled HR Record Ledger,Shared premium portal surfaces,V3/V5 regression and current build
+attendance,Shift Timeline & Location Validation,Shared premium portal surfaces,V3/V5 regression and current build
+leave,Absence Calendar & Request Rail,Shared premium portal surfaces,V3/V5 regression and current build
+performance,Review Cycle & Scorecard,Shared premium portal surfaces,V3/V5 regression and current build
+hr-cases,Confidential Case Timeline,Shared premium portal surfaces,V3/V5 regression and current build
+lifecycle,Lifecycle Checklist & Responsibility Map,Shared premium portal surfaces,V3/V5 regression and current build
+forms,Document Shelf & Form Workspace,Shared premium portal surfaces,V3/V5 regression and current build
+tasks,Workstream Board,Shared premium portal surfaces,V3/V5 regression and current build
+payroll,Readiness Gates & Payroll Worksheet,Shared premium portal surfaces,V3/V5 regression and current build
+payslips,Statement Reader & Period Archive,Shared premium portal surfaces,V3/V5 regression and current build
+payroll-batches,Payment Batch Control Ledger,Shared premium portal surfaces,V3/V5 regression and current build
+applications,Candidate Pipeline,Shared premium portal surfaces,V3/V5 regression and current build
+interviews,Interview Calendar & Scorecards,Shared premium portal surfaces,V3/V5 regression and current build
+hiring,Offer-to-Onboarding Handoff,Shared premium portal surfaces,V3/V5 regression and current build
+printing,Production Lanes & Machine Load,Shared premium portal surfaces,V3/V5 regression and current build
+print-orders,Quotation Ledger & Customer Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+print-materials,Consumption & Job Cost Worksheet,Shared premium portal surfaces,V3/V5 regression and current build
+bakery,Batch Timeline & Yield Reconciliation,Shared premium portal surfaces,V3/V5 regression and current build
+bakery-recipes,BOM & Ingredient Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+bakery-sales,Dispatch-to-Remittance Reconciliation,Shared premium portal surfaces,V3/V5 regression and current build
+autos,Vehicle Inventory & Sales Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+auto-leads,Vehicle Sales Pipeline,Shared premium portal surfaces,V3/V5 regression and current build
+auto-history,Read-only Service Archive,Shared premium portal surfaces,V3/V5 regression and current build
+logistics,Route Map & Dispatch Queue,Shared premium portal surfaces,V3/V5 regression and current build
+fleet,Fleet Readiness Matrix,Shared premium portal surfaces,V3/V5 regression and current build
+trip-costs,Trip Profitability Worksheet,Shared premium portal surfaces,V3/V5 regression and current build
+properties,Portfolio Mosaic & Occupancy Grid,Shared premium portal surfaces,V3/V5 regression and current build
+leases,Lease Timeline & Receivables,Shared premium portal surfaces,V3/V5 regression and current build
+property-leads,Listing-to-Inspection Pipeline,Shared premium portal surfaces,V3/V5 regression and current build
+finance,Ledger & Financial Analysis,Shared premium portal surfaces,V3/V5 regression and current build
+receivables,Aging Ladder & Receivable Ledger,Shared premium portal surfaces,V3/V5 regression and current build
+finance-posting,Posting Event Trace,Shared premium portal surfaces,V3/V5 regression and current build
+budgets,Budget Variance & Period Control,Shared premium portal surfaces,V3/V5 regression and current build
+expenses,Request Register & Evidence Composer,Shared premium portal surfaces,V3/V5 regression and current build
+expense-approvals,Queue–Evidence–Decision Desk,Shared premium portal surfaces,V3/V5 regression and current build
+spend,Spend Treemap & Profit Bridge,Shared premium portal surfaces,V3/V5 regression and current build
+cost-admin,Cost Governance Workbench,Shared premium portal surfaces,V3/V5 regression and current build
+inventory,Availability Matrix & Movement Ledger,Shared premium portal surfaces,V3/V5 regression and current build
+projects,Milestone Schedule & Budget Rail,Shared premium portal surfaces,V3/V5 regression and current build
+facilities,Asset Health & Maintenance Board,Shared premium portal surfaces,V3/V5 regression and current build
+social,Editorial Calendar & Content Canvas,Shared premium portal surfaces,V3/V5 regression and current build
+social-controls,Publishing Policy Studio,Shared premium portal surfaces,V3/V5 regression and current build
+social-accounts,Provider Connection Register,Shared premium portal surfaces,V3/V5 regression and current build
+social-sync,Conversion Queue & Source Trace,Shared premium portal surfaces,V3/V5 regression and current build
+marketing,Audience Funnel & Campaign Comparison,Shared premium portal surfaces,V3/V5 regression and current build
+inbox,Conversation Inbox & Context Rail,Shared premium portal surfaces,V3/V5 regression and current build
+website,Page Tree & Revision Workspace,Shared premium portal surfaces,V3/V5 regression and current build
+communications,Announcement Editorial Board,Shared premium portal surfaces,V3/V5 regression and current build
+broadcasts,Audience Composer & Acknowledgement Monitor,Shared premium portal surfaces,V3/V5 regression and current build
+encouragement,Human-Approval Writing Desk,Shared premium portal surfaces,V3/V5 regression and current build
+notifications,Priority Inbox,Shared premium portal surfaces,V3/V5 regression and current build
+help,Contextual Help Conversation,Shared premium portal surfaces,V3/V5 regression and current build
+security,Security Event Timeline & Risk Matrix,Shared premium portal surfaces,V3/V5 regression and current build
+access,Permission Matrix & Explanation Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+admin,Organization Policy Workbench,Shared premium portal surfaces,V3/V5 regression and current build
+recovery,Recovery Issue & Revocation Desk,Shared premium portal surfaces,V3/V5 regression and current build
+support,Support Case & Consent Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+resources,Service Topology & Health Grid,Shared premium portal surfaces,V3/V5 regression and current build
+sync,Sync Queue & Conflict Comparator,Shared premium portal surfaces,V3/V5 regression and current build
+audit,Audit Explorer & Event Detail,Shared premium portal surfaces,V3/V5 regression and current build
+toolbox,Readiness Diagnostic Workbench,Shared premium portal surfaces,V3/V5 regression and current build
+integrations,Integration Catalogue & Request Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+hub,Authorized Module Atlas,Shared premium portal surfaces,V3/V5 regression and current build
+theme,Appearance Gallery,Shared premium portal surfaces,V3/V5 regression and current build
+navigation,Navigation Workbench,Shared premium portal surfaces,V3/V5 regression and current build
+layout,Composition Studio & Policy Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+signin-design,Sign-In Composition Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+procurement,Requisition & Sourcing Desk,Shared premium portal surfaces,V3/V5 regression and current build
+purchase-orders,Commitment Ledger & Order Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+goods-receipts,Receipt Worksheet & Acceptance Gate,Shared premium portal surfaces,V3/V5 regression and current build
+stock-transfers,Transfer Custody Timeline,Shared premium portal surfaces,V3/V5 regression and current build
+stock-borrowing,Borrow & Return Register,Shared premium portal surfaces,V3/V5 regression and current build
+bakery-accountability,Loaf & Money Accountability Desk,Shared premium portal surfaces,V3/V5 regression and current build
+technology-services,Service Queue & SLA Timeline,Shared premium portal surfaces,V3/V5 regression and current build
+vacancies,Vacancy Brief & Recruitment Readiness,Shared premium portal surfaces,V3/V5 regression and current build
+staff-messaging,Internal Staff Messaging,Shared premium portal surfaces,V3/V5 regression and current build
+productivity,Governed Productivity Scorecard,Shared premium portal surfaces,V3/V5 regression and current build
+work-location,Location Policy & Privacy Workbench,Shared premium portal surfaces,V3/V5 regression and current build
+salary-adjustments,Compensation Change Control,Shared premium portal surfaces,V3/V5 regression and current build
+data-import,Import Mapping & Validation Workbench,Shared premium portal surfaces,V3/V5 regression and current build
+dashboard-personalization,Widget Composition & Defaults,Shared premium portal surfaces,V3/V5 regression and current build
+files,Evidence Library & Preview Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+saved-views,Personal View Library,Shared premium portal surfaces,V3/V5 regression and current build
+field-builder,Schema Configuration Canvas,Shared premium portal surfaces,V3/V5 regression and current build
+form-builder,Form Canvas & Property Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+workflow-builder,State Canvas & Transition Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+report-builder,Report Query Canvas & Result Preview,Shared premium portal surfaces,V3/V5 regression and current build
+widget-builder,Widget Gallery & Data Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+theme-builder,Semantic Token Canvas & Contrast Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+business-rules,Rule Condition & Validation Workbench,Shared premium portal surfaces,V3/V5 regression and current build
+notification-rules,Event-to-Audience Routing Desk,Shared premium portal surfaces,V3/V5 regression and current build
+session-analytics,Session Timeline & Consent Inspector,Shared premium portal surfaces,V3/V5 regression and current build
+reports,Metric Library & Source Explorer,Shared premium portal surfaces,V3/V5 regression and current build
+communication-automation,Authoritative Event Automation Studio,Shared premium portal surfaces,V3/V5 regression and current build
+communication-templates,Template Governance Studio,Shared premium portal surfaces,V3/V5 regression and current build
+letterheads,Company Identity & Letterhead Studio,Shared premium portal surfaces,V3/V5 regression and current build
+payment-verification,"Verification, Matching & Activation Gate",Shared premium portal surfaces,V3/V5 regression and current build
+transfers,Transfer Control & Approval Rail,Shared premium portal surfaces,V3/V5 regression and current build
+beneficiaries,Beneficiary Risk & Verification Register,Shared premium portal surfaces,V3/V5 regression and current build
+reconciliation,Source Comparison & Exception Resolution,Shared premium portal surfaces,V3/V5 regression and current build
+financial-reports,Financial Metric & Export Governance,Shared premium portal surfaces,V3/V5 regression and current build

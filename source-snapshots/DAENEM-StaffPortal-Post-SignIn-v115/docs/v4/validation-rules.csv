@@ -1,0 +1,18 @@
+RULE_ID,ENTITY,FIELD,CONDITION,ERROR_MESSAGE,CLIENT_VALIDATION,SERVER_REQUIRED,DEPENDENCY,BUSINESS_RULE
+forms.required,forms,Required Response,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+printing.required,printing,Material Usage,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+bakery.required,bakery,Actual Yield,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+logistics.required,logistics,Proof of Delivery,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+expenses.required,expenses,Receipt,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+expense-approvals.required,expense-approvals,Receipt,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+procurement.required,procurement,Receipt,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards
+goods-receipts.required,goods-receipts,Receipt,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards
+stock-transfers.required,stock-transfers,Receipt,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards
+technology-services.required,technology-services,Resolution,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+vacancies.required,vacancies,Approval,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+staff-messaging.required,staff-messaging,Message,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,Evidence and completion guards
+productivity.required,productivity,Business Purpose,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards
+work-location.required,work-location,Privacy Explanation,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards
+salary-adjustments.required,salary-adjustments,Reason,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards
+data-import.required,data-import,Mapping,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards
+dashboard-personalization.required,dashboard-personalization,Widget,Completion/submission requires field,Required before this action,mutationError,YES,app/experience/enterprise-v3.tsx,Evidence and completion guards

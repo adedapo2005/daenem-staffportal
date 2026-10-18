@@ -1,0 +1,15 @@
+ENTITY,FROM,TO,GATE
+BankTransaction,RECEIVED,PENDING,Verified provider transition and idempotent update
+BankTransaction,PENDING,PROCESSING,Verified provider transition and idempotent update
+BankTransaction,PROCESSING,COMPLETED,Verified provider transition and idempotent update
+BankTransaction,PROCESSING,FAILED,Verified provider failure
+BankTransaction,COMPLETED,REVERSED,Verified reversal linked to original
+BankTransaction,COMPLETED,REFUNDED,Authorized refund linked to original
+Transfer,Draft,Awaiting Approval,Separate permission at each controlled step
+Transfer,Awaiting Approval,Approved,Separate permission at each controlled step
+Transfer,Approved,Submitted,Separate permission at each controlled step
+Transfer,Submitted,Processing,Separate permission at each controlled step
+Transfer,Processing,Completed,Separate permission at each controlled step
+Transfer,Completed,Reconciled,Separate permission at each controlled step
+Transfer,Submitted,Failed,Provider failure with retry policy
+Transfer,Completed,Reversed,Verified reversal and exception

@@ -1,0 +1,25 @@
+{
+  "modules": 118,
+  "fixtures": 222,
+  "semanticOperations": 350,
+  "entities": 52,
+  "workflowTransitions": 381,
+  "businessRules": 141,
+  "validations": 788,
+  "metrics": 242,
+  "auditEvents": 472,
+  "notifications": 236,
+  "fileClasses": 20,
+  "integrations": 35,
+  "relationships": 65,
+  "requirements": 6127,
+  "requirementsByStatus": {
+    "NOT_APPLICABLE": 2,
+    "IMPLEMENTED_UNVERIFIED": 6091,
+    "BLOCKED_PRODUCTION": 12,
+    "PASS_VERIFIED": 22,
+    "TOTAL_REQUIREMENTS": 6127
+  },
+  "signInBrowserMeasurements": 105,
+  "visualCaptures": 94
+}

@@ -1,0 +1,634 @@
+{
+  "siteProjectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "siteTitle": "DAENEM STAFF PORTAL — PREMIUM EXPERIENCE LAB",
+  "capturedAt": "2026-09-12T04:42:50.287Z",
+  "captures": [
+    {
+      "name": "owner-home",
+      "profile": "Owner",
+      "screen": "home",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/owner-home-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "manager-home",
+      "profile": "Manager",
+      "screen": "home",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/manager-home-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "employee-home",
+      "profile": "Employee",
+      "screen": "home",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/employee-home-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "no-permission-experience",
+      "profile": "No permission",
+      "screen": "home",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/no-permission-experience-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "operational-cockpit",
+      "profile": "Owner",
+      "screen": "cockpit",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/operational-cockpit-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "profile",
+      "profile": "Owner",
+      "screen": "profile",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/profile-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "attendance",
+      "profile": "Owner",
+      "screen": "attendance",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/attendance-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "leave",
+      "profile": "Owner",
+      "screen": "leave",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/leave-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "payroll",
+      "profile": "Owner",
+      "screen": "payroll",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/payroll-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "salary-adjustments",
+      "profile": "Owner",
+      "screen": "salary-adjustments",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/salary-adjustments-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "recruitment",
+      "profile": "Owner",
+      "screen": "applications",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/recruitment-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "printing",
+      "profile": "Owner",
+      "screen": "printing",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/printing-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "bakery",
+      "profile": "Owner",
+      "screen": "bakery",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/bakery-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "autos",
+      "profile": "Owner",
+      "screen": "autos",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/autos-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "logistics",
+      "profile": "Owner",
+      "screen": "logistics",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/logistics-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "properties",
+      "profile": "Owner",
+      "screen": "properties",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/properties-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "finance",
+      "profile": "Owner",
+      "screen": "finance",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/finance-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "expenses",
+      "profile": "Owner",
+      "screen": "expenses",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/expenses-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "procurement",
+      "profile": "Owner",
+      "screen": "procurement",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/procurement-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "inventory",
+      "profile": "Owner",
+      "screen": "inventory",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/inventory-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "projects",
+      "profile": "Owner",
+      "screen": "projects",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/projects-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "facilities",
+      "profile": "Owner",
+      "screen": "facilities",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/facilities-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "technology-services",
+      "profile": "Owner",
+      "screen": "technology-services",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/technology-services-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "security",
+      "profile": "Owner",
+      "screen": "security",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/security-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "access-control",
+      "profile": "Owner",
+      "screen": "access",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/access-control-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "customer-communications",
+      "profile": "Owner",
+      "screen": "communication-queues",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/customer-communications-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "whatsapp-conversation",
+      "profile": "Owner",
+      "screen": "customer-communications",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/whatsapp-conversation-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "communication-automation",
+      "profile": "Owner",
+      "screen": "communication-automation",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/communication-automation-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "letterhead",
+      "profile": "Owner",
+      "screen": "ai-letterhead-generator",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/letterhead-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "banking-operations",
+      "profile": "Owner",
+      "screen": "banking-operations",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/banking-operations-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "treasury",
+      "profile": "Owner",
+      "screen": "treasury",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/treasury-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "payment-verification",
+      "profile": "Owner",
+      "screen": "payment-verification",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/payment-verification-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "transfers",
+      "profile": "Owner",
+      "screen": "transfers",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/transfers-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "payroll-banking",
+      "profile": "Owner",
+      "screen": "payroll-execution",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/payroll-banking-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "reconciliation",
+      "profile": "Owner",
+      "screen": "reconciliation",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/reconciliation-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "financial-reports",
+      "profile": "Owner",
+      "screen": "financial-reports",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/financial-reports-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "form-builder",
+      "profile": "Owner",
+      "screen": "form-builder",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/form-builder-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "workflow-builder",
+      "profile": "Owner",
+      "screen": "workflow-builder",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/workflow-builder-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "report-builder",
+      "profile": "Owner",
+      "screen": "report-builder",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/report-builder-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "widget-builder",
+      "profile": "Owner",
+      "screen": "widget-builder",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/widget-builder-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "theme-builder",
+      "profile": "Owner",
+      "screen": "theme",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/theme-builder-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "data-import",
+      "profile": "Owner",
+      "screen": "data-import",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/data-import-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "files",
+      "profile": "Owner",
+      "screen": "files",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/files-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "staff-chat",
+      "profile": "Owner",
+      "screen": "staff-messaging",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/staff-chat-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "notifications",
+      "profile": "Owner",
+      "screen": "notifications",
+      "viewport": "1920×1080",
+      "filename": "evidence/erp/notifications-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "owner-home",
+      "profile": "Owner",
+      "screen": "home",
+      "viewport": "390×844",
+      "filename": "evidence/erp/owner-home-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "operational-cockpit",
+      "profile": "Owner",
+      "screen": "cockpit",
+      "viewport": "390×844",
+      "filename": "evidence/erp/operational-cockpit-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "attendance",
+      "profile": "Owner",
+      "screen": "attendance",
+      "viewport": "390×844",
+      "filename": "evidence/erp/attendance-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "printing",
+      "profile": "Owner",
+      "screen": "printing",
+      "viewport": "390×844",
+      "filename": "evidence/erp/printing-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "bakery",
+      "profile": "Owner",
+      "screen": "bakery",
+      "viewport": "390×844",
+      "filename": "evidence/erp/bakery-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "whatsapp-conversation",
+      "profile": "Owner",
+      "screen": "customer-communications",
+      "viewport": "390×844",
+      "filename": "evidence/erp/whatsapp-conversation-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "communication-analytics",
+      "profile": "Owner",
+      "screen": "communication-analytics",
+      "viewport": "390×844",
+      "filename": "evidence/erp/communication-analytics-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "banking-operations",
+      "profile": "Owner",
+      "screen": "banking-operations",
+      "viewport": "390×844",
+      "filename": "evidence/erp/banking-operations-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "treasury",
+      "profile": "Owner",
+      "screen": "treasury",
+      "viewport": "390×844",
+      "filename": "evidence/erp/treasury-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "payroll-banking",
+      "profile": "Owner",
+      "screen": "payroll-execution",
+      "viewport": "390×844",
+      "filename": "evidence/erp/payroll-banking-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "form-builder",
+      "profile": "Owner",
+      "screen": "form-builder",
+      "viewport": "390×844",
+      "filename": "evidence/erp/form-builder-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "files",
+      "profile": "Owner",
+      "screen": "files",
+      "viewport": "390×844",
+      "filename": "evidence/erp/files-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "name": "owner-home",
+      "profile": "Owner",
+      "screen": "home",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/owner-home-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "operational-cockpit",
+      "profile": "Owner",
+      "screen": "cockpit",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/operational-cockpit-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "attendance",
+      "profile": "Owner",
+      "screen": "attendance",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/attendance-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "printing",
+      "profile": "Owner",
+      "screen": "printing",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/printing-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "bakery",
+      "profile": "Owner",
+      "screen": "bakery",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/bakery-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "whatsapp-conversation",
+      "profile": "Owner",
+      "screen": "customer-communications",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/whatsapp-conversation-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "communication-analytics",
+      "profile": "Owner",
+      "screen": "communication-analytics",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/communication-analytics-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "banking-operations",
+      "profile": "Owner",
+      "screen": "banking-operations",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/banking-operations-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "treasury",
+      "profile": "Owner",
+      "screen": "treasury",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/treasury-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "payroll-banking",
+      "profile": "Owner",
+      "screen": "payroll-execution",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/payroll-banking-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "form-builder",
+      "profile": "Owner",
+      "screen": "form-builder",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/form-builder-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    },
+    {
+      "name": "files",
+      "profile": "Owner",
+      "screen": "files",
+      "viewport": "3840×2160",
+      "filename": "evidence/erp/files-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture at 3840×2160 CSS viewport, visually scaled by the review workbench",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "desktop": 45,
+    "mobile": 12,
+    "fourK": 12,
+    "total": 69
+  }
+}

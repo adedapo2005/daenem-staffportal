@@ -1,0 +1,104 @@
+[
+  {
+    "file": "evidence/daenem-v3-final-atrium-1672.jpg",
+    "bytes": 217712,
+    "sha256": "62ca148773ecf412f70604d2fe7fc0c903205623f7e778273b5b371f54a6507c",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-final-duet-1672.jpg",
+    "bytes": 221026,
+    "sha256": "1e7c8b8da6571cca4c088b66a1b582e73af2c53744f08fa90d018501f2750fe2",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-final-editorial-1672.jpg",
+    "bytes": 187330,
+    "sha256": "f05f8f3efcdc5e991d3a3db6453d7c2a4ccaa4629e7526f92a5cd039c373b519",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-final-focus-1672.jpg",
+    "bytes": 146160,
+    "sha256": "0df78b7ef01b152a89aba94ebfc9885f26968b12f1216b5c26888ce473f48be5",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-final-gallery-1672.jpg",
+    "bytes": 110220,
+    "sha256": "c29b9a298e8f8ba1e29f5ac862158c4ad4d18b9f4be5cd07f84a57d770651777",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-final-horizon-1672.jpg",
+    "bytes": 192896,
+    "sha256": "8288620f9902016ecca06091c75d13cc47ba2c7d7bf9ceab3b2f0253af84de35",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-final-panorama-1672.jpg",
+    "bytes": 143250,
+    "sha256": "a3d5ee39cf524e83e1e33e844124ad319f541b17f00cbac01a498406470687ef",
+    "status": "PRE-FIX: contrast correction needs recapture"
+  },
+  {
+    "file": "evidence/daenem-v3-final-vertical-1672.jpg",
+    "bytes": 190690,
+    "sha256": "daa1595af7ef92898e69288e6ffd6b0349396085467ebe3d8c449e91abf600ea",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-home-0-1672.jpg",
+    "bytes": 197390,
+    "sha256": "4d5d74ba200c0584546798fcf7b33de62dc78e7cf5574d2041440b0a1eaea6ac",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-home-1-1672.jpg",
+    "bytes": 171144,
+    "sha256": "4005f6adc8d6e9bfe36f6cb4a932192febabaf03abaf9ecbc66675f0bc8112f3",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-home-2-1672.jpg",
+    "bytes": 188670,
+    "sha256": "8c7fcb103617dc21df828fb82f983f7de98fceaf40a59db38acba6213f052e41",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-home-4-1672.jpg",
+    "bytes": 197435,
+    "sha256": "49e4254f3e926747730044961a24d39b5e7974c7fe078bdb2c04f46ff5b2c4e1",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-home-5-1672.jpg",
+    "bytes": 194991,
+    "sha256": "5bcb45372c8d8123507cf55916b3b19c0844b1e691fe98e4f7fea1d419e7eebf",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-home-6-1672.jpg",
+    "bytes": 192312,
+    "sha256": "1554e0dcfd7974c346e28e2df30db915a79b3784c4f81ca8e851ab417d5076dd",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-home-8-1672.jpg",
+    "bytes": 191210,
+    "sha256": "4e37e0fa45bc740a2d0fc829d16ddd8bbf874adbac0eafeb66dd316de46c05b4",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-horizon-3840.jpg",
+    "bytes": 570948,
+    "sha256": "e6834b933aa4cd3df35e52de7ad39d91293e4d8c81db2d5244b90ac07d971692",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  },
+  {
+    "file": "evidence/daenem-v3-vertical-3840.jpg",
+    "bytes": 625227,
+    "sha256": "f542e0a5047c3d122027c198d9511a59b4a23b6e12dbd8e193d10259d63abc01",
+    "status": "Preserved screenshot; not complete screen acceptance"
+  }
+]

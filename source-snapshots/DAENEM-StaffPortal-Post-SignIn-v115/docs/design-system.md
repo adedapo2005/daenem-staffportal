@@ -1,0 +1,11 @@
+- Direction: dark green organizational navigation, clear white working surfaces, restrained botanical accents, purpose-specific domain color, crisp typographic hierarchy and a photographic sign-in.
+- Type: Bundled Inter Variable for body/UI and Manrope Variable for display text, licensed under SIL OFL 1.1; system fallback remains available while loading. Main type uses rem units; the new experience stylesheet has no authored font-size below 0.75rem at a 16px root.
+- Spacing: 0.25 / 0.5 / 0.75 / 1 / 1.25 / 1.5 / 2rem; comfortable, standard and compact density adjust panel/table rhythm.
+- Surfaces: solid operational surfaces; translucency reserved for sign-in; 7–12px interface radii and restrained shadows.
+- Status: text accompanies semantic color; required / review / incomplete uses amber, approved / present uses green, failures use red.
+- Icons: Lucide SVGs and an authored vector DAENEM monogram.
+- Charts: visible units and Demo Data labels; tooltips and drill-downs where implemented. No schematic geography is called live GPS.
+- Responsive: primary shifts around 767, 1024, 1250/1400, 2200, 2560 and 3200px. 390px uses single-column records and drawers. Seven-size validation remains blocked.
+- Motion: Off / Calm / Balanced / Expressive plus `prefers-reduced-motion`; no strobing.
+- Accessibility: semantic controls, labels, skip link, focus styling, Radix dialogs/sheets/tabs/select and command palette. Actual keyboard, touch, zoom and contrast testing remains outstanding.
+- Layout: ten distinct home compositions. `resolveLayout` implements forced organization → permitted personal → role → ERP → organization → Executive fallback. Domain workspaces retain their functional architecture. Independent selection of theme, layout, density, motion and navigation is represented.

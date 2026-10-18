@@ -1,0 +1,473 @@
+EVENT,DOMAIN,SUBJECT,PAYLOAD,PRODUCTION_STATE
+self-service.created,Staff ERP,self-service,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+self-service.updated,Staff ERP,self-service,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+self-service.state_changed,Staff ERP,self-service,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+self-service.export_requested,Staff ERP,self-service,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+home.created,Global,home,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+home.updated,Global,home,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+home.state_changed,Global,home,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+home.export_requested,Global,home,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cockpit.created,Global,cockpit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cockpit.updated,Global,cockpit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cockpit.state_changed,Global,cockpit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cockpit.export_requested,Global,cockpit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workspace.created,Staff ERP,workspace,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workspace.updated,Staff ERP,workspace,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workspace.state_changed,Staff ERP,workspace,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workspace.export_requested,Staff ERP,workspace,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+profile.created,Staff ERP,profile,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+profile.updated,Staff ERP,profile,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+profile.state_changed,Staff ERP,profile,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+profile.export_requested,Staff ERP,profile,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+people.created,Staff ERP,people,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+people.updated,Staff ERP,people,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+people.state_changed,Staff ERP,people,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+people.export_requested,Staff ERP,people,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-records.created,Staff ERP,hr-records,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-records.updated,Staff ERP,hr-records,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-records.state_changed,Staff ERP,hr-records,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-records.export_requested,Staff ERP,hr-records,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+attendance.created,Staff ERP,attendance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+attendance.updated,Staff ERP,attendance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+attendance.state_changed,Staff ERP,attendance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+attendance.export_requested,Staff ERP,attendance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leave.created,Staff ERP,leave,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leave.updated,Staff ERP,leave,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leave.state_changed,Staff ERP,leave,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leave.export_requested,Staff ERP,leave,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+performance.created,Staff ERP,performance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+performance.updated,Staff ERP,performance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+performance.state_changed,Staff ERP,performance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+performance.export_requested,Staff ERP,performance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-cases.created,Staff ERP,hr-cases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-cases.updated,Staff ERP,hr-cases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-cases.state_changed,Staff ERP,hr-cases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hr-cases.export_requested,Staff ERP,hr-cases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+lifecycle.created,Staff ERP,lifecycle,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+lifecycle.updated,Staff ERP,lifecycle,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+lifecycle.state_changed,Staff ERP,lifecycle,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+lifecycle.export_requested,Staff ERP,lifecycle,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+forms.created,Staff ERP,forms,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+forms.updated,Staff ERP,forms,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+forms.state_changed,Staff ERP,forms,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+forms.export_requested,Staff ERP,forms,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+tasks.created,Staff ERP,tasks,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+tasks.updated,Staff ERP,tasks,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+tasks.state_changed,Staff ERP,tasks,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+tasks.export_requested,Staff ERP,tasks,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll.created,Staff ERP,payroll,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll.updated,Staff ERP,payroll,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll.state_changed,Staff ERP,payroll,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll.export_requested,Staff ERP,payroll,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payslips.created,Staff ERP,payslips,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payslips.updated,Staff ERP,payslips,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payslips.state_changed,Staff ERP,payslips,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payslips.export_requested,Staff ERP,payslips,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-batches.created,Staff ERP,payroll-batches,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-batches.updated,Staff ERP,payroll-batches,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-batches.state_changed,Staff ERP,payroll-batches,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-batches.export_requested,Staff ERP,payroll-batches,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+applications.created,Jobs ERP,applications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+applications.updated,Jobs ERP,applications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+applications.state_changed,Jobs ERP,applications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+applications.export_requested,Jobs ERP,applications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+interviews.created,Jobs ERP,interviews,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+interviews.updated,Jobs ERP,interviews,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+interviews.state_changed,Jobs ERP,interviews,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+interviews.export_requested,Jobs ERP,interviews,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hiring.created,Jobs ERP,hiring,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hiring.updated,Jobs ERP,hiring,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hiring.state_changed,Jobs ERP,hiring,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hiring.export_requested,Jobs ERP,hiring,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+printing.created,Printing & Technology,printing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+printing.updated,Printing & Technology,printing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+printing.state_changed,Printing & Technology,printing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+printing.export_requested,Printing & Technology,printing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-orders.created,Printing & Technology,print-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-orders.updated,Printing & Technology,print-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-orders.state_changed,Printing & Technology,print-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-orders.export_requested,Printing & Technology,print-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-materials.created,Printing & Technology,print-materials,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-materials.updated,Printing & Technology,print-materials,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-materials.state_changed,Printing & Technology,print-materials,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+print-materials.export_requested,Printing & Technology,print-materials,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery.created,Bakery ERP,bakery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery.updated,Bakery ERP,bakery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery.state_changed,Bakery ERP,bakery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery.export_requested,Bakery ERP,bakery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-recipes.created,Bakery ERP,bakery-recipes,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-recipes.updated,Bakery ERP,bakery-recipes,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-recipes.state_changed,Bakery ERP,bakery-recipes,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-recipes.export_requested,Bakery ERP,bakery-recipes,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-sales.created,Bakery ERP,bakery-sales,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-sales.updated,Bakery ERP,bakery-sales,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-sales.state_changed,Bakery ERP,bakery-sales,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-sales.export_requested,Bakery ERP,bakery-sales,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+autos.created,Autos ERP,autos,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+autos.updated,Autos ERP,autos,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+autos.state_changed,Autos ERP,autos,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+autos.export_requested,Autos ERP,autos,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-leads.created,Autos ERP,auto-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-leads.updated,Autos ERP,auto-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-leads.state_changed,Autos ERP,auto-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-leads.export_requested,Autos ERP,auto-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-history.created,Autos ERP,auto-history,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-history.updated,Autos ERP,auto-history,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-history.state_changed,Autos ERP,auto-history,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+auto-history.export_requested,Autos ERP,auto-history,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+logistics.created,Logistics ERP,logistics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+logistics.updated,Logistics ERP,logistics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+logistics.state_changed,Logistics ERP,logistics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+logistics.export_requested,Logistics ERP,logistics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+fleet.created,Logistics ERP,fleet,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+fleet.updated,Logistics ERP,fleet,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+fleet.state_changed,Logistics ERP,fleet,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+fleet.export_requested,Logistics ERP,fleet,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+trip-costs.created,Logistics ERP,trip-costs,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+trip-costs.updated,Logistics ERP,trip-costs,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+trip-costs.state_changed,Logistics ERP,trip-costs,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+trip-costs.export_requested,Logistics ERP,trip-costs,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+properties.created,Homes & Properties,properties,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+properties.updated,Homes & Properties,properties,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+properties.state_changed,Homes & Properties,properties,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+properties.export_requested,Homes & Properties,properties,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leases.created,Homes & Properties,leases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leases.updated,Homes & Properties,leases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leases.state_changed,Homes & Properties,leases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+leases.export_requested,Homes & Properties,leases,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+property-leads.created,Homes & Properties,property-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+property-leads.updated,Homes & Properties,property-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+property-leads.state_changed,Homes & Properties,property-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+property-leads.export_requested,Homes & Properties,property-leads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance.created,Finance & Operations,finance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance.updated,Finance & Operations,finance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance.state_changed,Finance & Operations,finance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance.export_requested,Finance & Operations,finance,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+receivables.created,Finance & Operations,receivables,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+receivables.updated,Finance & Operations,receivables,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+receivables.state_changed,Finance & Operations,receivables,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+receivables.export_requested,Finance & Operations,receivables,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance-posting.created,Finance & Operations,finance-posting,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance-posting.updated,Finance & Operations,finance-posting,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance-posting.state_changed,Finance & Operations,finance-posting,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+finance-posting.export_requested,Finance & Operations,finance-posting,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+budgets.created,Finance & Operations,budgets,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+budgets.updated,Finance & Operations,budgets,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+budgets.state_changed,Finance & Operations,budgets,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+budgets.export_requested,Finance & Operations,budgets,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expenses.created,Finance & Operations,expenses,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expenses.updated,Finance & Operations,expenses,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expenses.state_changed,Finance & Operations,expenses,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expenses.export_requested,Finance & Operations,expenses,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expense-approvals.created,Finance & Operations,expense-approvals,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expense-approvals.updated,Finance & Operations,expense-approvals,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expense-approvals.state_changed,Finance & Operations,expense-approvals,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+expense-approvals.export_requested,Finance & Operations,expense-approvals,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+spend.created,Finance & Operations,spend,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+spend.updated,Finance & Operations,spend,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+spend.state_changed,Finance & Operations,spend,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+spend.export_requested,Finance & Operations,spend,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cost-admin.created,Finance & Operations,cost-admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cost-admin.updated,Finance & Operations,cost-admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cost-admin.state_changed,Finance & Operations,cost-admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+cost-admin.export_requested,Finance & Operations,cost-admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inventory.created,Finance & Operations,inventory,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inventory.updated,Finance & Operations,inventory,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inventory.state_changed,Finance & Operations,inventory,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inventory.export_requested,Finance & Operations,inventory,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+projects.created,Finance & Operations,projects,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+projects.updated,Finance & Operations,projects,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+projects.state_changed,Finance & Operations,projects,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+projects.export_requested,Finance & Operations,projects,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+facilities.created,Finance & Operations,facilities,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+facilities.updated,Finance & Operations,facilities,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+facilities.state_changed,Finance & Operations,facilities,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+facilities.export_requested,Finance & Operations,facilities,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social.created,Social & Web,social,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social.updated,Social & Web,social,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social.state_changed,Social & Web,social,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social.export_requested,Social & Web,social,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-controls.created,Social & Web,social-controls,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-controls.updated,Social & Web,social-controls,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-controls.state_changed,Social & Web,social-controls,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-controls.export_requested,Social & Web,social-controls,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-accounts.created,Social & Web,social-accounts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-accounts.updated,Social & Web,social-accounts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-accounts.state_changed,Social & Web,social-accounts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-accounts.export_requested,Social & Web,social-accounts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-sync.created,Social & Web,social-sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-sync.updated,Social & Web,social-sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-sync.state_changed,Social & Web,social-sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+social-sync.export_requested,Social & Web,social-sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+marketing.created,Social & Web,marketing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+marketing.updated,Social & Web,marketing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+marketing.state_changed,Social & Web,marketing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+marketing.export_requested,Social & Web,marketing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inbox.created,Social & Web,inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inbox.updated,Social & Web,inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inbox.state_changed,Social & Web,inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+inbox.export_requested,Social & Web,inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+website.created,Social & Web,website,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+website.updated,Social & Web,website,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+website.state_changed,Social & Web,website,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+website.export_requested,Social & Web,website,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communications.created,Communications,communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communications.updated,Communications,communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communications.state_changed,Communications,communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communications.export_requested,Communications,communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+broadcasts.created,Communications,broadcasts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+broadcasts.updated,Communications,broadcasts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+broadcasts.state_changed,Communications,broadcasts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+broadcasts.export_requested,Communications,broadcasts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+encouragement.created,Communications,encouragement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+encouragement.updated,Communications,encouragement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+encouragement.state_changed,Communications,encouragement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+encouragement.export_requested,Communications,encouragement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notifications.created,Global,notifications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notifications.updated,Global,notifications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notifications.state_changed,Global,notifications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notifications.export_requested,Global,notifications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+help.created,Global,help,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+help.updated,Global,help,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+help.state_changed,Global,help,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+help.export_requested,Global,help,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+security.created,"Security, Access & Admin",security,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+security.updated,"Security, Access & Admin",security,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+security.state_changed,"Security, Access & Admin",security,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+security.export_requested,"Security, Access & Admin",security,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+access.created,"Security, Access & Admin",access,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+access.updated,"Security, Access & Admin",access,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+access.state_changed,"Security, Access & Admin",access,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+access.export_requested,"Security, Access & Admin",access,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+admin.created,"Security, Access & Admin",admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+admin.updated,"Security, Access & Admin",admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+admin.state_changed,"Security, Access & Admin",admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+admin.export_requested,"Security, Access & Admin",admin,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+recovery.created,"Security, Access & Admin",recovery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+recovery.updated,"Security, Access & Admin",recovery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+recovery.state_changed,"Security, Access & Admin",recovery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+recovery.export_requested,"Security, Access & Admin",recovery,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+support.created,"Security, Access & Admin",support,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+support.updated,"Security, Access & Admin",support,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+support.state_changed,"Security, Access & Admin",support,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+support.export_requested,"Security, Access & Admin",support,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+resources.created,"Security, Access & Admin",resources,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+resources.updated,"Security, Access & Admin",resources,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+resources.state_changed,"Security, Access & Admin",resources,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+resources.export_requested,"Security, Access & Admin",resources,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+sync.created,"Security, Access & Admin",sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+sync.updated,"Security, Access & Admin",sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+sync.state_changed,"Security, Access & Admin",sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+sync.export_requested,"Security, Access & Admin",sync,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+audit.created,"Security, Access & Admin",audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+audit.updated,"Security, Access & Admin",audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+audit.state_changed,"Security, Access & Admin",audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+audit.export_requested,"Security, Access & Admin",audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+toolbox.created,"Security, Access & Admin",toolbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+toolbox.updated,"Security, Access & Admin",toolbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+toolbox.state_changed,"Security, Access & Admin",toolbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+toolbox.export_requested,"Security, Access & Admin",toolbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+integrations.created,"Security, Access & Admin",integrations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+integrations.updated,"Security, Access & Admin",integrations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+integrations.state_changed,"Security, Access & Admin",integrations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+integrations.export_requested,"Security, Access & Admin",integrations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hub.created,Global,hub,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hub.updated,Global,hub,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hub.state_changed,Global,hub,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+hub.export_requested,Global,hub,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme.created,Personalization,theme,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme.updated,Personalization,theme,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme.state_changed,Personalization,theme,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme.export_requested,Personalization,theme,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+navigation.created,Personalization,navigation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+navigation.updated,Personalization,navigation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+navigation.state_changed,Personalization,navigation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+navigation.export_requested,Personalization,navigation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+layout.created,Personalization,layout,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+layout.updated,Personalization,layout,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+layout.state_changed,Personalization,layout,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+layout.export_requested,Personalization,layout,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+signin-design.created,Personalization,signin-design,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+signin-design.updated,Personalization,signin-design,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+signin-design.state_changed,Personalization,signin-design,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+signin-design.export_requested,Personalization,signin-design,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+procurement.created,Finance & Operations,procurement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+procurement.updated,Finance & Operations,procurement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+procurement.state_changed,Finance & Operations,procurement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+procurement.export_requested,Finance & Operations,procurement,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+purchase-orders.created,Finance & Operations,purchase-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+purchase-orders.updated,Finance & Operations,purchase-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+purchase-orders.state_changed,Finance & Operations,purchase-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+purchase-orders.export_requested,Finance & Operations,purchase-orders,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+goods-receipts.created,Finance & Operations,goods-receipts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+goods-receipts.updated,Finance & Operations,goods-receipts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+goods-receipts.state_changed,Finance & Operations,goods-receipts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+goods-receipts.export_requested,Finance & Operations,goods-receipts,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-transfers.created,Finance & Operations,stock-transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-transfers.updated,Finance & Operations,stock-transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-transfers.state_changed,Finance & Operations,stock-transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-transfers.export_requested,Finance & Operations,stock-transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-borrowing.created,Finance & Operations,stock-borrowing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-borrowing.updated,Finance & Operations,stock-borrowing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-borrowing.state_changed,Finance & Operations,stock-borrowing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+stock-borrowing.export_requested,Finance & Operations,stock-borrowing,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-accountability.created,Bakery ERP,bakery-accountability,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-accountability.updated,Bakery ERP,bakery-accountability,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-accountability.state_changed,Bakery ERP,bakery-accountability,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+bakery-accountability.export_requested,Bakery ERP,bakery-accountability,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+technology-services.created,Printing & Technology,technology-services,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+technology-services.updated,Printing & Technology,technology-services,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+technology-services.state_changed,Printing & Technology,technology-services,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+technology-services.export_requested,Printing & Technology,technology-services,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+vacancies.created,Jobs ERP,vacancies,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+vacancies.updated,Jobs ERP,vacancies,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+vacancies.state_changed,Jobs ERP,vacancies,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+vacancies.export_requested,Jobs ERP,vacancies,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+staff-messaging.created,Communications,staff-messaging,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+staff-messaging.updated,Communications,staff-messaging,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+staff-messaging.state_changed,Communications,staff-messaging,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+staff-messaging.export_requested,Communications,staff-messaging,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+productivity.created,Staff ERP,productivity,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+productivity.updated,Staff ERP,productivity,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+productivity.state_changed,Staff ERP,productivity,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+productivity.export_requested,Staff ERP,productivity,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+work-location.created,"Security, Access & Admin",work-location,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+work-location.updated,"Security, Access & Admin",work-location,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+work-location.state_changed,"Security, Access & Admin",work-location,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+work-location.export_requested,"Security, Access & Admin",work-location,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+salary-adjustments.created,Staff ERP,salary-adjustments,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+salary-adjustments.updated,Staff ERP,salary-adjustments,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+salary-adjustments.state_changed,Staff ERP,salary-adjustments,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+salary-adjustments.export_requested,Staff ERP,salary-adjustments,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+data-import.created,Finance & Operations,data-import,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+data-import.updated,Finance & Operations,data-import,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+data-import.state_changed,Finance & Operations,data-import,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+data-import.export_requested,Finance & Operations,data-import,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+dashboard-personalization.created,Personalization,dashboard-personalization,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+dashboard-personalization.updated,Personalization,dashboard-personalization,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+dashboard-personalization.state_changed,Personalization,dashboard-personalization,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+dashboard-personalization.export_requested,Personalization,dashboard-personalization,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+files.created,Global,files,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+files.updated,Global,files,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+files.state_changed,Global,files,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+files.export_requested,Global,files,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+saved-views.created,Global,saved-views,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+saved-views.updated,Global,saved-views,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+saved-views.state_changed,Global,saved-views,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+saved-views.export_requested,Global,saved-views,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+field-builder.created,"Security, Access & Admin",field-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+field-builder.updated,"Security, Access & Admin",field-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+field-builder.state_changed,"Security, Access & Admin",field-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+field-builder.export_requested,"Security, Access & Admin",field-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+form-builder.created,"Security, Access & Admin",form-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+form-builder.updated,"Security, Access & Admin",form-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+form-builder.state_changed,"Security, Access & Admin",form-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+form-builder.export_requested,"Security, Access & Admin",form-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workflow-builder.created,"Security, Access & Admin",workflow-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workflow-builder.updated,"Security, Access & Admin",workflow-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workflow-builder.state_changed,"Security, Access & Admin",workflow-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+workflow-builder.export_requested,"Security, Access & Admin",workflow-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+report-builder.created,"Security, Access & Admin",report-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+report-builder.updated,"Security, Access & Admin",report-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+report-builder.state_changed,"Security, Access & Admin",report-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+report-builder.export_requested,"Security, Access & Admin",report-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+widget-builder.created,"Security, Access & Admin",widget-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+widget-builder.updated,"Security, Access & Admin",widget-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+widget-builder.state_changed,"Security, Access & Admin",widget-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+widget-builder.export_requested,"Security, Access & Admin",widget-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme-builder.created,"Security, Access & Admin",theme-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme-builder.updated,"Security, Access & Admin",theme-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme-builder.state_changed,"Security, Access & Admin",theme-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+theme-builder.export_requested,"Security, Access & Admin",theme-builder,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+business-rules.created,"Security, Access & Admin",business-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+business-rules.updated,"Security, Access & Admin",business-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+business-rules.state_changed,"Security, Access & Admin",business-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+business-rules.export_requested,"Security, Access & Admin",business-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notification-rules.created,"Security, Access & Admin",notification-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notification-rules.updated,"Security, Access & Admin",notification-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notification-rules.state_changed,"Security, Access & Admin",notification-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+notification-rules.export_requested,"Security, Access & Admin",notification-rules,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+session-analytics.created,"Security, Access & Admin",session-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+session-analytics.updated,"Security, Access & Admin",session-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+session-analytics.state_changed,"Security, Access & Admin",session-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+session-analytics.export_requested,"Security, Access & Admin",session-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reports.created,Finance & Operations,reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reports.updated,Finance & Operations,reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reports.state_changed,Finance & Operations,reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reports.export_requested,Finance & Operations,reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+customer-communications.created,Communications,customer-communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+customer-communications.updated,Communications,customer-communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+customer-communications.state_changed,Communications,customer-communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+customer-communications.export_requested,Communications,customer-communications,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-queues.created,Communications,communication-queues,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-queues.updated,Communications,communication-queues,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-queues.state_changed,Communications,communication-queues,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-queues.export_requested,Communications,communication-queues,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+whatsapp-numbers.created,Communications,whatsapp-numbers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+whatsapp-numbers.updated,Communications,whatsapp-numbers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+whatsapp-numbers.state_changed,Communications,whatsapp-numbers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+whatsapp-numbers.export_requested,Communications,whatsapp-numbers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-analytics.created,Communications,communication-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-analytics.updated,Communications,communication-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-analytics.state_changed,Communications,communication-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-analytics.export_requested,Communications,communication-analytics,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-preferences.created,Communications,communication-preferences,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-preferences.updated,Communications,communication-preferences,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-preferences.state_changed,Communications,communication-preferences,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-preferences.export_requested,Communications,communication-preferences,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+ai-letterhead-generator.created,Communications,ai-letterhead-generator,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+ai-letterhead-generator.updated,Communications,ai-letterhead-generator,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+ai-letterhead-generator.state_changed,Communications,ai-letterhead-generator,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+ai-letterhead-generator.export_requested,Communications,ai-letterhead-generator,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-audit.created,Communications,communication-audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-audit.updated,Communications,communication-audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-audit.state_changed,Communications,communication-audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-audit.export_requested,Communications,communication-audit,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+unified-inbox.created,Communications,unified-inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+unified-inbox.updated,Communications,unified-inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+unified-inbox.state_changed,Communications,unified-inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+unified-inbox.export_requested,Communications,unified-inbox,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-automation.created,Communications,communication-automation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-automation.updated,Communications,communication-automation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-automation.state_changed,Communications,communication-automation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-automation.export_requested,Communications,communication-automation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-templates.created,Communications,communication-templates,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-templates.updated,Communications,communication-templates,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-templates.state_changed,Communications,communication-templates,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+communication-templates.export_requested,Communications,communication-templates,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+letterheads.created,Communications,letterheads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+letterheads.updated,Communications,letterheads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+letterheads.state_changed,Communications,letterheads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+letterheads.export_requested,Communications,letterheads,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+banking-operations.created,Finance & Operations,banking-operations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+banking-operations.updated,Finance & Operations,banking-operations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+banking-operations.state_changed,Finance & Operations,banking-operations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+banking-operations.export_requested,Finance & Operations,banking-operations,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+treasury.created,Finance & Operations,treasury,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+treasury.updated,Finance & Operations,treasury,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+treasury.state_changed,Finance & Operations,treasury,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+treasury.export_requested,Finance & Operations,treasury,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payment-verification.created,Finance & Operations,payment-verification,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payment-verification.updated,Finance & Operations,payment-verification,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payment-verification.state_changed,Finance & Operations,payment-verification,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payment-verification.export_requested,Finance & Operations,payment-verification,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+transfers.created,Finance & Operations,transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+transfers.updated,Finance & Operations,transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+transfers.state_changed,Finance & Operations,transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+transfers.export_requested,Finance & Operations,transfers,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+beneficiaries.created,Finance & Operations,beneficiaries,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+beneficiaries.updated,Finance & Operations,beneficiaries,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+beneficiaries.state_changed,Finance & Operations,beneficiaries,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+beneficiaries.export_requested,Finance & Operations,beneficiaries,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-execution.created,Finance & Operations,payroll-execution,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-execution.updated,Finance & Operations,payroll-execution,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-execution.state_changed,Finance & Operations,payroll-execution,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+payroll-execution.export_requested,Finance & Operations,payroll-execution,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reconciliation.created,Finance & Operations,reconciliation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reconciliation.updated,Finance & Operations,reconciliation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reconciliation.state_changed,Finance & Operations,reconciliation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+reconciliation.export_requested,Finance & Operations,reconciliation,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+financial-reports.created,Finance & Operations,financial-reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+financial-reports.updated,Finance & Operations,financial-reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+financial-reports.state_changed,Finance & Operations,financial-reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required
+financial-reports.export_requested,Finance & Operations,financial-reports,actor|company|record|revision|reason|correlation|authorized before/after projection,Append-only production store required

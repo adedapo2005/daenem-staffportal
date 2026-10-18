@@ -1,0 +1,17 @@
+EVENT_ID,EVENT,DOMAIN,PAYLOAD,PRODUCTION_STATE
+AUD-V12-001,message.received,communications,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-002,conversation.assigned,communications,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-003,reply.generated,communications,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-004,reply.approved,communications,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-005,message.send_requested,communications,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-006,message.delivery_changed,communications,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-007,provider.event_verified,banking,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-008,payment.matched,banking,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-009,transfer.created,banking,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-010,transfer.approved,banking,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-011,transfer.executed,banking,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-012,beneficiary.changed,banking,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-013,payroll.batch_submitted,payroll,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-014,employee.payment_changed,payroll,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-015,reconciliation.completed,reconciliation,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
+AUD-V12-016,authorization.denied_neutral,security,"Actor, time, company, scope, target, before/after where authorized, reason, correlation",Append-only production mapping required
