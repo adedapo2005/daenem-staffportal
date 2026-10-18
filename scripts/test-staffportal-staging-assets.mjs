@@ -7,7 +7,8 @@ const expectedTypes = {
   '.woff': /font|woff|octet-stream/i,
   '.woff2': /font|woff|octet-stream/i,
   '.png': /image\/png/i,
-  // Approved V115 keeps .jpg source references, while staging serves the verified responsive WebP derivative behind the same URL.\n  '.jpg': /image\/(?:jpeg|webp)/i,
+  // Approved V115 keeps .jpg source references, while staging serves the verified responsive WebP derivative behind the same URL.
+  '.jpg': /image\/(?:jpeg|webp)/i,
   '.jpeg': /image\/(?:jpeg|webp)/i,
   '.svg': /image\/svg\+xml/i,
   '.webp': /image\/webp/i,
