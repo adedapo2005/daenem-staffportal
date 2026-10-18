@@ -275,9 +275,77 @@ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE
 db.exec('DROP TRIGGER reject_delivery_audit');
 
 db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-status-ok','company-printing','DP-SO','Status success',1,5000,'enquiry')`).run();
+response = await route(statusRequest('job-status-ok', 'quoted', 'request-status-ok'), env, context);
+assert.equal(response.status, 200);
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-status-ok'").get().production_status, 'quoted');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-status-ok'").get().n, 1);
+assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE entity_id='job-status-ok' AND action='status_change'").get().request_id, 'request-status-ok');
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-status-stale','company-printing','DP-SS','Status stale',1,5000,'enquiry')`).run();
+const beforeStatusPrepare = env.DB.prepare;
+env.DB.prepare = (sql) => {
+  const prepared = beforeStatusPrepare(sql);
+  if (sql.includes('SELECT pj.id,pj.job_no')) {
+    const originalFirst = prepared.first.bind(prepared);
+    prepared.first = async () => {
+      const row = await originalFirst();
+      if (row?.id === 'job-status-stale') db.prepare("UPDATE print_jobs SET production_status='on_hold' WHERE id='job-status-stale'").run();
+      return row;
+    };
+  }
+  return prepared;
+};
+response = await route(statusRequest('job-status-stale', 'quoted', 'request-status-stale'), env, context);
+env.DB.prepare = beforeStatusPrepare;
+assert.equal(response.status, 409, 'lost status race fails closed');
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-status-stale'").get().production_status, 'on_hold');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-status-stale'").get().n, 0);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-status-stale'").get().n, 0);
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-status-same-target','company-printing','DP-ST','Status same target',1,5000,'enquiry')`).run();
+env.DB.prepare = (sql) => {
+  const prepared = beforeStatusPrepare(sql);
+  if (sql.includes('SELECT pj.id,pj.job_no')) {
+    const originalFirst = prepared.first.bind(prepared);
+    prepared.first = async () => {
+      const row = await originalFirst();
+      if (row?.id === 'job-status-same-target') db.prepare("UPDATE print_jobs SET production_status='quoted' WHERE id='job-status-same-target'").run();
+      return row;
+    };
+  }
+  return prepared;
+};
+response = await route(statusRequest('job-status-same-target', 'quoted', 'request-status-same-target'), env, context);
+env.DB.prepare = beforeStatusPrepare;
+assert.equal(response.status, 409, 'another writer reaching the same target is not this request succeeding');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-status-same-target'").get().n, 0);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-status-same-target'").get().n, 0);
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-status-audit','company-printing','DP-SA','Status audit',1,5000,'enquiry')`).run();
+db.exec(`CREATE TRIGGER ignore_status_audit BEFORE INSERT ON audit_logs WHEN NEW.action='status_change'
+  BEGIN SELECT RAISE(IGNORE); END`);
+await assert.rejects(route(statusRequest('job-status-audit', 'quoted', 'request-status-audit'), env, context),
+  /malformed JSON/i, 'ignored success audit rolls back the status and event');
+db.exec('DROP TRIGGER ignore_status_audit');
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-status-audit'").get().production_status, 'enquiry');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-status-audit'").get().n, 0);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-status-audit'").get().n, 0);
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-status-foreign','company-bakery','DP-SF','Foreign status',1,5000,'enquiry')`).run();
+response = await route(statusRequest('job-status-foreign', 'quoted', 'request-status-foreign'), env, context);
+assert.equal(response.status, 404, 'cross-company status remains neutral');
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-status-foreign'").get().production_status, 'enquiry');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-status-foreign'").get().n, 0);
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
   VALUES('job-delivery-foreign','company-bakery','DP-B','Foreign delivery',1,5000,'ready')`).run();
 response = await route(deliveryRequest('job-delivery-foreign', 'request-foreign-delivery'), env, context);
 assert.equal(response.status, 404, 'cross-company delivery remains neutral');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery-foreign'").get().n, 0);
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery state CAS, company isolation, payment truth, and audit rollback PASS');
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, company isolation, payment truth, and audit rollback PASS');
