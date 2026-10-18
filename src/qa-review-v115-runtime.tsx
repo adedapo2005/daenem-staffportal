@@ -118,20 +118,21 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         manifest.className = 'v116-release-manifest';
         manifest.setAttribute('aria-label', 'Staging deployment manifest');
         const close = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.trim() === 'Close');
-        if (close) close.before(manifest); else dialog.append(manifest);
+        if (close) close.insertAdjacentElement('beforebegin', manifest); else dialog.insertAdjacentElement('beforeend', manifest);
       }
       if (manifest.dataset.commit === STAGING_BUILD.commit) return;
       manifest.dataset.commit = STAGING_BUILD.commit;
       manifest.replaceChildren();
       const heading = document.createElement('strong');
       heading.textContent = 'Staging deployment';
-      manifest.append(heading);
+      manifest.insertAdjacentElement('beforeend', heading);
       const addLine = (label: string, value: string) => {
         const line = document.createElement('div');
         const key = document.createElement('b');
         key.textContent = `${label}: `;
-        line.append(key, document.createTextNode(value));
-        manifest?.append(line);
+        line.insertAdjacentElement('beforeend', key);
+        line.insertAdjacentText('beforeend', value);
+        manifest?.insertAdjacentElement('beforeend', line);
       };
       addLine('Approved design', `QA Review V${APPROVED_SOURCE.version}`);
       addLine('Design source', `${APPROVED_SOURCE.commit.slice(0, 7)} · Oct 5, 2026`);
@@ -141,14 +142,14 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       addLine('Pushed to stage', stagingDeploymentLabel());
       const listHeading = document.createElement('b');
       listHeading.textContent = 'Completed work included';
-      manifest.append(listHeading);
+      manifest.insertAdjacentElement('beforeend', listHeading);
       const list = document.createElement('ul');
       STAGING_BUILD.completedWork.forEach((item) => {
         const row = document.createElement('li');
         row.textContent = item;
-        list.append(row);
+        list.insertAdjacentElement('beforeend', row);
       });
-      manifest.append(list);
+      manifest.insertAdjacentElement('beforeend', list);
       if (STAGING_BUILD.runId) addLine('GitHub run', STAGING_BUILD.runId);
     };
     const updateReleaseDetails = () => {
