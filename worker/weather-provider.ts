@@ -25,7 +25,7 @@ export async function readWeatherConfiguration(env: WeatherProviderEnv): Promise
       .first<{ value: string }>();
     if (!row?.value) return { enabled: env.WEATHER_PROVIDER_ENABLED === 'true', defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
     const settings: unknown = JSON.parse(row.value);
-    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return { enabled: env.WEATHER_PROVIDER_ENABLED === 'true', defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
     const value = settings as Record<string, unknown>;
     return {
       enabled: env.WEATHER_PROVIDER_ENABLED === 'true' || value.enabled === true,
@@ -33,7 +33,7 @@ export async function readWeatherConfiguration(env: WeatherProviderEnv): Promise
       refreshIntervalSeconds: Number.isInteger(value.refreshIntervalSeconds) && Number(value.refreshIntervalSeconds) >= CACHE_TTL_SECONDS && Number(value.refreshIntervalSeconds) <= 86_400
         ? Number(value.refreshIntervalSeconds) : CACHE_TTL_SECONDS,
     };
-  } catch { return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS }; }
+  } catch { return { enabled: env.WEATHER_PROVIDER_ENABLED === 'true', defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS }; }
 }
 
 /** Returns only provider data. Location labels and user/company identifiers never enter shared cache values. */
