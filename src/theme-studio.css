@@ -938,3 +938,179 @@
 @media (max-width: 820px) { .signin-background-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .signin-background-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .signin-background-option { transition: none; } }
+
+
+/* Owner Studio: protected approved-surface scope and responsive review mode */
+.signin-studio-scope {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, var(--surface)), var(--surface));
+}
+.signin-studio-scope-head,
+.signin-studio-scope-head span {
+  display: grid;
+  gap: 4px;
+}
+.signin-studio-scope-head strong {
+  color: var(--text);
+  font-size: 11px;
+}
+.signin-studio-scope-head span {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+.signin-studio-scope-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.signin-studio-scope-grid article {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+}
+.signin-studio-scope-grid strong {
+  color: var(--text);
+  font-size: 10px;
+}
+.signin-studio-scope-grid small,
+.signin-studio-scope-kicker {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.35;
+}
+.signin-studio-scope-kicker {
+  color: var(--primary);
+  font-weight: 900;
+  letter-spacing: .09em;
+}
+.studio-review-toolbar,
+.studio-review-draft-actions,
+.studio-review-status,
+.studio-review-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.studio-review-toolbar {
+  margin: 10px 0;
+}
+.studio-review-toolbar label,
+.studio-review-draft-name {
+  display: grid;
+  flex: 1 1 150px;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+}
+.studio-review-toolbar select,
+.studio-review-toolbar input,
+.studio-review-draft-name input {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--surface-strong);
+  font: inherit;
+  font-size: 9px;
+}
+.studio-review-draft-actions {
+  align-items: center;
+}
+.studio-review-draft-actions button,
+.studio-review-footer button,
+.studio-review-status button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--surface-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+}
+.studio-review-draft-actions button:hover,
+.studio-review-footer button:hover,
+.studio-review-status button:hover {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  color: var(--primary);
+}
+.studio-review-draft-actions .studio-review-publish {
+  border-color: color-mix(in srgb, var(--primary) 48%, var(--border));
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface-strong));
+}
+.studio-review-status {
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0 8px;
+  color: var(--muted);
+  font-size: 8px;
+}
+.studio-review-stage {
+  display: grid;
+  place-items: center;
+  min-height: 300px;
+  max-height: 620px;
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 48%),
+    color-mix(in srgb, var(--canvas) 80%, #071222);
+  overscroll-behavior: contain;
+}
+.studio-review-viewport {
+  width: var(--studio-review-width);
+  height: var(--studio-review-height);
+  max-width: none;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 8px solid #101c2b;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgb(0 0 0 / 28%);
+  transform-origin: center center;
+}
+.studio-review-viewport iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+.studio-review-footer {
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 8px;
+}
+@media (max-width: 720px) {
+  .signin-studio-scope-grid {
+    grid-template-columns: 1fr;
+  }
+  .studio-review-stage {
+    min-height: 260px;
+    padding: 10px;
+  }
+  .studio-review-draft-actions > button {
+    flex: 1 1 180px;
+  }
+}
