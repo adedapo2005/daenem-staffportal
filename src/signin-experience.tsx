@@ -79,7 +79,7 @@ function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
 
 function resolvedMedia(cityId: string, phase: 'dawn' | 'day' | 'dusk' | 'night') {
   const media = cityMedia[cityId] || {};
-  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : [phase] as const;
+  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : phase === 'night' ? ['night', 'day'] as const : ['day', 'dawn', 'night'] as const;
   const mediaPhase = order.find((item) => media[item]);
   return mediaPhase ? { src: media[mediaPhase] || '', mediaPhase } : { src: '', mediaPhase: 'none' };
 }
