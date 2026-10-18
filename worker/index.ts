@@ -426,6 +426,13 @@ export default {
 
     if (url.pathname === '/api/context/signin' && request.method === 'GET') return securityHeaders(await publicSignInContext(env));
 
+    // The approved public Sign-In experience needs current weather before a
+    // session exists. The weather handler is already safe for production:
+    // it returns provider_required there and never exposes employee data.
+    if (url.pathname === '/api/context/weather' && request.method === 'GET') {
+      return securityHeaders(await weather(request, env));
+    }
+
     const authResponse = await routeAuth(request, env);
     if (authResponse) return securityHeaders(authResponse);
 
@@ -433,7 +440,6 @@ export default {
       const context = await getSessionContext(request, env);
       if (!context) return securityHeaders(json({ error: 'Authentication required.' }, 401));
       if (url.pathname === '/api/context/postlogin' && request.method === 'GET') return securityHeaders(await postLoginContext(env));
-      if (url.pathname === '/api/context/weather' && request.method === 'GET') return securityHeaders(await weather(request, env));
       if (url.pathname === '/api/ai/help' && request.method === 'POST') return securityHeaders(await aiHelp(request, env, context));
       if (url.pathname === '/api/ai/guide/catalog' && request.method === 'GET') return securityHeaders(await aiGuideCatalog(context));
       if (url.pathname === '/api/dashboard/summary' && request.method === 'GET') return securityHeaders(await dashboardSummary(request, env, context));
