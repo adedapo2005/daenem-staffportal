@@ -60,3 +60,38 @@
 @media (prefers-reduced-motion: reduce) {
   .sp-root[data-approved-signin="sites-v180"] * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Marked Sign-In corrections: keep the approved card, but make the
+   authenticated-looking Create Account form fit its narrow mount cleanly. */
+#staffportal-auth-mount {
+  container-type: inline-size;
+}
+#staffportal-auth-mount .usp-auth-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
+}
+#staffportal-auth-mount .usp-auth-form,
+#staffportal-auth-mount .usp-field,
+#staffportal-auth-mount .usp-two {
+  min-width: 0;
+}
+#staffportal-auth-mount .usp-field > input,
+#staffportal-auth-mount .usp-password-field {
+  width: 100%;
+  box-sizing: border-box;
+}
+#staffportal-auth-mount .usp-password-field input {
+  min-width: 0;
+}
+@container (max-width: 430px) {
+  #staffportal-auth-mount .usp-two {
+    grid-template-columns: 1fr;
+  }
+  #staffportal-auth-mount .usp-password-pair {
+    gap: 9px;
+  }
+}
