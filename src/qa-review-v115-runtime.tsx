@@ -4,6 +4,7 @@ import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/
 import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/security-contract';
 import type { Company, Session } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
 import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';
+import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
@@ -14,12 +15,17 @@ const APPROVED_SOURCE = {
 } as const;
 
 const STAGING_BUILD = {
-  release: '2026.10.17',
+  release: '2026.10.18',
+  runtime: '116',
   commit: import.meta.env.VITE_STAFFPORTAL_BUILD_SHA || 'local-preview',
   branch: import.meta.env.VITE_STAFFPORTAL_BUILD_REF || 'local',
   runId: import.meta.env.VITE_STAFFPORTAL_BUILD_RUN_ID || '',
   deployedAt: import.meta.env.VITE_STAFFPORTAL_DEPLOYED_AT || '',
   completedWork: [
+    'Expanded live News and local + international Intelligence sources',
+    'Integrated current Weather and daily Inspiration widgets',
+    'Refined Clock and Weather icon treatment without changing the top bar',
+    'Preserved schema-driven forms without removing or combining fields',
     'Printing sales-order and Finance handoff',
     'Autos sale-truth concurrency protection',
     'Theme preference and runtime routing hardening',
@@ -91,10 +97,10 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
     const updateReleaseChip = () => {
       const chip = document.querySelector<HTMLElement>('[data-version-state="saved"]');
       if (!chip) return;
-      const label = `V${APPROVED_SOURCE.version} · 10/17`;
+      const label = `V${APPROVED_SOURCE.version} · R${STAGING_BUILD.runtime} · 10/18`;
       const text = chip.querySelector<HTMLElement>('span');
       if (text && text.textContent !== label) text.textContent = label;
-      const ariaLabel = `Open Release Details, approved UI V${APPROVED_SOURCE.version}, staging ${STAGING_BUILD.release}`;
+      const ariaLabel = `Open Release Details, approved UI V${APPROVED_SOURCE.version}, live runtime R${STAGING_BUILD.runtime}, staging ${STAGING_BUILD.release}`;
       if (chip.getAttribute('aria-label') !== ariaLabel) chip.setAttribute('aria-label', ariaLabel);
       chip.dataset.stageRelease = STAGING_BUILD.release;
     };
@@ -130,6 +136,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       }}
     >
       <Portal />
+      <LivePostLoginEnhancementsV116 />
       <details
         aria-label="StaffPortal staging deployment details"
         style={{
@@ -155,12 +162,13 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
             letterSpacing: '0.02em',
           }}
         >
-          STAGING {STAGING_BUILD.release} · UI V{APPROVED_SOURCE.version} · {STAGING_BUILD.commit.slice(0, 7)} · {stagingDeploymentLabel()}
+          STAGING {STAGING_BUILD.release} · UI V{APPROVED_SOURCE.version} · R{STAGING_BUILD.runtime} · {STAGING_BUILD.commit.slice(0, 7)} · {stagingDeploymentLabel()}
         </summary>
         <div style={{ borderTop: '1px solid rgba(15, 53, 74, 0.12)', padding: '10px 12px', fontWeight: 500 }}>
           <div><strong>Approved design:</strong> QA Review V{APPROVED_SOURCE.version}</div>
           <div><strong>Design source:</strong> {APPROVED_SOURCE.commit.slice(0, 7)} (Oct 5, 2026)</div>
           <div><strong>Stage release:</strong> {STAGING_BUILD.release}</div>
+          <div><strong>Live runtime:</strong> R{STAGING_BUILD.runtime}</div>
           <div><strong>Stage commit:</strong> {STAGING_BUILD.commit}</div>
           <div><strong>Pushed to stage:</strong> {stagingDeploymentLabel()}</div>
           <div style={{ marginTop: '8px' }}><strong>Completed work included:</strong></div>
