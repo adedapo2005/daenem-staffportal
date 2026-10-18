@@ -4,6 +4,7 @@ import { DASHBOARD_FIELD_PERMISSIONS, type DashboardAggregateField } from '../sr
 import { readGoogleWeather, readWeatherConfiguration } from './weather-provider';
 import { routeIncidentResponse } from './incident-response';
 import { routeWorkspaceShell } from './workspace-route';
+import { postLoginContext } from './postlogin-context';
 
 interface Env extends AuthEnv {
   FILES: R2Bucket;
@@ -431,6 +432,7 @@ export default {
     if (url.pathname.startsWith('/api/')) {
       const context = await getSessionContext(request, env);
       if (!context) return securityHeaders(json({ error: 'Authentication required.' }, 401));
+      if (url.pathname === '/api/context/postlogin' && request.method === 'GET') return securityHeaders(await postLoginContext(env));
       if (url.pathname === '/api/context/weather' && request.method === 'GET') return securityHeaders(await weather(request, env));
       if (url.pathname === '/api/ai/help' && request.method === 'POST') return securityHeaders(await aiHelp(request, env, context));
       if (url.pathname === '/api/ai/guide/catalog' && request.method === 'GET') return securityHeaders(await aiGuideCatalog(context));
