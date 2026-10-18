@@ -145,8 +145,8 @@ async function verifyIdentityToken(tokenValue: string, current: Config, nonce: s
 }
 async function start(request: Request, env: ProviderAuthEnv, provider: Provider) {
   const current = config(env, provider);
-  if (!current) return json({ error: label(provider) + ' provider is not configured in the StaffPortal Worker.', code: 'OAUTH_NOT_CONFIGURED' }, 503);
-  if (!env.SOCIAL_CACHE) return json({ error: 'OAuth state storage is not configured for the StaffPortal Worker.', code: 'OAUTH_STATE_STORAGE_UNAVAILABLE' }, 503);
+  if (!current) return failure(request, provider, 'oauth_not_configured');
+  if (!env.SOCIAL_CACHE) return failure(request, provider, 'oauth_state_storage_unavailable');
   const state: State = { provider, state: token(24), verifier: token(48), nonce: token(24), expiresAt: Date.now() + ttl * 1000 };
   await env.SOCIAL_CACHE.put('staffportal-oauth-state:' + state.state, JSON.stringify(state), { expirationTtl: ttl });
   const target = new URL(current.authorizationEndpoint);
