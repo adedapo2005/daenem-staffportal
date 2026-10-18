@@ -67,7 +67,7 @@ function readCookie(request: Request, name: string) {
 }
 function stateCookie(request: Request, value: string, maxAge = ttl) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
-  return \`\${cookieName}=\${encodeURIComponent(value)}; Path=/; HttpOnly\${secure}; SameSite=Lax; Max-Age=\${maxAge}\`;
+  return `${cookieName}=${encodeURIComponent(value)}; Path=/; HttpOnly${secure}; SameSite=Lax; Max-Age=${maxAge}`;
 }
 function config(env: ProviderAuthEnv, provider: Provider): Config | null {
   if (provider === 'google') {
@@ -85,8 +85,8 @@ function config(env: ProviderAuthEnv, provider: Provider): Config | null {
   const tenant = env.MICROSOFT_TENANT_ID || env.MICROSOFT_OAUTH_TENANT_ID || 'common';
   return {
     clientId, clientSecret,
-    authorizationEndpoint: \`https://login.microsoftonline.com/\${encodeURIComponent(tenant)}/oauth2/v2.0/authorize\`,
-    tokenEndpoint: \`https://login.microsoftonline.com/\${encodeURIComponent(tenant)}/oauth2/v2.0/token\`,
+    authorizationEndpoint: `https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/authorize`,
+    tokenEndpoint: `https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/token`,
     userInfoEndpoint: 'https://graph.microsoft.com/oidc/userinfo', scope: 'openid profile email User.Read',
   };
 }
@@ -135,12 +135,12 @@ async function createSession(request: Request, env: ProviderAuthEnv, employeeId:
     .bind('security.session_hours').first<{ setting_value: string }>();
   const hours = Math.max(1, Number(setting?.setting_value || 12) || 12);
   const expiresAt = new Date(Date.now() + hours * 60 * 60_000).toISOString();
-  await env.DB.prepare(\`
+  await env.DB.prepare(`
     INSERT INTO auth_sessions (
       id, employee_id, token_hash, device_id, device_name, user_agent, ip_address,
       login_geofence_result, expires_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  \`).bind(sessionId, employeeId, sessionHash, null, 'OAuth · ' + label(provider),
+  `).bind(sessionId, employeeId, sessionHash, null, 'OAuth · ' + label(provider),
     request.headers.get('user-agent'), request.headers.get('cf-connecting-ip') || null, 'not_required', expiresAt).run();
   await logSecurity(env, request, 'signin_success', { employeeId, sessionId, result: 'success',
     details: { provider: label(provider), authentication: 'oauth' } });
@@ -165,9 +165,9 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
     const profile = await providerJson(await fetch(current.userInfoEndpoint, { headers: { authorization: 'Bearer ' + accessToken } }));
     const email = String(profile.email || profile.preferred_username || '').trim().toLowerCase();
     if (!email) return failure(request, provider, 'provider_email_missing');
-    const employee = await env.DB.prepare(\`
+    const employee = await env.DB.prepare(`
       SELECT id, employment_status AS status FROM employees WHERE LOWER(email) = ? LIMIT 1
-    \`).bind(email).first<{ id: string; status: string }>();
+    `).bind(email).first<{ id: string; status: string }>();
     if (!employee || !['active', 'provisional'].includes(employee.status)) return failure(request, provider, 'employee_not_authorized');
     const session = await createSession(request, env, employee.id, provider);
     const headers = new Headers({ location: new URL('/workspace/', request.url).toString(), 'cache-control': 'no-store' });
