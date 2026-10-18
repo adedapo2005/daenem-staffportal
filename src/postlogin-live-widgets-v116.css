@@ -42,3 +42,9 @@
 #main-content[data-construction-view="simple"] .c16-command-grid{margin-bottom:0}
 @media(max-width:760px){.v116-construction-view-toggle{width:100%}}
 @media(prefers-reduced-motion:reduce){.v116-construction-view-toggle{transition:none}}
+
+.v116-release-manifest{display:grid;gap:.38rem;margin:1rem 0;padding:1rem;border:1px solid color-mix(in srgb,var(--p-accent) 22%,var(--p-line));border-radius:.8rem;background:color-mix(in srgb,var(--p-accent) 5%,var(--p-surface));color:var(--p-ink);font-size:.76rem;line-height:1.45;text-align:left}
+.v116-release-manifest>strong{font-size:.9rem;color:color-mix(in srgb,var(--p-accent) 82%,var(--p-ink))}
+.v116-release-manifest b{font-weight:750}
+.v116-release-manifest ul{display:grid;gap:.22rem;margin:.2rem 0 0;padding-left:1.2rem;color:var(--p-muted);max-height:11rem;overflow:auto}
+.v116-release-manifest li{padding-left:.1rem}
