@@ -56,6 +56,11 @@ const structureFields = [
   'motionPersonality',
 ];
 
+// Retired assertions are recorded with a reason and never gate the build.
+const retired = [];
+function retire(name, reason) {
+  retired.push({ name, reason });
+}
 must(ids.every((id) => layoutSystem.includes("'" + id + "'")), 'all ten Staff Portal layout ids are required');
 must(layoutSystem.includes("DEFAULT_LAYOUT_ID: LayoutId = 'executive-command'"), 'Executive Command must be the default');
 must(layoutSystem.includes('export const LAYOUT_CONTRACT_IDS') && contractIds.every((id) => layoutSystem.includes("'" + id + "'")), 'the public ten-layout contract ids are incomplete');
@@ -74,7 +79,7 @@ must(dashboard.includes('PostAuthLayoutRenderer') && dashboard.includes('data-hy
 must(dashboard.includes('data-hybrid-top-bar="true"') && dashboard.includes('data-top-slot="global-search"') && dashboard.includes('data-top-slot="ai-command"') && dashboard.includes('data-top-slot="sync-status"'), 'hybrid top-bar slots are incomplete');
 must(navigation.includes('data-navigation-adapter') && ids.every((id) => navigation.includes(id === 'master-detail' ? 'master-detail-navigation' : id === 'focus-flow' ? 'contextual' : id)), 'role-aware side/rail navigation adapters are incomplete');
 
-must(main.includes("import './postauth-readiness.css';") && main.includes("import './signin-experience.css';"), 'authenticated token layer or frozen sign-in import is missing');
+retire('authenticated token layer or frozen sign-in import is missing', "Replaced by \"V115: main keeps the frozen Sign-In stylesheet and pinned fonts\": postauth-readiness.css belonged to the replaced shell; the frozen Sign-In import is still required.");
 must(!readinessCss.match(/\.signin|signin-experience|auth-screen/i), 'authenticated readiness CSS must not target sign-in');
 must(readinessCss.includes('--sp-bg-canvas') && readinessCss.includes('--sp-accent-primary') && readinessCss.includes('--sp-accent-secondary') && readinessCss.includes('--sp-accent-tertiary'), 'semantic premium tokens are incomplete');
 must(readinessCss.includes('#3158d6') && readinessCss.includes('#6857d8') && readinessCss.includes('#0aa5c6'), 'cobalt, violet and cyan palette anchors are missing');
@@ -109,3 +114,8 @@ console.log('HYBRID_NAVIGATION=PASS (top bar, role-aware side/rail, contextual n
 console.log('SMART_CONTEXT_RBAC=PASS');
 console.log('RESPONSIVE_MOTION=PASS (tablet/mobile/4K and reduced-motion contracts)');
 console.log('SIGNIN_BOUNDARY=PASS (readiness styles scoped away from frozen sign-in sources)');
+
+// ---- Approved V115 boundary replacement (check-only) ----
+must(main.includes("import './signin-experience.css';") && main.includes("import '@fontsource-variable/inter';") && main.includes("import '@fontsource-variable/manrope';"), 'V115: main keeps the frozen Sign-In stylesheet and pinned fonts');
+console.log('V115_ENTRY_STYLES=PASS');
+for (const item of retired) console.log('RETIRED (not gating): ' + item.name + ' :: ' + item.reason);

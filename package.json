@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "prebuild": "node scripts/check-owner-studio-contract.mjs && node scripts/check-complete-v115-export.mjs && node scripts/check-approved-experience-lock.mjs && node scripts/check-zero-disclosure.mjs && node scripts/check-staffportal-staging-integration.mjs && node scripts/check-postauth-live-integrations.mjs && tsc --noEmit",
+    "prebuild": "node scripts/check-owner-studio-contract.mjs && node scripts/check-complete-v115-export.mjs && node scripts/check-approved-experience-lock.mjs && node scripts/check-zero-disclosure.mjs && node scripts/check-staffportal-staging-integration.mjs && node scripts/check-postauth-live-integrations.mjs && node scripts/check-signin-configurability.mjs && node scripts/check-postauth-layout.mjs && node scripts/check-postauth-layout-readiness.mjs && node scripts/check-canonical-postauth.mjs && tsc --noEmit",
     "check:postauth-live": "node scripts/check-postauth-live-integrations.mjs",
     "build": "vite build",
     "preview": "npm run build && vite preview",
@@ -32,6 +32,7 @@
     "check:properties-hostel": "node scripts/check-properties-hostel.mjs",
     "check:bakery-accountability": "node scripts/check-bakery-accountability.mjs",
     "typecheck": "tsc --noEmit",
+    "check:release-blockers": "node scripts/check-staffportal-release-blockers.mjs",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "db:migrations:list": "wrangler d1 migrations list daenem-workforce-hub",

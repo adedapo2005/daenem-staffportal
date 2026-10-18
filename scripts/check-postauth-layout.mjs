@@ -27,6 +27,11 @@ const docs = read('docs/ERP-CONSOLIDATION-MAP.md');
 const packageFile = JSON.parse(read('package.json'));
 
 const ids = ['executive-command', 'workspace-canvas', 'operational-cockpit', 'insight-magazine', 'master-detail', 'horizon-wide', 'adaptive-bento', 'focus-flow', 'enterprise-studio', 'board-pulse'];
+// Retired assertions are recorded with a reason and never gate the build.
+const retired = [];
+function retire(name, reason) {
+  retired.push({ name, reason });
+}
 must(ids.every((id) => system.includes("'" + id + "'")), 'all ten layout profiles must be declared');
 must(system.includes("DEFAULT_LAYOUT_ID: LayoutId = 'executive-command'"), 'Executive Command must be the default');
 must(system.includes('resolveLayout') && system.includes('forcedLayout') && system.includes('roleDefaults') && system.includes('erpDefaults'), 'layout precedence is missing');
@@ -39,10 +44,10 @@ must(home.includes('postauth-composition-clocks'), 'clock surface must have a de
 must(home.includes("profile.id === 'workspace-canvas'") && home.includes("profile.id === 'operational-cockpit'") && home.includes("profile.id === 'insight-magazine'") && home.includes("profile.id === 'master-detail'") && home.includes("profile.id === 'horizon-wide'") && home.includes("profile.id === 'adaptive-bento'") && home.includes("profile.id === 'focus-flow'") && home.includes("profile.id === 'enterprise-studio'") && home.includes("profile.id === 'board-pulse'"), 'all ten profiles need explicit dashboard composition adapters');
 must(studio.includes('Layout Studio') && studio.includes('Preview') && /Apply To Me/i.test(studio), 'Layout Studio gallery is missing');
 must(studio.includes('daenem:close-layout-studio') && studio.includes('preview: true') && studio.includes('/api/experience/layout/preference'), 'real non-destructive preview/apply behavior is missing');
-must(main.includes('layoutPreviewPreference') && main.includes('effectiveLayoutPreference') && main.includes('daenem:layout-preview-exit'), 'preview state is not isolated from saved layout');
-must(zip.includes('layoutPreviewCanApply') && zip.includes('onApplyLayoutPreview') && main.includes('applyLayoutPreview') && main.includes('/api/experience/layout/preference'), 'active preview must provide an explicit Apply to Me action');
+retire('preview state is not isolated from saved layout', "Retired: asserts src/main.tsx wiring for the replaced ZIP/layout-engine shell; src/main.tsx now lazily mounts the approved V115 runtime (src/qa-review-v115-runtime.tsx), which has no layout-preview or ERP-resolution path.");
+retire('active preview must provide an explicit Apply to Me action', "Retired: asserts src/main.tsx wiring for the replaced ZIP/layout-engine shell; src/main.tsx now lazily mounts the approved V115 runtime (src/qa-review-v115-runtime.tsx), which has no layout-preview or ERP-resolution path.");
 must(studio.includes('rollback') && studio.includes('History'), 'layout rollback/history is missing');
-must(shell.includes('layoutProfile') && shell.includes('data-layout-profile') && shell.includes('postauth-layout.css'), 'authenticated shell is not connected to layout engine');
+retire('authenticated shell is not connected to layout engine', "Replaced by \"V115: main lazily mounts the approved post-login runtime with real auth context\" and \"V115: runtime root carries approved provenance and the snapshot stylesheet\".");
 must((zip.match(/qa-v115-home-hero/g) || []).length === 1, 'QA Review V115 home must render exactly one primary hero');
 must(home.includes('postauth-composition-kpis') && home.includes('{intelligence}{owner}{pulse') && !home.includes('{intelligence}{owner}{kpis}{pulse'), 'Owner Executive Command must render one primary KPI strip');
 must(zip.includes('data-primary-kpi-grid'), 'primary KPI strip must have a stable structural marker');
@@ -57,11 +62,11 @@ must(navigation.includes('data-navigation-adapter') && ['executive-command-sideb
 must(worker.includes('before') && worker.includes('after') && worker.includes('target') && worker.includes('restorable') && worker.includes("entry.scope === 'personal'") && worker.includes('rollback_personal'), 'scope-aware experience rollback is missing');
 must(!worker.includes("saveSetting(env, 'experience.layout.forced', JSON.stringify(next)"), 'personal rollback can still become a global forced layout');
 must(worker.includes('if (manage)') && worker.includes('response.policy = policy'), 'full experience policy is not restricted to managers');
-must(main.includes('activeErpId') && main.includes('ERP_BY_VIEW') && !main.includes('erpId=controls'), 'active ERP context is not used for experience resolution');
+retire('active ERP context is not used for experience resolution', "Retired: asserts src/main.tsx wiring for the replaced ZIP/layout-engine shell; src/main.tsx now lazily mounts the approved V115 runtime (src/qa-review-v115-runtime.tsx), which has no layout-preview or ERP-resolution path.");
 must(executive.includes('daenem:canonical-navigation') && !executive.includes('sidebar-functional-item') && !executive.includes('document.querySelector'), 'Owner Intelligence must use canonical navigation, not visual selectors');
-must(main.includes('daenem:canonical-navigation') && main.includes('isModuleVisible'), 'canonical navigation receiver is missing');
+retire('canonical navigation receiver is missing', "Moved to release-blocker gate POSTLOGIN-NAVIGATION-NOT-PERMISSION-DERIVED (scripts/check-staffportal-release-blockers.mjs): the V115 runtime derives navigation from role text, not isModuleVisible grants.");
 must(moduleBridge.includes('ModuleExperienceEnvelope') && moduleBridge.includes('data-module-context-ready') && hub.includes('daenem:module-experience'), 'canonical module experience bridge is missing');
-must(main.includes('resolveExperienceForErp') && hub.includes('resolveExperience') && hub.includes('await resolveExperience'), 'ERP experience must resolve before module initialization');
+retire('ERP experience must resolve before module initialization', "Retired: asserts src/main.tsx wiring for the replaced ZIP/layout-engine shell; src/main.tsx now lazily mounts the approved V115 runtime (src/qa-review-v115-runtime.tsx), which has no layout-preview or ERP-resolution path.");
 must(moduleBridgeCss.includes('--module-experience-surface-width') && moduleBridgeCss.includes('--module-experience-surface-padding') && moduleBridgeCss.includes('printing-shell') && moduleBridgeCss.includes('fin-shell'), 'shared ERP surface presentation tokens are missing');
 for (const entry of ['printing-entry.tsx','bakery-entry-v2.tsx','autos-entry.tsx','logistics-entry.tsx','properties-entry.tsx','finance-entry.tsx']) must(read('src/' + entry).includes('ModuleExperienceEnvelope'), entry + ' does not consume module experience');
 must(centers.includes('Assigned forms & submissions') && !main.includes('<h2>People, roles & payroll</h2>'), 'feature page heading ownership is duplicated');
@@ -85,3 +90,10 @@ const autosContext = autosContextStart >= 0 ? smartContext.slice(autosContextSta
 must(autosContext.includes('workshop-related records') && !/without workshop assumptions|sales only/i.test(autosContext), 'Autos Smart Context must describe the current workspace truthfully');
 must(docs.includes('Autos Workshop') && docs.includes('canonical') && docs.includes('Layout Studio'), 'consolidation map is incomplete');
 console.log('Post-auth layout foundation contract: PASS (10 shell adapters, scoped widgets, rollback safety)');
+
+// ---- Approved V115 post-login boundary (check-only; reads src/main.tsx and src/qa-review-v115-runtime.tsx) ----
+const v115Runtime = read('src/qa-review-v115-runtime.tsx');
+must(main.includes("const ApprovedPostLoginV115 = lazy(() => import('./qa-review-v115-runtime'));") && main.includes('<ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} />'), 'V115: main lazily mounts the approved post-login runtime with real auth context');
+must(v115Runtime.includes('data-approved-postlogin="qa-review-v115"') && v115Runtime.includes('<Portal />') && v115Runtime.includes("import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';") && v115Runtime.includes('data-export-archive-sha256={APPROVED_SOURCE.archiveSha256}'), 'V115: runtime root carries approved provenance and the snapshot stylesheet');
+console.log('V115_POSTLOGIN_BOUNDARY=PASS');
+for (const item of retired) console.log('RETIRED (not gating): ' + item.name + ' :: ' + item.reason);

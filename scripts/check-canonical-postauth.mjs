@@ -65,6 +65,11 @@ const packageJson = JSON.parse(read('package.json'));
 
 const quoted = (value) => `[\"']?${value}[\"']?`;
 
+// Retired assertions are recorded with a reason and never gate the build.
+const retired = [];
+function retire(name, reason) {
+  retired.push({ name, reason });
+}
 must(types.includes("StaffPortalLayoutId"), 'canonical layout type is missing');
 must(ids.every((id) => types.includes("'" + id + "'")), 'canonical type IDs are incomplete');
 must(ids.every((id) => new RegExp(quoted(id)).test(specs)), 'canonical layout specs are incomplete');
@@ -92,7 +97,7 @@ must(dashboard.includes('formatPersonName') && dashboard.includes('initialsFromP
 must(displayStandards.includes('export function formatPersonName') && displayStandards.includes('export function formatUiLabel') && displayStandards.includes('export function initialsFromPersonName'), 'display standards exports are incomplete');
 must(index.includes("export * from './display-standards';"), 'canonical index does not export display standards');
 must(fonts.includes("@fontsource-variable/inter/wght.css") && fonts.includes("@fontsource-variable/manrope/wght.css"), 'canonical font entry is incomplete');
-must(main.includes("import './canonical-postauth-v1/canonical-fonts';"), 'main does not import canonical fonts directly');
+retire('main does not import canonical fonts directly', "Replaced by \"V115: main keeps the frozen Sign-In stylesheet and pinned fonts\": main imports @fontsource-variable/inter and /manrope directly.");
 must(packageJson.dependencies?.['@fontsource-variable/inter'] === '5.3.0' && packageJson.dependencies?.['@fontsource-variable/manrope'] === '5.3.0', 'canonical font package versions are not pinned to 5.3.0');
 must(fixture.includes('VISUAL QA ONLY') && fixture.includes('Never use this fixture as production business truth'), 'fixture warning is missing');
 must(adapter.includes('import.meta.env.DEV && import.meta.env.VITE_CANONICAL_QA_FIXTURE === \'true\''), 'fixture mode is not development-only');
@@ -114,7 +119,7 @@ const authoredSub9 = [
   ...css.matchAll(/font\s*:\s*(?:normal\s+|italic\s+)?\d+\s+([\d.]+)px/g),
 ].filter((match) => Number(match[1]) < 9);
 must(authoredSub9.length === 0, 'canonical authored UI contains sub-9px text declarations: ' + authoredSub9.map((match) => match[0]).join(', '));
-must(main.indexOf("import './canonical-postauth-v1/canonical-dashboard.css';") > main.indexOf("import './postauth-readiness.css';"), 'canonical CSS is not loaded after legacy authenticated CSS');
+retire('canonical CSS is not loaded after legacy authenticated CSS', "Replaced by \"V115: no replaced-shell stylesheet is loaded on the authenticated boundary\": canonical-dashboard.css is not part of the V115 boundary.");
 must(dashboardEntry.includes('return <QaReviewPostAuthShell') && !dashboardEntry.includes('CanonicalStaffPortalAdapter'), 'QA Review V115 post-auth shell is not the sole authenticated boundary');
 must(!dashboardEntry.includes('return <main className={`dashboard-page'), 'legacy dashboard shell remains renderable');
 must(layoutSystem.includes("'master-detail': 'master-detail-workspace'"), 'accepted stored master-detail compatibility mapping is missing');
@@ -157,3 +162,9 @@ console.log('CANONICAL_FIXTURE_IS_DEV_ONLY=PASS');
 console.log('CANONICAL_REAL_DATA_ADAPTER=PASS');
 console.log('CANONICAL_CSS_PRIORITY=PASS');
 console.log('CANONICAL_OVERVIEW_BOUNDARY=PASS');
+
+// ---- Approved V115 boundary replacement (check-only) ----
+must(main.includes("import '@fontsource-variable/inter';") && main.includes("import '@fontsource-variable/manrope';"), 'V115: main keeps the frozen Sign-In stylesheet and pinned fonts');
+must(!main.includes('canonical-dashboard.css') && !main.includes('postauth-readiness.css'), 'V115: no replaced-shell stylesheet is loaded on the authenticated boundary');
+console.log('V115_FONTS_AND_STYLES=PASS');
+for (const item of retired) console.log('RETIRED (not gating): ' + item.name + ' :: ' + item.reason);
