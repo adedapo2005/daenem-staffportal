@@ -166,7 +166,7 @@ function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: D
 }
 
 function removePublicOwnerStudioLauncher(markup: string) {
-  return markup.replace(/<a\\b[^>]*data-owner-studio-launcher="sign-in"[^>]*>[\\s\\S]*?<\\/a>/, '');
+  return markup.replace(/<a\b[^>]*data-owner-studio-launcher="sign-in"[^>]*>[\s\S]*?<\/a>/, '');
 }
 const runtimeApprovedSignInMarkup = removePublicOwnerStudioLauncher(approvedSignInMarkup);
 
