@@ -728,7 +728,10 @@ export function normalizeSignInPreferences(value: unknown): SignInExperiencePref
 export function readSignInPreferences() {
   if (typeof window === 'undefined') return DEFAULT_SIGNIN_PREFERENCES;
   try {
-    return normalizeSignInPreferences(JSON.parse(localStorage.getItem(SIGNIN_PREFS_KEY) || 'null'));
+    const isStudioReview = new URLSearchParams(window.location.search).get('studioReview') === 'signin-v180';
+    const storage = isStudioReview ? sessionStorage : localStorage;
+    const key = isStudioReview ? 'daenem:signin-review-draft' : SIGNIN_PREFS_KEY;
+    return normalizeSignInPreferences(JSON.parse(storage.getItem(key) || 'null'));
   } catch {
     return DEFAULT_SIGNIN_PREFERENCES;
   }
