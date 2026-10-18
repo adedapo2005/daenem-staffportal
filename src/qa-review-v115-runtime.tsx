@@ -14,10 +14,20 @@ const APPROVED_SOURCE = {
 } as const;
 
 const STAGING_BUILD = {
+  release: '2026.10.17',
   commit: import.meta.env.VITE_STAFFPORTAL_BUILD_SHA || 'local-preview',
   branch: import.meta.env.VITE_STAFFPORTAL_BUILD_REF || 'local',
   runId: import.meta.env.VITE_STAFFPORTAL_BUILD_RUN_ID || '',
   deployedAt: import.meta.env.VITE_STAFFPORTAL_DEPLOYED_AT || '',
+  completedWork: [
+    'Printing sales-order and Finance handoff',
+    'Autos sale-truth concurrency protection',
+    'Theme preference and runtime routing hardening',
+    'Recruitment record workspace and scoped API',
+    'OneDrive company scope and OAuth token rotation',
+    'Payroll reconciliation and paid-truth guard',
+    'Owner Intelligence domain and company scoping',
+  ],
 } as const;
 
 function stagingDeploymentLabel() {
@@ -128,13 +138,18 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
             letterSpacing: '0.02em',
           }}
         >
-          STAGING · UI V{APPROVED_SOURCE.version} · {STAGING_BUILD.commit.slice(0, 7)} · {stagingDeploymentLabel()}
+          STAGING {STAGING_BUILD.release} · UI V{APPROVED_SOURCE.version} · {STAGING_BUILD.commit.slice(0, 7)} · {stagingDeploymentLabel()}
         </summary>
         <div style={{ borderTop: '1px solid rgba(15, 53, 74, 0.12)', padding: '10px 12px', fontWeight: 500 }}>
           <div><strong>Approved design:</strong> QA Review V{APPROVED_SOURCE.version}</div>
           <div><strong>Design source:</strong> {APPROVED_SOURCE.commit.slice(0, 7)} (Oct 5, 2026)</div>
+          <div><strong>Stage release:</strong> {STAGING_BUILD.release}</div>
           <div><strong>Stage commit:</strong> {STAGING_BUILD.commit}</div>
           <div><strong>Pushed to stage:</strong> {stagingDeploymentLabel()}</div>
+          <div style={{ marginTop: '8px' }}><strong>Completed work included:</strong></div>
+          <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
+            {STAGING_BUILD.completedWork.map((item) => <li key={item}>{item}</li>)}
+          </ul>
           {STAGING_BUILD.runId ? (
             <div><strong>GitHub run:</strong> {STAGING_BUILD.runId}</div>
           ) : null}
