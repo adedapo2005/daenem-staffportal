@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { BriefcaseBusiness, ClipboardCheck, FileText, UsersRound, X } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import { api, hasWorkforcePermission, type WorkforceContext } from './auth';
+import { RecruitmentWorkspace } from './jobs-recruitment-workspace';
+import './jobs-recruitment.css';
 
 function canAccess(context: WorkforceContext) {
-  return context.roles.some((role) => ['owner', 'group_admin'].includes(role.code)) || hasWorkforcePermission(context, 'jobs.access');
+  return context.employee.status === 'active' && context.companies.some((company) => hasWorkforcePermission(context, 'jobs.access', 'view', company.id));
 }
 
 function JobsWorkspace({ context, onClose }: { context: WorkforceContext; onClose: () => void }) {
@@ -45,7 +47,7 @@ function Launcher() {
     return () => { active = false; window.removeEventListener('focus', onFocus); };
   }, []);
   if (!context) return null;
-  return <><button className="jobs-erp-launcher" type="button" onClick={() => setOpen(true)}><BriefcaseBusiness size={18} /><span>Jobs ERP</span></button>{open && <JobsWorkspace context={context} onClose={() => setOpen(false)} />}</>;
+  return <><button className="jobs-erp-launcher" type="button" onClick={() => setOpen(true)}><BriefcaseBusiness size={18} /><span>Jobs ERP</span></button>{open && <RecruitmentWorkspace context={context} onClose={() => setOpen(false)} />}</>;
 }
 
 const host = document.createElement('div');
