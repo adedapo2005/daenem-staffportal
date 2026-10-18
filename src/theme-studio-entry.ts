@@ -495,11 +495,8 @@ function handleSignInAdminClick(event: Event) {
     return;
   }
   if (duplicate) {
-    signInConfig = cloneSignInConfigFrom(signInPublishedConfig);
     draftName = draftName || 'New Sign-In draft';
-    signInSaveState = 'draft';
-    writeReviewDraft();
-    renderSignInAdmin();
+    queueSignInConfigSave(cloneSignInConfigFrom(signInPublishedConfig));
     return;
   }
   if (reviewRefresh) {
