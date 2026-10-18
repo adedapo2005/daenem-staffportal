@@ -2,6 +2,7 @@ import { resolveMetaCredential, type MetaCredentialEnv } from './meta-credential
 
 export interface WeatherProviderEnv extends MetaCredentialEnv {
   SOCIAL_CACHE?: KVNamespace;
+  WEATHER_PROVIDER_ENABLED?: string;
 }
 
 const CACHE_TTL_SECONDS = 300;
@@ -22,7 +23,7 @@ export async function readWeatherConfiguration(env: WeatherProviderEnv): Promise
   try {
     const row = await env.DB.prepare("SELECT setting_value AS value FROM app_settings WHERE setting_key='experience.weather.organization' LIMIT 1")
       .first<{ value: string }>();
-    if (!row?.value) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
+    if (!row?.value) return { enabled: env.WEATHER_PROVIDER_ENABLED === 'true', defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
     const settings: unknown = JSON.parse(row.value);
     if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
     const value = settings as Record<string, unknown>;
