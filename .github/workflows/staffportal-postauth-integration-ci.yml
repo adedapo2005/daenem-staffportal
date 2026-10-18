@@ -1,0 +1,79 @@
+name: StaffPortal Post-auth Integration CI
+
+on:
+  push:
+    branches:
+      - "feature/staffportal-postauth-live-integrations-v116-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: staffportal-postauth-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify approved post-auth integrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Approved V115 source lock
+        run: node scripts/check-approved-experience-lock.mjs
+
+      - name: Post-auth live integration contract
+        run: npm run check:postauth-live
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+
+      - name: Diff hygiene
+        run: git diff --check
+
+      - name: Production safety gates
+        shell: bash
+        run: |
+          test "$(node -p "require('./delivery/current-state.json').farmsAccessAllowed")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionDeployAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').liveMetaAuthorized")" = "false"
+
+  report:
+    name: Publish post-auth status
+    if: always()
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Publish commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const state = '${{ needs.verify.result }}' === 'success' ? 'success' : 'failure';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state,
+              context: 'StaffPortal Post-auth CI / verify',
+              description: state === 'success' ? 'Post-auth integration gates passed' : 'Post-auth integration gates failed',
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
