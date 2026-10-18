@@ -34,6 +34,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate release contracts
+        run: |
+          node scripts/check-delivery-controller.mjs
+          node scripts/check-home-contract.mjs
+          npm run check:dashboard-permissions
+          npm run check:company-scoped-access
+          node scripts/check-v44-scoped-settings.mjs
+          node scripts/check-staffportal-staging-integration.mjs
+          npm run check:postauth-live
+
+      - name: Build and verify communications contracts
+        run: |
+          npx tsc worker/communications/index.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --types @cloudflare/workers-types --outDir .tmp-communications-test --rootDir . --noEmit false
+          node scripts/test-communications-contracts.mjs
+          npx tsc worker/communications-dispatch.ts worker/communications-webhook.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --types @cloudflare/workers-types --outDir .tmp-communications-remediation --rootDir . --noEmit false
+          node scripts/test-communications-remediation.mjs
+
+      - name: Assert production safety gates remain closed
+        shell: bash
+        run: |
+          test "$(node -p "require('./delivery/current-state.json').farmsAccessAllowed")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionDeployAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').liveMetaAuthorized")" = "false"
+
+
       - name: Build StaffPortal
         env:
           VITE_STAFFPORTAL_BUILD_SHA: ${{ github.sha }}
@@ -108,3 +134,8 @@ jobs:
         env:
           STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
         run: node scripts/test-staffportal-staging-runtime.mjs
+
+      - name: Verify versioned staging asset integrity
+        env:
+          STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
+        run: node scripts/test-staffportal-staging-assets.mjs
