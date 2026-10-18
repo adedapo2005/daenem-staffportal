@@ -1,0 +1,282 @@
+/*
+ * StaffPortal authenticated shell refinement.
+ *
+ * This is intentionally additive: it preserves the approved QA Review
+ * structure, palette, copy, widgets, permissions, and business actions while
+ * tightening the visual language around navigation, context, controls, and
+ * responsive interaction.
+ */
+.qa-v115-shell {
+  --staffportal-shell-radius: 14px;
+  --staffportal-shell-line: var(--qa-line);
+  --staffportal-shell-focus: #1ba7a0;
+}
+
+.qa-v115-shell :where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--staffportal-shell-focus) 32%, transparent);
+  outline-offset: 2px;
+}
+
+.qa-v115-sidebar {
+  gap: 20px;
+  padding: 24px 16px 18px;
+  scrollbar-color: #2d5b70 transparent;
+  scrollbar-width: thin;
+}
+
+.qa-v115-sidebar nav {
+  gap: 7px;
+  scrollbar-color: #2d5b70 transparent;
+  scrollbar-width: thin;
+}
+
+.qa-v115-nav-item {
+  position: relative;
+  min-height: 46px;
+  padding: 9px 11px;
+  border-radius: 12px;
+}
+
+.qa-v115-nav-item svg {
+  width: 17px;
+  height: 17px;
+  color: currentColor;
+  opacity: .94;
+}
+
+.qa-v115-nav-item:hover,
+.qa-v115-nav-item:focus-visible {
+  transform: translateX(2px);
+}
+
+.qa-v115-nav-item.active {
+  box-shadow: inset 3px 0 var(--qa-gold), 0 10px 22px #05162538;
+}
+
+.qa-v115-nav-item.active svg {
+  color: #176672;
+}
+
+.qa-v115-sidebar-bottom {
+  gap: 13px;
+  padding-top: 18px;
+}
+
+.qa-v115-user {
+  min-height: 52px;
+  border-radius: 14px;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+.qa-v115-user:hover,
+.qa-v115-user:focus-visible {
+  border-color: #3d7083;
+  background: #10314a;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px #06142338;
+}
+
+.qa-v115-main {
+  background: linear-gradient(180deg, #fbfdfe 0%, #f7fafb 38%, #f4f8fa 100%);
+}
+
+.qa-v115-topbar {
+  min-height: 78px;
+  padding-inline: 26px;
+  box-shadow: 0 8px 20px #12354a08;
+}
+
+.qa-v115-command {
+  min-height: 46px;
+  border-radius: 14px;
+  background: #f8fbfc;
+  box-shadow: inset 0 1px 0 #ffffff, 0 4px 12px #12354a07;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.qa-v115-command:hover,
+.qa-v115-command:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px #12354a12, 0 0 0 4px #1ba7a014;
+}
+
+.qa-v115-command-orb {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+}
+
+.qa-v115-top-action,
+.qa-v115-profile {
+  min-height: 40px;
+  border-radius: 11px;
+}
+
+.qa-v115-top-action.qa-v115-chip {
+  padding-inline: 11px;
+}
+
+.qa-v115-context {
+  padding-top: 26px;
+}
+
+.qa-v115-breadcrumb {
+  min-height: 28px;
+  margin-bottom: 16px;
+}
+
+.qa-v115-breadcrumb button {
+  min-height: 28px;
+  padding-inline: 7px;
+  border-radius: 7px;
+}
+
+.qa-v115-breadcrumb button:hover,
+.qa-v115-breadcrumb button:focus-visible {
+  background: var(--qa-teal-soft);
+  color: #1e686b;
+}
+
+.qa-v115-heading {
+  padding: 20px 22px;
+  border-radius: 20px;
+  box-shadow: 0 14px 30px #12354a0d;
+}
+
+.qa-v115-heading-action {
+  align-items: center;
+}
+
+.qa-v115-btn {
+  min-height: 40px;
+  border-radius: 11px;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.qa-v115-btn:hover,
+.qa-v115-btn:focus-visible {
+  transform: translateY(-1px);
+}
+
+.qa-v115-preview {
+  min-height: 36px;
+  margin-top: 14px;
+  border-radius: 11px;
+  box-shadow: 0 5px 14px #12354a06;
+}
+
+.qa-v115-content {
+  padding-top: 20px;
+}
+
+.qa-v115-panel {
+  border-radius: 18px;
+  box-shadow: 0 12px 26px #12354a0b;
+}
+
+.qa-v115-panel > :last-child {
+  margin-bottom: 0;
+}
+
+.qa-v115-home-hero {
+  border-radius: 22px;
+  box-shadow: 0 22px 42px #08243a30;
+}
+
+.qa-v115-home-grid {
+  gap: 20px;
+}
+
+.qa-v115-main-column,
+.qa-v115-rail {
+  gap: 20px;
+}
+
+.qa-v115-shell .kpi-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 22px #12354a0b;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.qa-v115-shell .kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: #b7d5dc;
+  box-shadow: 0 14px 26px #12354a12;
+}
+
+.qa-v115-footer {
+  padding-block: 16px;
+}
+
+@media (max-width: 1100px) {
+  .qa-v115-topbar {
+    padding-inline: 20px;
+  }
+
+  .qa-v115-context,
+  .qa-v115-content {
+    padding-inline: 20px;
+  }
+}
+
+@media (max-width: 820px) {
+  .qa-v115-sidebar {
+    padding: 22px 15px 18px;
+  }
+
+  .qa-v115-topbar {
+    min-height: 70px;
+    padding-inline: 14px;
+  }
+
+  .qa-v115-context {
+    padding-top: 20px;
+  }
+
+  .qa-v115-heading {
+    border-radius: 18px;
+  }
+
+  .qa-v115-mobile-nav {
+    box-shadow: 0 -8px 20px #12354a0b;
+  }
+}
+
+@media (max-width: 600px) {
+  .qa-v115-topbar {
+    gap: 10px;
+  }
+
+  .qa-v115-command {
+    min-height: 42px;
+    padding-inline: 10px;
+  }
+
+  .qa-v115-heading {
+    padding: 18px;
+  }
+
+  .qa-v115-heading-action,
+  .qa-v115-heading-action .qa-v115-btn {
+    width: 100%;
+  }
+
+  .qa-v115-home-grid,
+  .qa-v115-main-column,
+  .qa-v115-rail {
+    gap: 14px;
+  }
+
+  .qa-v115-panel {
+    padding: 16px;
+    border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-v115-shell *,
+  .qa-v115-shell *::before,
+  .qa-v115-shell *::after {
+    transition-duration: .001ms !important;
+  }
+}
