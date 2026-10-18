@@ -55,20 +55,25 @@ type WeatherContext = {
 type MountTargets = {
   dashboard: HTMLElement | null;
   weather: HTMLElement | null;
+  constructionToolbar: HTMLElement | null;
+  constructionMain: HTMLElement | null;
 };
 
 const IBADAN_WEATHER_QUERY = 'lat=7.3775&lon=3.9470&unitsSystem=METRIC';
 
 function useMountTargets() {
-  const [targets, setTargets] = useState<MountTargets>({ dashboard: null, weather: null });
+  const [targets, setTargets] = useState<MountTargets>({ dashboard: null, weather: null, constructionToolbar: null, constructionMain: null });
 
   useEffect(() => {
     const locate = () => {
       const dashboard = document.querySelector<HTMLElement>('.tech-dashboard-grid');
       const weather = document.querySelector<HTMLElement>('.home-weather');
-      setTargets((current) => current.dashboard === dashboard && current.weather === weather
+      const constructionToolbar = document.querySelector<HTMLElement>('#main-content .c16-toolbar');
+      const constructionMain = constructionToolbar?.closest<HTMLElement>('#main-content') || null;
+      setTargets((current) => current.dashboard === dashboard && current.weather === weather &&
+        current.constructionToolbar === constructionToolbar && current.constructionMain === constructionMain
         ? current
-        : { dashboard, weather });
+        : { dashboard, weather, constructionToolbar, constructionMain });
     };
     locate();
     const observer = new MutationObserver(locate);
@@ -233,12 +238,28 @@ function WeatherWidget({ weather, loading, onRefresh }: {
   );
 }
 
+function ConstructionViewToggle({ simple, onToggle }: { simple: boolean; onToggle: () => void }) {
+  return (
+    <button
+      className="v116-construction-view-toggle"
+      type="button"
+      aria-pressed={simple}
+      aria-label={simple ? 'Show full Construction detail' : 'Use simplified Construction view'}
+      onClick={onToggle}
+    >
+      <BriefcaseBusiness size={15} aria-hidden="true" />
+      <span>{simple ? 'Full detail' : 'Simple view'}</span>
+    </button>
+  );
+}
+
 export default function LivePostLoginEnhancementsV116() {
   const targets = useMountTargets();
   const [context, setContext] = useState<PostLoginContext | null>(null);
   const [weather, setWeather] = useState<WeatherContext | null>(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [loadingWeather, setLoadingWeather] = useState(false);
+  const [constructionSimple, setConstructionSimple] = useState(true);
 
   const loadContext = useCallback(async () => {
     setLoadingContext(true);
@@ -268,6 +289,13 @@ export default function LivePostLoginEnhancementsV116() {
   }, [loadContext, loadWeather]);
 
   useEffect(() => {
+    const main = targets.constructionMain;
+    if (!main) return;
+    main.dataset.constructionView = constructionSimple ? 'simple' : 'full';
+    return () => { delete main.dataset.constructionView; };
+  }, [targets.constructionMain, constructionSimple]);
+
+  useEffect(() => {
     const button = document.querySelector<HTMLButtonElement>('button.p-weather-chip[aria-label^="Open Weather status"]');
     if (!button || weather?.available !== true || weather.temperature == null) return;
     const temperature = Math.round(weather.temperature);
@@ -291,6 +319,10 @@ export default function LivePostLoginEnhancementsV116() {
     <>
       {targets.dashboard ? createPortal(dashboardWidgets, targets.dashboard) : null}
       {targets.weather ? createPortal(<WeatherWidget weather={weather} loading={loadingWeather} onRefresh={loadWeather} />, targets.weather) : null}
+      {targets.constructionToolbar ? createPortal(
+        <ConstructionViewToggle simple={constructionSimple} onToggle={() => setConstructionSimple((value) => !value)} />,
+        targets.constructionToolbar,
+      ) : null}
     </>
   );
 }
