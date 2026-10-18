@@ -1,4 +1,4 @@
-import { useMemo, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, type MouseEvent as ReactMouseEvent } from 'react';
 import type { WorkforceContext } from './auth';
 import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal';
 import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/security-contract';
@@ -86,6 +86,23 @@ function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
 
 export default function ApprovedPostLoginV115({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
   const session = useMemo(() => sessionFor(context), [context]);
+
+  useEffect(() => {
+    const updateReleaseChip = () => {
+      const chip = document.querySelector<HTMLElement>('[data-version-state="saved"]');
+      if (!chip) return;
+      const label = `V${APPROVED_SOURCE.version} · 10/17`;
+      const text = chip.querySelector<HTMLElement>('span');
+      if (text && text.textContent !== label) text.textContent = label;
+      const ariaLabel = `Open Release Details, approved UI V${APPROVED_SOURCE.version}, staging ${STAGING_BUILD.release}`;
+      if (chip.getAttribute('aria-label') !== ariaLabel) chip.setAttribute('aria-label', ariaLabel);
+      chip.dataset.stageRelease = STAGING_BUILD.release;
+    };
+    updateReleaseChip();
+    const observer = new MutationObserver(updateReleaseChip);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   if (typeof window !== 'undefined') {
     sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
