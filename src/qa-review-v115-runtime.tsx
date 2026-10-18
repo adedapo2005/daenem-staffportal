@@ -13,6 +13,28 @@ const APPROVED_SOURCE = {
   archiveSha256: 'c52773eb05c01be8fb84810b4c2cc3b42e73416e02d71372f5046cef9dea2fb4',
 } as const;
 
+const STAGING_BUILD = {
+  commit: import.meta.env.VITE_STAFFPORTAL_BUILD_SHA || 'local-preview',
+  branch: import.meta.env.VITE_STAFFPORTAL_BUILD_REF || 'local',
+  runId: import.meta.env.VITE_STAFFPORTAL_BUILD_RUN_ID || '',
+  deployedAt: import.meta.env.VITE_STAFFPORTAL_DEPLOYED_AT || '',
+} as const;
+
+function stagingDeploymentLabel() {
+  if (!STAGING_BUILD.deployedAt) return 'Deployment time unavailable';
+  const value = new Date(STAGING_BUILD.deployedAt);
+  if (Number.isNaN(value.getTime())) return STAGING_BUILD.deployedAt;
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(value);
+}
+
 function companyFor(context: WorkforceContext): Company {
   const company = context.companies.find((item) => item.primary) || context.companies[0];
   const value = `${company?.code || ''} ${company?.name || ''}`.toLowerCase();
@@ -70,6 +92,9 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       data-source-commit={APPROVED_SOURCE.commit}
       data-export-file-count={APPROVED_SOURCE.exportFiles}
       data-export-archive-sha256={APPROVED_SOURCE.archiveSha256}
+      data-staging-build-commit={STAGING_BUILD.commit}
+      data-staging-build-branch={STAGING_BUILD.branch}
+      data-staging-deployed-at={STAGING_BUILD.deployedAt}
       onClickCapture={(event) => {
         if (!isConfirmedSignOut(event)) return;
         event.preventDefault();
@@ -78,6 +103,43 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       }}
     >
       <Portal />
+      <details
+        aria-label="StaffPortal staging deployment details"
+        style={{
+          position: 'fixed',
+          right: '12px',
+          bottom: '12px',
+          zIndex: 2147483000,
+          maxWidth: 'min(360px, calc(100vw - 24px))',
+          border: '1px solid rgba(15, 53, 74, 0.18)',
+          borderRadius: '12px',
+          background: 'rgba(255, 255, 255, 0.96)',
+          boxShadow: '0 12px 34px rgba(11, 48, 71, 0.16)',
+          color: '#10374b',
+          font: '600 11px/1.35 Inter, system-ui, sans-serif',
+          backdropFilter: 'blur(14px)',
+        }}
+      >
+        <summary
+          style={{
+            cursor: 'pointer',
+            listStyle: 'none',
+            padding: '9px 12px',
+            letterSpacing: '0.02em',
+          }}
+        >
+          STAGING · UI V{APPROVED_SOURCE.version} · {STAGING_BUILD.commit.slice(0, 7)} · {stagingDeploymentLabel()}
+        </summary>
+        <div style={{ borderTop: '1px solid rgba(15, 53, 74, 0.12)', padding: '10px 12px', fontWeight: 500 }}>
+          <div><strong>Approved design:</strong> QA Review V{APPROVED_SOURCE.version}</div>
+          <div><strong>Design source:</strong> {APPROVED_SOURCE.commit.slice(0, 7)} (Oct 5, 2026)</div>
+          <div><strong>Stage commit:</strong> {STAGING_BUILD.commit}</div>
+          <div><strong>Pushed to stage:</strong> {stagingDeploymentLabel()}</div>
+          {STAGING_BUILD.runId ? (
+            <div><strong>GitHub run:</strong> {STAGING_BUILD.runId}</div>
+          ) : null}
+        </div>
+      </details>
     </div>
   );
 }
