@@ -107,19 +107,36 @@ const output = ts.transpileModule(source, { compilerOptions: { module: ts.Module
 const module = { exports: {} };
 new Function('exports', 'require', 'module', output)(module.exports, (specifier) => {
   assert.equal(specifier, './auth');
-  return { hasPermission: () => true };
+  return { hasPermission: (candidate, code, minimum, targetCompanyId) => {
+    assert.equal(targetCompanyId, 'company-printing');
+    const levels = ['none', 'view', 'create', 'edit', 'approve', 'manage'];
+    const granted = candidate.companyPermissions?.[targetCompanyId]?.[code] || 'none';
+    return levels.indexOf(granted) >= levels.indexOf(minimum);
+  } };
 }, module);
 const route = module.exports.routePrintingProduction;
 const financeSource = await readFile(new URL('../worker/finance-sales-autopost.ts', import.meta.url), 'utf8');
 const financeOutput = ts.transpileModule(financeSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { postFulfilledSalesOrder } = await import(`data:text/javascript;base64,${Buffer.from(financeOutput).toString('base64')}`);
-const context = { employee: { id: 'employee-a' } };
+const context = { employee: { id: 'employee-a' }, companyPermissions: { 'company-printing': { 'printing.access': 'approve' } } };
+const editOnly = { employee: { id: 'employee-edit' }, companyPermissions: { 'company-printing': { 'printing.access': 'edit' } } };
+const owner = { employee: { id: 'employee-owner' }, roles: [{ code: 'owner' }], companyPermissions: { 'company-printing': { 'printing.access': 'manage' } } };
+const otherCompanyApprover = { employee: { id: 'employee-other' }, companyPermissions: { 'company-bakery': { 'printing.access': 'approve' } } };
 const statusRequest = (jobId, toStatus, requestId) => new Request('https://staffportal.test/api/printing/jobs/status', {
   method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': requestId },
   body: JSON.stringify({ jobId, toStatus }),
 });
 
-let response = await route(statusRequest('job-a', 'customer_approved', 'request-approval'), env, context);
+let response = await route(statusRequest('job-a', 'customer_approved', 'request-edit-approval'), env, editOnly);
+assert.equal(response.status, 403, 'Printing Edit cannot approve a quoted job');
+assert.doesNotMatch(await response.text(), /print-order-job-a|salesOrderId/);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE id='print-order-job-a'").get().n, 0);
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-a'").get().production_status, 'quoted');
+response = await route(statusRequest('job-a', 'customer_approved', 'request-other-company'), env, otherCompanyApprover);
+assert.equal(response.status, 403, 'approval in another company cannot approve a Printing job');
+assert.doesNotMatch(await response.text(), /print-order-job-a|salesOrderId/);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE id='print-order-job-a'").get().n, 0);
+response = await route(statusRequest('job-a', 'customer_approved', 'request-approval'), env, context);
 assert.equal(response.status, 200);
 const approval = await response.json();
 assert.equal(approval.salesOrderId, 'print-order-job-a');
@@ -129,6 +146,14 @@ assert.deepEqual({ ...db.prepare('SELECT status,payment_status,total_kobo,amount
 assert.equal(db.prepare('SELECT COUNT(*) AS n FROM sales_order_items WHERE sales_order_id=?').get(approval.salesOrderId).n, 1);
 assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE action='customer_approved_order_link'").get().request_id, 'request-approval');
 
+response = await route(statusRequest('job-a', 'customer_approved', 'request-edit-replay'), env, editOnly);
+assert.equal(response.status, 403, 'Printing Edit cannot replay an approval or receive its linked order');
+assert.doesNotMatch(await response.text(), /print-order-job-a|salesOrderId/);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-a' AND action='customer_approved_order_link'").get().n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-a' AND to_status='customer_approved'").get().n, 1);
+response = await route(statusRequest('job-a', 'customer_approved', 'request-owner-replay'), env, owner);
+assert.equal(response.status, 200, 'Owner retains authorized approval retry');
+assert.equal((await response.json()).salesOrderId, approval.salesOrderId);
 response = await route(statusRequest('job-a', 'customer_approved', 'request-replay'), env, context);
 assert.equal(response.status, 200, 'valid approval retry resolves the canonical order');
 assert.equal((await response.json()).salesOrderId, approval.salesOrderId);
