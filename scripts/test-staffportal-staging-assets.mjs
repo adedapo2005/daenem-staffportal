@@ -35,7 +35,8 @@ async function verifyOnce() {
     for (const match of text.matchAll(assetPattern)) {
       const value = match[0];
       const url = new URL(value.startsWith('assets/') ? `/${value}` : value, parent);
-      if (url.origin === base.origin && !checked.has(url.pathname)) queue.push(url);
+      // Native sign-in originals are provenance-only and intentionally not deployed.
+      if (url.origin === base.origin && !url.pathname.includes('/assets/signin-native/') && !checked.has(url.pathname)) queue.push(url);
     }
   };
   addReferences(rootHtml, root);
