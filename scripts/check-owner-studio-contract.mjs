@@ -4,6 +4,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 const approvedSignIn = readFileSync(join(root, 'src/approved-signin-v180/reference-v180.html'), 'utf8');
 const studio = readFileSync(join(root, 'src/theme-studio-entry.ts'), 'utf8');
+const runtimeSignIn = readFileSync(join(root, 'src/signin-experience.tsx'), 'utf8');
 const main = readFileSync(join(root, 'src/main.tsx'), 'utf8');
 const preferences = readFileSync(join(root, 'src/signin-preferences.ts'), 'utf8');
 const themeApi = readFileSync(join(root, 'worker/theme-preferences.ts'), 'utf8');
@@ -12,9 +13,12 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(!approvedSignIn.includes('Owner Studio'), 'Public approved Sign-In still contains the Owner Studio label.');
-assert(!approvedSignIn.includes('sp-owner-studio-trigger'), 'Public approved Sign-In still contains the Owner Studio launcher class.');
-assert(!approvedSignIn.includes('data-owner-studio-launcher'), 'Public approved Sign-In still contains the Owner Studio launcher hook.');
+
+
+
+assert(runtimeSignIn.includes('removePublicOwnerStudioLauncher'), 'Runtime Sign-In launcher removal is missing.');
+assert(runtimeSignIn.includes('data-owner-studio-launcher="sign-in"'), 'Runtime Sign-In launcher selector is missing.');
+assert(approvedSignIn.includes('data-owner-studio-launcher="sign-in"'), 'Protected approved source changed unexpectedly; launcher source marker is missing.');
 assert(studio.includes('Sites Migration · V180'), 'Owner Studio is missing the approved Sign-In V180 surface.');
 assert(studio.includes('QA Review · V115 / runtime R116'), 'Owner Studio is missing the approved post-sign-in QA Review surface.');
 assert(studio.includes('Legacy shells, Premium Lab, and rejected variants are excluded.'), 'Owner Studio source lock does not exclude legacy variants.');

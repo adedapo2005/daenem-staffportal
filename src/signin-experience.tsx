@@ -165,8 +165,13 @@ function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: D
   image.alt = `${city} at ${phase} (${media.mediaPhase} media)`;
 }
 
+function removePublicOwnerStudioLauncher(markup: string) {
+  return markup.replace(/<a\b[^>]*data-owner-studio-launcher="sign-in"[^>]*>[\s\S]*?<\/a>/, '');
+}
+const runtimeApprovedSignInMarkup = removePublicOwnerStudioLauncher(approvedSignInMarkup);
+
 const ApprovedSignInSource = memo(forwardRef<HTMLDivElement>(function ApprovedSignInSource(_, ref) {
-  return <div ref={ref} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: approvedSignInMarkup }} />;
+  return <div ref={ref} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: runtimeApprovedSignInMarkup }} />;
 }));
 
 function updateReferenceClocks(root: HTMLElement, now: Date) {
