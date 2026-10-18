@@ -4,6 +4,7 @@ import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/
 import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/security-contract';
 import type { Company, Session } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
 import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';
+import './postlogin-premium-refinement-v1.css';
 import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
 
 const APPROVED_SOURCE = {
