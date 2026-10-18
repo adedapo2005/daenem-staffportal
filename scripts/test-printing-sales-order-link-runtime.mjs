@@ -175,6 +175,39 @@ assert.equal(response.status, 409, 'cross-company linked order replay is rejecte
 assert.doesNotMatch(await response.text(), /foreign-order|company-bakery/);
 
 db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-audit-ignore-approval','company-printing','location-a','DP-I','Ignored audit',1,2500,'quoted')`).run();
+db.exec(`CREATE TRIGGER ignore_print_approval_audit BEFORE INSERT ON audit_logs
+  WHEN NEW.action='customer_approved_order_link' BEGIN SELECT RAISE(IGNORE); END`);
+await assert.rejects(route(statusRequest('job-audit-ignore-approval', 'customer_approved', 'request-audit-ignore-approval'), env, context),
+  /NOT NULL constraint failed|constraint failed/i,
+  'an ignored required approval audit must abort and roll back the order link');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE notes='Printing job job-audit-ignore-approval'").get().n, 0);
+assert.deepEqual({ ...db.prepare("SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-audit-ignore-approval'").get() }, {
+  production_status: 'quoted', sales_order_id: null,
+});
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-audit-ignore-approval'").get().n, 0);
+db.exec('DROP TRIGGER ignore_print_approval_audit');
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-audit-ignore-complete','company-printing','location-a','DP-J','Ignored completion audit',1,3500,'quoted')`).run();
+response = await route(statusRequest('job-audit-ignore-complete', 'customer_approved', 'request-ignore-complete-approval'), env, context);
+assert.equal(response.status, 200);
+const ignoredAuditOrder = (await response.json()).salesOrderId;
+db.prepare("UPDATE print_jobs SET production_status='delivered' WHERE id='job-audit-ignore-complete'").run();
+db.prepare("INSERT INTO print_job_materials VALUES('job-audit-ignore-complete',1,0,0)").run();
+db.prepare("INSERT INTO print_delivery_records VALUES('job-audit-ignore-complete',CURRENT_TIMESTAMP)").run();
+db.exec(`CREATE TRIGGER ignore_print_completion_audit BEFORE INSERT ON audit_logs
+  WHEN NEW.action='completed_sales_order_eligible' BEGIN SELECT RAISE(IGNORE); END`);
+await assert.rejects(route(statusRequest('job-audit-ignore-complete', 'completed', 'request-audit-ignore-complete'), env, context),
+  /NOT NULL constraint failed|constraint failed/i,
+  'an ignored required completion audit must abort and roll back the eligible sale');
+assert.equal(db.prepare('SELECT status FROM sales_orders WHERE id=?').get(ignoredAuditOrder).status, 'approved');
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-audit-ignore-complete'").get().production_status, 'delivered');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-audit-ignore-complete' AND to_status='completed'").get().n, 0);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-audit-ignore-complete' AND action='completed_sales_order_eligible'").get().n, 0);
+db.exec('DROP TRIGGER ignore_print_completion_audit');
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quantity,quoted_kobo,production_status)
   VALUES('job-audit-fail','company-printing','location-a','DP-F','Audit failure',1,2500,'quoted')`).run();
 db.exec(`CREATE TRIGGER reject_print_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'audit unavailable'); END`);
 await assert.rejects(route(statusRequest('job-audit-fail', 'customer_approved', 'request-audit-fail'), env, context), /audit unavailable/,
