@@ -20,7 +20,6 @@ type State = { provider: Provider; state: string; verifier: string; expiresAt: n
 const encoder = new TextEncoder();
 const cookieName = 'daenem_staffportal_oauth_state';
 const ttl = 600;
-const stageSecret = 'bootstrap-stage-only-change-before-production';
 
 function json(body: Record<string, unknown>, status = 200) {
   const headers = new Headers({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -40,7 +39,7 @@ function token(size = 32) { return b64(randomBytes(size)); }
 async function sha(value: string) { return new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(value))); }
 async function shaHex(value: string) { return [...await sha(value)].map((byte) => byte.toString(16).padStart(2, '0')).join(''); }
 async function hmacKey(env: ProviderAuthEnv) {
-  const secret = env.AUTH_PEPPER || (env.APP_STAGE === 'production' ? '' : stageSecret);
+  const secret = env.AUTH_PEPPER || '';
   if (!secret) throw new Error('AUTH_PEPPER is not configured for production.');
   return crypto.subtle.importKey('raw', encoder.encode(secret + ':staffportal-oauth-state'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
 }
@@ -151,7 +150,8 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
   if (query.get('error')) return failure(request, provider, 'provider_denied');
   const code = query.get('code'); const incomingState = query.get('state'); const signedState = readCookie(request, cookieName);
   if (!code || !incomingState || !signedState) return failure(request, provider, 'invalid_oauth_response');
-  const state = await verifyState(env, signedState);
+  let state: State | null = null;
+  try { state = await verifyState(env, signedState); } catch { return failure(request, provider, 'invalid_oauth_state'); }
   if (!state || state.provider !== provider || state.state !== incomingState) return failure(request, provider, 'invalid_oauth_state');
   const current = config(env, provider);
   if (!current) return failure(request, provider, 'oauth_not_configured');
