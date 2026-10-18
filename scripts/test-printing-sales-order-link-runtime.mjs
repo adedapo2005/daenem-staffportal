@@ -40,6 +40,29 @@ db.exec(`
   CREATE TABLE employee_company_memberships(employee_id TEXT,company_id TEXT,active INTEGER);
   CREATE TABLE employees(id TEXT,display_name TEXT);
   CREATE TABLE app_settings(setting_key TEXT,setting_value TEXT);
+  CREATE TABLE finance_accounts(id TEXT PRIMARY KEY, company_id TEXT NOT NULL, code TEXT NOT NULL, active INTEGER NOT NULL);
+  CREATE TABLE fiscal_periods(id TEXT PRIMARY KEY, company_id TEXT NOT NULL, status TEXT NOT NULL,
+    name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+  CREATE TABLE journal_entries(id TEXT PRIMARY KEY, company_id TEXT NOT NULL, fiscal_period_id TEXT NOT NULL,
+    entry_no TEXT NOT NULL, entry_date TEXT NOT NULL, description TEXT NOT NULL, source_module TEXT NOT NULL,
+    source_type TEXT NOT NULL, source_id TEXT NOT NULL, status TEXT NOT NULL, prepared_by TEXT,
+    approved_by TEXT, approved_at TEXT, posted_at TEXT);
+  CREATE TABLE journal_lines(id TEXT PRIMARY KEY, journal_entry_id TEXT NOT NULL, account_id TEXT NOT NULL,
+    description TEXT, debit_kobo INTEGER NOT NULL, credit_kobo INTEGER NOT NULL, customer_id TEXT);
+  CREATE TABLE finance_receivables(id TEXT PRIMARY KEY, company_id TEXT NOT NULL, customer_name TEXT NOT NULL,
+    customer_ref TEXT, invoice_no TEXT, source_module TEXT NOT NULL, source_id TEXT NOT NULL,
+    invoice_date TEXT NOT NULL, due_date TEXT, amount_kobo INTEGER NOT NULL, paid_kobo INTEGER NOT NULL,
+    balance_kobo INTEGER NOT NULL, status TEXT NOT NULL, notes TEXT, created_by TEXT);
+  CREATE TABLE finance_source_postings(id TEXT PRIMARY KEY, company_id TEXT NOT NULL, source_module TEXT NOT NULL,
+    source_type TEXT NOT NULL, source_id TEXT NOT NULL, journal_entry_id TEXT, receivable_id TEXT,
+    posted_amount_kobo INTEGER NOT NULL, cost_amount_kobo INTEGER NOT NULL, status TEXT NOT NULL,
+    error_text TEXT, posted_at TEXT NOT NULL, UNIQUE(company_id,source_module,source_type,source_id));
+  INSERT INTO customers(id,company_id,name,business_name) VALUES('customer-a','company-printing','Customer A',NULL);
+  INSERT INTO finance_accounts VALUES
+    ('cash-a','company-printing','1000',1),('ar-a','company-printing','1100',1),
+    ('inventory-a','company-printing','1200',1),('revenue-a','company-printing','4000',1),
+    ('cogs-a','company-printing','5000',1);
+  INSERT INTO fiscal_periods VALUES('period-a','company-printing','open','Current period',date('now','start of month'),date('now','start of month','+1 month','-1 day'));
   CREATE TABLE print_job_materials(print_job_id TEXT,actual_quantity REAL,waste_quantity REAL,unit_cost_kobo INTEGER);
   CREATE TABLE print_finishing_records(print_job_id TEXT,cost_kobo INTEGER,result TEXT);
   CREATE TABLE print_delivery_records(print_job_id TEXT,delivered_at TEXT);
@@ -84,6 +107,9 @@ new Function('exports', 'require', 'module', output)(module.exports, (specifier)
   return { hasPermission: () => true };
 }, module);
 const route = module.exports.routePrintingProduction;
+const financeSource = await readFile(new URL('../worker/finance-sales-autopost.ts', import.meta.url), 'utf8');
+const financeOutput = ts.transpileModule(financeSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const { postFulfilledSalesOrder } = await import(`data:text/javascript;base64,${Buffer.from(financeOutput).toString('base64')}`);
 const context = { employee: { id: 'employee-a' } };
 const statusRequest = (jobId, toStatus, requestId) => new Request('https://staffportal.test/api/printing/jobs/status', {
   method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': requestId },
@@ -112,6 +138,15 @@ assert.deepEqual({ ...db.prepare('SELECT status,payment_status,total_kobo,amount
   status: 'completed', payment_status: 'unpaid', total_kobo: 125000, amount_paid_kobo: 0,
 });
 assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE action='completed_sales_order_eligible'").get().request_id, 'request-complete');
+const financePosting = await postFulfilledSalesOrder(env, approval.salesOrderId);
+assert.equal(financePosting.posted, true, 'a completed Printing order enters canonical Finance posting');
+assert.equal(financePosting.paidKobo, 0, 'Printing completion cannot fabricate customer payment evidence');
+assert.equal(financePosting.balanceKobo, 125000);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM finance_source_postings WHERE company_id='company-printing' AND source_module='sales' AND source_type='sales_order' AND source_id=? AND status='posted'").get(approval.salesOrderId).n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM finance_receivables WHERE company_id='company-printing' AND source_id=? AND amount_kobo=125000 AND paid_kobo=0 AND balance_kobo=125000").get(approval.salesOrderId).n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM journal_entries WHERE company_id='company-printing' AND source_module='sales' AND source_id=? AND status='posted'").get(approval.salesOrderId).n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM journal_lines WHERE account_id='ar-a' AND debit_kobo=125000 AND credit_kobo=0").get().n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM journal_lines WHERE account_id='cash-a'").get().n, 0, 'unverified payment must not be journaled as cash');
 
 db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quantity,quoted_kobo,production_status)
   VALUES('job-race','company-printing','location-a','DP-R','Concurrent approval',20,64000,'quoted')`).run();
