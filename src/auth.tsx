@@ -438,6 +438,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [whatsAppSignInChallenge, setWhatsAppSignInChallenge] = useState('');
   const [whatsAppSignInDestination, setWhatsAppSignInDestination] = useState('');
   const [whatsAppSignInCode, setWhatsAppSignInCode] = useState('');
+  const [whatsAppPhoneMode, setWhatsAppPhoneMode] = useState(false);
+  const [whatsAppPhone, setWhatsAppPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [themeId] = useState<ThemeId>(() => readThemeId());
@@ -695,6 +697,30 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
+  async function startWhatsAppPhoneLogin() {
+    if(!whatsAppPhone.trim()) return;
+    setBusy(true);setMessage(null);
+    try {
+      const result=await api<{challengeId?:string;destination?:string;message:string}>('/api/auth/login/whatsapp/start',{
+        method:'POST',body:JSON.stringify({phone:whatsAppPhone,...deviceIdentity()})
+      });
+      setWhatsAppSignInChallenge(result.challengeId||'');
+      setWhatsAppSignInDestination(result.destination||'your enrolled WhatsApp contact');
+      setWhatsAppSignInCode('');
+      setMessage({type:'info',text:result.message});
+    } catch(e) {setMessage({type:'error',text:(e as Error).message});}
+    finally {setBusy(false);}
+  }
+  async function verifyWhatsAppPhoneLogin() {
+    setBusy(true);setMessage(null);
+    try {
+      await api('/api/auth/login/whatsapp/verify',{method:'POST',body:JSON.stringify({challengeId:whatsAppSignInChallenge,code:whatsAppSignInCode})});
+      const me=await api<{authenticated:boolean;context?:WorkforceContext}>('/api/auth/me');
+      if(!me.authenticated||!me.context)throw new Error('Your secure session could not be established.');
+      setWhatsAppSignInCode('');setWhatsAppSignInChallenge('');onAuthenticated(me.context);
+    }catch(e){setMessage({type:'error',text:(e as Error).message});}
+    finally{setBusy(false);}
+  }
   async function startWhatsAppSignIn() {
     setBusy(true);
     setMessage(null);
@@ -888,12 +914,13 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <div className="sp-auth-options"><label className="sp-remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Remember Me</span></label><button type="button" className="sp-forgot" onClick={() => switchMode('forgot')}><KeyRound size={14} /> Forgot Password?</button></div>
         <button type="submit" className={`sp-primary-button ${busy ? 'is-loading' : 'is-idle'}`} disabled={busy}><span>{busy ? 'Connecting…' : 'Sign In'}</span><ArrowRight size={16} /></button>
       </form>
-      {whatsAppSignInChallenge && <div className="sp-provider-flow-panel is-verify" role="status"><div className="sp-provider-flow-head"><span className="sp-provider-flow-icon"><WhatsAppMark size={17} /></span><span><b>WhatsApp Verification</b><small>Code sent to {whatsAppSignInDestination}</small></span></div><label><span className="sp-field-label">Verification Code</span><span className="sp-input-shell"><KeyRound size={16} /><input value={whatsAppSignInCode} onChange={(event) => setWhatsAppSignInCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Enter 6-digit code" /></span></label><button type="button" className="sp-provider-flow-action" disabled={busy || whatsAppSignInCode.length !== 6} onClick={() => void verifyWhatsAppSignIn()}>Verify WhatsApp Code <ArrowRight size={14} /></button></div>}
+      {whatsAppPhoneMode && <div className="sp-provider-flow-panel" role="group" aria-label="WhatsApp phone sign in"><label><span className="sp-field-label">Verified WhatsApp phone</span><span className="sp-input-shell"><input type="tel" autoComplete="tel" value={whatsAppPhone} onChange={e=>setWhatsAppPhone(e.target.value)} placeholder="080... or +234..." /></span></label><button className="sp-provider-flow-action" type="button" disabled={busy||!whatsAppPhone.trim()} onClick={()=>void startWhatsAppPhoneLogin()}>Send secure code</button><button type="button" className="sp-text-button" onClick={()=>{setWhatsAppPhoneMode(false);setWhatsAppSignInChallenge('');}}>Cancel</button></div>}
+      {whatsAppSignInChallenge && <div className="sp-provider-flow-panel is-verify" role="status"><div className="sp-provider-flow-head"><span className="sp-provider-flow-icon"><WhatsAppMark size={17} /></span><span><b>WhatsApp Verification</b><small>Code sent to {whatsAppSignInDestination}</small></span></div><label><span className="sp-field-label">Verification Code</span><span className="sp-input-shell"><KeyRound size={16} /><input value={whatsAppSignInCode} onChange={(event) => setWhatsAppSignInCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Enter 6-digit code" /></span></label><button type="button" className="sp-provider-flow-action" disabled={busy || whatsAppSignInCode.length !== 6} onClick={() => void (whatsAppPhoneMode ? verifyWhatsAppPhoneLogin() : verifyWhatsAppSignIn())}>Verify WhatsApp Code <ArrowRight size={14} /></button></div>}
       <div className="sp-auth-divider"><span /><b>Or Continue With</b><span /></div>
       <div className="sp-social-grid sp-auth-provider-list sp-auth-provider-signin" aria-label="Sign in with another provider">
         <button type="button" className="sp-social-button" onClick={() => startOAuth('microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">Microsoft</span></button>
         <button type="button" className="sp-social-button" onClick={() => startOAuth('google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">Google</span></button>
-        <button type="button" className="sp-social-button" onClick={() => void startWhatsAppSignIn()}><span className="sp-social-icon"><WhatsAppMark size={19} /></span><span className="sp-social-label">WhatsApp</span></button>
+        <button type="button" className="sp-social-button" onClick={() => {setWhatsAppPhoneMode(true);setWhatsAppSignInChallenge('');setMessage(null);}}><span className="sp-social-icon"><WhatsAppMark size={19} /></span><span className="sp-social-label">WhatsApp</span></button>
         <p className="sp-auth-provider-status"><LockKeyhole size={12} /> Secure provider connections use the configured Cloudflare staging environment.</p>
       </div>
       <button type="button" className="sp-install-card sp-install-card-v101" onClick={() => void installApp()}><span className="sp-install-icon"><Download size={16} /></span><span className="sp-install-copy"><b>Install StaffPortal App</b><small>Fast Access From Your Home Screen</small></span><span className="sp-install-state">Shortcut</span></button>
