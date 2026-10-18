@@ -53,6 +53,8 @@ function Root() {
   const auth = useAuth();
   useEffect(() => registerFreshServiceWorker(), []);
   if (auth.loading) return <LoadingScreen />;
+  const studioReview = new URLSearchParams(window.location.search).get('studioReview');
+  if (studioReview === 'signin-v180') return <AuthScreen onAuthenticated={() => undefined} />;
   if (!auth.context) return <AuthScreen onAuthenticated={(context) => {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
