@@ -26,6 +26,7 @@ const STAGING_BUILD = {
     'Integrated current Weather and daily Inspiration widgets',
     'Refined Clock and Weather icon treatment without changing the top bar',
     'Preserved schema-driven forms without removing or combining fields',
+    'Simplified Construction default view with reversible full detail',
     'Printing sales-order and Finance handoff',
     'Autos sale-truth concurrency protection',
     'Theme preference and runtime routing hardening',
