@@ -1,0 +1,236 @@
+/*
+ * StaffPortal ultra-premium refinement v1.
+ * Scope: authenticated QA Review shell only.
+ * Deliberately does not target Sign-In, form structure, navigation order,
+ * provider flows, or the approved V115 source snapshot.
+ */
+
+.qa-v115-shell {
+  --premium-ink: #123b4a;
+  --premium-ink-deep: #0a2a39;
+  --premium-teal: #0d8b86;
+  --premium-teal-soft: rgba(13, 139, 134, .11);
+  --premium-gold: #c9943e;
+  --premium-line: rgba(18, 59, 74, .14);
+  --premium-shadow: 0 18px 42px rgba(10, 42, 57, .10);
+  --premium-shadow-soft: 0 8px 22px rgba(10, 42, 57, .07);
+  --premium-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+.qa-v115-shell .qa-v115-topbar,
+.qa-v115-shell .qa-v115-context,
+.qa-v115-shell .qa-v115-footer {
+  border-color: var(--premium-line);
+}
+
+.qa-v115-shell .qa-v115-topbar {
+  position: relative;
+  box-shadow: 0 8px 24px rgba(10, 42, 57, .055);
+}
+
+.qa-v115-shell .qa-v115-topbar::after {
+  content: "";
+  position: absolute;
+  inset: auto 20px 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(13, 139, 134, .38), rgba(201, 148, 62, .28), transparent);
+  pointer-events: none;
+}
+
+.qa-v115-shell .qa-v115-sidebar {
+  box-shadow: 12px 0 34px rgba(10, 42, 57, .08);
+}
+
+.qa-v115-shell .qa-v115-brand-mark {
+  box-shadow: 0 10px 22px rgba(13, 139, 134, .20), inset 0 1px 0 rgba(255, 255, 255, .30);
+}
+
+.qa-v115-shell .qa-v115-nav-item,
+.qa-v115-shell .qa-v115-command,
+.qa-v115-shell .qa-v115-top-action,
+.qa-v115-shell .qa-v115-profile,
+.qa-v115-shell .qa-v115-btn {
+  transition:
+    background-color .22s var(--premium-ease),
+    border-color .22s var(--premium-ease),
+    box-shadow .22s var(--premium-ease),
+    color .22s var(--premium-ease),
+    transform .22s var(--premium-ease);
+}
+
+.qa-v115-shell .qa-v115-nav-item {
+  border: 1px solid transparent;
+  border-radius: 13px;
+}
+
+.qa-v115-shell .qa-v115-nav-item:hover {
+  border-color: rgba(13, 139, 134, .16);
+  background: rgba(13, 139, 134, .055);
+  transform: translateX(2px);
+}
+
+.qa-v115-shell .qa-v115-nav-item.active {
+  border-color: rgba(13, 139, 134, .22);
+  background: linear-gradient(100deg, rgba(13, 139, 134, .13), rgba(201, 148, 62, .045));
+  box-shadow: inset 3px 0 0 var(--premium-teal), 0 8px 18px rgba(13, 139, 134, .07);
+}
+
+.qa-v115-shell .qa-v115-command,
+.qa-v115-shell .qa-v115-top-action,
+.qa-v115-shell .qa-v115-profile {
+  border-color: rgba(18, 59, 74, .12);
+  box-shadow: var(--premium-shadow-soft);
+}
+
+.qa-v115-shell .qa-v115-command:hover,
+.qa-v115-shell .qa-v115-top-action:hover,
+.qa-v115-shell .qa-v115-profile:hover {
+  border-color: rgba(13, 139, 134, .26);
+  box-shadow: 0 12px 26px rgba(10, 42, 57, .12);
+  transform: translateY(-1px);
+}
+
+.qa-v115-shell .qa-v115-command-orb {
+  box-shadow: 0 0 0 5px rgba(13, 139, 134, .08), 0 8px 18px rgba(13, 139, 134, .16);
+}
+
+.qa-v115-shell .qa-v115-context {
+  position: relative;
+}
+
+.qa-v115-shell .qa-v115-breadcrumb button {
+  color: var(--premium-teal);
+  font-weight: 750;
+}
+
+.qa-v115-shell .qa-v115-breadcrumb button:hover {
+  color: var(--premium-ink-deep);
+}
+
+.qa-v115-shell .qa-v115-scope {
+  color: var(--premium-teal);
+  letter-spacing: .045em;
+}
+
+.qa-v115-shell .qa-v115-heading h1,
+.qa-v115-shell .qa-v115-home-hero h2,
+.qa-v115-shell .qa-v115-feature-heading h2 {
+  color: var(--premium-ink-deep);
+  letter-spacing: -.025em;
+}
+
+.qa-v115-shell .qa-v115-home-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: rgba(13, 139, 134, .20);
+  box-shadow: var(--premium-shadow);
+}
+
+.qa-v115-shell .qa-v115-home-hero::after {
+  content: "";
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  right: -115px;
+  bottom: -165px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 148, 62, .22);
+  box-shadow: 0 0 0 22px rgba(201, 148, 62, .045), 0 0 0 44px rgba(13, 139, 134, .035);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.qa-v115-shell .qa-v115-hero-status {
+  border-color: rgba(13, 139, 134, .18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .50), var(--premium-shadow-soft);
+}
+
+.qa-v115-shell .qa-v115-status i {
+  box-shadow: 0 0 0 4px rgba(13, 139, 134, .10), 0 0 14px rgba(13, 139, 134, .28);
+}
+
+.qa-v115-shell .qa-v115-panel {
+  border-color: var(--premium-line);
+  box-shadow: var(--premium-shadow-soft);
+  transition: border-color .22s var(--premium-ease), box-shadow .22s var(--premium-ease), transform .22s var(--premium-ease);
+}
+
+.qa-v115-shell .qa-v115-panel:hover {
+  border-color: rgba(13, 139, 134, .22);
+  box-shadow: var(--premium-shadow);
+}
+
+.qa-v115-shell .qa-v115-panel h3 {
+  color: var(--premium-ink);
+  letter-spacing: -.012em;
+}
+
+.qa-v115-shell .qa-v115-btn {
+  border-color: rgba(18, 59, 74, .14);
+  box-shadow: 0 7px 16px rgba(10, 42, 57, .07);
+}
+
+.qa-v115-shell .qa-v115-btn:hover {
+  border-color: rgba(13, 139, 134, .28);
+  box-shadow: 0 11px 22px rgba(10, 42, 57, .12);
+  transform: translateY(-1px);
+}
+
+.qa-v115-shell .qa-v115-btn.primary {
+  box-shadow: 0 10px 22px rgba(13, 139, 134, .20);
+}
+
+.qa-v115-shell .qa-v115-btn.primary:hover {
+  box-shadow: 0 14px 28px rgba(13, 139, 134, .25);
+}
+
+.qa-v115-shell .qa-v115-widget,
+.qa-v115-shell .qa-v115-kpi,
+.qa-v115-shell .qa-v115-workspace-card {
+  border-color: rgba(18, 59, 74, .12);
+}
+
+.qa-v115-shell .qa-v115-kpi strong,
+.qa-v115-shell .qa-v115-workspace-card strong {
+  color: var(--premium-ink-deep);
+}
+
+.qa-v115-shell .qa-v115-kpi::before {
+  background: linear-gradient(90deg, var(--premium-teal), var(--premium-gold));
+}
+
+.qa-v115-shell .qa-v115-feature-panel {
+  box-shadow: var(--premium-shadow);
+}
+
+.qa-v115-shell .qa-v115-preview {
+  border-color: rgba(201, 148, 62, .24);
+  box-shadow: 0 6px 16px rgba(201, 148, 62, .06);
+}
+
+.qa-v115-shell :where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(13, 139, 134, .36);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-v115-shell *,
+  .qa-v115-shell *::before,
+  .qa-v115-shell *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .qa-v115-shell .qa-v115-topbar::after {
+    inset-inline: 12px;
+  }
+
+  .qa-v115-shell .qa-v115-panel:hover {
+    transform: none;
+  }
+}
