@@ -8,7 +8,7 @@ import './signin-experience.css';
 
 const ApprovedPostLoginV115 = lazy(() => import('./qa-review-v115-runtime'));
 
-const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v15-complete-v115-export';
+const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v16-postauth-live-integrations';
 
 function registerFreshServiceWorker() {
   if (!('serviceWorker' in navigator)) return () => undefined;
