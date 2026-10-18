@@ -1,6 +1,6 @@
 import './theme-studio.css';
 import { applyThemeToDocument, normalizeThemeId, themeList } from './theme-system';
-import { fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
+import { fetchAdminSignInDraft, fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInDraft, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
 
 type ThemeOption = {
   id: string;
@@ -26,6 +26,7 @@ let signInConfig: SignInExperiencePreferences = readSignInPreferences();
 let signInPublishedConfig: SignInExperiencePreferences = readSignInPreferences();
 let signInSaveState: 'idle' | 'saving' | 'saved' | 'draft' | 'error' = 'idle';
 let signInSaveQueue: Promise<void> = Promise.resolve();
+let signInDraftSaveQueue: Promise<void> = Promise.resolve();
 let aiOptions: Record<string, string[]> = {};
 let draggedWidgetId: string | null = null;
 type StudioReviewSurface = 'signin-v180' | 'postlogin-v115';
@@ -316,6 +317,13 @@ function writeReviewDraft() {
   if (typeof window === 'undefined') return;
   try { sessionStorage.setItem(REVIEW_DRAFT_KEY, JSON.stringify(signInConfig)); } catch { /* preview remains available without draft storage */ }
 }
+function queueDraftPersistence() {
+  const draft = cloneSignInConfig();
+  signInDraftSaveQueue = signInDraftSaveQueue.then(() => saveSignInDraft(draft).then(() => undefined).catch(() => undefined));
+}
+function clearPersistedDraft() {
+  signInDraftSaveQueue = signInDraftSaveQueue.then(() => saveSignInDraft(null).then(() => undefined).catch(() => undefined));
+}
 function reviewFrameUrl() {
   return reviewSurface === 'signin-v180' ? '/staff-portal-signin?studioReview=signin-v180' : '/workspace/?studioReview=postlogin-v115';
 }
@@ -323,6 +331,7 @@ function queueSignInConfigSave(next: SignInExperiencePreferences) {
   signInConfig = normalizeSignInPreferences(next);
   signInSaveState = 'draft';
   writeReviewDraft();
+  queueDraftPersistence();
   renderSignInAdmin();
 }
 async function publishSignInConfig() {
@@ -332,6 +341,8 @@ async function publishSignInConfig() {
     try {
       signInConfig = await saveSignInPreferences(signInConfig);
       signInPublishedConfig = cloneSignInConfig();
+      await signInDraftSaveQueue;
+      await saveSignInDraft(null);
       writeReviewDraft();
       signInSaveState = 'saved';
       renderSignInAdmin();
@@ -549,6 +560,10 @@ function handleSignInAdminClick(event: Event) {
     queueSignInConfigSave(JSON.parse(JSON.stringify(DEFAULT_SIGNIN_PREFERENCES)) as SignInExperiencePreferences);
     return;
   }
+  if (reset?.dataset.signinReset === 'published') {
+    queueSignInConfigSave(cloneSignInConfigFrom(signInPublishedConfig));
+    return;
+  }
   if (reset?.dataset.signinReset === 'widgets') {
     const next = cloneSignInConfig();
     next.widgetInstances = JSON.parse(JSON.stringify(DEFAULT_SIGNIN_PREFERENCES.widgetInstances));
@@ -582,8 +597,17 @@ async function loadSignInAdmin(canManage: boolean) {
   renderSignInAdmin();
   try {
     const result = await fetchAdminSignInPreferences();
-    signInConfig = result.config;
     signInPublishedConfig = cloneSignInConfigFrom(result.config);
+    signInConfig = cloneSignInConfigFrom(result.config);
+    try {
+      const draftResult = await fetchAdminSignInDraft();
+      if (draftResult.canManage && draftResult.draft) {
+        signInConfig = draftResult.draft;
+        signInSaveState = 'draft';
+      }
+    } catch {
+      /* Active config remains available if draft storage is temporarily unavailable. */
+    }
     writeReviewDraft();
     section.hidden = !result.canManage;
     renderSignInAdmin();
