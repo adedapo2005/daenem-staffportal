@@ -292,7 +292,7 @@ test('Instruction activation is claimed once and database-enforced per language'
 
 test('Governance upserts atomically audit the canonical persisted identity',async()=>{
   const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
-  assert.equal((governance.match(/(?:const |try\{)\[saved,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
+  assert.equal((governance.match(/(?:const |try\{\s*)\[saved,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
   assert.match(governance,/upsert_restriction[\s\S]*FROM communication_policy_restrictions[\s\S]*company_id=\? AND event_id=\? AND subject_type=\? AND subject_id=\?/);
   assert.match(governance,/upsert_trigger[\s\S]*FROM communication_trigger_rules[\s\S]*company_id=\? AND event_id=\? AND trigger_code=\?/);
   assert.equal((governance.match(/saved\.meta\?\.changes[\s\S]{0,80}audited\.meta\?\.changes/g)||[]).length,3);
