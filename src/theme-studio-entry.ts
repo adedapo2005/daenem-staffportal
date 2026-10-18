@@ -317,7 +317,7 @@ function writeReviewDraft() {
   try { sessionStorage.setItem(REVIEW_DRAFT_KEY, JSON.stringify(signInConfig)); } catch { /* preview remains available without draft storage */ }
 }
 function reviewFrameUrl() {
-  return reviewSurface === 'signin-v180' ? '/?studioReview=signin-v180' : '/workspace/?studioReview=postlogin-v115';
+  return reviewSurface === 'signin-v180' ? '/staff-portal-signin?studioReview=signin-v180' : '/workspace/?studioReview=postlogin-v115';
 }
 function queueSignInConfigSave(next: SignInExperiencePreferences) {
   signInConfig = normalizeSignInPreferences(next);
