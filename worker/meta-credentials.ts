@@ -21,6 +21,7 @@ export interface MetaCredentialEnv extends AuthEnv,SocialCryptoEnv{
   WHATSAPP_EMBEDDED_CONFIG_ID?:string;
   COMMUNICATIONS_WEBHOOK_VERIFY_TOKEN?:string;
   META_GRAPH_VERSION?:string;
+  GOOGLE_WEATHER_API_KEY?:string;
 }
 
 type Definition={
@@ -51,7 +52,7 @@ const envMap:Record<MetaCredentialKey,keyof MetaCredentialEnv|undefined>={
   meta_graph_version:'META_GRAPH_VERSION',
   whatsapp_waba_id:undefined,
   whatsapp_phone_number_id:undefined,
-  google_weather_api_key:undefined,
+  google_weather_api_key:'GOOGLE_WEATHER_API_KEY',
 };
 
 export function isMetaCredentialKey(value:string):value is MetaCredentialKey{
