@@ -27,6 +27,8 @@ if (worker.indexOf("url.pathname === '/api/context/postlogin'") < worker.indexOf
 if ((feeds.match(/\{ id: '/g) || []).length < 20) fail('fewer than 20 governed feed definitions are configured');
 if (!widgets.includes('/api/context/weather?')) fail('weather widget is not integrated with the configured provider route');
 if (!styles.includes('.home-weather > .tech-weather:not(.v116-weather)')) fail('legacy weather placeholder is not replaced in place');
+if (!widgets.includes('dataset.constructionView') || !widgets.includes('Show full Construction detail') || !widgets.includes('Use simplified Construction view')) fail('reversible simplified Construction view is missing');
+if (!styles.includes('#main-content[data-construction-view="simple"] .c16-triple')) fail('simplified Construction view does not reduce secondary dashboard density');
 if (/AI[- ]generated/i.test([runtime, widgets, styles, feeds].join('\n'))) fail('employee-facing AI-generated label detected');
 if (/source-snapshots\/.+\.(tsx|css)/.test(process.env.CHANGED_FILES || '')) fail('approved source snapshot must remain untouched');
 
