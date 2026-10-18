@@ -1,16 +1,18 @@
 const base = new URL(process.env.STAFFPORTAL_STAGING_URL || 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev');
-const assetPattern = /(?:\/assets\/|\.\/|assets\/)[A-Za-z0-9_./-]+\.(?:js|mjs|css|woff2?|png|jpe?g|svg|webp)/g;
+const assetPattern = /(?:\\/assets\\/|\\.\\/|assets\\/)[A-Za-z0-9_./-]+\\.(?:js|mjs|css|woff2?|png|jpe?g|svg|webp)/g;
 const expectedTypes = {
   '.js': /(?:javascript|ecmascript)/i,
   '.mjs': /(?:javascript|ecmascript)/i,
-  '.css': /text\/css/i,
+  '.css': /text\\/css/i,
   '.woff': /font|woff|octet-stream/i,
   '.woff2': /font|woff|octet-stream/i,
-  '.png': /image\/png/i,
-  '.jpg': /image\/jpeg/i,
-  '.jpeg': /image\/jpeg/i,
-  '.svg': /image\/svg\+xml/i,
-  '.webp': /image\/webp/i,
+  '.png': /image\\/png/i,
+  // Approved V115 keeps .jpg source references, while staging serves the
+  // verified responsive WebP derivative behind the same URL.
+  '.jpg': /image\\/(?:jpeg|webp)/i,
+  '.jpeg': /image\\/(?:jpeg|webp)/i,
+  '.svg': /image\\/svg\\+xml/i,
+  '.webp': /image\\/webp/i,
 };
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -24,7 +26,7 @@ async function verifyOnce() {
   const root = new URL('/', base);
   root.searchParams.set('__asset_gate', String(Date.now()));
   const rootResponse = await responseFor(root);
-  if (rootResponse.status !== 200 || !/text\/html/i.test(rootResponse.headers.get('content-type') || '')) {
+  if (rootResponse.status !== 200 || !/text\\/html/i.test(rootResponse.headers.get('content-type') || '')) {
     throw new Error(`Staging shell returned ${rootResponse.status} ${rootResponse.headers.get('content-type') || 'without content type'}`);
   }
   const rootHtml = await rootResponse.text();
@@ -52,11 +54,11 @@ async function verifyOnce() {
     if (!suffix || !expectedTypes[suffix].test(type)) throw new Error(`${url.pathname} returned unexpected content type ${type || 'missing'}.`);
     if (suffix === '.js' || suffix === '.mjs' || suffix === '.css') {
       const text = await response.text();
-      if (/^\s*<!doctype html/i.test(text)) throw new Error(`${url.pathname} returned the SPA HTML fallback.`);
+      if (/^\\s*<!doctype html/i.test(text)) throw new Error(`${url.pathname} returned the SPA HTML fallback.`);
       addReferences(text, url);
     }
   }
-  if (![...checked].some((path) => /qa-review-v115-runtime-.*\.css$/.test(path))) {
+  if (![...checked].some((path) => /qa-review-v115-runtime-.*\\.css$/.test(path))) {
     throw new Error('The approved post-login stylesheet was not reachable from the deployed asset graph.');
   }
   return checked.size;
