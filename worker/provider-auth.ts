@@ -68,6 +68,10 @@ function stateCookie(request: Request, value: string, maxAge = ttl) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
   return `${cookieName}=${encodeURIComponent(value)}; Path=/; HttpOnly${secure}; SameSite=Lax; Max-Age=${maxAge}`;
 }
+function sessionPepper(env: ProviderAuthEnv) {
+  if (env.APP_STAGE === 'production' && !env.AUTH_PEPPER) return undefined;
+  return env.AUTH_PEPPER || 'bootstrap-stage-only-change-before-production';
+}
 function config(env: ProviderAuthEnv, provider: Provider): Config | null {
   if (provider === 'google') {
     const clientId = env.GOOGLE_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID;
@@ -125,7 +129,7 @@ async function start(request: Request, env: ProviderAuthEnv, provider: Provider)
   }});
 }
 async function createSession(request: Request, env: ProviderAuthEnv, employeeId: string, provider: Provider) {
-  const secret = env.AUTH_PEPPER || (env.APP_STAGE === 'production' ? '' : stageSecret);
+  const secret = sessionPepper(env);
   if (!secret) throw new Error('AUTH_PEPPER is not configured for production.');
   const sessionToken = token(32);
   const sessionHash = await shaHex(sessionToken + ':' + secret);

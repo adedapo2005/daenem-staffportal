@@ -5,6 +5,7 @@ import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-S
 import type { Company, Session } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
 import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';
 import './postlogin-premium-refinement-v1.css';
+import './staffportal-premium-shell.css';
 import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
 
 const APPROVED_SOURCE = {
