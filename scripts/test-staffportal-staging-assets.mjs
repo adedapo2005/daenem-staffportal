@@ -1,5 +1,5 @@
 const base = new URL(process.env.STAFFPORTAL_STAGING_URL || 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev');
-const assetPattern = /(?:\/assets\/|\.\/|assets\/)[A-Za-z0-9_./-]+\.(?:js|mjs|css|woff2?|png|jpe?g|svg|webp)/g;
+const assetPattern = /(?<![A-Za-z0-9_-])(?:\/assets\/|\.\/|assets\/)[A-Za-z0-9_./-]+\.(?:js|mjs|css|woff2?|png|jpe?g|svg|webp)/g;
 const expectedTypes = {
   '.js': /(?:javascript|ecmascript)/i,
   '.mjs': /(?:javascript|ecmascript)/i,
