@@ -267,6 +267,18 @@ export default function LivePostLoginEnhancementsV116() {
     return () => { window.clearInterval(contextTimer); window.clearInterval(weatherTimer); };
   }, [loadContext, loadWeather]);
 
+  useEffect(() => {
+    const button = document.querySelector<HTMLButtonElement>('button.p-weather-chip[aria-label^="Open Weather status"]');
+    if (!button || weather?.available !== true || weather.temperature == null) return;
+    const temperature = Math.round(weather.temperature);
+    const description = weather.description || 'Current conditions';
+    button.setAttribute('aria-label', `Open Weather status, ${description}, ${temperature} degrees Celsius`);
+    button.dataset.providerState = 'connected';
+    button.dataset.weatherUnit = 'C';
+    const reading = button.querySelector<HTMLSpanElement>('span');
+    if (reading) reading.textContent = `${temperature}°C`;
+  }, [weather]);
+
   const dashboardWidgets = useMemo(() => (
     <>
       <NewsWidget context={context} loading={loadingContext} onRefresh={loadContext} />
