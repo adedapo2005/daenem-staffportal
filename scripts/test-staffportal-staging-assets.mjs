@@ -34,6 +34,10 @@ async function verifyOnce() {
   const addReferences = (text, parent) => {
     for (const match of text.matchAll(assetPattern)) {
       const value = match[0];
+      const matchIndex = match.index ?? -1;
+      const preceding = matchIndex > 0 ? text[matchIndex - 1] : '';
+      // Do not reinterpret the `assets/` substring inside `/brand-assets/`.
+      if (value.startsWith('assets/') && preceding === '-') continue;
       const url = new URL(value.startsWith('assets/') ? `/${value}` : value, parent);
       // Native sign-in originals are provenance-only and intentionally not deployed.
       if (url.origin === base.origin && !url.pathname.includes('/assets/signin-native/') && !checked.has(url.pathname)) queue.push(url);
