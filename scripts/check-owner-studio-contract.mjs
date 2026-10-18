@@ -28,4 +28,6 @@ assert(main.includes("studioReview === 'signin-v180'"), 'Isolated Sign-In review
 assert(preferences.includes("sessionStorage : localStorage"), 'Sign-In review draft storage is not isolated from live preferences.');
 assert(studio.includes('section.hidden = !canManage'), 'Owner Studio UI is not hidden for unauthorized users.');
 assert(themeApi.includes("if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403);"), 'Theme API publish route is missing the server-side authorization guard.');
+assert(themeApi.includes("/api/theme/signin/draft"), 'Durable Owner Studio draft API is missing.');
+assert(studio.includes('fetchAdminSignInDraft') && studio.includes('saveSignInDraft'), 'Owner Studio is not connected to durable draft storage.');
 console.log('Owner Studio contract passed.');
