@@ -840,6 +840,7 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv, pass
   }
   if (!verified.employeeId) return json({ error:'Sign-in verification is invalid.' }, 401);
   if (passwordless && verified.transactionContext.authMode !== 'passwordless') return json({ error:'Sign-in verification is invalid.' }, 401);
+  if (!passwordless && verified.transactionContext.authMode === 'passwordless') return json({ error:'Sign-in verification is invalid.' },401);
   const employee = await env.DB.prepare(`
     SELECT c.username,e.email,e.display_name AS displayName,e.employment_status AS status
     FROM employee_credentials c
