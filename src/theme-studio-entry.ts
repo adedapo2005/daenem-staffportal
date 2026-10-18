@@ -1,6 +1,6 @@
 import './theme-studio.css';
 import { applyThemeToDocument, normalizeThemeId, themeList } from './theme-system';
-import { fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
+import { fetchAdminSignInDraft, fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInDraft, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
 
 type ThemeOption = {
   id: string;
@@ -23,10 +23,26 @@ const STORAGE_KEY = 'workforce-theme';
 const modalId = 'daenem-theme-studio';
 let policy: ThemePolicy | null = null;
 let signInConfig: SignInExperiencePreferences = readSignInPreferences();
-let signInSaveState: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+let signInPublishedConfig: SignInExperiencePreferences = readSignInPreferences();
+let signInSaveState: 'idle' | 'saving' | 'saved' | 'draft' | 'error' = 'idle';
 let signInSaveQueue: Promise<void> = Promise.resolve();
+let signInDraftSaveQueue: Promise<void> = Promise.resolve();
 let aiOptions: Record<string, string[]> = {};
 let draggedWidgetId: string | null = null;
+type StudioReviewSurface = 'signin-v180' | 'postlogin-v115';
+const REVIEW_VIEWPORTS = [
+  { label: 'Phone · 390 × 844', width: 390, height: 844 },
+  { label: 'Phone · 430 × 932', width: 430, height: 932 },
+  { label: 'Tablet · 768 × 1024', width: 768, height: 1024 },
+  { label: 'Desktop · 1366 × 768', width: 1366, height: 768 },
+  { label: 'Desktop · 1920 × 1080', width: 1920, height: 1080 },
+  { label: 'Wide · 2560 × 1440', width: 2560, height: 1440 },
+  { label: '4K · 3840 × 2160', width: 3840, height: 2160 },
+];
+let reviewSurface: StudioReviewSurface = 'signin-v180';
+let reviewViewport = { width: 390, height: 844 };
+let draftName = 'New Sign-In draft';
+const REVIEW_DRAFT_KEY = 'daenem:signin-review-draft';
 
 const signInWidgetLabels: Record<SignInWidgetId, string> = {
   weather: 'Live Weather',
@@ -140,7 +156,14 @@ function ensureModal() {
         <div class="theme-owner-actions"><button type="button" data-theme-admin="default">Set as Group default</button><button type="button" data-theme-admin="force">Force selected theme</button><button type="button" data-theme-admin="clear">Clear forced theme</button></div>
       </div>
       <section class="signin-theme-admin" hidden>
-        <div class="signin-theme-admin-head"><div><strong>Live sign-in controls</strong><span>Manage the public sign-in widgets, clocks, daylight/night mode, logo placement, and effects.</span></div><span class="signin-theme-save-state" data-state="idle">Central settings</span></div>
+        <div class="signin-theme-admin-head"><div><strong>Owner Studio · approved surfaces</strong><span>Authorized design controls for the approved Sign-In and QA Review post-sign-in experiences only.</span></div><span class="signin-theme-save-state" data-state="idle">Central settings</span></div>
+        <section class="signin-studio-scope">
+          <div class="signin-studio-scope-head"><strong>Protected release surfaces</strong><span>These are the only sources this studio can review or prepare. Legacy shells, Premium Lab, and rejected variants are excluded.</span></div>
+          <div class="signin-studio-scope-grid">
+            <article><span class="signin-studio-scope-kicker">PUBLIC SIGN-IN</span><strong>Sites Migration · V180</strong><small>Approved Sign-In source · source-locked</small></article>
+            <article><span class="signin-studio-scope-kicker">POST-SIGN-IN</span><strong>QA Review · V115 / runtime R116</strong><small>Approved workspace source · source-locked</small></article>
+          </div>
+        </section>
         <div class="signin-theme-admin-body"></div>
       </section>
       <div class="theme-choice-grid"></div>
@@ -274,22 +297,50 @@ function renderSignInAdmin() {
       '</div><div class="signin-display-toggles">' + [['showAnalog','Analog clock'],['showDigital','Digital time'],['showDate','Date'],['showTimezone','Timezone'],['showDayNight','Day/night'],['showWeather','Weather'],['showFeelsLike','Feels like'],['showHumidity','Humidity'],['showWind','Wind'],['showPrecipitation','Precipitation'],['showHighLow','High / low'],['showSunriseSunset','Sunrise / sunset']].map(([key,label]) => '<label class="signin-check"><input type="checkbox" data-signin-field="globalOperations.' + key + '"' + (signInConfig.globalOperations[key as keyof typeof signInConfig.globalOperations] ? ' checked' : '') + '> ' + label + '</label>').join('') + '</div><div class="signin-admin-grid"><label>Weather style<select data-signin-field="globalOperations.weatherStyle">' + optionMarkup(['detailed', 'compact', 'visual'], signInConfig.globalOperations.weatherStyle) + '</select></label><label>Weather animation<select data-signin-field="globalOperations.weatherAnimation">' + optionMarkup(['none', 'subtle', 'expressive'], signInConfig.globalOperations.weatherAnimation) + '</select></label></div><div class="signin-location-list">' + locationRows + '</div></section>' +
       '<section class="signin-admin-section"><h4>EFFECTS</h4><div class="signin-display-toggles">' + [['ambientGlow','Ambient glow'],['backgroundBreathing','Background breathing'],['cardFloat','Card float'],['logoMotion','Logo motion'],['statusPulse','Status pulse'],['widgetEntrance','Widget entrance'],['shimmer','Shimmer']].map(([key,label]) => '<label class="signin-check"><input type="checkbox" data-signin-field="effects.' + key + '"' + (signInConfig.effects[key as keyof typeof signInConfig.effects] ? ' checked' : '') + '> ' + label + '</label>').join('') + '</div><label>Glass intensity<input type="range" min="0" max="100" step="1" data-signin-field="effects.glassIntensity" value="' + signInConfig.effects.glassIntensity + '"></label></section>' +
       '<section class="signin-admin-section"><h4>AI CONTENT</h4>' + aiMarkup('inspiration') + aiMarkup('motivation') + '<p class="signin-admin-note">News remains source-bound to verified RSS headlines; AI cannot fabricate news.</p></section>' +
-      '<section class="signin-admin-section signin-admin-preview"><h4>PREVIEW</h4><p>Open the public sign-in surface in a separate tab to review the saved central configuration.</p><button type="button" data-signin-preview>Open sign-in preview</button></section>' +
-      '<section class="signin-admin-section signin-admin-recovery"><h4>RESET / RECOVERY</h4><button type="button" data-signin-reset="complete">Reset complete sign-in layout</button><button type="button" data-signin-reset="widgets">Reset widgets</button><span>Changes are saved centrally and can be restored to safe defaults.</span></section>' +
+      '<section class="signin-admin-section signin-admin-preview"><h4>REVIEW MODE</h4><p>Review the selected approved surface at any viewport before publishing. Draft edits stay isolated to this Owner Studio session until you explicitly publish Sign-In changes.</p>' +
+      '<div class="studio-review-toolbar"><label>Surface<select data-review-surface><option value="signin-v180"' + (reviewSurface === 'signin-v180' ? ' selected' : '') + '>Approved Sign-In · V180</option><option value="postlogin-v115"' + (reviewSurface === 'postlogin-v115' ? ' selected' : '') + '>QA Review post-sign-in · V115</option></select></label>' +
+      '<label>Viewport<select data-review-preset>' + REVIEW_VIEWPORTS.map((item) => '<option value="' + item.width + 'x' + item.height + '"' + (reviewViewport.width === item.width && reviewViewport.height === item.height ? ' selected' : '') + '>' + item.label + '</option>').join('') + '</select></label>' +
+      '<label>Width<input type="number" min="320" max="3840" step="1" data-review-width value="' + reviewViewport.width + '"></label><label>Height<input type="number" min="240" max="2160" step="1" data-review-height value="' + reviewViewport.height + '"></label>' +
+      '</div><div class="studio-review-draft-actions"><label class="studio-review-draft-name">Draft name<input data-signin-draft-name maxlength="80" value="' + escapeHtml(draftName) + '"></label><button type="button" data-signin-duplicate>Duplicate approved Sign-In as draft</button><button type="button" class="studio-review-publish" data-signin-publish>Publish Sign-In changes</button></div>' +
+      '<div class="studio-review-status"><span>Review only · nothing publishes from viewport changes.</span><button type="button" data-review-refresh>Refresh preview from draft</button></div>' +
+      '<div class="studio-review-stage" data-review-stage style="--studio-review-width:' + reviewViewport.width + 'px;--studio-review-height:' + reviewViewport.height + 'px"><div class="studio-review-viewport"><iframe data-studio-review-frame title="Owner Studio responsive review" src="' + reviewFrameUrl() + '" loading="lazy"></iframe></div></div>' +
+      '<div class="studio-review-footer"><span>Frame: ' + reviewViewport.width + ' × ' + reviewViewport.height + '</span><button type="button" data-signin-preview>Open review in a new tab</button></div></section>' +
+      '<section class="signin-admin-section signin-admin-recovery"><h4>RESET / RECOVERY</h4><button type="button" data-signin-reset="complete">Reset draft to safe defaults</button><button type="button" data-signin-reset="published">Reset draft to published</button><button type="button" data-signin-reset="widgets">Reset widgets</button><span>Draft edits can be restored before publishing.</span></section>' +
     '</div>';
   const state = document.querySelector<HTMLElement>('.signin-theme-save-state');
   if (state) {
     state.dataset.state = signInSaveState;
-    state.textContent = signInSaveState === 'saving' ? 'Saving…' : signInSaveState === 'saved' ? 'Saved live' : signInSaveState === 'error' ? 'Save failed' : 'Central V3 settings';
+    state.textContent = signInSaveState === 'saving' ? 'Publishing…' : signInSaveState === 'saved' ? 'Published' : signInSaveState === 'draft' ? 'Draft · not published' : signInSaveState === 'error' ? 'Publish failed' : 'Central V3 settings';
   }
+}
+function writeReviewDraft() {
+  if (typeof window === 'undefined') return;
+  try { sessionStorage.setItem(REVIEW_DRAFT_KEY, JSON.stringify(signInConfig)); } catch { /* preview remains available without draft storage */ }
+}
+function queueDraftPersistence() {
+  const draft = cloneSignInConfig();
+  signInDraftSaveQueue = signInDraftSaveQueue.then(() => saveSignInDraft(draft).then(() => undefined).catch(() => undefined));
+}
+function reviewFrameUrl() {
+  return reviewSurface === 'signin-v180' ? '/staff-portal-signin?studioReview=signin-v180' : '/workspace/?studioReview=postlogin-v115';
 }
 function queueSignInConfigSave(next: SignInExperiencePreferences) {
   signInConfig = normalizeSignInPreferences(next);
+  signInSaveState = 'draft';
+  writeReviewDraft();
+  queueDraftPersistence();
+  renderSignInAdmin();
+}
+async function publishSignInConfig() {
   signInSaveState = 'saving';
   renderSignInAdmin();
   signInSaveQueue = signInSaveQueue.then(async () => {
     try {
       signInConfig = await saveSignInPreferences(signInConfig);
+      signInPublishedConfig = cloneSignInConfig();
+      await signInDraftSaveQueue;
+      await saveSignInDraft(null);
+      writeReviewDraft();
       signInSaveState = 'saved';
       renderSignInAdmin();
       window.setTimeout(() => {
@@ -308,6 +359,9 @@ function queueSignInConfigSave(next: SignInExperiencePreferences) {
 function cloneSignInConfig() {
   return JSON.parse(JSON.stringify(signInConfig)) as SignInExperiencePreferences;
 }
+function cloneSignInConfigFrom(value: SignInExperiencePreferences) {
+  return JSON.parse(JSON.stringify(value)) as SignInExperiencePreferences;
+}
 function setConfigPath(config: SignInExperiencePreferences, path: string, value: unknown) {
   const parts = path.split('.');
   let cursor = config as unknown as Record<string, unknown>;
@@ -320,6 +374,28 @@ function setConfigPath(config: SignInExperiencePreferences, path: string, value:
 function handleSignInAdminChange(event: Event) {
   const target = event.target as HTMLInputElement | HTMLSelectElement | null;
   if (!target) return;
+  if (target.dataset.reviewSurface) {
+    reviewSurface = target.value as StudioReviewSurface;
+    writeReviewDraft();
+    renderSignInAdmin();
+    return;
+  }
+  if (target.dataset.reviewPreset) {
+    const [width, height] = target.value.split('x').map(Number);
+    if (width && height) { reviewViewport = { width, height }; renderSignInAdmin(); }
+    return;
+  }
+  if (target.dataset.reviewWidth || target.dataset.reviewHeight) {
+    const width = target.dataset.reviewWidth ? Number(target.value) : reviewViewport.width;
+    const height = target.dataset.reviewHeight ? Number(target.value) : reviewViewport.height;
+    reviewViewport = { width: Math.max(320, Math.min(3840, width || reviewViewport.width)), height: Math.max(240, Math.min(2160, height || reviewViewport.height)) };
+    renderSignInAdmin();
+    return;
+  }
+  if (target.dataset.signinDraftName) {
+    draftName = target.value;
+    return;
+  }
   const path = target.dataset.signinField;
   if (path) {
     const value = target instanceof HTMLInputElement && target.type === 'checkbox' ? target.checked : target.value;
@@ -404,9 +480,32 @@ function handleSignInAdminClick(event: Event) {
   const generate = target?.closest<HTMLButtonElement>('[data-ai-generate]');
   const option = target?.closest<HTMLButtonElement>('[data-ai-option-kind]');
   const preview = target?.closest<HTMLButtonElement>('[data-signin-preview]');
+  const publish = target?.closest<HTMLButtonElement>('[data-signin-publish]');
+  const duplicate = target?.closest<HTMLButtonElement>('[data-signin-duplicate]');
+  const reviewRefresh = target?.closest<HTMLButtonElement>('[data-review-refresh]');
+  const reviewPreset = target?.closest<HTMLButtonElement>('[data-review-preset]');
   const background = target?.closest<HTMLButtonElement>('[data-signin-background]');
   const backgroundReset = target?.closest<HTMLButtonElement>('[data-signin-background-reset]');
   const clockMove = target?.closest<HTMLButtonElement>('[data-clock-move]');
+  if (publish) {
+    void publishSignInConfig();
+    return;
+  }
+  if (duplicate) {
+    draftName = draftName || 'New Sign-In draft';
+    queueSignInConfigSave(cloneSignInConfigFrom(signInPublishedConfig));
+    return;
+  }
+  if (reviewRefresh) {
+    writeReviewDraft();
+    renderSignInAdmin();
+    return;
+  }
+  if (reviewPreset) {
+    const [width, height] = (reviewPreset.dataset.reviewPreset || '').split('x').map(Number);
+    if (width && height) { reviewViewport = { width, height }; renderSignInAdmin(); }
+    return;
+  }
   if (background) {
     const id = background.dataset.signinBackground;
     if (id && SIGNIN_BACKGROUND_OPTIONS.some((candidate) => candidate.id === id)) {
@@ -455,6 +554,10 @@ function handleSignInAdminClick(event: Event) {
     queueSignInConfigSave(JSON.parse(JSON.stringify(DEFAULT_SIGNIN_PREFERENCES)) as SignInExperiencePreferences);
     return;
   }
+  if (reset?.dataset.signinReset === 'published') {
+    queueSignInConfigSave(cloneSignInConfigFrom(signInPublishedConfig));
+    return;
+  }
   if (reset?.dataset.signinReset === 'widgets') {
     const next = cloneSignInConfig();
     next.widgetInstances = JSON.parse(JSON.stringify(DEFAULT_SIGNIN_PREFERENCES.widgetInstances));
@@ -475,7 +578,8 @@ function handleSignInAdminClick(event: Event) {
     return;
   }
   if (preview) {
-    window.open('/', '_blank', 'noopener,noreferrer');
+    writeReviewDraft();
+    window.open(reviewFrameUrl(), '_blank', 'noopener,noreferrer');
   }
 }
 async function loadSignInAdmin(canManage: boolean) {
@@ -487,7 +591,18 @@ async function loadSignInAdmin(canManage: boolean) {
   renderSignInAdmin();
   try {
     const result = await fetchAdminSignInPreferences();
-    signInConfig = result.config;
+    signInPublishedConfig = cloneSignInConfigFrom(result.config);
+    signInConfig = cloneSignInConfigFrom(result.config);
+    try {
+      const draftResult = await fetchAdminSignInDraft();
+      if (draftResult.canManage && draftResult.draft) {
+        signInConfig = draftResult.draft;
+        signInSaveState = 'draft';
+      }
+    } catch {
+      /* Active config remains available if draft storage is temporarily unavailable. */
+    }
+    writeReviewDraft();
     section.hidden = !result.canManage;
     renderSignInAdmin();
   } catch {

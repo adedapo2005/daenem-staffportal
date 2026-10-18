@@ -728,7 +728,10 @@ export function normalizeSignInPreferences(value: unknown): SignInExperiencePref
 export function readSignInPreferences() {
   if (typeof window === 'undefined') return DEFAULT_SIGNIN_PREFERENCES;
   try {
-    return normalizeSignInPreferences(JSON.parse(localStorage.getItem(SIGNIN_PREFS_KEY) || 'null'));
+    const isStudioReview = new URLSearchParams(window.location.search).get('studioReview') === 'signin-v180';
+    const storage = isStudioReview ? sessionStorage : localStorage;
+    const key = isStudioReview ? 'daenem:signin-review-draft' : SIGNIN_PREFS_KEY;
+    return normalizeSignInPreferences(JSON.parse(storage.getItem(key) || 'null'));
   } catch {
     return DEFAULT_SIGNIN_PREFERENCES;
   }
@@ -789,6 +792,19 @@ export async function saveSignInPreferences(value: unknown): Promise<SignInExper
     body: JSON.stringify({ config }),
   });
   return storeSignInPreferences(result.config);
+}
+
+export async function fetchAdminSignInDraft(): Promise<{ draft: SignInExperiencePreferences | null; canManage: boolean }> {
+  const result = await requestJson<{ draft?: unknown | null; canManage: boolean }>('/api/theme/signin/draft');
+  return { draft: result.draft ? normalizeSignInPreferences(result.draft) : null, canManage: Boolean(result.canManage) };
+}
+
+export async function saveSignInDraft(value: unknown | null): Promise<SignInExperiencePreferences | null> {
+  const result = await requestJson<{ draft?: unknown | null }>('/api/theme/signin/draft', {
+    method: 'POST',
+    body: JSON.stringify({ config: value == null ? null : normalizeSignInPreferences(value) }),
+  });
+  return result.draft ? normalizeSignInPreferences(result.draft) : null;
 }
 
 export function readWorldClockPreferences(): WorldClockPreferences {

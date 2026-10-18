@@ -405,6 +405,29 @@ export async function routeThemePreferences(request: Request, env: Env, context:
   if (url.pathname === '/api/theme/signin' && request.method === 'GET') {
     return json({ config: await readSignInConfig(env), canManage });
   }
+  if (url.pathname === '/api/theme/signin/draft' && request.method === 'GET') {
+    if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403);
+    const rawDraft = await setting(env, 'ui.signin_draft_v1', '');
+    let draft: ReturnType<typeof cleanSignInConfig> | null = null;
+    if (rawDraft) {
+      try { draft = cleanSignInConfig(JSON.parse(rawDraft)); } catch { draft = null; }
+    }
+    return json({ draft, canManage: true });
+  }
+  if (url.pathname === '/api/theme/signin/draft' && request.method === 'POST') {
+    if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403);
+    let body: { config?: unknown | null };
+    try { body = await request.json(); } catch { return json({ error: 'Invalid sign-in draft request.' }, 400); }
+    const draft = body.config == null ? null : cleanSignInConfig(body.config);
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.signin_draft_v1\',?,\'json\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP')
+        .bind(draft ? JSON.stringify(draft) : '', context.employee.id),
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+        VALUES(?,?,'theme',?, 'app_setting','ui.signin_draft_v1',?,'web')`)
+        .bind(uid('audit'), context.employee.id, draft ? 'save_signin_draft' : 'clear_signin_draft', JSON.stringify({ hasDraft: Boolean(draft) })),
+    ]);
+    return json({ ok: true, draft });
+  }
   if (url.pathname === '/api/theme/signin' && request.method === 'POST') {
     if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403);
     let body: { config?: unknown };
