@@ -498,6 +498,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       provider_email_unverified: 'The identity provider email must be verified before Staff Portal access is allowed.',
       employee_not_authorized: 'This account is not authorized for Staff Portal access. Contact your administrator.',
       oauth_not_configured: 'This social sign-in method is not configured for this Staff Portal deployment.',
+      oauth_state_storage_unavailable: 'The sign-in service is temporarily unavailable. Please try again shortly.',
       invalid_provider_identity: 'The identity provider response could not be verified. Please try again.',
       provider_exchange_failed: 'The identity provider could not complete sign-in. Please try again.',
     };
