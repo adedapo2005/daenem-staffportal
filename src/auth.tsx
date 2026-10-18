@@ -487,6 +487,28 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }, []);
 
   useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('auth_error');
+    if (!code) return;
+    const messages: Record<string, string> = {
+      provider_denied: 'Sign-in was cancelled. You can try again or use your employee username or email and password.',
+      invalid_oauth_response: 'The sign-in response was incomplete. Please try again.',
+      invalid_oauth_state: 'The sign-in session expired or could not be verified. Please try again.',
+      provider_token_missing: 'The identity provider did not return a usable sign-in token. Please try again.',
+      provider_email_missing: 'The identity provider did not return an email address for this account.',
+      provider_email_unverified: 'The identity provider email must be verified before Staff Portal access is allowed.',
+      employee_not_authorized: 'This account is not authorized for Staff Portal access. Contact your administrator.',
+      oauth_not_configured: 'This social sign-in method is not configured for this Staff Portal deployment.',
+      invalid_provider_identity: 'The identity provider response could not be verified. Please try again.',
+      provider_exchange_failed: 'The identity provider could not complete sign-in. Please try again.',
+    };
+    setMessage({ type: 'error', text: messages[code] || 'Social sign-in could not be completed. Please try again.' });
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete('auth_error');
+    cleanUrl.searchParams.delete('auth_provider');
+    window.history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     api<PasswordPolicy>('/api/auth/password-policy').then((value) => {
       if (!active || !value || typeof value.minimumLength !== 'number') return;
@@ -590,8 +612,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
-  function unavailableOAuth(provider: 'Microsoft' | 'Google') {
-    setMessage({ type: 'info', text: `${provider} access is not enabled for this Staff Portal deployment. Use your employee username or email and password, or ask your administrator to enable it.` });
+  function startOAuth(provider: 'google' | 'microsoft') {
+    setMessage(null);
+    window.location.assign(`/api/auth/oauth/${provider}/start`);
   }
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
@@ -872,8 +895,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {whatsAppSignInChallenge && <div className="sp-provider-flow-panel is-verify" role="status"><div className="sp-provider-flow-head"><span className="sp-provider-flow-icon"><WhatsAppMark size={17} /></span><span><b>WhatsApp Verification</b><small>Code sent to {whatsAppSignInDestination}</small></span></div><label><span className="sp-field-label">Verification Code</span><span className="sp-input-shell"><KeyRound size={16} /><input value={whatsAppSignInCode} onChange={(event) => setWhatsAppSignInCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Enter 6-digit code" /></span></label><button type="button" className="sp-provider-flow-action" disabled={busy || whatsAppSignInCode.length !== 6} onClick={() => void verifyWhatsAppSignIn()}>Verify WhatsApp Code <ArrowRight size={14} /></button></div>}
       <div className="sp-auth-divider"><span /><b>Or Continue With</b><span /></div>
       <div className="sp-social-grid sp-auth-provider-list sp-auth-provider-signin" aria-label="Sign in with another provider">
-        <button type="button" className="sp-social-button" onClick={() => unavailableOAuth('Microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">Microsoft</span></button>
-        <button type="button" className="sp-social-button" onClick={() => unavailableOAuth('Google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">Google</span></button>
+        <button type="button" className="sp-social-button" onClick={() => startOAuth('microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">Microsoft</span></button>
+        <button type="button" className="sp-social-button" onClick={() => startOAuth('google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">Google</span></button>
         <button type="button" className="sp-social-button" onClick={() => void startWhatsAppSignIn()}><span className="sp-social-icon"><WhatsAppMark size={19} /></span><span className="sp-social-label">WhatsApp</span></button>
         <p className="sp-auth-provider-status"><LockKeyhole size={12} /> Secure provider connections use the configured Cloudflare staging environment.</p>
       </div>
@@ -1023,8 +1046,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {mode !== 'forgot' && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
-          <button type="button" onClick={() => unavailableOAuth('Microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>
-          <button type="button" onClick={() => unavailableOAuth('Google')}><b className="usp-google-mark">G</b>{mode === 'signup' ? authLabels.googleCreateAccount : authLabels.googleSignIn}</button>
+          <button type="button" onClick={() => startOAuth('microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>
+          <button type="button" onClick={() => startOAuth('google')}><b className="usp-google-mark">G</b>{mode === 'signup' ? authLabels.googleCreateAccount : authLabels.googleSignIn}</button>
         </div>
         <p className="usp-social-note">{authLabels.socialNote}</p>
       </>}
