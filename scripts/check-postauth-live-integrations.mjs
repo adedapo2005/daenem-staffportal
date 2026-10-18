@@ -6,8 +6,14 @@ const widgets = read('src/postlogin-live-widgets-v116.tsx');
 const styles = read('src/postlogin-live-widgets-v116.css');
 const feeds = read('worker/postlogin-context.ts');
 const worker = read('worker/index.ts');
+const clientEntry = read('src/main.tsx');
+const serviceWorker = read('public/sw.js');
 
 const fail = (message) => { console.error(`post-auth integration contract: ${message}`); process.exitCode = 1; };
+
+const clientCache = clientEntry.match(/SERVICE_WORKER_CACHE = '([^']+)'/)?.[1];
+const workerCache = serviceWorker.match(/CACHE = '([^']+)'/)?.[1];
+if (!clientCache || clientCache !== workerCache || !clientCache.includes('v16-postauth-live-integrations')) fail('client and service-worker cache releases are not synchronized');
 
 if (!runtime.includes('LivePostLoginEnhancementsV116')) fail('runtime enhancement mount is missing');
 if (!runtime.includes('09bd2051d118242bce095be012a3a763cc1f8a33')) fail('approved V115 source provenance changed');
