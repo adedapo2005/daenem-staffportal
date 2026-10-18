@@ -105,8 +105,58 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       if (chip.getAttribute('aria-label') !== ariaLabel) chip.setAttribute('aria-label', ariaLabel);
       chip.dataset.stageRelease = STAGING_BUILD.release;
     };
-    updateReleaseChip();
-    const observer = new MutationObserver(updateReleaseChip);
+    const updateReleaseDialog = () => {
+      const dialog = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'))
+        .find((item) => item.querySelector('h2')?.textContent?.trim() === 'Release Details');
+      if (!dialog) return;
+      const placeholder = Array.from(dialog.querySelectorAll<HTMLParagraphElement>('p'))
+        .find((item) => item.textContent?.includes('Detailed release notes are not available'));
+      if (placeholder) placeholder.textContent = `Approved UI V${APPROVED_SOURCE.version} with live runtime R${STAGING_BUILD.runtime}, deployed ${stagingDeploymentLabel()}.`;
+      let manifest = dialog.querySelector<HTMLElement>('.v116-release-manifest');
+      if (!manifest) {
+        manifest = document.createElement('section');
+        manifest.className = 'v116-release-manifest';
+        manifest.setAttribute('aria-label', 'Staging deployment manifest');
+        const close = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.trim() === 'Close');
+        if (close) close.before(manifest); else dialog.append(manifest);
+      }
+      if (manifest.dataset.commit === STAGING_BUILD.commit) return;
+      manifest.dataset.commit = STAGING_BUILD.commit;
+      manifest.replaceChildren();
+      const heading = document.createElement('strong');
+      heading.textContent = 'Staging deployment';
+      manifest.append(heading);
+      const addLine = (label: string, value: string) => {
+        const line = document.createElement('div');
+        const key = document.createElement('b');
+        key.textContent = `${label}: `;
+        line.append(key, document.createTextNode(value));
+        manifest?.append(line);
+      };
+      addLine('Approved design', `QA Review V${APPROVED_SOURCE.version}`);
+      addLine('Design source', `${APPROVED_SOURCE.commit.slice(0, 7)} · Oct 5, 2026`);
+      addLine('Stage release', STAGING_BUILD.release);
+      addLine('Live runtime', `R${STAGING_BUILD.runtime}`);
+      addLine('Stage commit', STAGING_BUILD.commit);
+      addLine('Pushed to stage', stagingDeploymentLabel());
+      const listHeading = document.createElement('b');
+      listHeading.textContent = 'Completed work included';
+      manifest.append(listHeading);
+      const list = document.createElement('ul');
+      STAGING_BUILD.completedWork.forEach((item) => {
+        const row = document.createElement('li');
+        row.textContent = item;
+        list.append(row);
+      });
+      manifest.append(list);
+      if (STAGING_BUILD.runId) addLine('GitHub run', STAGING_BUILD.runId);
+    };
+    const updateReleaseDetails = () => {
+      updateReleaseChip();
+      updateReleaseDialog();
+    };
+    updateReleaseDetails();
+    const observer = new MutationObserver(updateReleaseDetails);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, []);
@@ -138,49 +188,6 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
     >
       <Portal />
       <LivePostLoginEnhancementsV116 />
-      <details
-        aria-label="StaffPortal staging deployment details"
-        style={{
-          position: 'fixed',
-          right: '12px',
-          bottom: '12px',
-          zIndex: 2147483000,
-          maxWidth: 'min(360px, calc(100vw - 24px))',
-          border: '1px solid rgba(15, 53, 74, 0.18)',
-          borderRadius: '12px',
-          background: 'rgba(255, 255, 255, 0.96)',
-          boxShadow: '0 12px 34px rgba(11, 48, 71, 0.16)',
-          color: '#10374b',
-          font: '600 11px/1.35 Inter, system-ui, sans-serif',
-          backdropFilter: 'blur(14px)',
-        }}
-      >
-        <summary
-          style={{
-            cursor: 'pointer',
-            listStyle: 'none',
-            padding: '9px 12px',
-            letterSpacing: '0.02em',
-          }}
-        >
-          STAGING {STAGING_BUILD.release} · UI V{APPROVED_SOURCE.version} · R{STAGING_BUILD.runtime} · {STAGING_BUILD.commit.slice(0, 7)} · {stagingDeploymentLabel()}
-        </summary>
-        <div style={{ borderTop: '1px solid rgba(15, 53, 74, 0.12)', padding: '10px 12px', fontWeight: 500 }}>
-          <div><strong>Approved design:</strong> QA Review V{APPROVED_SOURCE.version}</div>
-          <div><strong>Design source:</strong> {APPROVED_SOURCE.commit.slice(0, 7)} (Oct 5, 2026)</div>
-          <div><strong>Stage release:</strong> {STAGING_BUILD.release}</div>
-          <div><strong>Live runtime:</strong> R{STAGING_BUILD.runtime}</div>
-          <div><strong>Stage commit:</strong> {STAGING_BUILD.commit}</div>
-          <div><strong>Pushed to stage:</strong> {stagingDeploymentLabel()}</div>
-          <div style={{ marginTop: '8px' }}><strong>Completed work included:</strong></div>
-          <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
-            {STAGING_BUILD.completedWork.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-          {STAGING_BUILD.runId ? (
-            <div><strong>GitHub run:</strong> {STAGING_BUILD.runId}</div>
-          ) : null}
-        </div>
-      </details>
     </div>
   );
 }
