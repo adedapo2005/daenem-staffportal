@@ -1,0 +1,36 @@
+.home-weather > .tech-weather:not(.v116-weather){display:none}
+.v116-widget{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--p-line) 78%,var(--p-accent) 22%);background:linear-gradient(145deg,var(--p-surface) 0%,color-mix(in srgb,var(--p-surface) 93%,var(--p-accent) 7%) 100%)}
+.v116-widget::after{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,var(--p-accent),transparent);opacity:.6;pointer-events:none}
+.v116-widget-header{display:flex;align-items:flex-start;gap:.8rem;margin-bottom:1rem}
+.v116-widget-header>div{min-width:0;flex:1}
+.v116-widget-header h3{font-size:1rem;margin:.18rem 0 .12rem;letter-spacing:-.015em}
+.v116-widget-header small{display:block;color:var(--p-muted);font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v116-widget-icon{width:2.25rem;height:2.25rem;border-radius:.72rem;display:grid;place-items:center;color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 10%,var(--p-surface));border:1px solid color-mix(in srgb,var(--p-accent) 18%,var(--p-line))}
+.v116-icon-button{width:2.15rem;height:2.15rem;display:grid;place-items:center;border:1px solid var(--p-line);border-radius:.68rem;background:color-mix(in srgb,var(--p-surface) 92%,transparent);color:var(--p-muted);transition:color .2s ease,border-color .2s ease,transform .2s ease}
+.v116-icon-button:hover{color:var(--p-accent);border-color:color-mix(in srgb,var(--p-accent) 42%,var(--p-line));transform:translateY(-1px)}
+.v116-icon-button:disabled{opacity:.55;transform:none}
+.v116-headlines{list-style:none;padding:0;margin:0;display:grid;gap:.15rem}
+.v116-headlines li{border-top:1px solid color-mix(in srgb,var(--p-line) 82%,transparent)}
+.v116-headlines li:first-child{border-top:0}
+.v116-headlines a{display:block;padding:.68rem .2rem;color:var(--p-ink);text-decoration:none;border-radius:.45rem;transition:background .18s ease,padding-left .18s ease}
+.v116-headlines a:hover{background:color-mix(in srgb,var(--p-accent) 6%,transparent);padding-left:.45rem}
+.v116-headlines a>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.84rem;line-height:1.42;font-weight:620}
+.v116-headlines small{display:block;margin-top:.28rem;color:var(--p-muted);font-size:.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v116-headlines small strong{color:color-mix(in srgb,var(--p-accent) 80%,var(--p-ink));font-weight:650}
+.v116-empty{min-height:8rem;display:grid;place-items:center;text-align:center;color:var(--p-muted);font-size:.82rem}
+.v116-inspiration blockquote{font-family:Manrope,Inter,system-ui,sans-serif;font-size:1.08rem;line-height:1.58;letter-spacing:-.02em;margin:1.2rem 0;color:var(--p-ink)}
+.v116-focus-action{display:flex;gap:.6rem;align-items:flex-start;padding:.8rem;border-radius:.7rem;background:color-mix(in srgb,var(--p-accent) 7%,var(--p-surface));color:var(--p-muted);font-size:.76rem;line-height:1.45}
+.v116-focus-action svg{flex:none;color:var(--p-accent);margin-top:.08rem}
+.v116-weather{position:relative}
+.v116-weather header{align-items:center}
+.v116-weather-glyph{color:var(--p-accent);filter:drop-shadow(0 8px 16px color-mix(in srgb,var(--p-accent) 22%,transparent))}
+.v116-temperature{margin-top:1.05rem}
+.v116-weather-facts{margin-top:1rem}
+.v116-provider-state{display:block;margin-top:.8rem;color:var(--p-muted)}
+.tech-world .tech-clock{border-color:color-mix(in srgb,var(--p-line) 82%,var(--p-accent) 18%);background:linear-gradient(145deg,var(--p-surface),color-mix(in srgb,var(--p-surface) 94%,var(--p-accent) 6%));box-shadow:0 8px 22px color-mix(in srgb,var(--p-accent) 7%,transparent)}
+.tech-world .tech-clock-city svg{color:var(--p-accent);filter:drop-shadow(0 3px 7px color-mix(in srgb,var(--p-accent) 22%,transparent))}
+.tech-world .tech-day-track i{box-shadow:0 0 0 3px color-mix(in srgb,var(--p-accent) 13%,transparent),0 0 12px color-mix(in srgb,var(--p-accent) 32%,transparent)}
+.v116-spinning{animation:v116-spin .8s linear infinite}
+@keyframes v116-spin{to{transform:rotate(360deg)}}
+@media(max-width:760px){.v116-widget-header small{white-space:normal}.v116-headlines a>span{font-size:.88rem}.v116-inspiration blockquote{font-size:1rem}}
+@media(prefers-reduced-motion:reduce){.v116-icon-button,.v116-headlines a{transition:none}.v116-spinning{animation:none}}
