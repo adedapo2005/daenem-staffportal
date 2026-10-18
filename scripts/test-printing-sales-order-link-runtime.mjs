@@ -113,6 +113,23 @@ assert.deepEqual({ ...db.prepare('SELECT status,payment_status,total_kobo,amount
 });
 assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE action='completed_sales_order_eligible'").get().request_id, 'request-complete');
 
+db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-race','company-printing','location-a','DP-R','Concurrent approval',20,64000,'quoted')`).run();
+const concurrentApprovals = await Promise.all([
+  route(statusRequest('job-race', 'customer_approved', 'request-race-a'), env, context),
+  route(statusRequest('job-race', 'customer_approved', 'request-race-b'), env, context),
+]);
+const raceResults = await Promise.all(concurrentApprovals.map(async (result) => ({ status: result.status, body: await result.json() })));
+assert.deepEqual(raceResults.map((result) => result.status), [200, 200], 'concurrent approval retries resolve successfully');
+assert.equal(raceResults[0].body.salesOrderId, 'print-order-job-race');
+assert.equal(raceResults[1].body.salesOrderId, 'print-order-job-race', 'both concurrent requests resolve the same authoritative order');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE id='print-order-job-race'").get().n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_order_items WHERE sales_order_id='print-order-job-race'").get().n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-race' AND action='customer_approved_order_link'").get().n, 1);
+assert.deepEqual({ ...db.prepare("SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-race'").get() }, {
+  production_status: 'customer_approved', sales_order_id: 'print-order-job-race',
+});
+
 db.prepare(`INSERT INTO sales_orders(id,company_id,location_id,customer_id,order_no,channel,order_date,status,payment_status,currency,
   subtotal_kobo,discount_kobo,tax_kobo,total_kobo,amount_paid_kobo,notes,created_by)
   VALUES('foreign-order','company-bakery',NULL,NULL,'BAK-1','other',date('now'),'approved','unpaid','NGN',125000,0,0,125000,0,NULL,'employee-b')`).run();
@@ -131,4 +148,4 @@ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE notes='Pri
 assert.equal(db.prepare("SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-audit-fail'").get().production_status, 'quoted');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-audit-fail'").get().n, 0);
 
-console.log('Printing status Worker-handler SQLite acceptance: approval, idempotent retry, company isolation, Finance eligibility, payment-truth preservation, and audit rollback PASS');
+console.log('Printing status Worker-handler SQLite acceptance: approval, concurrent one-order linkage, idempotent retry, company isolation, Finance eligibility, payment-truth preservation, and audit rollback PASS');
