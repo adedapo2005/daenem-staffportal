@@ -30,7 +30,7 @@ import { routeSocialOAuthAuthenticated, routeSocialOAuthPublic, type SocialOAuth
 import { routeSocialCommunity } from './social-community';
 import { guardOwnerForcedPasswordChange, routeOwnerTemporaryAccess } from './owner-temp-access';
 import { routeOwnerTemporaryPasswordRepair } from './owner-temp-repair';
-import { guardTemporaryPasswordChange, routeTemporaryPasswordSelf } from './temporary-password';
+import { guardTemporaryPasswordChange, routeTemporaryPasswordAdmin, routeTemporaryPasswordSelf } from './temporary-password';
 import { routeThemePreferences } from './theme-preferences';
 import { routeNavigationWorkspace } from './navigation-workspace';
 import { routeExperiencePreferences } from './experience-preferences';
@@ -271,6 +271,16 @@ export default {
         url.pathname === '/api/admin/employees/create'
       ) {
         const response = await routeProfileManagement(request, env, context);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/admin/login-access/temporary-password')) {
+        // The legacy writer uses aggregate users.access and non-atomic credential writes.
+        // Expose only the group Owner's read model until target-company writes are repaired.
+        if (url.pathname !== '/api/admin/login-access/temporary-password' || request.method !== 'GET' ||
+            !context.roles.some((role) => role.code === 'owner')) {
+          return secure(json({ error: 'Route not found.' }, 404));
+        }
+        const response = await routeTemporaryPasswordAdmin(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/admin/')) {
