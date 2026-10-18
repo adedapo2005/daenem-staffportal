@@ -1,5 +1,7 @@
 const base = new URL(process.env.STAFFPORTAL_STAGING_URL || 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev');
-const assetPattern = /(?:\/assets\/|\.\/|assets\/)[A-Za-z0-9_./-]+\.(?:js|mjs|css|woff2?|png|jpe?g|svg|webp)/g;
+// `assets/` must start a path segment: a source path such as `design-assets/signin-native/x.jpg`
+// (unpublished provenance metadata) is not a reference to `/assets/signin-native/x.jpg`.
+const assetPattern = /(?:\/assets\/|\.\/|(?<![A-Za-z0-9_-])assets\/)[A-Za-z0-9_./-]+\.(?:js|mjs|css|woff2?|png|jpe?g|svg|webp)/g;
 const expectedTypes = {
   '.js': /(?:javascript|ecmascript)/i,
   '.mjs': /(?:javascript|ecmascript)/i,
@@ -12,6 +14,9 @@ const expectedTypes = {
   '.svg': /image\/svg\+xml/i,
   '.webp': /image\/webp/i,
 };
+
+const SCENERY_KEY = /^\/assets\/scenery\/([A-Za-z0-9_-]+)\.jpe?g$/;
+const SCENERY_WIDTHS = [640, 1280, 2560, 3840];
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const extension = (pathname) => Object.keys(expectedTypes).find((value) => pathname.endsWith(value));
@@ -48,6 +53,16 @@ async function verifyOnce() {
     const response = await responseFor(url);
     const type = response.headers.get('content-type') || '';
     const suffix = extension(url.pathname);
+    // V115 sign-in scenery presets store `/assets/scenery/<name>.jpg` as a base-name key;
+    // every renderer rewrites it to `<name>-{640,1280,2560,3840}.webp` and never requests
+    // the .jpg. A published .jpg still passes normally; otherwise all four WebP derivatives
+    // must exist and are verified (200 + image/webp) like any other asset.
+    const sceneryKey = SCENERY_KEY.exec(url.pathname);
+    if (sceneryKey && !(response.status === 200 && expectedTypes['.jpg'].test(type))) {
+      for (const width of SCENERY_WIDTHS) queue.push(new URL(`/assets/scenery/${sceneryKey[1]}-${width}.webp`, url));
+      await response.body?.cancel();
+      continue;
+    }
     if (response.status !== 200) throw new Error(`${url.pathname} returned ${response.status}.`);
     if (!suffix || !expectedTypes[suffix].test(type)) throw new Error(`${url.pathname} returned unexpected content type ${type || 'missing'}.`);
     if (suffix === '.js' || suffix === '.mjs' || suffix === '.css') {
