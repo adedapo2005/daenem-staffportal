@@ -1,9 +1,8 @@
 name: StaffPortal Staging Deploy
 
+# Deployment authority moved to the manual controller on main.
+# The legacy feature-branch workflow MUST NOT deploy, even if dispatched.
 on:
-  push:
-    branches:
-      - feature/staffportal-mobile-auth-takeover-01
   workflow_dispatch:
 
 permissions:
@@ -15,6 +14,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ false }} # RETIRED: Only the Owner-approved main workflow can deploy.
     name: Deploy StaffPortal staging
     runs-on: ubuntu-latest
     timeout-minutes: 30
