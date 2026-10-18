@@ -38,24 +38,48 @@ function parseCanonicalExpiry(value: unknown): Date | null {
   return Number.isFinite(date.getTime()) && date.toISOString() === value ? date : null;
 }
 
-export async function storeOneDriveOAuthTokens(env: StorageMirrorVaultEnv, tokens: OneDriveOAuthTokens) {
+// An initial OAuth connection must never overwrite an already connected account.
+// A refresh must supply the exact encrypted refresh-token snapshot it read before
+// contacting Microsoft. One conditional UPDATE wins; stale attempts fail closed.
+// The guard is server-internal encrypted state, never a customer- or UI-supplied token.
+export async function storeOneDriveOAuthTokens(
+  env: StorageMirrorVaultEnv,
+  tokens: OneDriveOAuthTokens,
+  expectedRefreshTokenCiphertext?: string,
+) {
   const expiresAt = parseCanonicalExpiry(tokens.expiresAt);
   const scopes = normalizeOneDriveScopes(tokens.scopes);
   if (!validToken(tokens.accessToken) || !validToken(tokens.refreshToken) ||
     !expiresAt || expiresAt.getTime() <= Date.now()) {
     throw new Error('ONEDRIVE_OAUTH_TOKEN_RESPONSE_INVALID');
   }
+  if (expectedRefreshTokenCiphertext !== undefined &&
+    (typeof expectedRefreshTokenCiphertext !== 'string' ||
+      expectedRefreshTokenCiphertext.length === 0 ||
+      expectedRefreshTokenCiphertext.length > 65_536)) {
+    throw new Error('ONEDRIVE_OAUTH_TOKEN_ROTATION_GUARD_INVALID');
+  }
 
   const accessTokenCiphertext = await encryptSocialSecret(env, tokens.accessToken);
   const refreshTokenCiphertext = await encryptSocialSecret(env, tokens.refreshToken);
-  await env.DB.prepare(`INSERT INTO storage_mirror_oauth_tokens(
-      id,access_token_ciphertext,refresh_token_ciphertext,expires_at,scopes_json,updated_at
-    ) VALUES('microsoft_onedrive',?,?,?,?,CURRENT_TIMESTAMP)
-    ON CONFLICT(id) DO UPDATE SET
-      access_token_ciphertext=excluded.access_token_ciphertext,
-      refresh_token_ciphertext=excluded.refresh_token_ciphertext,
-      expires_at=excluded.expires_at,scopes_json=excluded.scopes_json,updated_at=CURRENT_TIMESTAMP`)
-    .bind(accessTokenCiphertext, refreshTokenCiphertext, expiresAt.toISOString(), JSON.stringify(scopes)).run();
+  const statement = expectedRefreshTokenCiphertext === undefined
+    ? env.DB.prepare(`INSERT INTO storage_mirror_oauth_tokens(
+        id,access_token_ciphertext,refresh_token_ciphertext,expires_at,scopes_json,updated_at
+      ) VALUES('microsoft_onedrive',?,?,?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO NOTHING`)
+      .bind(accessTokenCiphertext, refreshTokenCiphertext, expiresAt.toISOString(), JSON.stringify(scopes))
+    : env.DB.prepare(`UPDATE storage_mirror_oauth_tokens SET
+        access_token_ciphertext=?, refresh_token_ciphertext=?, expires_at=?,
+        scopes_json=?, updated_at=CURRENT_TIMESTAMP
+      WHERE id='microsoft_onedrive' AND refresh_token_ciphertext=?`)
+      .bind(accessTokenCiphertext, refreshTokenCiphertext, expiresAt.toISOString(),
+        JSON.stringify(scopes), expectedRefreshTokenCiphertext);
+  const result = await statement.run();
+  if (Number(result.meta?.changes ?? 0) !== 1) {
+    throw new Error(expectedRefreshTokenCiphertext === undefined
+      ? 'ONEDRIVE_OAUTH_TOKEN_ALREADY_CONNECTED'
+      : 'ONEDRIVE_OAUTH_TOKEN_STALE');
+  }
   return { expiresAt: expiresAt.toISOString(), scopes };
 }
 

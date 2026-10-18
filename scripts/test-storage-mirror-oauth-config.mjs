@@ -8,7 +8,7 @@ const config = worker.slice(worker.indexOf('async function routeOneDriveConfig')
 assert.match(migration, /client_secret_ciphertext TEXT NOT NULL/);
 assert.match(migration, /id TEXT PRIMARY KEY CHECK \(id = 'microsoft_onedrive'\)/);
 assert.match(config, /request\.method === 'GET'[\s\S]*?authorizationEnabled: false, liveTransferEnabled: false/);
-assert.match(config, /if \(!authorized\(context\)\) return json\([\s\S]*?403/);
+assert.match(config, /if \(!await hasStorageAdminGrant\(env, context\)\) return json\([\s\S]*?403/);
 assert.match(config, /official Microsoft OAuth flow; credential entry is unavailable/);
 assert.match(config, /ownerActionRequired: true/);
 assert.doesNotMatch(config, /clientSecret|encryptSocialSecret|request\.json\(\)/);
