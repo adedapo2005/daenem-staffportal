@@ -1,0 +1,9 @@
+RULE,CONDITION,RESULT
+Maker checker,maker_id == approver_id,BLOCK
+Dual authorization,amount >= configured threshold,Require two eligible independent approvals
+Beneficiary validation,beneficiary not Active/Verified,BLOCK
+Transfer limit,amount exceeds account/user/provider limit,BLOCK
+Evidence,reason or required evidence absent,BLOCK
+Execution authority,approval complete but execute grant absent,BLOCK
+Provider retry,ambiguous provider result,Do not resubmit without idempotency/provider lookup
+Reversal,provider confirms reversal,Link state to original; preserve audit

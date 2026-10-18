@@ -473,7 +473,8 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
   const [loading, setLoading] = useState('');
   const [message, setMessage] = useState('');
   const deepLinkLaunchRef = useRef('');
-  const available = useMemo(() => moduleDefinitions.filter((module) => isModuleVisible(context, module, companyId, companyCode)), [companyCode, companyId, context]);
+  const available = useMemo(() => moduleDefinitions.filter((module) => isModuleVisible(context, module, companyId, companyCode))
+    .filter((module) => module.id !== 'layout-studio'), [companyCode, companyId, context]);
   const groups = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const filtered = normalized ? available.filter((module) => `${module.label} ${module.detail} ${module.functionalItem}`.toLowerCase().includes(normalized)) : available;

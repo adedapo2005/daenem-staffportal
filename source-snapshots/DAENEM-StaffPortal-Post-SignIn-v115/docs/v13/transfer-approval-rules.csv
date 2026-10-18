@@ -1,0 +1,6 @@
+CONTROL,RULE,FAILURE
+Maker-checker,Maker cannot approve own controlled transfer,No provider submission
+Dual authorization,Threshold may require two independent approvers,No provider submission
+Beneficiary,Active and verified beneficiary required,No provider submission
+Execution,"Create, approve and execute are separate permissions",No provider submission
+Idempotency,Unique transfer operation key required,No provider submission

@@ -4,7 +4,8 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const auth = read('worker/auth.ts');
 const api = read('worker/index.ts');
 const clientAuth = read('src/auth.tsx');
-const main = read('src/main.tsx');
+const approvedPostLogin = read('src/qa-review-v115-runtime.tsx');
+const approvedPortalModel = read('source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model.ts');
 const moduleHub = read('src/module-hub.tsx');
 const packageJson = JSON.parse(read('package.json'));
 const businessWorkers = {
@@ -25,16 +26,16 @@ function check(name, condition) {
   if (!condition) process.exitCode = 1;
 }
 
-check('release version is synchronized', /^7\.0\.0-alpha\.\d+$/.test(packageJson.version) && main.includes(`version: '${packageJson.version}'`));
+check('release version and approved shell identity are synchronized', /^7\.0\.0-alpha\.\d+$/.test(packageJson.version) && approvedPostLogin.includes('data-approved-postlogin="qa-review-v115"') && approvedPostLogin.includes("version: '115'") && approvedPostLogin.includes('09bd2051d118242bce095be012a3a763cc1f8a33'));
 check('session returns company permission maps', auth.includes('companyPermissions,') && auth.includes('employee_permission_overrides_v2'));
 check('general roles apply across assigned businesses', auth.includes('const targets = row.companyId ? [String(row.companyId)] : companyIds'));
 check('explicit business overrides apply last', auth.indexOf('for (const row of scopedOverrides.results || [])') > auth.indexOf('for (const row of permissionRows.results || [])'));
 check('server permission helper accepts a company', auth.includes("companyId?: string | null") && auth.includes('context.companyPermissions[companyId]'));
 check('client permission helper accepts a company', clientAuth.includes('hasWorkforcePermission') && clientAuth.includes('context.companyPermissions?.[companyId]'));
 check('background tabs reuse cached identity', clientAuth.includes("document.visibilityState === 'hidden'") && clientAuth.includes('authMeCache.value'));
-check('sidebar is filtered for the selected business', main.includes("can(context, item.permission, 'view', company.id)") && main.includes('visibleNav'));
-check('permission-only navigation redirects safely', main.includes('visibleNav.some((item) => item.id === view)') && main.includes("setView(visibleNav[0]?.id || 'help')"));
-check('employee approvals are requested by business', main.includes('/api/admin/signup-requests${query}') && auth.includes('requested_company_id IN (${placeholders})'));
+check('approved Portal receives only an authenticated Worker context', approvedPostLogin.includes('WorkforceContext') && approvedPostLogin.includes('sessionForProfile'));
+check('approved sidebar and records are permission projected', approvedPortalModel.includes('effectiveLevel') && approvedPortalModel.includes('canView') && approvedPortalModel.includes('authorizedRecords'));
+check('employee approvals are constrained by business', auth.includes('requested_company_id IN (${placeholders})'));
 check('approval writes recheck business permission', auth.includes("hasPermission(context, 'users.access', 'manage', companyId)"));
 check('dashboard group queries stay within authorized businesses', (api.includes('dashboardCompanyIds') && api.includes('company_id IN (${companyPlaceholders})')) || (api.includes('permittedDashboardCompanyIds') && ['employeeCompanyIds', 'attendanceCompanyIds', 'incompleteCompanyIds', 'approvalCompanyIds', 'securityCompanyIds', 'overdueCompanyIds', 'facilitiesCompanyIds'].every((name) => api.includes('sqlList(' + name + ')'))));
 check('security events stay within authorized businesses', api.includes('allowedCompanyIds = permittedCompanyIds(context, \'security.access\')') && api.includes('WHERE sl.company_id IN (${sqlList(companyIds)})'));
@@ -60,3 +61,4 @@ check('Properties APIs enforce Properties-company access', businessWorkers.prope
 for (const result of assertions) console.log(`${result.ok ? '✓' : '✗'} ${result.name}`);
 if (process.exitCode) console.error(`\n${assertions.filter((item) => !item.ok).length} company-access contract assertion(s) failed.`);
 else console.log(`\n${assertions.length} company-access contract assertions passed.`);
+

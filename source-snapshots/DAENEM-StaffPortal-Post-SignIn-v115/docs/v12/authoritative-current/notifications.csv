@@ -1,0 +1,7 @@
+EVENT_ID,EVENT,AUDIENCE,CHANNEL,SECURITY
+NOT-V12-001,conversation.assigned,Assigned staff,In-app,Permission projection before enqueue and render
+NOT-V12-002,message.failed,Assigned queue and authorized supervisor,In-app,Permission projection before enqueue and render
+NOT-V12-003,payment.verified,Authorized finance role,In-app,Permission projection before enqueue and render
+NOT-V12-004,transfer.awaiting_approval,Independent authorized checker,In-app,Permission projection before enqueue and render
+NOT-V12-005,payroll.employee_failed,Assigned payroll operators,In-app,Permission projection before enqueue and render
+NOT-V12-006,reconciliation.variance,Authorized reconciliation team,In-app,Permission projection before enqueue and render

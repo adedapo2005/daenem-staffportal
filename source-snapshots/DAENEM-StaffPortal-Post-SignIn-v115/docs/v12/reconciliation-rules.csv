@@ -1,0 +1,6 @@
+RULE,SOURCES,PASS_CONDITION,EXCEPTION
+Payment match,provider event|bank transaction|ERP obligation,"reference, amount, currency and authoritative state agree",Investigation queue
+Transfer match,provider transfer|bank transaction|ledger journal,reference and amount agree; provider final,Do not mark reconciled
+Payroll match,banking batch|employee result|payroll ledger,each employee final outcome accounted,Employee exception
+Fee classification,statement line|chart of accounts,approved account classification,Unclassified variance
+Maker checker,reconciliation author|reviewer,different eligible people,BLOCK

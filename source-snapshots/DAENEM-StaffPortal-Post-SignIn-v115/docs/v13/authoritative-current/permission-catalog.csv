@@ -1,0 +1,1181 @@
+PROFILE,MODULE,DISCOVERY,SOURCE
+Owner,self-service,VISIBLE,Current security-contract.ts export
+Owner,home,VISIBLE,Current security-contract.ts export
+Owner,cockpit,VISIBLE,Current security-contract.ts export
+Owner,workspace,VISIBLE,Current security-contract.ts export
+Owner,profile,VISIBLE,Current security-contract.ts export
+Owner,people,VISIBLE,Current security-contract.ts export
+Owner,hr-records,VISIBLE,Current security-contract.ts export
+Owner,attendance,VISIBLE,Current security-contract.ts export
+Owner,leave,VISIBLE,Current security-contract.ts export
+Owner,performance,VISIBLE,Current security-contract.ts export
+Owner,hr-cases,VISIBLE,Current security-contract.ts export
+Owner,lifecycle,VISIBLE,Current security-contract.ts export
+Owner,forms,VISIBLE,Current security-contract.ts export
+Owner,tasks,VISIBLE,Current security-contract.ts export
+Owner,payroll,VISIBLE,Current security-contract.ts export
+Owner,payslips,VISIBLE,Current security-contract.ts export
+Owner,payroll-batches,VISIBLE,Current security-contract.ts export
+Owner,applications,VISIBLE,Current security-contract.ts export
+Owner,interviews,VISIBLE,Current security-contract.ts export
+Owner,hiring,VISIBLE,Current security-contract.ts export
+Owner,printing,VISIBLE,Current security-contract.ts export
+Owner,print-orders,VISIBLE,Current security-contract.ts export
+Owner,print-materials,VISIBLE,Current security-contract.ts export
+Owner,bakery,VISIBLE,Current security-contract.ts export
+Owner,bakery-recipes,VISIBLE,Current security-contract.ts export
+Owner,bakery-sales,VISIBLE,Current security-contract.ts export
+Owner,autos,VISIBLE,Current security-contract.ts export
+Owner,auto-leads,VISIBLE,Current security-contract.ts export
+Owner,auto-history,VISIBLE,Current security-contract.ts export
+Owner,logistics,VISIBLE,Current security-contract.ts export
+Owner,fleet,VISIBLE,Current security-contract.ts export
+Owner,trip-costs,VISIBLE,Current security-contract.ts export
+Owner,properties,VISIBLE,Current security-contract.ts export
+Owner,leases,VISIBLE,Current security-contract.ts export
+Owner,property-leads,VISIBLE,Current security-contract.ts export
+Owner,finance,VISIBLE,Current security-contract.ts export
+Owner,receivables,VISIBLE,Current security-contract.ts export
+Owner,finance-posting,VISIBLE,Current security-contract.ts export
+Owner,budgets,VISIBLE,Current security-contract.ts export
+Owner,expenses,VISIBLE,Current security-contract.ts export
+Owner,expense-approvals,VISIBLE,Current security-contract.ts export
+Owner,spend,VISIBLE,Current security-contract.ts export
+Owner,cost-admin,VISIBLE,Current security-contract.ts export
+Owner,inventory,VISIBLE,Current security-contract.ts export
+Owner,projects,VISIBLE,Current security-contract.ts export
+Owner,facilities,VISIBLE,Current security-contract.ts export
+Owner,social,VISIBLE,Current security-contract.ts export
+Owner,social-controls,VISIBLE,Current security-contract.ts export
+Owner,social-accounts,VISIBLE,Current security-contract.ts export
+Owner,social-sync,VISIBLE,Current security-contract.ts export
+Owner,marketing,VISIBLE,Current security-contract.ts export
+Owner,inbox,VISIBLE,Current security-contract.ts export
+Owner,website,VISIBLE,Current security-contract.ts export
+Owner,communications,VISIBLE,Current security-contract.ts export
+Owner,broadcasts,VISIBLE,Current security-contract.ts export
+Owner,encouragement,VISIBLE,Current security-contract.ts export
+Owner,notifications,VISIBLE,Current security-contract.ts export
+Owner,help,VISIBLE,Current security-contract.ts export
+Owner,security,VISIBLE,Current security-contract.ts export
+Owner,access,VISIBLE,Current security-contract.ts export
+Owner,admin,VISIBLE,Current security-contract.ts export
+Owner,recovery,VISIBLE,Current security-contract.ts export
+Owner,support,VISIBLE,Current security-contract.ts export
+Owner,resources,VISIBLE,Current security-contract.ts export
+Owner,sync,VISIBLE,Current security-contract.ts export
+Owner,audit,VISIBLE,Current security-contract.ts export
+Owner,toolbox,VISIBLE,Current security-contract.ts export
+Owner,integrations,VISIBLE,Current security-contract.ts export
+Owner,hub,VISIBLE,Current security-contract.ts export
+Owner,theme,VISIBLE,Current security-contract.ts export
+Owner,navigation,VISIBLE,Current security-contract.ts export
+Owner,layout,VISIBLE,Current security-contract.ts export
+Owner,signin-design,VISIBLE,Current security-contract.ts export
+Owner,procurement,VISIBLE,Current security-contract.ts export
+Owner,purchase-orders,VISIBLE,Current security-contract.ts export
+Owner,goods-receipts,VISIBLE,Current security-contract.ts export
+Owner,stock-transfers,VISIBLE,Current security-contract.ts export
+Owner,stock-borrowing,VISIBLE,Current security-contract.ts export
+Owner,bakery-accountability,VISIBLE,Current security-contract.ts export
+Owner,technology-services,VISIBLE,Current security-contract.ts export
+Owner,vacancies,VISIBLE,Current security-contract.ts export
+Owner,staff-messaging,VISIBLE,Current security-contract.ts export
+Owner,productivity,VISIBLE,Current security-contract.ts export
+Owner,work-location,VISIBLE,Current security-contract.ts export
+Owner,salary-adjustments,VISIBLE,Current security-contract.ts export
+Owner,data-import,VISIBLE,Current security-contract.ts export
+Owner,dashboard-personalization,VISIBLE,Current security-contract.ts export
+Owner,files,VISIBLE,Current security-contract.ts export
+Owner,saved-views,VISIBLE,Current security-contract.ts export
+Owner,field-builder,VISIBLE,Current security-contract.ts export
+Owner,form-builder,VISIBLE,Current security-contract.ts export
+Owner,workflow-builder,VISIBLE,Current security-contract.ts export
+Owner,report-builder,VISIBLE,Current security-contract.ts export
+Owner,widget-builder,VISIBLE,Current security-contract.ts export
+Owner,theme-builder,VISIBLE,Current security-contract.ts export
+Owner,business-rules,VISIBLE,Current security-contract.ts export
+Owner,notification-rules,VISIBLE,Current security-contract.ts export
+Owner,session-analytics,VISIBLE,Current security-contract.ts export
+Owner,reports,VISIBLE,Current security-contract.ts export
+Owner,customer-communications,VISIBLE,Current security-contract.ts export
+Owner,communication-queues,VISIBLE,Current security-contract.ts export
+Owner,whatsapp-numbers,VISIBLE,Current security-contract.ts export
+Owner,communication-analytics,VISIBLE,Current security-contract.ts export
+Owner,communication-preferences,VISIBLE,Current security-contract.ts export
+Owner,ai-letterhead-generator,VISIBLE,Current security-contract.ts export
+Owner,communication-audit,VISIBLE,Current security-contract.ts export
+Owner,unified-inbox,VISIBLE,Current security-contract.ts export
+Owner,communication-automation,VISIBLE,Current security-contract.ts export
+Owner,communication-templates,VISIBLE,Current security-contract.ts export
+Owner,letterheads,VISIBLE,Current security-contract.ts export
+Owner,banking-operations,VISIBLE,Current security-contract.ts export
+Owner,treasury,VISIBLE,Current security-contract.ts export
+Owner,payment-verification,VISIBLE,Current security-contract.ts export
+Owner,transfers,VISIBLE,Current security-contract.ts export
+Owner,beneficiaries,VISIBLE,Current security-contract.ts export
+Owner,payroll-execution,VISIBLE,Current security-contract.ts export
+Owner,reconciliation,VISIBLE,Current security-contract.ts export
+Owner,financial-reports,VISIBLE,Current security-contract.ts export
+Group Admin,self-service,VISIBLE,Current security-contract.ts export
+Group Admin,home,VISIBLE,Current security-contract.ts export
+Group Admin,cockpit,VISIBLE,Current security-contract.ts export
+Group Admin,workspace,VISIBLE,Current security-contract.ts export
+Group Admin,profile,VISIBLE,Current security-contract.ts export
+Group Admin,people,VISIBLE,Current security-contract.ts export
+Group Admin,hr-records,VISIBLE,Current security-contract.ts export
+Group Admin,attendance,VISIBLE,Current security-contract.ts export
+Group Admin,leave,VISIBLE,Current security-contract.ts export
+Group Admin,performance,VISIBLE,Current security-contract.ts export
+Group Admin,hr-cases,VISIBLE,Current security-contract.ts export
+Group Admin,lifecycle,VISIBLE,Current security-contract.ts export
+Group Admin,forms,VISIBLE,Current security-contract.ts export
+Group Admin,tasks,VISIBLE,Current security-contract.ts export
+Group Admin,payroll,NONEXISTENT,Current security-contract.ts export
+Group Admin,payslips,VISIBLE,Current security-contract.ts export
+Group Admin,payroll-batches,NONEXISTENT,Current security-contract.ts export
+Group Admin,applications,VISIBLE,Current security-contract.ts export
+Group Admin,interviews,VISIBLE,Current security-contract.ts export
+Group Admin,hiring,VISIBLE,Current security-contract.ts export
+Group Admin,printing,VISIBLE,Current security-contract.ts export
+Group Admin,print-orders,VISIBLE,Current security-contract.ts export
+Group Admin,print-materials,VISIBLE,Current security-contract.ts export
+Group Admin,bakery,VISIBLE,Current security-contract.ts export
+Group Admin,bakery-recipes,VISIBLE,Current security-contract.ts export
+Group Admin,bakery-sales,VISIBLE,Current security-contract.ts export
+Group Admin,autos,VISIBLE,Current security-contract.ts export
+Group Admin,auto-leads,VISIBLE,Current security-contract.ts export
+Group Admin,auto-history,VISIBLE,Current security-contract.ts export
+Group Admin,logistics,VISIBLE,Current security-contract.ts export
+Group Admin,fleet,VISIBLE,Current security-contract.ts export
+Group Admin,trip-costs,VISIBLE,Current security-contract.ts export
+Group Admin,properties,VISIBLE,Current security-contract.ts export
+Group Admin,leases,VISIBLE,Current security-contract.ts export
+Group Admin,property-leads,VISIBLE,Current security-contract.ts export
+Group Admin,finance,NONEXISTENT,Current security-contract.ts export
+Group Admin,receivables,VISIBLE,Current security-contract.ts export
+Group Admin,finance-posting,VISIBLE,Current security-contract.ts export
+Group Admin,budgets,VISIBLE,Current security-contract.ts export
+Group Admin,expenses,VISIBLE,Current security-contract.ts export
+Group Admin,expense-approvals,VISIBLE,Current security-contract.ts export
+Group Admin,spend,NONEXISTENT,Current security-contract.ts export
+Group Admin,cost-admin,VISIBLE,Current security-contract.ts export
+Group Admin,inventory,VISIBLE,Current security-contract.ts export
+Group Admin,projects,VISIBLE,Current security-contract.ts export
+Group Admin,facilities,VISIBLE,Current security-contract.ts export
+Group Admin,social,VISIBLE,Current security-contract.ts export
+Group Admin,social-controls,VISIBLE,Current security-contract.ts export
+Group Admin,social-accounts,VISIBLE,Current security-contract.ts export
+Group Admin,social-sync,VISIBLE,Current security-contract.ts export
+Group Admin,marketing,VISIBLE,Current security-contract.ts export
+Group Admin,inbox,VISIBLE,Current security-contract.ts export
+Group Admin,website,VISIBLE,Current security-contract.ts export
+Group Admin,communications,VISIBLE,Current security-contract.ts export
+Group Admin,broadcasts,VISIBLE,Current security-contract.ts export
+Group Admin,encouragement,VISIBLE,Current security-contract.ts export
+Group Admin,notifications,VISIBLE,Current security-contract.ts export
+Group Admin,help,VISIBLE,Current security-contract.ts export
+Group Admin,security,VISIBLE,Current security-contract.ts export
+Group Admin,access,VISIBLE,Current security-contract.ts export
+Group Admin,admin,VISIBLE,Current security-contract.ts export
+Group Admin,recovery,VISIBLE,Current security-contract.ts export
+Group Admin,support,VISIBLE,Current security-contract.ts export
+Group Admin,resources,VISIBLE,Current security-contract.ts export
+Group Admin,sync,VISIBLE,Current security-contract.ts export
+Group Admin,audit,VISIBLE,Current security-contract.ts export
+Group Admin,toolbox,VISIBLE,Current security-contract.ts export
+Group Admin,integrations,VISIBLE,Current security-contract.ts export
+Group Admin,hub,VISIBLE,Current security-contract.ts export
+Group Admin,theme,VISIBLE,Current security-contract.ts export
+Group Admin,navigation,VISIBLE,Current security-contract.ts export
+Group Admin,layout,VISIBLE,Current security-contract.ts export
+Group Admin,signin-design,VISIBLE,Current security-contract.ts export
+Group Admin,procurement,VISIBLE,Current security-contract.ts export
+Group Admin,purchase-orders,VISIBLE,Current security-contract.ts export
+Group Admin,goods-receipts,VISIBLE,Current security-contract.ts export
+Group Admin,stock-transfers,VISIBLE,Current security-contract.ts export
+Group Admin,stock-borrowing,VISIBLE,Current security-contract.ts export
+Group Admin,bakery-accountability,VISIBLE,Current security-contract.ts export
+Group Admin,technology-services,VISIBLE,Current security-contract.ts export
+Group Admin,vacancies,VISIBLE,Current security-contract.ts export
+Group Admin,staff-messaging,VISIBLE,Current security-contract.ts export
+Group Admin,productivity,VISIBLE,Current security-contract.ts export
+Group Admin,work-location,VISIBLE,Current security-contract.ts export
+Group Admin,salary-adjustments,VISIBLE,Current security-contract.ts export
+Group Admin,data-import,VISIBLE,Current security-contract.ts export
+Group Admin,dashboard-personalization,VISIBLE,Current security-contract.ts export
+Group Admin,files,VISIBLE,Current security-contract.ts export
+Group Admin,saved-views,VISIBLE,Current security-contract.ts export
+Group Admin,field-builder,VISIBLE,Current security-contract.ts export
+Group Admin,form-builder,VISIBLE,Current security-contract.ts export
+Group Admin,workflow-builder,VISIBLE,Current security-contract.ts export
+Group Admin,report-builder,VISIBLE,Current security-contract.ts export
+Group Admin,widget-builder,VISIBLE,Current security-contract.ts export
+Group Admin,theme-builder,VISIBLE,Current security-contract.ts export
+Group Admin,business-rules,VISIBLE,Current security-contract.ts export
+Group Admin,notification-rules,VISIBLE,Current security-contract.ts export
+Group Admin,session-analytics,VISIBLE,Current security-contract.ts export
+Group Admin,reports,VISIBLE,Current security-contract.ts export
+Group Admin,customer-communications,VISIBLE,Current security-contract.ts export
+Group Admin,communication-queues,VISIBLE,Current security-contract.ts export
+Group Admin,whatsapp-numbers,VISIBLE,Current security-contract.ts export
+Group Admin,communication-analytics,VISIBLE,Current security-contract.ts export
+Group Admin,communication-preferences,VISIBLE,Current security-contract.ts export
+Group Admin,ai-letterhead-generator,VISIBLE,Current security-contract.ts export
+Group Admin,communication-audit,VISIBLE,Current security-contract.ts export
+Group Admin,unified-inbox,VISIBLE,Current security-contract.ts export
+Group Admin,communication-automation,VISIBLE,Current security-contract.ts export
+Group Admin,communication-templates,VISIBLE,Current security-contract.ts export
+Group Admin,letterheads,VISIBLE,Current security-contract.ts export
+Group Admin,banking-operations,NONEXISTENT,Current security-contract.ts export
+Group Admin,treasury,NONEXISTENT,Current security-contract.ts export
+Group Admin,payment-verification,NONEXISTENT,Current security-contract.ts export
+Group Admin,transfers,NONEXISTENT,Current security-contract.ts export
+Group Admin,beneficiaries,NONEXISTENT,Current security-contract.ts export
+Group Admin,payroll-execution,NONEXISTENT,Current security-contract.ts export
+Group Admin,reconciliation,NONEXISTENT,Current security-contract.ts export
+Group Admin,financial-reports,NONEXISTENT,Current security-contract.ts export
+Manager,self-service,VISIBLE,Current security-contract.ts export
+Manager,home,VISIBLE,Current security-contract.ts export
+Manager,cockpit,VISIBLE,Current security-contract.ts export
+Manager,workspace,VISIBLE,Current security-contract.ts export
+Manager,profile,VISIBLE,Current security-contract.ts export
+Manager,people,VISIBLE,Current security-contract.ts export
+Manager,hr-records,VISIBLE,Current security-contract.ts export
+Manager,attendance,VISIBLE,Current security-contract.ts export
+Manager,leave,VISIBLE,Current security-contract.ts export
+Manager,performance,VISIBLE,Current security-contract.ts export
+Manager,hr-cases,VISIBLE,Current security-contract.ts export
+Manager,lifecycle,VISIBLE,Current security-contract.ts export
+Manager,forms,VISIBLE,Current security-contract.ts export
+Manager,tasks,VISIBLE,Current security-contract.ts export
+Manager,payroll,NONEXISTENT,Current security-contract.ts export
+Manager,payslips,VISIBLE,Current security-contract.ts export
+Manager,payroll-batches,NONEXISTENT,Current security-contract.ts export
+Manager,applications,VISIBLE,Current security-contract.ts export
+Manager,interviews,VISIBLE,Current security-contract.ts export
+Manager,hiring,VISIBLE,Current security-contract.ts export
+Manager,printing,VISIBLE,Current security-contract.ts export
+Manager,print-orders,VISIBLE,Current security-contract.ts export
+Manager,print-materials,VISIBLE,Current security-contract.ts export
+Manager,bakery,NONEXISTENT,Current security-contract.ts export
+Manager,bakery-recipes,NONEXISTENT,Current security-contract.ts export
+Manager,bakery-sales,NONEXISTENT,Current security-contract.ts export
+Manager,autos,NONEXISTENT,Current security-contract.ts export
+Manager,auto-leads,NONEXISTENT,Current security-contract.ts export
+Manager,auto-history,NONEXISTENT,Current security-contract.ts export
+Manager,logistics,NONEXISTENT,Current security-contract.ts export
+Manager,fleet,NONEXISTENT,Current security-contract.ts export
+Manager,trip-costs,NONEXISTENT,Current security-contract.ts export
+Manager,properties,NONEXISTENT,Current security-contract.ts export
+Manager,leases,NONEXISTENT,Current security-contract.ts export
+Manager,property-leads,NONEXISTENT,Current security-contract.ts export
+Manager,finance,NONEXISTENT,Current security-contract.ts export
+Manager,receivables,VISIBLE,Current security-contract.ts export
+Manager,finance-posting,NONEXISTENT,Current security-contract.ts export
+Manager,budgets,NONEXISTENT,Current security-contract.ts export
+Manager,expenses,VISIBLE,Current security-contract.ts export
+Manager,expense-approvals,VISIBLE,Current security-contract.ts export
+Manager,spend,NONEXISTENT,Current security-contract.ts export
+Manager,cost-admin,NONEXISTENT,Current security-contract.ts export
+Manager,inventory,VISIBLE,Current security-contract.ts export
+Manager,projects,VISIBLE,Current security-contract.ts export
+Manager,facilities,VISIBLE,Current security-contract.ts export
+Manager,social,VISIBLE,Current security-contract.ts export
+Manager,social-controls,NONEXISTENT,Current security-contract.ts export
+Manager,social-accounts,VISIBLE,Current security-contract.ts export
+Manager,social-sync,VISIBLE,Current security-contract.ts export
+Manager,marketing,VISIBLE,Current security-contract.ts export
+Manager,inbox,VISIBLE,Current security-contract.ts export
+Manager,website,VISIBLE,Current security-contract.ts export
+Manager,communications,VISIBLE,Current security-contract.ts export
+Manager,broadcasts,VISIBLE,Current security-contract.ts export
+Manager,encouragement,VISIBLE,Current security-contract.ts export
+Manager,notifications,VISIBLE,Current security-contract.ts export
+Manager,help,VISIBLE,Current security-contract.ts export
+Manager,security,NONEXISTENT,Current security-contract.ts export
+Manager,access,NONEXISTENT,Current security-contract.ts export
+Manager,admin,NONEXISTENT,Current security-contract.ts export
+Manager,recovery,NONEXISTENT,Current security-contract.ts export
+Manager,support,NONEXISTENT,Current security-contract.ts export
+Manager,resources,NONEXISTENT,Current security-contract.ts export
+Manager,sync,VISIBLE,Current security-contract.ts export
+Manager,audit,NONEXISTENT,Current security-contract.ts export
+Manager,toolbox,NONEXISTENT,Current security-contract.ts export
+Manager,integrations,NONEXISTENT,Current security-contract.ts export
+Manager,hub,VISIBLE,Current security-contract.ts export
+Manager,theme,VISIBLE,Current security-contract.ts export
+Manager,navigation,VISIBLE,Current security-contract.ts export
+Manager,layout,VISIBLE,Current security-contract.ts export
+Manager,signin-design,NONEXISTENT,Current security-contract.ts export
+Manager,procurement,VISIBLE,Current security-contract.ts export
+Manager,purchase-orders,VISIBLE,Current security-contract.ts export
+Manager,goods-receipts,VISIBLE,Current security-contract.ts export
+Manager,stock-transfers,VISIBLE,Current security-contract.ts export
+Manager,stock-borrowing,VISIBLE,Current security-contract.ts export
+Manager,bakery-accountability,NONEXISTENT,Current security-contract.ts export
+Manager,technology-services,VISIBLE,Current security-contract.ts export
+Manager,vacancies,VISIBLE,Current security-contract.ts export
+Manager,staff-messaging,VISIBLE,Current security-contract.ts export
+Manager,productivity,VISIBLE,Current security-contract.ts export
+Manager,work-location,VISIBLE,Current security-contract.ts export
+Manager,salary-adjustments,VISIBLE,Current security-contract.ts export
+Manager,data-import,VISIBLE,Current security-contract.ts export
+Manager,dashboard-personalization,VISIBLE,Current security-contract.ts export
+Manager,files,VISIBLE,Current security-contract.ts export
+Manager,saved-views,VISIBLE,Current security-contract.ts export
+Manager,field-builder,NONEXISTENT,Current security-contract.ts export
+Manager,form-builder,NONEXISTENT,Current security-contract.ts export
+Manager,workflow-builder,NONEXISTENT,Current security-contract.ts export
+Manager,report-builder,NONEXISTENT,Current security-contract.ts export
+Manager,widget-builder,NONEXISTENT,Current security-contract.ts export
+Manager,theme-builder,NONEXISTENT,Current security-contract.ts export
+Manager,business-rules,NONEXISTENT,Current security-contract.ts export
+Manager,notification-rules,NONEXISTENT,Current security-contract.ts export
+Manager,session-analytics,NONEXISTENT,Current security-contract.ts export
+Manager,reports,VISIBLE,Current security-contract.ts export
+Manager,customer-communications,VISIBLE,Current security-contract.ts export
+Manager,communication-queues,VISIBLE,Current security-contract.ts export
+Manager,whatsapp-numbers,VISIBLE,Current security-contract.ts export
+Manager,communication-analytics,VISIBLE,Current security-contract.ts export
+Manager,communication-preferences,VISIBLE,Current security-contract.ts export
+Manager,ai-letterhead-generator,NONEXISTENT,Current security-contract.ts export
+Manager,communication-audit,VISIBLE,Current security-contract.ts export
+Manager,unified-inbox,VISIBLE,Current security-contract.ts export
+Manager,communication-automation,VISIBLE,Current security-contract.ts export
+Manager,communication-templates,VISIBLE,Current security-contract.ts export
+Manager,letterheads,VISIBLE,Current security-contract.ts export
+Manager,banking-operations,NONEXISTENT,Current security-contract.ts export
+Manager,treasury,NONEXISTENT,Current security-contract.ts export
+Manager,payment-verification,NONEXISTENT,Current security-contract.ts export
+Manager,transfers,NONEXISTENT,Current security-contract.ts export
+Manager,beneficiaries,NONEXISTENT,Current security-contract.ts export
+Manager,payroll-execution,NONEXISTENT,Current security-contract.ts export
+Manager,reconciliation,NONEXISTENT,Current security-contract.ts export
+Manager,financial-reports,NONEXISTENT,Current security-contract.ts export
+Employee,self-service,VISIBLE,Current security-contract.ts export
+Employee,home,VISIBLE,Current security-contract.ts export
+Employee,cockpit,NONEXISTENT,Current security-contract.ts export
+Employee,workspace,VISIBLE,Current security-contract.ts export
+Employee,profile,VISIBLE,Current security-contract.ts export
+Employee,people,NONEXISTENT,Current security-contract.ts export
+Employee,hr-records,NONEXISTENT,Current security-contract.ts export
+Employee,attendance,VISIBLE,Current security-contract.ts export
+Employee,leave,VISIBLE,Current security-contract.ts export
+Employee,performance,VISIBLE,Current security-contract.ts export
+Employee,hr-cases,NONEXISTENT,Current security-contract.ts export
+Employee,lifecycle,NONEXISTENT,Current security-contract.ts export
+Employee,forms,VISIBLE,Current security-contract.ts export
+Employee,tasks,VISIBLE,Current security-contract.ts export
+Employee,payroll,NONEXISTENT,Current security-contract.ts export
+Employee,payslips,VISIBLE,Current security-contract.ts export
+Employee,payroll-batches,NONEXISTENT,Current security-contract.ts export
+Employee,applications,NONEXISTENT,Current security-contract.ts export
+Employee,interviews,NONEXISTENT,Current security-contract.ts export
+Employee,hiring,NONEXISTENT,Current security-contract.ts export
+Employee,printing,NONEXISTENT,Current security-contract.ts export
+Employee,print-orders,NONEXISTENT,Current security-contract.ts export
+Employee,print-materials,NONEXISTENT,Current security-contract.ts export
+Employee,bakery,NONEXISTENT,Current security-contract.ts export
+Employee,bakery-recipes,NONEXISTENT,Current security-contract.ts export
+Employee,bakery-sales,NONEXISTENT,Current security-contract.ts export
+Employee,autos,NONEXISTENT,Current security-contract.ts export
+Employee,auto-leads,NONEXISTENT,Current security-contract.ts export
+Employee,auto-history,NONEXISTENT,Current security-contract.ts export
+Employee,logistics,NONEXISTENT,Current security-contract.ts export
+Employee,fleet,NONEXISTENT,Current security-contract.ts export
+Employee,trip-costs,NONEXISTENT,Current security-contract.ts export
+Employee,properties,NONEXISTENT,Current security-contract.ts export
+Employee,leases,NONEXISTENT,Current security-contract.ts export
+Employee,property-leads,NONEXISTENT,Current security-contract.ts export
+Employee,finance,NONEXISTENT,Current security-contract.ts export
+Employee,receivables,NONEXISTENT,Current security-contract.ts export
+Employee,finance-posting,NONEXISTENT,Current security-contract.ts export
+Employee,budgets,NONEXISTENT,Current security-contract.ts export
+Employee,expenses,VISIBLE,Current security-contract.ts export
+Employee,expense-approvals,NONEXISTENT,Current security-contract.ts export
+Employee,spend,NONEXISTENT,Current security-contract.ts export
+Employee,cost-admin,NONEXISTENT,Current security-contract.ts export
+Employee,inventory,NONEXISTENT,Current security-contract.ts export
+Employee,projects,NONEXISTENT,Current security-contract.ts export
+Employee,facilities,NONEXISTENT,Current security-contract.ts export
+Employee,social,NONEXISTENT,Current security-contract.ts export
+Employee,social-controls,NONEXISTENT,Current security-contract.ts export
+Employee,social-accounts,NONEXISTENT,Current security-contract.ts export
+Employee,social-sync,NONEXISTENT,Current security-contract.ts export
+Employee,marketing,NONEXISTENT,Current security-contract.ts export
+Employee,inbox,NONEXISTENT,Current security-contract.ts export
+Employee,website,NONEXISTENT,Current security-contract.ts export
+Employee,communications,VISIBLE,Current security-contract.ts export
+Employee,broadcasts,NONEXISTENT,Current security-contract.ts export
+Employee,encouragement,NONEXISTENT,Current security-contract.ts export
+Employee,notifications,VISIBLE,Current security-contract.ts export
+Employee,help,VISIBLE,Current security-contract.ts export
+Employee,security,NONEXISTENT,Current security-contract.ts export
+Employee,access,NONEXISTENT,Current security-contract.ts export
+Employee,admin,NONEXISTENT,Current security-contract.ts export
+Employee,recovery,NONEXISTENT,Current security-contract.ts export
+Employee,support,NONEXISTENT,Current security-contract.ts export
+Employee,resources,NONEXISTENT,Current security-contract.ts export
+Employee,sync,VISIBLE,Current security-contract.ts export
+Employee,audit,NONEXISTENT,Current security-contract.ts export
+Employee,toolbox,NONEXISTENT,Current security-contract.ts export
+Employee,integrations,NONEXISTENT,Current security-contract.ts export
+Employee,hub,VISIBLE,Current security-contract.ts export
+Employee,theme,VISIBLE,Current security-contract.ts export
+Employee,navigation,VISIBLE,Current security-contract.ts export
+Employee,layout,VISIBLE,Current security-contract.ts export
+Employee,signin-design,NONEXISTENT,Current security-contract.ts export
+Employee,procurement,NONEXISTENT,Current security-contract.ts export
+Employee,purchase-orders,NONEXISTENT,Current security-contract.ts export
+Employee,goods-receipts,NONEXISTENT,Current security-contract.ts export
+Employee,stock-transfers,NONEXISTENT,Current security-contract.ts export
+Employee,stock-borrowing,NONEXISTENT,Current security-contract.ts export
+Employee,bakery-accountability,NONEXISTENT,Current security-contract.ts export
+Employee,technology-services,NONEXISTENT,Current security-contract.ts export
+Employee,vacancies,NONEXISTENT,Current security-contract.ts export
+Employee,staff-messaging,VISIBLE,Current security-contract.ts export
+Employee,productivity,VISIBLE,Current security-contract.ts export
+Employee,work-location,NONEXISTENT,Current security-contract.ts export
+Employee,salary-adjustments,NONEXISTENT,Current security-contract.ts export
+Employee,data-import,NONEXISTENT,Current security-contract.ts export
+Employee,dashboard-personalization,NONEXISTENT,Current security-contract.ts export
+Employee,files,VISIBLE,Current security-contract.ts export
+Employee,saved-views,VISIBLE,Current security-contract.ts export
+Employee,field-builder,NONEXISTENT,Current security-contract.ts export
+Employee,form-builder,NONEXISTENT,Current security-contract.ts export
+Employee,workflow-builder,NONEXISTENT,Current security-contract.ts export
+Employee,report-builder,NONEXISTENT,Current security-contract.ts export
+Employee,widget-builder,NONEXISTENT,Current security-contract.ts export
+Employee,theme-builder,NONEXISTENT,Current security-contract.ts export
+Employee,business-rules,NONEXISTENT,Current security-contract.ts export
+Employee,notification-rules,NONEXISTENT,Current security-contract.ts export
+Employee,session-analytics,NONEXISTENT,Current security-contract.ts export
+Employee,reports,NONEXISTENT,Current security-contract.ts export
+Employee,customer-communications,NONEXISTENT,Current security-contract.ts export
+Employee,communication-queues,NONEXISTENT,Current security-contract.ts export
+Employee,whatsapp-numbers,NONEXISTENT,Current security-contract.ts export
+Employee,communication-analytics,NONEXISTENT,Current security-contract.ts export
+Employee,communication-preferences,NONEXISTENT,Current security-contract.ts export
+Employee,ai-letterhead-generator,NONEXISTENT,Current security-contract.ts export
+Employee,communication-audit,NONEXISTENT,Current security-contract.ts export
+Employee,unified-inbox,NONEXISTENT,Current security-contract.ts export
+Employee,communication-automation,NONEXISTENT,Current security-contract.ts export
+Employee,communication-templates,NONEXISTENT,Current security-contract.ts export
+Employee,letterheads,NONEXISTENT,Current security-contract.ts export
+Employee,banking-operations,NONEXISTENT,Current security-contract.ts export
+Employee,treasury,NONEXISTENT,Current security-contract.ts export
+Employee,payment-verification,NONEXISTENT,Current security-contract.ts export
+Employee,transfers,NONEXISTENT,Current security-contract.ts export
+Employee,beneficiaries,NONEXISTENT,Current security-contract.ts export
+Employee,payroll-execution,NONEXISTENT,Current security-contract.ts export
+Employee,reconciliation,NONEXISTENT,Current security-contract.ts export
+Employee,financial-reports,NONEXISTENT,Current security-contract.ts export
+Provisional,self-service,NONEXISTENT,Current security-contract.ts export
+Provisional,home,NONEXISTENT,Current security-contract.ts export
+Provisional,cockpit,NONEXISTENT,Current security-contract.ts export
+Provisional,workspace,NONEXISTENT,Current security-contract.ts export
+Provisional,profile,NONEXISTENT,Current security-contract.ts export
+Provisional,people,NONEXISTENT,Current security-contract.ts export
+Provisional,hr-records,NONEXISTENT,Current security-contract.ts export
+Provisional,attendance,NONEXISTENT,Current security-contract.ts export
+Provisional,leave,NONEXISTENT,Current security-contract.ts export
+Provisional,performance,NONEXISTENT,Current security-contract.ts export
+Provisional,hr-cases,NONEXISTENT,Current security-contract.ts export
+Provisional,lifecycle,NONEXISTENT,Current security-contract.ts export
+Provisional,forms,NONEXISTENT,Current security-contract.ts export
+Provisional,tasks,NONEXISTENT,Current security-contract.ts export
+Provisional,payroll,NONEXISTENT,Current security-contract.ts export
+Provisional,payslips,NONEXISTENT,Current security-contract.ts export
+Provisional,payroll-batches,NONEXISTENT,Current security-contract.ts export
+Provisional,applications,NONEXISTENT,Current security-contract.ts export
+Provisional,interviews,NONEXISTENT,Current security-contract.ts export
+Provisional,hiring,NONEXISTENT,Current security-contract.ts export
+Provisional,printing,NONEXISTENT,Current security-contract.ts export
+Provisional,print-orders,NONEXISTENT,Current security-contract.ts export
+Provisional,print-materials,NONEXISTENT,Current security-contract.ts export
+Provisional,bakery,NONEXISTENT,Current security-contract.ts export
+Provisional,bakery-recipes,NONEXISTENT,Current security-contract.ts export
+Provisional,bakery-sales,NONEXISTENT,Current security-contract.ts export
+Provisional,autos,NONEXISTENT,Current security-contract.ts export
+Provisional,auto-leads,NONEXISTENT,Current security-contract.ts export
+Provisional,auto-history,NONEXISTENT,Current security-contract.ts export
+Provisional,logistics,NONEXISTENT,Current security-contract.ts export
+Provisional,fleet,NONEXISTENT,Current security-contract.ts export
+Provisional,trip-costs,NONEXISTENT,Current security-contract.ts export
+Provisional,properties,NONEXISTENT,Current security-contract.ts export
+Provisional,leases,NONEXISTENT,Current security-contract.ts export
+Provisional,property-leads,NONEXISTENT,Current security-contract.ts export
+Provisional,finance,NONEXISTENT,Current security-contract.ts export
+Provisional,receivables,NONEXISTENT,Current security-contract.ts export
+Provisional,finance-posting,NONEXISTENT,Current security-contract.ts export
+Provisional,budgets,NONEXISTENT,Current security-contract.ts export
+Provisional,expenses,NONEXISTENT,Current security-contract.ts export
+Provisional,expense-approvals,NONEXISTENT,Current security-contract.ts export
+Provisional,spend,NONEXISTENT,Current security-contract.ts export
+Provisional,cost-admin,NONEXISTENT,Current security-contract.ts export
+Provisional,inventory,NONEXISTENT,Current security-contract.ts export
+Provisional,projects,NONEXISTENT,Current security-contract.ts export
+Provisional,facilities,NONEXISTENT,Current security-contract.ts export
+Provisional,social,NONEXISTENT,Current security-contract.ts export
+Provisional,social-controls,NONEXISTENT,Current security-contract.ts export
+Provisional,social-accounts,NONEXISTENT,Current security-contract.ts export
+Provisional,social-sync,NONEXISTENT,Current security-contract.ts export
+Provisional,marketing,NONEXISTENT,Current security-contract.ts export
+Provisional,inbox,NONEXISTENT,Current security-contract.ts export
+Provisional,website,NONEXISTENT,Current security-contract.ts export
+Provisional,communications,NONEXISTENT,Current security-contract.ts export
+Provisional,broadcasts,NONEXISTENT,Current security-contract.ts export
+Provisional,encouragement,NONEXISTENT,Current security-contract.ts export
+Provisional,notifications,NONEXISTENT,Current security-contract.ts export
+Provisional,help,NONEXISTENT,Current security-contract.ts export
+Provisional,security,NONEXISTENT,Current security-contract.ts export
+Provisional,access,NONEXISTENT,Current security-contract.ts export
+Provisional,admin,NONEXISTENT,Current security-contract.ts export
+Provisional,recovery,NONEXISTENT,Current security-contract.ts export
+Provisional,support,NONEXISTENT,Current security-contract.ts export
+Provisional,resources,NONEXISTENT,Current security-contract.ts export
+Provisional,sync,NONEXISTENT,Current security-contract.ts export
+Provisional,audit,NONEXISTENT,Current security-contract.ts export
+Provisional,toolbox,NONEXISTENT,Current security-contract.ts export
+Provisional,integrations,NONEXISTENT,Current security-contract.ts export
+Provisional,hub,NONEXISTENT,Current security-contract.ts export
+Provisional,theme,NONEXISTENT,Current security-contract.ts export
+Provisional,navigation,NONEXISTENT,Current security-contract.ts export
+Provisional,layout,NONEXISTENT,Current security-contract.ts export
+Provisional,signin-design,NONEXISTENT,Current security-contract.ts export
+Provisional,procurement,NONEXISTENT,Current security-contract.ts export
+Provisional,purchase-orders,NONEXISTENT,Current security-contract.ts export
+Provisional,goods-receipts,NONEXISTENT,Current security-contract.ts export
+Provisional,stock-transfers,NONEXISTENT,Current security-contract.ts export
+Provisional,stock-borrowing,NONEXISTENT,Current security-contract.ts export
+Provisional,bakery-accountability,NONEXISTENT,Current security-contract.ts export
+Provisional,technology-services,NONEXISTENT,Current security-contract.ts export
+Provisional,vacancies,NONEXISTENT,Current security-contract.ts export
+Provisional,staff-messaging,NONEXISTENT,Current security-contract.ts export
+Provisional,productivity,NONEXISTENT,Current security-contract.ts export
+Provisional,work-location,NONEXISTENT,Current security-contract.ts export
+Provisional,salary-adjustments,NONEXISTENT,Current security-contract.ts export
+Provisional,data-import,NONEXISTENT,Current security-contract.ts export
+Provisional,dashboard-personalization,NONEXISTENT,Current security-contract.ts export
+Provisional,files,NONEXISTENT,Current security-contract.ts export
+Provisional,saved-views,NONEXISTENT,Current security-contract.ts export
+Provisional,field-builder,NONEXISTENT,Current security-contract.ts export
+Provisional,form-builder,NONEXISTENT,Current security-contract.ts export
+Provisional,workflow-builder,NONEXISTENT,Current security-contract.ts export
+Provisional,report-builder,NONEXISTENT,Current security-contract.ts export
+Provisional,widget-builder,NONEXISTENT,Current security-contract.ts export
+Provisional,theme-builder,NONEXISTENT,Current security-contract.ts export
+Provisional,business-rules,NONEXISTENT,Current security-contract.ts export
+Provisional,notification-rules,NONEXISTENT,Current security-contract.ts export
+Provisional,session-analytics,NONEXISTENT,Current security-contract.ts export
+Provisional,reports,NONEXISTENT,Current security-contract.ts export
+Provisional,customer-communications,NONEXISTENT,Current security-contract.ts export
+Provisional,communication-queues,NONEXISTENT,Current security-contract.ts export
+Provisional,whatsapp-numbers,NONEXISTENT,Current security-contract.ts export
+Provisional,communication-analytics,NONEXISTENT,Current security-contract.ts export
+Provisional,communication-preferences,NONEXISTENT,Current security-contract.ts export
+Provisional,ai-letterhead-generator,NONEXISTENT,Current security-contract.ts export
+Provisional,communication-audit,NONEXISTENT,Current security-contract.ts export
+Provisional,unified-inbox,NONEXISTENT,Current security-contract.ts export
+Provisional,communication-automation,NONEXISTENT,Current security-contract.ts export
+Provisional,communication-templates,NONEXISTENT,Current security-contract.ts export
+Provisional,letterheads,NONEXISTENT,Current security-contract.ts export
+Provisional,banking-operations,NONEXISTENT,Current security-contract.ts export
+Provisional,treasury,NONEXISTENT,Current security-contract.ts export
+Provisional,payment-verification,NONEXISTENT,Current security-contract.ts export
+Provisional,transfers,NONEXISTENT,Current security-contract.ts export
+Provisional,beneficiaries,NONEXISTENT,Current security-contract.ts export
+Provisional,payroll-execution,NONEXISTENT,Current security-contract.ts export
+Provisional,reconciliation,NONEXISTENT,Current security-contract.ts export
+Provisional,financial-reports,NONEXISTENT,Current security-contract.ts export
+Multi-role,self-service,VISIBLE,Current security-contract.ts export
+Multi-role,home,VISIBLE,Current security-contract.ts export
+Multi-role,cockpit,VISIBLE,Current security-contract.ts export
+Multi-role,workspace,VISIBLE,Current security-contract.ts export
+Multi-role,profile,VISIBLE,Current security-contract.ts export
+Multi-role,people,VISIBLE,Current security-contract.ts export
+Multi-role,hr-records,VISIBLE,Current security-contract.ts export
+Multi-role,attendance,VISIBLE,Current security-contract.ts export
+Multi-role,leave,VISIBLE,Current security-contract.ts export
+Multi-role,performance,VISIBLE,Current security-contract.ts export
+Multi-role,hr-cases,VISIBLE,Current security-contract.ts export
+Multi-role,lifecycle,VISIBLE,Current security-contract.ts export
+Multi-role,forms,VISIBLE,Current security-contract.ts export
+Multi-role,tasks,VISIBLE,Current security-contract.ts export
+Multi-role,payroll,NONEXISTENT,Current security-contract.ts export
+Multi-role,payslips,VISIBLE,Current security-contract.ts export
+Multi-role,payroll-batches,NONEXISTENT,Current security-contract.ts export
+Multi-role,applications,VISIBLE,Current security-contract.ts export
+Multi-role,interviews,VISIBLE,Current security-contract.ts export
+Multi-role,hiring,VISIBLE,Current security-contract.ts export
+Multi-role,printing,VISIBLE,Current security-contract.ts export
+Multi-role,print-orders,VISIBLE,Current security-contract.ts export
+Multi-role,print-materials,VISIBLE,Current security-contract.ts export
+Multi-role,bakery,NONEXISTENT,Current security-contract.ts export
+Multi-role,bakery-recipes,NONEXISTENT,Current security-contract.ts export
+Multi-role,bakery-sales,NONEXISTENT,Current security-contract.ts export
+Multi-role,autos,NONEXISTENT,Current security-contract.ts export
+Multi-role,auto-leads,NONEXISTENT,Current security-contract.ts export
+Multi-role,auto-history,NONEXISTENT,Current security-contract.ts export
+Multi-role,logistics,NONEXISTENT,Current security-contract.ts export
+Multi-role,fleet,NONEXISTENT,Current security-contract.ts export
+Multi-role,trip-costs,NONEXISTENT,Current security-contract.ts export
+Multi-role,properties,NONEXISTENT,Current security-contract.ts export
+Multi-role,leases,NONEXISTENT,Current security-contract.ts export
+Multi-role,property-leads,NONEXISTENT,Current security-contract.ts export
+Multi-role,finance,NONEXISTENT,Current security-contract.ts export
+Multi-role,receivables,VISIBLE,Current security-contract.ts export
+Multi-role,finance-posting,NONEXISTENT,Current security-contract.ts export
+Multi-role,budgets,NONEXISTENT,Current security-contract.ts export
+Multi-role,expenses,VISIBLE,Current security-contract.ts export
+Multi-role,expense-approvals,VISIBLE,Current security-contract.ts export
+Multi-role,spend,NONEXISTENT,Current security-contract.ts export
+Multi-role,cost-admin,NONEXISTENT,Current security-contract.ts export
+Multi-role,inventory,VISIBLE,Current security-contract.ts export
+Multi-role,projects,VISIBLE,Current security-contract.ts export
+Multi-role,facilities,VISIBLE,Current security-contract.ts export
+Multi-role,social,VISIBLE,Current security-contract.ts export
+Multi-role,social-controls,NONEXISTENT,Current security-contract.ts export
+Multi-role,social-accounts,VISIBLE,Current security-contract.ts export
+Multi-role,social-sync,VISIBLE,Current security-contract.ts export
+Multi-role,marketing,VISIBLE,Current security-contract.ts export
+Multi-role,inbox,VISIBLE,Current security-contract.ts export
+Multi-role,website,VISIBLE,Current security-contract.ts export
+Multi-role,communications,VISIBLE,Current security-contract.ts export
+Multi-role,broadcasts,VISIBLE,Current security-contract.ts export
+Multi-role,encouragement,VISIBLE,Current security-contract.ts export
+Multi-role,notifications,VISIBLE,Current security-contract.ts export
+Multi-role,help,VISIBLE,Current security-contract.ts export
+Multi-role,security,NONEXISTENT,Current security-contract.ts export
+Multi-role,access,NONEXISTENT,Current security-contract.ts export
+Multi-role,admin,NONEXISTENT,Current security-contract.ts export
+Multi-role,recovery,NONEXISTENT,Current security-contract.ts export
+Multi-role,support,NONEXISTENT,Current security-contract.ts export
+Multi-role,resources,NONEXISTENT,Current security-contract.ts export
+Multi-role,sync,VISIBLE,Current security-contract.ts export
+Multi-role,audit,NONEXISTENT,Current security-contract.ts export
+Multi-role,toolbox,NONEXISTENT,Current security-contract.ts export
+Multi-role,integrations,NONEXISTENT,Current security-contract.ts export
+Multi-role,hub,VISIBLE,Current security-contract.ts export
+Multi-role,theme,VISIBLE,Current security-contract.ts export
+Multi-role,navigation,VISIBLE,Current security-contract.ts export
+Multi-role,layout,VISIBLE,Current security-contract.ts export
+Multi-role,signin-design,NONEXISTENT,Current security-contract.ts export
+Multi-role,procurement,VISIBLE,Current security-contract.ts export
+Multi-role,purchase-orders,VISIBLE,Current security-contract.ts export
+Multi-role,goods-receipts,VISIBLE,Current security-contract.ts export
+Multi-role,stock-transfers,VISIBLE,Current security-contract.ts export
+Multi-role,stock-borrowing,VISIBLE,Current security-contract.ts export
+Multi-role,bakery-accountability,NONEXISTENT,Current security-contract.ts export
+Multi-role,technology-services,VISIBLE,Current security-contract.ts export
+Multi-role,vacancies,VISIBLE,Current security-contract.ts export
+Multi-role,staff-messaging,VISIBLE,Current security-contract.ts export
+Multi-role,productivity,VISIBLE,Current security-contract.ts export
+Multi-role,work-location,VISIBLE,Current security-contract.ts export
+Multi-role,salary-adjustments,VISIBLE,Current security-contract.ts export
+Multi-role,data-import,VISIBLE,Current security-contract.ts export
+Multi-role,dashboard-personalization,VISIBLE,Current security-contract.ts export
+Multi-role,files,VISIBLE,Current security-contract.ts export
+Multi-role,saved-views,VISIBLE,Current security-contract.ts export
+Multi-role,field-builder,NONEXISTENT,Current security-contract.ts export
+Multi-role,form-builder,NONEXISTENT,Current security-contract.ts export
+Multi-role,workflow-builder,NONEXISTENT,Current security-contract.ts export
+Multi-role,report-builder,NONEXISTENT,Current security-contract.ts export
+Multi-role,widget-builder,NONEXISTENT,Current security-contract.ts export
+Multi-role,theme-builder,NONEXISTENT,Current security-contract.ts export
+Multi-role,business-rules,NONEXISTENT,Current security-contract.ts export
+Multi-role,notification-rules,NONEXISTENT,Current security-contract.ts export
+Multi-role,session-analytics,NONEXISTENT,Current security-contract.ts export
+Multi-role,reports,VISIBLE,Current security-contract.ts export
+Multi-role,customer-communications,VISIBLE,Current security-contract.ts export
+Multi-role,communication-queues,VISIBLE,Current security-contract.ts export
+Multi-role,whatsapp-numbers,VISIBLE,Current security-contract.ts export
+Multi-role,communication-analytics,VISIBLE,Current security-contract.ts export
+Multi-role,communication-preferences,VISIBLE,Current security-contract.ts export
+Multi-role,ai-letterhead-generator,NONEXISTENT,Current security-contract.ts export
+Multi-role,communication-audit,VISIBLE,Current security-contract.ts export
+Multi-role,unified-inbox,VISIBLE,Current security-contract.ts export
+Multi-role,communication-automation,VISIBLE,Current security-contract.ts export
+Multi-role,communication-templates,VISIBLE,Current security-contract.ts export
+Multi-role,letterheads,VISIBLE,Current security-contract.ts export
+Multi-role,banking-operations,NONEXISTENT,Current security-contract.ts export
+Multi-role,treasury,NONEXISTENT,Current security-contract.ts export
+Multi-role,payment-verification,NONEXISTENT,Current security-contract.ts export
+Multi-role,transfers,NONEXISTENT,Current security-contract.ts export
+Multi-role,beneficiaries,NONEXISTENT,Current security-contract.ts export
+Multi-role,payroll-execution,NONEXISTENT,Current security-contract.ts export
+Multi-role,reconciliation,NONEXISTENT,Current security-contract.ts export
+Multi-role,financial-reports,NONEXISTENT,Current security-contract.ts export
+Multi-company,self-service,VISIBLE,Current security-contract.ts export
+Multi-company,home,VISIBLE,Current security-contract.ts export
+Multi-company,cockpit,VISIBLE,Current security-contract.ts export
+Multi-company,workspace,VISIBLE,Current security-contract.ts export
+Multi-company,profile,VISIBLE,Current security-contract.ts export
+Multi-company,people,VISIBLE,Current security-contract.ts export
+Multi-company,hr-records,VISIBLE,Current security-contract.ts export
+Multi-company,attendance,VISIBLE,Current security-contract.ts export
+Multi-company,leave,VISIBLE,Current security-contract.ts export
+Multi-company,performance,VISIBLE,Current security-contract.ts export
+Multi-company,hr-cases,VISIBLE,Current security-contract.ts export
+Multi-company,lifecycle,VISIBLE,Current security-contract.ts export
+Multi-company,forms,VISIBLE,Current security-contract.ts export
+Multi-company,tasks,VISIBLE,Current security-contract.ts export
+Multi-company,payroll,VISIBLE,Current security-contract.ts export
+Multi-company,payslips,VISIBLE,Current security-contract.ts export
+Multi-company,payroll-batches,VISIBLE,Current security-contract.ts export
+Multi-company,applications,VISIBLE,Current security-contract.ts export
+Multi-company,interviews,VISIBLE,Current security-contract.ts export
+Multi-company,hiring,VISIBLE,Current security-contract.ts export
+Multi-company,printing,VISIBLE,Current security-contract.ts export
+Multi-company,print-orders,VISIBLE,Current security-contract.ts export
+Multi-company,print-materials,VISIBLE,Current security-contract.ts export
+Multi-company,bakery,VISIBLE,Current security-contract.ts export
+Multi-company,bakery-recipes,VISIBLE,Current security-contract.ts export
+Multi-company,bakery-sales,VISIBLE,Current security-contract.ts export
+Multi-company,autos,NONEXISTENT,Current security-contract.ts export
+Multi-company,auto-leads,NONEXISTENT,Current security-contract.ts export
+Multi-company,auto-history,NONEXISTENT,Current security-contract.ts export
+Multi-company,logistics,NONEXISTENT,Current security-contract.ts export
+Multi-company,fleet,NONEXISTENT,Current security-contract.ts export
+Multi-company,trip-costs,NONEXISTENT,Current security-contract.ts export
+Multi-company,properties,NONEXISTENT,Current security-contract.ts export
+Multi-company,leases,NONEXISTENT,Current security-contract.ts export
+Multi-company,property-leads,NONEXISTENT,Current security-contract.ts export
+Multi-company,finance,VISIBLE,Current security-contract.ts export
+Multi-company,receivables,VISIBLE,Current security-contract.ts export
+Multi-company,finance-posting,VISIBLE,Current security-contract.ts export
+Multi-company,budgets,VISIBLE,Current security-contract.ts export
+Multi-company,expenses,VISIBLE,Current security-contract.ts export
+Multi-company,expense-approvals,VISIBLE,Current security-contract.ts export
+Multi-company,spend,VISIBLE,Current security-contract.ts export
+Multi-company,cost-admin,VISIBLE,Current security-contract.ts export
+Multi-company,inventory,VISIBLE,Current security-contract.ts export
+Multi-company,projects,VISIBLE,Current security-contract.ts export
+Multi-company,facilities,VISIBLE,Current security-contract.ts export
+Multi-company,social,VISIBLE,Current security-contract.ts export
+Multi-company,social-controls,VISIBLE,Current security-contract.ts export
+Multi-company,social-accounts,VISIBLE,Current security-contract.ts export
+Multi-company,social-sync,VISIBLE,Current security-contract.ts export
+Multi-company,marketing,VISIBLE,Current security-contract.ts export
+Multi-company,inbox,VISIBLE,Current security-contract.ts export
+Multi-company,website,VISIBLE,Current security-contract.ts export
+Multi-company,communications,VISIBLE,Current security-contract.ts export
+Multi-company,broadcasts,VISIBLE,Current security-contract.ts export
+Multi-company,encouragement,VISIBLE,Current security-contract.ts export
+Multi-company,notifications,VISIBLE,Current security-contract.ts export
+Multi-company,help,VISIBLE,Current security-contract.ts export
+Multi-company,security,VISIBLE,Current security-contract.ts export
+Multi-company,access,VISIBLE,Current security-contract.ts export
+Multi-company,admin,VISIBLE,Current security-contract.ts export
+Multi-company,recovery,VISIBLE,Current security-contract.ts export
+Multi-company,support,VISIBLE,Current security-contract.ts export
+Multi-company,resources,VISIBLE,Current security-contract.ts export
+Multi-company,sync,VISIBLE,Current security-contract.ts export
+Multi-company,audit,VISIBLE,Current security-contract.ts export
+Multi-company,toolbox,VISIBLE,Current security-contract.ts export
+Multi-company,integrations,VISIBLE,Current security-contract.ts export
+Multi-company,hub,VISIBLE,Current security-contract.ts export
+Multi-company,theme,VISIBLE,Current security-contract.ts export
+Multi-company,navigation,VISIBLE,Current security-contract.ts export
+Multi-company,layout,VISIBLE,Current security-contract.ts export
+Multi-company,signin-design,VISIBLE,Current security-contract.ts export
+Multi-company,procurement,VISIBLE,Current security-contract.ts export
+Multi-company,purchase-orders,VISIBLE,Current security-contract.ts export
+Multi-company,goods-receipts,VISIBLE,Current security-contract.ts export
+Multi-company,stock-transfers,VISIBLE,Current security-contract.ts export
+Multi-company,stock-borrowing,VISIBLE,Current security-contract.ts export
+Multi-company,bakery-accountability,VISIBLE,Current security-contract.ts export
+Multi-company,technology-services,VISIBLE,Current security-contract.ts export
+Multi-company,vacancies,VISIBLE,Current security-contract.ts export
+Multi-company,staff-messaging,VISIBLE,Current security-contract.ts export
+Multi-company,productivity,VISIBLE,Current security-contract.ts export
+Multi-company,work-location,VISIBLE,Current security-contract.ts export
+Multi-company,salary-adjustments,VISIBLE,Current security-contract.ts export
+Multi-company,data-import,VISIBLE,Current security-contract.ts export
+Multi-company,dashboard-personalization,VISIBLE,Current security-contract.ts export
+Multi-company,files,VISIBLE,Current security-contract.ts export
+Multi-company,saved-views,VISIBLE,Current security-contract.ts export
+Multi-company,field-builder,VISIBLE,Current security-contract.ts export
+Multi-company,form-builder,VISIBLE,Current security-contract.ts export
+Multi-company,workflow-builder,VISIBLE,Current security-contract.ts export
+Multi-company,report-builder,VISIBLE,Current security-contract.ts export
+Multi-company,widget-builder,VISIBLE,Current security-contract.ts export
+Multi-company,theme-builder,VISIBLE,Current security-contract.ts export
+Multi-company,business-rules,VISIBLE,Current security-contract.ts export
+Multi-company,notification-rules,VISIBLE,Current security-contract.ts export
+Multi-company,session-analytics,VISIBLE,Current security-contract.ts export
+Multi-company,reports,VISIBLE,Current security-contract.ts export
+Multi-company,customer-communications,VISIBLE,Current security-contract.ts export
+Multi-company,communication-queues,VISIBLE,Current security-contract.ts export
+Multi-company,whatsapp-numbers,VISIBLE,Current security-contract.ts export
+Multi-company,communication-analytics,VISIBLE,Current security-contract.ts export
+Multi-company,communication-preferences,VISIBLE,Current security-contract.ts export
+Multi-company,ai-letterhead-generator,VISIBLE,Current security-contract.ts export
+Multi-company,communication-audit,VISIBLE,Current security-contract.ts export
+Multi-company,unified-inbox,VISIBLE,Current security-contract.ts export
+Multi-company,communication-automation,VISIBLE,Current security-contract.ts export
+Multi-company,communication-templates,VISIBLE,Current security-contract.ts export
+Multi-company,letterheads,VISIBLE,Current security-contract.ts export
+Multi-company,banking-operations,VISIBLE,Current security-contract.ts export
+Multi-company,treasury,VISIBLE,Current security-contract.ts export
+Multi-company,payment-verification,VISIBLE,Current security-contract.ts export
+Multi-company,transfers,VISIBLE,Current security-contract.ts export
+Multi-company,beneficiaries,VISIBLE,Current security-contract.ts export
+Multi-company,payroll-execution,VISIBLE,Current security-contract.ts export
+Multi-company,reconciliation,VISIBLE,Current security-contract.ts export
+Multi-company,financial-reports,VISIBLE,Current security-contract.ts export
+No permission,self-service,NONEXISTENT,Current security-contract.ts export
+No permission,home,NONEXISTENT,Current security-contract.ts export
+No permission,cockpit,NONEXISTENT,Current security-contract.ts export
+No permission,workspace,NONEXISTENT,Current security-contract.ts export
+No permission,profile,NONEXISTENT,Current security-contract.ts export
+No permission,people,NONEXISTENT,Current security-contract.ts export
+No permission,hr-records,NONEXISTENT,Current security-contract.ts export
+No permission,attendance,NONEXISTENT,Current security-contract.ts export
+No permission,leave,NONEXISTENT,Current security-contract.ts export
+No permission,performance,NONEXISTENT,Current security-contract.ts export
+No permission,hr-cases,NONEXISTENT,Current security-contract.ts export
+No permission,lifecycle,NONEXISTENT,Current security-contract.ts export
+No permission,forms,NONEXISTENT,Current security-contract.ts export
+No permission,tasks,NONEXISTENT,Current security-contract.ts export
+No permission,payroll,NONEXISTENT,Current security-contract.ts export
+No permission,payslips,NONEXISTENT,Current security-contract.ts export
+No permission,payroll-batches,NONEXISTENT,Current security-contract.ts export
+No permission,applications,NONEXISTENT,Current security-contract.ts export
+No permission,interviews,NONEXISTENT,Current security-contract.ts export
+No permission,hiring,NONEXISTENT,Current security-contract.ts export
+No permission,printing,NONEXISTENT,Current security-contract.ts export
+No permission,print-orders,NONEXISTENT,Current security-contract.ts export
+No permission,print-materials,NONEXISTENT,Current security-contract.ts export
+No permission,bakery,NONEXISTENT,Current security-contract.ts export
+No permission,bakery-recipes,NONEXISTENT,Current security-contract.ts export
+No permission,bakery-sales,NONEXISTENT,Current security-contract.ts export
+No permission,autos,NONEXISTENT,Current security-contract.ts export
+No permission,auto-leads,NONEXISTENT,Current security-contract.ts export
+No permission,auto-history,NONEXISTENT,Current security-contract.ts export
+No permission,logistics,NONEXISTENT,Current security-contract.ts export
+No permission,fleet,NONEXISTENT,Current security-contract.ts export
+No permission,trip-costs,NONEXISTENT,Current security-contract.ts export
+No permission,properties,NONEXISTENT,Current security-contract.ts export
+No permission,leases,NONEXISTENT,Current security-contract.ts export
+No permission,property-leads,NONEXISTENT,Current security-contract.ts export
+No permission,finance,NONEXISTENT,Current security-contract.ts export
+No permission,receivables,NONEXISTENT,Current security-contract.ts export
+No permission,finance-posting,NONEXISTENT,Current security-contract.ts export
+No permission,budgets,NONEXISTENT,Current security-contract.ts export
+No permission,expenses,NONEXISTENT,Current security-contract.ts export
+No permission,expense-approvals,NONEXISTENT,Current security-contract.ts export
+No permission,spend,NONEXISTENT,Current security-contract.ts export
+No permission,cost-admin,NONEXISTENT,Current security-contract.ts export
+No permission,inventory,NONEXISTENT,Current security-contract.ts export
+No permission,projects,NONEXISTENT,Current security-contract.ts export
+No permission,facilities,NONEXISTENT,Current security-contract.ts export
+No permission,social,NONEXISTENT,Current security-contract.ts export
+No permission,social-controls,NONEXISTENT,Current security-contract.ts export
+No permission,social-accounts,NONEXISTENT,Current security-contract.ts export
+No permission,social-sync,NONEXISTENT,Current security-contract.ts export
+No permission,marketing,NONEXISTENT,Current security-contract.ts export
+No permission,inbox,NONEXISTENT,Current security-contract.ts export
+No permission,website,NONEXISTENT,Current security-contract.ts export
+No permission,communications,NONEXISTENT,Current security-contract.ts export
+No permission,broadcasts,NONEXISTENT,Current security-contract.ts export
+No permission,encouragement,NONEXISTENT,Current security-contract.ts export
+No permission,notifications,NONEXISTENT,Current security-contract.ts export
+No permission,help,NONEXISTENT,Current security-contract.ts export
+No permission,security,NONEXISTENT,Current security-contract.ts export
+No permission,access,NONEXISTENT,Current security-contract.ts export
+No permission,admin,NONEXISTENT,Current security-contract.ts export
+No permission,recovery,NONEXISTENT,Current security-contract.ts export
+No permission,support,NONEXISTENT,Current security-contract.ts export
+No permission,resources,NONEXISTENT,Current security-contract.ts export
+No permission,sync,NONEXISTENT,Current security-contract.ts export
+No permission,audit,NONEXISTENT,Current security-contract.ts export
+No permission,toolbox,NONEXISTENT,Current security-contract.ts export
+No permission,integrations,NONEXISTENT,Current security-contract.ts export
+No permission,hub,NONEXISTENT,Current security-contract.ts export
+No permission,theme,NONEXISTENT,Current security-contract.ts export
+No permission,navigation,NONEXISTENT,Current security-contract.ts export
+No permission,layout,NONEXISTENT,Current security-contract.ts export
+No permission,signin-design,NONEXISTENT,Current security-contract.ts export
+No permission,procurement,NONEXISTENT,Current security-contract.ts export
+No permission,purchase-orders,NONEXISTENT,Current security-contract.ts export
+No permission,goods-receipts,NONEXISTENT,Current security-contract.ts export
+No permission,stock-transfers,NONEXISTENT,Current security-contract.ts export
+No permission,stock-borrowing,NONEXISTENT,Current security-contract.ts export
+No permission,bakery-accountability,NONEXISTENT,Current security-contract.ts export
+No permission,technology-services,NONEXISTENT,Current security-contract.ts export
+No permission,vacancies,NONEXISTENT,Current security-contract.ts export
+No permission,staff-messaging,NONEXISTENT,Current security-contract.ts export
+No permission,productivity,NONEXISTENT,Current security-contract.ts export
+No permission,work-location,NONEXISTENT,Current security-contract.ts export
+No permission,salary-adjustments,NONEXISTENT,Current security-contract.ts export
+No permission,data-import,NONEXISTENT,Current security-contract.ts export
+No permission,dashboard-personalization,NONEXISTENT,Current security-contract.ts export
+No permission,files,NONEXISTENT,Current security-contract.ts export
+No permission,saved-views,NONEXISTENT,Current security-contract.ts export
+No permission,field-builder,NONEXISTENT,Current security-contract.ts export
+No permission,form-builder,NONEXISTENT,Current security-contract.ts export
+No permission,workflow-builder,NONEXISTENT,Current security-contract.ts export
+No permission,report-builder,NONEXISTENT,Current security-contract.ts export
+No permission,widget-builder,NONEXISTENT,Current security-contract.ts export
+No permission,theme-builder,NONEXISTENT,Current security-contract.ts export
+No permission,business-rules,NONEXISTENT,Current security-contract.ts export
+No permission,notification-rules,NONEXISTENT,Current security-contract.ts export
+No permission,session-analytics,NONEXISTENT,Current security-contract.ts export
+No permission,reports,NONEXISTENT,Current security-contract.ts export
+No permission,customer-communications,NONEXISTENT,Current security-contract.ts export
+No permission,communication-queues,NONEXISTENT,Current security-contract.ts export
+No permission,whatsapp-numbers,NONEXISTENT,Current security-contract.ts export
+No permission,communication-analytics,NONEXISTENT,Current security-contract.ts export
+No permission,communication-preferences,NONEXISTENT,Current security-contract.ts export
+No permission,ai-letterhead-generator,NONEXISTENT,Current security-contract.ts export
+No permission,communication-audit,NONEXISTENT,Current security-contract.ts export
+No permission,unified-inbox,NONEXISTENT,Current security-contract.ts export
+No permission,communication-automation,NONEXISTENT,Current security-contract.ts export
+No permission,communication-templates,NONEXISTENT,Current security-contract.ts export
+No permission,letterheads,NONEXISTENT,Current security-contract.ts export
+No permission,banking-operations,NONEXISTENT,Current security-contract.ts export
+No permission,treasury,NONEXISTENT,Current security-contract.ts export
+No permission,payment-verification,NONEXISTENT,Current security-contract.ts export
+No permission,transfers,NONEXISTENT,Current security-contract.ts export
+No permission,beneficiaries,NONEXISTENT,Current security-contract.ts export
+No permission,payroll-execution,NONEXISTENT,Current security-contract.ts export
+No permission,reconciliation,NONEXISTENT,Current security-contract.ts export
+No permission,financial-reports,NONEXISTENT,Current security-contract.ts export
+Expired override,self-service,VISIBLE,Current security-contract.ts export
+Expired override,home,VISIBLE,Current security-contract.ts export
+Expired override,cockpit,VISIBLE,Current security-contract.ts export
+Expired override,workspace,VISIBLE,Current security-contract.ts export
+Expired override,profile,VISIBLE,Current security-contract.ts export
+Expired override,people,VISIBLE,Current security-contract.ts export
+Expired override,hr-records,VISIBLE,Current security-contract.ts export
+Expired override,attendance,VISIBLE,Current security-contract.ts export
+Expired override,leave,VISIBLE,Current security-contract.ts export
+Expired override,performance,VISIBLE,Current security-contract.ts export
+Expired override,hr-cases,VISIBLE,Current security-contract.ts export
+Expired override,lifecycle,VISIBLE,Current security-contract.ts export
+Expired override,forms,VISIBLE,Current security-contract.ts export
+Expired override,tasks,VISIBLE,Current security-contract.ts export
+Expired override,payroll,VISIBLE,Current security-contract.ts export
+Expired override,payslips,VISIBLE,Current security-contract.ts export
+Expired override,payroll-batches,VISIBLE,Current security-contract.ts export
+Expired override,applications,VISIBLE,Current security-contract.ts export
+Expired override,interviews,VISIBLE,Current security-contract.ts export
+Expired override,hiring,VISIBLE,Current security-contract.ts export
+Expired override,printing,VISIBLE,Current security-contract.ts export
+Expired override,print-orders,VISIBLE,Current security-contract.ts export
+Expired override,print-materials,VISIBLE,Current security-contract.ts export
+Expired override,bakery,VISIBLE,Current security-contract.ts export
+Expired override,bakery-recipes,VISIBLE,Current security-contract.ts export
+Expired override,bakery-sales,VISIBLE,Current security-contract.ts export
+Expired override,autos,VISIBLE,Current security-contract.ts export
+Expired override,auto-leads,VISIBLE,Current security-contract.ts export
+Expired override,auto-history,VISIBLE,Current security-contract.ts export
+Expired override,logistics,VISIBLE,Current security-contract.ts export
+Expired override,fleet,VISIBLE,Current security-contract.ts export
+Expired override,trip-costs,VISIBLE,Current security-contract.ts export
+Expired override,properties,VISIBLE,Current security-contract.ts export
+Expired override,leases,VISIBLE,Current security-contract.ts export
+Expired override,property-leads,VISIBLE,Current security-contract.ts export
+Expired override,finance,VISIBLE,Current security-contract.ts export
+Expired override,receivables,VISIBLE,Current security-contract.ts export
+Expired override,finance-posting,VISIBLE,Current security-contract.ts export
+Expired override,budgets,VISIBLE,Current security-contract.ts export
+Expired override,expenses,VISIBLE,Current security-contract.ts export
+Expired override,expense-approvals,VISIBLE,Current security-contract.ts export
+Expired override,spend,VISIBLE,Current security-contract.ts export
+Expired override,cost-admin,VISIBLE,Current security-contract.ts export
+Expired override,inventory,VISIBLE,Current security-contract.ts export
+Expired override,projects,VISIBLE,Current security-contract.ts export
+Expired override,facilities,VISIBLE,Current security-contract.ts export
+Expired override,social,VISIBLE,Current security-contract.ts export
+Expired override,social-controls,VISIBLE,Current security-contract.ts export
+Expired override,social-accounts,VISIBLE,Current security-contract.ts export
+Expired override,social-sync,VISIBLE,Current security-contract.ts export
+Expired override,marketing,VISIBLE,Current security-contract.ts export
+Expired override,inbox,VISIBLE,Current security-contract.ts export
+Expired override,website,VISIBLE,Current security-contract.ts export
+Expired override,communications,VISIBLE,Current security-contract.ts export
+Expired override,broadcasts,VISIBLE,Current security-contract.ts export
+Expired override,encouragement,VISIBLE,Current security-contract.ts export
+Expired override,notifications,VISIBLE,Current security-contract.ts export
+Expired override,help,VISIBLE,Current security-contract.ts export
+Expired override,security,VISIBLE,Current security-contract.ts export
+Expired override,access,VISIBLE,Current security-contract.ts export
+Expired override,admin,VISIBLE,Current security-contract.ts export
+Expired override,recovery,VISIBLE,Current security-contract.ts export
+Expired override,support,VISIBLE,Current security-contract.ts export
+Expired override,resources,VISIBLE,Current security-contract.ts export
+Expired override,sync,VISIBLE,Current security-contract.ts export
+Expired override,audit,VISIBLE,Current security-contract.ts export
+Expired override,toolbox,VISIBLE,Current security-contract.ts export
+Expired override,integrations,VISIBLE,Current security-contract.ts export
+Expired override,hub,VISIBLE,Current security-contract.ts export
+Expired override,theme,VISIBLE,Current security-contract.ts export
+Expired override,navigation,VISIBLE,Current security-contract.ts export
+Expired override,layout,VISIBLE,Current security-contract.ts export
+Expired override,signin-design,VISIBLE,Current security-contract.ts export
+Expired override,procurement,VISIBLE,Current security-contract.ts export
+Expired override,purchase-orders,VISIBLE,Current security-contract.ts export
+Expired override,goods-receipts,VISIBLE,Current security-contract.ts export
+Expired override,stock-transfers,VISIBLE,Current security-contract.ts export
+Expired override,stock-borrowing,VISIBLE,Current security-contract.ts export
+Expired override,bakery-accountability,VISIBLE,Current security-contract.ts export
+Expired override,technology-services,VISIBLE,Current security-contract.ts export
+Expired override,vacancies,VISIBLE,Current security-contract.ts export
+Expired override,staff-messaging,VISIBLE,Current security-contract.ts export
+Expired override,productivity,VISIBLE,Current security-contract.ts export
+Expired override,work-location,VISIBLE,Current security-contract.ts export
+Expired override,salary-adjustments,VISIBLE,Current security-contract.ts export
+Expired override,data-import,VISIBLE,Current security-contract.ts export
+Expired override,dashboard-personalization,VISIBLE,Current security-contract.ts export
+Expired override,files,VISIBLE,Current security-contract.ts export
+Expired override,saved-views,VISIBLE,Current security-contract.ts export
+Expired override,field-builder,VISIBLE,Current security-contract.ts export
+Expired override,form-builder,VISIBLE,Current security-contract.ts export
+Expired override,workflow-builder,VISIBLE,Current security-contract.ts export
+Expired override,report-builder,VISIBLE,Current security-contract.ts export
+Expired override,widget-builder,VISIBLE,Current security-contract.ts export
+Expired override,theme-builder,VISIBLE,Current security-contract.ts export
+Expired override,business-rules,VISIBLE,Current security-contract.ts export
+Expired override,notification-rules,VISIBLE,Current security-contract.ts export
+Expired override,session-analytics,VISIBLE,Current security-contract.ts export
+Expired override,reports,VISIBLE,Current security-contract.ts export
+Expired override,customer-communications,VISIBLE,Current security-contract.ts export
+Expired override,communication-queues,VISIBLE,Current security-contract.ts export
+Expired override,whatsapp-numbers,VISIBLE,Current security-contract.ts export
+Expired override,communication-analytics,VISIBLE,Current security-contract.ts export
+Expired override,communication-preferences,VISIBLE,Current security-contract.ts export
+Expired override,ai-letterhead-generator,VISIBLE,Current security-contract.ts export
+Expired override,communication-audit,VISIBLE,Current security-contract.ts export
+Expired override,unified-inbox,VISIBLE,Current security-contract.ts export
+Expired override,communication-automation,VISIBLE,Current security-contract.ts export
+Expired override,communication-templates,VISIBLE,Current security-contract.ts export
+Expired override,letterheads,VISIBLE,Current security-contract.ts export
+Expired override,banking-operations,VISIBLE,Current security-contract.ts export
+Expired override,treasury,VISIBLE,Current security-contract.ts export
+Expired override,payment-verification,VISIBLE,Current security-contract.ts export
+Expired override,transfers,VISIBLE,Current security-contract.ts export
+Expired override,beneficiaries,VISIBLE,Current security-contract.ts export
+Expired override,payroll-execution,VISIBLE,Current security-contract.ts export
+Expired override,reconciliation,VISIBLE,Current security-contract.ts export
+Expired override,financial-reports,VISIBLE,Current security-contract.ts export
+Reduced override,self-service,VISIBLE,Current security-contract.ts export
+Reduced override,home,VISIBLE,Current security-contract.ts export
+Reduced override,cockpit,VISIBLE,Current security-contract.ts export
+Reduced override,workspace,VISIBLE,Current security-contract.ts export
+Reduced override,profile,VISIBLE,Current security-contract.ts export
+Reduced override,people,VISIBLE,Current security-contract.ts export
+Reduced override,hr-records,VISIBLE,Current security-contract.ts export
+Reduced override,attendance,VISIBLE,Current security-contract.ts export
+Reduced override,leave,VISIBLE,Current security-contract.ts export
+Reduced override,performance,VISIBLE,Current security-contract.ts export
+Reduced override,hr-cases,VISIBLE,Current security-contract.ts export
+Reduced override,lifecycle,VISIBLE,Current security-contract.ts export
+Reduced override,forms,VISIBLE,Current security-contract.ts export
+Reduced override,tasks,VISIBLE,Current security-contract.ts export
+Reduced override,payroll,VISIBLE,Current security-contract.ts export
+Reduced override,payslips,VISIBLE,Current security-contract.ts export
+Reduced override,payroll-batches,VISIBLE,Current security-contract.ts export
+Reduced override,applications,VISIBLE,Current security-contract.ts export
+Reduced override,interviews,VISIBLE,Current security-contract.ts export
+Reduced override,hiring,VISIBLE,Current security-contract.ts export
+Reduced override,printing,VISIBLE,Current security-contract.ts export
+Reduced override,print-orders,VISIBLE,Current security-contract.ts export
+Reduced override,print-materials,VISIBLE,Current security-contract.ts export
+Reduced override,bakery,VISIBLE,Current security-contract.ts export
+Reduced override,bakery-recipes,VISIBLE,Current security-contract.ts export
+Reduced override,bakery-sales,VISIBLE,Current security-contract.ts export
+Reduced override,autos,VISIBLE,Current security-contract.ts export
+Reduced override,auto-leads,VISIBLE,Current security-contract.ts export
+Reduced override,auto-history,VISIBLE,Current security-contract.ts export
+Reduced override,logistics,VISIBLE,Current security-contract.ts export
+Reduced override,fleet,VISIBLE,Current security-contract.ts export
+Reduced override,trip-costs,VISIBLE,Current security-contract.ts export
+Reduced override,properties,VISIBLE,Current security-contract.ts export
+Reduced override,leases,VISIBLE,Current security-contract.ts export
+Reduced override,property-leads,VISIBLE,Current security-contract.ts export
+Reduced override,finance,VISIBLE,Current security-contract.ts export
+Reduced override,receivables,VISIBLE,Current security-contract.ts export
+Reduced override,finance-posting,VISIBLE,Current security-contract.ts export
+Reduced override,budgets,VISIBLE,Current security-contract.ts export
+Reduced override,expenses,VISIBLE,Current security-contract.ts export
+Reduced override,expense-approvals,VISIBLE,Current security-contract.ts export
+Reduced override,spend,VISIBLE,Current security-contract.ts export
+Reduced override,cost-admin,VISIBLE,Current security-contract.ts export
+Reduced override,inventory,VISIBLE,Current security-contract.ts export
+Reduced override,projects,VISIBLE,Current security-contract.ts export
+Reduced override,facilities,VISIBLE,Current security-contract.ts export
+Reduced override,social,VISIBLE,Current security-contract.ts export
+Reduced override,social-controls,VISIBLE,Current security-contract.ts export
+Reduced override,social-accounts,VISIBLE,Current security-contract.ts export
+Reduced override,social-sync,VISIBLE,Current security-contract.ts export
+Reduced override,marketing,VISIBLE,Current security-contract.ts export
+Reduced override,inbox,VISIBLE,Current security-contract.ts export
+Reduced override,website,VISIBLE,Current security-contract.ts export
+Reduced override,communications,VISIBLE,Current security-contract.ts export
+Reduced override,broadcasts,VISIBLE,Current security-contract.ts export
+Reduced override,encouragement,VISIBLE,Current security-contract.ts export
+Reduced override,notifications,VISIBLE,Current security-contract.ts export
+Reduced override,help,VISIBLE,Current security-contract.ts export
+Reduced override,security,VISIBLE,Current security-contract.ts export
+Reduced override,access,VISIBLE,Current security-contract.ts export
+Reduced override,admin,VISIBLE,Current security-contract.ts export
+Reduced override,recovery,VISIBLE,Current security-contract.ts export
+Reduced override,support,VISIBLE,Current security-contract.ts export
+Reduced override,resources,VISIBLE,Current security-contract.ts export
+Reduced override,sync,VISIBLE,Current security-contract.ts export
+Reduced override,audit,VISIBLE,Current security-contract.ts export
+Reduced override,toolbox,VISIBLE,Current security-contract.ts export
+Reduced override,integrations,VISIBLE,Current security-contract.ts export
+Reduced override,hub,VISIBLE,Current security-contract.ts export
+Reduced override,theme,VISIBLE,Current security-contract.ts export
+Reduced override,navigation,VISIBLE,Current security-contract.ts export
+Reduced override,layout,VISIBLE,Current security-contract.ts export
+Reduced override,signin-design,VISIBLE,Current security-contract.ts export
+Reduced override,procurement,VISIBLE,Current security-contract.ts export
+Reduced override,purchase-orders,VISIBLE,Current security-contract.ts export
+Reduced override,goods-receipts,VISIBLE,Current security-contract.ts export
+Reduced override,stock-transfers,VISIBLE,Current security-contract.ts export
+Reduced override,stock-borrowing,VISIBLE,Current security-contract.ts export
+Reduced override,bakery-accountability,VISIBLE,Current security-contract.ts export
+Reduced override,technology-services,VISIBLE,Current security-contract.ts export
+Reduced override,vacancies,VISIBLE,Current security-contract.ts export
+Reduced override,staff-messaging,VISIBLE,Current security-contract.ts export
+Reduced override,productivity,VISIBLE,Current security-contract.ts export
+Reduced override,work-location,VISIBLE,Current security-contract.ts export
+Reduced override,salary-adjustments,VISIBLE,Current security-contract.ts export
+Reduced override,data-import,VISIBLE,Current security-contract.ts export
+Reduced override,dashboard-personalization,VISIBLE,Current security-contract.ts export
+Reduced override,files,VISIBLE,Current security-contract.ts export
+Reduced override,saved-views,VISIBLE,Current security-contract.ts export
+Reduced override,field-builder,VISIBLE,Current security-contract.ts export
+Reduced override,form-builder,VISIBLE,Current security-contract.ts export
+Reduced override,workflow-builder,VISIBLE,Current security-contract.ts export
+Reduced override,report-builder,VISIBLE,Current security-contract.ts export
+Reduced override,widget-builder,VISIBLE,Current security-contract.ts export
+Reduced override,theme-builder,VISIBLE,Current security-contract.ts export
+Reduced override,business-rules,VISIBLE,Current security-contract.ts export
+Reduced override,notification-rules,VISIBLE,Current security-contract.ts export
+Reduced override,session-analytics,VISIBLE,Current security-contract.ts export
+Reduced override,reports,VISIBLE,Current security-contract.ts export
+Reduced override,customer-communications,VISIBLE,Current security-contract.ts export
+Reduced override,communication-queues,VISIBLE,Current security-contract.ts export
+Reduced override,whatsapp-numbers,VISIBLE,Current security-contract.ts export
+Reduced override,communication-analytics,VISIBLE,Current security-contract.ts export
+Reduced override,communication-preferences,VISIBLE,Current security-contract.ts export
+Reduced override,ai-letterhead-generator,VISIBLE,Current security-contract.ts export
+Reduced override,communication-audit,VISIBLE,Current security-contract.ts export
+Reduced override,unified-inbox,VISIBLE,Current security-contract.ts export
+Reduced override,communication-automation,VISIBLE,Current security-contract.ts export
+Reduced override,communication-templates,VISIBLE,Current security-contract.ts export
+Reduced override,letterheads,VISIBLE,Current security-contract.ts export
+Reduced override,banking-operations,VISIBLE,Current security-contract.ts export
+Reduced override,treasury,VISIBLE,Current security-contract.ts export
+Reduced override,payment-verification,VISIBLE,Current security-contract.ts export
+Reduced override,transfers,VISIBLE,Current security-contract.ts export
+Reduced override,beneficiaries,VISIBLE,Current security-contract.ts export
+Reduced override,payroll-execution,VISIBLE,Current security-contract.ts export
+Reduced override,reconciliation,VISIBLE,Current security-contract.ts export
+Reduced override,financial-reports,VISIBLE,Current security-contract.ts export

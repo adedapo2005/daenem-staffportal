@@ -1,0 +1,11 @@
+REQUIREMENT_ID,PRIOR_V16_STATUS,CORRECTED_PRE_FIX_STATUS,INDEPENDENT_REVIEW_FINDING,NEXT_ACTION
+V16-SIGNIN-001,PASS_VERIFIED,FAIL,"Rendered V16 did not meet the Owner reference minimum",Rebuild the runtime composition and verify visually
+V16-SIGNIN-002,PASS_VERIFIED,FAIL,"Theme differences relied materially on CSS and background treatments rather than distinct persisted layouts",Create ten distinct theme layout definitions rendered by one runtime
+V16-SIGNIN-005,PASS_VERIFIED,FAIL,"The 390x844 composition compressed content and retained initial authentication overflow",Build a dedicated mobile layout and measure the authentication element
+V16-SIGNIN-006,PASS_VERIFIED,FAIL,"Visible 10px and 11px text remained",Run computed-style inspection of every visible text element
+V16-BUILDER-001,PASS_VERIFIED,FAIL,"Lifecycle labels existed but the builder did not persist the full configuration",Persist complete declarative theme versions and verify reload
+V16-BUILDER-002,PASS_VERIFIED,FAIL,"Breakpoint selector did not retain independent layout objects",Persist Desktop Tablet Mobile and 4K layouts separately
+V16-BUILDER-003,PASS_VERIFIED,FAIL,"Grip icons and sliders did not provide real drag/drop and direct resize",Implement pointer/drag behavior plus keyboard alternatives
+V16-BUILDER-006,PASS_VERIFIED,FAIL,"Style sliders and button/input selectors were not connected to preview or runtime",Bind style tokens to the shared renderer
+V16-BUILDER-007,PASS_VERIFIED,FAIL,"Most individual motion controls were no-op",Persist motion settings and apply representative effects in the shared renderer
+V16-BUILDER-008,PASS_VERIFIED,FAIL,"Create clone variant schedule compare rollback archive export and import were incomplete or inert",Implement or truthfully disable every lifecycle action

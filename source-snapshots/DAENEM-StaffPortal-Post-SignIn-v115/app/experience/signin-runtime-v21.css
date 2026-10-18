@@ -1,0 +1,164 @@
+.s21-brand-layer { position: absolute; inset: 0; pointer-events: none; z-index: 25; }
+.s21-brand-object { position: var(--logo-d-position); display: var(--logo-d-display); left: var(--logo-d-x); top: var(--logo-d-y); z-index: var(--logo-d-layer); width: var(--logo-d-size); margin: 0; padding: 10px; opacity: var(--logo-d-opacity); --logo-border:var(--logo-d-border); --logo-shadow:var(--logo-d-shadow); --logo-glow:var(--logo-d-glow); transform-origin: center; pointer-events: auto; }
+.s21-brand-object img { display: block; width: 100%; height: auto; }
+.s21-brand-object.plate-glass { border: var(--logo-border) solid color-mix(in srgb,var(--logo-accent) 50%,#fff); border-radius: 15px; background: #06193680; box-shadow: 0 14px 38px #02061770,0 0 28px color-mix(in srgb,var(--logo-accent) 65%,transparent); backdrop-filter: blur(16px); }
+.s21-brand-object.plate-solid { border: var(--logo-border) solid var(--logo-accent); border-radius: 10px; background: #071b39; }
+.s21-brand-object.motion-float:not(.hover-only) { animation: s21-logo-float var(--logo-duration) var(--logo-easing) var(--logo-delay) var(--logo-iteration) var(--logo-direction); }
+.s21-brand-object.motion-gentle-pulse:not(.hover-only),.s21-brand-object.motion-breathing-glow:not(.hover-only) { animation: s21-logo-pulse var(--logo-duration) var(--logo-easing) var(--logo-delay) var(--logo-iteration) var(--logo-direction); }
+.s21-brand-object.motion-reveal:not(.hover-only) { animation: s21-logo-reveal var(--logo-duration) var(--logo-easing) var(--logo-delay) both; }
+.s21-brand-object.motion-shimmer:not(.hover-only),.s21-brand-object.motion-light-sweep:not(.hover-only) { animation: s21-logo-shimmer var(--logo-duration) linear var(--logo-delay) var(--logo-iteration); }
+.s21-brand-object.motion-hover-lift:hover,.s21-brand-object.hover-only:hover { transform: translateY(-8px) scale(1.02); }
+.s21-brand-object.motion-depth-tilt:hover { transform: perspective(500px) rotateX(5deg) rotateY(-8deg); }
+.s21-brand-object.motion-particle-halo::after { content: ""; position: absolute; inset: -10px; border: 1px dotted var(--logo-accent); border-radius: 50%; animation: s21-logo-spin 3200ms linear infinite; }
+@keyframes s21-logo-float { 50% { transform: translateY(-9px); } }
+@keyframes s21-logo-pulse { 50% { filter: drop-shadow(0 0 18px var(--logo-accent)); transform: scale(1.03); } }
+@keyframes s21-logo-reveal { from { opacity: 0; filter: blur(10px); transform: translateY(18px); } to { opacity: 1; filter: blur(0); transform: none; } }
+@keyframes s21-logo-shimmer { 50% { filter: brightness(1.6) drop-shadow(0 0 18px var(--logo-accent)); } }
+@keyframes s21-logo-spin { to { transform: rotate(360deg); } }
+@media(max-width:1200px) { .s21-brand-object { position: var(--logo-t-position); display: var(--logo-t-display); left: var(--logo-t-x); top: var(--logo-t-y); z-index: var(--logo-t-layer); width: var(--logo-t-size); opacity:var(--logo-t-opacity); --logo-border:var(--logo-t-border); --logo-shadow:var(--logo-t-shadow); --logo-glow:var(--logo-t-glow); } }
+@media(max-width:680px) { .s21-brand-object { position: var(--logo-m-position); display: var(--logo-m-display); left: var(--logo-m-x); top: var(--logo-m-y); z-index: var(--logo-m-layer); width: var(--logo-m-size); opacity:var(--logo-m-opacity); --logo-border:var(--logo-m-border); --logo-shadow:var(--logo-m-shadow); --logo-glow:var(--logo-m-glow); padding: 7px; } }
+@media(min-width:2200px) { .s21-brand-object { position: var(--logo-k-position); display: var(--logo-k-display); left: var(--logo-k-x); top: var(--logo-k-y); z-index: var(--logo-k-layer); width: var(--logo-k-size); opacity:var(--logo-k-opacity); --logo-border:var(--logo-k-border); --logo-shadow:var(--logo-k-shadow); --logo-glow:var(--logo-k-glow); } }
+@media(prefers-reduced-motion:reduce) { .s21-brand-object { animation: none!important; transition: none!important; } .s21-brand-object::after { animation: none!important; } }
+
+/* V21 acceptance closure for the imported production experience.  The
+   original desktop system used 9–10px tertiary labels and a tall one-column
+   federation stack on phones.  Preserve the content while making every
+   ordinary label readable and the complete authentication task visible in
+   the initial 390×844 viewport. */
+.usp-production-host .usp-brand-copy small,
+.usp-production-host .usp-brand-copy span,
+.usp-production-host .usp-panel-eyebrow,
+.usp-production-host .usp-panel-heading p,
+.usp-production-host .usp-tabs button,
+.usp-production-host .usp-field,
+.usp-production-host .usp-forgot-link,
+.usp-production-host .usp-remember-row,
+.usp-production-host .usp-remember-row small,
+.usp-production-host .usp-social-note,
+.usp-production-host .usp-legal-copy,
+.usp-production-host .usp-or-divider,
+.usp-production-host .usp-operational-pill,
+.usp-production-host .usp-widget-group-title,
+.usp-production-host .usp-widget-label,
+.usp-production-host .usp-widget-label b,
+.usp-production-host .usp-live-card small,
+.usp-production-host .usp-clock-heading span,
+.usp-production-host .usp-clock-heading small,
+.usp-production-host .usp-clock-location strong,
+.usp-production-host .usp-clock-location small,
+.usp-production-host .usp-clock-copy > span,
+.usp-production-host .usp-clock-meta > small,
+.usp-production-host .usp-clock-weather > span,
+.usp-production-host .usp-clock-weather > small,
+.usp-production-host .usp-weather-condition,
+.usp-production-host .usp-variant-kicker,
+.usp-production-host .usp-focus-goal b,
+.usp-production-host .usp-news-stack small,
+.usp-production-host .usp-news-top-stories small,
+.usp-production-host .usp-news-briefing small,
+.usp-production-host .usp-news-ticker small,
+.usp-production-host .usp-widget-rotator-controls button,
+.usp-production-host .usp-widget-rotator-position { font-size: 12px; }
+
+/* Keep the imported live-card light bloom inside its card bounds.  The source
+   effect intentionally bleeds below the card on desktop, but that bleed made
+   the compact mobile context group report a false scroll/clipping failure. */
+.usp-production-host .usp-live-card::after { inset: auto 0 0 30%; height: 100%; }
+.usp-production-host .usp-panel-heading p,
+.usp-production-host .usp-social-note,
+.usp-production-host .usp-legal-copy,
+.usp-production-host .usp-clock-compact-detail,
+.usp-production-host .usp-clock-pager b { font-size: 12px !important; line-height: 1.25 !important; }
+
+/* Keep the canonical Sites context cards inside their breakpoint tracks. The
+   V19 grid intentionally favored roomy desktop cards; these bounded rules
+   retain the clock/weather information while preventing intrinsic child tracks
+   from reporting a clipped context surface at review sizes. */
+@media (min-width: 621px) {
+  .s17-widget-ibadan .sf-signature { grid-template-columns: minmax(0, 1fr) minmax(0, .56fr) !important; }
+  .s17-widget-ibadan .sf-signature-clock,
+  .s17-widget-ibadan .sf-signature-weather,
+  .s17-widget-ibadan .sf-signature-sun { min-width: 0 !important; max-width: 100% !important; width: auto !important; }
+  .s17-widget-ibadan .sf-signature-sun { grid-column: 1 / -1 !important; }
+  .s17-widget-weather .s18-weather { grid-template-rows: auto 70px 78px !important; padding: 10px !important; gap: 4px !important; }
+  .s17-widget-weather .s18-weather > p { display: none !important; }
+  .s17-widget-weather .s18-weather-main { min-height: 0 !important; height: 70px !important; }
+  .s17-widget-weather .s18-weather-main { overflow: hidden !important; }
+  .s17-widget-weather .s18-weather-main > span:last-child { min-height: 0 !important; height: 70px !important; overflow: hidden !important; align-content: center !important; }
+  .s17-widget-weather .s18-weather-data { min-height: 0 !important; height: 78px !important; overflow: hidden !important; grid-template-rows: repeat(2, 36px) !important; }
+  .s17-widget-weather .s18-weather-data > span { min-height: 0 !important; overflow: hidden !important; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 6px !important; padding: 4px 6px !important; }
+  .s17-widget-weather .s18-weather-data > span :is(small,b) { min-width: 0 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+}
+
+@media (min-width: 621px) and (max-width: 1250px) {
+  .s17-widget-ibadan .sf-signature { display: flex !important; align-items: center !important; padding: 6px 8px !important; overflow: hidden !important; }
+  .s17-widget-ibadan .sf-signature-clock { display: grid !important; grid-template-columns: 46px minmax(0, 1fr) !important; align-items: center !important; gap: 7px !important; width: 100% !important; height: 100% !important; }
+  .s17-widget-ibadan .sf-clock { width: 44px !important; min-width: 44px !important; height: 44px !important; }
+  .s17-widget-ibadan .sf-signature-clock > div { min-width: 0 !important; height: auto !important; display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; grid-template-rows: auto auto !important; column-gap: 6px !important; align-items: center !important; }
+  .s17-widget-ibadan .sf-signature-clock .sf-label { grid-column: 1 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .s17-widget-ibadan .sf-signature-clock strong { grid-column: 2 !important; grid-row: 1 !important; font-size: 16px !important; white-space: nowrap !important; }
+  .s17-widget-ibadan .sf-signature-clock p { grid-column: 1 / -1 !important; grid-row: 2 !important; margin: 0 !important; font-size: 12px !important; line-height: 1.15 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .s17-widget-ibadan .sf-signature-clock small,
+  .s17-widget-ibadan .sf-signature-weather,
+  .s17-widget-ibadan .sf-signature-sun { display: none !important; }
+  .s17-widget-weather .s18-weather { grid-template-columns: 94px minmax(0, 1fr) !important; grid-template-rows: 1fr !important; align-items: center !important; padding: 7px !important; gap: 5px !important; }
+  .s17-widget-weather .s18-weather > header { display: flex !important; flex-direction: column !important; align-items: flex-start !important; justify-content: center !important; min-width: 0 !important; }
+  .s17-widget-weather .s18-weather-main { height: 100% !important; min-width: 0 !important; gap: 3px !important; }
+  .s17-widget-weather .s18-weather-orbit { width: 34px !important; height: 30px !important; flex: 0 0 34px !important; }
+  .s17-widget-weather .s18-weather-orbit svg:first-child { width: 20px !important; height: 20px !important; }
+  .s17-widget-weather .s18-weather-orbit svg:last-child { width: 28px !important; height: 28px !important; }
+  .s17-widget-weather .s18-weather-main strong { font-size: 17px !important; line-height: 1 !important; }
+  .s17-widget-weather .s18-weather-main b,
+  .s17-widget-weather .s18-weather-main small { font-size: 12px !important; line-height: 1.05 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .s17-widget-weather .s18-weather-data,
+  .s17-widget-weather .s18-weather > p { display: none !important; }
+}
+
+@media (min-width: 1251px) and (max-height: 959px) {
+  .s17-widget-ibadan .sf-signature { padding: 10px !important; gap: 6px !important; }
+}
+
+@media(max-width:480px) {
+  .usp-production-host .usp-shell { padding: 8px 10px 14px; gap: 8px; }
+  .usp-production-host .usp-topbar { min-height: 82px; }
+  .usp-production-host .usp-logo-orbit { width: 54px; height: 54px; }
+  .usp-production-host .usp-logo-depth { width: 40px; height: 40px; }
+  .usp-production-host .usp-brand-lockup { gap: 8px; }
+  .usp-production-host .usp-brand-copy strong { font-size: 18px; }
+  .usp-production-host .usp-auth-panel { padding: 14px; border-radius: 22px; }
+  .usp-production-host .usp-panel-heading { gap: 5px; margin-bottom: 9px; }
+  .usp-production-host .usp-panel-heading h1 { margin-top: 2px; font-size: 27px; }
+  .usp-production-host .usp-panel-heading p { line-height: 1.3; }
+  .usp-production-host .usp-tabs { margin-bottom: 9px; }
+  .usp-production-host .usp-tabs button { min-height: 44px; }
+  .usp-production-host .usp-auth-form { gap: 7px; }
+  .usp-production-host .usp-field { gap: 3px; }
+  .usp-production-host .usp-field input,
+  .usp-production-host .usp-password-field input { height: 48px; font-size: 16px; }
+  .usp-production-host .usp-password-toggle { width: 44px; height: 44px; bottom: 2px; }
+  .usp-production-host .usp-remember-row { min-height: 44px; }
+  .usp-production-host .usp-primary-button { min-height: 48px; }
+  .usp-production-host .usp-or-divider { margin: 7px 0 5px; }
+  .usp-production-host .usp-social-buttons { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+  .usp-production-host .usp-social-buttons button { min-height: 44px; padding-inline: 7px; font-size: 12px; }
+  .usp-production-host .usp-social-note { margin-top: 5px; line-height: 1.2; }
+  .usp-production-host .usp-legal-copy { margin-top: 5px; line-height: 1.2; }
+  .usp-production-host .usp-panel-footer { margin-top: 6px; padding-top: 6px; }
+}
+
+/* The six-city dock is intentionally a two-row mobile surface. Keep the
+   grid's intrinsic card height inside the 390px composition row so every
+   required city remains readable without relying on clipping. */
+@media(max-width:620px) {
+  .s17-widget-world .s18-world-clocks { overflow: hidden !important; min-height: 0 !important; padding: 3px 5px !important; grid-template-columns: 78px minmax(0,1fr) !important; gap: 3px !important; }
+  .s17-widget-world .s18-world-clocks > header { height: 20px !important; align-self: center !important; margin-right: 2px !important; }
+  .s17-widget-world .s18-world-grid { height: 42px !important; min-height: 0 !important; grid-template-rows: repeat(2, 20px) !important; gap: 2px !important; overflow: hidden !important; }
+  .s17-widget-world .s18-world-grid article { min-height: 0 !important; height: 20px !important; line-height: 1 !important; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 2px !important; padding: 0 2px !important; }
+  .s17-widget-world .s18-world-grid article > span { line-height: 1 !important; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 2px !important; min-width: 0 !important; width: 100% !important; }
+  .s17-widget-world .s18-world-grid article b,
+  .s17-widget-world .s18-world-grid article strong { font-size: 12px !important; line-height: 1 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .s17-widget-weather .s18-weather { overflow: hidden !important; min-height: 0 !important; padding: 4px !important; grid-template-rows: 42px !important; gap: 2px !important; }
+  .s17-widget-weather .s18-weather > header { height: 36px !important; align-self: center !important; }
+  .s17-widget-weather .s18-weather-main { height: 36px !important; min-height: 0 !important; overflow: hidden !important; }
+  .s17-widget-weather .s18-weather-main svg { width: 30px !important; height: 30px !important; }
+}

@@ -1,0 +1,17 @@
+FROM,TO,CARDINALITY,RULE
+Customer,Conversation,1:N,Customer Communication Center wraps existing customer truth
+Conversation,ERP record,N:1,related record reference; no duplicate order/invoice/payment truth
+Provider message,Conversation,N:1,"provider ID, direction and delivery state"
+Authoritative ERP event,Communication automation,1:N,idempotent event trigger
+Company,Business number,1:N,company/site/number scope
+Bank account,Transaction,1:N,account assignment gates visibility
+Provider event,Payment verification,1:1,"signature, replay and idempotency gate"
+Payment verification,Invoice or order,N:1,reference matching before activation
+Transfer,Beneficiary,N:1,verified destination
+Transfer,Approval,1:N,maker/checker and threshold authorization
+Payroll batch,Employee payment,1:N,per-employee outcome controls finality
+Reconciliation,Bank and ledger transaction,N:2,evidenced source comparison
+Purchase requisition,Purchase order,1:1,approved sourcing handoff
+Purchase order,Goods receipt,1:N,received quantity updated only on posting
+Stock transfer,Inventory location,N:2,custody preserves total stock
+Bakery batch,Custody ledger,1:1,loaf and money reconciliation

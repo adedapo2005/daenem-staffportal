@@ -1,0 +1,8 @@
+"VISUALIZATION","LOCATION","DATA SOURCE","INTERACTION","STATUS"
+"Company record bars","Homes","Authorized records","Work filter; source record drilldown","Derived and scoped"
+"Attention board","Board & Pulse","Authorized evidence and attention record keys","Open record","Identity comparison fixed; final recapture pending"
+"Route map","Cockpit / logistics","Illustrative schematic","Open logistics","Not live GPS"
+"Report bars","Report/widget builders","metricValue with permitted source rows","Select metric; grouping preview","Local preview"
+"Legacy operational charts","Payroll / finance / bakery / properties","Illustrative fixture arrays","Varies","Not fully unified with mutable source records"
+"Weather panel","Homes / sign-in","No provider","Unavailable truth state","No fabricated observation"
+"World clocks","Homes / sign-in","Intl.DateTimeFormat with IANA zones","User context selection","Real clock calculation; not server time SLA"

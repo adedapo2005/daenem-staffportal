@@ -189,7 +189,7 @@ test('Inbox send-readiness UI uses guarded prepare and send handoffs',async()=>{
   assert.match(ui,/\/send`/);
   assert.match(ui,/Check readiness/);
   assert.match(ui,/Send to WhatsApp/);
-  assert.match(ui,/Provider send release-gated/);
+  assert.match(ui,/live WhatsApp sending must be turned on separately by an authorized administrator/);
   assert.match(ui,/META_SYSTEM_USER_TOKEN_MISSING/);
   assert.match(ui,/!currentReadiness\?\.ready\|\|!currentReadiness\.liveSend/);
 });
@@ -292,7 +292,7 @@ test('Instruction activation is claimed once and database-enforced per language'
 
 test('Governance upserts atomically audit the canonical persisted identity',async()=>{
   const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
-  assert.equal((governance.match(/const \[saved,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
+  assert.equal((governance.match(/(?:const |try\{\s*)\[saved,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
   assert.match(governance,/upsert_restriction[\s\S]*FROM communication_policy_restrictions[\s\S]*company_id=\? AND event_id=\? AND subject_type=\? AND subject_id=\?/);
   assert.match(governance,/upsert_trigger[\s\S]*FROM communication_trigger_rules[\s\S]*company_id=\? AND event_id=\? AND trigger_code=\?/);
   assert.equal((governance.match(/saved\.meta\?\.changes[\s\S]{0,80}audited\.meta\?\.changes/g)||[]).length,3);
@@ -301,10 +301,10 @@ test('Governance upserts atomically audit the canonical persisted identity',asyn
 
 test('Template and instruction governance writes persist audit evidence atomically',async()=>{
   const governance=await readFile(path.join(root,'worker','communications-governance.ts'),'utf8');
-  assert.equal((governance.match(/const \[created,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
+  assert.equal((governance.match(/(?:const |try\{)\[created,audited\]=await env\.DB\.batch\(\[/g)||[]).length,3);
   assert.match(governance,/const \[approved,audited\]=await env\.DB\.batch\(\[/);
   assert.match(governance,/const \[claimed,,activated,audited\]=await env\.DB\.batch\(\[/);
-  assert.equal((governance.match(/changes\(\)=1/g)||[]).length,4);
+  assert.equal((governance.match(/changes\(\)=1/g)||[]).length,5);
   assert.doesNotMatch(governance,/async function audit\(/);
   assert.doesNotMatch(governance,/await audit\(/);
 });

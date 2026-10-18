@@ -1,0 +1,112 @@
+ROUTE,COMPONENT,MODEL_SOURCE,API_CONTRACT,PRODUCTION_GAP
+/self-service,Personal Service Desk,model.ts / enterprise-contract.ts,/api/self-service,See production-gaps.csv
+/home,Executive Command,model.ts / enterprise-contract.ts,/api/home,See production-gaps.csv
+/cockpit,Map & Exception Control Room,model.ts / enterprise-contract.ts,/api/cockpit,See production-gaps.csv
+/workspace,Focus & Flow,model.ts / enterprise-contract.ts,/api/workspace,See production-gaps.csv
+/profile,Identity & Self-Service,model.ts / enterprise-contract.ts,/api/profile,See production-gaps.csv
+/people,People Directory & Record Inspector,model.ts / enterprise-contract.ts,/api/people,See production-gaps.csv
+/hr-records,Controlled HR Record Ledger,model.ts / enterprise-contract.ts,/api/hr-records,See production-gaps.csv
+/attendance,Shift Timeline & Location Validation,model.ts / enterprise-contract.ts,/api/attendance,See production-gaps.csv
+/leave,Absence Calendar & Request Rail,model.ts / enterprise-contract.ts,/api/leave,See production-gaps.csv
+/performance,Review Cycle & Scorecard,model.ts / enterprise-contract.ts,/api/performance,See production-gaps.csv
+/hr-cases,Confidential Case Timeline,model.ts / enterprise-contract.ts,/api/hr-cases,See production-gaps.csv
+/lifecycle,Lifecycle Checklist & Responsibility Map,model.ts / enterprise-contract.ts,/api/lifecycle,See production-gaps.csv
+/forms,Document Shelf & Form Workspace,model.ts / enterprise-contract.ts,/api/forms,See production-gaps.csv
+/tasks,Workstream Board,model.ts / enterprise-contract.ts,/api/tasks,See production-gaps.csv
+/payroll,Readiness Gates & Payroll Worksheet,model.ts / enterprise-contract.ts,/api/payroll,See production-gaps.csv
+/payslips,Statement Reader & Period Archive,model.ts / enterprise-contract.ts,/api/payslips,See production-gaps.csv
+/payroll-batches,Payment Batch Control Ledger,model.ts / enterprise-contract.ts,/api/payroll-batches,See production-gaps.csv
+/applications,Candidate Pipeline,model.ts / enterprise-contract.ts,/api/applications,See production-gaps.csv
+/interviews,Interview Calendar & Scorecards,model.ts / enterprise-contract.ts,/api/interviews,See production-gaps.csv
+/hiring,Offer-to-Onboarding Handoff,model.ts / enterprise-contract.ts,/api/hiring,See production-gaps.csv
+/printing,Production Lanes & Machine Load,model.ts / enterprise-contract.ts,/api/printing,See production-gaps.csv
+/print-orders,Quotation Ledger & Customer Inspector,model.ts / enterprise-contract.ts,/api/print-orders,See production-gaps.csv
+/print-materials,Consumption & Job Cost Worksheet,model.ts / enterprise-contract.ts,/api/print-materials,See production-gaps.csv
+/bakery,Batch Timeline & Yield Reconciliation,model.ts / enterprise-contract.ts,/api/bakery,See production-gaps.csv
+/bakery-recipes,BOM & Ingredient Inspector,model.ts / enterprise-contract.ts,/api/bakery-recipes,See production-gaps.csv
+/bakery-sales,Dispatch-to-Remittance Reconciliation,model.ts / enterprise-contract.ts,/api/bakery-sales,See production-gaps.csv
+/autos,Vehicle Inventory & Sales Inspector,model.ts / enterprise-contract.ts,/api/autos,See production-gaps.csv
+/auto-leads,Vehicle Sales Pipeline,model.ts / enterprise-contract.ts,/api/auto-leads,See production-gaps.csv
+/auto-history,Read-only Service Archive,model.ts / enterprise-contract.ts,/api/auto-history,See production-gaps.csv
+/logistics,Route Map & Dispatch Queue,model.ts / enterprise-contract.ts,/api/logistics,See production-gaps.csv
+/fleet,Fleet Readiness Matrix,model.ts / enterprise-contract.ts,/api/fleet,See production-gaps.csv
+/trip-costs,Trip Profitability Worksheet,model.ts / enterprise-contract.ts,/api/trip-costs,See production-gaps.csv
+/properties,Portfolio Mosaic & Occupancy Grid,model.ts / enterprise-contract.ts,/api/properties,See production-gaps.csv
+/leases,Lease Timeline & Receivables,model.ts / enterprise-contract.ts,/api/leases,See production-gaps.csv
+/property-leads,Listing-to-Inspection Pipeline,model.ts / enterprise-contract.ts,/api/property-leads,See production-gaps.csv
+/finance,Ledger & Financial Analysis,model.ts / enterprise-contract.ts,/api/finance,See production-gaps.csv
+/receivables,Aging Ladder & Receivable Ledger,model.ts / enterprise-contract.ts,/api/receivables,See production-gaps.csv
+/finance-posting,Posting Event Trace,model.ts / enterprise-contract.ts,/api/finance-posting,See production-gaps.csv
+/budgets,Budget Variance & Period Control,model.ts / enterprise-contract.ts,/api/budgets,See production-gaps.csv
+/expenses,Request Register & Evidence Composer,model.ts / enterprise-contract.ts,/api/expenses,See production-gaps.csv
+/expense-approvals,Queue–Evidence–Decision Desk,model.ts / enterprise-contract.ts,/api/expense-approvals,See production-gaps.csv
+/spend,Spend Treemap & Profit Bridge,model.ts / enterprise-contract.ts,/api/spend,See production-gaps.csv
+/cost-admin,Cost Governance Workbench,model.ts / enterprise-contract.ts,/api/cost-admin,See production-gaps.csv
+/inventory,Availability Matrix & Movement Ledger,model.ts / enterprise-contract.ts,/api/inventory,See production-gaps.csv
+/projects,Milestone Schedule & Budget Rail,model.ts / enterprise-contract.ts,/api/projects,See production-gaps.csv
+/facilities,Asset Health & Maintenance Board,model.ts / enterprise-contract.ts,/api/facilities,See production-gaps.csv
+/social,Editorial Calendar & Content Canvas,model.ts / enterprise-contract.ts,/api/social,See production-gaps.csv
+/social-controls,Publishing Policy Studio,model.ts / enterprise-contract.ts,/api/social-controls,See production-gaps.csv
+/social-accounts,Provider Connection Register,model.ts / enterprise-contract.ts,/api/social-accounts,See production-gaps.csv
+/social-sync,Conversion Queue & Source Trace,model.ts / enterprise-contract.ts,/api/social-sync,See production-gaps.csv
+/marketing,Audience Funnel & Campaign Comparison,model.ts / enterprise-contract.ts,/api/marketing,See production-gaps.csv
+/inbox,Conversation Inbox & Context Rail,model.ts / enterprise-contract.ts,/api/inbox,See production-gaps.csv
+/website,Page Tree & Revision Workspace,model.ts / enterprise-contract.ts,/api/website,See production-gaps.csv
+/communications,Announcement Editorial Board,model.ts / enterprise-contract.ts,/api/communications,See production-gaps.csv
+/broadcasts,Audience Composer & Acknowledgement Monitor,model.ts / enterprise-contract.ts,/api/broadcasts,See production-gaps.csv
+/encouragement,Human-Approval Writing Desk,model.ts / enterprise-contract.ts,/api/encouragement,See production-gaps.csv
+/notifications,Priority Inbox,model.ts / enterprise-contract.ts,/api/notifications,See production-gaps.csv
+/help,Contextual Help Conversation,model.ts / enterprise-contract.ts,/api/help,See production-gaps.csv
+/security,Security Event Timeline & Risk Matrix,model.ts / enterprise-contract.ts,/api/security,See production-gaps.csv
+/access,Permission Matrix & Explanation Inspector,model.ts / enterprise-contract.ts,/api/access,See production-gaps.csv
+/admin,Organization Policy Workbench,model.ts / enterprise-contract.ts,/api/admin,See production-gaps.csv
+/recovery,Recovery Issue & Revocation Desk,model.ts / enterprise-contract.ts,/api/recovery,See production-gaps.csv
+/support,Support Case & Consent Inspector,model.ts / enterprise-contract.ts,/api/support,See production-gaps.csv
+/resources,Service Topology & Health Grid,model.ts / enterprise-contract.ts,/api/resources,See production-gaps.csv
+/sync,Sync Queue & Conflict Comparator,model.ts / enterprise-contract.ts,/api/sync,See production-gaps.csv
+/audit,Audit Explorer & Event Detail,model.ts / enterprise-contract.ts,/api/audit,See production-gaps.csv
+/toolbox,Readiness Diagnostic Workbench,model.ts / enterprise-contract.ts,/api/toolbox,See production-gaps.csv
+/integrations,Integration Catalogue & Request Inspector,model.ts / enterprise-contract.ts,/api/integrations,See production-gaps.csv
+/hub,Authorized Module Atlas,model.ts / enterprise-contract.ts,/api/hub,See production-gaps.csv
+/theme,Appearance Gallery,model.ts / enterprise-contract.ts,/api/theme,See production-gaps.csv
+/navigation,Navigation Workbench,model.ts / enterprise-contract.ts,/api/navigation,See production-gaps.csv
+/layout,Composition Studio & Policy Inspector,model.ts / enterprise-contract.ts,/api/layout,See production-gaps.csv
+/signin-design,Sign-In Composition Inspector,model.ts / enterprise-contract.ts,/api/signin-design,See production-gaps.csv
+/procurement,Requisition & Sourcing Desk,model.ts / enterprise-contract.ts,/api/procurement,See production-gaps.csv
+/purchase-orders,Commitment Ledger & Order Inspector,model.ts / enterprise-contract.ts,/api/purchase-orders,See production-gaps.csv
+/goods-receipts,Receipt Worksheet & Acceptance Gate,model.ts / enterprise-contract.ts,/api/goods-receipts,See production-gaps.csv
+/stock-transfers,Transfer Custody Timeline,model.ts / enterprise-contract.ts,/api/stock-transfers,See production-gaps.csv
+/stock-borrowing,Borrow & Return Register,model.ts / enterprise-contract.ts,/api/stock-borrowing,See production-gaps.csv
+/bakery-accountability,Loaf & Money Accountability Desk,model.ts / enterprise-contract.ts,/api/bakery-accountability,See production-gaps.csv
+/technology-services,Service Queue & SLA Timeline,model.ts / enterprise-contract.ts,/api/technology-services,See production-gaps.csv
+/vacancies,Vacancy Brief & Recruitment Readiness,model.ts / enterprise-contract.ts,/api/vacancies,See production-gaps.csv
+/staff-messaging,Internal Staff Messaging,model.ts / enterprise-contract.ts,/api/staff-messaging,See production-gaps.csv
+/productivity,Governed Productivity Scorecard,model.ts / enterprise-contract.ts,/api/productivity,See production-gaps.csv
+/work-location,Location Policy & Privacy Workbench,model.ts / enterprise-contract.ts,/api/work-location,See production-gaps.csv
+/salary-adjustments,Compensation Change Control,model.ts / enterprise-contract.ts,/api/salary-adjustments,See production-gaps.csv
+/data-import,Import Mapping & Validation Workbench,model.ts / enterprise-contract.ts,/api/data-import,See production-gaps.csv
+/dashboard-personalization,Widget Composition & Defaults,model.ts / enterprise-contract.ts,/api/dashboard-personalization,See production-gaps.csv
+/files,Evidence Library & Preview Inspector,model.ts / enterprise-contract.ts,/api/files,See production-gaps.csv
+/saved-views,Personal View Library,model.ts / enterprise-contract.ts,/api/saved-views,See production-gaps.csv
+/field-builder,Schema Configuration Canvas,model.ts / enterprise-contract.ts,/api/field-builder,See production-gaps.csv
+/form-builder,Form Canvas & Property Inspector,model.ts / enterprise-contract.ts,/api/form-builder,See production-gaps.csv
+/workflow-builder,State Canvas & Transition Inspector,model.ts / enterprise-contract.ts,/api/workflow-builder,See production-gaps.csv
+/report-builder,Report Query Canvas & Result Preview,model.ts / enterprise-contract.ts,/api/report-builder,See production-gaps.csv
+/widget-builder,Widget Gallery & Data Inspector,model.ts / enterprise-contract.ts,/api/widget-builder,See production-gaps.csv
+/theme-builder,Semantic Token Canvas & Contrast Inspector,model.ts / enterprise-contract.ts,/api/theme-builder,See production-gaps.csv
+/business-rules,Rule Condition & Validation Workbench,model.ts / enterprise-contract.ts,/api/business-rules,See production-gaps.csv
+/notification-rules,Event-to-Audience Routing Desk,model.ts / enterprise-contract.ts,/api/notification-rules,See production-gaps.csv
+/session-analytics,Session Timeline & Consent Inspector,model.ts / enterprise-contract.ts,/api/session-analytics,See production-gaps.csv
+/reports,Metric Library & Source Explorer,model.ts / enterprise-contract.ts,/api/reports,See production-gaps.csv
+/customer-communications,Omnichannel Queue & Customer Context,model.ts / enterprise-contract.ts,/api/customer-communications,See production-gaps.csv
+/communication-automation,Authoritative Event Automation Studio,model.ts / enterprise-contract.ts,/api/communication-automation,See production-gaps.csv
+/communication-templates,Template Governance Studio,model.ts / enterprise-contract.ts,/api/communication-templates,See production-gaps.csv
+/letterheads,Company Identity & Letterhead Studio,model.ts / enterprise-contract.ts,/api/letterheads,See production-gaps.csv
+/banking-operations,Account Cards & Transaction Command,model.ts / enterprise-contract.ts,/api/banking-operations,See production-gaps.csv
+/treasury,Cash Position & Forecast Command,model.ts / enterprise-contract.ts,/api/treasury,See production-gaps.csv
+/payment-verification,"Verification, Matching & Activation Gate",model.ts / enterprise-contract.ts,/api/payment-verification,See production-gaps.csv
+/transfers,Transfer Control & Approval Rail,model.ts / enterprise-contract.ts,/api/transfers,See production-gaps.csv
+/beneficiaries,Beneficiary Risk & Verification Register,model.ts / enterprise-contract.ts,/api/beneficiaries,See production-gaps.csv
+/payroll-execution,Payroll Banking & Exception Command,model.ts / enterprise-contract.ts,/api/payroll-execution,See production-gaps.csv
+/reconciliation,Source Comparison & Exception Resolution,model.ts / enterprise-contract.ts,/api/reconciliation,See production-gaps.csv
+/financial-reports,Financial Metric & Export Governance,model.ts / enterprise-contract.ts,/api/financial-reports,See production-gaps.csv

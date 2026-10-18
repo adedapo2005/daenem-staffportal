@@ -1,0 +1,100 @@
+PAGE,ARCHETYPE,COMPONENT,VISUAL_ACCEPTANCE
+Self-Service,Personal Service Desk,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Overview,Executive Command,app/experience/homes-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Operational Cockpit,Map & Exception Control Room,app/experience/homes-v3.tsx,PARTIAL; dimensions are not visual acceptance
+My Workspace,Focus & Flow,app/experience/homes-v3.tsx,PARTIAL; dimensions are not visual acceptance
+My Profile,Identity & Self-Service,app/experience/profile-v3.tsx,PARTIAL; dimensions are not visual acceptance
+People & HR,People Directory & Record Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+HR Master Records,Controlled HR Record Ledger,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Attendance & Location,Shift Timeline & Location Validation,app/experience/attendance-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Leave Management,Absence Calendar & Request Rail,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Performance Reviews,Review Cycle & Scorecard,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+HR Cases,Confidential Case Timeline,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Onboarding & Offboarding,Lifecycle Checklist & Responsibility Map,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Forms Center,Document Shelf & Form Workspace,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Tasks & Approvals,Workstream Board,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Payroll Control,Readiness Gates & Payroll Worksheet,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+My Payslips,Statement Reader & Period Archive,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Bank Payment Batches,Payment Batch Control Ledger,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Job Applications,Candidate Pipeline,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Interview Pipeline,Interview Calendar & Scorecards,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Hiring Workflow,Offer-to-Onboarding Handoff,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Printing Production,Production Lanes & Machine Load,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Customers & Print Orders,Quotation Ledger & Customer Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Print Materials & Costing,Consumption & Job Cost Worksheet,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Bakery Production,Batch Timeline & Yield Reconciliation,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Recipes & Ingredients,BOM & Ingredient Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Bakery Orders & Remittance,Dispatch-to-Remittance Reconciliation,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Vehicle Sales,Vehicle Inventory & Sales Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Auto Leads & Sales,Vehicle Sales Pipeline,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Historical Workshop Records,Read-only Service Archive,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Logistics Dispatch,Route Map & Dispatch Queue,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Fleet & Drivers,Fleet Readiness Matrix,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Trip Expenses & Collections,Trip Profitability Worksheet,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Homes & Properties,Portfolio Mosaic & Occupancy Grid,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Leases & Rent Schedules,Lease Timeline & Receivables,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Property Sales & Leads,Listing-to-Inspection Pipeline,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Finance Workspace,Ledger & Financial Analysis,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Receivables,Aging Ladder & Receivable Ledger,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Finance Posting,Posting Event Trace,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Budgets & Fiscal Periods,Budget Variance & Period Control,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+My Expense Requests,Request Register & Evidence Composer,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Expense Approval Queue,Queue–Evidence–Decision Desk,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Spend & Profit Intelligence,Spend Treemap & Profit Bridge,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Cost Intelligence Administration,Cost Governance Workbench,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Inventory,Availability Matrix & Movement Ledger,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Construction & Projects,Milestone Schedule & Budget Rail,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Facilities & Maintenance,Asset Health & Maintenance Board,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Social Engine,Editorial Calendar & Content Canvas,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Social Controls,Publishing Policy Studio,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Social Accounts,Provider Connection Register,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+ERP Social Sync,Conversion Queue & Source Trace,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Marketing Command,Audience Funnel & Campaign Comparison,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Community Inbox,Conversation Inbox & Context Rail,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Website Administration,Page Tree & Revision Workspace,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Notice Board,Announcement Editorial Board,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Broadcast Center,Audience Composer & Acknowledgement Monitor,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Daily Staff Encouragement,Human-Approval Writing Desk,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Action Center,Priority Inbox,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+AI Guide,Contextual Help Conversation,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Security Center,Security Event Timeline & Risk Matrix,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Access Control,Permission Matrix & Explanation Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Admin Setup,Organization Policy Workbench,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Temporary Password Recovery,Recovery Issue & Revocation Desk,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+User Support Centre,Support Case & Consent Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Resource Monitoring,Service Topology & Health Grid,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Sync & Sessions,Sync Queue & Conflict Comparator,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Activity & Audit,Audit Explorer & Event Detail,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Advanced Toolbox,Readiness Diagnostic Workbench,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+API & Integrations,Integration Catalogue & Request Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Module Hub,Authorized Module Atlas,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Theme Studio,Appearance Gallery,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Navigation Studio,Navigation Workbench,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Layout Studio,Composition Studio & Policy Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Sign-In Personalization,Sign-In Composition Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Procurement,Requisition & Sourcing Desk,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Purchase Orders,Commitment Ledger & Order Inspector,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Goods Receipts,Receipt Worksheet & Acceptance Gate,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Stock Transfers,Transfer Custody Timeline,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Stock Borrowing,Borrow & Return Register,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Bakery Accountability,Loaf & Money Accountability Desk,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Technology Services,Service Queue & SLA Timeline,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Vacancies,Vacancy Brief & Recruitment Readiness,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Staff Messaging,Internal Staff Messaging,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Work Effectiveness,Governed Productivity Scorecard,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Work-Location Policy,Location Policy & Privacy Workbench,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Salary Adjustments,Compensation Change Control,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Controlled Data Import,Import Mapping & Validation Workbench,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Dashboard Personalization,Widget Composition & Defaults,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+File Manager,Evidence Library & Preview Inspector,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Saved Views,Personal View Library,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Field Configuration,Schema Configuration Canvas,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Form Builder,Form Canvas & Property Inspector,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Workflow Builder,State Canvas & Transition Inspector,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Report Builder,Report Query Canvas & Result Preview,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Widget Builder,Widget Gallery & Data Inspector,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Theme Builder,Semantic Token Canvas & Contrast Inspector,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Business Rules,Rule Condition & Validation Workbench,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Notification Policies,Event-to-Audience Routing Desk,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance
+Sessions & Usage,Session Timeline & Consent Inspector,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; dimensions are not visual acceptance
+Report Center,Metric Library & Source Explorer,app/experience/enterprise-v3.tsx,PARTIAL; dimensions are not visual acceptance

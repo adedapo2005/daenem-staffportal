@@ -1,0 +1,23 @@
+PERMISSION,RESOURCE,SCOPE,IMPLIED_BY_VIEW
+View Balance,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+View Transactions,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+View Statements,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Create Transfers,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Approve Transfers,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Reject Transfers,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Execute Transfers,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Manage Beneficiaries,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Manage Bank Accounts,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+View Payroll,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Create Payroll,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Approve Payroll,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Execute Payroll,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Reconcile Payroll,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+View Treasury,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Approve Payments,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Manage Cash Position,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+View Reports,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Create Reports,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Export Reports,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+View Audit,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO
+Download Audit,Financial operation,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,NO

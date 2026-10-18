@@ -77,10 +77,10 @@ function buildPayload(row:PreparedMessage,templateComponents?:Record<string,unkn
 
 async function resolveInboxTemplateComponents(env:WhatsAppOutboundEnv,row:PreparedMessage){
   const mapping=await env.DB.prepare(`
-    SELECT id FROM communication_template_mappings
-    WHERE template_id=? AND company_id=? AND use_case_id='support.reply'
-      AND provider_template_name=? AND language=?
-      AND category='customer_support' AND enabled=1 AND status='approved'
+    SELECT m.id FROM communication_template_mappings m
+    WHERE m.template_id=? AND m.company_id=? AND m.use_case_id='support.reply'
+      AND m.provider_template_name=? AND m.language=?
+      AND m.category='customer_support' AND m.enabled=1 AND m.status='approved'
     LIMIT 1
   `).bind(String(row.templateId||''),row.companyId,String(row.templateName||''),String(row.templateLanguage||'')).first<{id:string}>();
   if(!mapping)throw new Error('WHATSAPP_TEMPLATE_MAPPING_NOT_READY');

@@ -1,0 +1,386 @@
+{
+  "generatedAt": "2026-09-12T05:21:07Z",
+  "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "identityVerified": true,
+  "rawBrowserMeasurements": "signin-browser-measurements.json",
+  "signInCaptures": 25,
+  "erpCaptures": 69,
+  "files": [
+    {
+      "file": "evidence/erp/access-control-1920x1080.jpg",
+      "sha256": "512cc3850d1d7d6ce4c54aa83b1d4aa4afacc9207538b12ecdede11d563a1e1f"
+    },
+    {
+      "file": "evidence/erp/attendance-1920x1080.jpg",
+      "sha256": "8a56369c8b7eb63ba9a5f94ad7290e57ea66caa3bd08568a6ae131bbfa23e16d"
+    },
+    {
+      "file": "evidence/erp/attendance-3840x2160.jpg",
+      "sha256": "e24b2cf15653c57e84ba0535c8bd73398796e2a416d27989a0b985ac304f4615"
+    },
+    {
+      "file": "evidence/erp/attendance-390x844.jpg",
+      "sha256": "5899e2c9357b5c5bb182d695c28328e19933220d7353d94758aa77fa20616607"
+    },
+    {
+      "file": "evidence/erp/autos-1920x1080.jpg",
+      "sha256": "9627691d8378f9693cb0f56ad6ff102cfd3050f1a80d3a6a274bf3fb5e59acb6"
+    },
+    {
+      "file": "evidence/erp/bakery-1920x1080.jpg",
+      "sha256": "0085f14e0ff9761751c4f9ba312e14371008b21fcda71fbad06df922d64e519b"
+    },
+    {
+      "file": "evidence/erp/bakery-3840x2160.jpg",
+      "sha256": "2adf50907be82b8041ffc280b9a61a2c379316cd94a36e68ea328f7500d0a2b5"
+    },
+    {
+      "file": "evidence/erp/bakery-390x844.jpg",
+      "sha256": "022f3be4395af0450eed9a9fcd0f0db926a6dc0e9423f2c71300193e69ba91e0"
+    },
+    {
+      "file": "evidence/erp/banking-operations-1920x1080.jpg",
+      "sha256": "f755a81f2d9d0cd2e7ffecbd427b4dafb90d2183b17a4a293202729509313b48"
+    },
+    {
+      "file": "evidence/erp/banking-operations-3840x2160.jpg",
+      "sha256": "d86d79dcef7aecdb80c0f429af5691eef5593426b388ff7681798c477c5fb527"
+    },
+    {
+      "file": "evidence/erp/banking-operations-390x844.jpg",
+      "sha256": "323d7ae8e591d3550eeef83f1ff8501b7d96f1b20f918c3e56a24be7355bb5e3"
+    },
+    {
+      "file": "evidence/erp/communication-analytics-3840x2160.jpg",
+      "sha256": "c4ef23e2f93ca1a5bf6d0211cc3bb4667f48b16b9e570a382a48831db9a8b3ff"
+    },
+    {
+      "file": "evidence/erp/communication-analytics-390x844.jpg",
+      "sha256": "53c21545e6aadb0e005dd1d5c8627adf4836b9ce55293393bb04bb0c9a426f78"
+    },
+    {
+      "file": "evidence/erp/communication-automation-1920x1080.jpg",
+      "sha256": "56ecf90bf4ab9821f4f72b8521b641f3e02a5a4390454f9b6f4621f89b9a6876"
+    },
+    {
+      "file": "evidence/erp/customer-communications-1920x1080.jpg",
+      "sha256": "4ac2ed9af1f4c4e6e7a494a18ec516aad163a92015a705a510dfa99b92935eac"
+    },
+    {
+      "file": "evidence/erp/data-import-1920x1080.jpg",
+      "sha256": "1f01339a5d43f72f7de5125909c438faa0e2d0d2021b97b397f4393792726489"
+    },
+    {
+      "file": "evidence/erp/employee-home-1920x1080.jpg",
+      "sha256": "cdfffb15a735fbf5ac0191cbaa61f1531f6947bfedbb1edc991cbad8b3d050ee"
+    },
+    {
+      "file": "evidence/erp/expenses-1920x1080.jpg",
+      "sha256": "3e568821bf67ea8f2db23667c040c7dc61049278cbc4a548857e6224069a05c0"
+    },
+    {
+      "file": "evidence/erp/facilities-1920x1080.jpg",
+      "sha256": "dad796db5a91bb9ae2ab75699f17255b29edbb6332f221ee716f20adad988452"
+    },
+    {
+      "file": "evidence/erp/files-1920x1080.jpg",
+      "sha256": "e072e5f4bcf529da6873ad1b5954ec4bb6ce42a3b96a704301a8405026adea9d"
+    },
+    {
+      "file": "evidence/erp/files-3840x2160.jpg",
+      "sha256": "b806d4e4393e850acf1124bb127a310d5eb7555b9105341ce4bf5771bd6ac41a"
+    },
+    {
+      "file": "evidence/erp/files-390x844.jpg",
+      "sha256": "210dfa5b9d6185d922be6c2992bb1444cb2b8e082dc9ce751b5276ca6e0cfb1f"
+    },
+    {
+      "file": "evidence/erp/finance-1920x1080.jpg",
+      "sha256": "0fda6e655e69f38322c7ac9d685b2ebf9f912bd1ad04c3ed2c11dadd9a69ee45"
+    },
+    {
+      "file": "evidence/erp/financial-reports-1920x1080.jpg",
+      "sha256": "0be381bf3c77b595ef3e4d1d23a65e9ce43a9ea8f02e2329c6c7dc3c994cc660"
+    },
+    {
+      "file": "evidence/erp/form-builder-1920x1080.jpg",
+      "sha256": "5ef90d4530707c529b521b8d35685e9d7c46222106d76aff12eb0bd9b5896a28"
+    },
+    {
+      "file": "evidence/erp/form-builder-3840x2160.jpg",
+      "sha256": "9bfe970b5f525ae8fc5d3a50a323fe4a92aac2d0841dd939d73af4f6bc03f041"
+    },
+    {
+      "file": "evidence/erp/form-builder-390x844.jpg",
+      "sha256": "74c05de7c3e1e218ed3d6c6388fc24877aae8670748e57a31519b3eb0e4fd240"
+    },
+    {
+      "file": "evidence/erp/inventory-1920x1080.jpg",
+      "sha256": "de8d12e9544e79030deb6792d020b4314c43634a47dfe32f72fb5cb7524c3127"
+    },
+    {
+      "file": "evidence/erp/leave-1920x1080.jpg",
+      "sha256": "8cd747dc47ea12849b136c5ce72bf2155d6b715a608391e8cf339406f93547a0"
+    },
+    {
+      "file": "evidence/erp/letterhead-1920x1080.jpg",
+      "sha256": "3f0eabd035bcbf202596f78d1706df04628e2caa0a63d5cedb7f9adaa28274a0"
+    },
+    {
+      "file": "evidence/erp/logistics-1920x1080.jpg",
+      "sha256": "7266a32f713c98a4435866c16c0990b84399091c5a4f3395e2eb90447958920d"
+    },
+    {
+      "file": "evidence/erp/manager-home-1920x1080.jpg",
+      "sha256": "e7531977e5b4bcd1edc084acad19d84da22c87b19a05a9a54bf70037bb0bb549"
+    },
+    {
+      "file": "evidence/erp/no-permission-experience-1920x1080.jpg",
+      "sha256": "5d9363a469826487197b206f6f567797bd0bc0b88e9f2808ae72e39e99e4097e"
+    },
+    {
+      "file": "evidence/erp/notifications-1920x1080.jpg",
+      "sha256": "04fa6b8472148ecd890ff567df1fc77016aeaea8b50f4a58edb28b73cd77e60d"
+    },
+    {
+      "file": "evidence/erp/operational-cockpit-1920x1080.jpg",
+      "sha256": "2c8fe40bb2a8813b411de789d175e3b98c00c5fa5abce2ace6d87bf9e5be97ca"
+    },
+    {
+      "file": "evidence/erp/operational-cockpit-3840x2160.jpg",
+      "sha256": "8be36558b4a45fd37339ca018d35e467f02511e9f165895501225ad57bdecc37"
+    },
+    {
+      "file": "evidence/erp/operational-cockpit-390x844.jpg",
+      "sha256": "f9b34cd7e642d843b2be8f135a0d57db28d7e45c11f1ec86a32da1e00b781063"
+    },
+    {
+      "file": "evidence/erp/owner-home-1920x1080.jpg",
+      "sha256": "32b81f0247e34ac55cde72afed8ea7d5215a1be94dad1c029ca03fb0b341ae64"
+    },
+    {
+      "file": "evidence/erp/owner-home-3840x2160.jpg",
+      "sha256": "023643897bb9abf6003abb55cee311f4e94f8af1d73b8c2100f1d8dce534258f"
+    },
+    {
+      "file": "evidence/erp/owner-home-390x844.jpg",
+      "sha256": "0b1eb94495ce2ea69646c87da640a8e3614f85c21bcc023e7a3511d6abc41526"
+    },
+    {
+      "file": "evidence/erp/payment-verification-1920x1080.jpg",
+      "sha256": "67dc0d42810f1cd2fdcbb6602bb7e6efb3890801e26835f9edc8860475474d9c"
+    },
+    {
+      "file": "evidence/erp/payroll-1920x1080.jpg",
+      "sha256": "1d4263a2d415965f9c1bf35661ef99c80841651919fb3e417f39833bfbd288a0"
+    },
+    {
+      "file": "evidence/erp/payroll-banking-1920x1080.jpg",
+      "sha256": "b5f6a92297a5604b01bf9bde9ed4e088b3d20a2d5ba1eb568c5070e6237d1359"
+    },
+    {
+      "file": "evidence/erp/payroll-banking-3840x2160.jpg",
+      "sha256": "9749b2be31d5c02574ad818ead8a2d3774ffae6446f203c2da38653a869307ca"
+    },
+    {
+      "file": "evidence/erp/payroll-banking-390x844.jpg",
+      "sha256": "7d09d4a8afe7546eff0fe16164807024d732c0e0f28ccebbeb434cab003b9a22"
+    },
+    {
+      "file": "evidence/erp/printing-1920x1080.jpg",
+      "sha256": "17fe9e8f9d8617484385b10e086b2dbd30cc57bdcc993b53c2e1ea595b31825a"
+    },
+    {
+      "file": "evidence/erp/printing-3840x2160.jpg",
+      "sha256": "c70e5fcc5e8eb925dd89443936234f77680b75f6cf54507df0315865edbca297"
+    },
+    {
+      "file": "evidence/erp/printing-390x844.jpg",
+      "sha256": "40126cea4dec43e88747c985ae2455378a4d0f72db97f30a88b05367a0203495"
+    },
+    {
+      "file": "evidence/erp/procurement-1920x1080.jpg",
+      "sha256": "025c4470ff4316a1832b6cc3746d33eac29cab9c6c9da83efc2535e44cdbf1ff"
+    },
+    {
+      "file": "evidence/erp/profile-1920x1080.jpg",
+      "sha256": "90fe78a8e3e939250a2afa938f0f1ec5dedd400d560bf0717be5c842166ae54a"
+    },
+    {
+      "file": "evidence/erp/projects-1920x1080.jpg",
+      "sha256": "8162294abbb9d8dfbcb63ce29119b5798c134c675642294f8d4e54503009db2a"
+    },
+    {
+      "file": "evidence/erp/properties-1920x1080.jpg",
+      "sha256": "9a63a8d73d127a067c032042329270afb9902f971a347508b76d36e89dd4039c"
+    },
+    {
+      "file": "evidence/erp/reconciliation-1920x1080.jpg",
+      "sha256": "7876ec4e569fb13ae9abb76993bccb2f8e7cb48e79949b000a09c3fa75cab541"
+    },
+    {
+      "file": "evidence/erp/recruitment-1920x1080.jpg",
+      "sha256": "8fb83f524255224898e8da996cc134b3501e80789cec033ec5a7f40787467548"
+    },
+    {
+      "file": "evidence/erp/report-builder-1920x1080.jpg",
+      "sha256": "ff8092c0f6f966fa84549a797b572717d7eac55fdbffed70bfbebc41a43fa350"
+    },
+    {
+      "file": "evidence/erp/salary-adjustments-1920x1080.jpg",
+      "sha256": "51bf828fcf88c5b2f96a1b17b9a373d786dc0c87cf8ae8d745626e2764f8ca08"
+    },
+    {
+      "file": "evidence/erp/security-1920x1080.jpg",
+      "sha256": "a30db00ba8147d87b22dfefca8d4db33ee87fd4141f1d40df8093dabe49affb4"
+    },
+    {
+      "file": "evidence/erp/staff-chat-1920x1080.jpg",
+      "sha256": "bc39902819b7f2ddbe7f360e15508eb910b70b2a31e74a95e0b88bb224693489"
+    },
+    {
+      "file": "evidence/erp/technology-services-1920x1080.jpg",
+      "sha256": "ba0c030b17519996ac505cd42d6b19ecb5cd1c3f1588263fe7a88e368ab61269"
+    },
+    {
+      "file": "evidence/erp/theme-builder-1920x1080.jpg",
+      "sha256": "bc46139056de47420f6866a36ab5267bbc5a98d0a093add05c1f636f4fa6e670"
+    },
+    {
+      "file": "evidence/erp/transfers-1920x1080.jpg",
+      "sha256": "b13994596afc459b17f8702ea167e747922e69938189912498ce667241a22328"
+    },
+    {
+      "file": "evidence/erp/treasury-1920x1080.jpg",
+      "sha256": "9cf9e2b7b9a0be9b1da40b172ab35711a3184c977bd1d2ce308ee299b9fc44cc"
+    },
+    {
+      "file": "evidence/erp/treasury-3840x2160.jpg",
+      "sha256": "1a4359cc7ec5e9eeea91a3225c32b9b9d6745ee78bfde8fcc9c32075ee6f99ec"
+    },
+    {
+      "file": "evidence/erp/treasury-390x844.jpg",
+      "sha256": "8a7eee4cd1012d161e2d2dbef0cac19230499c1321851b04976ad73d0c100619"
+    },
+    {
+      "file": "evidence/erp/whatsapp-conversation-1920x1080.jpg",
+      "sha256": "53d79e8c69aa4a0ac3e0e71f3d24c0369853f9ac9f9b06f5a3f8499fb12975b5"
+    },
+    {
+      "file": "evidence/erp/whatsapp-conversation-3840x2160.jpg",
+      "sha256": "ca188c13ca6d1910c545aaec30d5ce2d75c62e277b983d3102adf008a59a37e3"
+    },
+    {
+      "file": "evidence/erp/whatsapp-conversation-390x844.jpg",
+      "sha256": "6de73f165de36811852ef74de1d5b2aefee474fd1e579d631a1447f88a603299"
+    },
+    {
+      "file": "evidence/erp/widget-builder-1920x1080.jpg",
+      "sha256": "8d393ed52e6fb2f8787ebc8fbc6604c6cd5c76a2859ab2582b84f660a6eeabe2"
+    },
+    {
+      "file": "evidence/erp/workflow-builder-1920x1080.jpg",
+      "sha256": "53a48f682e4b01af209a4dc5f638872ea73ec1da2a4f07a88d0a1cf318a20c52"
+    },
+    {
+      "file": "evidence/signin/signin-atrium-1920x1080.jpg",
+      "sha256": "06761ab34d0ddae1e7ccd694f277356deebb95eb1aa8a9bd74cad254111980c7"
+    },
+    {
+      "file": "evidence/signin/signin-atrium-390x844.jpg",
+      "sha256": "695b4267fde955151468e70e743462e710a8a4a9c47415793fd263f1e9ae6b72"
+    },
+    {
+      "file": "evidence/signin/signin-atrium-768x1024.jpg",
+      "sha256": "a23d02dd8fb07e1a3f746b5e4a7be27b59f2c3908bf02b11cbf48e8bfe25b86b"
+    },
+    {
+      "file": "evidence/signin/signin-command-1920x1080.jpg",
+      "sha256": "ee983e91cbe3ae36fe4660cb59754d92447ce8a0fc4ed4e12eee415d940b8d11"
+    },
+    {
+      "file": "evidence/signin/signin-command-390x844.jpg",
+      "sha256": "b1a7446602b289034f78c74a981665d102562a0c0531c2edf1f0f500a56a5e7f"
+    },
+    {
+      "file": "evidence/signin/signin-duet-1920x1080.jpg",
+      "sha256": "a3780c948ce06c71cf5892fe65868de00b6e941654d574eab028bf2de6b3d1bb"
+    },
+    {
+      "file": "evidence/signin/signin-duet-390x844.jpg",
+      "sha256": "19c8fe8e028b66904d94e39bc136d738fca34aafab0560223d085f259672d263"
+    },
+    {
+      "file": "evidence/signin/signin-editorial-1920x1080.jpg",
+      "sha256": "4ba1782dac1355272c3dd13c4b4c0a01400edab6549216e82c1a044033d8167d"
+    },
+    {
+      "file": "evidence/signin/signin-editorial-390x844.jpg",
+      "sha256": "fb9a05e4b27711548cb03124e2bbdb3125a88e07adfd1a740be0a45da6b15a63"
+    },
+    {
+      "file": "evidence/signin/signin-focus-1920x1080.jpg",
+      "sha256": "40d388cecb5bd34a848958e904ae5efce5ab98901c6f97f7dfab5177e04b17bd"
+    },
+    {
+      "file": "evidence/signin/signin-focus-390x844.jpg",
+      "sha256": "7edf62a9cbe807e6f3a310b2aa8bb937c5c7f8baf0e13d1fe3a13d50c0e8e79c"
+    },
+    {
+      "file": "evidence/signin/signin-gallery-1920x1080.jpg",
+      "sha256": "f57ebd149fb2783c9e6f31a555826352ade14d975ef56ca21faa8480977688ec"
+    },
+    {
+      "file": "evidence/signin/signin-gallery-390x844.jpg",
+      "sha256": "da1cf50bb79bea50f89b1138a51adfa79f3e154a4475877983bf8ffab026760f"
+    },
+    {
+      "file": "evidence/signin/signin-horizon-1920x1080.jpg",
+      "sha256": "a22c42de5685eb5cbdaec3e5d198eda6b7a9e2fb4146189c9b43aefceb436942"
+    },
+    {
+      "file": "evidence/signin/signin-horizon-3840x2160.jpg",
+      "sha256": "7ffd8394893f988338e1433865e7a7ef1715dd91d2b70ecbc0ba2a62fce15f6f"
+    },
+    {
+      "file": "evidence/signin/signin-horizon-390x844.jpg",
+      "sha256": "70faf8794180fde413ed2fb8dd0bbc11e12207757e262e1ef319177015516bed"
+    },
+    {
+      "file": "evidence/signin/signin-nightfall-1920x1080.jpg",
+      "sha256": "4f6b5b9f2b21f1cc640f88d9b6574613f65caf7081457960ed57bead409aef10"
+    },
+    {
+      "file": "evidence/signin/signin-nightfall-2560x1440.jpg",
+      "sha256": "4121b09e8f466f1b1d545ab79fecde01088eb6590b57a33a5f6c62c0e9afcfb8"
+    },
+    {
+      "file": "evidence/signin/signin-nightfall-390x844.jpg",
+      "sha256": "808b6b86a76d05a14f3e19a14c62803e3a92e1e14f50fa95b7ed27f1cc9d9473"
+    },
+    {
+      "file": "evidence/signin/signin-panorama-1672x941.jpg",
+      "sha256": "52e51e57bb9622dc132a4d035dd996d7aa5233bce5d58da9721c29ec47c5d7f4"
+    },
+    {
+      "file": "evidence/signin/signin-panorama-1920x1080.jpg",
+      "sha256": "fc7184b08264d9ca9522449827ef906c6ef8ea35d681c46a3c063614fadf3737"
+    },
+    {
+      "file": "evidence/signin/signin-panorama-390x844.jpg",
+      "sha256": "1c4de96327af9ea91f96553f121af72081f0521f39da67871861eee491f2c341"
+    },
+    {
+      "file": "evidence/signin/signin-vertical-1024x1366.jpg",
+      "sha256": "359f0765ebc88ada5eb1ede28a4dd86bb6e8eae9987e8dabd83abafc65b1cf38"
+    },
+    {
+      "file": "evidence/signin/signin-vertical-1920x1080.jpg",
+      "sha256": "4538da999103a239bb44522fa31773f7a4761671ec87c946e2bfa9b9f1a0ec9b"
+    },
+    {
+      "file": "evidence/signin/signin-vertical-390x844.jpg",
+      "sha256": "c6ab0fcbc4c1137e4a95e303f98876c91e1ee75c397a2a550e9d03e10d8ee7c0"
+    }
+  ]
+}

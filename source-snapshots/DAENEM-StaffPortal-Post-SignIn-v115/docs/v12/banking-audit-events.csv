@@ -1,0 +1,18 @@
+EVENT,CONTROL_DATA,IMMUTABILITY
+provider.event.received,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+provider.event.verified,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+provider.event.rejected,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+payment.matched,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+payment.activated,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+transfer.created,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+transfer.approved,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+transfer.rejected,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+transfer.submitted,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+transfer.failed,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+transfer.reversed,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+beneficiary.created,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+beneficiary.verified,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+beneficiary.activated,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+payroll.batch.submitted,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+employee.payment.changed,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required
+reconciliation.completed,actor|session|device|company|account/transaction scope|correlation|reason|before/after where authorized,Append-only production store required

@@ -1,0 +1,11 @@
+PROFILE,SESSION_KIND,EXPECTED_EXPERIENCE,RESULT
+Owner,Fixture authorization profile,111 assigned modules; every other module and record is nonexistent,PASS
+Group Admin,Fixture authorization profile,99 assigned modules; every other module and record is nonexistent,PASS
+Manager,Fixture authorization profile,63 assigned modules; every other module and record is nonexistent,PASS
+Employee,Fixture authorization profile,23 assigned modules; every other module and record is nonexistent,PASS
+Provisional,Fixture authorization profile,0 assigned modules; every other module and record is nonexistent,PASS
+Multi-role,Fixture authorization profile,63 assigned modules; every other module and record is nonexistent,PASS
+Multi-company,Fixture authorization profile,102 assigned modules; every other module and record is nonexistent,PASS
+No permission,Fixture authorization profile,0 assigned modules; every other module and record is nonexistent,PASS
+Expired override,Fixture authorization profile,111 assigned modules; every other module and record is nonexistent,PASS
+Reduced override,Fixture authorization profile,111 assigned modules; every other module and record is nonexistent,PASS

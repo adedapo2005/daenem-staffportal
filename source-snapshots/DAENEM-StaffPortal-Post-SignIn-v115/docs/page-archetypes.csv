@@ -1,0 +1,73 @@
+PAGE,WORKFLOW TYPE,ARCHITECTURE,WHY THIS STRUCTURE,VISUAL SIGNATURE
+Overview,home,Executive Command,Understand priorities across your authorized scope.,Executive Command
+Operational Cockpit,cockpit,Map & Exception Control Room,Resolve operational exceptions and keep work moving.,Map & Exception Control Room
+My Workspace,work,Focus & Flow,Complete your own work and personal requests.,Focus & Flow
+My Profile,profile,Identity & Self-Service,"Manage your identity, employment and self-service information.",Employee identity cover and comprehensive self-service tabs
+People & HR,people,People Directory & Record Inspector,Find assigned employees and follow up on missing information.,People Directory & Record Inspector
+HR Master Records,records,Controlled HR Record Ledger,Maintain authorized employment and statutory records.,Controlled HR Record Ledger
+Attendance & Location,attendance,Shift Timeline & Location Validation,Record required attendance events and resolve incomplete days.,"Explicit clocking control, calendar and event timeline"
+Leave Management,calendar,Absence Calendar & Request Rail,Request time away and check team coverage before decisions.,Absence Calendar & Request Rail
+Performance Reviews,reviews,Review Cycle & Scorecard,"Complete assigned reviews, commentary and acknowledgement.",Review Cycle & Scorecard
+HR Cases,cases,Confidential Case Timeline,Handle scoped confidential employment cases and evidence.,Confidential Case Timeline
+Onboarding & Offboarding,lifecycle,Lifecycle Checklist & Responsibility Map,Coordinate accountable employee lifecycle tasks.,Lifecycle Checklist & Responsibility Map
+Forms Center,forms,Document Shelf & Form Workspace,Complete assigned forms and keep evidence with each submission.,Document Shelf & Form Workspace
+Tasks & Approvals,board,Workstream Board,Move assigned work forward with clear ownership.,Workstream Board
+Payroll Control,payroll,Readiness Gates & Payroll Worksheet,Validate readiness and prepare controlled payroll batches.,Sequential readiness gates and payroll worksheet
+My Payslips,payslips,Statement Reader & Period Archive,Inspect your payroll statements and payment status.,Statement Reader & Period Archive
+Bank Payment Batches,records,Payment Batch Control Ledger,Inspect batch evidence and prepare a draft export.,Payment Batch Control Ledger
+Job Applications,recruitment,Candidate Pipeline,Review candidates and move authorized applications through stages.,Candidate Pipeline
+Interview Pipeline,calendar,Interview Calendar & Scorecards,Coordinate interview schedules and scorecards.,Interview Calendar & Scorecards
+Hiring Workflow,lifecycle,Offer-to-Onboarding Handoff,Prepare approved candidate handoff to onboarding.,Offer-to-Onboarding Handoff
+Printing Production,printing,Production Lanes & Machine Load,"Keep jobs, proofs, material usage and QC connected.",Stage lanes and machine-load strip
+Customers & Print Orders,records,Quotation Ledger & Customer Inspector,"Track enquiries, quotes and customer commitments.",Quotation Ledger & Customer Inspector
+Print Materials & Costing,costing,Consumption & Job Cost Worksheet,"Reconcile issued stock, actual use and job profitability.",Consumption & Job Cost Worksheet
+Bakery Production,bakery,Batch Timeline & Yield Reconciliation,Record ingredients and actual yield before completing batches.,Timed batch tracks and yield reconciliation
+Recipes & Ingredients,recipes,BOM & Ingredient Inspector,Maintain recipes and inspect ingredient availability.,BOM & Ingredient Inspector
+Bakery Orders & Remittance,costing,Dispatch-to-Remittance Reconciliation,"Reconcile wholesale orders, dispatch, returns and remittance.",Dispatch-to-Remittance Reconciliation
+Vehicle Sales,autos,Vehicle Inventory & Sales Inspector,Manage inventory from acquisition to customer delivery.,Vehicle inventory selector and acquisition/sales inspector
+Auto Leads & Sales,board,Vehicle Sales Pipeline,"Track prospects, showings, deposits and outstanding balances.",Vehicle Sales Pipeline
+Historical Workshop Records,archive,Read-only Service Archive,Read historical service records and their audit history.,Read-only Service Archive
+Logistics Dispatch,logistics,Route Map & Dispatch Queue,Dispatch trips and inspect route progress and delivery proof.,Schematic route canvas and dispatch queue
+Fleet & Drivers,fleet,Fleet Readiness Matrix,"Review fleet readiness, fuel, maintenance and expiring documents.",Fleet Readiness Matrix
+Trip Expenses & Collections,costing,Trip Profitability Worksheet,"Review fuel, collections, trip expenses and profitability.",Trip Profitability Worksheet
+Homes & Properties,properties,Portfolio Mosaic & Occupancy Grid,"Inspect portfolio occupancy, income and maintenance priorities.",Portfolio cards with unit occupancy grids
+Leases & Rent Schedules,calendar,Lease Timeline & Receivables,"Track lease periods, payment schedules, arrears and receipts.",Lease Timeline & Receivables
+Property Sales & Leads,board,Listing-to-Inspection Pipeline,"Coordinate listings, inspections, agents and commissions.",Listing-to-Inspection Pipeline
+Finance Workspace,finance,Ledger & Financial Analysis,Trace ledger movement and reconcile posting exceptions.,Cash reconciliation ribbon and ledger
+Receivables,receivables,Aging Ladder & Receivable Ledger,"Prioritize collection by aging, due date and company.",Aging Ladder & Receivable Ledger
+Finance Posting,audit,Posting Event Trace,"Inspect posting state, exceptions and source traceability.",Posting Event Trace
+Budgets & Fiscal Periods,budget,Budget Variance & Period Control,Compare authorized budgets and govern reporting periods.,Budget Variance & Period Control
+My Expense Requests,expenses,Request Register & Evidence Composer,Submit documented requests and track their decisions.,Request Register & Evidence Composer
+Expense Approval Queue,approvals,Queue–Evidence–Decision Desk,Inspect evidence before a maker-checker decision.,Queue / evidence / decision columns
+Spend & Profit Intelligence,spend,Spend Treemap & Profit Bridge,Investigate cost exposure by company and category.,Spend Treemap & Profit Bridge
+Cost Intelligence Administration,policy,Cost Governance Workbench,"Maintain categories, suppliers, cost centres and evidence rules.",Cost Governance Workbench
+Inventory,inventory,Availability Matrix & Movement Ledger,"Track stock, movement, issues, transfers and reorder risk.",Availability Matrix & Movement Ledger
+Construction & Projects,projects,Milestone Schedule & Budget Rail,"Track milestones, evidence and budget responsibility.",Milestone Schedule & Budget Rail
+Facilities & Maintenance,facilities,Asset Health & Maintenance Board,"Prioritize defects, inspections and preventive work.",Asset Health & Maintenance Board
+Social Engine,social,Editorial Calendar & Content Canvas,Prepare content and review it before simulated publishing.,Editorial Calendar & Content Canvas
+Social Controls,policy,Publishing Policy Studio,"Configure approval, automation and publishing guardrails.",Publishing Policy Studio
+Social Accounts,integrations,Provider Connection Register,Inspect provider connection scopes and availability.,Provider Connection Register
+ERP Social Sync,sync,Conversion Queue & Source Trace,Review ERP content conversion and sync exceptions.,Conversion Queue & Source Trace
+Marketing Command,marketing,Audience Funnel & Campaign Comparison,Compare campaign outcomes and audience conversion.,Audience Funnel & Campaign Comparison
+Community Inbox,inbox,Conversation Inbox & Context Rail,Assign conversations and prepare appropriate responses.,Conversation Inbox & Context Rail
+Website Administration,website,Page Tree & Revision Workspace,"Review pages, media, revisions and publishing approval.",Page Tree & Revision Workspace
+Notice Board,communications,Announcement Editorial Board,Read authorized announcements and acknowledge notices.,Announcement Editorial Board
+Broadcast Center,broadcast,Audience Composer & Acknowledgement Monitor,"Choose audience, push intent and acknowledgement explicitly.",Audience Composer & Acknowledgement Monitor
+Daily Staff Encouragement,encouragement,Human-Approval Writing Desk,"Generate, review and approve encouragement before publishing.",Human-Approval Writing Desk
+Action Center,notifications,Priority Inbox,Resolve permitted alerts and required actions.,Priority Inbox
+AI Guide,help,Contextual Help Conversation,Get guidance for the current authorized workspace.,Contextual Help Conversation
+Security Center,security,Security Event Timeline & Risk Matrix,"Investigate sign-in events, failed access and session risk.",Investigative stream and severity matrix
+Access Control,access,Permission Matrix & Explanation Inspector,Explain effective permissions and scoped overrides.,Permission Matrix & Explanation Inspector
+Admin Setup,policy,Organization Policy Workbench,Manage organization policies with scope and change history.,Organization Policy Workbench
+Temporary Password Recovery,recovery,Recovery Issue & Revocation Desk,Represent audited recovery issuance and revocation.,Recovery Issue & Revocation Desk
+User Support Centre,support,Support Case & Consent Inspector,Inspect assigned access and employee-approved support.,Support Case & Consent Inspector
+Resource Monitoring,resources,Service Topology & Health Grid,Inspect service availability and diagnostic context.,Service Topology & Health Grid
+Sync & Sessions,sync,Sync Queue & Conflict Comparator,Resolve pending changes and conflicts without losing drafts.,Sync Queue & Conflict Comparator
+Activity & Audit,audit,Audit Explorer & Event Detail,"Trace business changes by actor, object and result.",Audit Explorer & Event Detail
+Advanced Toolbox,toolbox,Readiness Diagnostic Workbench,Inspect readiness and controlled maintenance plans.,Readiness Diagnostic Workbench
+API & Integrations,integrations,Integration Catalogue & Request Inspector,Inspect safe metadata and unavailable provider states.,Integration Catalogue & Request Inspector
+Module Hub,hub,Authorized Module Atlas,Find and open workspaces available to your role and company.,Authorized Module Atlas
+Theme Studio,studio,Appearance Gallery,Preview and apply permitted appearance preferences.,Composition or appearance gallery with scoped inspector
+Navigation Studio,studio,Navigation Workbench,Choose a navigation model for your authorized work.,Composition or appearance gallery with scoped inspector
+Layout Studio,studio,Composition Studio & Policy Inspector,Preview ten compositions and apply a scoped preference.,Composition or appearance gallery with scoped inspector
+Sign-In Personalization,signin-studio,Sign-In Composition Inspector,"Configure approved image treatment, clocks, logo and widgets.",Sign-In Composition Inspector

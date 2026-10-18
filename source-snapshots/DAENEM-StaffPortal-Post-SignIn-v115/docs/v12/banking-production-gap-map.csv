@@ -1,0 +1,11 @@
+GAP_ID,CAPABILITY,SITE_DESIGN,PRODUCTION_GAP,STATUS
+BANK-GAP-001,Provider entitlement,Implemented as contract/fixture,Commercial and technical confirmation for each institution/provider,BLOCKED_PRODUCTION
+BANK-GAP-002,Account connectivity,Implemented as contract/fixture,Server-side credentials and approved account onboarding,BLOCKED_PRODUCTION
+BANK-GAP-003,Webhooks,Implemented as contract/fixture,"Verified endpoints, replay store and delivery observability",BLOCKED_PRODUCTION
+BANK-GAP-004,Balances/statements,Implemented as contract/fixture,"Provider adapters, caching and truth-state policy",BLOCKED_PRODUCTION
+BANK-GAP-005,Transfers,Implemented as contract/fixture,"Real execution rails, limits, approvals and recovery",BLOCKED_PRODUCTION
+BANK-GAP-006,Payroll execution,Implemented as contract/fixture,Batch format/provider integration and per-employee callbacks,BLOCKED_PRODUCTION
+BANK-GAP-007,Reconciliation,Implemented as contract/fixture,Durable matching jobs and exception operations,BLOCKED_PRODUCTION
+BANK-GAP-008,AML/KYC/fraud,Implemented as contract/fixture,"Approved providers, policies and operational review",BLOCKED_PRODUCTION
+BANK-GAP-009,Audit,Implemented as contract/fixture,Tamper-evident durable event store,BLOCKED_PRODUCTION
+BANK-GAP-010,MFA/device/network,Implemented as contract/fixture,Production identity and finance-user policies,BLOCKED_PRODUCTION

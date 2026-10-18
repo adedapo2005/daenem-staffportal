@@ -1,0 +1,41 @@
+import fs from 'node:fs';
+
+const read = p => fs.readFileSync(p, 'utf8');
+const checks = [];
+const assert = (name, pass, evidence) => checks.push({ name, status: pass ? 'PASS' : 'FAIL', evidence });
+const operations = read('docs/v13/authoritative-current/semantic-operation-catalog.csv');
+const entities = read('docs/v13/authoritative-current/entity-catalog.csv');
+const workflows = read('docs/v13/authoritative-current/workflow-state-machines.csv');
+const ledger = read('docs/v13/requirements-ledger.csv');
+const comm = read('app/experience/enterprise-operations.tsx');
+const contract = read('app/experience/enterprise-contract.ts');
+const metadata = read('app/experience/deployment-metadata.ts');
+const measurements = JSON.parse(read('docs/v13/signin-browser-measurements.json'));
+const zero = JSON.parse(read('docs/v13/zero-disclosure-browser-evidence.json'));
+
+assert('exact project identity is retained', metadata.includes('appgprj_6aa35d8149408191b710e092ed0137f2'), 'deployment-metadata.ts');
+assert('published indicator is V13 build metadata', metadata.includes('publishedVersion: 13') && metadata.includes('America/New_York') && !metadata.includes('new Date().toISOString'), 'deployment-metadata.ts');
+assert('raw sign-in browser matrix has 70 passing rows', measurements.summary.themeViewportTotal === 70 && measurements.summary.themeViewportPass === 70, 'signin-browser-measurements.json');
+assert('raw authentication-state matrix has 35 passing rows', measurements.summary.authenticationStateTotal === 35 && measurements.summary.authenticationStatePass === 35, 'signin-browser-measurements.json');
+assert('derived matrix has exactly 70 data rows', read('docs/v13/signin-viewport-matrix.csv').trim().split('\n').length === 71, 'signin-viewport-matrix.csv');
+assert('zero-disclosure runtime assertions pass', zero.summary.hardAssertions === zero.summary.passed && zero.summary.failed === 0, 'zero-disclosure-browser-evidence.json');
+for (const label of ['Conversation','Queues','Numbers','Analytics','Consent','Automation','Templates','Letterheads','AI Letterhead','Audit','Unified Inbox']) assert(`communications tab ${label}`, comm.includes(`>${label}<`) || comm.includes(`'${label}'`), 'enterprise-operations.tsx');
+for (const label of ['Rewrite','Summarize','Suggest next action','Generate','Preview','Edit','Approve','Send']) assert(`governed communications action ${label}`, comm.includes(label), 'enterprise-operations.tsx');
+for (const state of ['RECEIVED','PENDING','PROCESSING','SUBMITTED','COMPLETED','FAILED','REVERSED','REFUNDED','CANCELLED']) assert(`bank transaction state ${state}`, comm.includes(`'${state}'`) || comm.includes(`>${state}<`), 'enterprise-operations.tsx');
+for (const column of ['Employee Name','Employee Number','Amount','Payment Date','Bank','Status','Transaction Reference','Department','Branch','Approved By']) assert(`payroll column ${column}`, comm.includes(column), 'enterprise-operations.tsx');
+for (const widget of ['Total Payroll This Month','Total Salaries Paid','Pending Salary Payments','Failed Salary Payments','Employees Paid','Employees Pending','Payroll Costs by Department','Payroll Costs by Branch']) assert(`payroll widget ${widget}`, comm.toLowerCase().includes(widget.toLowerCase()), 'enterprise-operations.tsx');
+assert('submitted is not paid', comm.includes('Submitted Is Not Paid') || comm.includes('Submitted is not paid'), 'enterprise-operations.tsx');
+for (const id of ['communication-queues','whatsapp-numbers','communication-analytics','communication-preferences','ai-letterhead-generator','communication-audit','unified-inbox']) assert(`module ${id}`, contract.includes(`'${id}'`), 'enterprise-contract.ts');
+assert('semantic operations do not invent API URLs', !operations.includes('/api/'), 'semantic-operation-catalog.csv');
+assert('semantic operations have required columns', operations.startsWith('OPERATION_ID,DOMAIN,PURPOSE,READ_WRITE,INPUT,OUTPUT,VIEW_PERMISSION,ACTION_PERMISSION'), 'semantic-operation-catalog.csv');
+for (const entity of ['Employee','AttendanceDay','ClockEvent','LeaveRequest','PayrollBatch','EmployeePayment','Candidate','Application','Interview','PrintJob','MaterialIssue','QCRecord','BakeryBatch','BakeryDispatch','BakeryReconciliation','AccountabilityInvestigation','Vehicle','Trip','POD','Property','Unit','Lease','Invoice','Payment','ExpenseRequest','PurchaseOrder','GoodsReceipt','InventoryMovement','BankAccount','BankTransaction','Transfer','Beneficiary','Conversation','Message']) assert(`business entity ${entity}`, entities.includes(`\n${entity},`), 'entity-catalog.csv');
+assert('workflow contract includes guarded transition fields', workflows.startsWith('WORKFLOW,FROM_STATE,TO_STATE,ACTOR,PERMISSION,COMPANY_SCOPE,RECORD_SCOPE,GUARD,REQUIRED_DATA,REQUIRED_EVIDENCE'), 'workflow-state-machines.csv');
+assert('ledger adds evidence-specific verification columns', ledger.split('\n')[0].includes('VERIFICATION_METHOD,VERIFICATION_ARTIFACT,SOURCE_LOCATION,TEST_ASSERTION,VISUAL_EVIDENCE,LAST_ACTUALLY_VERIFIED_AT'), 'requirements-ledger.csv');
+assert('ledger is not bulk marked pass', (ledger.match(/,PASS_VERIFIED,/g) || []).length < 100, 'requirements-ledger.csv');
+assert('whole ERP evidence has 69 captures', fs.readdirSync('docs/v13/evidence/erp').filter(x => x.endsWith('.jpg')).length === 69, 'docs/v13/evidence/erp');
+assert('sign-in evidence has 25 captures', fs.readdirSync('docs/v13/evidence/signin').filter(x => x.endsWith('.jpg')).length === 25, 'docs/v13/evidence/signin');
+
+const failed = checks.filter(x => x.status === 'FAIL');
+fs.writeFileSync('docs/v13/v13-regression-checks.json', JSON.stringify({ generatedAt: new Date().toISOString(), total: checks.length, passed: checks.length - failed.length, failed: failed.length, results: checks }, null, 2) + '\n');
+console.log(JSON.stringify({ total: checks.length, passed: checks.length - failed.length, failed: failed.length }, null, 2));
+if (failed.length) process.exit(1);

@@ -1,0 +1,10 @@
+METRIC_ID,NAME,UNIT,FORMULA,INPUT_SCOPE
+record-count,Authorized record count,records,count(authorized rows),Authorized records only
+record-value,Authorized record value,NGN,sum(authorized record amount),Authorized records only
+evidence-gaps,Evidence gaps,records,count(required field is empty),Authorized records only
+purchase-commitment,Active purchase commitment,NGN,"sum((ordered quantity − received quantity) × unit cost), ordered/partial only",Authorized records only
+bakery-quantity,Unexplained loaf variance,loaves,actual yield − store balance − disposition quantities − approved resolution,Authorized records only
+bakery-cash,Unexplained remittance variance,NGN,agent sold × unit price − remittance − approved resolution,Authorized records only
+treasury-cash-position,Consolidated assigned cash position,NGN,sum(authorized account available balances),Assigned bank accounts
+payroll-success-rate,Confirmed employee payments,percent,successful reconciled payments / employee payment rows,Assigned payroll batch
+communications-delivery,Approved message delivery states,messages,count authorized provider delivery states,Assigned conversation queues

@@ -1,0 +1,9 @@
+AREA,SITE_STATUS,SITE_OWNED_GAP,PRODUCTION_INTEGRATION_GAP,READY
+Zero disclosure,PARTIAL,All fixtures remain shipped in the client bundle; no whole-product field/action/file/cache certification. Production must never use this delivery model.,PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO
+Workflow depth,PARTIAL,"Recruitment, printing, bakery, logistics and properties do not yet have all requested linked event/accounting flows.",PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO
+Builders,PARTIAL,"Forms have one configurable field; workflow graph editor lacks multi-node authoring; advanced conditions, scheduling and approvals remain partial.",PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO
+Imports and exports,PARTIAL,"CSV/XLSX import workflow, bulk editing and PDF/XLSX exports remain incomplete.",PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO
+Files,PARTIAL,"Versioning, locking, tags, retention, expiry and byte-governance fixture flows remain partial.",PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO
+Administration,PARTIAL,"Full multi-role lifecycle, policy audience management, scoped self-service configuration and multi-stage approvals remain incomplete.",PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO
+Fixture coherence,PARTIAL,Receipt/stock targeted conservation passes; many legacy charts still use illustrative independent values.,PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO
+Visual/accessibility/performance acceptance,PARTIAL,"Dimension checks do not establish keyboard/zoom/contrast, every page/state, Core Web Vitals or independent visual acceptance.",PRODUCTION CONTRACT TO BE MAPPED DURING INTEGRATION,NO

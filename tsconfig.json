@@ -15,8 +15,15 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/*"],
+      "next/navigation": ["src/next-navigation-shim.ts"],
+      "next/link": ["src/next-link-shim.tsx"]
+    }
   },
   "include": ["src", "worker", "vite.config.ts"],
   "exclude": ["src/bakery.tsx", "src/bakery-entry.tsx"]
 }
+

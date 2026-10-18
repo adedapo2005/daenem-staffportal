@@ -2,6 +2,7 @@ import { resolveMetaCredential, type MetaCredentialEnv } from './meta-credential
 
 export interface WeatherProviderEnv extends MetaCredentialEnv {
   SOCIAL_CACHE?: KVNamespace;
+  WEATHER_PROVIDER_ENABLED?: string;
 }
 
 const CACHE_TTL_SECONDS = 300;
@@ -22,17 +23,17 @@ export async function readWeatherConfiguration(env: WeatherProviderEnv): Promise
   try {
     const row = await env.DB.prepare("SELECT setting_value AS value FROM app_settings WHERE setting_key='experience.weather.organization' LIMIT 1")
       .first<{ value: string }>();
-    if (!row?.value) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
+    if (!row?.value) return { enabled: env.WEATHER_PROVIDER_ENABLED === 'true', defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
     const settings: unknown = JSON.parse(row.value);
-    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return { enabled: env.WEATHER_PROVIDER_ENABLED === 'true', defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS };
     const value = settings as Record<string, unknown>;
     return {
-      enabled: value.enabled === true,
+      enabled: env.WEATHER_PROVIDER_ENABLED === 'true' || value.enabled === true,
       defaultUnits: value.defaultUnits === 'METRIC' ? 'METRIC' : 'IMPERIAL',
       refreshIntervalSeconds: Number.isInteger(value.refreshIntervalSeconds) && Number(value.refreshIntervalSeconds) >= CACHE_TTL_SECONDS && Number(value.refreshIntervalSeconds) <= 86_400
         ? Number(value.refreshIntervalSeconds) : CACHE_TTL_SECONDS,
     };
-  } catch { return { enabled: false, defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS }; }
+  } catch { return { enabled: env.WEATHER_PROVIDER_ENABLED === 'true', defaultUnits: 'IMPERIAL', refreshIntervalSeconds: CACHE_TTL_SECONDS }; }
 }
 
 /** Returns only provider data. Location labels and user/company identifiers never enter shared cache values. */
@@ -40,7 +41,7 @@ export async function readGoogleWeather(
   env: WeatherProviderEnv,
   latitude: number,
   longitude: number,
-  unitsSystem?: 'IMPERIAL' | 'METRIC',
+  unitsSystem: 'IMPERIAL' | 'METRIC' = 'IMPERIAL',
   forceRefresh = false,
 ): Promise<GoogleWeatherResult> {
   const configuration = await readWeatherConfiguration(env);

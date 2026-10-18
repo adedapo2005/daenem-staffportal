@@ -1,0 +1,20 @@
+METRIC,FORMULA,SCOPE,SITE_STATE
+Revenue Today,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Revenue This Week,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Revenue This Month,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Revenue This Year,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Customer Payments,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Pending Collections,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Payroll,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Vendors,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Suppliers,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Expenses,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Operational Costs,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Refunds,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Bank Charges,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Account Balances,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Consolidated Balance,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Daily Cash Flow,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Weekly Cash Flow,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Monthly Cash Flow,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE
+Treasury Forecast,Derived from authoritative assigned accounts/transactions only,Assigned account + field scope,FIXTURE

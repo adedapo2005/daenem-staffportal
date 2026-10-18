@@ -1,0 +1,24 @@
+RULE_ID,NAME,DOMAIN,INVARIANT,SOURCE
+BR-001,Sign-in is not attendance,attendance,Present requires successful clock-in and clock-out.,app/experience/enterprise-contract.ts
+BR-002,Actual print material use,printing,Complete requires actual material usage and QC evidence.,app/experience/enterprise-contract.ts
+BR-003,Actual bakery yield,bakery,Completion requires nonnegative actual yield; expected yield is never substituted.,app/experience/enterprise-contract.ts
+BR-004,Loaf and money reconciliation,bakery-accountability,Unexplained quantity or cash variance blocks reconciliation.,app/experience/enterprise-contract.ts
+BR-005,Proof of delivery,logistics,A trip cannot be delivered or closed without POD evidence.,app/experience/enterprise-contract.ts
+BR-006,Maker-checker decisions,shared,Maker cannot approve their own controlled request; decision reason is required.,app/experience/enterprise-contract.ts
+BR-007,Balanced journal,finance,Posting requires finite equal debit and credit values in an open period.,app/experience/enterprise-contract.ts
+BR-008,Commitment recognition,purchase-orders,Approval alone creates no active commitment. Ordered and partial-received balances do.,app/experience/enterprise-contract.ts
+BR-009,Receipt accountability,goods-receipts,Accepted plus rejected quantity equals delivered quantity.,app/experience/enterprise-contract.ts
+BR-010,Human publication approval,social,Human approval and explicit Publish permission precede any simulated publication.,app/experience/enterprise-contract.ts
+BR-011,Zero disclosure,security,No assignment means no disclosure; missing and unauthorized resources share a neutral result.,app/experience/enterprise-contract.ts
+BR-012,Specialized permission,security,"Export, Pay, Publish and other specialized actions are explicit, never implied by a level.",app/experience/enterprise-contract.ts
+BR-013,Config safety,builders,No arbitrary SQL/JavaScript; protected business invariants cannot be disabled.,app/experience/enterprise-contract.ts
+BR-014,Stock custody,stock-transfers,Transfer closure requires received quantity equal to dispatched quantity.,app/experience/enterprise-contract.ts
+BR-015,Borrowed stock,stock-borrowing,Closure requires the full issued quantity returned.,app/experience/enterprise-contract.ts
+BR-016,Payroll readiness,payroll,"Net pay, bank validation, statutory configuration and approval are separate gates.",app/experience/enterprise-contract.ts
+BR-017,Authoritative communication events,customer-communications,"Opening a screen never sends a message; sends require an authorized event or an approved manual flow with idempotency, consent and audit.",app/experience/enterprise-contract.ts
+BR-018,Human communication approval,customer-communications,"AI may draft, but a manually initiated customer communication follows Generate, Preview, Edit, Approve, Send.",app/experience/enterprise-contract.ts
+BR-019,Server-side provider authority,integrations,"Provider credentials, signatures, webhook verification and retries belong in production server-side adapters, never the frontend.",app/experience/enterprise-contract.ts
+BR-020,Verified payment activation,payment-verification,"A bank notification alone cannot activate service; verified provider event, match, authoritative payment state and applicable business rule are all required.",app/experience/enterprise-contract.ts
+BR-021,Transfer separation of duties,transfers,"Create, approve, execute and reconcile are separate grants; a maker cannot approve their own controlled transfer.",app/experience/enterprise-contract.ts
+BR-022,Payroll finality,payroll-execution,Batch submission does not mark employees paid; success or reversal is applied per employee and reconciled before final state.,app/experience/enterprise-contract.ts
+BR-023,Financial account zero disclosure,banking-operations,"Unassigned accounts, balances, transactions, beneficiaries, payroll batches, reports and their derived counts are absent from every surface.",app/experience/enterprise-contract.ts

@@ -1,0 +1,513 @@
+{
+  "generatedAt": "2026-09-12T05:20:55.907Z",
+  "total": 101,
+  "passed": 101,
+  "failed": 0,
+  "results": [
+    {
+      "name": "exact project identity is retained",
+      "status": "PASS",
+      "evidence": "deployment-metadata.ts"
+    },
+    {
+      "name": "published indicator is V13 build metadata",
+      "status": "PASS",
+      "evidence": "deployment-metadata.ts"
+    },
+    {
+      "name": "raw sign-in browser matrix has 70 passing rows",
+      "status": "PASS",
+      "evidence": "signin-browser-measurements.json"
+    },
+    {
+      "name": "raw authentication-state matrix has 35 passing rows",
+      "status": "PASS",
+      "evidence": "signin-browser-measurements.json"
+    },
+    {
+      "name": "derived matrix has exactly 70 data rows",
+      "status": "PASS",
+      "evidence": "signin-viewport-matrix.csv"
+    },
+    {
+      "name": "zero-disclosure runtime assertions pass",
+      "status": "PASS",
+      "evidence": "zero-disclosure-browser-evidence.json"
+    },
+    {
+      "name": "communications tab Conversation",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Queues",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Numbers",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Analytics",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Consent",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Automation",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Templates",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Letterheads",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab AI Letterhead",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Audit",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "communications tab Unified Inbox",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Rewrite",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Summarize",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Suggest next action",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Generate",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Preview",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Edit",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Approve",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "governed communications action Send",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state RECEIVED",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state PENDING",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state PROCESSING",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state SUBMITTED",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state COMPLETED",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state FAILED",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state REVERSED",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state REFUNDED",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "bank transaction state CANCELLED",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Employee Name",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Employee Number",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Amount",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Payment Date",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Bank",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Status",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Transaction Reference",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Department",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Branch",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll column Approved By",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Total Payroll This Month",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Total Salaries Paid",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Pending Salary Payments",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Failed Salary Payments",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Employees Paid",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Employees Pending",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Payroll Costs by Department",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "payroll widget Payroll Costs by Branch",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "submitted is not paid",
+      "status": "PASS",
+      "evidence": "enterprise-operations.tsx"
+    },
+    {
+      "name": "module communication-queues",
+      "status": "PASS",
+      "evidence": "enterprise-contract.ts"
+    },
+    {
+      "name": "module whatsapp-numbers",
+      "status": "PASS",
+      "evidence": "enterprise-contract.ts"
+    },
+    {
+      "name": "module communication-analytics",
+      "status": "PASS",
+      "evidence": "enterprise-contract.ts"
+    },
+    {
+      "name": "module communication-preferences",
+      "status": "PASS",
+      "evidence": "enterprise-contract.ts"
+    },
+    {
+      "name": "module ai-letterhead-generator",
+      "status": "PASS",
+      "evidence": "enterprise-contract.ts"
+    },
+    {
+      "name": "module communication-audit",
+      "status": "PASS",
+      "evidence": "enterprise-contract.ts"
+    },
+    {
+      "name": "module unified-inbox",
+      "status": "PASS",
+      "evidence": "enterprise-contract.ts"
+    },
+    {
+      "name": "semantic operations do not invent API URLs",
+      "status": "PASS",
+      "evidence": "semantic-operation-catalog.csv"
+    },
+    {
+      "name": "semantic operations have required columns",
+      "status": "PASS",
+      "evidence": "semantic-operation-catalog.csv"
+    },
+    {
+      "name": "business entity Employee",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity AttendanceDay",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity ClockEvent",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity LeaveRequest",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity PayrollBatch",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity EmployeePayment",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Candidate",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Application",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Interview",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity PrintJob",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity MaterialIssue",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity QCRecord",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity BakeryBatch",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity BakeryDispatch",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity BakeryReconciliation",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity AccountabilityInvestigation",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Vehicle",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Trip",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity POD",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Property",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Unit",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Lease",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Invoice",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Payment",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity ExpenseRequest",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity PurchaseOrder",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity GoodsReceipt",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity InventoryMovement",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity BankAccount",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity BankTransaction",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Transfer",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Beneficiary",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Conversation",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "business entity Message",
+      "status": "PASS",
+      "evidence": "entity-catalog.csv"
+    },
+    {
+      "name": "workflow contract includes guarded transition fields",
+      "status": "PASS",
+      "evidence": "workflow-state-machines.csv"
+    },
+    {
+      "name": "ledger adds evidence-specific verification columns",
+      "status": "PASS",
+      "evidence": "requirements-ledger.csv"
+    },
+    {
+      "name": "ledger is not bulk marked pass",
+      "status": "PASS",
+      "evidence": "requirements-ledger.csv"
+    },
+    {
+      "name": "whole ERP evidence has 69 captures",
+      "status": "PASS",
+      "evidence": "docs/v13/evidence/erp"
+    },
+    {
+      "name": "sign-in evidence has 25 captures",
+      "status": "PASS",
+      "evidence": "docs/v13/evidence/signin"
+    }
+  ]
+}

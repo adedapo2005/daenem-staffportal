@@ -204,8 +204,11 @@ async function sellVehicle(request: Request, env: AutosEnv, context: SessionCont
   const balance = salePrice;
   const paymentStatus = 'unpaid';
   const saleStatus = 'reserved';
-  const saleNo = await nextNumber(env, 'AUTO-SALE', 'auto_sales', 'sale_no');
   const id = uid('auto-sale');
+  // A count-derived number races when separate vehicles are sold concurrently.
+  // Bind the immutable reference to this sale identity; the database uniqueness
+  // constraint remains the final collision barrier.
+  const saleNo = `AUTO-SALE-${nigeriaDate().replaceAll('-', '')}-${id.slice('auto-sale-'.length)}`;
   const statements: D1PreparedStatement[] = [
     env.DB.prepare(`UPDATE auto_vehicles SET sale_price_kobo=?,gross_profit_kobo=?-landed_cost_kobo,status='reserved',customer_id=?,sold_by=?,sold_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status='ready' AND NOT EXISTS (SELECT 1 FROM auto_sales s WHERE s.vehicle_id=auto_vehicles.id AND s.company_id=auto_vehicles.company_id AND s.sale_status!='cancelled')`).bind(salePrice, salePrice, body.customerId || null, context.employee.id, body.vehicleId, COMPANY),
     env.DB.prepare(`INSERT INTO auto_sales(id,company_id,vehicle_id,lead_id,customer_id,sale_no,sale_price_kobo,deposit_kobo,amount_paid_kobo,balance_kobo,payment_status,sale_status,payment_terms,sold_by,approved_by,approved_at,sale_date) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE changes()=1`).bind(id, COMPANY, body.vehicleId, body.leadId || null, body.customerId || null, saleNo, salePrice, 0, paid, balance, paymentStatus, saleStatus, body.paymentTerms || null, context.employee.id, context.employee.id, new Date().toISOString(), nigeriaDate()),

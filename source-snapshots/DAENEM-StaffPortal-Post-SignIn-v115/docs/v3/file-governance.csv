@@ -1,0 +1,8 @@
+"CONCERN","CURRENT LAB","REQUIRED MAPPING","STATUS"
+"Ownership","Evidence tied to visible record","Server authorization for metadata and bytes","PARTIAL"
+"Storage","Device-local Data URL; illustrative fixture file names","Durable object storage with scoped grants","NOT CONNECTED"
+"MIME / size","Local upload validation in record editor","Server content validation; malware policy; size limits","PARTIAL"
+"Checksum","Image source hashes verified; arbitrary record files lack authoritative checksum","Server checksum and content integrity","INCOMPLETE"
+"Versions","Record revision and evidence list","Immutable file versions with lineage","INCOMPLETE"
+"Retention / deletion","No retention service","Domain retention; legal hold; authorized deletion audit","NOT IMPLEMENTED"
+"Import","No full transactional import engine","Preview; mapping; validation; idempotency; row errors; rollback","NOT IMPLEMENTED"

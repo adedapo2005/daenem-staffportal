@@ -1,0 +1,11 @@
+DOMAIN,GAP,STATUS,NEXT_ACTION
+Identity/MFA,"Production identity, MFA, device and network policy",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Durable data,"Existing repository, schema, D1 and transaction boundaries",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Object storage,"R2/object authorization, scanning, retention and legal hold",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Communications,"Official WhatsApp/email adapters, credentials and webhooks",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Banking,"Provider contracts, credentials, statements and verified events",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Money movement,"Real transfers, approval execution and recovery",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Payroll,Real banking batches and per-employee callbacks,BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Observability,"Production telemetry, audit immutability and alerting",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Performance,"Production RUM, load tests and Web Vitals",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts
+Accessibility,"Independent AT, zoom and full visual contrast certification",BLOCKED_PRODUCTION,Inspect the actual repository/backend and map approved contracts

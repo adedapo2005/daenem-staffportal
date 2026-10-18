@@ -1,0 +1,4 @@
+RULE,INPUT,GUARD,OUTPUT,FAILURE
+PAYMATCH-VERIFY,Provider event,Valid signature + replay guard + idempotency,Verified event,Reject/audit
+PAYMATCH-REFERENCE,Verified event,"Reference, amount, currency, company and business rule match",Authoritative PaymentMatch,Exception queue
+PAYMATCH-ACTIVATE,Authoritative payment,Verified + matched + applicable business rule,Authorized downstream event,No activation

@@ -1,0 +1,8 @@
+PERMISSION,CREATE,APPROVE,SEND_OR_PUBLISH,SCOPE
+View conversations,,,,Company + site + business number + queue + record
+Reply draft,sendCommunication,,,Assigned conversation
+Approve reply,,approveCommunication,,Independent assigned approver
+Send reply,,,sendCommunication,Approved conversation + provider/business number
+Manage templates,manageTemplates,approveCommunication,publish,Company + channel
+Manage letterheads,manageTemplates,approveCommunication,publish,Company + document type
+Export history,,,export,Assigned customer/conversation plus field scope

@@ -1,0 +1,112 @@
+ENTITY,DOMAIN,PURPOSE,FIELDS,FIXTURE_COUNT,SOURCE
+self-service,Staff ERP,"Your assigned personal tasks, documents and requests.",,0,app/experience/model.ts + enterprise-contract.ts
+home,Global,Understand priorities across your authorized scope.,Priority|Company|Owner,0,app/experience/model.ts + enterprise-contract.ts
+cockpit,Global,Resolve operational exceptions and keep work moving.,Severity|Source|Owner,0,app/experience/model.ts + enterprise-contract.ts
+workspace,Staff ERP,Complete your own work and personal requests.,Due Date|Assigned To|Priority,0,app/experience/model.ts + enterprise-contract.ts
+profile,Staff ERP,"Manage your identity, employment and self-service information.",Work Email|Phone|Emergency Contact,0,app/experience/model.ts + enterprise-contract.ts
+people,Staff ERP,Find assigned employees and follow up on missing information.,Employee ID|Job Title|Department|Manager|Start Date,3,app/experience/model.ts + enterprise-contract.ts
+hr-records,Staff ERP,Maintain authorized employment and statutory records.,Employment Type|Emergency Contact|Pension|PAYE|Payroll Bank,3,app/experience/model.ts + enterprise-contract.ts
+attendance,Staff ERP,Record required attendance events and resolve incomplete days.,Clock In|Clock Out|Location|Photo|Override Reason,0,app/experience/model.ts + enterprise-contract.ts
+leave,Staff ERP,Request time away and check team coverage before decisions.,Leave Type|Start Date|End Date|Reason,3,app/experience/model.ts + enterprise-contract.ts
+performance,Staff ERP,"Complete assigned reviews, commentary and acknowledgement.",Cycle|Goals|Self Rating|Manager Commentary,3,app/experience/model.ts + enterprise-contract.ts
+hr-cases,Staff ERP,Handle scoped confidential employment cases and evidence.,Case Type|Confidentiality|Assignee|Case Notes,3,app/experience/model.ts + enterprise-contract.ts
+lifecycle,Staff ERP,Coordinate accountable employee lifecycle tasks.,Employee|Lifecycle Type|Task Owner|Due Date,3,app/experience/model.ts + enterprise-contract.ts
+forms,Staff ERP,Complete assigned forms and keep evidence with each submission.,Form Type|Purpose|Required Response,3,app/experience/model.ts + enterprise-contract.ts
+tasks,Staff ERP,Move assigned work forward with clear ownership.,Priority|Assigned To|Due Date,3,app/experience/model.ts + enterprise-contract.ts
+payroll,Staff ERP,Validate readiness and prepare controlled payroll batches.,Period|Gross Pay|Deductions|Net Pay|Bank Validation|Statutory Configuration,3,app/experience/model.ts + enterprise-contract.ts
+payslips,Staff ERP,Inspect your payroll statements and payment status.,Period|Gross Pay|Deductions|Net Pay,3,app/experience/model.ts + enterprise-contract.ts
+payroll-batches,Staff ERP,Inspect batch evidence and prepare a draft export.,Period|Payment Count|Bank Validation|Approval,3,app/experience/model.ts + enterprise-contract.ts
+applications,Jobs ERP,Review candidates and move authorized applications through stages.,Role|Source|Application Date|Reviewer,3,app/experience/model.ts + enterprise-contract.ts
+interviews,Jobs ERP,Coordinate interview schedules and scorecards.,Candidate|Interviewer|Interview Date|Scorecard,3,app/experience/model.ts + enterprise-contract.ts
+hiring,Jobs ERP,Prepare approved candidate handoff to onboarding.,Candidate|Approver|Start Date|Onboarding Owner,3,app/experience/model.ts + enterprise-contract.ts
+printing,Printing & Technology,"Keep jobs, proofs, material usage and QC connected.",Customer|Quantity|Paper Stock|Machine|Material Usage|QC Evidence,3,app/experience/model.ts + enterprise-contract.ts
+print-orders,Printing & Technology,"Track enquiries, quotes and customer commitments.",Customer|Branch|Quantity|Quote Value|Delivery Date,3,app/experience/model.ts + enterprise-contract.ts
+print-materials,Printing & Technology,"Reconcile issued stock, actual use and job profitability.",Job ID|Material|Issued Quantity|Actual Usage|Waste,3,app/experience/model.ts + enterprise-contract.ts
+bakery,Bakery ERP,Record ingredients and actual yield before completing batches.,Recipe|Expected Yield|Actual Yield|Waste|Oven,3,app/experience/model.ts + enterprise-contract.ts
+bakery-recipes,Bakery ERP,Maintain recipes and inspect ingredient availability.,Recipe|Ingredient|Quantity|Unit|Expected Yield,3,app/experience/model.ts + enterprise-contract.ts
+bakery-sales,Bakery ERP,"Reconcile wholesale orders, dispatch, returns and remittance.",Customer|Order Type|Quantity|Returns|Remittance,3,app/experience/model.ts + enterprise-contract.ts
+autos,Autos ERP,Manage inventory from acquisition to customer delivery.,VIN / Chassis|Model Year|Landed Cost|Asking Price|Documentation,3,app/experience/model.ts + enterprise-contract.ts
+auto-leads,Autos ERP,"Track prospects, showings, deposits and outstanding balances.",Prospect|Vehicle|Test Drive|Deposit|Outstanding Balance,3,app/experience/model.ts + enterprise-contract.ts
+auto-history,Autos ERP,Read historical service records and their audit history.,Vehicle|Historical Work|Archived Date|Audit Reference,3,app/experience/model.ts + enterprise-contract.ts
+logistics,Logistics ERP,Dispatch trips and inspect route progress and delivery proof.,Driver|Vehicle|Origin|Destination|Proof of Delivery,3,app/experience/model.ts + enterprise-contract.ts
+fleet,Logistics ERP,"Review fleet readiness, fuel, maintenance and expiring documents.",Driver|Vehicle|Fuel|Licence Expiry|Maintenance Due,3,app/experience/model.ts + enterprise-contract.ts
+trip-costs,Logistics ERP,"Review fuel, collections, trip expenses and profitability.",Trip ID|Fuel|Other Expenses|Collections|Revenue,3,app/experience/model.ts + enterprise-contract.ts
+properties,Homes & Properties,"Inspect portfolio occupancy, income and maintenance priorities.",Property|Units|Occupancy|Rent Due|Service Charges,3,app/experience/model.ts + enterprise-contract.ts
+leases,Homes & Properties,"Track lease periods, payment schedules, arrears and receipts.",Tenant|Unit|Lease Start|Lease End|Rent,3,app/experience/model.ts + enterprise-contract.ts
+property-leads,Homes & Properties,"Coordinate listings, inspections, agents and commissions.",Listing|Agent|Buyer|Inspection Date|Commission,3,app/experience/model.ts + enterprise-contract.ts
+finance,Finance & Operations,Trace ledger movement and reconcile posting exceptions.,Account|Debit|Credit|Reference|Fiscal Period|Period State,3,app/experience/model.ts + enterprise-contract.ts
+receivables,Finance & Operations,"Prioritize collection by aging, due date and company.",Customer|Invoice|Due Date|Outstanding|Receipt,3,app/experience/model.ts + enterprise-contract.ts
+finance-posting,Finance & Operations,"Inspect posting state, exceptions and source traceability.",Source|Posting Reference|Exception|Result,3,app/experience/model.ts + enterprise-contract.ts
+budgets,Finance & Operations,Compare authorized budgets and govern reporting periods.,Cost Centre|Fiscal Period|Budget|Actual|Funding,3,app/experience/model.ts + enterprise-contract.ts
+expenses,Finance & Operations,Submit documented requests and track their decisions.,Category|Supplier|Cost Centre|Amount|Purpose|Receipt,3,app/experience/model.ts + enterprise-contract.ts
+expense-approvals,Finance & Operations,Inspect evidence before a maker-checker decision.,Maker|Category|Purpose|Amount|Receipt,3,app/experience/model.ts + enterprise-contract.ts
+spend,Finance & Operations,Investigate cost exposure by company and category.,Company|Supplier|Category|Treatment|Business Impact,3,app/experience/model.ts + enterprise-contract.ts
+cost-admin,Finance & Operations,"Maintain categories, suppliers, cost centres and evidence rules.",Category|Supplier|Cost Centre|Evidence Rule,3,app/experience/model.ts + enterprise-contract.ts
+inventory,Finance & Operations,"Track stock, movement, issues, transfers and reorder risk.",Item|Location|On Hand|Reorder Level|Movement Type,4,app/experience/model.ts + enterprise-contract.ts
+projects,Finance & Operations,"Track milestones, evidence and budget responsibility.",Site|Budget|Actual|Milestone|Responsible Person,3,app/experience/model.ts + enterprise-contract.ts
+facilities,Finance & Operations,"Prioritize defects, inspections and preventive work.",Building|Asset|Priority|Reading|Due Date,3,app/experience/model.ts + enterprise-contract.ts
+social,Social & Web,Prepare content and review it before simulated publishing.,Channel|Campaign|Caption|Publication Date|Approval,3,app/experience/model.ts + enterprise-contract.ts
+social-controls,Social & Web,"Configure approval, automation and publishing guardrails.",Approval Required|Allowed Channel|Automation Rule,3,app/experience/model.ts + enterprise-contract.ts
+social-accounts,Social & Web,Inspect provider connection scopes and availability.,Provider|Permission Scope|Connection State,3,app/experience/model.ts + enterprise-contract.ts
+social-sync,Social & Web,Review ERP content conversion and sync exceptions.,Source Record|Destination|Conversion|Exception,3,app/experience/model.ts + enterprise-contract.ts
+marketing,Social & Web,Compare campaign outcomes and audience conversion.,Audience|Campaign|Channel|Budget|Conversions,3,app/experience/model.ts + enterprise-contract.ts
+inbox,Social & Web,Assign conversations and prepare appropriate responses.,Channel|Customer|Assignee|Message|Response,3,app/experience/model.ts + enterprise-contract.ts
+website,Social & Web,"Review pages, media, revisions and publishing approval.",Page Title|Path|Body|Revision|Approval,3,app/experience/model.ts + enterprise-contract.ts
+communications,Communications,Read authorized announcements and acknowledge notices.,Audience|Message|Acknowledgement Required,3,app/experience/model.ts + enterprise-contract.ts
+broadcasts,Communications,"Choose audience, push intent and acknowledgement explicitly.",Audience|Message|Push Requested|Acknowledgement Required,3,app/experience/model.ts + enterprise-contract.ts
+encouragement,Communications,"Generate, review and approve encouragement before publishing.",Message|Audience|Approval,0,app/experience/model.ts + enterprise-contract.ts
+notifications,Global,Resolve permitted alerts and required actions.,Priority|Source|Action Required,0,app/experience/model.ts + enterprise-contract.ts
+help,Global,Get guidance for the current authorized workspace.,Question|Context,0,app/experience/model.ts + enterprise-contract.ts
+security,"Security, Access & Admin","Investigate sign-in events, failed access and session risk.",Severity|Device|Session|Result|Review Notes,3,app/experience/model.ts + enterprise-contract.ts
+access,"Security, Access & Admin",Explain effective permissions and scoped overrides.,Role|Company Scope|Module|Access Level|Override,3,app/experience/model.ts + enterprise-contract.ts
+admin,"Security, Access & Admin",Manage organization policies with scope and change history.,Policy|Company Scope|Value|Reason,3,app/experience/model.ts + enterprise-contract.ts
+recovery,"Security, Access & Admin",Represent audited recovery issuance and revocation.,Employee|Expiry|Reason|Status,3,app/experience/model.ts + enterprise-contract.ts
+support,"Security, Access & Admin",Inspect assigned access and employee-approved support.,Employee|Issue|Consent|Support Action,3,app/experience/model.ts + enterprise-contract.ts
+resources,"Security, Access & Admin",Inspect service availability and diagnostic context.,Service|Availability|Diagnostic|Last Seen,3,app/experience/model.ts + enterprise-contract.ts
+sync,"Security, Access & Admin",Resolve pending changes and conflicts without losing drafts.,Record|Local Version|Remote Version|Resolution,3,app/experience/model.ts + enterprise-contract.ts
+audit,"Security, Access & Admin","Trace business changes by actor, object and result.",Actor|Time|Object|Action|Result,3,app/experience/model.ts + enterprise-contract.ts
+toolbox,"Security, Access & Admin",Inspect readiness and controlled maintenance plans.,Check|Result|Reason|Authorized Action,3,app/experience/model.ts + enterprise-contract.ts
+integrations,"Security, Access & Admin",Inspect safe metadata and unavailable provider states.,Provider|Capability|State|Last Request,3,app/experience/model.ts + enterprise-contract.ts
+hub,Global,Find and open workspaces available to your role and company.,Family|Module|Purpose,0,app/experience/model.ts + enterprise-contract.ts
+theme,Personalization,Preview and apply permitted appearance preferences.,Theme|Scope,0,app/experience/model.ts + enterprise-contract.ts
+navigation,Personalization,Choose a navigation model for your authorized work.,Navigation Style|Pinned Modules|Scope,0,app/experience/model.ts + enterprise-contract.ts
+layout,Personalization,Preview ten compositions and apply a scoped preference.,Layout|Density|Motion|Scope,0,app/experience/model.ts + enterprise-contract.ts
+signin-design,Personalization,"Configure approved image treatment, clocks, logo and widgets.",Background|Logo Scale|Clock Selection|Motion|Weather Density,0,app/experience/model.ts + enterprise-contract.ts
+procurement,Finance & Operations,Move evidenced requisitions through review and sourcing.,Supplier|Item|Quantity|Unit Cost|Purpose|Receipt,1,app/experience/model.ts + enterprise-contract.ts
+purchase-orders,Finance & Operations,Separate approval from committed supplier orders.,Supplier|Item|Quantity|Unit Cost|Received Quantity|Source Requisition|Decision Reason,3,app/experience/model.ts + enterprise-contract.ts
+goods-receipts,Finance & Operations,Receive ordered stock with accepted quantities and evidence.,Purchase Order|Item|Quantity|Accepted Quantity|Rejected Quantity|Location|Receipt,1,app/experience/model.ts + enterprise-contract.ts
+stock-transfers,Finance & Operations,Track stock custody between authorized locations.,Item|Quantity|From Location|To Location|Received Quantity|Receipt,1,app/experience/model.ts + enterprise-contract.ts
+stock-borrowing,Finance & Operations,Keep borrowed quantities and return accountability linked.,Item|Quantity|Borrowing Team|Return Due|Returned Quantity,1,app/experience/model.ts + enterprise-contract.ts
+bakery-accountability,Bakery ERP,Reconcile every loaf and every remittance before closure.,Actual Yield|Dispatched|Store Balance|Agent Sold|Returns|Damaged|Promo|Staff|In Transit|Unit Price|Remittance|Resolution Quantity|Resolution Amount|Decision Reason,1,app/experience/model.ts + enterprise-contract.ts
+technology-services,Printing & Technology,Manage technology service requests within Printing & Technology.,Customer|Service Type|Priority|SLA Due|Assigned To|Resolution,1,app/experience/model.ts + enterprise-contract.ts
+vacancies,Jobs ERP,Publish approved vacancies and connect candidates to hiring.,Job Title|Department|Hiring Manager|Headcount|Description|Approval,1,app/experience/model.ts + enterprise-contract.ts
+staff-messaging,Communications,"Communicate with authorized employees, teams and company channels.",Company|Department|Channel|Recipient|Message|Attachment|Mention,1,app/experience/model.ts + enterprise-contract.ts
+productivity,Staff ERP,Use governed workflow measures to improve work without surveillance.,Metric Definition|Source|Scope|Business Purpose|Permission,1,app/experience/model.ts + enterprise-contract.ts
+work-location,"Security, Access & Admin","Configure designated work-location policy with privacy, consent and retention controls.",Company|Site|Roles|Users|Purpose|Effective Date|Work Hours|GPS Eligibility|Privacy Explanation|Consent|Retention|Exceptions,1,app/experience/model.ts + enterprise-contract.ts
+salary-adjustments,Staff ERP,Prepare controlled compensation changes with approval and audit.,Employee|Effective Date|Reason|Current Amount|Proposed Amount|Initiator|Reviewer|Approval|Payroll Impact|Employee Visibility,1,app/experience/model.ts + enterprise-contract.ts
+data-import,Finance & Operations,Validate authorized CSV or XLSX rows before a local import simulation.,Entity|File Type|Columns|Mapping|Duplicates|Error Rows|Idempotency|Audit|Permission Scope,1,app/experience/model.ts + enterprise-contract.ts
+dashboard-personalization,Personalization,"Compose permitted widgets while respecting required, role and company defaults.",Widget|Source|Position|Size|Visibility|Required|Role Default|Company Default|Scope,1,app/experience/model.ts + enterprise-contract.ts
+files,Global,"Inspect permitted evidence, versions and local file governance.",Filename|MIME Type|Size|Checksum|Retention,0,app/experience/model.ts + enterprise-contract.ts
+saved-views,Global,Keep permission-filtered views and favorites within your scope.,Name|Module|Filters|Scope,0,app/experience/model.ts + enterprise-contract.ts
+field-builder,"Security, Access & Admin",Define governed field metadata and safe validation.,Name|Target Module|Field Type|Required|Validation,0,app/experience/model.ts + enterprise-contract.ts
+form-builder,"Security, Access & Admin",Compose forms from permitted fields with versioned review.,Name|Target Module|Field Type|Required|Validation,0,app/experience/model.ts + enterprise-contract.ts
+workflow-builder,"Security, Access & Admin",Simulate versioned workflow changes without bypassing invariants.,Name|Target Module|From State|To State|Required Role,0,app/experience/model.ts + enterprise-contract.ts
+report-builder,"Security, Access & Admin",Build scoped reports from permitted fields and safe metrics.,Name|Target Module|Metric|Grouping|Scope,0,app/experience/model.ts + enterprise-contract.ts
+widget-builder,"Security, Access & Admin",Preview dashboard widgets sourced from authorized records.,Name|Target Module|Metric|Visualization|Scope,0,app/experience/model.ts + enterprise-contract.ts
+theme-builder,"Security, Access & Admin","Govern semantic tokens, contrast and appearance versions.",Name|Primary Color|Surface Color|Text Color|Scope,0,app/experience/model.ts + enterprise-contract.ts
+business-rules,"Security, Access & Admin",Review invariant rules and simulate safe business conditions.,Name|Target Module|Condition|Required Role|Reason,0,app/experience/model.ts + enterprise-contract.ts
+notification-rules,"Security, Access & Admin","Govern events, recipients and channel availability explicitly.",Name|Target Module|Event|Audience|Channel,0,app/experience/model.ts + enterprise-contract.ts
+session-analytics,"Security, Access & Admin",Inspect transparent session metadata without covert monitoring.,Device|Session|Last Activity|Consent|IP Source,0,app/experience/model.ts + enterprise-contract.ts
+reports,Finance & Operations,Trace permitted metrics back to their underlying records.,Name|Source|Metric|Scope,0,app/experience/model.ts + enterprise-contract.ts
+customer-communications,Communications,"Coordinate authorized customer conversations around existing ERP customers, orders, invoices and payments.",Company|Site|Business Number|Channel|Customer|Related Record|Queue|Assignee|Priority|Unread|Consent|Opt Out|Provider Message ID|Delivery State|Last Message,3,app/experience/model.ts + enterprise-contract.ts
+communication-automation,Communications,Configure event-driven customer messages from authoritative ERP events.,Event|Channel|Template Version|Consent Rule|Business Hours|Idempotency Key|Retry Policy|Company,1,app/experience/model.ts + enterprise-contract.ts
+communication-templates,Communications,"Govern company-aware WhatsApp, email and future-channel templates.",Company|Channel|Purpose|Body|Version|Editor|Approver|Variables|Provider State,1,app/experience/model.ts + enterprise-contract.ts
+letterheads,Communications,Create governed company-aware document and message letterheads from approved facts and assets.,Company|Document Type|Version|Logo|Known Facts|Editor|Approver|Published Version,1,app/experience/model.ts + enterprise-contract.ts
+banking-operations,Finance & Operations,Inspect assigned financial accounts and provider-sourced transaction states without duplicating ledger truth.,Institution|Account Name|Masked Account|Available Balance|Ledger Balance|Statement State|Provider State|Branch|Business Unit|Cost Centre,3,app/experience/model.ts + enterprise-contract.ts
+treasury,Finance & Operations,"Govern cash position, inflows, outflows and forecasts across assigned accounts.",Money In|Money Out|Consolidated Balance|Daily Cash Flow|Weekly Cash Flow|Monthly Cash Flow|Forecast|Scope,1,app/experience/model.ts + enterprise-contract.ts
+payment-verification,Finance & Operations,Match verified provider events to authoritative ERP obligations before activation.,Provider Event|Signature|Replay Check|Idempotency Key|Account|Transaction Reference|Related Record|Match State|Payment State|Business Rule|Receipt|Activation State,1,app/experience/model.ts + enterprise-contract.ts
+transfers,Finance & Operations,"Separate transfer creation, approval, execution and reconciliation under maker-checker controls.",Transfer Type|Source Account|Beneficiary|Amount|Reason|Maker|Checker|Threshold|Scheduled Date|Provider Reference|Evidence|Reconciliation State,1,app/experience/model.ts + enterprise-contract.ts
+beneficiaries,Finance & Operations,"Create, verify, activate and deactivate beneficiaries with independent review for high-risk changes.",Name|Institution|Masked Account|Verification State|Risk Level|Maker|Checker|Change Reason|Last Verified,1,app/experience/model.ts + enterprise-contract.ts
+payroll-execution,Finance & Operations,"Carry approved payroll through banking submission, employee-level outcomes and reconciliation.",Payroll Batch|Period|Employee Count|Gross Total|Net Total|Banking Batch|Approved By|Submitted At|Success Count|Pending Count|Failed Count|Reversed Count|Reference,1,app/experience/model.ts + enterprise-contract.ts
+reconciliation,Finance & Operations,"Resolve provider, bank, ledger and business-record differences with evidence and audit.",Account|Statement Reference|Provider Transaction|Ledger Transaction|Related Record|Variance|Reason|Evidence|Maker|Checker,1,app/experience/model.ts + enterprise-contract.ts
+financial-reports,Finance & Operations,Create governed reports with view and export permissions evaluated separately.,Report Type|Period|Company|Branch|Department|Business Unit|Cost Centre|Source|Metric|Export Format|Scope,1,app/experience/model.ts + enterprise-contract.ts

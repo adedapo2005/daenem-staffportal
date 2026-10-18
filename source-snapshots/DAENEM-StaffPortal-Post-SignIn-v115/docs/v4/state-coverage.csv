@@ -1,0 +1,398 @@
+MODULE,STATE,SOURCE,INTERACTIVE_ACCEPTANCE
+self-service,Available,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+home,Open,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+home,In Review,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+home,Resolved,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+cockpit,Open,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+cockpit,Investigating,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+cockpit,Resolved,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+workspace,To Do,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+workspace,In Progress,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+workspace,Done,app/experience/homes-v3.tsx,PARTIAL; registry is not transition verification
+profile,Action Required,app/experience/profile-v3.tsx,PARTIAL; registry is not transition verification
+profile,Verified,app/experience/profile-v3.tsx,PARTIAL; registry is not transition verification
+people,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+people,Onboarding,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+people,On Leave,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hr-records,Missing Information,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hr-records,In Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hr-records,Verified,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+attendance,Not Started,app/experience/attendance-v3.tsx,PARTIAL; registry is not transition verification
+attendance,Incomplete,app/experience/attendance-v3.tsx,PARTIAL; registry is not transition verification
+attendance,Present,app/experience/attendance-v3.tsx,PARTIAL; registry is not transition verification
+attendance,Late,app/experience/attendance-v3.tsx,PARTIAL; registry is not transition verification
+leave,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+leave,Submitted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+leave,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+leave,Returned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+performance,Not Started,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+performance,Self Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+performance,Manager Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+performance,Acknowledged,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hr-cases,Open,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hr-cases,Investigating,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hr-cases,Action Required,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hr-cases,Closed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+lifecycle,Identity,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+lifecycle,Assignment,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+lifecycle,Payroll,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+lifecycle,Acknowledgement,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+lifecycle,Complete,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+forms,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+forms,Submitted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+forms,Returned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+forms,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+tasks,To Do,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+tasks,In Progress,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+tasks,Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+tasks,Done,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll,Prepare,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll,Validate,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll,Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll,Draft Export,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payslips,Available,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payslips,Payment Pending,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payslips,Paid,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll-batches,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll-batches,Validation,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll-batches,Approval,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+payroll-batches,Draft Export,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+applications,Applied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+applications,Screening,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+applications,Interview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+applications,Offer,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+applications,Hired,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+interviews,Scheduled,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+interviews,Interviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+interviews,Scorecard Due,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+interviews,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hiring,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hiring,Offer Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hiring,Offer Accepted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hiring,Onboarding,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Enquiry,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Quote,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Approval,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Artwork,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Proof,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Proof Approval,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Job Card,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Material Issue,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Printing,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Finishing,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,QC,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Delivery,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Invoice,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Payment,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+printing,Complete,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+print-orders,Enquiry,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+print-orders,Quoted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+print-orders,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+print-orders,Ordered,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+print-materials,Issued,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+print-materials,Usage Pending,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+print-materials,Reconciled,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery,Planned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery,Ingredient Issue,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery,Baking,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery,Yield Required,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery,QC,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery,Complete,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-recipes,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-recipes,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-recipes,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-sales,Pre-order,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-sales,Dispatch,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-sales,Delivered,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-sales,Remittance Due,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+bakery-sales,Reconciled,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+autos,Acquired,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+autos,Documentation,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+autos,Available,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+autos,Reserved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+autos,Sold,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+autos,Delivered,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+auto-leads,New Lead,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+auto-leads,Showing,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+auto-leads,Test Drive,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+auto-leads,Deposit,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+auto-leads,Sale,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+auto-leads,Delivery,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+auto-history,Archived,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+logistics,Booked,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+logistics,Assigned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+logistics,In Transit,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+logistics,POD Required,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+logistics,Delivered,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+logistics,Closed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+fleet,Available,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+fleet,Assigned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+fleet,Maintenance,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+fleet,Document Due,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+trip-costs,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+trip-costs,Submitted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+trip-costs,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+trip-costs,Reconciled,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+properties,Occupied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+properties,Available,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+properties,Maintenance,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+leases,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+leases,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+leases,Expiring,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+leases,Renewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+property-leads,Enquiry,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+property-leads,Inspection,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+property-leads,Negotiation,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+property-leads,Contract,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+property-leads,Completed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance,Pending Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance,Posted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance,Reconciliation,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+receivables,Current,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+receivables,1–30 Days,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+receivables,31–60 Days,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+receivables,61+ Days,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+receivables,Paid,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance-posting,Queued,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance-posting,Validation Failed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance-posting,Posted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+finance-posting,Reconciled,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+budgets,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+budgets,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+budgets,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+budgets,Closed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expenses,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expenses,Submitted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expenses,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expenses,Returned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expenses,Rejected,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expense-approvals,Submitted,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expense-approvals,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expense-approvals,Returned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+expense-approvals,Rejected,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+spend,Evidence Due,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+spend,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+spend,Reconciled,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+cost-admin,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+cost-admin,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+cost-admin,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inventory,Available,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inventory,Low Stock,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inventory,Reserved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inventory,In Transit,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+projects,Planning,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+projects,In Progress,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+projects,At Risk,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+projects,Complete,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+facilities,Reported,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+facilities,Assigned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+facilities,In Progress,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+facilities,Resolved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social,In Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social,Published (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-controls,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-controls,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-controls,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-accounts,Unavailable,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-sync,Queued,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-sync,Needs Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-sync,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+social-sync,Simulated Sync,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+marketing,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+marketing,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+marketing,Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+marketing,Completed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inbox,Unassigned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inbox,Assigned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inbox,Replied (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inbox,Escalated,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+inbox,Closed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+website,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+website,In Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+website,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+website,Published (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+communications,Unread,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+communications,Read,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+communications,Acknowledged,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+broadcasts,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+broadcasts,Preview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+broadcasts,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+broadcasts,Published (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+encouragement,Generate,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+encouragement,Preview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+encouragement,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+encouragement,Published (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+notifications,Unread,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+notifications,In Progress,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+notifications,Resolved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+help,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+help,Answered,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+security,Open,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+security,Investigating,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+security,Reviewed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+access,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+access,Applied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+access,Rolled Back,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+admin,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+admin,Preview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+admin,Applied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+admin,Rolled Back,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+recovery,Requested,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+recovery,Issued (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+recovery,Expired,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+recovery,Revoked,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+support,Awaiting Consent,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+support,Authorized,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+support,In Progress,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+support,Resolved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+resources,Unavailable,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+sync,Waiting to Sync,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+sync,Syncing,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+sync,Synced (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+sync,Conflict,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+audit,Recorded,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+toolbox,Not Run,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+toolbox,Needs Attention,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+toolbox,Checked (Demo),app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+integrations,Unavailable,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+hub,Available,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+theme,Preview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+theme,Applied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+navigation,Preview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+navigation,Applied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+layout,Preview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+layout,Applied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+layout,Rolled Back,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+signin-design,Preview,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+signin-design,Applied,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+procurement,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+procurement,Submitted,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+procurement,Approved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+procurement,Sourcing,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+procurement,Converted,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+procurement,Cancelled,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Submitted,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Approved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Ordered,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Partially Received,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Received,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Closed,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+purchase-orders,Cancelled,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+goods-receipts,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+goods-receipts,Inspected,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+goods-receipts,Accepted,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+goods-receipts,Posted,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+goods-receipts,Cancelled,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-transfers,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-transfers,Approved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-transfers,Dispatched,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-transfers,In Transit,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-transfers,Received,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-transfers,Closed,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-transfers,Cancelled,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-borrowing,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-borrowing,Submitted,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-borrowing,Approved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-borrowing,Issued,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-borrowing,Partially Returned,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-borrowing,Returned,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+stock-borrowing,Closed,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+bakery-accountability,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+bakery-accountability,Dispatched,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+bakery-accountability,Remittance Due,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+bakery-accountability,Investigating,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+bakery-accountability,Resolved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+bakery-accountability,Reconciled,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+technology-services,New,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+technology-services,Triaged,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+technology-services,Assigned,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+technology-services,In Progress,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+technology-services,Customer Review,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+technology-services,Resolved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+technology-services,Closed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+vacancies,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+vacancies,Approved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+vacancies,Open,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+vacancies,Interviewing,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+vacancies,Filled,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+vacancies,Closed,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+staff-messaging,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+staff-messaging,Sent,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+staff-messaging,Acknowledged,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+staff-messaging,Archived,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+productivity,Current,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+productivity,Reviewed,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+productivity,Action Planned,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+work-location,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+work-location,Review,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+work-location,Approved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+work-location,Active,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+work-location,Expired,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+salary-adjustments,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+salary-adjustments,Review,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+salary-adjustments,Approved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+salary-adjustments,Payroll Ready,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+salary-adjustments,Visible,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+salary-adjustments,Cancelled,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+data-import,Choose Entity,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+data-import,Upload,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+data-import,Map,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+data-import,Validate,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+data-import,Duplicate Review,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+data-import,Dry Run,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+data-import,Imported,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+dashboard-personalization,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+dashboard-personalization,Preview,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+dashboard-personalization,Saved,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+dashboard-personalization,Restored,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+files,Available,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+saved-views,Draft,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+saved-views,Saved,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+field-builder,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+field-builder,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+field-builder,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+field-builder,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+field-builder,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+form-builder,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+form-builder,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+form-builder,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+form-builder,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+form-builder,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+workflow-builder,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+workflow-builder,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+workflow-builder,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+workflow-builder,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+workflow-builder,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+report-builder,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+report-builder,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+report-builder,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+report-builder,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+report-builder,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+widget-builder,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+widget-builder,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+widget-builder,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+widget-builder,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+widget-builder,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+theme-builder,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+theme-builder,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+theme-builder,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+theme-builder,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+theme-builder,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+business-rules,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+business-rules,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+business-rules,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+business-rules,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+business-rules,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+notification-rules,Draft,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+notification-rules,Validated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+notification-rules,Simulated,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+notification-rules,Published,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+notification-rules,Rolled Back,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification
+session-analytics,Active,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+session-analytics,Revoked,app/experience/workspaces.tsx or studios.tsx; inspect kind dispatch,PARTIAL; registry is not transition verification
+reports,Available,app/experience/enterprise-v3.tsx,PARTIAL; registry is not transition verification

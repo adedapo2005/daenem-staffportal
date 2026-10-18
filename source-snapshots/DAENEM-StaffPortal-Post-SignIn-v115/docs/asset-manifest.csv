@@ -1,0 +1,7 @@
+ASSET,USED AT,SOURCE,RESOLUTION,NOTES
+daenem-campus.png,/signin and Sign-In Personalization,Generated once with ImageGen,1672x941 native; NOT 4K,Photographic campus; no factual production site claim
+DAENEM monogram,"Global shell, sign-in, profile and document preview",Authored SVG logo geometry,Vector,New concept logo; owner acceptance pending
+Lucide icons,Across application,lucide-react declared dependency,Vector,Functional icon system
+Route schematic,Logistics and cockpit,Authored SVG diagram,Vector,"Illustrative topology, not a factual live map"
+Inter Variable,Body and operational UI,Official Google Fonts repository / ofl/inter,Variable TTF: weight 100–900; optical size 14–32,Bundled with SIL OFL 1.1; exact sources and SHA-256 in font-sources.json
+Manrope Variable,Headings and key metrics,Official Google Fonts repository / ofl/manrope,Variable TTF: weight 200–800,Bundled with SIL OFL 1.1; exact sources and SHA-256 in font-sources.json

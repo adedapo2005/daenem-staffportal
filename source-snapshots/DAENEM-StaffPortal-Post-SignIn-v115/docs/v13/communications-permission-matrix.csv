@@ -1,0 +1,16 @@
+PERMISSION,ACTION,SCOPE,AUDIT
+View conversations,VIEW_CONVERSATIONS,Company|site|business number|queue|conversation|field,Required
+Reply draft,REPLY_DRAFT,Company|site|business number|queue|conversation|field,Required
+Assign queue,ASSIGN_QUEUE,Company|site|business number|queue|conversation|field,Required
+Manage numbers,MANAGE_NUMBERS,Company|site|business number|queue|conversation|field,Required
+View analytics,VIEW_ANALYTICS,Company|site|business number|queue|conversation|field,Required
+Manage preferences,MANAGE_PREFERENCES,Company|site|business number|queue|conversation|field,Required
+Manage consent,MANAGE_CONSENT,Company|site|business number|queue|conversation|field,Required
+Manage automation,MANAGE_AUTOMATION,Company|site|business number|queue|conversation|field,Required
+Manage templates,MANAGE_TEMPLATES,Company|site|business number|queue|conversation|field,Required
+Manage letterheads,MANAGE_LETTERHEADS,Company|site|business number|queue|conversation|field,Required
+Generate letterhead,GENERATE_LETTERHEAD,Company|site|business number|queue|conversation|field,Required
+Approve reply,APPROVE_REPLY,Company|site|business number|queue|conversation|field,Required
+Send reply,SEND_REPLY,Company|site|business number|queue|conversation|field,Required
+View audit,VIEW_AUDIT,Company|site|business number|queue|conversation|field,Required
+Export history,EXPORT_HISTORY,Company|site|business number|queue|conversation|field,Required

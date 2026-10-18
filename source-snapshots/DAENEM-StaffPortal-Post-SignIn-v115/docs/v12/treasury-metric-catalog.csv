@@ -1,0 +1,17 @@
+METRIC,FORMULA,SCOPE,TRUTH_STATE
+Revenue Today,authoritative receipts today,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Revenue This Week,authoritative receipts current week,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Revenue This Month,authoritative receipts current month,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Revenue This Year,authoritative receipts current year,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Customer Payments,verified matched customer payments,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Pending Collections,authorized outstanding receivables,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Payroll,confirmed and pending payroll outflows,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Vendors/Suppliers,authorized completed and pending payments,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Expenses,authorized approved/paid expenses,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Refunds,verified refunds,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Bank Charges,classified bank charges,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Consolidated Balance,sum assigned available balances,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Daily Cash Flow,money in minus money out today,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Weekly Cash Flow,money in minus money out current week,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Monthly Cash Flow,money in minus money out current month,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected
+Treasury Forecast,approved forecast model over assigned sources,Assigned accounts and authorized ERP records only,DEMO until provider/ledger adapters are connected

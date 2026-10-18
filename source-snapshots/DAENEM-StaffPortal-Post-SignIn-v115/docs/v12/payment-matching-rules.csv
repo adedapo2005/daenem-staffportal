@@ -1,0 +1,10 @@
+PRIORITY,MATCH_TARGET,KEYS,REQUIRED_GATES,NO_MATCH_ACTION
+1,Invoice,invoice reference|amount|currency,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+2,Order,order reference|amount|customer,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+3,Membership,member reference|period|amount,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+4,Subscription,subscription reference|period,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+5,Service request,request reference|amount,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+6,School fee,student/reference|term|amount,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+7,Rent,tenant/unit|period|amount,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+8,Reimbursement,claim reference|amount,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation
+9,Custom reference,configured namespace|reference,Verified signature|replay prevention|idempotency|account scope|business rule,Exception queue; no activation

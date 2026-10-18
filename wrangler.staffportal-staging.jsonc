@@ -8,6 +8,12 @@
   "limits": {
     "cpu_ms": 300000
   },
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "single-page-application"
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -43,8 +49,9 @@
     "APP_NAME": "DAENEM Staff Portal Staging",
     "TIMEZONE": "Africa/Lagos",
     "APP_STAGE": "staging",
+    "WEATHER_PROVIDER_ENABLED": "true",
     "WORKFORCE_EMAIL_FROM": "portal@daenem.com",
     "META_GRAPH_VERSION": "v24.0",
-    "STAFF_PORTAL_FRONTEND_ORIGIN": "https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site,https://daenem-staffportal-qa-review.daenem-group-9873.chatgpt.site"
+    "STAFF_PORTAL_FRONTEND_ORIGIN": "https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site,https://daenem-staffportal-qa-review.daenem-group-9873.chatgpt.site"
   }
 }

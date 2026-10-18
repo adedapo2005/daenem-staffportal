@@ -1,0 +1,61 @@
+/* The Studio shell is a design workspace, so its navigation and actions use
+ * Daenem's blue/cyan control language. Green remains available only where the
+ * UI communicates a genuine healthy/success/connected state. */
+.p-app.signin-studio-shell .p-sidebar,
+.p-app.signin-studio-shell .p-mobile-nav {
+  background: #071b3d !important;
+  color: #c8dafa !important;
+}
+.p-app.signin-studio-shell .p-sidebar > .p-logo,
+.p-app.signin-studio-shell .p-mobile-nav > .p-logo {
+  color: #f0f7ff !important;
+}
+.p-app.signin-studio-shell .p-company {
+  background: #102e5a !important;
+  border-color: #285791 !important;
+  color: #e6f1ff !important;
+}
+.p-app.signin-studio-shell .p-company small,
+.p-app.signin-studio-shell .p-nav-label,
+.p-app.signin-studio-shell .p-user-card small {
+  color: #9bb8dc !important;
+}
+.p-app.signin-studio-shell .p-sidebar nav button,
+.p-app.signin-studio-shell .p-mobile-nav nav button {
+  color: #c7dafa !important;
+}
+.p-app.signin-studio-shell .p-sidebar nav button:hover,
+.p-app.signin-studio-shell .p-mobile-nav nav button:hover {
+  background: #163e72 !important;
+  color: #fff !important;
+}
+.p-app.signin-studio-shell .p-sidebar nav button.active,
+.p-app.signin-studio-shell .p-mobile-nav nav button.active {
+  background: #c3d9ff !important;
+  color: #173968 !important;
+  box-shadow: inset 3px 0 #5a8fe8, 0 0 20px #5a8fe81c !important;
+}
+.p-app.signin-studio-shell .p-sidebar nav button small,
+.p-app.signin-studio-shell .p-mobile-nav nav button small {
+  background: #29476a;
+  color: #c8ddf6;
+}
+.p-app.signin-studio-shell .p-sidebar nav button.active small,
+.p-app.signin-studio-shell .p-mobile-nav nav button.active small {
+  background: #b7cdf2;
+  color: #1d3c68;
+}
+.p-app.signin-studio-shell .p-btn:not(.outline):not(.quiet):not(.danger) {
+  background: #246fc2;
+}
+.p-app.signin-studio-shell .p-btn:not(.outline):not(.quiet):not(.danger):hover {
+  background: #18599f;
+}
+.p-app.signin-studio-shell .p-btn.light {
+  background: #c7dcff;
+  color: #173968;
+}
+.p-app.signin-studio-shell .p-app :focus-visible,
+.p-app.signin-studio-shell :focus-visible {
+  outline-color: #50b9ff;
+}

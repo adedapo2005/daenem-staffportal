@@ -1,0 +1,243 @@
+METRIC_ID,DOMAIN,NAME,UNIT,FORMULA,SCOPE,DRILLDOWN,SITE_STATE
+self-service.record_count,Staff ERP,Self-Service authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+self-service.state_distribution,Staff ERP,Self-Service state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+home.record_count,Global,Overview authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+home.state_distribution,Global,Overview state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+cockpit.record_count,Global,Operational Cockpit authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+cockpit.state_distribution,Global,Operational Cockpit state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+workspace.record_count,Staff ERP,My Workspace authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+workspace.state_distribution,Staff ERP,My Workspace state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+profile.record_count,Staff ERP,My Profile authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+profile.state_distribution,Staff ERP,My Profile state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+people.record_count,Staff ERP,People & HR authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+people.state_distribution,Staff ERP,People & HR state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+hr-records.record_count,Staff ERP,HR Master Records authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+hr-records.state_distribution,Staff ERP,HR Master Records state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+attendance.record_count,Staff ERP,Attendance & Location authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+attendance.state_distribution,Staff ERP,Attendance & Location state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+leave.record_count,Staff ERP,Leave Management authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+leave.state_distribution,Staff ERP,Leave Management state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+performance.record_count,Staff ERP,Performance Reviews authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+performance.state_distribution,Staff ERP,Performance Reviews state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+hr-cases.record_count,Staff ERP,HR Cases authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+hr-cases.state_distribution,Staff ERP,HR Cases state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+lifecycle.record_count,Staff ERP,Onboarding & Offboarding authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+lifecycle.state_distribution,Staff ERP,Onboarding & Offboarding state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+forms.record_count,Staff ERP,Forms Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+forms.state_distribution,Staff ERP,Forms Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+tasks.record_count,Staff ERP,Tasks & Approvals authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+tasks.state_distribution,Staff ERP,Tasks & Approvals state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+payroll.record_count,Staff ERP,Payroll Control authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+payroll.state_distribution,Staff ERP,Payroll Control state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+payslips.record_count,Staff ERP,My Payslips authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+payslips.state_distribution,Staff ERP,My Payslips state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+payroll-batches.record_count,Staff ERP,Bank Payment Batches authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+payroll-batches.state_distribution,Staff ERP,Bank Payment Batches state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+applications.record_count,Jobs ERP,Job Applications authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+applications.state_distribution,Jobs ERP,Job Applications state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+interviews.record_count,Jobs ERP,Interview Pipeline authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+interviews.state_distribution,Jobs ERP,Interview Pipeline state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+hiring.record_count,Jobs ERP,Hiring Workflow authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+hiring.state_distribution,Jobs ERP,Hiring Workflow state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+printing.record_count,Printing & Technology,Printing Production authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+printing.state_distribution,Printing & Technology,Printing Production state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+print-orders.record_count,Printing & Technology,Customers & Print Orders authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+print-orders.state_distribution,Printing & Technology,Customers & Print Orders state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+print-materials.record_count,Printing & Technology,Print Materials & Costing authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+print-materials.state_distribution,Printing & Technology,Print Materials & Costing state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+bakery.record_count,Bakery ERP,Bakery Production authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+bakery.state_distribution,Bakery ERP,Bakery Production state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+bakery-recipes.record_count,Bakery ERP,Recipes & Ingredients authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+bakery-recipes.state_distribution,Bakery ERP,Recipes & Ingredients state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+bakery-sales.record_count,Bakery ERP,Bakery Orders & Remittance authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+bakery-sales.state_distribution,Bakery ERP,Bakery Orders & Remittance state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+autos.record_count,Autos ERP,Vehicle Sales authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+autos.state_distribution,Autos ERP,Vehicle Sales state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+auto-leads.record_count,Autos ERP,Auto Leads & Sales authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+auto-leads.state_distribution,Autos ERP,Auto Leads & Sales state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+auto-history.record_count,Autos ERP,Historical Workshop Records authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+auto-history.state_distribution,Autos ERP,Historical Workshop Records state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+logistics.record_count,Logistics ERP,Logistics Dispatch authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+logistics.state_distribution,Logistics ERP,Logistics Dispatch state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+fleet.record_count,Logistics ERP,Fleet & Drivers authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+fleet.state_distribution,Logistics ERP,Fleet & Drivers state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+trip-costs.record_count,Logistics ERP,Trip Expenses & Collections authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+trip-costs.state_distribution,Logistics ERP,Trip Expenses & Collections state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+properties.record_count,Homes & Properties,Homes & Properties authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+properties.state_distribution,Homes & Properties,Homes & Properties state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+leases.record_count,Homes & Properties,Leases & Rent Schedules authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+leases.state_distribution,Homes & Properties,Leases & Rent Schedules state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+property-leads.record_count,Homes & Properties,Property Sales & Leads authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+property-leads.state_distribution,Homes & Properties,Property Sales & Leads state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+finance.record_count,Finance & Operations,Finance Workspace authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+finance.state_distribution,Finance & Operations,Finance Workspace state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+receivables.record_count,Finance & Operations,Receivables authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+receivables.state_distribution,Finance & Operations,Receivables state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+finance-posting.record_count,Finance & Operations,Finance Posting authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+finance-posting.state_distribution,Finance & Operations,Finance Posting state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+budgets.record_count,Finance & Operations,Budgets & Fiscal Periods authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+budgets.state_distribution,Finance & Operations,Budgets & Fiscal Periods state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+expenses.record_count,Finance & Operations,My Expense Requests authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+expenses.state_distribution,Finance & Operations,My Expense Requests state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+expense-approvals.record_count,Finance & Operations,Expense Approval Queue authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+expense-approvals.state_distribution,Finance & Operations,Expense Approval Queue state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+spend.record_count,Finance & Operations,Spend & Profit Intelligence authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+spend.state_distribution,Finance & Operations,Spend & Profit Intelligence state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+cost-admin.record_count,Finance & Operations,Cost Intelligence Administration authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+cost-admin.state_distribution,Finance & Operations,Cost Intelligence Administration state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+inventory.record_count,Finance & Operations,Inventory authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+inventory.state_distribution,Finance & Operations,Inventory state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+projects.record_count,Finance & Operations,Construction & Projects authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+projects.state_distribution,Finance & Operations,Construction & Projects state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+facilities.record_count,Finance & Operations,Facilities & Maintenance authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+facilities.state_distribution,Finance & Operations,Facilities & Maintenance state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+social.record_count,Social & Web,Social Engine authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+social.state_distribution,Social & Web,Social Engine state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+social-controls.record_count,Social & Web,Social Controls authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+social-controls.state_distribution,Social & Web,Social Controls state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+social-accounts.record_count,Social & Web,Social Accounts authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+social-accounts.state_distribution,Social & Web,Social Accounts state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+social-sync.record_count,Social & Web,ERP Social Sync authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+social-sync.state_distribution,Social & Web,ERP Social Sync state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+marketing.record_count,Social & Web,Marketing Command authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+marketing.state_distribution,Social & Web,Marketing Command state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+inbox.record_count,Social & Web,Community Inbox authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+inbox.state_distribution,Social & Web,Community Inbox state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+website.record_count,Social & Web,Website Administration authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+website.state_distribution,Social & Web,Website Administration state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+communications.record_count,Communications,Notice Board authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+communications.state_distribution,Communications,Notice Board state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+broadcasts.record_count,Communications,Broadcast Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+broadcasts.state_distribution,Communications,Broadcast Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+encouragement.record_count,Communications,Daily Staff Encouragement authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+encouragement.state_distribution,Communications,Daily Staff Encouragement state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+notifications.record_count,Global,Action Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+notifications.state_distribution,Global,Action Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+help.record_count,Global,AI Guide authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+help.state_distribution,Global,AI Guide state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+security.record_count,"Security, Access & Admin",Security Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+security.state_distribution,"Security, Access & Admin",Security Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+access.record_count,"Security, Access & Admin",Access Control authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+access.state_distribution,"Security, Access & Admin",Access Control state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+admin.record_count,"Security, Access & Admin",Admin Setup authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+admin.state_distribution,"Security, Access & Admin",Admin Setup state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+recovery.record_count,"Security, Access & Admin",Temporary Password Recovery authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+recovery.state_distribution,"Security, Access & Admin",Temporary Password Recovery state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+support.record_count,"Security, Access & Admin",User Support Centre authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+support.state_distribution,"Security, Access & Admin",User Support Centre state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+resources.record_count,"Security, Access & Admin",Resource Monitoring authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+resources.state_distribution,"Security, Access & Admin",Resource Monitoring state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+sync.record_count,"Security, Access & Admin",Sync & Sessions authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+sync.state_distribution,"Security, Access & Admin",Sync & Sessions state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+audit.record_count,"Security, Access & Admin",Activity & Audit authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+audit.state_distribution,"Security, Access & Admin",Activity & Audit state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+toolbox.record_count,"Security, Access & Admin",Advanced Toolbox authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+toolbox.state_distribution,"Security, Access & Admin",Advanced Toolbox state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+integrations.record_count,"Security, Access & Admin",API & Integrations authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+integrations.state_distribution,"Security, Access & Admin",API & Integrations state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+hub.record_count,Global,Module Hub authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+hub.state_distribution,Global,Module Hub state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+theme.record_count,Personalization,Theme Studio authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+theme.state_distribution,Personalization,Theme Studio state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+navigation.record_count,Personalization,Navigation Studio authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+navigation.state_distribution,Personalization,Navigation Studio state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+layout.record_count,Personalization,Layout Studio authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+layout.state_distribution,Personalization,Layout Studio state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+signin-design.record_count,Personalization,Sign-In Personalization authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+signin-design.state_distribution,Personalization,Sign-In Personalization state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+procurement.record_count,Finance & Operations,Procurement authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+procurement.state_distribution,Finance & Operations,Procurement state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+purchase-orders.record_count,Finance & Operations,Purchase Orders authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+purchase-orders.state_distribution,Finance & Operations,Purchase Orders state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+goods-receipts.record_count,Finance & Operations,Goods Receipts authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+goods-receipts.state_distribution,Finance & Operations,Goods Receipts state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+stock-transfers.record_count,Finance & Operations,Stock Transfers authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+stock-transfers.state_distribution,Finance & Operations,Stock Transfers state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+stock-borrowing.record_count,Finance & Operations,Stock Borrowing authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+stock-borrowing.state_distribution,Finance & Operations,Stock Borrowing state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+bakery-accountability.record_count,Bakery ERP,Bakery Accountability authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+bakery-accountability.state_distribution,Bakery ERP,Bakery Accountability state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+technology-services.record_count,Printing & Technology,Technology Services authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+technology-services.state_distribution,Printing & Technology,Technology Services state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+vacancies.record_count,Jobs ERP,Vacancies authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+vacancies.state_distribution,Jobs ERP,Vacancies state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+staff-messaging.record_count,Communications,Staff Messaging authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+staff-messaging.state_distribution,Communications,Staff Messaging state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+productivity.record_count,Staff ERP,Work Effectiveness authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+productivity.state_distribution,Staff ERP,Work Effectiveness state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+work-location.record_count,"Security, Access & Admin",Work-Location Policy authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+work-location.state_distribution,"Security, Access & Admin",Work-Location Policy state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+salary-adjustments.record_count,Staff ERP,Salary Adjustments authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+salary-adjustments.state_distribution,Staff ERP,Salary Adjustments state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+data-import.record_count,Finance & Operations,Controlled Data Import authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+data-import.state_distribution,Finance & Operations,Controlled Data Import state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+dashboard-personalization.record_count,Personalization,Dashboard Personalization authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+dashboard-personalization.state_distribution,Personalization,Dashboard Personalization state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+files.record_count,Global,File Manager authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+files.state_distribution,Global,File Manager state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+saved-views.record_count,Global,Saved Views authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+saved-views.state_distribution,Global,Saved Views state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+field-builder.record_count,"Security, Access & Admin",Field Configuration authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+field-builder.state_distribution,"Security, Access & Admin",Field Configuration state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+form-builder.record_count,"Security, Access & Admin",Form Builder authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+form-builder.state_distribution,"Security, Access & Admin",Form Builder state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+workflow-builder.record_count,"Security, Access & Admin",Workflow Builder authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+workflow-builder.state_distribution,"Security, Access & Admin",Workflow Builder state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+report-builder.record_count,"Security, Access & Admin",Report Builder authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+report-builder.state_distribution,"Security, Access & Admin",Report Builder state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+widget-builder.record_count,"Security, Access & Admin",Widget Builder authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+widget-builder.state_distribution,"Security, Access & Admin",Widget Builder state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+theme-builder.record_count,"Security, Access & Admin",Theme Builder authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+theme-builder.state_distribution,"Security, Access & Admin",Theme Builder state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+business-rules.record_count,"Security, Access & Admin",Business Rules authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+business-rules.state_distribution,"Security, Access & Admin",Business Rules state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+notification-rules.record_count,"Security, Access & Admin",Notification Policies authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+notification-rules.state_distribution,"Security, Access & Admin",Notification Policies state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+session-analytics.record_count,"Security, Access & Admin",Sessions & Usage authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+session-analytics.state_distribution,"Security, Access & Admin",Sessions & Usage state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+reports.record_count,Finance & Operations,Report Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+reports.state_distribution,Finance & Operations,Report Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+customer-communications.record_count,Communications,Customer Communication Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+customer-communications.state_distribution,Communications,Customer Communication Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+communication-queues.record_count,Communications,Queues & Assignment authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+communication-queues.state_distribution,Communications,Queues & Assignment state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+whatsapp-numbers.record_count,Communications,WhatsApp Business Numbers authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+whatsapp-numbers.state_distribution,Communications,WhatsApp Business Numbers state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+communication-analytics.record_count,Communications,Communication Analytics authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+communication-analytics.state_distribution,Communications,Communication Analytics state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+communication-preferences.record_count,Communications,Communication Preferences authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+communication-preferences.state_distribution,Communications,Communication Preferences state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+ai-letterhead-generator.record_count,Communications,AI Letterhead Generator authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+ai-letterhead-generator.state_distribution,Communications,AI Letterhead Generator state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+communication-audit.record_count,Communications,Communication Audit authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+communication-audit.state_distribution,Communications,Communication Audit state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+unified-inbox.record_count,Communications,Unified Inbox authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+unified-inbox.state_distribution,Communications,Unified Inbox state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+communication-automation.record_count,Communications,Communication Automation authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+communication-automation.state_distribution,Communications,Communication Automation state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+communication-templates.record_count,Communications,Communication Templates authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+communication-templates.state_distribution,Communications,Communication Templates state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+letterheads.record_count,Communications,Letterhead Studio authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+letterheads.state_distribution,Communications,Letterhead Studio state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+banking-operations.record_count,Finance & Operations,Banking Operations Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+banking-operations.state_distribution,Finance & Operations,Banking Operations Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+treasury.record_count,Finance & Operations,Treasury Command Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+treasury.state_distribution,Finance & Operations,Treasury Command Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+payment-verification.record_count,Finance & Operations,Payment Verification authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+payment-verification.state_distribution,Finance & Operations,Payment Verification state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+transfers.record_count,Finance & Operations,Transfers & Approvals authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+transfers.state_distribution,Finance & Operations,Transfers & Approvals state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+beneficiaries.record_count,Finance & Operations,Beneficiary Governance authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+beneficiaries.state_distribution,Finance & Operations,Beneficiary Governance state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+payroll-execution.record_count,Finance & Operations,Payroll Financial Operations authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+payroll-execution.state_distribution,Finance & Operations,Payroll Financial Operations state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+reconciliation.record_count,Finance & Operations,Financial Reconciliation authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+reconciliation.state_distribution,Finance & Operations,Financial Reconciliation state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+financial-reports.record_count,Finance & Operations,Financial Report Center authorized record count,count,count(authorized records),Assigned records only,Drills to same authorized set,FIXTURE
+financial-reports.state_distribution,Finance & Operations,Financial Report Center state distribution,records,group authorized records by state,Assigned records only,Same source and filters,FIXTURE
+record-count,Cross-domain,Authorized record count,records,count(authorized rows),Authorized records only,Same source and filters,FIXTURE
+record-value,Cross-domain,Authorized record value,NGN,sum(authorized record amount),Authorized records only,Same source and filters,FIXTURE
+evidence-gaps,Cross-domain,Evidence gaps,records,count(required field is empty),Authorized records only,Same source and filters,FIXTURE
+purchase-commitment,Cross-domain,Active purchase commitment,NGN,"sum((ordered quantity − received quantity) × unit cost), ordered/partial only",Authorized records only,Same source and filters,FIXTURE
+bakery-quantity,Cross-domain,Unexplained loaf variance,loaves,actual yield − store balance − disposition quantities − approved resolution,Authorized records only,Same source and filters,FIXTURE
+bakery-cash,Cross-domain,Unexplained remittance variance,NGN,agent sold × unit price − remittance − approved resolution,Authorized records only,Same source and filters,FIXTURE

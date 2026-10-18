@@ -1,0 +1,9 @@
+ENTITY,KEY_FIELDS,RELATIONSHIP,ZERO_DISCLOSURE
+BusinessNumber,"id, company_id, site_id, provider, display_number, state",1:N Conversation,Number and existence require assignment
+Conversation,"id, business_number_id, customer_id?, queue_id, assignee_id?, priority, status, unread",N:1 Customer; 1:N Message,Filter before counts/search
+Message,"id, conversation_id, provider_message_id, direction, channel, state, body, attachment_id?",N:1 Conversation,Body and delivery metadata require conversation scope
+Queue,"id, company_id, site_id, name, after_hours_policy",1:N Conversation,Queue absent without assignment
+CommunicationEvent,"id, authoritative_type, related_record, idempotency_key, occurred_at",1:N AutomationAttempt,Payload projected through record permission
+TemplateVersion,"id, company_id, channel, purpose, version, status",N:1 Company,Drafts and variables restricted
+LetterheadVersion,"id, company_id, document_type, version, status, approved_asset_ids",N:1 Company,Known facts only
+Consent,"customer_id, channel, purpose, state, recorded_at",N:1 Customer,Customer scope required

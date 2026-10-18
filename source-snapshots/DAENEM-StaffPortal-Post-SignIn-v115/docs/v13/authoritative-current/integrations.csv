@@ -1,0 +1,36 @@
+INTEGRATION,DIRECTION,SITE_STATE,SERVER_AUTHORITY,CONTROLS,PRODUCTION_STATUS
+Production identity/MFA,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Microsoft federation,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Google federation,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+WhatsApp Business,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Email,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+SMS future,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Weather,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+World/industry news,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+AI drafting,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+AI authorized search,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Kuda Business,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Providus Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Wema Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Sterling Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Access Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+GTBank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+First Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Zenith Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+UBA,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Fidelity Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+FCMB,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Keystone Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Union Bank,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Mono,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Okra,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+OnePipe,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Stitch,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Paystack,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Flutterwave,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Monnify,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Squad,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Interswitch,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Cloudflare D1,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Cloudflare R2,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION
+Cloudflare Workers,Provider-specific,DEMO|UNAVAILABLE|CONTRACT_ONLY,Required,Secrets|signature|replay|idempotency|rate limit|audit|truth state,BLOCKED_PRODUCTION

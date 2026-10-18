@@ -1,0 +1,4273 @@
+{
+  "schemaVersion": "V13_BROWSER_MEASUREMENTS_1",
+  "siteProjectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "siteTitle": "DAENEM STAFF PORTAL — PREMIUM EXPERIENCE LAB",
+  "sourceCommitAtMeasurement": "WORKTREE_PRE_COMMIT",
+  "source": "Managed Sites preview in Chromium; values read from the rendered Staff Portal iframe document",
+  "requestedViewports": [
+    "390×844",
+    "768×1024",
+    "1024×1366",
+    "1672×941",
+    "1920×1080",
+    "2560×1440",
+    "3840×2160"
+  ],
+  "compositions": [
+    "horizon",
+    "editorial",
+    "nightfall",
+    "atrium",
+    "vertical",
+    "panorama",
+    "duet",
+    "command",
+    "gallery",
+    "focus"
+  ],
+  "themeViewportMeasurements": [
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:16.999Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:17.219Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 435,
+        "scrollHeight": 688,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:17.502Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:17.832Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:18.069Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 1787.609375,
+          "right": 2457.609375,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:18.337Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 2750,
+          "right": 3420,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:18.624Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "editorial",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:19.733Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "editorial",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:19.961Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 24,
+          "right": 404,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 378,
+        "scrollHeight": 688,
+        "scrollWidth": 378,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "editorial",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:20.192Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 53.5,
+          "right": 563.5,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "editorial",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:20.443Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 61.4375,
+          "right": 571.4375,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "editorial",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:20.687Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 102.390625,
+          "right": 772.390625,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "editorial",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:20.891Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 420,
+          "right": 1090,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "editorial",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:21.248Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "nightfall",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:22.418Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "nightfall",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:22.637Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 24,
+          "right": 414,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 388,
+        "scrollHeight": 688,
+        "scrollWidth": 388,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "nightfall",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:22.855Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 53.5,
+          "right": 563.5,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "nightfall",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:23.169Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 61.4375,
+          "right": 571.4375,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "nightfall",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:23.389Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 102.390625,
+          "right": 772.390625,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "nightfall",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:23.640Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 420,
+          "right": 1090,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "nightfall",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:23.872Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 565.296875,
+          "left": 10,
+          "right": 380,
+          "top": 95.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "atrium",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:24.951Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 710.9375,
+          "left": 84,
+          "right": 684,
+          "top": 132.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "atrium",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:25.180Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 435,
+        "scrollHeight": 688,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "atrium",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:25.387Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 515.96875,
+          "right": 981.453125,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 463,
+        "scrollHeight": 688,
+        "scrollWidth": 463,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "atrium",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:25.742Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 617.03125,
+          "right": 1127.03125,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "atrium",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:25.981Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 825.515625,
+          "right": 1495.515625,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "atrium",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:26.181Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 1529.984375,
+          "right": 2199.984375,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "atrium",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:26.938Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 565.296875,
+          "left": 10,
+          "right": 380,
+          "top": 95.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "vertical",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:32.882Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 710.9375,
+          "left": 84,
+          "right": 684,
+          "top": 132.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "vertical",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:33.096Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 435,
+        "scrollHeight": 688,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "vertical",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:33.393Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 499.171875,
+          "right": 1009.171875,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "vertical",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:33.749Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 648.84375,
+          "right": 1158.84375,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "vertical",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:33.993Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 825.515625,
+          "right": 1495.515625,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "vertical",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:34.243Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 1529.984375,
+          "right": 2199.984375,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "vertical",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:34.520Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "panorama",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:35.602Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "panorama",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:35.840Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1043.34375,
+          "left": 24,
+          "right": 414,
+          "top": 352.875
+        },
+        "clientHeight": 688,
+        "clientWidth": 388,
+        "scrollHeight": 688,
+        "scrollWidth": 388,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "panorama",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:36.099Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 897,
+          "left": 53.5,
+          "right": 563.5,
+          "top": 301.71875
+        },
+        "clientHeight": 593,
+        "clientWidth": 498,
+        "scrollHeight": 688,
+        "scrollWidth": 498,
+        "scrollable": true
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "panorama",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:36.416Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1013.9375,
+          "left": 61.4375,
+          "right": 571.4375,
+          "top": 323.46875
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "panorama",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:36.712Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1202.34375,
+          "left": 102.390625,
+          "right": 772.390625,
+          "top": 426.78125
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "panorama",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:37.020Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1255.796875,
+          "left": 420,
+          "right": 1090,
+          "top": 451.875
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "panorama",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:37.381Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "duet",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:38.469Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "duet",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:38.697Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 582.828125,
+          "right": 1000,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 415,
+        "scrollHeight": 688,
+        "scrollWidth": 415,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "duet",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:38.895Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "duet",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:39.164Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "duet",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:39.410Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 1787.59375,
+          "right": 2457.59375,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "duet",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:39.691Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 2750,
+          "right": 3420,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "duet",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:40.008Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "command",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:41.066Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "command",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:41.276Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 610,
+          "right": 1000,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 388,
+        "scrollHeight": 688,
+        "scrollWidth": 388,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "command",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:41.484Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "command",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:41.829Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "command",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:42.035Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 1787.609375,
+          "right": 2457.609375,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "command",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:42.284Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 2750,
+          "right": 3420,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "command",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:42.626Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "gallery",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:43.690Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "gallery",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:43.944Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 24,
+          "right": 414,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 388,
+        "scrollHeight": 688,
+        "scrollWidth": 388,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "gallery",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:44.180Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 53.5,
+          "right": 563.5,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "gallery",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:44.495Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 61.4375,
+          "right": 571.4375,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "gallery",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:44.749Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 102.390625,
+          "right": 772.390625,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "gallery",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:45.006Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 420,
+          "right": 1090,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "gallery",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:45.379Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "focus",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:46.470Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 844,
+          "left": 0,
+          "right": 390,
+          "top": 0
+        },
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "focus",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:46.697Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1024,
+          "left": 0,
+          "right": 768,
+          "top": 0
+        },
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 24,
+          "right": 384,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 358,
+        "scrollHeight": 688,
+        "scrollWidth": 358,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "focus",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:46.953Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1366,
+          "left": 0,
+          "right": 1024,
+          "top": 0
+        },
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 53.5,
+          "right": 536.640625,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 481,
+        "scrollHeight": 688,
+        "scrollWidth": 481,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "focus",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:47.322Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 941,
+          "left": 0,
+          "right": 1672,
+          "top": 0
+        },
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 61.4375,
+          "right": 571.4375,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "focus",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:47.553Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1080,
+          "left": 0,
+          "right": 1920,
+          "top": 0
+        },
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 102.390625,
+          "right": 772.390625,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "focus",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:47.841Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 1440,
+          "left": 0,
+          "right": 2560,
+          "top": 0
+        },
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 420,
+          "right": 1090,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "focus",
+      "horizontalOverflow": false,
+      "kind": "theme-viewport",
+      "measuredAt": "2026-09-12T04:36:48.060Z",
+      "pass": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "bounds": {
+          "bottom": 2160,
+          "left": 0,
+          "right": 3840,
+          "top": 0
+        },
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    }
+  ],
+  "authenticationStateMeasurements": [
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 614.296875,
+          "left": 10,
+          "right": 380,
+          "top": 144.703125
+        },
+        "clientHeight": 468,
+        "clientWidth": 368,
+        "scrollHeight": 468,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:29.979Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Create Account",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 744,
+          "left": 10,
+          "right": 380,
+          "top": 54
+        },
+        "clientHeight": 688,
+        "clientWidth": 358,
+        "scrollHeight": 1332,
+        "scrollWidth": 358,
+        "scrollable": true
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:33.485Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue to verification",
+      "primaryCtaVisible": false,
+      "root": {
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Password Recovery",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 550.09375,
+          "left": 10,
+          "right": 380,
+          "top": 208.890625
+        },
+        "clientHeight": 339,
+        "clientWidth": 368,
+        "scrollHeight": 339,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:36.995Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue recovery",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "OTP / Verification",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 616.78125,
+          "left": 10,
+          "right": 380,
+          "top": 142.21875
+        },
+        "clientHeight": 473,
+        "clientWidth": 368,
+        "scrollHeight": 473,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:40.973Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Verify code",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Password Reset",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 645.84375,
+          "left": 10,
+          "right": 380,
+          "top": 113.15625
+        },
+        "clientHeight": 531,
+        "clientWidth": 368,
+        "scrollHeight": 531,
+        "scrollWidth": 368,
+        "scrollable": false
+      },
+      "clientHeight": 844,
+      "clientWidth": 390,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:45.285Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Save demo password",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 844,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "scrollWidth": 390
+      },
+      "scrollHeight": 844,
+      "scrollWidth": 390,
+      "verticalOverflow": false,
+      "viewport": "390×844"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 774.9375,
+          "left": 84,
+          "right": 684,
+          "top": 196.046875
+        },
+        "clientHeight": 577,
+        "clientWidth": 598,
+        "scrollHeight": 577,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:48.570Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Create Account",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 928,
+          "left": 84,
+          "right": 684,
+          "top": 58
+        },
+        "clientHeight": 868,
+        "clientWidth": 588,
+        "scrollHeight": 1292,
+        "scrollWidth": 588,
+        "scrollable": true
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:52.077Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue to verification",
+      "primaryCtaVisible": false,
+      "root": {
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Password Recovery",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 673.640625,
+          "left": 84,
+          "right": 684,
+          "top": 297.34375
+        },
+        "clientHeight": 374,
+        "clientWidth": 598,
+        "scrollHeight": 374,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:55.603Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue recovery",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "OTP / Verification",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 729.875,
+          "left": 84,
+          "right": 684,
+          "top": 241.109375
+        },
+        "clientHeight": 487,
+        "clientWidth": 598,
+        "scrollHeight": 487,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:32:59.465Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Verify code",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Password Reset",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 751.390625,
+          "left": 84,
+          "right": 684,
+          "top": 219.609375
+        },
+        "clientHeight": 530,
+        "clientWidth": 598,
+        "scrollHeight": 530,
+        "scrollWidth": 598,
+        "scrollable": false
+      },
+      "clientHeight": 1024,
+      "clientWidth": 768,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:03.672Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Save demo password",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1024,
+        "clientWidth": 768,
+        "scrollHeight": 1024,
+        "scrollWidth": 768
+      },
+      "scrollHeight": 1024,
+      "scrollWidth": 768,
+      "verticalOverflow": false,
+      "viewport": "768×1024"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1044.234375,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 353.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 435,
+        "scrollHeight": 688,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:06.965Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Create Account",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1264.8125,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 133.1875
+        },
+        "clientHeight": 1130,
+        "clientWidth": 435,
+        "scrollHeight": 1130,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:10.475Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue to verification",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Password Recovery",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 929.1875,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 468.8125
+        },
+        "clientHeight": 458,
+        "clientWidth": 435,
+        "scrollHeight": 458,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:13.967Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue recovery",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "OTP / Verification",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 994.515625,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 403.484375
+        },
+        "clientHeight": 589,
+        "clientWidth": 435,
+        "scrollHeight": 589,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:17.806Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Verify code",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Password Reset",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1009.671875,
+          "left": 562.59375,
+          "right": 1000,
+          "top": 388.3125
+        },
+        "clientHeight": 619,
+        "clientWidth": 435,
+        "scrollHeight": 619,
+        "scrollWidth": 435,
+        "scrollable": false
+      },
+      "clientHeight": 1366,
+      "clientWidth": 1024,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:22.052Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Save demo password",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1366,
+        "clientWidth": 1024,
+        "scrollHeight": 1366,
+        "scrollWidth": 1024
+      },
+      "scrollHeight": 1366,
+      "scrollWidth": 1024,
+      "verticalOverflow": false,
+      "viewport": "1024×1366"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 831.734375,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 141.265625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:25.403Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Create Account",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 899,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 76
+        },
+        "clientHeight": 821,
+        "clientWidth": 498,
+        "scrollHeight": 1091,
+        "scrollWidth": 498,
+        "scrollable": true
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:28.974Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue to verification",
+      "primaryCtaVisible": false,
+      "root": {
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Password Recovery",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 716.6875,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 256.3125
+        },
+        "clientHeight": 458,
+        "clientWidth": 508,
+        "scrollHeight": 458,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:32.514Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue recovery",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "OTP / Verification",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 771.171875,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 201.828125
+        },
+        "clientHeight": 567,
+        "clientWidth": 508,
+        "scrollHeight": 567,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:36.402Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Verify code",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Password Reset",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 797.171875,
+          "left": 1108.5,
+          "right": 1618.5,
+          "top": 175.8125
+        },
+        "clientHeight": 619,
+        "clientWidth": 508,
+        "scrollHeight": 619,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 941,
+      "clientWidth": 1672,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:40.707Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Save demo password",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 941,
+        "clientWidth": 1672,
+        "scrollHeight": 941,
+        "scrollWidth": 1672
+      },
+      "scrollHeight": 941,
+      "scrollWidth": 1672,
+      "verticalOverflow": false,
+      "viewport": "1672×941"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 901.234375,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 210.765625
+        },
+        "clientHeight": 688,
+        "clientWidth": 508,
+        "scrollHeight": 688,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:44.009Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Create Account",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1038,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 76
+        },
+        "clientHeight": 960,
+        "clientWidth": 498,
+        "scrollHeight": 1091,
+        "scrollWidth": 498,
+        "scrollable": true
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:47.555Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue to verification",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Password Recovery",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 786.1875,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 325.8125
+        },
+        "clientHeight": 458,
+        "clientWidth": 508,
+        "scrollHeight": 458,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:51.074Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue recovery",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "OTP / Verification",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 840.671875,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 271.328125
+        },
+        "clientHeight": 567,
+        "clientWidth": 508,
+        "scrollHeight": 567,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:54.959Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Verify code",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Password Reset",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 866.671875,
+          "left": 1348.5625,
+          "right": 1858.5625,
+          "top": 245.3125
+        },
+        "clientHeight": 619,
+        "clientWidth": 508,
+        "scrollHeight": 619,
+        "scrollWidth": 508,
+        "scrollable": false
+      },
+      "clientHeight": 1080,
+      "clientWidth": 1920,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:33:59.222Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Save demo password",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1080,
+        "clientWidth": 1920,
+        "scrollHeight": 1080,
+        "scrollWidth": 1920
+      },
+      "scrollHeight": 1080,
+      "scrollWidth": 1920,
+      "verticalOverflow": false,
+      "viewport": "1920×1080"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1133.78125,
+          "left": 1787.609375,
+          "right": 2457.609375,
+          "top": 358.21875
+        },
+        "clientHeight": 774,
+        "clientWidth": 668,
+        "scrollHeight": 774,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:02.541Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Create Account",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1367.234375,
+          "left": 1787.609375,
+          "right": 2457.609375,
+          "top": 124.765625
+        },
+        "clientHeight": 1240,
+        "clientWidth": 668,
+        "scrollHeight": 1240,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:06.051Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue to verification",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Password Recovery",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1011,
+          "left": 1787.609375,
+          "right": 2457.609375,
+          "top": 480.984375
+        },
+        "clientHeight": 528,
+        "clientWidth": 668,
+        "scrollHeight": 528,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:09.603Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue recovery",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "OTP / Verification",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1068.109375,
+          "left": 1787.609375,
+          "right": 2457.609375,
+          "top": 423.875
+        },
+        "clientHeight": 642,
+        "clientWidth": 668,
+        "scrollHeight": 642,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:13.513Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Verify code",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Password Reset",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1100.3125,
+          "left": 1787.609375,
+          "right": 2457.609375,
+          "top": 391.6875
+        },
+        "clientHeight": 707,
+        "clientWidth": 668,
+        "scrollHeight": 707,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 1440,
+      "clientWidth": 2560,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:17.880Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Save demo password",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 1440,
+        "clientWidth": 2560,
+        "scrollHeight": 1440,
+        "scrollWidth": 2560
+      },
+      "scrollHeight": 1440,
+      "scrollWidth": 2560,
+      "verticalOverflow": false,
+      "viewport": "2560×1440"
+    },
+    {
+      "authState": "Sign In",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1507.953125,
+          "left": 2750,
+          "right": 3420,
+          "top": 704.03125
+        },
+        "clientHeight": 802,
+        "clientWidth": 668,
+        "scrollHeight": 802,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:21.251Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Sign in",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Create Account",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1782.46875,
+          "left": 2750,
+          "right": 3420,
+          "top": 429.515625
+        },
+        "clientHeight": 1351,
+        "clientWidth": 668,
+        "scrollHeight": 1351,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:24.763Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue to verification",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Password Recovery",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1383.75,
+          "left": 2750,
+          "right": 3420,
+          "top": 828.25
+        },
+        "clientHeight": 554,
+        "clientWidth": 668,
+        "scrollHeight": 554,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:28.279Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Continue recovery",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "OTP / Verification",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1480.890625,
+          "left": 2750,
+          "right": 3420,
+          "top": 731.109375
+        },
+        "clientHeight": 748,
+        "clientWidth": 668,
+        "scrollHeight": 748,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:32.192Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Verify code",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    },
+    {
+      "authState": "Password Reset",
+      "authVisible": true,
+      "card": {
+        "bounds": {
+          "bottom": 1477.203125,
+          "left": 2750,
+          "right": 3420,
+          "top": 734.78125
+        },
+        "clientHeight": 740,
+        "clientWidth": 668,
+        "scrollHeight": 740,
+        "scrollWidth": 668,
+        "scrollable": false
+      },
+      "clientHeight": 2160,
+      "clientWidth": 3840,
+      "composition": "horizon",
+      "horizontalOverflow": false,
+      "kind": "auth-state",
+      "measuredAt": "2026-09-12T04:34:36.550Z",
+      "pass": true,
+      "primaryCtaReachable": true,
+      "primaryCtaText": "Save demo password",
+      "primaryCtaVisible": true,
+      "root": {
+        "clientHeight": 2160,
+        "clientWidth": 3840,
+        "scrollHeight": 2160,
+        "scrollWidth": 3840
+      },
+      "scrollHeight": 2160,
+      "scrollWidth": 3840,
+      "verticalOverflow": false,
+      "viewport": "3840×2160"
+    }
+  ],
+  "summary": {
+    "themeViewportTotal": 70,
+    "themeViewportPass": 70,
+    "authenticationStateTotal": 35,
+    "authenticationStatePass": 35
+  }
+}

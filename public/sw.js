@@ -1,4 +1,4 @@
-const CACHE = 'daenem-workforce-shell-v8-offline-foundation-v1';
+const CACHE = 'daenem-workforce-shell-v16-postauth-live-integrations';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 function isCacheableShellAsset(request, url) {
@@ -76,3 +76,4 @@ self.addEventListener('sync', (event) => {
     Promise.all(clients.map((client) => client.postMessage({ type: 'daenem-offline-sync' })))
   ));
 });
+

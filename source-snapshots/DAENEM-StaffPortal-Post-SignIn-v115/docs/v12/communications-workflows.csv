@@ -1,0 +1,5 @@
+WORKFLOW,STATE_SEQUENCE,EXCEPTIONS,AUTHORITY
+Inbound WhatsApp,Provider verification → replay guard → number resolution → company/site scope → customer match → queue → assignment → notification → audit,Unknown customer/number; duplicate; outage; attachment failure; opt-out; after-hours,Production server adapter
+Manual reply,Generate → Preview → Edit → Approve → Send → queued → sent → delivered/read or failed,Expired session; template required; failure retry; reassignment; reopen,Assigned author + independent approval/send grants
+Automation,Authoritative ERP event → idempotency → consent/opt-out → business hours → approved template → provider queue → delivery audit,Duplicate event; revoked consent; unavailable provider,Server event consumer
+AI draft,Generate → Preview → Edit → Approve → Send,AI unavailable; unsafe content; unapproved facts,Human approval required

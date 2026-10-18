@@ -1,0 +1,7 @@
+"METRIC","FORMULA / SOURCE","UNIT","SCOPE","CURRENT STATUS","LIMIT"
+"record-count","Count authorized source records","Records","Current assignments","Implemented in home and report builder","Not all legacy domain charts unified"
+"needs-attention","attentionRecords(records,session)","Records","Current assignments","Common home and Action Center source","End-to-end notification engine absent"
+"active-records","Authorized records excluding completed/closed/archived/reconciled/paid/resolved states","Records","Current assignments","Implemented in home","Lifecycle semantics still require domain mapping"
+"po-commitment","Outstanding quantity × unit cost for Ordered / Partially Received PO only","NGN fixture","Authorized PO records","Source test verifies fixture total 398000","Approval creates zero; actual finance commitment integration absent"
+"bakery-cash","Agent sold × unit price − remittance − reasoned resolution","NGN fixture","Bakery accountability","Source test verifies unexplained fixture variance 16000","Immutable remittance/adjustment event store absent"
+"bakery-quantity","Produced − store − accounted custody − reasoned resolution","Loaves","Bakery accountability","Calculated; closure guard present","Cross-record physical stock ledger not implemented"

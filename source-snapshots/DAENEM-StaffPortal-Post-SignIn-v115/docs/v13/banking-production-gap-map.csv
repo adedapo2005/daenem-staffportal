@@ -1,0 +1,10 @@
+GAP,STATUS,NEXT_ACTION
+Provider entitlement,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+Account connectivity,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+Webhook endpoints,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+Durable balances/statements,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+Real transfers,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+Real payroll,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+Durable reconciliation,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+AML/KYC/fraud operations,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"
+MFA/device/network controls,BLOCKED_PRODUCTION,"Repository/backend discovery, provider confirmation and approved implementation"

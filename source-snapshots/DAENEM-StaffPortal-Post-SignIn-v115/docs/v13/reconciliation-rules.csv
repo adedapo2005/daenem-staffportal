@@ -1,0 +1,4 @@
+RULE,INVARIANT,FAILURE
+RECON-SOURCE,Bank/provider/ledger sources retain independent identity,Exception
+RECON-FINAL,Completed only when variance is zero or approved resolution is evidenced,Investigation
+RECON-REVERSAL,Reversal never erases original transaction,Append reversal

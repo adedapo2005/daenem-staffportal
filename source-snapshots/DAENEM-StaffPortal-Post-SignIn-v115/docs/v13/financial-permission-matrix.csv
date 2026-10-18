@@ -1,0 +1,23 @@
+PERMISSION,SCOPE,SEPARATE_ACTION,AUDIT
+View Balance,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+View Transactions,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+View Statements,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Create Transfers,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Approve Transfers,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Reject Transfers,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Execute Transfers,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Manage Beneficiaries,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Manage Bank Accounts,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+View Payroll,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Create Payroll,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Approve Payroll,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Execute Payroll,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Reconcile Payroll,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+View Treasury,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Approve Payments,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Manage Cash Position,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+View Reports,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Create Reports,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Export Reports,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+View Audit,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required
+Download Audit,Group|Company|Bank Account|Branch|Department|Business Unit|Cost Centre|Payroll Batch|Transaction|Report|Field,YES,Required

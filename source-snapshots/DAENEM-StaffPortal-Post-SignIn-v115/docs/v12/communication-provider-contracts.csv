@@ -1,0 +1,4 @@
+ADAPTER,INBOUND,OUTBOUND,REQUIRED_CONTROLS,SITE_STATE
+WhatsApp Business,Verified webhook,Approved template/session reply,Server secrets; signature; replay guard; provider ID; retry; delivery callbacks,UNAVAILABLE / simulated
+Email,Reply and delivery webhooks where supported,Approved transactional/campaign send,Server credentials; idempotency; unsubscribe; bounce handling,UNAVAILABLE / simulated
+SMS future,Provider-specific,Approved template,Consent; opt-out; signature; audit,FUTURE / unavailable

@@ -1,0 +1,4164 @@
+{
+  "testedAt": "2026-09-11T22:10:50.576Z",
+  "scope": "Deterministic fictional-data source contracts; not a production authorization or complete browser certification.",
+  "passed": 1039,
+  "total": 1039,
+  "results": [
+    {
+      "name": "Owner / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-role / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-company / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "No permission / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired override / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / self-service / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / home / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / cockpit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / workspace / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / profile / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / people / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / hr-records / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / attendance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / leave / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / performance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / hr-cases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / lifecycle / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / forms / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / tasks / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / payroll / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / payslips / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / payroll-batches / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / applications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / interviews / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / hiring / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / printing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / print-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / print-materials / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / bakery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / bakery-recipes / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / bakery-sales / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / autos / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / auto-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / auto-history / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / logistics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / fleet / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / trip-costs / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / properties / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / leases / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / property-leads / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / finance / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / receivables / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / finance-posting / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / budgets / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / expenses / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / expense-approvals / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / spend / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / cost-admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / inventory / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / projects / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / facilities / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / social / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / social-controls / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / social-accounts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / social-sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / marketing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / inbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / website / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / communications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / broadcasts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / encouragement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / notifications / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / help / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / security / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / access / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / admin / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / recovery / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / support / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / resources / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / sync / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / audit / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / toolbox / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / integrations / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / hub / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / theme / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / navigation / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / layout / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / signin-design / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / procurement / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / purchase-orders / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / goods-receipts / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / stock-transfers / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / stock-borrowing / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / bakery-accountability / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / technology-services / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / vacancies / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / staff-messaging / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / productivity / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / work-location / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / salary-adjustments / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / data-import / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / dashboard-personalization / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / files / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / saved-views / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / field-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / form-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / workflow-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / report-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / widget-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / theme-builder / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / business-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / notification-rules / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / session-analytics / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override / reports / authorized projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Provisional surface contains no module or record metadata",
+      "status": "PASS"
+    },
+    {
+      "name": "No-permission surface contains no module or record metadata",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee export is not inferred from Edit access",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced override loses all explicit printing exports",
+      "status": "PASS"
+    },
+    {
+      "name": "Secret fields cannot appear in projected results",
+      "status": "PASS"
+    },
+    {
+      "name": "Explicit hidden field cannot appear in projected results",
+      "status": "PASS"
+    },
+    {
+      "name": "Profile records are restricted to the current identity",
+      "status": "PASS"
+    },
+    {
+      "name": "Company scopes cannot leak through global search",
+      "status": "PASS"
+    },
+    {
+      "name": "Expired assignments grant no records or action",
+      "status": "PASS"
+    },
+    {
+      "name": "Department-scoped assignment requires matching record scope",
+      "status": "PASS"
+    },
+    {
+      "name": "Attention counts use a deduplicated permitted source",
+      "status": "PASS"
+    },
+    {
+      "name": "Password rules reject weak or mismatched passwords",
+      "status": "PASS"
+    },
+    {
+      "name": "Immediate password reuse is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Email verification expires",
+      "status": "PASS"
+    },
+    {
+      "name": "Email verification locks after three failed attempts",
+      "status": "PASS"
+    },
+    {
+      "name": "Password reset authorization is short-lived",
+      "status": "PASS"
+    },
+    {
+      "name": "Present requires a valid in and out event",
+      "status": "PASS"
+    },
+    {
+      "name": "Approved PO is not a financial commitment",
+      "status": "PASS"
+    },
+    {
+      "name": "Ordered and partial PO commitments are source-derived",
+      "status": "PASS"
+    },
+    {
+      "name": "Cancelled PO releases commitment",
+      "status": "PASS"
+    },
+    {
+      "name": "A non-PO record cannot inflate the commitment metric",
+      "status": "PASS"
+    },
+    {
+      "name": "Fixture bakery balances preserve unexplained cash variance",
+      "status": "PASS"
+    },
+    {
+      "name": "Bakery report metric matches the underlying ledger",
+      "status": "PASS"
+    },
+    {
+      "name": "Unbalanced journal cannot be posted",
+      "status": "PASS"
+    },
+    {
+      "name": "Closed-period journal cannot be posted",
+      "status": "PASS"
+    },
+    {
+      "name": "Accessible theme can validate",
+      "status": "PASS"
+    },
+    {
+      "name": "Low-contrast theme cannot validate",
+      "status": "PASS"
+    },
+    {
+      "name": "Unknown source cannot validate",
+      "status": "PASS"
+    },
+    {
+      "name": "Arbitrary scripts cannot validate",
+      "status": "PASS"
+    },
+    {
+      "name": "CSV formula prefixes are neutralized",
+      "status": "PASS"
+    },
+    {
+      "name": "Ten structurally identified sign-in presets are registered",
+      "status": "PASS"
+    },
+    {
+      "name": "Global Horizon / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "The Architecture Edit / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "Night Operations / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "Executive Atrium / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "Metropolitan / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "Connected Coast / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "A Shared Perspective / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "Lagos After Hours / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "New Perspectives / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "First Light / native 4K original",
+      "status": "PASS"
+    },
+    {
+      "name": "Consolidated V3 Sign-In Studio is the only sign-in composer",
+      "status": "PASS"
+    },
+    {
+      "name": "Signup / claim identity field contract is complete",
+      "status": "PASS"
+    },
+    {
+      "name": "Privileged projection state purge is wired to session changes",
+      "status": "PASS"
+    },
+    {
+      "name": "Ten post-sign-in experience presets are named and compositional",
+      "status": "PASS"
+    },
+    {
+      "name": "Purpose-built operational workspaces are registered",
+      "status": "PASS"
+    },
+    {
+      "name": "Staff messaging and governed productivity surfaces exist",
+      "status": "PASS"
+    },
+    {
+      "name": "Builder output has local runtime consumers",
+      "status": "PASS"
+    },
+    {
+      "name": "Runtime image candidates exclude raw originals",
+      "status": "PASS"
+    }
+  ]
+}

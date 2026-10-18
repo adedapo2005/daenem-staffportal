@@ -1,0 +1,251 @@
+{
+  "scope": "Bounded local-fixture regression tests; not whole-platform authorization certification",
+  "total": 61,
+  "passed": 61,
+  "results": [
+    {
+      "name": "Role label without assignments grants nothing",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot edit another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot approve another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot manage another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot export another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPANY View + OWN Manage cannot close another owner record",
+      "status": "PASS"
+    },
+    {
+      "name": "Hidden monetary value is removed from source projection",
+      "status": "PASS"
+    },
+    {
+      "name": "Hidden evidence has neither names nor bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "Secret visibility override cannot reveal secrets",
+      "status": "PASS"
+    },
+    {
+      "name": "Receipt acceptance creates no stock or PO movement",
+      "status": "PASS"
+    },
+    {
+      "name": "Posting updates PO and stock together exactly once",
+      "status": "PASS"
+    },
+    {
+      "name": "Repeated posted edit does not duplicate effects",
+      "status": "PASS"
+    },
+    {
+      "name": "Stale receipt rejects without partial write",
+      "status": "PASS"
+    },
+    {
+      "name": "Posted receipt cannot be reopened",
+      "status": "PASS"
+    },
+    {
+      "name": "Posted quantity immutable",
+      "status": "PASS"
+    },
+    {
+      "name": "Unlinked receipt rejected atomically",
+      "status": "PASS"
+    },
+    {
+      "name": "Overreceipt rejected atomically",
+      "status": "PASS"
+    },
+    {
+      "name": "Evidence required for acceptance",
+      "status": "PASS"
+    },
+    {
+      "name": "Dispatch removes source stock once",
+      "status": "PASS"
+    },
+    {
+      "name": "Cannot reset dispatched transfer to redispatch",
+      "status": "PASS"
+    },
+    {
+      "name": "Transfer conserves stock across locations",
+      "status": "PASS"
+    },
+    {
+      "name": "Published report target authorization before metadata",
+      "status": "PASS"
+    },
+    {
+      "name": "Individual config requires assigned identity",
+      "status": "PASS"
+    },
+    {
+      "name": "Only latest configuration revision is active",
+      "status": "PASS"
+    },
+    {
+      "name": "Configuration rollback selects restored revision",
+      "status": "PASS"
+    },
+    {
+      "name": "Published evidence guard executes",
+      "status": "PASS"
+    },
+    {
+      "name": "Payroll approval cannot skip readiness",
+      "status": "PASS"
+    },
+    {
+      "name": "Canonical edit preserves hidden monetary evidence and history data",
+      "status": "PASS"
+    },
+    {
+      "name": "Wrong purchase-order item rejected before movement",
+      "status": "PASS"
+    },
+    {
+      "name": "Wildcard specialized restriction enforced",
+      "status": "PASS"
+    },
+    {
+      "name": "Bakery resolution cannot be prepared and approved by the same action",
+      "status": "PASS"
+    },
+    {
+      "name": "Non-Open accounting period cannot post",
+      "status": "PASS"
+    },
+    {
+      "name": "Approved payroll financial changes require separate adjustment",
+      "status": "PASS"
+    },
+    {
+      "name": "Approved payroll evidence cannot be replaced",
+      "status": "PASS"
+    },
+    {
+      "name": "Purchase order direct receipt total update blocked",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin cannot inspect denied finance audit target",
+      "status": "PASS"
+    },
+    {
+      "name": "CSV quoted commas, escaped quotes and embedded newlines parse",
+      "status": "PASS"
+    },
+    {
+      "name": "CSV rejects open quotes and duplicate headers",
+      "status": "PASS"
+    },
+    {
+      "name": "Import empty title rejected at commit boundary",
+      "status": "PASS"
+    },
+    {
+      "name": "Import negative inventory rejected at commit boundary",
+      "status": "PASS"
+    },
+    {
+      "name": "No-permission import is denied",
+      "status": "PASS"
+    },
+    {
+      "name": "Required acknowledgement requires Yes",
+      "status": "PASS"
+    },
+    {
+      "name": "Date range requires two dates in order",
+      "status": "PASS"
+    },
+    {
+      "name": "Blank typed signature is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Fakepath upload is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Procurement handoff produces a linked order exactly once",
+      "status": "PASS"
+    },
+    {
+      "name": "Handoff rejects unavailable target and preserves input",
+      "status": "PASS"
+    },
+    {
+      "name": "Finalized business record cannot rewrite evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "Workflow board cannot skip controlled stages",
+      "status": "PASS"
+    },
+    {
+      "name": "Legal hold prevents evidence removal even with delete permission",
+      "status": "PASS"
+    },
+    {
+      "name": "Retention prevents replacement before expiry",
+      "status": "PASS"
+    },
+    {
+      "name": "Hidden evidence also hides governance metadata",
+      "status": "PASS"
+    },
+    {
+      "name": "New records cannot write protected fields",
+      "status": "PASS"
+    },
+    {
+      "name": "XLSX and CSV share strict header and row validation",
+      "status": "PASS"
+    },
+    {
+      "name": "Soft-deleted evidence cannot satisfy configured guards",
+      "status": "PASS"
+    },
+    {
+      "name": "Soft-deleted bytes are hidden and safely retained during canonical edits",
+      "status": "PASS"
+    },
+    {
+      "name": "Finalized evidence cannot be soft deleted",
+      "status": "PASS"
+    },
+    {
+      "name": "Classification and restoration enforce explicit permissions",
+      "status": "PASS"
+    },
+    {
+      "name": "Repeat groups require complete bounded rows",
+      "status": "PASS"
+    },
+    {
+      "name": "Canonical no-op preserves absent attachment bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "Repeat groups reject malformed rows and missing configured columns",
+      "status": "PASS"
+    }
+  ]
+}

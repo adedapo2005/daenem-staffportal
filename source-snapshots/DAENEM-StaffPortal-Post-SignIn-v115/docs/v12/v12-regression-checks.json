@@ -1,0 +1,281 @@
+{
+  "testedAt": "2026-09-12T05:17:58.470Z",
+  "scope": "V12 source contracts, bounded local fixtures, synchronized browser measurement and evidence inventory. Production provider execution excluded.",
+  "total": 68,
+  "passed": 68,
+  "failed": 0,
+  "results": [
+    {
+      "name": "V12 registers every communications workspace",
+      "status": "PASS"
+    },
+    {
+      "name": "V12 registers every financial workspace",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner sees every V12 workspace",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager sees assigned communication workspaces",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager sees no banking or treasury workspace",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee sees no V12 privileged workspace",
+      "status": "PASS"
+    },
+    {
+      "name": "No-permission surface has zero modules and records",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin financial overrides disclose no financial module",
+      "status": "PASS"
+    },
+    {
+      "name": "Group Admin search discloses no financial category or record",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager communications exclude Bakery company context",
+      "status": "PASS"
+    },
+    {
+      "name": "Owner receives three scoped account fixtures",
+      "status": "PASS"
+    },
+    {
+      "name": "Bank-account assignment reveals only its assigned account",
+      "status": "PASS"
+    },
+    {
+      "name": "Unassigned bank-account value has no result or derived count",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: createTransfer",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: approveTransfer",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: rejectTransfer",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: executeTransfer",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: manageBeneficiaries",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: manageBankAccounts",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: createPayroll",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: approvePayroll",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: executePayroll",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: reconcilePayroll",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: approvePayments",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: manageCashPosition",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: createReports",
+      "status": "PASS"
+    },
+    {
+      "name": "Specialized financial permission exists: downloadAudit",
+      "status": "PASS"
+    },
+    {
+      "name": "Transfer create, approve and execute are separate owner grants",
+      "status": "PASS"
+    },
+    {
+      "name": "Financial override blocks specialized action",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager communication send and approval grants are explicit",
+      "status": "PASS"
+    },
+    {
+      "name": "Banking fixtures expose a truthful non-production provider state",
+      "status": "PASS"
+    },
+    {
+      "name": "Bank alert alone is blocked by an explicit invariant",
+      "status": "PASS"
+    },
+    {
+      "name": "Payroll submission is not employee payment finality",
+      "status": "PASS"
+    },
+    {
+      "name": "Communications send only from authoritative events or approved flow",
+      "status": "PASS"
+    },
+    {
+      "name": "AI customer communication retains human approval",
+      "status": "PASS"
+    },
+    {
+      "name": "Provider credentials are server-side production authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Ten sign-in presets are registered",
+      "status": "PASS"
+    },
+    {
+      "name": "Ten sign-in presets use ten distinct native images",
+      "status": "PASS"
+    },
+    {
+      "name": "Every sign-in native source is at least 4K",
+      "status": "PASS"
+    },
+    {
+      "name": "Every sign-in source and license is documented",
+      "status": "PASS"
+    },
+    {
+      "name": "Every native sign-in image exists outside the public runtime tree",
+      "status": "PASS"
+    },
+    {
+      "name": "Every theme has 640, 1280, 2560 and 3840 runtime derivatives",
+      "status": "PASS"
+    },
+    {
+      "name": "No UBA or third-party bank brand appears in sign-in contracts",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary sign-in clock list has exactly seven locations",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary clock includes DAENEM COMPLEX — IBADAN",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary clock includes Toronto",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary clock includes London",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary clock includes New York",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary clock includes Moscow",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary clock includes Tokyo",
+      "status": "PASS"
+    },
+    {
+      "name": "Primary clock includes Beijing",
+      "status": "PASS"
+    },
+    {
+      "name": "Pre-auth search catalog contains account help only",
+      "status": "PASS"
+    },
+    {
+      "name": "Pre-auth empty state states internal content is not searched",
+      "status": "PASS"
+    },
+    {
+      "name": "Clock renders face, markers, hour, minute and second hands",
+      "status": "PASS"
+    },
+    {
+      "name": "World time renders 12-hour time, full date, timezone and UTC offset",
+      "status": "PASS"
+    },
+    {
+      "name": "Weather is Fahrenheit and explicitly DEMO",
+      "status": "PASS"
+    },
+    {
+      "name": "Weather icon system supports all required animated states",
+      "status": "PASS"
+    },
+    {
+      "name": "Inspiration, motivation, status and news surfaces are distinct",
+      "status": "PASS"
+    },
+    {
+      "name": "Sign-in root locks both axes to the dynamic viewport",
+      "status": "PASS"
+    },
+    {
+      "name": "Reduced motion disables sign-in animation",
+      "status": "PASS"
+    },
+    {
+      "name": "No-scroll matrix has 70 measured cases",
+      "status": "PASS"
+    },
+    {
+      "name": "No-scroll matrix records 70 PASS results",
+      "status": "PASS"
+    },
+    {
+      "name": "Visual evidence contains 25 synchronized screenshots",
+      "status": "PASS"
+    },
+    {
+      "name": "Communications UI implements governed five-step send",
+      "status": "PASS"
+    },
+    {
+      "name": "Transfers UI separates create, approve, execute and reconcile",
+      "status": "PASS"
+    },
+    {
+      "name": "Design-lab operations make no network provider request",
+      "status": "PASS"
+    },
+    {
+      "name": "Payroll UI shows employee-level pending, success and failure states",
+      "status": "PASS"
+    },
+    {
+      "name": "Financial report view and export are independently evaluated",
+      "status": "PASS"
+    }
+  ]
+}

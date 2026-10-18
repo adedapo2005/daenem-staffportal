@@ -1,0 +1,4 @@
+ADAPTER,MODE,CONTROLS,SITE_STATE,PRODUCTION_STATUS
+WhatsApp Business,Official provider-backed business integration,Signature|replay|idempotency|server secret|delivery callbacks,SIMULATED,BLOCKED_PRODUCTION
+Email,Server provider,Idempotency|bounce|unsubscribe|audit,SIMULATED,BLOCKED_PRODUCTION
+SMS,Future adapter,Consent|opt-out|delivery callbacks,UNAVAILABLE_FUTURE,BLOCKED_PRODUCTION

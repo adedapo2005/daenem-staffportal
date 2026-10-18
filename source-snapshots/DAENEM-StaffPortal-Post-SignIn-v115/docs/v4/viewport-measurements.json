@@ -1,0 +1,2118 @@
+[
+  {
+    "screen": "signin",
+    "size": "390×844",
+    "headings": [
+      "Modern Business.Naturally Better.",
+      "Welcome back."
+    ],
+    "scrollWidth": 375,
+    "width": 375
+  },
+  {
+    "screen": "signin",
+    "size": "768×1024",
+    "headings": [
+      "Modern Business.Naturally Better.",
+      "Welcome back."
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "signin",
+    "size": "1024×1366",
+    "headings": [
+      "Modern Business.Naturally Better.",
+      "Welcome back."
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "signin",
+    "size": "1672×941",
+    "headings": [
+      "Modern Business.Naturally Better.",
+      "Welcome back."
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "signin",
+    "size": "1920×1080",
+    "headings": [
+      "Modern Business.Naturally Better.",
+      "Welcome back."
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "signin",
+    "size": "2560×1440",
+    "headings": [
+      "Modern Business.Naturally Better.",
+      "Welcome back."
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "signin",
+    "size": "3840×2160",
+    "headings": [
+      "Modern Business.Naturally Better.",
+      "Welcome back."
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "home",
+    "size": "390×844",
+    "headings": [
+      "Your group, in perspective."
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "home",
+    "size": "768×1024",
+    "headings": [
+      "Your group, in perspective."
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "home",
+    "size": "1024×1366",
+    "headings": [
+      "Your group, in perspective.",
+      "Welcome back,Theo.",
+      "Work in perspective"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "home",
+    "size": "1672×941",
+    "headings": [
+      "Your group, in perspective.",
+      "Welcome back,Theo.",
+      "Work in perspective"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "home",
+    "size": "1920×1080",
+    "headings": [
+      "Your group, in perspective.",
+      "Welcome back,Theo.",
+      "Work in perspective"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "home",
+    "size": "2560×1440",
+    "headings": [
+      "Your group, in perspective.",
+      "Welcome back,Theo.",
+      "Work in perspective"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "home",
+    "size": "3840×2160",
+    "headings": [
+      "Your group, in perspective.",
+      "Welcome back,Theo.",
+      "Work in perspective"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "cockpit",
+    "size": "390×844",
+    "headings": [
+      "Operational Cockpit",
+      "Welcome back,Theo.",
+      "Operational routes"
+    ],
+    "scrollWidth": 375,
+    "width": 375
+  },
+  {
+    "screen": "cockpit",
+    "size": "768×1024",
+    "headings": [
+      "Operational Cockpit",
+      "Welcome back,Theo.",
+      "Operational routes"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "cockpit",
+    "size": "1024×1366",
+    "headings": [
+      "Operational Cockpit",
+      "Welcome back,Theo.",
+      "Operational routes"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "cockpit",
+    "size": "1672×941",
+    "headings": [
+      "Operational Cockpit",
+      "Welcome back,Theo.",
+      "Operational routes"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "cockpit",
+    "size": "1920×1080",
+    "headings": [
+      "Operational Cockpit",
+      "Welcome back,Theo.",
+      "Operational routes"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "cockpit",
+    "size": "2560×1440",
+    "headings": [
+      "Operational Cockpit",
+      "Welcome back,Theo.",
+      "Operational routes"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "cockpit",
+    "size": "3840×2160",
+    "headings": [
+      "Operational Cockpit",
+      "Welcome back,Theo.",
+      "Operational routes"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "profile",
+    "size": "390×844",
+    "headings": [
+      "My Profile"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "profile",
+    "size": "768×1024",
+    "headings": [
+      "My Profile"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "profile",
+    "size": "1024×1366",
+    "headings": [
+      "My Profile",
+      "Theo Adegboye",
+      "Profile completeness"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "profile",
+    "size": "1672×941",
+    "headings": [
+      "My Profile",
+      "Theo Adegboye",
+      "Profile completeness"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "profile",
+    "size": "1920×1080",
+    "headings": [
+      "My Profile",
+      "Theo Adegboye",
+      "Profile completeness"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "profile",
+    "size": "2560×1440",
+    "headings": [
+      "My Profile",
+      "Theo Adegboye",
+      "Profile completeness"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "profile",
+    "size": "3840×2160",
+    "headings": [
+      "My Profile",
+      "Theo Adegboye",
+      "Profile completeness"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "attendance",
+    "size": "390×844",
+    "headings": [
+      "Attendance & Location"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "attendance",
+    "size": "768×1024",
+    "headings": [
+      "Attendance & Location",
+      "Start with presence.Finish with a complete record.",
+      "Attendance events"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "attendance",
+    "size": "1024×1366",
+    "headings": [
+      "Attendance & Location",
+      "Start with presence.Finish with a complete record.",
+      "Attendance events"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "attendance",
+    "size": "1672×941",
+    "headings": [
+      "Attendance & Location",
+      "Start with presence.Finish with a complete record.",
+      "Attendance events"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "attendance",
+    "size": "1920×1080",
+    "headings": [
+      "Attendance & Location",
+      "Start with presence.Finish with a complete record.",
+      "Attendance events"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "attendance",
+    "size": "2560×1440",
+    "headings": [
+      "Attendance & Location",
+      "Start with presence.Finish with a complete record.",
+      "Attendance events"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "attendance",
+    "size": "3840×2160",
+    "headings": [
+      "Attendance & Location",
+      "Start with presence.Finish with a complete record.",
+      "Attendance events"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "payroll",
+    "size": "390×844",
+    "headings": [
+      "Payroll Control"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "payroll",
+    "size": "768×1024",
+    "headings": [
+      "Payroll Control"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "payroll",
+    "size": "1024×1366",
+    "headings": [
+      "Payroll Control",
+      "Prepare with confidence.Release with control.",
+      "Readiness & approval"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "payroll",
+    "size": "1672×941",
+    "headings": [
+      "Payroll Control",
+      "Prepare with confidence.Release with control.",
+      "Readiness & approval"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "payroll",
+    "size": "1920×1080",
+    "headings": [
+      "Payroll Control",
+      "Prepare with confidence.Release with control.",
+      "Readiness & approval"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "payroll",
+    "size": "2560×1440",
+    "headings": [
+      "Payroll Control",
+      "Prepare with confidence.Release with control.",
+      "Readiness & approval"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "payroll",
+    "size": "3840×2160",
+    "headings": [
+      "Payroll Control",
+      "Prepare with confidence.Release with control.",
+      "Readiness & approval"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "applications",
+    "size": "390×844",
+    "headings": [
+      "Job Applications"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "applications",
+    "size": "768×1024",
+    "headings": [
+      "Job Applications"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "applications",
+    "size": "1024×1366",
+    "headings": [
+      "Job Applications"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "applications",
+    "size": "1672×941",
+    "headings": [
+      "Job Applications",
+      "A considered path to the right hire.",
+      "Applied"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "applications",
+    "size": "1920×1080",
+    "headings": [
+      "Job Applications",
+      "A considered path to the right hire.",
+      "Applied"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "applications",
+    "size": "2560×1440",
+    "headings": [
+      "Job Applications",
+      "A considered path to the right hire.",
+      "Applied"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "applications",
+    "size": "3840×2160",
+    "headings": [
+      "Job Applications",
+      "A considered path to the right hire.",
+      "Applied"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "printing",
+    "size": "390×844",
+    "headings": [
+      "Printing Production"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "printing",
+    "size": "768×1024",
+    "headings": [
+      "Printing Production"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "printing",
+    "size": "1024×1366",
+    "headings": [
+      "Printing Production"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "printing",
+    "size": "1672×941",
+    "headings": [
+      "Printing Production",
+      "From approved proof to finished work.",
+      "Pre-production"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "printing",
+    "size": "1920×1080",
+    "headings": [
+      "Printing Production",
+      "From approved proof to finished work.",
+      "Pre-production"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "printing",
+    "size": "2560×1440",
+    "headings": [
+      "Printing Production",
+      "From approved proof to finished work.",
+      "Pre-production"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "printing",
+    "size": "3840×2160",
+    "headings": [
+      "Printing Production",
+      "From approved proof to finished work.",
+      "Pre-production"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "bakery",
+    "size": "390×844",
+    "headings": [
+      "Bakery Production"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "bakery",
+    "size": "768×1024",
+    "headings": [
+      "Bakery Production"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "bakery",
+    "size": "1024×1366",
+    "headings": [
+      "Bakery Production"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "bakery",
+    "size": "1672×941",
+    "headings": [
+      "Bakery Production",
+      "Know what went in.Account for what came out.",
+      "Today's production schedule"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "bakery",
+    "size": "1920×1080",
+    "headings": [
+      "Bakery Production",
+      "Know what went in.Account for what came out.",
+      "Today's production schedule"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "bakery",
+    "size": "2560×1440",
+    "headings": [
+      "Bakery Production",
+      "Know what went in.Account for what came out.",
+      "Today's production schedule"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "bakery",
+    "size": "3840×2160",
+    "headings": [
+      "Bakery Production",
+      "Know what went in.Account for what came out.",
+      "Today's production schedule"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "bakery-accountability",
+    "size": "390×844",
+    "headings": [
+      "Bakery Accountability"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "bakery-accountability",
+    "size": "768×1024",
+    "headings": [
+      "Bakery Accountability"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "bakery-accountability",
+    "size": "1024×1366",
+    "headings": [
+      "Bakery Accountability",
+      "Accountability stays with the batch.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "bakery-accountability",
+    "size": "1672×941",
+    "headings": [
+      "Bakery Accountability",
+      "Accountability stays with the batch.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "bakery-accountability",
+    "size": "1920×1080",
+    "headings": [
+      "Bakery Accountability",
+      "Accountability stays with the batch.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "bakery-accountability",
+    "size": "2560×1440",
+    "headings": [
+      "Bakery Accountability",
+      "Accountability stays with the batch.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "bakery-accountability",
+    "size": "3840×2160",
+    "headings": [
+      "Bakery Accountability",
+      "Accountability stays with the batch.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "autos",
+    "size": "390×844",
+    "headings": [
+      "Vehicle Sales"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "autos",
+    "size": "768×1024",
+    "headings": [
+      "Vehicle Sales",
+      "A considered view of your inventory.",
+      "2022 Toyota Camry SE"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "autos",
+    "size": "1024×1366",
+    "headings": [
+      "Vehicle Sales",
+      "A considered view of your inventory.",
+      "2022 Toyota Camry SE"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "autos",
+    "size": "1672×941",
+    "headings": [
+      "Vehicle Sales",
+      "A considered view of your inventory.",
+      "2022 Toyota Camry SE"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "autos",
+    "size": "1920×1080",
+    "headings": [
+      "Vehicle Sales",
+      "A considered view of your inventory.",
+      "2022 Toyota Camry SE"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "autos",
+    "size": "2560×1440",
+    "headings": [
+      "Vehicle Sales",
+      "A considered view of your inventory.",
+      "2022 Toyota Camry SE"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "autos",
+    "size": "3840×2160",
+    "headings": [
+      "Vehicle Sales",
+      "A considered view of your inventory.",
+      "2022 Toyota Camry SE"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "logistics",
+    "size": "390×844",
+    "headings": [
+      "Logistics Dispatch"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "logistics",
+    "size": "768×1024",
+    "headings": [
+      "Logistics Dispatch"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "logistics",
+    "size": "1024×1366",
+    "headings": [
+      "Logistics Dispatch"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "logistics",
+    "size": "1672×941",
+    "headings": [
+      "Logistics Dispatch",
+      "Dispatch with the full journey in view.",
+      "Lagos → Ibadan · TRP-208"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "logistics",
+    "size": "1920×1080",
+    "headings": [
+      "Logistics Dispatch",
+      "Dispatch with the full journey in view.",
+      "Lagos → Ibadan · TRP-208"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "logistics",
+    "size": "2560×1440",
+    "headings": [
+      "Logistics Dispatch",
+      "Dispatch with the full journey in view.",
+      "Lagos → Ibadan · TRP-208"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "logistics",
+    "size": "3840×2160",
+    "headings": [
+      "Logistics Dispatch",
+      "Dispatch with the full journey in view.",
+      "Lagos → Ibadan · TRP-208"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "properties",
+    "size": "390×844",
+    "headings": [
+      "Homes & Properties"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "properties",
+    "size": "768×1024",
+    "headings": [
+      "Homes & Properties"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "properties",
+    "size": "1024×1366",
+    "headings": [
+      "Homes & Properties"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "properties",
+    "size": "1672×941",
+    "headings": [
+      "Homes & Properties",
+      "Spaces that work.Returns you can understand.",
+      "Parkside Residences"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "properties",
+    "size": "1920×1080",
+    "headings": [
+      "Homes & Properties",
+      "Spaces that work.Returns you can understand.",
+      "Parkside Residences"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "properties",
+    "size": "2560×1440",
+    "headings": [
+      "Homes & Properties",
+      "Spaces that work.Returns you can understand.",
+      "Parkside Residences"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "properties",
+    "size": "3840×2160",
+    "headings": [
+      "Homes & Properties",
+      "Spaces that work.Returns you can understand.",
+      "Parkside Residences"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "finance",
+    "size": "390×844",
+    "headings": [
+      "Finance Workspace"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "finance",
+    "size": "768×1024",
+    "headings": [
+      "Finance Workspace"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "finance",
+    "size": "1024×1366",
+    "headings": [
+      "Finance Workspace",
+      "Inflow & outflow",
+      "Period bridge"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "finance",
+    "size": "1672×941",
+    "headings": [
+      "Finance Workspace",
+      "Inflow & outflow",
+      "Period bridge"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "finance",
+    "size": "1920×1080",
+    "headings": [
+      "Finance Workspace",
+      "Inflow & outflow",
+      "Period bridge"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "finance",
+    "size": "2560×1440",
+    "headings": [
+      "Finance Workspace",
+      "Inflow & outflow",
+      "Period bridge"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "finance",
+    "size": "3840×2160",
+    "headings": [
+      "Finance Workspace",
+      "Inflow & outflow",
+      "Period bridge"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "expenses",
+    "size": "390×844",
+    "headings": [
+      "My Expense Requests"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "expenses",
+    "size": "768×1024",
+    "headings": [
+      "My Expense Requests"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "expenses",
+    "size": "1024×1366",
+    "headings": [
+      "My Expense Requests"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "expenses",
+    "size": "1672×941",
+    "headings": [
+      "My Expense Requests",
+      "Every request, backed by evidence.",
+      "My expense requests"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "expenses",
+    "size": "1920×1080",
+    "headings": [
+      "My Expense Requests",
+      "Every request, backed by evidence.",
+      "My expense requests"
+    ],
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "screen": "expenses",
+    "size": "2560×1440",
+    "headings": [
+      "My Expense Requests",
+      "Every request, backed by evidence.",
+      "My expense requests"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "expenses",
+    "size": "3840×2160",
+    "headings": [
+      "My Expense Requests",
+      "Every request, backed by evidence.",
+      "My expense requests"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "expense-approvals",
+    "size": "390×844",
+    "headings": [
+      "Expense Approval Queue"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "expense-approvals",
+    "size": "768×1024",
+    "headings": [
+      "Expense Approval Queue"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "expense-approvals",
+    "size": "1024×1366",
+    "headings": [
+      "Expense Approval Queue"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "expense-approvals",
+    "size": "1672×941",
+    "headings": [
+      "Expense Approval Queue",
+      "Assigned decisions",
+      "Generator service"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "expense-approvals",
+    "size": "1920×1080",
+    "headings": [
+      "Expense Approval Queue",
+      "Assigned decisions",
+      "Generator service"
+    ],
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "screen": "expense-approvals",
+    "size": "2560×1440",
+    "headings": [
+      "Expense Approval Queue",
+      "Assigned decisions",
+      "Generator service"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "expense-approvals",
+    "size": "3840×2160",
+    "headings": [
+      "Expense Approval Queue",
+      "Assigned decisions",
+      "Generator service"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "inventory",
+    "size": "390×844",
+    "headings": [
+      "Inventory"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "inventory",
+    "size": "768×1024",
+    "headings": [
+      "Inventory"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "inventory",
+    "size": "1024×1366",
+    "headings": [
+      "Inventory",
+      "Stock accountability, by location.",
+      "Stock availability"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "inventory",
+    "size": "1672×941",
+    "headings": [
+      "Inventory",
+      "Stock accountability, by location.",
+      "Stock availability"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "inventory",
+    "size": "1920×1080",
+    "headings": [
+      "Inventory",
+      "Stock accountability, by location.",
+      "Stock availability"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "inventory",
+    "size": "2560×1440",
+    "headings": [
+      "Inventory",
+      "Stock accountability, by location.",
+      "Stock availability"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "inventory",
+    "size": "3840×2160",
+    "headings": [
+      "Inventory",
+      "Stock accountability, by location.",
+      "Stock availability"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "procurement",
+    "size": "390×844",
+    "headings": [
+      "Procurement"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "procurement",
+    "size": "768×1024",
+    "headings": [
+      "Procurement"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "procurement",
+    "size": "1024×1366",
+    "headings": [
+      "Procurement",
+      "A clear path from need to supply.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "procurement",
+    "size": "1672×941",
+    "headings": [
+      "Procurement",
+      "A clear path from need to supply.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "procurement",
+    "size": "1920×1080",
+    "headings": [
+      "Procurement",
+      "A clear path from need to supply.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "procurement",
+    "size": "2560×1440",
+    "headings": [
+      "Procurement",
+      "A clear path from need to supply.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "procurement",
+    "size": "3840×2160",
+    "headings": [
+      "Procurement",
+      "A clear path from need to supply.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "purchase-orders",
+    "size": "390×844",
+    "headings": [
+      "Purchase Orders"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "purchase-orders",
+    "size": "768×1024",
+    "headings": [
+      "Purchase Orders"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "purchase-orders",
+    "size": "1024×1366",
+    "headings": [
+      "Purchase Orders",
+      "Commitment follows the order.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "purchase-orders",
+    "size": "1672×941",
+    "headings": [
+      "Purchase Orders",
+      "Commitment follows the order.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "purchase-orders",
+    "size": "1920×1080",
+    "headings": [
+      "Purchase Orders",
+      "Commitment follows the order.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "purchase-orders",
+    "size": "2560×1440",
+    "headings": [
+      "Purchase Orders",
+      "Commitment follows the order.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "purchase-orders",
+    "size": "3840×2160",
+    "headings": [
+      "Purchase Orders",
+      "Commitment follows the order.",
+      "Authorized work queue"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "social",
+    "size": "390×844",
+    "headings": [
+      "Social Engine"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "social",
+    "size": "768×1024",
+    "headings": [
+      "Social Engine"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "social",
+    "size": "1024×1366",
+    "headings": [
+      "Social Engine"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "social",
+    "size": "1672×941",
+    "headings": [
+      "Social Engine",
+      "Behind the scenes · print studio",
+      "Fresh from the bakery"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "social",
+    "size": "1920×1080",
+    "headings": [
+      "Social Engine",
+      "Behind the scenes · print studio",
+      "Fresh from the bakery"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "social",
+    "size": "2560×1440",
+    "headings": [
+      "Social Engine",
+      "Behind the scenes · print studio",
+      "Fresh from the bakery"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "social",
+    "size": "3840×2160",
+    "headings": [
+      "Social Engine",
+      "Behind the scenes · print studio",
+      "Fresh from the bakery"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "communications",
+    "size": "390×844",
+    "headings": [
+      "Notice Board"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "communications",
+    "size": "768×1024",
+    "headings": [
+      "Notice Board"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "communications",
+    "size": "1024×1366",
+    "headings": [
+      "Notice Board",
+      "September operating priorities",
+      "Workplace safety briefing"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "communications",
+    "size": "1672×941",
+    "headings": [
+      "Notice Board",
+      "September operating priorities",
+      "Workplace safety briefing"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "communications",
+    "size": "1920×1080",
+    "headings": [
+      "Notice Board",
+      "September operating priorities",
+      "Workplace safety briefing"
+    ],
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "screen": "communications",
+    "size": "2560×1440",
+    "headings": [
+      "Notice Board",
+      "September operating priorities",
+      "Workplace safety briefing"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "communications",
+    "size": "3840×2160",
+    "headings": [
+      "Notice Board",
+      "September operating priorities",
+      "Workplace safety briefing"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "security",
+    "size": "390×844",
+    "headings": [
+      "Security Center"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "security",
+    "size": "768×1024",
+    "headings": [
+      "Security Center",
+      "Security signals",
+      "Risk / severity matrix"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "security",
+    "size": "1024×1366",
+    "headings": [
+      "Security Center",
+      "Security signals",
+      "Risk / severity matrix"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "security",
+    "size": "1672×941",
+    "headings": [
+      "Security Center",
+      "Security signals",
+      "Risk / severity matrix"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "security",
+    "size": "1920×1080",
+    "headings": [
+      "Security Center",
+      "Security signals",
+      "Risk / severity matrix"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "security",
+    "size": "2560×1440",
+    "headings": [
+      "Security Center",
+      "Security signals",
+      "Risk / severity matrix"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "security",
+    "size": "3840×2160",
+    "headings": [
+      "Security Center",
+      "Security signals",
+      "Risk / severity matrix"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "access",
+    "size": "390×844",
+    "headings": [
+      "Access Control"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "access",
+    "size": "768×1024",
+    "headings": [
+      "Access Control",
+      "Effective access matrix",
+      "Why this access exists"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "access",
+    "size": "1024×1366",
+    "headings": [
+      "Access Control",
+      "Effective access matrix",
+      "Why this access exists"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "access",
+    "size": "1672×941",
+    "headings": [
+      "Access Control",
+      "Effective access matrix",
+      "Why this access exists"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "access",
+    "size": "1920×1080",
+    "headings": [
+      "Access Control",
+      "Effective access matrix",
+      "Why this access exists"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "access",
+    "size": "2560×1440",
+    "headings": [
+      "Access Control",
+      "Effective access matrix",
+      "Why this access exists"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "access",
+    "size": "3840×2160",
+    "headings": [
+      "Access Control",
+      "Effective access matrix",
+      "Why this access exists"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "theme",
+    "size": "390×844",
+    "headings": [
+      "Theme Studio",
+      "Choose your visual language",
+      "Preference inspector"
+    ],
+    "scrollWidth": 375,
+    "width": 375
+  },
+  {
+    "screen": "theme",
+    "size": "768×1024",
+    "headings": [
+      "Theme Studio",
+      "Choose your visual language",
+      "Preference inspector"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "theme",
+    "size": "1024×1366",
+    "headings": [
+      "Theme Studio",
+      "Choose your visual language",
+      "Preference inspector"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "theme",
+    "size": "1672×941",
+    "headings": [
+      "Theme Studio",
+      "Choose your visual language",
+      "Preference inspector"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "theme",
+    "size": "1920×1080",
+    "headings": [
+      "Theme Studio",
+      "Choose your visual language",
+      "Preference inspector"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "theme",
+    "size": "2560×1440",
+    "headings": [
+      "Theme Studio",
+      "Choose your visual language",
+      "Preference inspector"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "theme",
+    "size": "3840×2160",
+    "headings": [
+      "Theme Studio",
+      "Choose your visual language",
+      "Preference inspector"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "layout",
+    "size": "390×844",
+    "headings": [
+      "Layout Studio",
+      "Choose how your workspace works",
+      "Selected composition"
+    ],
+    "scrollWidth": 375,
+    "width": 375
+  },
+  {
+    "screen": "layout",
+    "size": "768×1024",
+    "headings": [
+      "Layout Studio",
+      "Choose how your workspace works",
+      "Selected composition"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "layout",
+    "size": "1024×1366",
+    "headings": [
+      "Layout Studio",
+      "Choose how your workspace works",
+      "Selected composition"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "layout",
+    "size": "1672×941",
+    "headings": [
+      "Layout Studio",
+      "Choose how your workspace works",
+      "Selected composition"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "layout",
+    "size": "1920×1080",
+    "headings": [
+      "Layout Studio",
+      "Choose how your workspace works",
+      "Selected composition"
+    ],
+    "scrollWidth": 1905,
+    "width": 1905
+  },
+  {
+    "screen": "layout",
+    "size": "2560×1440",
+    "headings": [
+      "Layout Studio",
+      "Choose how your workspace works",
+      "Selected composition"
+    ],
+    "scrollWidth": 2545,
+    "width": 2545
+  },
+  {
+    "screen": "layout",
+    "size": "3840×2160",
+    "headings": [
+      "Layout Studio",
+      "Choose how your workspace works",
+      "Selected composition"
+    ],
+    "scrollWidth": 3825,
+    "width": 3825
+  },
+  {
+    "screen": "form-builder",
+    "size": "390×844",
+    "headings": [
+      "Form Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 375,
+    "width": 375
+  },
+  {
+    "screen": "form-builder",
+    "size": "768×1024",
+    "headings": [
+      "Form Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 753,
+    "width": 753
+  },
+  {
+    "screen": "form-builder",
+    "size": "1024×1366",
+    "headings": [
+      "Form Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 1009,
+    "width": 1009
+  },
+  {
+    "screen": "form-builder",
+    "size": "1672×941",
+    "headings": [
+      "Form Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "form-builder",
+    "size": "1920×1080",
+    "headings": [
+      "Form Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "screen": "form-builder",
+    "size": "2560×1440",
+    "headings": [
+      "Form Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "form-builder",
+    "size": "3840×2160",
+    "headings": [
+      "Form Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "workflow-builder",
+    "size": "390×844",
+    "headings": [
+      "Workflow Builder"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "workflow-builder",
+    "size": "768×1024",
+    "headings": [
+      "Workflow Builder"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "workflow-builder",
+    "size": "1024×1366",
+    "headings": [
+      "Workflow Builder"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "workflow-builder",
+    "size": "1672×941",
+    "headings": [
+      "Workflow Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "workflow-builder",
+    "size": "1920×1080",
+    "headings": [
+      "Workflow Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "screen": "workflow-builder",
+    "size": "2560×1440",
+    "headings": [
+      "Workflow Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "workflow-builder",
+    "size": "3840×2160",
+    "headings": [
+      "Workflow Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "report-builder",
+    "size": "390×844",
+    "headings": [
+      "Report Builder"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "report-builder",
+    "size": "768×1024",
+    "headings": [
+      "Report Builder"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "report-builder",
+    "size": "1024×1366",
+    "headings": [
+      "Report Builder"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "report-builder",
+    "size": "1672×941",
+    "headings": [
+      "Report Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 1657,
+    "width": 1657
+  },
+  {
+    "screen": "report-builder",
+    "size": "1920×1080",
+    "headings": [
+      "Report Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "screen": "report-builder",
+    "size": "2560×1440",
+    "headings": [
+      "Report Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "report-builder",
+    "size": "3840×2160",
+    "headings": [
+      "Report Builder",
+      "Definition",
+      "Live design preview"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  },
+  {
+    "screen": "admin",
+    "size": "390×844",
+    "headings": [
+      "Admin Setup"
+    ],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "screen": "admin",
+    "size": "768×1024",
+    "headings": [
+      "Admin Setup"
+    ],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "screen": "admin",
+    "size": "1024×1366",
+    "headings": [
+      "Admin Setup"
+    ],
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "screen": "admin",
+    "size": "1672×941",
+    "headings": [
+      "Admin Setup",
+      "Policies & controls",
+      "Attendance event policy"
+    ],
+    "scrollWidth": 1672,
+    "width": 1672
+  },
+  {
+    "screen": "admin",
+    "size": "1920×1080",
+    "headings": [
+      "Admin Setup",
+      "Policies & controls",
+      "Attendance event policy"
+    ],
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "screen": "admin",
+    "size": "2560×1440",
+    "headings": [
+      "Admin Setup",
+      "Policies & controls",
+      "Attendance event policy"
+    ],
+    "scrollWidth": 2560,
+    "width": 2560
+  },
+  {
+    "screen": "admin",
+    "size": "3840×2160",
+    "headings": [
+      "Admin Setup",
+      "Policies & controls",
+      "Attendance event policy"
+    ],
+    "scrollWidth": 3840,
+    "width": 3840
+  }
+]

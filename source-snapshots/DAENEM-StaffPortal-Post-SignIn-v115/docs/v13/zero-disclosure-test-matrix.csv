@@ -1,0 +1,61 @@
+PROFILE,SCREEN,ACCESS_VISIBLE,NEUTRALIZED,FORBIDDEN_DISCLOSURE,RESULT
+Owner,home,True,False,False,PASS
+Owner,banking-operations,True,False,False,PASS
+Owner,customer-communications,False,False,False,PASS
+Owner,files,False,False,False,PASS
+Owner,staff-messaging,False,False,True,FAIL
+Owner,notifications,False,False,True,FAIL
+Group Admin,home,True,False,False,PASS
+Group Admin,banking-operations,False,False,False,PASS
+Group Admin,customer-communications,False,False,False,PASS
+Group Admin,files,True,False,False,PASS
+Group Admin,staff-messaging,False,False,True,FAIL
+Group Admin,notifications,False,False,False,PASS
+Manager,home,True,False,False,PASS
+Manager,banking-operations,False,False,False,PASS
+Manager,customer-communications,False,False,False,PASS
+Manager,files,True,False,False,PASS
+Manager,staff-messaging,True,False,False,PASS
+Manager,notifications,True,False,False,PASS
+Employee,home,True,False,False,PASS
+Employee,banking-operations,False,False,False,PASS
+Employee,customer-communications,False,False,False,PASS
+Employee,files,True,False,False,PASS
+Employee,staff-messaging,True,False,False,PASS
+Employee,notifications,True,False,False,PASS
+Provisional,home,False,True,False,PASS
+Provisional,banking-operations,False,True,False,PASS
+Provisional,customer-communications,False,True,False,PASS
+Provisional,files,False,True,False,PASS
+Provisional,staff-messaging,False,True,False,PASS
+Provisional,notifications,False,True,False,PASS
+No permission,home,False,True,False,PASS
+No permission,banking-operations,False,True,False,PASS
+No permission,customer-communications,False,True,False,PASS
+No permission,files,False,True,False,PASS
+No permission,staff-messaging,False,True,False,PASS
+No permission,notifications,False,True,False,PASS
+Multi-role,home,True,False,False,PASS
+Multi-role,banking-operations,False,False,False,PASS
+Multi-role,customer-communications,False,False,False,PASS
+Multi-role,files,True,False,False,PASS
+Multi-role,staff-messaging,True,False,False,PASS
+Multi-role,notifications,True,False,False,PASS
+Multi-company,home,True,False,False,PASS
+Multi-company,banking-operations,True,False,False,PASS
+Multi-company,customer-communications,False,False,False,PASS
+Multi-company,files,False,False,False,PASS
+Multi-company,staff-messaging,False,False,True,FAIL
+Multi-company,notifications,False,False,True,FAIL
+Reduced override,home,True,False,False,PASS
+Reduced override,banking-operations,True,False,False,PASS
+Reduced override,customer-communications,False,False,False,PASS
+Reduced override,files,False,False,False,PASS
+Reduced override,staff-messaging,False,False,True,FAIL
+Reduced override,notifications,False,False,True,FAIL
+Expired override,home,True,False,False,PASS
+Expired override,banking-operations,True,False,False,PASS
+Expired override,customer-communications,False,False,False,PASS
+Expired override,files,False,False,False,PASS
+Expired override,staff-messaging,False,False,True,FAIL
+Expired override,notifications,False,False,True,FAIL

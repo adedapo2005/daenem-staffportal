@@ -1,0 +1,209 @@
+{
+  "siteProjectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+  "capturedAt": "2026-09-12T04:42:50.289Z",
+  "captures": [
+    {
+      "composition": "horizon",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-horizon-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "editorial",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-editorial-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "nightfall",
+      "viewport": "1920×1080",
+      "appearance": "Night",
+      "filename": "evidence/signin/signin-nightfall-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "atrium",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-atrium-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "vertical",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-vertical-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "panorama",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-panorama-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "duet",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-duet-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "command",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-command-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "gallery",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-gallery-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "focus",
+      "viewport": "1920×1080",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-focus-1920x1080.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "horizon",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-horizon-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "editorial",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-editorial-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "nightfall",
+      "viewport": "390×844",
+      "appearance": "Night",
+      "filename": "evidence/signin/signin-nightfall-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "atrium",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-atrium-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "vertical",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-vertical-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "panorama",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-panorama-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "duet",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-duet-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "command",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-command-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "gallery",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-gallery-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "focus",
+      "viewport": "390×844",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-focus-390x844.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "atrium",
+      "viewport": "768×1024",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-atrium-768x1024.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "vertical",
+      "viewport": "1024×1366",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-vertical-1024x1366.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "panorama",
+      "viewport": "1672×941",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-panorama-1672x941.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "nightfall",
+      "viewport": "2560×1440",
+      "appearance": "Night",
+      "filename": "evidence/signin/signin-nightfall-2560x1440.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    },
+    {
+      "composition": "horizon",
+      "viewport": "3840×2160",
+      "appearance": "Day",
+      "filename": "evidence/signin/signin-horizon-3840x2160.jpg",
+      "source": "Managed Chromium iframe capture",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 25
+  }
+}

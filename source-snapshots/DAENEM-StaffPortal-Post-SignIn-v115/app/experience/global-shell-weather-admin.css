@@ -1,0 +1,135 @@
+.gs-weather-provider {
+  margin: 0.85rem 0 0.35rem;
+  padding: 0.85rem;
+  border: 1px solid #5d8fd54a;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3676d012, #5e59c90c);
+}
+
+.gs-provider-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.gs-provider-heading strong,
+.gs-provider-heading small {
+  display: block;
+}
+
+.gs-provider-heading small {
+  margin-top: 0.12rem;
+  color: var(--p-muted);
+  font-size: 0.72rem;
+}
+
+.gs-provider-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #6c9ddd55;
+  border-radius: 9px;
+  background: #fff9;
+  color: #2d6bc7;
+}
+
+.gs-provider-icon svg {
+  width: 1.1rem;
+}
+
+.gs-provider-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0.75rem 0;
+}
+
+.gs-provider-facts div {
+  padding: 0.55rem;
+  border: 1px solid var(--p-line);
+  border-radius: 9px;
+  background: var(--p-card);
+}
+
+.gs-provider-facts dt {
+  color: var(--p-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gs-provider-facts dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.gs-provider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.gs-provider-actions .p-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.gs-provider-privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.7rem 0 0;
+  color: var(--p-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.gs-provider-privacy svg {
+  flex: 0 0 auto;
+  color: #316fca;
+}
+
+.gs-card .gs-locked-row strong {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.gs-locked-row strong svg {
+  color: #316fca;
+}
+
+@media (max-width: 620px) {
+  .gs-provider-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .gs-provider-heading > .p-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .gs-provider-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .gs-provider-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gs-provider-actions .p-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gs-weather-provider * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

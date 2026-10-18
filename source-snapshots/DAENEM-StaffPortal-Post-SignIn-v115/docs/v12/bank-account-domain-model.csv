@@ -1,0 +1,10 @@
+ENTITY,KEY_FIELDS,RELATIONSHIP,SECURITY
+BankAccount,"id, company_id, institution_id, masked_account, currency, available_balance, ledger_balance, provider_state",1:N Transaction,Bank-account assignment before discovery/count
+BankTransaction,"id, bank_account_id, provider_id, reference, amount, direction, state, occurred_at",N:1 Account; N:M ERP record through match,Account + transaction + field scope
+ProviderEvent,"id, provider, external_id, signature_state, replay_key, received_at",1:1/N PaymentMatch,Server-side only
+PaymentMatch,"id, provider_event_id, related_record_type/id, state, rule_version",Links existing ERP truth,No service activation before authoritative completion
+Transfer,"id, source_account_id, beneficiary_id, amount, state, maker_id, checker_id",N:1 account and beneficiary,Separate create/approve/execute/reconcile
+Beneficiary,"id, company_id, institution, masked_account, verification_state, risk_state",1:N Transfer,Separate lifecycle grants
+PayrollBatch,"id, company_id, period, state, totals",1:N EmployeePayment,Batch and field scope
+EmployeePayment,"id, payroll_batch_id, employee_id, amount, state, provider_reference",N:1 batch,Employee payment finality after confirmation/reconciliation
+Reconciliation,"id, account_id, period, bank_txn_id, ledger_txn_id, variance, state",N:1 account,Maker-checker and evidence

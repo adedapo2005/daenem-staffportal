@@ -1,0 +1,30 @@
+@media(min-width:901px){
+  .sf-panorama .sf-stage{grid-template-rows:auto minmax(0,1fr)}
+  .sf-panorama .sf-auth-slot{align-self:stretch;min-height:0}
+  .sf-panorama .v3-auth-card{max-height:100%!important}
+}
+
+/* V14 touch-target closure: compact visuals retain a 44px interaction box. */
+@media(max-width:760px){
+  .v3-auth button,
+  .v3-auth input,
+  .v3-auth select,
+  .v3-auth summary,
+  .v3-auth a{
+    min-height:44px!important;
+  }
+  .v3-auth button,
+  .v3-auth summary,
+  .v3-auth a,
+  .v3-auth .p-check{
+    display:inline-flex;
+    align-items:center;
+  }
+  .v3-auth .p-check{
+    min-height:44px!important;
+  }
+  .v3-auth .v3-password button,
+  .v3-auth .v3-brand button{
+    min-width:44px;
+  }
+}

@@ -1,0 +1,63 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import assert from 'node:assert/strict';
+import {pathToFileURL} from 'node:url';
+import {execFileSync} from 'node:child_process';
+import ts from 'typescript';
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'daenem-v3-check-'));
+const results=[];
+function check(name,fn){try{fn();results.push({name,status:'PASS'})}catch(e){results.push({name,status:'FAIL',detail:e.message})}}
+try{
+ for(const name of ['model','enterprise-contract','auth-contract','security-contract','evidence-state']){
+  const source=fs.readFileSync('app/experience/'+name+'.ts','utf8').replace(/from '\.\/([^']+)'/g,"from './$1.mjs'");
+  fs.writeFileSync(path.join(tmp,name+'.mjs'),ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText);
+ }
+ const m=await import(pathToFileURL(path.join(tmp,'model.mjs'))),b=await import(pathToFileURL(path.join(tmp,'enterprise-contract.mjs'))),a=await import(pathToFileURL(path.join(tmp,'auth-contract.mjs'))),s=await import(pathToFileURL(path.join(tmp,'security-contract.mjs')));
+ const rows=m.seedRecords(),owner=s.sessionForProfile('Owner'),employee=s.sessionForProfile('Employee');
+ for(const name of s.testProfiles){const session=s.sessionForProfile(name),surface=s.authorizedSurface(session,rows);for(const module of m.modules){check(name+' / '+module.id+' / authorized projection',()=>{const visible=m.canView(module,session),projected=m.recordsFor(rows,module,session);assert.equal(surface.modules.some(x=>x.id===module.id),visible);if(!visible){assert.equal(projected.length,0);for(const action of ['create','edit','approve','manage',...m.specializedActions])assert.equal(m.canAct(module,session,action),false)}for(const r of projected){assert.equal(m.recordVisible(r,module,session),true);for(const key of Object.keys(r.fields))assert.notEqual(m.fieldAccess(module.id,key,session),'hidden')}})}}
+ check('Provisional surface contains no module or record metadata',()=>assert.deepEqual(s.authorizedSurface(s.sessionForProfile('Provisional'),rows),{modules:[],records:[]}));
+ check('No-permission surface contains no module or record metadata',()=>assert.deepEqual(s.authorizedSurface(s.sessionForProfile('No permission'),rows),{modules:[],records:[]}));
+ check('Employee export is not inferred from Edit access',()=>assert.equal(s.exportProjection(rows,employee).length,0));
+ check('Reduced override loses all explicit printing exports',()=>assert.equal(s.exportProjection(rows.filter(r=>r.module==='printing'),s.sessionForProfile('Reduced override')).length,0));
+ check('Secret fields cannot appear in projected results',()=>{const row=rows.find(r=>r.module==='printing');assert.equal(m.projectRecord({...row,fields:{...row.fields,Token:'test-only',Secret:'test-only'}},owner).fields.Token,undefined)});
+ check('Explicit hidden field cannot appear in projected results',()=>{const row=rows.find(r=>r.module==='printing');assert.equal(m.projectRecord({...row,fields:{...row.fields,Customer:'Confidential fixture'}},{...owner,fieldRules:{'printing.Customer':'hidden'}}).fields.Customer,undefined)});
+ check('Profile records are restricted to the current identity',()=>{const profiles=['Theo Adegboye','Aminat Bello','Daniel Obi'].map((name,i)=>({...rows[0],id:'PROFILE-'+i,module:'profile',owner:name}));for(const profile of ['Owner','Manager','Employee']){const session=s.sessionForProfile(profile);assert.ok(m.recordsFor(profiles,m.byId('profile'),session).every(r=>r.owner===m.personFor(session)))}});
+ check('Company scopes cannot leak through global search',()=>{const surface=s.authorizedSurface(s.sessionForProfile('Multi-company'),rows);assert.ok(surface.records.every(r=>['printing','bakery'].includes(r.company)))});
+ check('Expired assignments grant no records or action',()=>{const session={...owner,assignments:[{module:'printing',level:'Manage',companies:['printing'],scope:'COMPANY',capabilities:['export'],expiresAt:'2020-01-01T00:00:00Z'}]};assert.equal(m.canView(m.byId('printing'),session),false);assert.equal(m.canAct(m.byId('printing'),session,'export'),false)});
+ check('Department-scoped assignment requires matching record scope',()=>{const session={...owner,assignments:[{module:'printing',level:'View',companies:['printing'],scope:'DEPARTMENT',values:['press'],capabilities:[]}]},row=rows.find(r=>r.module==='printing');assert.equal(m.recordVisible({...row,scopeData:{DEPARTMENT:'press'}},m.byId('printing'),session),true);assert.equal(m.recordVisible({...row,scopeData:{DEPARTMENT:'finance'}},m.byId('printing'),session),false)});
+ check('Attention counts use a deduplicated permitted source',()=>{const attention=m.attentionRecords(rows,owner);assert.equal(new Set(attention.map(r=>r.module+':'+r.id)).size,attention.length);assert.ok(attention.every(r=>m.authorizedRecords(rows,owner).some(x=>x.module===r.module&&x.id===r.id)))});
+ check('Password rules reject weak or mismatched passwords',()=>{assert.ok(a.passwordError('weak','weak',a.fixturePasswordPolicy));assert.ok(a.passwordError('FixturePass!42','Mismatch!42',a.fixturePasswordPolicy));assert.equal(a.passwordError('FixturePass!42','FixturePass!42',a.fixturePasswordPolicy),null)});
+ check('Immediate password reuse is rejected',()=>assert.ok(a.passwordError('FixturePass!42','FixturePass!42',a.fixturePasswordPolicy,'FixturePass!42')));
+ check('Email verification expires',()=>assert.ok(a.verifyDemoCode('246810',a.issueDemoCode(0),120000).error));
+ check('Email verification locks after three failed attempts',()=>{let state=a.issueDemoCode(0);for(let i=0;i<3;i++)state=a.verifyDemoCode('000000',state,1).state;assert.ok(a.verifyDemoCode('246810',state,1).error)});
+ check('Password reset authorization is short-lived',()=>{const state=a.verifyDemoCode('246810',a.issueDemoCode(0),1).state;assert.equal(a.canResetPassword(state,2),true);assert.equal(a.canResetPassword(state,300002),false)});
+ check('Present requires a valid in and out event',()=>{assert.equal(b.attendanceState([]),'Not Started');assert.equal(b.attendanceState([{kind:'in',time:'2026-09-11T07:00:00Z',success:true}]),'Incomplete');assert.equal(b.attendanceState([{kind:'in',time:'2026-09-11T07:00:00Z',success:true},{kind:'out',time:'2026-09-11T17:00:00Z',success:true}]),'Present')});
+ check('Approved PO is not a financial commitment',()=>{const row=rows.find(r=>r.module==='purchase-orders');assert.equal(b.purchaseCommitment({...row,status:'Approved'}),0)});
+ check('Ordered and partial PO commitments are source-derived',()=>assert.equal(rows.filter(r=>r.module==='purchase-orders').reduce((n,r)=>n+b.purchaseCommitment(r),0),398000));
+ check('Cancelled PO releases commitment',()=>{const row=rows.find(r=>r.module==='purchase-orders');assert.equal(b.purchaseCommitment({...row,status:'Cancelled'}),0)});
+ check('A non-PO record cannot inflate the commitment metric',()=>assert.equal(b.purchaseCommitment({...rows[0],status:'Ordered',fields:{Quantity:'10','Unit Cost':'100'}}),0));
+ check('Fixture bakery balances preserve unexplained cash variance',()=>{const row=rows.find(r=>r.module==='bakery-accountability'),balance=b.bakeryBalance(row.fields);assert.equal(balance.quantityVariance,0);assert.equal(balance.cashVariance,16000);assert.ok(b.businessError(row,row.fields,'Resolved'))});
+ check('Bakery report metric matches the underlying ledger',()=>assert.equal(b.metricValue(rows,'bakery-cash'),16000));
+ check('Unbalanced journal cannot be posted',()=>{const row=rows.find(r=>r.module==='finance');assert.ok(b.businessError(row,{Debit:'100',Credit:'90'},'Posted'))});
+ check('Closed-period journal cannot be posted',()=>{const row=rows.find(r=>r.module==='finance');assert.ok(b.businessError(row,{Debit:'100',Credit:'100','Period State':'Closed'},'Posted'))});
+ const config={id:'test',kind:'theme-builder',name:'Review',target:'printing',version:1,state:'Draft',scope:'Company',definition:{primary:'#3155ef',surface:'#ffffff',text:'#172337'},history:[]};
+ check('Accessible theme can validate',()=>assert.deepEqual(b.validateConfig(config,['printing']),[]));
+ check('Low-contrast theme cannot validate',()=>assert.ok(b.validateConfig({...config,definition:{primary:'#eeeeee',surface:'#ffffff',text:'#eeeeee'}},['printing']).length));
+ check('Unknown source cannot validate',()=>assert.ok(b.validateConfig(config,[]).length));
+ check('Arbitrary scripts cannot validate',()=>assert.ok(b.validateConfig({...config,definition:{...config.definition,rule:'javascript:alert(1)'}},['printing']).length));
+ check('CSV formula prefixes are neutralized',()=>{for(const value of ['=1+1','+cmd','@sum(1)','-1+2','  =1'])assert.ok(b.safeCsvCell(value).startsWith('"\''))});
+ check('Ten structurally identified sign-in presets are registered',()=>{assert.equal(a.signInPresets.length,10);assert.equal(new Set(a.signInPresets.map(p=>p.composition)).size,10)});
+ for(const preset of a.signInPresets)check(preset.name+' / native 4K original',()=>{const publicFile='public'+preset.image,sourceFile=fs.existsSync(publicFile)?publicFile:path.join('design-assets/signin-native',path.basename(preset.image));const [w,h]=execFileSync('identify',['-format','%w %h',sourceFile],{encoding:'utf8'}).trim().split(' ').map(Number);assert.ok(w>=3840&&h>=2160,`${w}×${h} is below minimum`)});
+ const studiosSource=fs.readFileSync('app/experience/studios.tsx','utf8'),authSource=fs.readFileSync('app/experience/auth-v3.tsx','utf8'),portalSource=fs.readFileSync('app/experience/Portal.tsx','utf8'),enterpriseSource=fs.readFileSync('app/experience/enterprise-v3.tsx','utf8');
+ check('Consolidated V3 Sign-In Studio is the only sign-in composer',()=>{assert.match(studiosSource,/SignInConfigV3/);assert.doesNotMatch(studiosSource,/Daylight Campus|daenem-campus\.png/);assert.match(enterpriseSource,/sole sign-in configuration source/i)});
+ check('Signup / claim identity field contract is complete',()=>{for(const field of ['Legal \/ full name','Phone number','Requested company','Department \/ work area','Job \/ position','Choose unique username','Existing employee reference'])assert.match(authSource,new RegExp(field.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'));assert.match(authSource,/verification|six-digit/i);assert.match(authSource,/never grants operational modules/i);assert.match(authSource,/privacy and acceptable-use requirements/i)});
+ check('Privileged projection state purge is wired to session changes',()=>{assert.match(portalSource,/purgePrivilegedProjectionState/);assert.match(portalSource,/favorites-|bookmarks-|recents-|saved-search/);assert.match(portalSource,/changeSession/)});
+ check('Ten post-sign-in experience presets are named and compositional',()=>{assert.equal(m.experiencePresets.length,10);assert.equal(new Set(m.experiencePresets.map(p=>p.layout)).size,10);assert.ok(m.experiencePresets.every(p=>p.theme&&p.density&&p.motion&&p.navigation))});
+ check('Purpose-built operational workspaces are registered',()=>{for(const id of ['procurement','purchase-orders','goods-receipts','stock-transfers','stock-borrowing','bakery-accountability','technology-services','vacancies'])assert.ok(m.byId(id),id);assert.match(enterpriseSource,/PurposeBuiltWorkspace/)});
+ check('Staff messaging and governed productivity surfaces exist',()=>{for(const id of ['staff-messaging','productivity','work-location','salary-adjustments','data-import','dashboard-personalization'])assert.ok(m.byId(id),id);assert.match(enterpriseSource,/INTERNAL STAFF COMMUNICATION|Staff Messaging/i);assert.match(enterpriseSource,/NO SURVEILLANCE/)});
+ check('Builder output has local runtime consumers',()=>{assert.match(enterpriseSource,/setVersions/);assert.match(enterpriseSource,/setPrefs/);assert.match(enterpriseSource,/Published/);assert.match(enterpriseSource,/local configuration library/)});
+ check('Runtime image candidates exclude raw originals',()=>{assert.doesNotMatch(authSource,/srcSet=\{\[.*original/);assert.match(fs.readFileSync('app/experience/auth-contract.ts','utf8'),/640.*1280.*2560.*3840/)});
+ const output={testedAt:new Date().toISOString(),scope:'Deterministic fictional-data source contracts; not a production authorization or complete browser certification.',passed:results.filter(r=>r.status==='PASS').length,total:results.length,results};
+ fs.mkdirSync('docs/v3',{recursive:true});fs.writeFileSync('docs/v3/source-checks.json',JSON.stringify(output,null,2));console.log(JSON.stringify({passed:output.passed,total:output.total,failures:results.filter(r=>r.status==='FAIL')},null,2));if(output.passed!==output.total)process.exitCode=1;
+}finally{fs.rmSync(tmp,{recursive:true,force:true})}

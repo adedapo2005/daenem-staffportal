@@ -543,6 +543,10 @@ function normalizeLabels(value: unknown): SignInLabels {
   const widgetSource = candidateRecord(source.widgetLabels);
   const authSource = candidateRecord(source.auth);
   const auth = Object.fromEntries(Object.keys(DEFAULT_SIGNIN_LABELS.auth).map((key) => [key, cleanText(authSource[key], DEFAULT_SIGNIN_LABELS.auth[key as keyof SignInAuthLabels], SIGNIN_LABEL_LIMITS.support)]));
+  const socialNote = String(auth.socialNote || '').toLowerCase();
+  const stalePreviewCopy = socialNote.includes('frontend') && socialNote.includes('preview')
+    || socialNote.includes('credentials') && socialNote.includes('session') && socialNote.includes('created');
+  if (stalePreviewCopy) auth.socialNote = DEFAULT_SIGNIN_LABELS.auth.socialNote;
   return {
     brandEyebrow: cleanText(source.brandEyebrow, DEFAULT_SIGNIN_LABELS.brandEyebrow, SIGNIN_LABEL_LIMITS.brandEyebrow),
     brandTitle: cleanText(source.brandTitle, DEFAULT_SIGNIN_LABELS.brandTitle, SIGNIN_LABEL_LIMITS.brandTitle),

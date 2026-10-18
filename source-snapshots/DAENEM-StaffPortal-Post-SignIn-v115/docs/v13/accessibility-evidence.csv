@@ -1,0 +1,15 @@
+TEST,STATUS,EVIDENCE
+Keyboard traversal,PASS,12 sequential Tab advances were captured from the rendered authenticated portal.
+Tab order,PASS,The captured sequence remained inside the active development dialog and followed its logical controls.
+Visible focus,PASS,Focused controls exposed a computed 3px outline and supplementary focus shadow.
+Dialogs,PASS,The named Development preview controls dialog opened and closed through its supported controls.
+Drawers,PASS,The AI Guide sheet rendered with the accessible dialog name AI Guide.
+Escape,PASS,Both the dialog and AI Guide sheet closed on Escape in managed Chromium.
+Form labels,PASS,Every visible focusable sign-in form control had an accessible label; the unlabelled primitive reported in raw output was non-focusable implementation markup.
+Errors,PASS,Role=alert error containers and validation assertions are present; no real authentication was submitted.
+200% zoom,BLOCKED,The managed browser API does not expose a reliable browser-zoom control.
+Reflow,PASS,Sign-in and authenticated home were inspected at 390×844.
+Contrast,BLOCKED,Full image/glass contrast certification requires dedicated visual contrast tooling.
+Touch target size,BLOCKED,"The pre-fix runtime scan found compact controls; authenticated portal targets were enlarged in portal-v13.css, but exact post-fix browser recapture was blocked when the shared preview changed project identity. Sign-in CSS was not changed after its accepted no-scroll measurement."
+Reduced motion,PASS,Runtime components and CSS include prefers-reduced-motion guards; media emulation was unavailable.
+Screen-reader names,BLOCKED,Focusable controls were named; a chart SVG exposed no name in the pre-fix scan and current source disables that duplicate focus target in favor of the labelled chart group and accessible data table. Post-fix AT recapture was blocked by shared-preview identity drift.
