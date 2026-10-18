@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: staffportal-ci-${{ github.ref }}
@@ -81,6 +82,29 @@ jobs:
           test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"
           test "$(node -p "require('./delivery/current-state.json').liveMetaAuthorized")" = "false"
           echo "Staff Portal production and Farms safety gates remain closed."
+
+
+  report:
+    name: Publish verification status
+    if: always()
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Publish commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const state = '${{ needs.verify.result }}' === 'success' ? 'success' : 'failure';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state,
+              context: 'Staff Portal CI / verify',
+              description: state === 'success' ? 'All StaffPortal verification gates passed' : 'One or more StaffPortal verification gates failed',
+            });
 
 # This workflow intentionally contains no deployment, remote migration,
 # production secret mutation, Meta activation, WhatsApp send, or PR merge step.
