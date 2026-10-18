@@ -801,7 +801,33 @@ async function login(request: Request, env: PasswordAuthEnv) {
   return json({ ok: true, message: 'Sign-in successful.' }, 200, { 'set-cookie': cookie });
 }
 
-async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
+async function startWhatsAppPhoneSignIn(request: Request, env: PasswordAuthEnv) {
+  let input: { phone?: string; latitude?: number; longitude?: number; accuracy?: number };
+  try { input = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
+  const phone = normalizePhone(String(input.phone || ''));
+  if (!/^\+[1-9]\d{6,14}$/.test(phone)) return json({ error: 'Enter a valid WhatsApp phone number.' }, 400);
+  const neutral = { ok: true, challengeId: uid('wa-auth'), destination: 'your enrolled WhatsApp contact', message: 'If this phone is enrolled and eligible, a WhatsApp code will be sent.' };
+  const rows = await env.DB.prepare([
+    'SELECT v.employee_id AS employeeId,v.company_id AS companyId,v.revision',
+    'FROM employee_verified_contacts v JOIN employees e ON e.id=v.employee_id',
+    'JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=v.company_id AND m.active=1',
+    "WHERE v.contact_type='phone' AND v.normalized_value=? AND v.revoked_at IS NULL",
+    "AND e.employment_status IN ('active','provisional') LIMIT 2"
+  ].join(' ')).bind(phone).all<{employeeId:string;companyId:string;revision:number}>();
+  if ((rows.results || []).length !== 1) return json(neutral);
+  const employee = rows.results![0];
+  const location = await evaluateLocation(env, employee.employeeId, input);
+  if (!location.ok || (location.companyId && location.companyId !== employee.companyId)) return json(neutral);
+  try {
+    const challenge = await startWhatsAppChallenge(env,request,{
+      purpose:'signin_step_up',companyId:employee.companyId,employeeId:employee.employeeId,
+      phone,contactRevision:Number(employee.revision),contactAlreadyVerified:true,
+      transactionContext:{authMode:'passwordless',latitude:input.latitude??null,longitude:input.longitude??null,accuracy:input.accuracy??null,locationResult:location.result||'unknown'}
+    });
+    return json({ ...neutral, challengeId: challenge.challengeId });
+  } catch { return json(neutral); }
+}
+async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv, passwordless = false) {
   let body: { challengeId?:string; code?:string };
   try { body = await request.json(); } catch { return json({ error:'Invalid request body.' }, 400); }
   let verified;
@@ -813,6 +839,8 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
     return json({ error:'The WhatsApp verification code is invalid, expired, or no longer eligible.' }, 401);
   }
   if (!verified.employeeId) return json({ error:'Sign-in verification is invalid.' }, 401);
+  if (passwordless && verified.transactionContext.authMode !== 'passwordless') return json({ error:'Sign-in verification is invalid.' }, 401);
+  if (!passwordless && verified.transactionContext.authMode === 'passwordless') return json({ error:'Sign-in verification is invalid.' },401);
   const employee = await env.DB.prepare(`
     SELECT c.username,e.email,e.display_name AS displayName,e.employment_status AS status
     FROM employee_credentials c
@@ -825,6 +853,14 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
     return json({ error:'This employee login is not available.' }, 403);
   }
   const tx = verified.transactionContext;
+  if (passwordless) {
+    const geo = await evaluateLocation(env, verified.employeeId, {
+      latitude: typeof tx.latitude === 'number' ? tx.latitude : undefined,
+      longitude: typeof tx.longitude === 'number' ? tx.longitude : undefined,
+      accuracy: typeof tx.accuracy === 'number' ? tx.accuracy : undefined
+    });
+    if (!geo.ok || (geo.companyId && geo.companyId !== verified.companyId)) return json({ error:'Sign-in location could not be verified.' },403);
+  }
   const text = (key:string) => typeof tx[key] === 'string' ? String(tx[key]) : undefined;
   const number = (key:string) => typeof tx[key] === 'number' && Number.isFinite(tx[key])
     ? Number(tx[key]) : undefined;
@@ -1088,6 +1124,8 @@ export async function routePasswordAuth(request: Request, env: PasswordAuthEnv):
   if (url.pathname === '/api/auth/signup/whatsapp/start' && request.method === 'POST') return startSignupWhatsApp(request, env);
   if (url.pathname === '/api/auth/signup/whatsapp/verify' && request.method === 'POST') return verifySignupWhatsApp(request, env);
   if (url.pathname === '/api/auth/login/verify-whatsapp' && request.method === 'POST') return verifySigninWhatsApp(request, env);
+  if (url.pathname === '/api/auth/login/whatsapp/start' && request.method === 'POST') return startWhatsAppPhoneSignIn(request, env);
+  if (url.pathname === '/api/auth/login/whatsapp/verify' && request.method === 'POST') return verifySigninWhatsApp(request, env, true);
   if (url.pathname === '/api/auth/password/recovery-options' && request.method === 'GET') return recoveryOptions(request, env);
   if (url.pathname === '/api/auth/password/forgot' && request.method === 'POST') return forgotPassword(request, env);
   if (url.pathname === '/api/auth/password/forgot-whatsapp' && request.method === 'POST') return startPasswordRecoveryWhatsApp(request, env);

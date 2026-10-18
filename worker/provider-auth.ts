@@ -81,7 +81,8 @@ function config(env: ProviderAuthEnv, provider: Provider): Config | null {
   const clientId = env.MICROSOFT_CLIENT_ID || env.MICROSOFT_OAUTH_CLIENT_ID;
   const clientSecret = env.MICROSOFT_CLIENT_SECRET || env.MICROSOFT_OAUTH_CLIENT_SECRET;
   if (!clientId || !clientSecret) return null;
-  const tenant = env.MICROSOFT_TENANT_ID || env.MICROSOFT_OAUTH_TENANT_ID || 'common';
+  const tenant = env.MICROSOFT_TENANT_ID || env.MICROSOFT_OAUTH_TENANT_ID;
+  if (!tenant || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(tenant)) return null;
   return {
     clientId, clientSecret,
     authorizationEndpoint: `https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/authorize`,
@@ -125,7 +126,7 @@ async function start(request: Request, env: ProviderAuthEnv, provider: Provider)
   }});
 }
 async function createSession(request: Request, env: ProviderAuthEnv, employeeId: string, provider: Provider) {
-  const secret = env.AUTH_PEPPER || (env.APP_STAGE === 'production' ? '' : stageSecret);
+  const secret = env.AUTH_PEPPER || '';
   if (!secret) throw new Error('AUTH_PEPPER is not configured for production.');
   const sessionToken = token(32);
   const sessionHash = await shaHex(sessionToken + ':' + secret);
@@ -163,8 +164,9 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
     const accessToken = typeof tokens.access_token === 'string' ? tokens.access_token : '';
     if (!accessToken) return failure(request, provider, 'provider_token_missing');
     const profile = await providerJson(await fetch(current.userInfoEndpoint, { headers: { authorization: 'Bearer ' + accessToken } }));
-    const email = String(profile.email || profile.preferred_username || '').trim().toLowerCase();
-    if (!email) return failure(request, provider, 'provider_email_missing');
+    const email = String(profile.email || '').trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return failure(request, provider, 'provider_email_missing');
+    if (provider === 'google' && profile.email_verified !== true) return failure(request, provider, 'provider_email_unverified');
     const employee = await env.DB.prepare(`
       SELECT id, employment_status AS status FROM employees WHERE LOWER(email) = ? LIMIT 1
     `).bind(email).first<{ id: string; status: string }>();
