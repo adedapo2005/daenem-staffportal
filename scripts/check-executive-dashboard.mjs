@@ -12,8 +12,8 @@ for(const module of['printing','bakery','autos','logistics','properties'])check(
 for(const field of['operatingExpenseKobo','outstandingReceivablesKobo','postedJournals'])check(`Finance metric: ${field}`,backend.includes(field)&&dashboard.includes(field));
 for(const field of['activeProjects','budgetKobo','spentKobo','overdueMilestones'])check(`Construction metric: ${field}`,backend.includes(field)&&dashboard.includes(field));
 check('Owner dashboard replaces placeholder for management',main.includes("<GroupExecutiveDashboard companyId={company.id} />")&&main.includes("can(context, 'dashboard.access', 'manage', company.id)"));
-check('company scope is validated server-side',backend.includes('Selected company is not assigned to this Owner workspace.')&&backend.includes('context.companies'));
-check('unassigned company data is suppressed',backend.includes("visible.has('company-printing')")&&backend.includes('scopePlaceholders'));
+check('company scope is validated server-side',backend.includes('const ids=new Set(context.companies.map(c=>c.id));')&&backend.includes("const denied = () => new Error('Owner intelligence scope is unavailable.');")&&backend.includes('throw denied()')&&!backend.includes('Selected company is not assigned to this Owner workspace.'));
+check('unassigned company data is suppressed',backend.includes('const can=(d:Domain,id:string)=>scopeIds.includes(id)&&allow(d,id);')&&backend.includes("visibleSales('company-printing') ? salesFor(env, 'company-printing', period)")&&backend.includes('scopePlaceholders')&&!backend.includes("visible.has('company-printing')"));
 check('queries are bound',backend.includes('.bind(companyId, range.start, range.end)')&&backend.includes('companyIds.map(() =>'));
 check('independent D1 reads are batched',backend.includes('env.DB.batch(['));
 check('two-minute refresh cadence',dashboard.includes('120000'));
