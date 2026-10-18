@@ -8,12 +8,17 @@ const feeds = read('worker/postlogin-context.ts');
 const worker = read('worker/index.ts');
 const clientEntry = read('src/main.tsx');
 const serviceWorker = read('public/sw.js');
+const credentials = read('worker/meta-credentials.ts');
+const stagingConfig = read('wrangler.staffportal-staging.jsonc');
 
 const fail = (message) => { console.error(`post-auth integration contract: ${message}`); process.exitCode = 1; };
 
 const clientCache = clientEntry.match(/SERVICE_WORKER_CACHE = '([^']+)'/)?.[1];
 const workerCache = serviceWorker.match(/CACHE = '([^']+)'/)?.[1];
 if (!clientCache || clientCache !== workerCache || !clientCache.includes('v16-postauth-live-integrations')) fail('client and service-worker cache releases are not synchronized');
+
+if (!credentials.includes("google_weather_api_key:'GOOGLE_WEATHER_API_KEY'")) fail('Cloudflare Google Weather credential mapping is missing');
+if (!stagingConfig.includes('"WEATHER_PROVIDER_ENABLED": "true"')) fail('staging weather provider flag is not enabled');
 
 if (!runtime.includes('LivePostLoginEnhancementsV116')) fail('runtime enhancement mount is missing');
 if (!runtime.includes('09bd2051d118242bce095be012a3a763cc1f8a33')) fail('approved V115 source provenance changed');
