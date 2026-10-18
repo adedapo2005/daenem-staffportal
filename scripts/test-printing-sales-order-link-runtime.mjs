@@ -32,7 +32,7 @@ db.exec(`
     quantity REAL NOT NULL, unit_price_kobo INTEGER NOT NULL, unit_cost_kobo INTEGER NOT NULL,
     discount_kobo INTEGER NOT NULL, line_total_kobo INTEGER NOT NULL
   );
-  CREATE TABLE print_job_status_events(id TEXT PRIMARY KEY,print_job_id TEXT,from_status TEXT,to_status TEXT,changed_by TEXT,note TEXT);
+  CREATE TABLE print_job_status_events(id TEXT PRIMARY KEY,print_job_id TEXT NOT NULL,from_status TEXT,to_status TEXT NOT NULL,changed_by TEXT,note TEXT);
   CREATE TABLE audit_logs(id TEXT PRIMARY KEY,actor_employee_id TEXT,company_id TEXT,module TEXT,action TEXT,
     entity_type TEXT,entity_id TEXT,before_json TEXT,after_json TEXT,source TEXT,request_id TEXT);
   CREATE TABLE customers(id TEXT,company_id TEXT,name TEXT,business_name TEXT);
@@ -65,7 +65,10 @@ db.exec(`
   INSERT INTO fiscal_periods VALUES('period-a','company-printing','open','Current period',date('now','start of month'),date('now','start of month','+1 month','-1 day'));
   CREATE TABLE print_job_materials(print_job_id TEXT,actual_quantity REAL,waste_quantity REAL,unit_cost_kobo INTEGER);
   CREATE TABLE print_finishing_records(print_job_id TEXT,cost_kobo INTEGER,result TEXT);
-  CREATE TABLE print_delivery_records(print_job_id TEXT,delivered_at TEXT);
+  CREATE TABLE print_delivery_records(id TEXT PRIMARY KEY,print_job_id TEXT NOT NULL,method TEXT,
+    recipient_name TEXT,recipient_phone TEXT,delivery_address TEXT,proof_key TEXT,note TEXT,
+    dispatched_by TEXT,delivered_by TEXT,dispatched_at TEXT,delivered_at TEXT,
+    acknowledged_by_customer INTEGER);
   INSERT INTO print_jobs(id,company_id,location_id,customer_id,job_no,title,quantity,quoted_kobo,production_status)
     VALUES('job-a','company-printing','location-a','customer-a','DP-001','Business cards',100,125000,'quoted');
 `);
@@ -131,7 +134,7 @@ assert.equal(response.status, 200, 'valid approval retry resolves the canonical 
 assert.equal((await response.json()).salesOrderId, approval.salesOrderId);
 db.prepare("UPDATE print_jobs SET production_status='delivered' WHERE id='job-a'").run();
 db.prepare("INSERT INTO print_job_materials VALUES('job-a',1,0,0)").run();
-db.prepare("INSERT INTO print_delivery_records VALUES('job-a',CURRENT_TIMESTAMP)").run();
+db.prepare("INSERT INTO print_delivery_records(id,print_job_id,delivered_at) VALUES('delivery-job-a','job-a',CURRENT_TIMESTAMP)").run();
 response = await route(statusRequest('job-a', 'completed', 'request-complete'), env, context);
 assert.equal(response.status, 200, await response.text());
 assert.deepEqual({ ...db.prepare('SELECT status,payment_status,total_kobo,amount_paid_kobo FROM sales_orders WHERE id=?').get(approval.salesOrderId) }, {
@@ -195,7 +198,7 @@ assert.equal(response.status, 200);
 const ignoredAuditOrder = (await response.json()).salesOrderId;
 db.prepare("UPDATE print_jobs SET production_status='delivered' WHERE id='job-audit-ignore-complete'").run();
 db.prepare("INSERT INTO print_job_materials VALUES('job-audit-ignore-complete',1,0,0)").run();
-db.prepare("INSERT INTO print_delivery_records VALUES('job-audit-ignore-complete',CURRENT_TIMESTAMP)").run();
+db.prepare("INSERT INTO print_delivery_records(id,print_job_id,delivered_at) VALUES('delivery-audit-ignore-complete','job-audit-ignore-complete',CURRENT_TIMESTAMP)").run();
 db.exec(`CREATE TRIGGER ignore_print_completion_audit BEFORE INSERT ON audit_logs
   WHEN NEW.action='completed_sales_order_eligible' BEGIN SELECT RAISE(IGNORE); END`);
 await assert.rejects(route(statusRequest('job-audit-ignore-complete', 'completed', 'request-audit-ignore-complete'), env, context),
@@ -216,4 +219,65 @@ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE notes='Pri
 assert.equal(db.prepare("SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-audit-fail'").get().production_status, 'quoted');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-audit-fail'").get().n, 0);
 
-console.log('Printing status Worker-handler SQLite acceptance: approval, concurrent one-order linkage, idempotent retry, company isolation, Finance eligibility, payment-truth preservation, and audit rollback PASS');
+db.exec('DROP TRIGGER reject_print_audit');
+const deliveryRequest = (jobId, requestId, markDelivered = true) => new Request('https://staffportal.test/api/printing/jobs/delivery', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': requestId },
+  body: JSON.stringify({ jobId, method: 'pickup', markDelivered }),
+});
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-delivery','company-printing','DP-D','Delivery guard',1,5000,'quoted')`).run();
+response = await route(deliveryRequest('job-delivery', 'request-early-delivery'), env, context);
+assert.equal(response.status, 409, 'a quoted job cannot claim completed delivery');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery'").get().n, 0);
+db.prepare("UPDATE print_jobs SET production_status='ready' WHERE id='job-delivery'").run();
+response = await route(deliveryRequest('job-delivery', 'request-valid-delivery'), env, context);
+assert.equal(response.status, 200, 'ready job can record delivery');
+assert.equal((await response.json()).delivered, true);
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-delivery'").get().production_status, 'delivered');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery' AND delivered_at IS NOT NULL").get().n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-delivery' AND from_status='ready' AND to_status='delivered'").get().n, 1);
+assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE entity_id='job-delivery' AND action='delivery_record'").get().request_id, 'request-valid-delivery');
+response = await route(deliveryRequest('job-delivery', 'request-delivery-replay'), env, context);
+assert.equal(response.status, 409, 'delivery replay cannot create another completed record');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery'").get().n, 1);
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-delivery-stale','company-printing','DP-S','Stale delivery',1,5000,'ready')`).run();
+const originalPrepare = env.DB.prepare;
+env.DB.prepare = (sql) => {
+  const prepared = originalPrepare(sql);
+  if (sql.includes('SELECT pj.id,pj.job_no')) {
+    const originalFirst = prepared.first.bind(prepared);
+    prepared.first = async () => {
+      const row = await originalFirst();
+      if (row?.id === 'job-delivery-stale') db.prepare("UPDATE print_jobs SET production_status='on_hold' WHERE id='job-delivery-stale'").run();
+      return row;
+    };
+  }
+  return prepared;
+};
+await assert.rejects(route(deliveryRequest('job-delivery-stale', 'request-stale-delivery'), env, context), /NOT NULL constraint failed/i,
+  'a state change after the read aborts delivery, status event and audit atomically');
+env.DB.prepare = originalPrepare;
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-delivery-stale'").get().production_status, 'on_hold');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery-stale'").get().n, 0);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-delivery-stale'").get().n, 0);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-delivery-stale' AND action='delivery_record'").get().n, 0);
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-delivery-audit','company-printing','DP-A','Delivery audit',1,5000,'ready')`).run();
+db.exec(`CREATE TRIGGER reject_delivery_audit BEFORE INSERT ON audit_logs WHEN NEW.action='delivery_record'
+  BEGIN SELECT RAISE(ABORT,'delivery audit unavailable'); END`);
+await assert.rejects(route(deliveryRequest('job-delivery-audit', 'request-delivery-audit-fail'), env, context), /delivery audit unavailable/);
+assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-delivery-audit'").get().production_status, 'ready');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery-audit'").get().n, 0);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-delivery-audit'").get().n, 0);
+db.exec('DROP TRIGGER reject_delivery_audit');
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-delivery-foreign','company-bakery','DP-B','Foreign delivery',1,5000,'ready')`).run();
+response = await route(deliveryRequest('job-delivery-foreign', 'request-foreign-delivery'), env, context);
+assert.equal(response.status, 404, 'cross-company delivery remains neutral');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery-foreign'").get().n, 0);
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery state CAS, company isolation, payment truth, and audit rollback PASS');
