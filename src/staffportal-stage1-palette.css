@@ -118,3 +118,11 @@
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-section-label {
   color: #526578;
 }
+
+/* Stage 1 visual QA 2026-10-19: explicit contrast over inherited premium shell. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-shell-brand .p-logo,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-shell-brand .p-logo :is(span,strong,small) { color: #13283d !important; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-company { background: #def3ee !important; color: #13283d !important; border-color: #b4ddd3 !important; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-company :is(span,strong,small) { color: #13283d !important; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-area > .ecc-group-row .ecc-disclosure { color: #13283d; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-area > .ecc-group-row .ecc-disclosure[aria-expanded="true"] { color: #0f766e; }
