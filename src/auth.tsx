@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound,
+  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound, X,
 } from 'lucide-react';
 import {
   readThemeId, type ThemeId,
@@ -635,6 +635,39 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
+  // The Create Account surface is a focused registration dialog, not a hidden
+  // scrollable form. Keep focus within the dialog and restore it on exit.
+  useEffect(() => {
+    if (mode !== 'signup') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusable = () => [...panel.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )].filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden');
+    const initial = panel.querySelector<HTMLElement>('.usp-auth-form input:not([disabled])') || focusable()[0];
+    initial?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        switchMode('signin');
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const controls = focusable();
+      if (!controls.length) return;
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    panel.addEventListener('keydown', onKeyDown);
+    return () => panel.removeEventListener('keydown', onKeyDown);
+  }, [mode, signupStep]);
+
   function validateSignupIdentity() {
     const missing = [
       !signup.firstName.trim() ? authLabels.firstName : '',
@@ -952,13 +985,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   );
 
   const legacyAuthPanel = (
-    <section ref={panelRef} aria-label="Employee authentication" data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
+    <section ref={panelRef} role={mode === 'signup' ? 'dialog' : undefined} aria-modal={mode === 'signup' ? true : undefined} aria-labelledby={mode === 'signup' ? 'usp-account-dialog-title' : undefined} aria-label={mode !== 'signup' ? 'Employee authentication' : undefined} data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
       <div className="usp-panel-heading sp-signup-heading">
         <div>
           <span className="usp-panel-eyebrow"><LockKeyhole size={14} /> {authLabels.secureErpAccess}</span>
-          <h1>{heading.title}</h1>
+          <h1 id={mode === 'signup' ? 'usp-account-dialog-title' : undefined}>{heading.title}</h1>
           <p>{heading.body}</p>
         </div>
+        {mode === 'signup' && <button type="button" className="sp-signup-close" aria-label="Close Create Account and return to Sign In" onClick={() => switchMode('signin')}><X size={16} /></button>}
         {mode === 'forgot'
           ? <button type="button" className="usp-back-link" onClick={() => switchMode('signin')}>{authLabels.backToSignIn}</button>
           : <span className="usp-mfa-chip"><ShieldCheck size={14} /> {authLabels.mfaReady}</span>}
@@ -1086,7 +1120,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button className="usp-primary-button" disabled={busy || !passwordPolicySatisfied(resetChecks) || newPassword !== confirmNewPassword} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
       </form>}
 
-      {mode !== 'forgot' && <>
+      {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity' || signupStep === 'work') && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
           <button type="button" onClick={() => startOAuth('microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>
