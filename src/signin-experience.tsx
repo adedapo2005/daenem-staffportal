@@ -123,9 +123,10 @@ function readCachedSignInWeather() {
     const stored: unknown = JSON.parse(raw);
     if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return null;
     const record = stored as { savedAt?: unknown; payload?: unknown };
-    if (typeof record.savedAt !== 'number' || !Number.isSafeInteger(record.savedAt) ||
-        record.savedAt <= 0 || Date.now() - record.savedAt > SIGNIN_WEATHER_CACHE_MAX_AGE_MS) return null;
-    return normalizeSignInWeather(record.payload);
+    if (typeof record.savedAt !== 'number' || !Number.isSafeInteger(record.savedAt) || record.savedAt <= 0) return null;
+    const payload = normalizeSignInWeather(record.payload);
+    if (!payload || Date.now() - Date.parse(payload.fetchedAt) > SIGNIN_WEATHER_CACHE_MAX_AGE_MS) return null;
+    return payload;
   } catch {
     return null;
   }
