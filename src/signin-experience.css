@@ -293,3 +293,13 @@
 #staffportal-auth-mount.sp-auth-mode-create .usp-auth-message {
   padding:6px 8px; font-size:11px; line-height:1.3; flex:none;
 }
+
+/* Prevent flex children from collapsing and visually overlapping the form. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-form,
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider,
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons,
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-note,
+#staffportal-auth-mount.sp-auth-mode-create .usp-legal-copy {
+  flex-shrink:0;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-form { min-height:max-content; }
