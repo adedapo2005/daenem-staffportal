@@ -333,3 +333,28 @@
     font-size:20px;
   }
 }
+
+/* Phone layout: guarantee the account workflow starts inside the visible screen.
+   Preserve scroll access to all fields, provider controls, and legal links. */
+@media (max-width:820px) {
+  .sp-root #staffportal-auth-mount.sp-auth-mode-create {
+    position:fixed !important;
+    inset:12px 10px auto 10px !important;
+    transform:none !important;
+    width:calc(100vw - 20px) !important;
+    max-width:440px !important;
+    height:auto !important;
+    max-height:calc(100dvh - 24px) !important;
+    margin-inline:auto !important;
+    overflow-y:auto !important;
+    padding:14px !important;
+    border-radius:18px !important;
+    z-index:1000 !important;
+    background:linear-gradient(145deg,#f4fbf8,#e5f1eb) !important;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
+    height:auto !important;
+    min-height:0 !important;
+    gap:8px;
+  }
+}
