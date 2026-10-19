@@ -7,6 +7,8 @@ import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css'
 import './postlogin-premium-refinement-v1.css';
 import './staffportal-stage1-palette.css';
 import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
+import Stage1SearchResults from './stage1-live-search';
+import './stage1-live-search.css';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
@@ -206,6 +208,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
     >
       <Portal />
       <LivePostLoginEnhancementsV116 />
+      <Stage1SearchResults enabled={stage1Enabled} />
     </div>
   );
 }

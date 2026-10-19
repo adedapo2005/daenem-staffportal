@@ -1,0 +1,27 @@
+#ask-daenem-command .stage1-live-search {
+  border-top: 1px solid #d8e7e7;
+  margin-top: 12px;
+  padding: 12px 2px 4px;
+  color: #13283d;
+}
+#ask-daenem-command .stage1-search-heading {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 6px 12px; margin-bottom: 8px;
+}
+#ask-daenem-command .stage1-search-heading span,
+#ask-daenem-command .stage1-search-empty { color: #526578; font-size: 13px; }
+#ask-daenem-command .stage1-search-list {
+  display: grid; gap: 4px; margin: 0; padding: 0; list-style: none;
+}
+#ask-daenem-command .stage1-search-list li :is(a,span) {
+  display: block; padding: 9px 12px; border-radius: 8px; min-height: 42px;
+  color: #13283d; overflow-wrap: anywhere;
+}
+#ask-daenem-command .stage1-search-list li a { text-decoration: none; }
+#ask-daenem-command .stage1-search-list li a:hover { background: #e8f7f5; }
+#ask-daenem-command .stage1-search-list li a:focus-visible {
+  outline: 3px solid #0f766e; outline-offset: 1px;
+}
+#ask-daenem-command .stage1-search-list li small {
+  display: block; color: #526578; margin-top: 2px;
+}
