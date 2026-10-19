@@ -144,7 +144,7 @@ function setTrailingText(element: HTMLElement | null, value: string) {
   if (!element) return;
   const textNode = [...element.childNodes].reverse().find((node) => node.nodeType === Node.TEXT_NODE);
   if (textNode) textNode.textContent = ` ${value}`;
-  else element.append(document.createTextNode(` ${value}`));
+  else element.insertAdjacentText('beforeend', ` ${value}`);
 }
 
 function weatherFreshness(payload: SignInWeatherPayload) {
