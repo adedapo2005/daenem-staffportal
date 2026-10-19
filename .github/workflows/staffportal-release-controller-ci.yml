@@ -33,6 +33,10 @@ jobs:
         run: |
           test -f .github/workflows/deploy-staffportal-staging.yml
           grep -q 'STAFFPORTAL STAGING APPROVAL CONSUMED SHA' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'name: Release blockers clear' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'signin-desktop-internal-scrollbar' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'signin-weather-cache' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'signin-password-state-styling' .github/workflows/deploy-staffportal-staging.yml
           ! grep -Eq 'uses: actions/(checkout|setup-node|github-script)@(v|main|master)' .github/workflows/deploy-staffportal-staging.yml
 
       - name: Checkout approved staging source
