@@ -635,9 +635,27 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
+  function validateSignupIdentity() {
+    const missing = [
+      !signup.firstName.trim() ? authLabels.firstName : '',
+      !signup.lastName.trim() ? authLabels.lastName : '',
+      !signup.email.trim() ? authLabels.personalEmail : '',
+    ].filter(Boolean);
+    if (missing.length) {
+      setMessage({ type: 'error', text: 'Complete the required account details to continue.', details: missing });
+      return false;
+    }
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(signup.email.trim())) {
+      setMessage({ type: 'error', text: 'Enter a valid personal email address before continuing.' });
+      return false;
+    }
+    return true;
+  }
+
   function continueSignupIdentity(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+    if (!validateSignupIdentity()) return;
     setSignupStep('account');
   }
 
@@ -743,6 +761,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   async function startSignup(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+    if (!validateSignupIdentity()) return;
     if (!passwordPolicySatisfied(signupChecks)) {
       setMessage({ type: 'error', text: authLabels.passwordRequirements, details: signupChecks.filter((check) => check.required && !check.ok).map((check) => check.label) });
       return;
@@ -971,14 +990,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         </div>}
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={continueSignupIdentity}>
+      {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupIdentity}>
         <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
         <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
         <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
         <button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button>
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={continueSignupAccount}>
+      {mode === 'signup' && compactDesktop && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupAccount}>
         <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="off" helper={authLabels.usernameHelper} />
         <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
         <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
@@ -987,13 +1006,13 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit" disabled={!passwordPolicySatisfied(signupChecks) || signup.password !== signup.confirmPassword}>{authLabels.continue}<ArrowRight size={17} /></button></div>
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={startSignup}>
+      {mode === 'signup' && compactDesktop && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
         <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
         <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
         <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('account')}>{authLabels.back}</button><button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button></div>
       </form>}
 
-      {mode === 'signup' && !compactDesktop && signupStep !== 'verify' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={startSignup}>
+      {mode === 'signup' && !compactDesktop && signupStep !== 'verify' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
         <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
         <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
         <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
