@@ -431,6 +431,7 @@ export function WorldClocks() {
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: WorkforceContext) => void }) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
+  const returnSignupFocusRef = useRef(false);
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -592,6 +593,16 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     };
   }, [mode, signupStep, recoveryStep, message, passwordPolicy, authLabels]);
 
+  useEffect(() => {
+    if (mode !== 'signin' || !returnSignupFocusRef.current) return;
+    returnSignupFocusRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('#staffportal-auth-mount .sp-auth-tabs button:nth-child(2)')
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode]);
+
   useEffect(() => { document.title = 'DAENEM Staff Portal'; }, [themeId]);
 
   useEffect(() => {
@@ -619,6 +630,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
+    if (mode === 'signup' && next === 'signin') returnSignupFocusRef.current = true;
     compactAuthRef.current = false;
     setMode(next);
     setMessage(null);
