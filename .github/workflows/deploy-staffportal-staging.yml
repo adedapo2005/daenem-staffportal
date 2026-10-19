@@ -1,0 +1,248 @@
+name: StaffPortal Staging Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: 'Exact 40-character SHA of the approved staging branch HEAD'
+        required: true
+        type: string
+      approval_comment_id:
+        description: 'Issue #5 comment ID with Owner approval for that exact SHA'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: staffportal-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  approval:
+    name: Check exact-SHA Owner approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      candidate_sha: ${{ steps.validate.outputs.candidate_sha }}
+    steps:
+      - name: Verify exact candidate, fresh approval, and no prior consumption
+        id: validate
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          APPROVAL_COMMENT_ID: ${{ inputs.approval_comment_id }}
+        with:
+          script: |
+            const sha = process.env.CANDIDATE_SHA || '';
+            const id = process.env.APPROVAL_COMMENT_ID || '';
+            if (!/^[a-f0-9]{40}$/i.test(sha)) {
+              core.setFailed('Full 40-character candidate SHA required.');
+              return;
+            }
+            if (!/^[1-9][0-9]*$/.test(id)) {
+              core.setFailed('Valid Issue #5 approval comment ID required.');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const ref = await github.rest.git.getRef({
+              owner,
+              repo,
+              ref: 'heads/feature/staffportal-mobile-auth-takeover-01'
+            });
+            if (ref.data.object.sha.toLowerCase() !== sha.toLowerCase()) {
+              core.setFailed('Candidate must equal current staging source HEAD.');
+              return;
+            }
+
+            const response = await github.rest.issues.getComment({
+              owner,
+              repo,
+              comment_id: Number(id)
+            });
+            const approval = response.data;
+            const expected = 'APPROVE STAFFPORTAL STAGING DEPLOY SHA ' + sha.toLowerCase();
+            const exactLine = (approval.body || '').split(/\r?\n/).some(
+              line => line.trim().toLowerCase() === expected.toLowerCase()
+            );
+            if (
+              approval.user?.login?.toLowerCase() !== owner.toLowerCase() ||
+              !approval.issue_url?.endsWith('/repos/' + owner + '/' + repo + '/issues/5') ||
+              !exactLine
+            ) {
+              core.setFailed('Exact SHA must be approved in Issue #5 by repository Owner.');
+              return;
+            }
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: 5, per_page: 100 }
+            );
+            const consumedMarker =
+              'STAFFPORTAL STAGING APPROVAL CONSUMED SHA ' + sha.toLowerCase();
+            const alreadyConsumed = comments.some(comment =>
+              (comment.body || '').toLowerCase().includes(consumedMarker.toLowerCase())
+            );
+            if (alreadyConsumed) {
+              core.setFailed('This exact approved SHA has already been deployed; a new approved candidate SHA is required.');
+              return;
+            }
+
+            core.setOutput('candidate_sha', sha.toLowerCase());
+
+  deploy:
+    name: Deploy StaffPortal staging
+    needs: approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: staffportal-api-staging
+      url: https://daenem-staffportal-api-staging.adedapo2005.workers.dev/
+    steps:
+      - name: Checkout exact approved source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.approval.outputs.candidate_sha }}
+          persist-credentials: false
+
+      - name: Assert exact approved SHA
+        env:
+          EXPECTED_SHA: ${{ needs.approval.outputs.candidate_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Use Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release contracts
+        run: |
+          node scripts/check-delivery-controller.mjs
+          node scripts/check-home-contract.mjs
+          npm run check:dashboard-permissions
+          npm run check:company-scoped-access
+          node scripts/check-v44-scoped-settings.mjs
+          node scripts/check-staffportal-staging-integration.mjs
+          npm run check:postauth-live
+
+      - name: Build and verify communications contracts
+        run: |
+          npx tsc worker/communications/index.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --types @cloudflare/workers-types --outDir .tmp-communications-test --rootDir . --noEmit false
+          node scripts/test-communications-contracts.mjs
+          npx tsc worker/communications-dispatch.ts worker/communications-webhook.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --types @cloudflare/workers-types --outDir .tmp-communications-remediation --rootDir . --noEmit false
+          node scripts/test-communications-remediation.mjs
+
+      - name: Assert production safety gates remain closed
+        shell: bash
+        run: |
+          test "$(node -p "require('./delivery/current-state.json').farmsAccessAllowed")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionDeployAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').liveMetaAuthorized")" = "false"
+
+      - name: Build StaffPortal
+        env:
+          VITE_STAFFPORTAL_BUILD_SHA: ${{ needs.approval.outputs.candidate_sha }}
+          VITE_STAFFPORTAL_BUILD_REF: feature/staffportal-mobile-auth-takeover-01
+          VITE_STAFFPORTAL_BUILD_RUN_ID: ${{ github.run_id }}
+        run: |
+          export VITE_STAFFPORTAL_DEPLOYED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          npm run build
+
+      - name: Reject legacy client shell and auth bridge
+        shell: bash
+        run: |
+          if grep -R -nE 'v180-staging-auth-bridge|vinext.navigationRuntime|/_next/static/|location[.]assign[(][^)]*/workspace/' src worker public index.html vite*.ts; then
+            echo "::error::Legacy Next/Vinext or hard-redirect auth bridge detected in the deploy source."
+            exit 1
+          fi
+
+      - name: Enforce approved post-login runtime
+        shell: bash
+        run: |
+          if grep -nE '<Workspace context=\\{auth[.]context\\}' src/main.tsx; then
+            echo "::error::Authenticated Root still mounts the rejected Workspace shell."
+            exit 1
+          fi
+          if ! grep -nF "ApprovedPostLoginV115 context={auth.context}" src/main.tsx; then
+            echo "::error::Approved QA Review V115 is not the authenticated root."
+            exit 1
+          fi
+          if [ -e src/approved-postlogin-v115.tsx ] || [ -e src/approved-postlogin-v115.css ]; then
+            echo "::error::Reduced post-login placeholder files are still present."
+            exit 1
+          fi
+          if grep -nE 'premium-lab|PostLoginRemoved|ZipDashboard' src/qa-review-v115-runtime.tsx; then
+            echo "::error::Rejected post-login source is present in the approved runtime."
+            exit 1
+          fi
+          if ! grep -nF '09bd2051d118242bce095be012a3a763cc1f8a33' src/qa-review-v115-runtime.tsx; then
+            echo "::error::Approved QA Review V115 source provenance is missing."
+            exit 1
+          fi
+          if [ "$(find source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience -type f | wc -l | tr -d ' ')" != "117" ]; then
+            echo "::error::Official post-Sign-In QA Review V115 experience source is missing."
+            exit 1
+          fi
+          node scripts/check-complete-v115-export.mjs
+          node scripts/check-approved-experience-lock.mjs
+
+      - name: Normalize Cloudflare account ID
+        env:
+          CLOUDFLARE_ACCOUNT_ID_RAW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          account_id="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID_RAW" | tr -d '[:space:]')"
+          if [ -z "$account_id" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is empty"
+            exit 1
+          fi
+          if ! printf '%s' "$account_id" | grep -Eq '^[A-Za-z0-9_-]+$'; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID contains invalid characters"
+            exit 1
+          fi
+          printf 'CLOUDFLARE_ACCOUNT_ID=%s\n' "$account_id" >> "$GITHUB_ENV"
+
+      - name: Deploy staging Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler deploy --config wrangler.staffportal-staging.jsonc --keep-vars
+
+      - name: Consume one-time approval
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          CANDIDATE_SHA: ${{ needs.approval.outputs.candidate_sha }}
+        with:
+          script: |
+            const sha = process.env.CANDIDATE_SHA;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 5,
+              body: [
+                'STAFFPORTAL STAGING APPROVAL CONSUMED SHA ' + sha,
+                '',
+                'The exact approved candidate was deployed by this protected manual run.',
+                'Run ID: ' + context.runId
+              ].join('\n')
+            });
+
+      - name: Verify staging health
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
+
+      - name: Verify staging runtime and auth route contract
+        env:
+          STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
+        run: node scripts/test-staffportal-staging-runtime.mjs
+
+      - name: Verify versioned staging asset integrity
+        env:
+          STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
+        run: node scripts/test-staffportal-staging-assets.mjs

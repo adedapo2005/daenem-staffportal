@@ -1,0 +1,70 @@
+name: StaffPortal Release Controller CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-staffportal-staging.yml'
+      - '.github/workflows/staffportal-release-controller-ci.yml'
+  push:
+    branches:
+      - 'release/staffportal-manual-staging-controller-20261018'
+    paths:
+      - '.github/workflows/deploy-staffportal-staging.yml'
+      - '.github/workflows/staffportal-release-controller-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  controller-check:
+    name: Typecheck, Pages build, and API dry-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout controller candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: controller
+
+      - name: Verify controller hardening
+        working-directory: controller
+        run: |
+          test -f .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'STAFFPORTAL STAGING APPROVAL CONSUMED SHA' .github/workflows/deploy-staffportal-staging.yml
+          ! grep -Eq 'uses: actions/(checkout|setup-node|github-script)@(v|main|master)' .github/workflows/deploy-staffportal-staging.yml
+
+      - name: Checkout approved staging source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: feature/staffportal-mobile-auth-takeover-01
+          persist-credentials: false
+          path: candidate
+
+      - name: Use Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: candidate/package-lock.json
+
+      - name: Install dependencies
+        working-directory: candidate
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: candidate
+        run: npm run typecheck
+
+      - name: Pages build
+        working-directory: candidate
+        run: npm run build
+
+      - name: API dry-run contracts
+        working-directory: candidate
+        run: |
+          node scripts/check-delivery-controller.mjs
+          node scripts/check-home-contract.mjs
+          node scripts/check-staffportal-staging-integration.mjs
+          npm run check:postauth-live
