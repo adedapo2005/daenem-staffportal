@@ -11,6 +11,8 @@ on:
         description: 'Issue #5 comment ID with Owner approval for that exact SHA'
         required: true
         type: string
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -23,6 +25,14 @@ concurrency:
 jobs:
   approval:
     name: Check exact-SHA Owner approval
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.number == 5 &&
+        github.event.comment.user.login == github.repository_owner &&
+        contains(github.event.comment.body, 'APPROVE STAFFPORTAL STAGING DEPLOY SHA ')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -32,12 +42,23 @@ jobs:
         id: validate
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
         env:
-          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          APPROVAL_COMMENT_ID: ${{ inputs.approval_comment_id }}
+          MANUAL_CANDIDATE_SHA: ${{ inputs.candidate_sha || '' }}
+          MANUAL_APPROVAL_COMMENT_ID: ${{ inputs.approval_comment_id || '' }}
+          APPROVAL_COMMENT_BODY: ${{ github.event.comment.body || '' }}
+          APPROVAL_COMMENT_ID: ${{ github.event.comment.id || '' }}
         with:
           script: |
-            const sha = process.env.CANDIDATE_SHA || '';
-            const id = process.env.APPROVAL_COMMENT_ID || '';
+            const fromOwnerComment = context.eventName === 'issue_comment';
+            const approvalLine = (process.env.APPROVAL_COMMENT_BODY || '')
+              .split(/\r?\n/)
+              .map(line => line.trim())
+              .find(line => /^APPROVE STAFFPORTAL STAGING DEPLOY SHA [a-f0-9]{40}$/i.test(line));
+            const sha = fromOwnerComment
+              ? (approvalLine || '').split(/\s+/).pop() || ''
+              : process.env.MANUAL_CANDIDATE_SHA || '';
+            const id = fromOwnerComment
+              ? process.env.APPROVAL_COMMENT_ID || ''
+              : process.env.MANUAL_APPROVAL_COMMENT_ID || '';
             if (!/^[a-f0-9]{40}$/i.test(sha)) {
               core.setFailed('Full 40-character candidate SHA required.');
               return;
