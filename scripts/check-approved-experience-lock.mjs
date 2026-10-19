@@ -1,7 +1,16 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifyApprovedNavigationOverlay } from './lib/approved-navigation-overlay.mjs';
+
+let navigationOverlay;
+try {
+  navigationOverlay = verifyApprovedNavigationOverlay({ projectRoot: fileURLToPath(new URL('../', import.meta.url)) });
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const main = read('../src/main.tsx');
@@ -25,17 +34,23 @@ const approvedSourceRoot = fileURLToPath(new URL('../source-snapshots/DAENEM-Sta
 const sourceRoots = ['app/experience', 'components/ui', 'hooks', 'lib', 'vendor'];
 const sourceFiles = [];
 const walk = (directory) => {
+  if (!lstatSync(directory).isDirectory()) {
+    failures.push(`Approved source directory is not a real directory: ${directory}`);
+    return;
+  }
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const absolute = resolve(directory, entry.name);
     if (entry.isDirectory()) walk(absolute);
     else if (entry.isFile()) sourceFiles.push(relative(approvedSourceRoot, absolute).replaceAll('\\', '/'));
+    else failures.push(`Unexpected non-regular approved source entry: ${absolute}`);
   }
 };
 for (const directory of sourceRoots) walk(resolve(approvedSourceRoot, directory));
 sourceFiles.push('app/globals.css');
+if (!lstatSync(resolve(approvedSourceRoot, 'app/globals.css')).isFile()) failures.push('Approved global stylesheet is not a regular file.');
 sourceFiles.sort();
 const sourceFingerprint = createHash('sha256').update(sourceFiles.map((file) => {
-  const digest = createHash('sha256').update(readFileSync(resolve(approvedSourceRoot, file))).digest('hex');
+  const digest = navigationOverlay.digestForExportFile(file, readFileSync(resolve(approvedSourceRoot, file)));
   return `${digest}  ${file}\n`;
 }).join('')).digest('hex');
 
@@ -99,4 +114,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Approved experience lock passed: exact Sites V180 + official 683-file QA Review V115 export (${sourceFiles.length} locked runtime files), real Worker auth retained.`);
+console.log(`Approved experience lock passed: exact Sites V180 + official QA Review V115 baseline with verified ${navigationOverlay.id} overlay (${sourceFiles.length} locked runtime files), real Worker auth checks retained.`);
