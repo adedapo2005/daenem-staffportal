@@ -1,304 +1,1108 @@
-import { forwardRef, memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
-import type { ThemeId } from './theme-system';
-import approvedSignInMarkup from './approved-signin-v180/reference-v180.html?raw';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  Activity, Cloud, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, LockKeyhole,
+  Moon, Newspaper, Radio, ShieldCheck, Sparkles, Sun, Target, Wifi 
+} from 'lucide-react';
+import { applyThemeToDocument, type ThemeId } from './theme-system';
+import {
+  DEFAULT_SIGNIN_PREFERENCES,
+  WORLD_CLOCK_CATALOG,
+  SIGNIN_BACKGROUND_OPTIONS,
+  fetchPublicSignInContext,
+  normalizeSignInPreferences,
+  readSignInPreferences,
+  type PortalLocation,
+  type PublicSignInContext,
+  type SignInExperiencePreferences,
+  type SignInGlobalOperations,
+  type SignInZone,
+  type SignInWidgetId,
+  type SignInWidgetInstance,
+  type TemperatureUnit,
+} from './signin-preferences';
 
-// Presentation is copied from the approved Sites V180 source; runtime code only wires live data and real authentication into it.
-const APPROVED_SIGNIN = Object.freeze({
-  project: 'appgprj_6abbab3d45848191b6344993cc010bd7',
-  version: 180,
-  commit: '523474f7b839919c258da85be6fcf53edd38810d',
-});
-
-const cityZones: Record<string, string> = {
-  toronto: 'America/Toronto',
-  london: 'Europe/London',
-  newyork: 'America/New_York',
-  moscow: 'Europe/Moscow',
-  tokyo: 'Asia/Tokyo',
-  beijing: 'Asia/Shanghai',
-  ibadan: 'Africa/Lagos',
+type WeatherReading = {
+  state: 'loading' | 'ready' | 'unavailable';
+  temperatureC: number | null;
+  apparentTemperatureC: number | null;
+  humidity: number | null;
+  precipitationMm: number | null;
+  windSpeedKmh: number | null;
+  windDirection: number | null;
+  windGustKmh: number | null;
+  isDay: boolean | null;
+  todayHighC: number | null;
+  todayLowC: number | null;
+  precipitationProbability: number | null;
+  sunrise: string | null;
+  sunset: string | null;
+  description: string;
+  updatedAt: Date | null;
 };
 
-const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
-  toronto: {
-    day: '/assets/global/toronto-day-v115-card.jpg',
-    night: '/assets/global/toronto-night-v180-card.webp',
-  },
-  london: {
-    day: '/assets/global/london-day-v115-card.jpg',
-    night: '/assets/global/london-night-v180-card.webp',
-  },
-  newyork: {
-    dawn: '/assets/global/newyork-dawn-v179-card.webp',
-    day: '/assets/global/newyork-day-v179-card.webp',
-    dusk: '/assets/global/newyork-dusk-v179-card.webp',
-    night: '/assets/global/newyork-night-v179-card.webp',
-  },
-  moscow: {
-    day: '/assets/global/moscow-day-v115-card.jpg',
-    night: '/assets/global/moscow-night-v180-card.webp',
-  },
-  tokyo: { day: '/assets/global/tokyo-day-v115-card.jpg' },
-  beijing: {
-    day: '/assets/global/beijing-day-v115-card.jpg',
-    night: '/assets/global/beijing-night-v109.jpg',
-  },
-  ibadan: {
-    day: '/assets/staffportal-weather/ibadan-day-v125-card.webp',
-    night: '/assets/staffportal-weather/ibadan-night-v125.png',
-  },
+type HealthReading = {
+  state: 'checking' | 'operational' | 'maintenance';
+  latencyMs: number | null;
+  checkedAt: Date | null;
 };
 
-const phaseIcons: Record<'dawn' | 'day' | 'dusk' | 'night', { className: string; paths: string }> = {
-  dawn: {
-    className: 'lucide lucide-sunrise h-3 w-3',
-    paths: '<path d="M12 2v8"></path><path d="m4.93 10.93 1.41 1.41"></path><path d="M2 18h2"></path><path d="M20 18h2"></path><path d="m19.07 10.93-1.41 1.41"></path><path d="M22 22H2"></path><path d="m8 6 4-4 4 4"></path><path d="M16 18a4 4 0 0 0-8 0"></path>',
-  },
-  day: {
-    className: 'lucide lucide-sun h-3 w-3',
-    paths: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>',
-  },
-  dusk: {
-    className: 'lucide lucide-sunset h-3 w-3',
-    paths: '<path d="M12 10V2"></path><path d="m4.93 10.93 1.41 1.41"></path><path d="M2 18h2"></path><path d="M20 18h2"></path><path d="m19.07 10.93-1.41 1.41"></path><path d="M22 22H2"></path><path d="m16 6-4 4-4-4"></path><path d="M16 18a4 4 0 0 0-8 0"></path>',
-  },
-  night: {
-    className: 'lucide lucide-moon h-3 w-3',
-    paths: '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></path>',
-  },
+type LayoutDensity = 'comfortable' | 'compact' | 'tight';
+type LayoutMetrics = {
+  stageTop: number;
+  stageHeight: number;
+  stageBottom: number;
+  brandTop: number;
+  brandBottom: number;
+  brandLeft: number;
+  brandRight: number;
+  authTop: number;
+  authBottom: number;
+  workspaceTop: number;
+  workspaceBottom: number;
+  liveTop: number;
+  liveBottom: number;
+  dockTop: number;
+  dockBottom: number;
+  authDockGap: number;
+  liveDockGap: number;
+  workspaceDockGap: number;
+  availableDockGap: number;
+  requiredDockHeight: number;
+  requiredAuthHeight: number;
+  requiredWorkspaceHeight: number;
+  authAvailable: number;
+  authRequired: number;
+  liveAvailable: number;
+  liveRequired: number;
+  dockWidth: number;
+  outerFitMeasured: boolean;
+  spatialFit: boolean;
+  outerFit: boolean;
+  workspaceAuthCollision: boolean;
+  brandAuthCollision: boolean;
 };
 
-function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
-  const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', hourCycle: 'h23' }).format(now));
-  if (hour >= 5 && hour < 7) return 'dawn';
-  if (hour >= 7 && hour < 17) return 'day';
-  if (hour >= 17 && hour < 19) return 'dusk';
-  return 'night';
+type ClockFitMetrics = {
+  measured: boolean;
+  dockClientHeight: number;
+  dockScrollHeight: number;
+  requiredDockHeight: number;
+  gridClientHeight: number;
+  gridScrollHeight: number;
+  cardClientHeight: number;
+  cardScrollHeight: number;
+  copyClientHeight: number;
+  copyScrollHeight: number;
+  gridWithinDock: boolean;
+  cardsWithinGrid: boolean;
+  copyWithinCards: boolean;
+  requiredContentWithinCards: boolean;
+  dockOverflow: boolean;
+  gridOverflow: boolean;
+  cardOverflow: boolean;
+  copyOverflow: boolean;
+  fits: boolean;
+};
+
+const EMPTY_CLOCK_FIT: ClockFitMetrics = {
+  measured: false,
+  dockClientHeight: 0,
+  dockScrollHeight: 0,
+  requiredDockHeight: 0,
+  gridClientHeight: 0,
+  gridScrollHeight: 0,
+  cardClientHeight: 0,
+  cardScrollHeight: 0,
+  copyClientHeight: 0,
+  copyScrollHeight: 0,
+  gridWithinDock: true,
+  cardsWithinGrid: true,
+  copyWithinCards: true,
+  requiredContentWithinCards: true,
+  dockOverflow: false,
+  gridOverflow: false,
+  cardOverflow: false,
+  copyOverflow: false,
+  fits: false,
+};
+
+const EMPTY_LAYOUT_METRICS: LayoutMetrics = {
+  stageTop: 0,
+  stageHeight: 0,
+  stageBottom: 0,
+  brandTop: 0,
+  brandBottom: 0,
+  brandLeft: 0,
+  brandRight: 0,
+  authTop: 0,
+  authBottom: 0,
+  workspaceTop: 0,
+  workspaceBottom: 0,
+  liveTop: 0,
+  liveBottom: 0,
+  dockTop: 0,
+  dockBottom: 0,
+  authDockGap: 0,
+  liveDockGap: 0,
+  workspaceDockGap: 0,
+  availableDockGap: 0,
+  requiredDockHeight: 0,
+  requiredAuthHeight: 0,
+  requiredWorkspaceHeight: 0,
+  authAvailable: 0,
+  authRequired: 0,
+  liveAvailable: 0,
+  liveRequired: 0,
+  dockWidth: 0,
+  outerFitMeasured: false,
+  spatialFit: true,
+  outerFit: true,
+  workspaceAuthCollision: false,
+  brandAuthCollision: false,
+};
+
+const CLOCK_FIT_TOLERANCE = 2;
+const CLOCK_CAPACITY_STEPS = [7, 4, 3, 2, 1] as const;
+const WIDGET_ROTATION_INTERVAL_MS = 9000;
+const SAFE_LAYOUT_GAP = 12;
+const SAFE_VIEWPORT_MARGIN = 4;
+
+const FALLBACK_CONTEXT: PublicSignInContext = {
+  config: DEFAULT_SIGNIN_PREFERENCES,
+  inspiration: 'Turn the clearest next step into visible progress.',
+  motivation: 'Build today’s momentum with one useful, well-finished action.',
+  news: [{ title: 'Daenem live services are connected and ready.', category: 'Portal', source: 'Daenem' }],
+  generatedAt: new Date(0).toISOString(),
+  source: 'fallback',
+};
+
+function timeText(zone: string, date: Date, seconds = false) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    hour: 'numeric',
+    minute: '2-digit',
+    second: seconds ? '2-digit' : undefined,
+    hour12: true,
+  }).format(date);
 }
 
-function resolvedMedia(cityId: string, phase: 'dawn' | 'day' | 'dusk' | 'night') {
-  const media = cityMedia[cityId] || {};
-  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : [phase] as const;
-  const mediaPhase = order.find((item) => media[item]);
-  return mediaPhase ? { src: media[mediaPhase] || '', mediaPhase } : { src: '', mediaPhase: 'none' };
+function fullDateText(zone: string, date: Date) {
+  const weekday = new Intl.DateTimeFormat('en-US', { timeZone: zone, weekday: 'long' }).format(date);
+  const numeric = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, month: '2-digit', day: '2-digit', year: 'numeric',
+  }).format(date);
+  return weekday + ' · ' + numeric;
 }
 
-function settleReferenceMotion(root: HTMLElement) {
-  const hero = root.querySelector<HTMLElement>('.sp-hero-content');
-  if (!hero) return;
-  [hero, ...hero.querySelectorAll<HTMLElement>('[style*="opacity:0"]')].forEach((element) => {
-    element.style.opacity = '1';
-    if (element.style.transform) element.style.transform = 'none';
-    if (element.style.clipPath) element.style.clipPath = 'inset(0 0 0 0)';
-  });
+function timeZoneText(zone: string, date: Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, timeZoneName: 'short',
+  }).formatToParts(date).find((part) => part.type === 'timeZoneName')?.value || zone;
 }
 
-function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: Date) {
-  const phase = phaseAt(now, zone);
-  const localNight = phase === 'night' || phase === 'dusk';
-  const media = resolvedMedia(cityId, phase);
-  const phaseNode = card.querySelector<HTMLElement>('.gw-city-phase');
-  if (phaseNode) {
-    const textNodes = [...phaseNode.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE);
-    textNodes.forEach((node, index) => { node.textContent = index === textNodes.length - 1 ? phase : ' '; });
-    const icon = phaseNode.querySelector<SVGElement>('svg');
-    if (icon) {
-      icon.setAttribute('class', phaseIcons[phase].className);
-      icon.innerHTML = phaseIcons[phase].paths;
-    }
-  }
-
-  card.dataset.phase = phase;
-  card.dataset.livePhase = phase;
-  card.dataset.resolvedPhase = phase;
-  card.dataset.mediaRequested = phase;
-  card.dataset.mediaPhase = media.mediaPhase;
-  card.dataset.mediaSelected = media.mediaPhase;
-  card.dataset.material = localNight ? 'night' : 'day';
-  card.dataset.localMaterial = localNight ? 'night' : 'day';
-  card.className = card.className
-    .replace(/gw-city-phase-(?:dawn|day|dusk|night)/g, `gw-city-phase-${phase}`)
-    .replace(/gw-city-(?:day|night)-(?:bright_glass|precision)/g, `gw-city-${localNight ? 'night-precision' : 'day-bright_glass'}`);
-  const atmosphere = card.querySelector<HTMLElement>('.gw-city-atmosphere');
-  if (atmosphere) atmosphere.className = atmosphere.className.replace(/gw-city-atmosphere-phase-(?:dawn|day|dusk|night)/g, `gw-city-atmosphere-phase-${phase}`);
-
-  const mediaContainer = card.firstElementChild;
-  let imageLayer = mediaContainer?.querySelector<HTMLElement>('.gw-city-image-layer') || null;
-  if (!media.src) {
-    imageLayer?.remove();
-    return;
-  }
-  if (!imageLayer && mediaContainer) {
-    imageLayer = document.createElement('div');
-    imageLayer.className = `absolute inset-0 gw-city-image-layer gw-city-image-phase-${phase} [&_img]:block`;
-    imageLayer.style.opacity = '1';
-    mediaContainer.insertBefore(imageLayer, mediaContainer.firstChild);
-  }
-  if (!imageLayer) return;
-  imageLayer.className = imageLayer.className.replace(/gw-city-image-phase-(?:dawn|day|dusk|night)/g, `gw-city-image-phase-${phase}`);
-  const usesApprovedImageWrapper = cityId === 'toronto' || cityId === 'london' || cityId === 'moscow';
-  let image: HTMLImageElement;
-  if (usesApprovedImageWrapper) {
-    let outer = imageLayer.querySelector<HTMLElement>('span[data-base44-image]');
-    if (!outer) outer = document.createElement('span');
-    outer.className = 'relative block h-full w-full object-cover transition-transform duration-1000 group-hover:scale-[1.025]';
-    outer.dataset.base44Image = '';
-    outer.dataset.base44ImageSrc = media.src;
-    let inner = outer.querySelector<HTMLElement>('span');
-    if (!inner) inner = document.createElement('span');
-    inner.className = 'block relative w-full h-full overflow-hidden';
-    image = inner.querySelector<HTMLImageElement>('img') || document.createElement('img');
-    image.className = 'w-full h-full inset-0 absolute object-cover';
-    inner.replaceChildren(image);
-    outer.replaceChildren(inner);
-    imageLayer.replaceChildren(outer);
-  } else {
-    image = imageLayer.querySelector<HTMLImageElement>(':scope > img') || document.createElement('img');
-    image.className = 'block h-full w-full object-cover transition-transform duration-1000 group-hover:scale-[1.025]';
-    imageLayer.replaceChildren(image);
-  }
-  image.loading = 'eager';
-  image.decoding = 'async';
-  if (image.getAttribute('src') !== media.src) image.src = media.src;
-  const city = card.querySelector<HTMLElement>('.gw-city-name')?.textContent?.trim() || cityId;
-  image.alt = `${city} at ${phase} (${media.mediaPhase} media)`;
+function dayNightText(zone: string, date: Date) {
+  const hour = Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, hour: '2-digit', hour12: false,
+  }).format(date));
+  return hour >= 6 && hour < 18 ? 'Daylight' : 'Night';
 }
 
-function removePublicOwnerStudioLauncher(markup: string) {
-  return markup.replace(/<a\b[^>]*data-owner-studio-launcher="sign-in"[^>]*>[\s\S]*?<\/a>/, '');
-}
-const runtimeApprovedSignInMarkup = removePublicOwnerStudioLauncher(approvedSignInMarkup);
-
-const ApprovedSignInSource = memo(forwardRef<HTMLDivElement>(function ApprovedSignInSource(_, ref) {
-  return <div ref={ref} className="sp-approved-signin-host" dangerouslySetInnerHTML={{ __html: runtimeApprovedSignInMarkup }} />;
-}));
-
-function updateReferenceClocks(root: HTMLElement, now: Date) {
-  root.querySelectorAll<HTMLElement>('[data-city-id]').forEach((card) => {
-    const zone = cityZones[card.dataset.cityId || ''];
-    if (!zone) return;
-    updateCityPhase(card, card.dataset.cityId || '', zone, now);
-    const time = new Intl.DateTimeFormat('en-US', {
-      timeZone: zone,
-      hour: 'numeric',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-    }).format(now);
-    const date = new Intl.DateTimeFormat('en-US', {
-      timeZone: zone,
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(now);
-    const comma = date.indexOf(',');
-    const timeNode = card.querySelector<HTMLElement>('.gw-city-local-time');
-    const dateNodes = card.querySelectorAll<HTMLElement>('.gw-city-digital > p');
-    if (timeNode) timeNode.textContent = time;
-    if (dateNodes[1]) dateNodes[1].textContent = date.slice(0, comma + 1);
-    if (dateNodes[2]) dateNodes[2].textContent = date.slice(comma + 2);
-    if (dateNodes[3]) {
-      const zoneName = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' })
-        .formatToParts(now)
-        .find((part) => part.type === 'timeZoneName')?.value || '';
-      dateNodes[3].textContent = `${zone} · ${zoneName}`;
-    }
-
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: zone,
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: true,
-    }).formatToParts(now);
-    const hour = Number(parts.find((part) => part.type === 'hour')?.value || 0) % 12;
-    const minute = Number(parts.find((part) => part.type === 'minute')?.value || 0);
-    const second = Number(parts.find((part) => part.type === 'second')?.value || 0);
-    const hands = [...card.querySelectorAll<SVGGElement>('.gw-city-clock svg > g[transform^="rotate("]')].slice(-3);
-    if (hands[0]) hands[0].setAttribute('transform', `rotate(${hour * 30 + minute * .5} 100 100)`);
-    if (hands[1]) hands[1].setAttribute('transform', `rotate(${minute * 6 + second * .1} 100 100)`);
-    if (hands[2]) hands[2].setAttribute('transform', `rotate(${second * 6} 100 100)`);
-  });
+function clockHands(zone: string, date: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value || 0) % 12;
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value || 0);
+  const second = Number(parts.find((part) => part.type === 'second')?.value || 0);
+  return {
+    '--usp-hour-angle': (hour * 30 + minute * 0.5) + 'deg',
+    '--usp-minute-angle': (minute * 6 + second * 0.1) + 'deg',
+    '--usp-second-angle': (second * 6) + 'deg',
+  } as CSSProperties;
 }
 
-export function Brand({ compact = false, className = '' }: { compact?: boolean; className?: string }) {
-  const target = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const source = document.querySelector<HTMLElement>('.sp-approved-signin-host .sp-hero-brand');
-    if (!source || !target.current) return;
-    const clone = source.cloneNode(true) as HTMLElement;
-    const idMap = new Map<string, string>();
-    clone.querySelectorAll<HTMLElement>('[id]').forEach((node) => {
-      const previous = node.id;
-      const next = `${previous}-auth`;
-      idMap.set(previous, next);
-      node.id = next;
+function formatTemperature(value: number | null, unit: TemperatureUnit) {
+  if (value === null) return '—°' + unit;
+  const converted = unit === 'F' ? (value * 9) / 5 + 32 : value;
+  return Math.round(converted) + '°' + unit;
+}
+
+function compassDirection(value: number | null) {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(value / 45) % 8];
+}
+
+function shortWeatherTime(value: string | null) {
+  if (!value) return '—';
+  const time = value.split('T')[1] || value;
+  return time.slice(0, 5);
+}
+
+function densityHint(viewport: { width: number; height: number }): LayoutDensity {
+  if (viewport.height < 720) return 'tight';
+  if (viewport.height < 960 || (viewport.width <= 1120 && viewport.height < 820)) return 'compact';
+  return 'comfortable';
+}
+
+function densityRank(value: LayoutDensity) {
+  return value === 'comfortable' ? 0 : value === 'compact' ? 1 : 2;
+}
+
+function rectsIntersect(a: DOMRect, b: DOMRect) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function rectWithin(inner: DOMRect, outer: DOMRect, tolerance = CLOCK_FIT_TOLERANCE) {
+  return inner.top >= outer.top - tolerance
+    && inner.left >= outer.left - tolerance
+    && inner.bottom <= outer.bottom + tolerance
+    && inner.right <= outer.right + tolerance;
+}
+
+function weatherKind(description: string) {
+  const value = description.toLowerCase();
+  if (value.includes('thunder') || value.includes('hail')) return 'storm';
+  if (value.includes('rain') || value.includes('drizzle') || value.includes('shower')) return 'rain';
+  if (value.includes('snow')) return 'snow';
+  if (value.includes('fog') || value.includes('mist')) return 'fog';
+  if (value.includes('cloud') || value.includes('overcast')) return 'cloud';
+  return 'sun';
+}
+
+function WeatherIcon({ description, size = 20, isDay = true, animation = 'subtle' }: { description: string; size?: number; isDay?: boolean | null; animation?: SignInGlobalOperations['weatherAnimation'] }) {
+  const kind = weatherKind(description);
+  const Icon = kind === 'storm' ? CloudLightning : kind === 'rain' ? CloudRain : kind === 'snow' ? CloudSnow : kind === 'cloud' || kind === 'fog' ? Cloud : isDay === false ? Moon : Sun;
+  const nightClass = isDay === false ? ' usp-weather-night' : '';
+  return <span className={'usp-weather-glyph usp-weather-' + kind + ' usp-weather-animation-' + animation + nightClass} aria-hidden="true"><Icon size={size} /></span>;
+}
+
+function AnimatedBrand({ preferences }: { preferences: SignInExperiencePreferences }) {
+  const labels = preferences.labels;
+  const logo = preferences.logo;
+  return <div className={'usp-brand-lockup usp-logo-size-' + logo.size + ' usp-logo-align-' + logo.alignment + ' usp-logo-animation-' + logo.animation + (logo.glass ? ' usp-brand-glass' : '')}
+    style={{ '--usp-glass-intensity': String(preferences.effects.glassIntensity) } as CSSProperties}
+    aria-label={labels.brandEyebrow + ' · ' + labels.brandTitle + ' · ' + labels.brandTagline}>
+    <span className="usp-logo-orbit" aria-hidden="true">
+      <i className="usp-logo-ring usp-logo-ring-a" />
+      <i className="usp-logo-ring usp-logo-ring-b" />
+      <span className="usp-logo-depth"><img src="/brand-assets/logo-mark.svg" alt="" /></span>
+    </span>
+    <span className="usp-brand-copy">
+      <small>{labels.brandEyebrow}</small>
+      <strong>{labels.brandTitle}</strong>
+      <span>{labels.brandTagline}</span>
+    </span>
+  </div>;
+}
+
+function locationForZone(zone: string) {
+  return WORLD_CLOCK_CATALOG.find((location) => location.zone === zone);
+}
+
+async function loadWeather(location: PortalLocation): Promise<WeatherReading> {
+  try {
+    const response = await fetch('/api/context/weather?lat=' + encodeURIComponent(location.latitude) + '&lon=' + encodeURIComponent(location.longitude), {
+      credentials: 'include', cache: 'no-store',
     });
-    clone.querySelectorAll<HTMLElement>('*').forEach((node) => {
-      for (const attribute of ['fill', 'stroke', 'filter', 'clip-path', 'mask']) {
-        const value = node.getAttribute(attribute);
-        if (!value) continue;
-        let next = value;
-        idMap.forEach((replacement, previous) => { next = next.replace(`#${previous}`, `#${replacement}`); });
-        if (next !== value) node.setAttribute(attribute, next);
-      }
-    });
-    target.current.replaceChildren(...Array.from(clone.childNodes));
+    const result = await response.json().catch(() => ({})) as {
+      temperature?: number | null; apparentTemperature?: number | null; humidity?: number | null;
+      precipitation?: number | null; windSpeed?: number | null; windDirection?: number | null; windGust?: number | null;
+      isDay?: boolean | null; precipitationProbability?: number | null; description?: string;
+      today?: { high?: number | null; low?: number | null; precipitationProbability?: number | null; sunrise?: string | null; sunset?: string | null };
+    };
+    if (!response.ok || typeof result.temperature !== 'number') throw new Error('Weather unavailable');
+    return {
+      state: 'ready',
+      temperatureC: result.temperature,
+      apparentTemperatureC: typeof result.apparentTemperature === 'number' ? result.apparentTemperature : null,
+      humidity: typeof result.humidity === 'number' ? result.humidity : null,
+      precipitationMm: typeof result.precipitation === 'number' ? result.precipitation : null,
+      windSpeedKmh: typeof result.windSpeed === 'number' ? result.windSpeed : null,
+      windDirection: typeof result.windDirection === 'number' ? result.windDirection : null,
+      windGustKmh: typeof result.windGust === 'number' ? result.windGust : null,
+      isDay: typeof result.isDay === 'boolean' ? result.isDay : null,
+      todayHighC: typeof result.today?.high === 'number' ? result.today.high : null,
+      todayLowC: typeof result.today?.low === 'number' ? result.today.low : null,
+      precipitationProbability: typeof result.precipitationProbability === 'number' ? result.precipitationProbability : (typeof result.today?.precipitationProbability === 'number' ? result.today.precipitationProbability : null),
+      sunrise: typeof result.today?.sunrise === 'string' ? result.today.sunrise : null,
+      sunset: typeof result.today?.sunset === 'string' ? result.today.sunset : null,
+      description: result.description || 'Current conditions',
+      updatedAt: new Date(),
+    };
+  } catch {
+    return {
+      state: 'unavailable',
+      temperatureC: null,
+      apparentTemperatureC: null, humidity: null, precipitationMm: null, windSpeedKmh: null,
+      windDirection: null, windGustKmh: null, isDay: null, todayHighC: null, todayLowC: null,
+      precipitationProbability: null, sunrise: null, sunset: null,
+      description: 'Weather temporarily unavailable',
+      updatedAt: new Date(),
+    };
+  }
+}
+
+function ClockCard({ location, now, weather, unit, display, loadingLabel }: {
+  location: PortalLocation;
+  now: Date;
+  weather: WeatherReading | undefined;
+  unit: TemperatureUnit;
+  display: SignInGlobalOperations;
+  loadingLabel: string;
+}) {
+  const description = weather?.description || loadingLabel;
+  const state = dayNightText(location.zone, now);
+  const compactDetails = [
+    display.showDate ? fullDateText(location.zone, now) : '',
+    display.showTimezone ? timeZoneText(location.zone, now) : '',
+    display.showDayNight ? state : '',
+    display.showWeather ? formatTemperature(weather?.temperatureC ?? null, unit) + ' · ' + description : '',
+  ].filter(Boolean);
+  const compactDetail = compactDetails[Math.floor(now.getTime() / 8000) % Math.max(1, compactDetails.length)] || timeZoneText(location.zone, now);
+  return <article className="usp-clock-card" tabIndex={0} aria-label={location.name + ' local time and weather'} data-clock-location={location.zone} data-weather-condition={weatherKind(description)}>
+    {display.showAnalog && <div className="usp-analog-clock" style={clockHands(location.zone, now)} aria-hidden="true">
+      {Array.from({ length: 12 }, (_, tick) => <i key={tick} style={{ transform: 'rotate(' + tick * 30 + 'deg)' }} />)}
+      <span className="usp-clock-hand usp-clock-hour" />
+      <span className="usp-clock-hand usp-clock-minute" />
+      <span className="usp-clock-hand usp-clock-second" />
+      <span className="usp-clock-pin" />
+    </div>}
+    <div className={'usp-clock-copy' + (display.showAnalog ? '' : ' usp-clock-copy-wide')} data-clock-copy="true">
+      <div className="usp-clock-location" data-clock-required="true"><strong>{location.name}</strong><small>{location.region}</small></div>
+      {display.showDigital && <b data-clock-required="true">{timeText(location.zone, now, true)}</b>}
+      <span className="usp-clock-compact-detail" aria-live="polite" data-clock-required="true">{compactDetail}</span>
+      {display.showDate && <span data-clock-required="true">{fullDateText(location.zone, now)}</span>}
+      {(display.showTimezone || display.showDayNight) && <div className="usp-clock-meta" data-clock-required="true">
+        {display.showTimezone && <small>{timeZoneText(location.zone, now)}</small>}
+        {display.showDayNight && <small className={'usp-day-state ' + state.toLowerCase()}><i />{state}</small>}
+      </div>}
+      {display.showWeather && <div className={'usp-clock-weather ' + weatherKind(description)} data-clock-required="true">
+        <WeatherIcon description={description} size={15} isDay={weather?.isDay} animation={display.weatherAnimation} />
+        <span>{weather?.state === 'ready' ? formatTemperature(weather.temperatureC, unit) : '—°' + unit}</span>
+        <small>{description}</small>
+      </div>}
+      {display.showWeather && display.weatherStyle === 'detailed' && weather?.state === 'ready' && <div className="usp-clock-weather-detail" data-clock-required="true">
+        {display.showFeelsLike && <span>Feels {formatTemperature(weather.apparentTemperatureC, unit)}</span>}
+        {display.showHumidity && <span>Hum {weather.humidity === null ? '—' : Math.round(weather.humidity) + '%'}</span>}
+        {display.showWind && <span>Wind {weather.windSpeedKmh === null ? '—' : Math.round(weather.windSpeedKmh) + ' km/h ' + compassDirection(weather.windDirection)}</span>}
+      </div>}
+    </div>
+  </article>;
+}
+
+
+function WidgetRotator({ title, zone, instances, capacity, renderWidget }: {
+  title: string;
+  zone: SignInZone;
+  instances: SignInWidgetInstance[];
+  capacity: number;
+  renderWidget: (instance: SignInWidgetInstance) => ReactNode;
+}) {
+  const pageCount = Math.max(1, Math.ceil(instances.length / Math.max(1, capacity)));
+  const [page, setPage] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(() => typeof document === 'undefined' || document.visibilityState === 'visible');
+  const safePage = Math.min(page, pageCount - 1);
+
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => setDocumentVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
-  return <div ref={target} className={`sp-brand sp-brand-v172 ${compact ? 'sp-brand-compact' : ''} sp-brand-depth ${className}`} aria-label="DAENEM Staff Portal" />;
+
+  useEffect(() => {
+    if (pageCount <= 1 || hovered || focused || !documentVisible) return;
+    const timer = window.setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        setPage((current) => (current + 1) % pageCount);
+      }
+    }, WIDGET_ROTATION_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [documentVisible, focused, hovered, page, pageCount]);
+
+  const changePage = (delta: number) => {
+    setPage((current) => (current + delta + pageCount) % pageCount);
+  };
+  const start = safePage * capacity;
+  const visibleInstances = instances.slice(start, start + capacity);
+  const interacting = hovered || focused;
+
+  return <div
+    className="usp-widget-rotator"
+    data-widget-zone={zone}
+    data-widget-count={instances.length}
+    data-widget-capacity={capacity}
+    data-widget-page={safePage + 1}
+    data-widget-page-count={pageCount}
+    data-widget-auto-rotation={pageCount > 1 ? 'true' : 'false'}
+    data-widget-rotation-interval={WIDGET_ROTATION_INTERVAL_MS}
+    data-widget-interacting={interacting ? 'true' : 'false'}
+    onMouseEnter={() => setHovered(true)}
+    onMouseLeave={() => setHovered(false)}
+    onFocusCapture={() => setFocused(true)}
+    onBlurCapture={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
+    }}
+  >
+    <div key={safePage} className="usp-widget-rotator-view" aria-live="polite">{visibleInstances.map(renderWidget)}</div>
+    <div className="usp-widget-rotator-controls">
+      <button type="button" onClick={() => changePage(-1)} aria-label={'Previous ' + title + ' widget'}>Previous</button>
+      <span className="usp-widget-rotator-position" aria-label={'Widgets ' + (start + 1) + ' to ' + Math.min(start + capacity, instances.length) + ' of ' + instances.length}>{start + 1}–{Math.min(start + capacity, instances.length)} / {instances.length}</span>
+      <button type="button" onClick={() => changePage(1)} aria-label={'Next ' + title + ' widget'}>Next</button>
+    </div>
+  </div>;
 }
 
-export function SignInExperience({ authPanel, authMode, onInstall }: {
+export function SignInExperience({ authPanel, authMode: _authMode, themeId, onInstall }: {
   authPanel: ReactNode;
-  authMode: 'signin' | 'signup' | 'forgot';
+  authMode?: 'signin' | 'signup' | 'forgot';
   themeId: ThemeId;
   onInstall: () => void;
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [authMount, setAuthMount] = useState<HTMLElement | null>(null);
+  const [now, setNow] = useState(() => new Date());
+  const [preferences, setPreferences] = useState<SignInExperiencePreferences>(() => readSignInPreferences());
+  const [context, setContext] = useState<PublicSignInContext>(() => ({ ...FALLBACK_CONTEXT, config: readSignInPreferences() }));
+  const [weather, setWeather] = useState<Record<string, WeatherReading>>({});
+  const [health, setHealth] = useState<HealthReading>({ state: 'checking', latencyMs: null, checkedAt: null });
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window === 'undefined' ? 1920 : window.innerWidth,
+    height: typeof window === 'undefined' ? 1080 : window.innerHeight,
+  }));
+  const [density, setDensity] = useState<LayoutDensity>(() => densityHint({
+    width: typeof window === 'undefined' ? 1920 : window.innerWidth,
+    height: typeof window === 'undefined' ? 1080 : window.innerHeight,
+  }));
+  const [layoutMetrics, setLayoutMetrics] = useState<LayoutMetrics>(EMPTY_LAYOUT_METRICS);
+  const [clockPage, setClockPage] = useState(0);
+  const [clockCapacityOverride, setClockCapacityOverride] = useState<number | null>(null);
+  const [clockFit, setClockFit] = useState<ClockFitMetrics>(EMPTY_CLOCK_FIT);
+  const pageRef = useRef<HTMLElement | null>(null);
+  const stageRef = useRef<HTMLElement | null>(null);
+  const liveStackRef = useRef<HTMLElement | null>(null);
+  const clockDockRef = useRef<HTMLElement | null>(null);
+  const [spatialRecovery, setSpatialRecovery] = useState(false);
+  const recoveryViewportKeyRef = useRef('');
+  const capacityViewportKeyRef = useRef('');
 
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const mount = root.querySelector<HTMLElement>('#staffportal-auth-mount');
-    if (!mount) return;
-    setAuthMount(mount);
-    settleReferenceMotion(root);
-    updateReferenceClocks(root, new Date());
+  const locations = useMemo(() => {
+    const values = preferences.clockZones.map(locationForZone).filter((item): item is PortalLocation => Boolean(item));
+    const fallback = values.length ? values : WORLD_CLOCK_CATALOG.slice(0, 7);
+    return fallback.slice(0, preferences.globalOperations.maxClocks);
+  }, [preferences.clockZones, preferences.globalOperations.maxClocks]);
+
+  const presentation = preferences.labels;
+  const zoneCapacities: Record<SignInZone, number> = density === 'tight'
+    ? { 'workspace-spotlight': 1, 'live-context': viewport.width > 1500 ? 2 : 1, today: viewport.width > 1500 ? 2 : 1, auxiliary: 1 }
+    : density === 'compact'
+      ? { 'workspace-spotlight': 1, 'live-context': 2, today: 2, auxiliary: 1 }
+      : { 'workspace-spotlight': 1, 'live-context': 2, today: 3, auxiliary: 2 };
+
+  const shortDesktop = viewport.width >= 821 && viewport.height <= 820;
+  const baseClockCapacity = locations.length <= 4
+    ? locations.length
+    : density === 'tight' || shortDesktop || (layoutMetrics.dockWidth > 0 && layoutMetrics.dockWidth / locations.length < 175)
+      ? 4
+      : 7;
+  const clockCapacity = Math.max(1, Math.min(
+    locations.length,
+    Math.min(baseClockCapacity, clockCapacityOverride ?? baseClockCapacity),
+  ));
+  const clockPageCount = Math.max(1, Math.ceil(locations.length / clockCapacity));
+  const safeClockPage = Math.min(clockPage, clockPageCount - 1);
+  const visibleLocations = locations.slice(safeClockPage * clockCapacity, safeClockPage * clockCapacity + clockCapacity);
+  const changeClockPage = (delta: number) => setClockPage((page) => (page + delta + clockPageCount) % clockPageCount);
+
+  useEffect(() => {
+    const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', onResize, { passive: true });
+    window.visualViewport?.addEventListener('resize', onResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
+    };
   }, []);
 
   useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return undefined;
-    const tick = () => updateReferenceClocks(root, new Date());
-    const timer = window.setInterval(tick, 1000);
-    const onClick = (event: Event) => {
-      const target = event.target as Element | null;
-      if (target?.closest('.sp-install-card, .sp-hero-install-app')) onInstall();
-    };
-    root.addEventListener('click', onClick);
-    return () => {
-      window.clearInterval(timer);
-      root.removeEventListener('click', onClick);
-    };
-  }, [onInstall]);
+    setDensity(densityHint(viewport));
+  }, [viewport.width, viewport.height]);
 
   useEffect(() => {
-    const authMount = rootRef.current?.querySelector<HTMLElement>('#staffportal-auth-mount');
-    if (!authMount) return;
-    authMount.classList.remove('sp-auth-mode-signin', 'sp-auth-mode-create', 'sp-auth-mode-forgot');
-    authMount.classList.add(`sp-auth-mode-${authMode === 'signup' ? 'create' : authMode}`);
-    authMount.dataset.authGateway = 'cloudflare-worker';
-    authMount.dataset.approvedProject = APPROVED_SIGNIN.project;
-    authMount.dataset.approvedVersion = String(APPROVED_SIGNIN.version);
-    authMount.dataset.sourceCommit = APPROVED_SIGNIN.commit;
-  }, [authMode]);
+    const key = viewport.width + 'x' + viewport.height + ':' + density + ':' + baseClockCapacity + ':' + locations.length;
+    if (recoveryViewportKeyRef.current === key) return;
+    recoveryViewportKeyRef.current = key;
+    setSpatialRecovery(false);
+  }, [baseClockCapacity, density, locations.length, viewport.height, viewport.width]);
 
-  return <>
-    <link rel="stylesheet" href="/approved-signin-v180.css" />
-    <ApprovedSignInSource ref={rootRef} />
-    {authMount ? createPortal(authPanel, authMount) : null}
-  </>;
+  useEffect(() => {
+    const capacityKey = viewport.width + 'x' + viewport.height + ':' + density + ':' + baseClockCapacity + ':' + locations.length + ':' + (spatialRecovery ? 'recovery' : 'normal');
+    if (capacityViewportKeyRef.current === capacityKey) return;
+    capacityViewportKeyRef.current = capacityKey;
+    // Retry the highest safe candidate whenever the measured layout regime changes.
+    setClockCapacityOverride(baseClockCapacity);
+    setClockPage(0);
+  }, [baseClockCapacity, density, locations.length, spatialRecovery, viewport.height, viewport.width]);
+
+  useEffect(() => {
+    if (viewport.width < 821) {
+      setLayoutMetrics((current) => current.outerFitMeasured ? EMPTY_LAYOUT_METRICS : current);
+      setSpatialRecovery(false);
+      pageRef.current?.style.setProperty('--usp-clock-recovery-height', '0px');
+      return;
+    }
+    const page = pageRef.current;
+    const stage = stageRef.current;
+    const liveStack = liveStackRef.current;
+    const dock = clockDockRef.current;
+    if (!page || !stage || !liveStack) return;
+    let frame = 0;
+    const round = (value: number) => Math.round(value * 100) / 100;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const authPanel = page.querySelector<HTMLElement>('.usp-auth-panel');
+        const workspace = page.querySelector<HTMLElement>('.usp-scene-caption');
+        const brand = page.querySelector<HTMLElement>('.usp-brand-lockup');
+        const authColumn = page.querySelector<HTMLElement>('.usp-form-column');
+        const stageRect = stage.getBoundingClientRect();
+        const brandRect = brand?.getBoundingClientRect();
+        const authRect = authPanel?.getBoundingClientRect();
+        const workspaceRect = workspace?.getBoundingClientRect();
+        const liveRect = liveStack.getBoundingClientRect();
+        const dockRect = dock?.getBoundingClientRect();
+
+        const authRequired = authPanel?.scrollHeight || 0;
+        const liveRequired = liveStack.scrollHeight;
+        const requiredDockHeight = clockFit.requiredDockHeight || dock?.scrollHeight || dockRect?.height || 0;
+        const requiredWorkspaceHeight = workspace?.scrollHeight || workspaceRect?.height || 0;
+        const authDockGapValue = authRect && dockRect ? dockRect.top - authRect.bottom : 0;
+        const authDockGap = authRect && dockRect ? round(authDockGapValue) : 0;
+        const liveDockGap = dockRect ? round(dockRect.top - liveRect.bottom) : 0;
+        const workspaceDockGap = workspaceRect && dockRect ? round(dockRect.top - workspaceRect.bottom) : 0;
+        const availableDockGapValue = dockRect
+          ? dockRect.top - Math.max(authRect?.bottom || stageRect.top, liveRect.bottom, workspaceRect?.bottom || stageRect.top)
+          : 0;
+        const availableDockGap = dockRect ? round(availableDockGapValue) : 0;
+        const recoveryDockHeight = dockRect
+          ? Math.max(0, dockRect.height - Math.max(0, SAFE_LAYOUT_GAP - availableDockGapValue))
+          : 0;
+        page.style.setProperty('--usp-clock-recovery-height', recoveryDockHeight + 'px');
+        const workspaceAuthCollision = Boolean(authRect && workspaceRect && rectsIntersect(workspaceRect, authRect));
+        const brandAuthCollision = Boolean(brandRect && authRect && rectsIntersect(brandRect, authRect));
+        const authDockFit = !authRect || !dockRect || authRect.bottom + SAFE_LAYOUT_GAP <= dockRect.top;
+        const liveDockFit = !dockRect || liveRect.bottom + SAFE_LAYOUT_GAP <= dockRect.top;
+        const workspaceDockFit = !workspaceRect || !dockRect || workspaceRect.bottom + SAFE_LAYOUT_GAP <= dockRect.top;
+        const dockViewportFit = !dockRect || dockRect.bottom <= window.innerHeight - SAFE_VIEWPORT_MARGIN;
+        const innerClockFit = !preferences.globalOperations.visible || !clockFit.measured || clockFit.fits;
+        const spatialFit = authDockFit && liveDockFit && workspaceDockFit && dockViewportFit && !workspaceAuthCollision && !brandAuthCollision;
+        const outerFit = spatialFit && innerClockFit;
+        const metrics: LayoutMetrics = {
+          stageTop: round(stageRect.top),
+          stageHeight: round(stage.clientHeight),
+          stageBottom: round(stageRect.bottom),
+          brandTop: round(brandRect?.top || 0),
+          brandBottom: round(brandRect?.bottom || 0),
+          brandLeft: round(brandRect?.left || 0),
+          brandRight: round(brandRect?.right || 0),
+          authTop: round(authRect?.top || 0),
+          authBottom: round(authRect?.bottom || 0),
+          workspaceTop: round(workspaceRect?.top || 0),
+          workspaceBottom: round(workspaceRect?.bottom || 0),
+          liveTop: round(liveRect.top),
+          liveBottom: round(liveRect.bottom),
+          dockTop: round(dockRect?.top || 0),
+          dockBottom: round(dockRect?.bottom || 0),
+          authDockGap,
+          liveDockGap,
+          workspaceDockGap,
+          availableDockGap,
+          requiredDockHeight: round(requiredDockHeight),
+          requiredAuthHeight: authRequired,
+          requiredWorkspaceHeight,
+          authAvailable: authColumn?.clientHeight || 0,
+          authRequired,
+          liveAvailable: liveStack.clientHeight,
+          liveRequired,
+          dockWidth: dock?.clientWidth || 0,
+          outerFitMeasured: true,
+          spatialFit,
+          outerFit,
+          workspaceAuthCollision,
+          brandAuthCollision,
+        };
+        setLayoutMetrics((current) => JSON.stringify(current) === JSON.stringify(metrics) ? current : metrics);
+
+        const spatialRecoveryNeeded = !spatialFit || availableDockGap < SAFE_LAYOUT_GAP;
+        // Outer page fit owns spatial recovery. Clock capacity is reduced only by
+        // the inner clock-fit governor when rendered clock content does not fit.
+        if (!outerFit && !innerClockFit) {
+          setDensity((current) => densityRank(current) >= 2 ? current : densityRank(current) === 1 ? 'tight' : 'compact');
+        }
+        if (spatialRecoveryNeeded && !spatialRecovery) setSpatialRecovery(true);
+      });
+    };
+    const observer = new ResizeObserver(measure);
+    [
+      page,
+      stage,
+      liveStack,
+      dock,
+      page.querySelector<HTMLElement>('.usp-form-column'),
+      page.querySelector<HTMLElement>('.usp-auth-panel'),
+      page.querySelector<HTMLElement>('.usp-scene-caption'),
+      page.querySelector<HTMLElement>('.usp-brand-lockup'),
+    ].filter((item): item is HTMLElement => Boolean(item)).forEach((item) => observer.observe(item));
+    window.addEventListener('resize', measure, { passive: true });
+    window.visualViewport?.addEventListener('resize', measure, { passive: true });
+    measure();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
+  }, [
+    baseClockCapacity,
+    clockFit.fits,
+    clockFit.measured,
+    clockFit.dockClientHeight,
+    clockFit.dockScrollHeight,
+    clockFit.requiredDockHeight,
+    density,
+    preferences.globalOperations.visible,
+    spatialRecovery,
+    viewport.width,
+    viewport.height,
+  ]);
+
+
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!preferences.globalOperations.visible || viewport.width < 821) {
+      setClockFit(EMPTY_CLOCK_FIT);
+      page?.style.setProperty('--usp-clock-required-height', '0px');
+      return;
+    }
+    let frame = 0;
+    const measureClockFit = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const dock = clockDockRef.current;
+        const grid = dock?.querySelector<HTMLElement>('.usp-clock-grid');
+        const heading = dock?.querySelector<HTMLElement>('.usp-clock-heading');
+        const cards = grid ? Array.from(grid.querySelectorAll<HTMLElement>('.usp-clock-card')) : [];
+        const copies = cards.map((card) => card.querySelector<HTMLElement>('.usp-clock-copy')).filter((copy): copy is HTMLElement => Boolean(copy));
+        if (!dock || !grid || !cards.length) return;
+
+        const dockRect = dock.getBoundingClientRect();
+        const gridRect = grid.getBoundingClientRect();
+        const cardRects = cards.map((card) => card.getBoundingClientRect());
+        const copyRects = copies.map((copy) => copy.getBoundingClientRect());
+        const dockStyles = getComputedStyle(dock);
+        const headingStyles = heading ? getComputedStyle(heading) : null;
+        const numeric = (value: string | undefined) => Number.parseFloat(value || '0') || 0;
+        const dockFrameHeight = numeric(dockStyles.paddingTop) + numeric(dockStyles.paddingBottom)
+          + numeric(dockStyles.borderTopWidth) + numeric(dockStyles.borderBottomWidth);
+        const headingOuterHeight = heading
+          ? heading.getBoundingClientRect().height + numeric(headingStyles?.marginTop) + numeric(headingStyles?.marginBottom)
+          : 0;
+        const dockGap = numeric(dockStyles.rowGap || dockStyles.gap);
+        const gridContentHeight = Math.max(
+          grid.scrollHeight,
+          cards.length ? Math.max(...cards.map((card) => card.scrollHeight)) : 0,
+        );
+        const requiredDockHeight = Math.ceil(dockFrameHeight + headingOuterHeight + dockGap + gridContentHeight);
+        const dockOverflow = dock.scrollHeight > dock.clientHeight + CLOCK_FIT_TOLERANCE;
+        const gridOverflow = grid.scrollHeight > grid.clientHeight + CLOCK_FIT_TOLERANCE || grid.scrollWidth > grid.clientWidth + CLOCK_FIT_TOLERANCE;
+        const cardOverflow = cards.some((card) => card.scrollHeight > card.clientHeight + CLOCK_FIT_TOLERANCE || card.scrollWidth > card.clientWidth + CLOCK_FIT_TOLERANCE);
+        const copyOverflow = copies.some((copy) => copy.scrollHeight > copy.clientHeight + CLOCK_FIT_TOLERANCE || copy.scrollWidth > copy.clientWidth + CLOCK_FIT_TOLERANCE);
+        const copyWithinCards = copies.every((copy, index) => cardRects[index] ? rectWithin(copyRects[index], cardRects[index]) : false);
+        const requiredContentWithinCards = cards.every((card, index) => {
+          const cardRect = cardRects[index];
+          const required = Array.from(card.querySelectorAll<HTMLElement>('[data-clock-required="true"]'))
+            .filter((element) => element.getClientRects().length > 0);
+          return required.every((element) => rectWithin(element.getBoundingClientRect(), cardRect));
+        });
+        const gridWithinDock = rectWithin(gridRect, dockRect);
+        const cardsWithinGrid = cardRects.every((rect) => rectWithin(rect, gridRect));
+        const next: ClockFitMetrics = {
+          measured: true,
+          dockClientHeight: dock.clientHeight,
+          dockScrollHeight: dock.scrollHeight,
+          requiredDockHeight,
+          gridClientHeight: grid.clientHeight,
+          gridScrollHeight: grid.scrollHeight,
+          cardClientHeight: cards.length ? Math.min(...cards.map((card) => card.clientHeight)) : 0,
+          cardScrollHeight: cards.length ? Math.max(...cards.map((card) => card.scrollHeight)) : 0,
+          copyClientHeight: copies.length ? Math.min(...copies.map((copy) => copy.clientHeight)) : 0,
+          copyScrollHeight: copies.length ? Math.max(...copies.map((copy) => copy.scrollHeight)) : 0,
+          gridWithinDock,
+          cardsWithinGrid,
+          copyWithinCards,
+          requiredContentWithinCards,
+          dockOverflow,
+          gridOverflow,
+          cardOverflow,
+          copyOverflow,
+          fits: gridWithinDock && cardsWithinGrid && copyWithinCards && requiredContentWithinCards && !dockOverflow && !gridOverflow && !cardOverflow && !copyOverflow,
+        };
+        page?.style.setProperty('--usp-clock-required-height', requiredDockHeight + 'px');
+        setClockFit((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
+
+        if (!next.fits) {
+          setDensity((current) => densityRank(current) === 0 ? 'compact' : 'tight');
+          setClockCapacityOverride((current) => {
+            const currentCapacity = current ?? baseClockCapacity;
+            const nextCapacity = CLOCK_CAPACITY_STEPS.find((step) => step < currentCapacity) || 1;
+            return Math.min(baseClockCapacity, nextCapacity);
+          });
+        }
+      });
+    };
+
+    setClockFit(EMPTY_CLOCK_FIT);
+    page?.style.setProperty('--usp-clock-required-height', '0px');
+    const dock = clockDockRef.current;
+    const grid = dock?.querySelector<HTMLElement>('.usp-clock-grid');
+    const cards = grid ? Array.from(grid.querySelectorAll<HTMLElement>('.usp-clock-card')) : [];
+    const copies = cards.map((card) => card.querySelector<HTMLElement>('.usp-clock-copy')).filter((copy): copy is HTMLElement => Boolean(copy));
+    const observer = new ResizeObserver(measureClockFit);
+    [dock, grid, ...cards, ...copies].filter((item): item is HTMLElement => Boolean(item)).forEach((item) => observer.observe(item));
+    window.addEventListener('resize', measureClockFit, { passive: true });
+    window.visualViewport?.addEventListener('resize', measureClockFit, { passive: true });
+    measureClockFit();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', measureClockFit);
+      window.visualViewport?.removeEventListener('resize', measureClockFit);
+    };
+  }, [
+    baseClockCapacity,
+    clockCapacity,
+    density,
+    preferences.globalOperations,
+    safeClockPage,
+    spatialRecovery,
+    viewport.height,
+    viewport.width,
+  ]);
+
+  useEffect(() => {
+    let timer = 0;
+    const start = () => {
+      window.clearInterval(timer);
+      if (document.visibilityState !== 'visible') return;
+      setNow(new Date());
+      timer = window.setInterval(() => setNow(new Date()), 1000);
+    };
+    document.addEventListener('visibilitychange', start);
+    start();
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', start);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let timer = 0;
+    async function refresh() {
+      try {
+        const result = await fetchPublicSignInContext();
+        if (!active) return;
+        const config = normalizeSignInPreferences(result.config);
+        setContext({ ...result, config });
+        setPreferences(config);
+      } catch {
+        if (active) setContext((current) => ({ ...current, source: 'fallback' }));
+      }
+    }
+    refresh();
+    timer = window.setInterval(refresh, 900_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onPreferences = (event: Event) => {
+      const detail = (event as CustomEvent<SignInExperiencePreferences>).detail;
+      if (detail) setPreferences(normalizeSignInPreferences(detail));
+    };
+    window.addEventListener('daenem:signin-preferences', onPreferences);
+    return () => window.removeEventListener('daenem:signin-preferences', onPreferences);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let timer = 0;
+    async function refreshWeather() {
+      const entries = await Promise.all(locations.map(async (location) => [location.zone, await loadWeather(location)] as const));
+      if (active) setWeather((current) => Object.fromEntries(entries.map(([zone, reading]) => {
+        const previous = current[zone];
+        return [zone, reading.state === 'unavailable' && previous?.state === 'ready'
+          ? { ...previous, state: 'unavailable' as const }
+          : reading];
+      })));
+    }
+    refreshWeather();
+    timer = window.setInterval(refreshWeather, 300_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [locations]);
+
+  useEffect(() => {
+    let active = true;
+    let timer = 0;
+    async function refreshHealth() {
+      const startedAt = Date.now();
+      try {
+        const response = await fetch('/api/health', { credentials: 'include', cache: 'no-store' });
+        const result = await response.json().catch(() => ({})) as { ok?: boolean };
+        if (!active) return;
+        setHealth({
+          state: response.ok && result.ok !== false ? 'operational' : 'maintenance',
+          latencyMs: Math.max(1, Date.now() - startedAt),
+          checkedAt: new Date(),
+        });
+      } catch {
+        if (active) setHealth({ state: 'maintenance', latencyMs: null, checkedAt: new Date() });
+      }
+    }
+    refreshHealth();
+    timer = window.setInterval(refreshHealth, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const selectedMode = preferences.themeMode === 'night' ? 'night' : 'day';
+    applyThemeToDocument(themeId, selectedMode);
+  }, [preferences.themeMode, themeId]);
+
+  const ibadan = locationForZone('Africa/Lagos') || locations[0];
+  const ibadanWeather = ibadan ? weather[ibadan.zone] : undefined;
+  const activeNewsIndex = context.news.length ? Math.floor(now.getTime() / 12_000) % context.news.length : 0;
+  const activeNews = context.news[activeNewsIndex] || FALLBACK_CONTEXT.news[0];
+  const newsItems = (context.news.length ? context.news : FALLBACK_CONTEXT.news).slice(0, 4);
+  const healthLabel = health.state === 'operational' ? presentation.statusOperational : health.state === 'maintenance' ? presentation.statusMaintenance : presentation.statusChecking;
+  const healthDetail = health.state === 'operational'
+    ? (health.latencyMs || '—') + ' ms secure edge'
+    : health.state === 'maintenance' ? 'Service team notified' : presentation.statusConnecting;
+  function renderWidget(instance: SignInWidgetInstance) {
+    if (!instance.visible) return null;
+    const widget = instance.kind;
+    const variantClass = 'usp-widget-variant-' + instance.variant;
+    const effectClass = 'usp-effect-preset-' + instance.effectPreset;
+    if (widget === 'weather') {
+      const description = ibadanWeather?.description || presentation.weatherLoading;
+      const weatherDisplay = preferences.globalOperations;
+      return <article className={'usp-live-card usp-weather-card usp-weather-style-' + weatherDisplay.weatherStyle + ' ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id} data-weather-condition={weatherKind(description)}>
+        <div className="usp-widget-label"><span><CloudSun size={15} /> {instance.label}</span><b>{presentation.weatherLocation}</b></div>
+        <div className="usp-weather-main"><span className="usp-weather-hero-icon"><WeatherIcon description={description} size={34} isDay={ibadanWeather?.isDay} animation={weatherDisplay.weatherAnimation} /></span><div className="usp-weather-reading"><strong>{formatTemperature(ibadanWeather?.temperatureC ?? null, preferences.temperatureUnit)}</strong><span className="usp-weather-condition">{description}</span></div></div>
+        {ibadanWeather?.state === 'ready' && <div className="usp-weather-details">
+          {weatherDisplay.showFeelsLike && <span>Feels {formatTemperature(ibadanWeather.apparentTemperatureC, preferences.temperatureUnit)}</span>}
+          {weatherDisplay.showHighLow && <span>H {formatTemperature(ibadanWeather.todayHighC, preferences.temperatureUnit)} · L {formatTemperature(ibadanWeather.todayLowC, preferences.temperatureUnit)}</span>}
+          {weatherDisplay.showHumidity && <span>Humidity {ibadanWeather.humidity === null ? '—' : Math.round(ibadanWeather.humidity) + '%'}</span>}
+          {weatherDisplay.showWind && <span>Wind {ibadanWeather.windSpeedKmh === null ? '—' : Math.round(ibadanWeather.windSpeedKmh) + ' km/h ' + compassDirection(ibadanWeather.windDirection)}{ibadanWeather.windGustKmh === null ? '' : ' · gust ' + Math.round(ibadanWeather.windGustKmh)}</span>}
+          {weatherDisplay.showPrecipitation && <span>Rain {ibadanWeather.precipitationProbability === null ? '—' : Math.round(ibadanWeather.precipitationProbability) + '%'}{ibadanWeather.precipitationMm === null ? '' : ' · ' + ibadanWeather.precipitationMm.toFixed(1) + ' mm'}</span>}
+          {weatherDisplay.showSunriseSunset && <span>Sun {shortWeatherTime(ibadanWeather.sunrise)} / {shortWeatherTime(ibadanWeather.sunset)}</span>}
+        </div>}
+        <small>{ibadanWeather?.updatedAt ? presentation.weatherUpdated + ' ' + timeText('Africa/Lagos', ibadanWeather.updatedAt) : presentation.weatherConnecting}</small>
+      </article>;
+    }
+    if (widget === 'inspiration') {
+      const copy = preferences.content.inspiration || context.inspiration;
+      return <article className={'usp-live-card usp-copy-card usp-inspiration-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+        <div className="usp-widget-label"><span><Sparkles size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
+        {instance.variant === 'innovation-spark' && <span className="usp-variant-kicker">{presentation.inspirationSpark}</span>}
+        {instance.variant === 'daily-prompt' && <span className="usp-variant-kicker">{presentation.promptOfTheDay}</span>}
+        {instance.variant === 'executive-thought' ? <blockquote>{copy}</blockquote> : <strong>{copy}</strong>}
+        <small>{instance.variant === 'daily-prompt' ? presentation.promptOfTheDayNote : presentation.liveGuidanceNote}</small>
+      </article>;
+    }
+    if (widget === 'motivation') {
+      const copy = preferences.content.motivation || context.motivation;
+      return <article className={'usp-live-card usp-copy-card usp-motivation-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+        <div className="usp-widget-label"><span><Target size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
+        {instance.variant === 'team-boost' && <span className="usp-variant-kicker">{presentation.teamBoost}</span>}
+        {instance.variant === 'recognition-prompt' && <span className="usp-variant-kicker">{presentation.recognition}</span>}
+        {instance.variant === 'focus-goal' ? <div className="usp-focus-goal"><b>{presentation.focusGoal}</b><strong>{copy}</strong></div> : <strong>{copy}</strong>}
+        <small>{instance.variant === 'recognition-prompt' ? presentation.recognitionNote : presentation.dailyMomentumNote}</small>
+      </article>;
+    }
+    if (widget === 'news') {
+      const story = (item: PublicSignInContext['news'][number], key: string) => <li key={key}>{item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a> : <strong>{item.title}</strong>}<small>{item.source}</small></li>;
+      return <article className={'usp-live-card usp-copy-card usp-news-card ' + effectClass + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+        <div className="usp-widget-label"><span><Newspaper size={14} /> {instance.label}</span><b>{activeNews.category}</b></div>
+        {instance.variant === 'headline-stack' && <ul className="usp-news-stack">{newsItems.slice(0, 3).map((item, index) => story(item, instance.id + '-stack-' + index))}</ul>}
+        {instance.variant === 'executive-briefing' && <div className="usp-news-briefing"><span className="usp-variant-kicker">{presentation.priorityBriefing}</span>{activeNews.url ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a> : <strong>{activeNews.title}</strong>}<small>{activeNews.source} · {presentation.rotatingLiveFeed}</small></div>}
+        {instance.variant === 'horizontal-ticker' && <div className="usp-news-ticker" aria-live="polite"><span className="usp-news-ticker-track">{activeNews.url ? <a href={activeNews.url} target="_blank" rel="noopener noreferrer">{activeNews.title}</a> : <strong>{activeNews.title}</strong>}<small>{activeNews.source}</small></span></div>}
+        {instance.variant === 'top-stories-cards' && <div className="usp-news-top-stories">{newsItems.slice(0, 3).map((item, index) => <div key={instance.id + '-top-' + index}>{item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a> : <strong>{item.title}</strong>}<small>{item.source}</small></div>)}</div>}
+        {instance.variant === 'headline-stack' && <small>{presentation.rotatingLiveFeed}</small>}
+      </article>;
+    }
+    return <article className={'usp-live-card usp-status-card ' + effectClass + ' ' + health.state + ' ' + variantClass} key={instance.id} data-widget={widget} data-widget-id={instance.id}>
+      <div className="usp-widget-label"><span><Activity size={14} /> {instance.label}</span><i className="usp-live-pulse" /></div>
+      <strong>{healthLabel}</strong><small>{health.state === 'operational' ? (health.latencyMs || '—') + ' ' + presentation.secureEdge : health.state === 'maintenance' ? presentation.serviceTeamNotified : healthDetail}</small>
+    </article>;
+  }
+
+  function renderWidgetGroup(title: string, zones: SignInZone[], region: string) {
+    const instances = preferences.widgetInstances.filter((instance) => instance.visible && zones.includes(instance.zone)).sort((a, b) => a.order - b.order);
+    if (!instances.length) return null;
+    const zone = zones[0];
+    const capacity = zoneCapacities[zone] || 1;
+    const rotate = instances.length > capacity;
+    return <section className={'usp-widget-group usp-widget-zone-' + region} aria-label={title} data-zone={zone}>
+      <h3 className="usp-widget-group-title">{title}</h3>
+      {rotate
+        ? <WidgetRotator title={title} zone={zone} instances={instances} capacity={capacity} renderWidget={renderWidget} />
+        : instances.map(renderWidget)}
+    </section>;
+  }
+
+  const labels = preferences.labels;
+  const background = SIGNIN_BACKGROUND_OPTIONS.find((item) => item.id === preferences.backgroundId) || SIGNIN_BACKGROUND_OPTIONS[0];
+  const effectClasses = [
+    preferences.effects.ambientGlow ? '' : 'usp-no-ambient',
+    preferences.effects.backgroundBreathing ? '' : 'usp-no-background-breathing',
+    preferences.effects.cardFloat ? 'usp-card-float' : 'usp-no-card-float',
+    preferences.effects.logoMotion ? '' : 'usp-no-logo-motion',
+    preferences.effects.statusPulse ? '' : 'usp-no-status-pulse',
+    preferences.effects.widgetEntrance ? 'usp-widget-entrance' : 'usp-no-widget-entrance',
+    preferences.effects.shimmer ? 'usp-shimmer' : '',
+  ].filter(Boolean).join(' ');
+  return <main
+    ref={pageRef}
+    className={'usp-page usp-density-' + density + ' usp-effects-' + preferences.effectLevel + ' usp-logo-' + preferences.logoPosition + ' ' + effectClasses}
+    style={{
+      '--usp-glass-intensity': String(preferences.effects.glassIntensity),
+      '--usp-hero-image': 'url("' + background.src + '")',
+      '--usp-bg-surface': background.surface,
+      '--usp-bg-line': background.line,
+      '--usp-bg-accent': background.accent,
+      '--usp-bg-glow': background.glow,
+      '--usp-bg-shade': background.shade,
+      '--usp-clock-required-height': (clockFit.requiredDockHeight ? Math.ceil(clockFit.requiredDockHeight) : 0) + 'px',
+    } as CSSProperties}
+    data-testid="unified-signin-page"
+    data-layout-density={density}
+    data-background-id={background.id}
+    data-auth-required-height={layoutMetrics.authRequired || undefined}
+    data-auth-available-height={layoutMetrics.authAvailable || undefined}
+    data-live-required-height={layoutMetrics.liveRequired || undefined}
+    data-live-available-height={layoutMetrics.liveAvailable || undefined}
+    data-clock-capacity={clockCapacity}
+    data-clock-page-count={clockPageCount}
+    data-clock-capacity-source="inner-fit"
+    data-safe-layout-gap={SAFE_LAYOUT_GAP}
+    data-clock-fit={clockFit.fits ? 'true' : 'false'}
+    data-clock-dock-client-height={clockFit.dockClientHeight || undefined}
+    data-clock-dock-scroll-height={clockFit.dockScrollHeight || undefined}
+    data-clock-grid-client-height={clockFit.gridClientHeight || undefined}
+    data-clock-grid-scroll-height={clockFit.gridScrollHeight || undefined}
+    data-clock-card-client-height={clockFit.cardClientHeight || undefined}
+    data-clock-card-scroll-height={clockFit.cardScrollHeight || undefined}
+    data-clock-copy-client-height={clockFit.copyClientHeight || undefined}
+    data-clock-copy-scroll-height={clockFit.copyScrollHeight || undefined}
+    data-clock-fit-measured={clockFit.measured ? 'true' : 'false'}
+    data-clock-copy-within-cards={clockFit.copyWithinCards ? 'true' : 'false'}
+    data-clock-required-content-within-cards={clockFit.requiredContentWithinCards ? 'true' : 'false'}
+    data-layout-fit={layoutMetrics.outerFitMeasured ? (layoutMetrics.outerFit ? 'true' : 'critical') : 'pending'}
+    data-spatial-fit={layoutMetrics.outerFitMeasured ? String(layoutMetrics.spatialFit) : 'pending'}
+    data-inner-clock-fit={clockFit.measured ? String(clockFit.fits) : 'pending'}
+    data-stage-top={layoutMetrics.stageTop || undefined}
+    data-stage-bottom={layoutMetrics.stageBottom || undefined}
+    data-auth-top={layoutMetrics.authTop || undefined}
+    data-auth-bottom={layoutMetrics.authBottom || undefined}
+    data-workspace-top={layoutMetrics.workspaceTop || undefined}
+    data-workspace-bottom={layoutMetrics.workspaceBottom || undefined}
+    data-live-top={layoutMetrics.liveTop || undefined}
+    data-live-bottom={layoutMetrics.liveBottom || undefined}
+    data-dock-top={layoutMetrics.dockTop || undefined}
+    data-dock-bottom={layoutMetrics.dockBottom || undefined}
+    data-auth-dock-gap={layoutMetrics.authDockGap || undefined}
+    data-live-dock-gap={layoutMetrics.liveDockGap || undefined}
+    data-workspace-dock-gap={layoutMetrics.workspaceDockGap || undefined}
+    data-available-dock-gap={layoutMetrics.availableDockGap || undefined}
+    data-required-dock-height={layoutMetrics.requiredDockHeight || undefined}
+    data-required-auth-height={layoutMetrics.requiredAuthHeight || undefined}
+    data-required-workspace-height={layoutMetrics.requiredWorkspaceHeight || undefined}
+    data-workspace-auth-collision={layoutMetrics.workspaceAuthCollision ? 'true' : 'false'}
+    data-brand-top={layoutMetrics.brandTop || undefined}
+    data-brand-bottom={layoutMetrics.brandBottom || undefined}
+    data-brand-left={layoutMetrics.brandLeft || undefined}
+    data-brand-right={layoutMetrics.brandRight || undefined}
+    data-brand-auth-collision={layoutMetrics.brandAuthCollision ? 'true' : 'false'}
+    data-spatial-recovery={spatialRecovery ? 'true' : 'false'}
+  >
+    <div className="usp-background" aria-hidden="true" />
+    <div className="usp-background-shade" aria-hidden="true" />
+    <div className="usp-ambient usp-ambient-a" aria-hidden="true" />
+    <div className="usp-ambient usp-ambient-b" aria-hidden="true" />
+
+    <div className="usp-shell">
+      <header className="usp-topbar">
+        <AnimatedBrand preferences={preferences} />
+        <div className="usp-top-actions">
+          <span className="usp-top-chip"><i /> {presentation.liveErpAccess}</span>
+          <button className="usp-top-install" type="button" data-pwa-install onClick={onInstall} aria-label="Install Daenem ERP app">
+            <Download size={16} /><span>{presentation.installApp}</span>
+          </button>
+        </div>
+      </header>
+
+      <section ref={stageRef} className="usp-stage" aria-label={labels.workspaceLabel}>
+        <div className="usp-scene-caption">
+          <div className="usp-scene-title">
+            <span><Radio size={13} /> {labels.workspaceLabel}</span>
+            <h2>{labels.workspaceHeadline}</h2>
+            <p>{labels.workspaceDescription}</p>
+          </div>
+          <div className="usp-widget-region usp-widget-region-workspace-spotlight">{renderWidgetGroup(labels.workspaceSpotlightHeading, ['workspace-spotlight'], 'workspace-spotlight')}</div>
+          <div className="usp-signal-row">
+            <span className="usp-signal"><span><Radio size={12} /> {labels.ibadanTime}</span><strong>{timeText('Africa/Lagos', now, true)}</strong><small>{fullDateText('Africa/Lagos', now)}</small></span>
+            <span className="usp-signal"><span><LockKeyhole size={12} /> {labels.session}</span><strong>{labels.protected}</strong><small>{labels.encryptedSession}</small></span>
+          </div>
+        </div>
+
+        <div className="usp-form-column">{authPanel}</div>
+
+        <aside ref={liveStackRef} className="usp-live-stack" aria-label="Live portal widgets">
+          <div className="usp-widget-region usp-widget-region-live-context">{renderWidgetGroup(labels.liveContextHeading, ['live-context'], 'live-context')}</div>
+          <div className="usp-widget-region usp-widget-region-today">{renderWidgetGroup(labels.todayHeading, ['today'], 'today')}</div>
+          <div className="usp-widget-region usp-widget-region-auxiliary">{renderWidgetGroup(labels.auxiliaryHeading, ['auxiliary'], 'auxiliary')}</div>
+        </aside>
+      </section>
+
+      {preferences.globalOperations.visible && <section ref={clockDockRef} className={'usp-clock-dock clock-style-' + preferences.clockStyle} aria-label="Global time and weather" data-clock-density={density} data-clock-capacity={clockCapacity} data-clock-fit={clockFit.fits ? 'true' : 'false'}>
+        <header className="usp-clock-heading">
+          <span><Wifi size={12} /> {labels.globalOperationsHeading}</span>
+          <div className="usp-clock-heading-tools"><small>{locations.length} {labels.clockSummary}</small>{clockPageCount > 1 && <span className="usp-clock-pager" aria-label="Global Operations pages"><button type="button" onClick={() => changeClockPage(-1)} aria-label="Previous locations">Previous</button><b>{safeClockPage + 1} / {clockPageCount}</b><button type="button" onClick={() => changeClockPage(1)} aria-label="Next locations">Next</button></span>}</div>
+        </header>
+        <div className="usp-clock-grid" data-clock-page={safeClockPage + 1} data-clock-count={visibleLocations.length} data-clock-capacity={clockCapacity} style={{ gridTemplateColumns: 'repeat(' + visibleLocations.length + ', minmax(0, 1fr))' }}>
+          {visibleLocations.map((location) => <ClockCard
+            key={location.name + location.zone}
+            location={location}
+            now={now}
+            weather={weather[location.zone]}
+            unit={preferences.temperatureUnit}
+            display={preferences.globalOperations}
+            loadingLabel={presentation.weatherLoading}
+          />)}
+        </div>
+      </section>}
+    </div>
+  </main>;
 }
