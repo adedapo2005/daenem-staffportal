@@ -161,6 +161,35 @@ jobs:
           npx tsc worker/communications-dispatch.ts worker/communications-webhook.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --types @cloudflare/workers-types --outDir .tmp-communications-remediation --rootDir . --noEmit false
           node scripts/test-communications-remediation.mjs
 
+      - name: Release blockers clear
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const blockers = [
+            {
+              id: 'signin-desktop-internal-scrollbar',
+              status: 'BLOCKED',
+              requirement: 'Approved desktop Sign-In must not use an internal auth-panel scrollbar.'
+            },
+            {
+              id: 'signin-weather-cache',
+              status: 'BLOCKED',
+              requirement: 'Public Sign-In weather must retain truthful cached data when refresh fails.'
+            },
+            {
+              id: 'signin-password-state-styling',
+              status: 'BLOCKED',
+              requirement: 'Create Account password requirements must expose visible success and failure states.'
+            }
+          ];
+          console.log('STAFFPORTAL_RELEASE_BLOCKERS=' + JSON.stringify(blockers));
+          const open = blockers.filter((item) => item.status !== 'RESOLVED');
+          if (open.length) {
+            console.error('::error::Known StaffPortal Sign-In release blockers remain: ' + open.map((item) => item.id).join(', '));
+            process.exit(1);
+          }
+          NODE
+
       - name: Assert production safety gates remain closed
         shell: bash
         run: |
