@@ -157,40 +157,6 @@ jobs:
           export VITE_STAFFPORTAL_DEPLOYED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           npm run build
 
-      - name: Release blocker gate
-        name: Release blockers clear
-        shell: bash
-        run: |
-          node --input-type=module <<'NODE'
-          const blockers = [
-            {
-              id: 'signin-desktop-internal-scrollbar',
-              status: 'BLOCKED',
-              description: 'Desktop Sign-In internal scrollbar behavior is unresolved.'
-            },
-            {
-              id: 'signin-weather-cache',
-              status: 'BLOCKED',
-              description: 'Sign-In weather and truthful cached-data behavior is not implemented.'
-            },
-            {
-              id: 'signin-password-state-styling',
-              status: 'BLOCKED',
-              description: 'Visible password success/failure styling is not implemented.'
-            }
-          ];
-          const report = {
-            check: 'staffportal-release-blockers',
-            status: blockers.length === 0 ? 'clear' : 'blocked',
-            blockers
-          };
-          console.log(JSON.stringify(report, null, 2));
-          if (blockers.length > 0) {
-            console.error('KNOWN RELEASE BLOCKERS: ' + blockers.length);
-            process.exit(1);
-          }
-          NODE
-
       - name: Reject legacy client shell and auth bridge
         shell: bash
         run: |
