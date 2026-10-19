@@ -1017,7 +1017,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       </form>}
 
       {mode === 'signup' && signupStep !== 'verify' && <nav className="sp-signup-progress" aria-label="Account setup progress">
-        <span>Step ${(['identity', 'contact', 'username', 'account', 'work'].indexOf(signupStep) + 1)} of 5</span>
+        <span>Step {(['identity', 'contact', 'username', 'account', 'work'].indexOf(signupStep) + 1)} of 5</span>
         <div className="sp-signup-progress-track"><i style={{ width: `${(['identity', 'contact', 'username', 'account', 'work'].indexOf(signupStep) + 1) * 20}%` }} /></div>
       </nav>}
       {mode === 'signup' && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={(event) => { event.preventDefault(); setMessage(null); if (!signup.firstName.trim() || !signup.lastName.trim()) { setMessage({type:'error',text:'Enter your first and last name to continue.'}); return; } setSignupStep('contact'); }}>
