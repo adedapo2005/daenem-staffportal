@@ -248,18 +248,6 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
   return json({ ok: true, job: { id, jobNo, title, status: 'enquiry', ...(canViewPrintFinancials(context) ? { quotedKobo } : {}) } }, 201);
 }
 
-async function recalculateJob(env: PrintingEnv, jobId: string) {
-  const material = await env.DB.prepare(`SELECT COALESCE(SUM((actual_quantity + waste_quantity) * unit_cost_kobo),0) AS amount FROM print_job_materials WHERE print_job_id = ?`).bind(jobId).first<{ amount: number }>();
-  const job = await env.DB.prepare(`SELECT quoted_kobo AS quotedKobo, invoiced_kobo AS invoicedKobo, labour_cost_kobo AS labourCostKobo, finishing_cost_kobo AS finishingCostKobo, other_cost_kobo AS otherCostKobo FROM print_jobs WHERE id = ?`).bind(jobId).first<{ quotedKobo: number; invoicedKobo: number; labourCostKobo: number; finishingCostKobo: number; otherCostKobo: number }>();
-  if (!job) return;
-  const materialCost = Math.round(Number(material?.amount || 0));
-  const revenue = Number(job.invoicedKobo || job.quotedKobo || 0);
-  const totalCost = materialCost + Number(job.labourCostKobo || 0) + Number(job.finishingCostKobo || 0) + Number(job.otherCostKobo || 0);
-  const profit = revenue - totalCost;
-  const margin = revenue > 0 ? Math.round((profit / revenue) * 10000) : 0;
-  await env.DB.prepare(`UPDATE print_jobs SET material_cost_kobo = ?, gross_profit_kobo = ?, margin_basis_points = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(materialCost, profit, margin, jobId).run();
-}
-
 async function addMaterial(request: Request, env: PrintingEnv, context: SessionContext) {
   if (!canPrint(context, 'create')) return json({ error: 'Create Printing data permission is required.' }, 403);
   let body: { jobId?: string; itemId?: string; actualQuantity?: number; wasteQuantity?: number; unitCostNaira?: number; note?: string; locationId?: string };
@@ -285,13 +273,26 @@ async function addMaterial(request: Request, env: PrintingEnv, context: SessionC
     return json({ error: `Insufficient stock for ${item.name}. Available quantity is ${Math.max(0, Number(balance?.quantity || 0) - Number(balance?.reservedQuantity || 0))}.` }, 409);
   }
   const unitCostKobo = body.unitCostNaira == null ? Number(item.unitCostKobo || 0) : koboFromNaira(body.unitCostNaira);
-  await env.DB.batch([
+  try {
+    await env.DB.batch([
+    env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND location_id = ? AND item_id = ? AND quantity - COALESCE(reserved_quantity, 0) >= ? AND EXISTS (SELECT 1 FROM print_jobs WHERE id = ? AND company_id = ? AND production_status NOT IN ('completed','cancelled'))`).bind(required, balance.id, companyId, locationId, body.itemId, required, body.jobId, companyId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`INSERT INTO print_job_materials (id, print_job_id, item_id, actual_quantity, waste_quantity, unit_cost_kobo, issued_from_location_id, issued_by, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(uid('print-material'), body.jobId, body.itemId, actual, waste, unitCostKobo, locationId, context.employee.id, body.note || null),
-    env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(required, balance.id),
     env.DB.prepare(`INSERT INTO stock_movements (id, company_id, item_id, movement_type, quantity, unit_cost_kobo, from_location_id, reference_type, reference_id, reason, created_by) VALUES (?, ?, ?, 'issue', ?, ?, ?, 'print_job', ?, ?, ?)`).bind(uid('stock-movement'), companyId, body.itemId, required, unitCostKobo, locationId, body.jobId, body.note || 'Print job material usage', context.employee.id),
     env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'printing', 'record_material_usage', 'print_job', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, body.jobId, JSON.stringify({ itemId: body.itemId, actual, waste, unitCostKobo })),
-  ]);
-  await recalculateJob(env, body.jobId);
+    env.DB.prepare(`WITH cost AS (SELECT COALESCE(ROUND(SUM((actual_quantity + waste_quantity) * unit_cost_kobo)), 0) AS amount FROM print_job_materials WHERE print_job_id = ?)
+      UPDATE print_jobs SET
+        material_cost_kobo = (SELECT amount FROM cost),
+        gross_profit_kobo = COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) - (SELECT amount FROM cost) - COALESCE(labour_cost_kobo, 0) - COALESCE(finishing_cost_kobo, 0) - COALESCE(other_cost_kobo, 0),
+        margin_basis_points = CASE WHEN COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) > 0 THEN ROUND((COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) - (SELECT amount FROM cost) - COALESCE(labour_cost_kobo, 0) - COALESCE(finishing_cost_kobo, 0) - COALESCE(other_cost_kobo, 0)) * 10000.0 / COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0)) ELSE 0 END,
+        updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`).bind(body.jobId, body.jobId, companyId),
+    ]);
+  } catch (error) {
+    const current = await env.DB.prepare(`SELECT quantity - COALESCE(reserved_quantity, 0) AS available FROM stock_balances WHERE id = ? AND company_id = ? AND location_id = ? AND item_id = ?`).bind(balance.id, companyId, locationId, body.itemId).first<{ available: number }>();
+    const openJob = await env.DB.prepare(`SELECT id FROM print_jobs WHERE id = ? AND company_id = ? AND production_status NOT IN ('completed','cancelled')`).bind(body.jobId, companyId).first();
+    if (!openJob || !current || Number(current.available) < required) return json({ error: 'Printing stock or job status changed. Refresh and try again.' }, 409);
+    throw error;
+  }
   return json({ ok: true, message: 'Material usage recorded and Printing stock reduced automatically.' });
 }
 
