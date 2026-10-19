@@ -126,3 +126,11 @@
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-company :is(span,strong,small) { color: #13283d !important; }
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-area > .ecc-group-row .ecc-disclosure { color: #13283d; }
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-area > .ecc-group-row .ecc-disclosure[aria-expanded="true"] { color: #0f766e; }
+
+/* Selector specificity guard against the retained premium-shell company-button rules. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar button.p-company.p-company {
+  background: #def3ee !important;
+  background-color: #def3ee !important;
+  background-image: none !important;
+  color: #13283d !important;
+}
