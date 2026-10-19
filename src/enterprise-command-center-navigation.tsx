@@ -93,7 +93,19 @@ function CommandCenterSession({
   const navigation = useSyncExternalStore(memory.subscribe, memory.getSnapshot, memory.getSnapshot);
   const [query, setQuery] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
-  const areas = buildEnterpriseCommandNavigation({ session, canView, contextVisible });
+  const baseAreas = buildEnterpriseCommandNavigation({ session, canView, contextVisible });
+  // Presentation order only. Every authorized destination stays available.
+  const role = session.role;
+  const roleOrder = role === "Employee"
+    ? ["my-work", "people", "home", "communications", "tools", "businesses", "finance", "admin"]
+    : role === "Manager"
+      ? ["home", "people", "my-work", "businesses", "finance", "communications", "tools", "admin"]
+      : ["home", "businesses", "finance", "people", "communications", "admin", "my-work", "tools"];
+  const areas = [...baseAreas].sort((a, b) => {
+    const ia = roleOrder.indexOf(a.globalId);
+    const ib = roleOrder.indexOf(b.globalId);
+    return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib);
+  });
   const pages = flattenCommandNavigation(areas);
   const candidatePages = pages.filter((page) => page.context ? activeContext(page.context) : page.moduleId === moduleId);
   const currentPage = candidatePages.find((page) => page.moduleId === "signin-design" && !page.context)
@@ -142,7 +154,13 @@ function CommandCenterSession({
         ? current.favorites.filter((id) => id !== page.id)
         : [...current.favorites, page.id],
     }));
-    if (removingFromShortcuts) requestAnimationFrame(() => searchInput.current?.focus());
+    if (removingFromShortcuts) {
+      // The removed shortcut unmounts: restore focus to a stable existing control.
+      requestAnimationFrame(() => searchInput.current?.focus());
+    } else {
+      // Favorite toggles stay in place; preserve the active keyboard target.
+      requestAnimationFrame(() => { if (trigger.isConnected) trigger.focus(); });
+    }
   };
 
   const navigate = (event: React.MouseEvent<HTMLAnchorElement>, page: CommandCenterPage, capabilityModuleId = page.permissionModuleId) => {
