@@ -44,7 +44,7 @@ import { routeOffline } from './offline';
 import { routeSpend } from './spend';
 import { routeProcurement } from './procurement';
 
-interface Env extends ProviderAuthEnv {
+interface Env extends SocialOAuthEnv, ProviderAuthEnv {
   ASSETS: Fetcher;
   TIMEZONE: string;
   SOCIAL_WEBHOOK_VERIFY_TOKEN?: string;
