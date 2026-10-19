@@ -37,7 +37,8 @@ jobs:
           grep -q 'signin-desktop-internal-scrollbar' .github/workflows/deploy-staffportal-staging.yml
           grep -q 'signin-weather-cache' .github/workflows/deploy-staffportal-staging.yml
           grep -q 'signin-password-state-styling' .github/workflows/deploy-staffportal-staging.yml
-          test "$(grep -c \"status: 'RESOLVED'\" .github/workflows/deploy-staffportal-staging.yml)" -eq 3
+          RESOLVED_COUNT=$(grep -c "status: 'RESOLVED'" .github/workflows/deploy-staffportal-staging.yml)
+          test "$RESOLVED_COUNT" -eq 3
           ! grep -Eq 'uses: actions/(checkout|setup-node|github-script)@(v|main|master)' .github/workflows/deploy-staffportal-staging.yml
 
       - name: Checkout approved staging source
