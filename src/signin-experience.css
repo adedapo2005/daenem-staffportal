@@ -418,3 +418,31 @@
   #staffportal-auth-mount.sp-auth-mode-create .usp-auth-form {gap:7px !important;}
   #staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements {padding:6px 9px !important;gap:3px !important;}
 }
+
+/* Final rendered-QA polish: password strength always has clear, separated labels. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta {
+  display:flex !important;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:4px 10px !important;
+  margin-bottom:4px;
+  line-height:1.35;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta > span,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta > strong {
+  display:inline-block;
+  color:#24523f !important;
+  font-size:11px !important;
+  font-weight:700;
+}
+/* The photograph runs from the upper Ibadan clock through weather intelligence:
+   avoid blacking out its lower half with a second near-opaque overlay. */
+.sp-root #staff-local-weather .sp-weather-v145-intelligence {
+  background:linear-gradient(180deg,rgba(4,20,37,.27),rgba(3,17,31,.44)) !important;
+  text-shadow:0 1px 2px rgba(0,0,0,.75);
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer {
+  background:rgba(3,17,31,.23) !important;
+  text-shadow:0 1px 2px rgba(0,0,0,.75);
+}
