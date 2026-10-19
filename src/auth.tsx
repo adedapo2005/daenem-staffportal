@@ -652,6 +652,16 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     return true;
   }
 
+  function validateSignupUsername() {
+    if (signup.username.trim()) return true;
+    setMessage({
+      type: 'error',
+      text: 'Complete the required account details to continue.',
+      details: [authLabels.createUsername],
+    });
+    return false;
+  }
+
   function continueSignupIdentity(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
@@ -662,6 +672,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   function continueSignupAccount(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+    if (!validateSignupUsername()) return;
     if (!passwordPolicySatisfied(signupChecks)) {
       setMessage({ type: 'error', text: authLabels.passwordRequirements, details: signupChecks.filter((check) => check.required && !check.ok).map((check) => check.label) });
       return;
@@ -762,6 +773,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     event.preventDefault();
     setMessage(null);
     if (!validateSignupIdentity()) return;
+    if (!validateSignupUsername()) return;
     if (!passwordPolicySatisfied(signupChecks)) {
       setMessage({ type: 'error', text: authLabels.passwordRequirements, details: signupChecks.filter((check) => check.required && !check.ok).map((check) => check.label) });
       return;
