@@ -69,6 +69,10 @@ db.exec(`
     recipient_name TEXT,recipient_phone TEXT,delivery_address TEXT,proof_key TEXT,note TEXT,
     dispatched_by TEXT,delivered_by TEXT,dispatched_at TEXT,delivered_at TEXT,
     acknowledged_by_customer INTEGER);
+  CREATE TABLE print_proofs(id TEXT PRIMARY KEY,print_job_id TEXT NOT NULL,version_no INTEGER NOT NULL,
+    file_key TEXT,preview_key TEXT,sent_at TEXT,sent_by TEXT,customer_response TEXT,
+    customer_comment TEXT,responded_at TEXT,approved_by_employee_id TEXT,
+    UNIQUE(print_job_id,version_no));
   INSERT INTO print_jobs(id,company_id,location_id,customer_id,job_no,title,quantity,quoted_kobo,production_status)
     VALUES('job-a','company-printing','location-a','customer-a','DP-001','Business cards',100,125000,'quoted');
 `);
@@ -373,4 +377,78 @@ response = await route(deliveryRequest('job-delivery-foreign', 'request-foreign-
 assert.equal(response.status, 404, 'cross-company delivery remains neutral');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery-foreign'").get().n, 0);
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, company isolation, payment truth, and audit rollback PASS');
+const proofRequest = (jobId, action, extra = {}, requestId = `proof-${action}`) => new Request('https://staffportal.test/api/printing/jobs/proof', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': requestId },
+  body: JSON.stringify({ jobId, action, ...extra }),
+});
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status,proof_status)
+  VALUES('job-proof','company-printing','DP-P','Proof job',1,5000,'proof','pending')`).run();
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status,proof_status)
+  VALUES('job-proof-foreign','company-bakery','DP-PF','Foreign proof',1,5000,'proof','pending')`).run();
+response = await route(proofRequest('job-proof', 'create'), env, otherCompanyApprover);
+assert.equal(response.status, 403, 'another company cannot create Printing proof evidence');
+response = await route(proofRequest('job-proof-foreign', 'create'), env, context);
+assert.equal(response.status, 404, 'foreign proof job is concealed');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_proofs WHERE print_job_id IN ('job-proof','job-proof-foreign')").get().n, 0);
+
+response = await route(proofRequest('job-proof', 'create', { fileKey: 'printing/job-proof/proof/file-a' }, 'proof-create'), env, context);
+assert.equal(response.status, 200);
+const firstProofId = (await response.json()).proofId;
+assert.equal(db.prepare('SELECT version_no FROM print_proofs WHERE id=?').get(firstProofId).version_no, 1);
+assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE entity_id='job-proof' AND action='proof_update'").get().request_id, 'proof-create');
+response = await route(proofRequest('job-proof', 'customer_response', { proofId: firstProofId, response: 'approved' }), env, context);
+assert.equal(response.status, 503, 'unsent proof cannot be presented as approved');
+assert.equal(db.prepare("SELECT proof_status FROM print_jobs WHERE id='job-proof'").get().proof_status, 'pending');
+
+db.exec(`CREATE TRIGGER reject_proof_sent_audit BEFORE INSERT ON audit_logs WHEN NEW.action='proof_update'
+  BEGIN SELECT RAISE(ABORT,'proof sent audit unavailable'); END`);
+response = await route(proofRequest('job-proof', 'sent', { proofId: firstProofId }, 'proof-sent-audit-failure'), env, owner);
+assert.equal(response.status, 503, 'sending state cannot survive required audit failure');
+assert.equal(db.prepare('SELECT sent_at FROM print_proofs WHERE id=?').get(firstProofId).sent_at, null);
+assert.equal(db.prepare("SELECT proof_status FROM print_jobs WHERE id='job-proof'").get().proof_status, 'pending');
+db.exec('DROP TRIGGER reject_proof_sent_audit');
+response = await route(proofRequest('job-proof', 'sent', { proofId: firstProofId }, 'proof-sent'), env, owner);
+assert.equal(response.status, 200);
+assert.equal(db.prepare("SELECT proof_status FROM print_jobs WHERE id='job-proof'").get().proof_status, 'sent');
+assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE entity_id='job-proof' AND after_json LIKE '%\"sent\"%'").get().request_id, 'proof-sent');
+db.exec(`CREATE TRIGGER reject_proof_audit BEFORE INSERT ON audit_logs WHEN NEW.action='proof_update'
+  BEGIN SELECT RAISE(ABORT,'proof audit unavailable'); END`);
+response = await route(proofRequest('job-proof', 'customer_response', { proofId: firstProofId, response: 'approved' }, 'proof-audit-failure'), env, context);
+assert.equal(response.status, 503, 'required audit failure denies proof approval');
+assert.equal(db.prepare('SELECT customer_response FROM print_proofs WHERE id=?').get(firstProofId).customer_response, 'pending');
+assert.equal(db.prepare("SELECT proof_status FROM print_jobs WHERE id='job-proof'").get().proof_status, 'sent');
+db.exec('DROP TRIGGER reject_proof_audit');
+response = await route(proofRequest('job-proof', 'customer_response', { proofId: firstProofId, response: 'approved' }, 'proof-approved'), env, context);
+assert.equal(response.status, 200, 'approval retry succeeds after audit recovery');
+assert.equal(db.prepare("SELECT proof_status FROM print_jobs WHERE id='job-proof'").get().proof_status, 'approved');
+assert.equal(db.prepare("SELECT request_id FROM audit_logs WHERE entity_id='job-proof' AND after_json LIKE '%approved%'").get().request_id, 'proof-approved');
+response = await route(proofRequest('job-proof', 'customer_response', { proofId: firstProofId, response: 'approved' }, 'proof-replay'), env, context);
+assert.equal(response.status, 503, 'approval replay cannot create a second success audit');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-proof' AND after_json LIKE '%approved%'").get().n, 1);
+
+db.exec(`CREATE TRIGGER ignore_proof_audit BEFORE INSERT ON audit_logs WHEN NEW.action='proof_update'
+  BEGIN SELECT RAISE(IGNORE); END`);
+response = await route(proofRequest('job-proof', 'create', { fileKey: 'printing/job-proof/proof/file-b' }, 'proof-create-ignored-audit'), env, context);
+assert.equal(response.status, 503, 'silently ignored audit rolls back proof creation');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_proofs WHERE print_job_id='job-proof'").get().n, 1);
+assert.equal(db.prepare("SELECT proof_status FROM print_jobs WHERE id='job-proof'").get().proof_status, 'approved');
+db.exec('DROP TRIGGER ignore_proof_audit');
+response = await route(proofRequest('job-proof', 'create', { fileKey: 'printing/job-proof/proof/file-b' }, 'proof-create-second'), env, context);
+assert.equal(response.status, 200);
+const secondProofId = (await response.json()).proofId;
+assert.equal(db.prepare('SELECT version_no FROM print_proofs WHERE id=?').get(secondProofId).version_no, 2);
+response = await route(proofRequest('job-proof', 'sent', { proofId: firstProofId }, 'proof-stale-version'), env, context);
+assert.equal(response.status, 503, 'old proof version cannot be sent after a revision');
+assert.equal(db.prepare("SELECT proof_status FROM print_jobs WHERE id='job-proof'").get().proof_status, 'pending');
+
+db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status,proof_status)
+  VALUES('job-proof-race','company-printing','DP-PR','Concurrent proof',1,5000,'proof','pending')`).run();
+const proofRace = await Promise.all([
+  route(proofRequest('job-proof-race', 'create', {}, 'proof-race-a'), env, context),
+  route(proofRequest('job-proof-race', 'create', {}, 'proof-race-b'), env, owner),
+]);
+assert.deepEqual(proofRace.map((item) => item.status).sort(), [200, 503], 'one version writer wins');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_proofs WHERE print_job_id='job-proof-race'").get().n, 1);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-proof-race' AND action='proof_update'").get().n, 1);
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, proof approval/audit rollback, company isolation, payment truth PASS');
