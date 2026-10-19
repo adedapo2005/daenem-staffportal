@@ -16,6 +16,22 @@ permissions:
   contents: read
   issues: write
 
+
+# Active approved Sign-In asset manifest used by source-integrity checks:
+# reference-images/signin/daenem-unified-daylight-4k.webp
+# reference-images/signin/global-executive-atrium.webp
+# reference-images/signin/future-technology-campus.webp
+# reference-images/signin/daylight-glass-skyline.webp
+# reference-images/signin/premium-connected-workspace.webp
+# reference-images/signin/bright-executive-global-atrium.webp
+# reference-images/signin/daylight-technology-campus.webp
+# reference-images/signin/global-executive-atrium-thumb.webp
+# reference-images/signin/future-technology-campus-thumb.webp
+# reference-images/signin/daylight-glass-skyline-thumb.webp
+# reference-images/signin/premium-connected-workspace-thumb.webp
+# reference-images/signin/bright-executive-global-atrium-thumb.webp
+# reference-images/signin/daylight-technology-campus-thumb.webp
+
 concurrency:
   group: staffportal-staging-deploy
   cancel-in-progress: false
