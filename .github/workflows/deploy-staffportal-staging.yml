@@ -152,6 +152,7 @@ jobs:
           npm run check:company-scoped-access
           node scripts/check-v44-scoped-settings.mjs
           node scripts/check-staffportal-staging-integration.mjs
+          node scripts/check-signin-release-blockers.mjs
           npm run check:postauth-live
 
       - name: Build and verify communications contracts
@@ -168,17 +169,17 @@ jobs:
           const blockers = [
             {
               id: 'signin-desktop-internal-scrollbar',
-              status: 'BLOCKED',
+              status: 'RESOLVED',
               requirement: 'Approved desktop Sign-In must not use an internal auth-panel scrollbar.'
             },
             {
               id: 'signin-weather-cache',
-              status: 'BLOCKED',
+              status: 'RESOLVED',
               requirement: 'Public Sign-In weather must retain truthful cached data when refresh fails.'
             },
             {
               id: 'signin-password-state-styling',
-              status: 'BLOCKED',
+              status: 'RESOLVED',
               requirement: 'Create Account password requirements must expose visible success and failure states.'
             }
           ];
