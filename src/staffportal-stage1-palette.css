@@ -1,7 +1,7 @@
 /* Stage 1 / Teal & Pearl: scoped to the post-login preview only.
    Changing data-stage1-palette to previous restores existing colours.
    No original V115 exported source, authentication, page content or routes change. */
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight {
   --p-bg: #f6fafc;
   --p-ink: #13283d;
   --p-muted: #526578;
@@ -12,26 +12,26 @@
   --stage1-citrus: #ffdf5c;
   --stage1-lavender: #f7f7fe;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight {
   background: #f6fafc;
   color: #13283d;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar {
   background: #e8f7f5 !important;
   color: #13283d !important;
   border-right: 1px solid #cbe7e3;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-shell-brand,
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-company {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-shell-brand,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-company {
   background: #dff2ed;
   color: #13283d;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-company :is(strong,small),
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-sidebar-bottom :is(button,small,strong),
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-shell-utility-label {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-company :is(strong,small),
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-sidebar-bottom :is(button,small,strong),
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-shell-utility-label {
   color: #13283d;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation {
   --ecc-navy: #ffffff;
   --ecc-surface: #e8f7f5;
   --ecc-hover: #d2eee9;
@@ -42,29 +42,29 @@
   --ecc-muted: #526578;
   color: #13283d;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-search-box {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-search-box {
   border: 1px solid #bcded9;
   color: #526578;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-search-box input,
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-page-link,
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-page[data-current] .ecc-page-link {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-search-box input,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-page-link,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-page[data-current] .ecc-page-link {
   color: #13283d;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(.ecc-disclosure,.ecc-page-link,.ecc-area-open,.ecc-favorite-button,.ecc-shortcuts-toggle,.ecc-clear-search):hover {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation :is(.ecc-disclosure,.ecc-page-link,.ecc-area-open,.ecc-favorite-button,.ecc-shortcuts-toggle,.ecc-clear-search):hover {
   background: #d2eee9;
   color: #13283d;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(a,button,input):focus-visible {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation :is(a,button,input):focus-visible {
   outline: 3px solid #0f766e;
   outline-offset: 2px;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-topbar {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-topbar {
   background: #ffffff;
   color: #13283d;
   border-bottom-color: #d8e7e7;
 }
-[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-main {
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-main {
   background: #f6fafc;
 }
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-panel,.p-table,.p-modal) {
@@ -92,6 +92,6 @@
 }
 .stage1-rollback-toggle:focus-visible { outline: 3px solid #0f766e; outline-offset: 3px; }
 @media (forced-colors: active) {
-  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar,
-  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation { background: Canvas !important; color: CanvasText !important; }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation { background: Canvas !important; color: CanvasText !important; }
 }

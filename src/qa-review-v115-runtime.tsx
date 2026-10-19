@@ -8,6 +8,7 @@ import './postlogin-premium-refinement-v1.css';
 import './staffportal-stage1-palette.css';
 import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
 import Stage1SearchResults from './stage1-live-search';
+import { Stage1RuntimeContext, type Stage1NavigationRole } from './stage1-runtime-context';
 import './stage1-live-search.css';
 
 const APPROVED_SOURCE = {
@@ -90,6 +91,19 @@ function sessionFor(context: WorkforceContext): Session {
   };
 }
 
+function companyNavigationRole(context: WorkforceContext, fallback: Stage1NavigationRole): Stage1NavigationRole {
+  const currentCompany = context.companies.find((company) => company.primary) || context.companies[0];
+  if (!currentCompany) return fallback;
+  // Navigation is a presentation layer, not a grant: use this company's actual
+  // assigned roles rather than the global union of roles across all companies.
+  const companyRoles = context.roles.filter((role) => role.companyId === currentCompany.id);
+  if (!companyRoles.length) return fallback;
+  const names = companyRoles.map((role) => `${role.code} ${role.name}`).join(' ').toLowerCase();
+  if (/owner|super.?admin/.test(names)) return 'Owner';
+  if (/manager|admin|lead|supervisor/.test(names)) return 'Manager';
+  return 'Employee';
+}
+
 function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
   const button = (event.target as HTMLElement).closest('button');
   return button?.textContent?.trim() === 'Sign out' && Boolean(button.closest('[role="dialog"]'));
@@ -98,6 +112,7 @@ function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
 export default function ApprovedPostLoginV115({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
   const session = useMemo(() => sessionFor(context), [context]);
   const [stage1Enabled, setStage1Enabled] = useState(true);
+  const navigationRole = useMemo(() => companyNavigationRole(context, session.role === 'Experience Admin' ? 'Manager' : session.role), [context, session.role]);
 
   useEffect(() => {
     const updateReleaseChip = () => {
@@ -135,7 +150,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         stage1Toggle.addEventListener('click', () => setStage1Enabled((enabled) => !enabled));
         manifest.insertAdjacentElement('beforebegin', stage1Toggle);
       }
-      const toggleLabel = stage1Enabled ? 'Use previous colour palette' : 'Restore Stage 1 colours';
+      const toggleLabel = stage1Enabled ? 'Use previous interface' : 'Restore Stage 1 experience';
       if (stage1Toggle.textContent !== toggleLabel) stage1Toggle.textContent = toggleLabel;
       stage1Toggle.setAttribute('aria-pressed', String(!stage1Enabled));
       if (manifest.dataset.commit === STAGING_BUILD.commit) return;
@@ -206,7 +221,9 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         void onLogout();
       }}
     >
-      <Portal />
+      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+        <Portal />
+      </Stage1RuntimeContext.Provider>
       <LivePostLoginEnhancementsV116 />
       <Stage1SearchResults enabled={stage1Enabled} />
     </div>

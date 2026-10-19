@@ -17,7 +17,7 @@ interface SearchPayload {
 }
 function recordHref(result: SearchSuggestion) {
   const route: Record<string,string> = {
-    'employee': '/hr', 'payroll': '/payroll', 'construction': '/construction',
+    'employee': '/people', 'payroll': '/payroll', 'construction': '/construction-command',
     'leave-request': '/leave', 'document-request': '/self-service',
   };
   return route[result.type] || undefined;

@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import React, { useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ArrowUpRight, ChevronDown, History, Search, Star, X } from "lucide-react";
 import type { Session } from "../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model";
 import type {
@@ -17,6 +17,7 @@ import {
   type CommandCenterPage,
   type CommandCenterPermissionCheck,
 } from "./enterprise-command-center-model";
+import { Stage1RuntimeContext } from "./stage1-runtime-context";
 
 export interface EnterpriseCommandCenterNavigationProps {
   session: Session;
@@ -93,19 +94,20 @@ function CommandCenterSession({
   const navigation = useSyncExternalStore(memory.subscribe, memory.getSnapshot, memory.getSnapshot);
   const [query, setQuery] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
+  const stage1 = useContext(Stage1RuntimeContext);
   const baseAreas = buildEnterpriseCommandNavigation({ session, canView, contextVisible });
   // Presentation order only. Every authorized destination stays available.
-  const role = session.role;
+  const role = stage1.companyRole || session.role;
   const roleOrder = role === "Employee"
     ? ["my-work", "people", "home", "communications", "tools", "businesses", "finance", "admin"]
     : role === "Manager"
       ? ["home", "people", "my-work", "businesses", "finance", "communications", "tools", "admin"]
       : ["home", "businesses", "finance", "people", "communications", "admin", "my-work", "tools"];
-  const areas = [...baseAreas].sort((a, b) => {
+  const areas = stage1.enabled ? [...baseAreas].sort((a, b) => {
     const ia = roleOrder.indexOf(a.globalId);
     const ib = roleOrder.indexOf(b.globalId);
     return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib);
-  });
+  }) : baseAreas;
   const pages = flattenCommandNavigation(areas);
   const candidatePages = pages.filter((page) => page.context ? activeContext(page.context) : page.moduleId === moduleId);
   const currentPage = candidatePages.find((page) => page.moduleId === "signin-design" && !page.context)
