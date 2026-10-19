@@ -645,7 +645,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       setMessage({ type: 'error', text: 'Complete the required account details to continue.', details: missing });
       return false;
     }
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(signup.email.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signup.email.trim())) {
       setMessage({ type: 'error', text: 'Enter a valid personal email address before continuing.' });
       return false;
     }
