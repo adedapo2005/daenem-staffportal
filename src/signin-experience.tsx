@@ -69,6 +69,138 @@ const phaseIcons: Record<'dawn' | 'day' | 'dusk' | 'night', { className: string;
   },
 };
 
+
+type SignInWeatherPayload = {
+  available: true;
+  provider: string;
+  providerStatus: 'fresh' | 'cached';
+  fetchedAt: string;
+  cacheAgeSeconds: number;
+  unitsSystem: 'IMPERIAL' | 'METRIC';
+  location: string;
+  temperature: number | null;
+  apparentTemperature: number | null;
+  humidity: number | null;
+  precipitationProbability: number | null;
+  windSpeed: number | null;
+  description: string;
+};
+
+const SIGNIN_WEATHER_CACHE_KEY = 'daenem:staffportal:signin-weather:ibadan:v1';
+const SIGNIN_WEATHER_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function optionalWeatherNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function normalizeSignInWeather(value: unknown): SignInWeatherPayload | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (candidate.available !== true ||
+      (candidate.providerStatus !== 'fresh' && candidate.providerStatus !== 'cached') ||
+      typeof candidate.fetchedAt !== 'string' || !Number.isFinite(Date.parse(candidate.fetchedAt))) return null;
+  return {
+    available: true,
+    provider: typeof candidate.provider === 'string' && candidate.provider.trim() ? candidate.provider.trim() : 'Google Weather',
+    providerStatus: candidate.providerStatus,
+    fetchedAt: candidate.fetchedAt,
+    cacheAgeSeconds: Math.max(0, optionalWeatherNumber(candidate.cacheAgeSeconds) || 0),
+    unitsSystem: candidate.unitsSystem === 'IMPERIAL' ? 'IMPERIAL' : 'METRIC',
+    location: typeof candidate.location === 'string' && candidate.location.trim() ? candidate.location.trim() : 'Ibadan',
+    temperature: optionalWeatherNumber(candidate.temperature),
+    apparentTemperature: optionalWeatherNumber(candidate.apparentTemperature),
+    humidity: optionalWeatherNumber(candidate.humidity),
+    precipitationProbability: optionalWeatherNumber(candidate.precipitationProbability),
+    windSpeed: optionalWeatherNumber(candidate.windSpeed),
+    description: typeof candidate.description === 'string' && candidate.description.trim() ? candidate.description.trim() : 'Current conditions',
+  };
+}
+
+function readCachedSignInWeather() {
+  try {
+    const raw = window.localStorage.getItem(SIGNIN_WEATHER_CACHE_KEY);
+    if (!raw) return null;
+    const stored: unknown = JSON.parse(raw);
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return null;
+    const record = stored as { savedAt?: unknown; payload?: unknown };
+    if (typeof record.savedAt !== 'number' || !Number.isSafeInteger(record.savedAt) || record.savedAt <= 0) return null;
+    const payload = normalizeSignInWeather(record.payload);
+    if (!payload || Date.now() - Date.parse(payload.fetchedAt) > SIGNIN_WEATHER_CACHE_MAX_AGE_MS) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSignInWeather(payload: SignInWeatherPayload) {
+  try {
+    window.localStorage.setItem(SIGNIN_WEATHER_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), payload }));
+  } catch {
+    // The live response remains usable when browser storage is unavailable.
+  }
+}
+
+function setTrailingText(element: HTMLElement | null, value: string) {
+  if (!element) return;
+  const textNode = [...element.childNodes].reverse().find((node) => node.nodeType === Node.TEXT_NODE);
+  if (textNode) textNode.textContent = ` ${value}`;
+  else element.append(document.createTextNode(` ${value}`));
+}
+
+function weatherFreshness(payload: SignInWeatherPayload) {
+  const ageSeconds = Math.max(payload.cacheAgeSeconds, Math.floor((Date.now() - Date.parse(payload.fetchedAt)) / 1000));
+  if (ageSeconds < 60) return 'Updated just now';
+  const minutes = Math.floor(ageSeconds / 60);
+  if (minutes < 60) return `Updated ${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  return `Updated ${hours} hr${hours === 1 ? '' : 's'} ago`;
+}
+
+function applySignInWeather(root: HTMLElement, payload: SignInWeatherPayload, browserCached = false) {
+  const card = root.querySelector<HTMLElement>('article[data-city-id="ibadan"]');
+  const unit = payload.unitsSystem === 'IMPERIAL' ? '°F' : '°C';
+  const speedUnit = payload.unitsSystem === 'IMPERIAL' ? 'mph' : 'km/h';
+  const temperature = payload.temperature === null ? null : Math.round(payload.temperature);
+  const summary = [...(card?.querySelectorAll<HTMLElement>('div, p, span') || [])]
+    .find((node) => node.childElementCount === 0 && node.textContent?.trim() === 'Connecting to weather…');
+  const summaryParts = [payload.description, temperature === null ? null : `${temperature}${unit}`, payload.humidity === null ? null : `Humidity ${Math.round(payload.humidity)}%`].filter(Boolean);
+  if (summary) summary.textContent = summaryParts.join(' · ');
+  if (card) {
+    card.dataset.weather = 'available';
+    card.dataset.weatherCondition = payload.description;
+  }
+
+  const cached = browserCached || payload.providerStatus === 'cached';
+  setTrailingText(root.querySelector<HTMLElement>('.sp-weather-v175-provider'), `${payload.provider} · ${cached ? 'Cached' : 'Live'}`);
+  const intelligence = root.querySelector<HTMLElement>('.sp-weather-v145-intelligence-body');
+  const intelligenceLine = [
+    temperature === null ? payload.description : `${payload.description}, ${temperature}${unit}`,
+    payload.apparentTemperature === null ? null : `feels like ${Math.round(payload.apparentTemperature)}${unit}`,
+    payload.precipitationProbability === null ? null : `rain ${Math.round(payload.precipitationProbability)}%`,
+    payload.windSpeed === null ? null : `wind ${Math.round(payload.windSpeed)} ${speedUnit}`,
+  ].filter(Boolean).join(' · ');
+  const intelligenceText = intelligence?.firstElementChild as HTMLElement | null;
+  if (intelligenceText) intelligenceText.textContent = intelligenceLine;
+  else if (intelligence) intelligence.textContent = intelligenceLine;
+
+  const footerItems = root.querySelectorAll<HTMLElement>('.sp-weather-v145-footer > span');
+  setTrailingText(footerItems[0] || null, `${payload.provider} · ${cached ? 'Cached' : 'Live'}`);
+  if (footerItems[1]) footerItems[1].textContent = weatherFreshness(payload);
+
+  const statusItem = [...root.querySelectorAll<HTMLElement>('.sp-status-rail > span')]
+    .find((item) => item.querySelector('b')?.textContent?.trim() === 'Weather Data');
+  const statusIndicator = statusItem?.querySelector<HTMLElement>('i') || null;
+  if (statusIndicator) statusIndicator.className = cached ? 'is-warn' : 'is-good';
+  setTrailingText(statusItem || null, cached ? 'Cached · refresh pending' : 'Live');
+}
+
+function applyUnavailableSignInWeather(root: HTMLElement) {
+  setTrailingText(root.querySelector<HTMLElement>('.sp-weather-v175-provider'), 'Weather data unavailable');
+  const statusItem = [...root.querySelectorAll<HTMLElement>('.sp-status-rail > span')]
+    .find((item) => item.querySelector('b')?.textContent?.trim() === 'Weather Data');
+  setTrailingText(statusItem || null, 'Unavailable');
+}
+
 function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
   const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', hourCycle: 'h23' }).format(now));
   if (hour >= 5 && hour < 7) return 'dawn';
@@ -284,6 +416,29 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
       root.removeEventListener('click', onClick);
     };
   }, [onInstall]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const cached = readCachedSignInWeather();
+    if (cached) applySignInWeather(root, cached, true);
+
+    const controller = new AbortController();
+    void fetch('/api/context/signin/weather', {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) throw new Error('Sign-In weather is unavailable.');
+      const payload = normalizeSignInWeather(await response.json());
+      if (!payload) throw new Error('Sign-In weather response is invalid.');
+      writeCachedSignInWeather(payload);
+      applySignInWeather(root, payload);
+    }).catch((error: unknown) => {
+      if ((error as { name?: string })?.name !== 'AbortError' && !cached) applyUnavailableSignInWeather(root);
+    });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const authMount = rootRef.current?.querySelector<HTMLElement>('#staffportal-auth-mount');

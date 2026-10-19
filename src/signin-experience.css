@@ -46,6 +46,57 @@
 #staffportal-auth-mount .usp-secondary-button { min-height: 46px; border-radius: 11px; }
 #staffportal-auth-mount .usp-primary-button { border: 0; color: #fff; background: linear-gradient(105deg,#1769c2,#267d9b); }
 #staffportal-auth-mount .usp-secondary-button { border: 1px solid #476987; color: #d7e8f6; background: #10253b; }
+#staffportal-auth-mount .usp-password-requirements {
+  display: grid;
+  gap: 6px;
+  padding: 9px 10px;
+  border: 1px solid rgba(91,174,235,.24);
+  border-radius: 10px;
+  background: rgba(7,30,48,.42);
+}
+#staffportal-auth-mount .usp-password-requirements > strong,
+#staffportal-auth-mount .usp-password-meter-meta {
+  color: #d7e8f6;
+  font-size: .66rem;
+}
+#staffportal-auth-mount .usp-password-status {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 5px 8px;
+}
+#staffportal-auth-mount .usp-password-status > span,
+#staffportal-auth-mount .usp-confirm-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .64rem;
+  line-height: 1.25;
+}
+#staffportal-auth-mount .usp-password-status > span i,
+#staffportal-auth-mount .usp-confirm-status i {
+  font-style: normal;
+  font-weight: 800;
+}
+#staffportal-auth-mount .usp-password-status .neutral,
+#staffportal-auth-mount .usp-confirm-status.neutral { color: #9bb3c7; }
+#staffportal-auth-mount .usp-password-status .pass,
+#staffportal-auth-mount .usp-confirm-status.valid { color: #85e3b1; }
+#staffportal-auth-mount .usp-password-status .fail,
+#staffportal-auth-mount .usp-confirm-status.invalid { color: #ffb4a8; }
+#staffportal-auth-mount .usp-password-meter-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(155,179,199,.2);
+}
+#staffportal-auth-mount .usp-password-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #85e3b1;
+  transition: width .2s ease;
+}
+
 #staffportal-auth-mount .usp-auth-message,
 #staffportal-auth-mount .usp-positive-note,
 #staffportal-auth-mount .usp-auth-destination,
@@ -62,24 +113,20 @@
 }
 
 
-/* Live staging correction: contain only the existing Create Account panel
-   in its narrow desktop mount; the approved Sign-In mount is untouched. */
+/* Create Account containment: desktop uses measured compact steps and never
+   creates an internal scrollbar. Tablet/mobile retain normal page scrolling. */
 #staffportal-auth-mount.sp-auth-mode-create {
   container-type: inline-size;
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-gutter: stable;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
 }
 #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-gutter: stable;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
 }
 #staffportal-auth-mount.sp-auth-mode-create .usp-auth-form,
 #staffportal-auth-mount.sp-auth-mode-create .usp-field,
