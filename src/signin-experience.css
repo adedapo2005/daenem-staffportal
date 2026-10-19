@@ -62,9 +62,9 @@
 }
 
 
-/* Live staging correction: contain the existing Create Account panel in its
-   narrow desktop mount without changing the approved Sign-In presentation. */
-#staffportal-auth-mount {
+/* Live staging correction: contain only the existing Create Account panel
+   in its narrow desktop mount; the approved Sign-In mount is untouched. */
+#staffportal-auth-mount.sp-auth-mode-create {
   container-type: inline-size;
   min-width: 0;
   min-height: 0;
@@ -73,7 +73,7 @@
   scrollbar-gutter: stable;
   padding-right: 4px;
 }
-#staffportal-auth-mount .usp-auth-panel {
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
@@ -81,26 +81,26 @@
   scrollbar-gutter: stable;
   padding-right: 4px;
 }
-#staffportal-auth-mount .usp-auth-form,
-#staffportal-auth-mount .usp-field,
-#staffportal-auth-mount .usp-two {
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-form,
+#staffportal-auth-mount.sp-auth-mode-create .usp-field,
+#staffportal-auth-mount.sp-auth-mode-create .usp-two {
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
-#staffportal-auth-mount .usp-field > input,
-#staffportal-auth-mount .usp-password-field {
+#staffportal-auth-mount.sp-auth-mode-create .usp-field > input,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field {
   width: 100%;
   box-sizing: border-box;
 }
-#staffportal-auth-mount .usp-password-field input {
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field input {
   min-width: 0;
 }
 @container (max-width: 430px) {
-  #staffportal-auth-mount .usp-two {
+  #staffportal-auth-mount.sp-auth-mode-create .usp-two {
     grid-template-columns: 1fr;
   }
-  #staffportal-auth-mount .usp-password-pair {
+  #staffportal-auth-mount.sp-auth-mode-create .usp-password-pair {
     gap: 9px;
   }
 }
