@@ -358,3 +358,39 @@
     gap:8px;
   }
 }
+
+/* Final visual QA: the password status should never inherit dark-palette
+   low-contrast colors on the pale Create Account surface. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements {
+  background:#eaf4ee !important;
+  border:1px solid #adcdbd !important;
+  padding:9px 11px !important;
+  border-radius:12px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements > strong,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta {
+  color:#234e3e !important; font-size:11px !important; font-weight:750 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status > span,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status {
+  color:#4b6759 !important; font-size:11px !important; line-height:1.35 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status > span.pass,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status.valid {color:#096d48 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status > span.fail,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status.invalid {color:#a32a32 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-track {background:#ccdfd3 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button {
+  color:#174632 !important; background:#f8fdfb !important; border:1px solid #bdd8c9 !important;
+  white-space:normal !important; overflow-wrap:anywhere; line-height:1.2 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-toggle {color:#137e64 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider {color:#466a58 !important;}
+/* The reference night imagery already contains shadows. Keep the photograph
+   detailed while using a small caption gradient for text readability. */
+#staff-global-operations article[data-city-id] > div:first-child > div:nth-child(2) {
+  background:linear-gradient(180deg,rgba(2,9,12,.53),rgba(2,9,12,.09) 45%,rgba(2,9,12,.49)) !important;
+}
+#staff-local-weather article[data-city-id] > div:first-child > div:nth-child(2) {
+  background:linear-gradient(180deg,rgba(2,9,12,.54),rgba(2,9,12,.06) 45%,rgba(2,9,12,.57)) !important;
+}
