@@ -151,3 +151,36 @@
     gap: 9px;
   }
 }
+
+
+/* Runtime media corrections: keep the approved composition and copy intact. */
+#staff-global-operations .gw-city-image-layer,
+#staff-local-weather .gw-city-image-layer {
+  opacity: 1 !important;
+}
+#staff-global-operations .gw-city-image-layer img,
+#staff-local-weather .gw-city-image-layer img {
+  opacity: 1 !important;
+  image-rendering: auto;
+}
+/* Do not darken already-photographed night and dusk source images a second time. */
+#staff-global-operations .gw-city-phase-night .gw-city-image-layer,
+#staff-global-operations .gw-city-phase-dusk .gw-city-image-layer {
+  filter: none !important;
+}
+/* The local weather image remains continuous underneath both weather sections. */
+.sp-root #staff-local-weather.sp-weather-v145 {
+  isolation: isolate;
+  background-image: linear-gradient(180deg, rgba(4,19,34,.13), rgba(4,19,34,.28)), var(--sp-weather-runtime-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.sp-root #staff-local-weather.sp-weather-v145[data-weather-phase="night"] {
+  --sp-weather-runtime-image: url('/assets/staffportal-weather/ibadan-night-v125.png');
+}
+.sp-root #staff-local-weather.sp-weather-v145:not([data-weather-phase="night"]) {
+  --sp-weather-runtime-image: url('/assets/staffportal-weather/ibadan-day-v125-card.webp');
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence {
+  background: linear-gradient(180deg, rgba(4,20,37,.67), rgba(3,17,31,.82)) !important;
+}
