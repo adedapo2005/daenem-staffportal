@@ -311,7 +311,7 @@ function PasswordField({
 }
 
 function PasswordStatus({ checks, password, label }: { checks: PasswordCheck[]; password: string; label: string }) {
-  return <div className="usp-password-requirements" aria-label={label}>
+  return <div className="usp-password-requirements" aria-label={label} aria-live="polite">
     <strong>{label}</strong>
     <div className="usp-password-status">
       {checks.map((check) => <span key={check.label} className={!password ? 'neutral' : check.ok ? 'pass' : 'fail'}>
@@ -562,7 +562,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   useEffect(() => {
     const panel = panelRef.current;
-    const column = panel?.closest<HTMLElement>('.usp-form-column');
+    const column = panel?.closest<HTMLElement>('.usp-form-column') || panel?.parentElement;
     if (!panel || !column) return;
     let frame = 0;
     const sync = () => {
