@@ -39,8 +39,12 @@ function unb64(value: string) {
 function token(size = 32) { return b64(randomBytes(size)); }
 async function sha(value: string) { return new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(value))); }
 async function shaHex(value: string) { return [...await sha(value)].map((byte) => byte.toString(16).padStart(2, '0')).join(''); }
+function pepper(env: ProviderAuthEnv) {
+  if (env.APP_STAGE === 'production' && !env.AUTH_PEPPER) return undefined;
+  return env.AUTH_PEPPER || 'bootstrap-stage-only-change-before-production';
+}
 async function hmacKey(env: ProviderAuthEnv) {
-  const secret = env.AUTH_PEPPER || '';
+  const secret = pepper(env);
   if (!secret) throw new Error('AUTH_PEPPER is not configured for production.');
   return crypto.subtle.importKey('raw', encoder.encode(secret + ':staffportal-oauth-state'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
 }
@@ -162,7 +166,7 @@ async function start(request: Request, env: ProviderAuthEnv, provider: Provider)
   }});
 }
 async function createSession(request: Request, env: ProviderAuthEnv, employeeId: string, provider: Provider) {
-  const secret = env.AUTH_PEPPER || '';
+  const secret = pepper(env);
   if (!secret) throw new Error('AUTH_PEPPER is not configured for production.');
   const sessionToken = token(32);
   const sessionHash = await shaHex(sessionToken + ':' + secret);
