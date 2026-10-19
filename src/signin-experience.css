@@ -303,3 +303,33 @@
   flex-shrink:0;
 }
 #staffportal-auth-mount.sp-auth-mode-create .usp-auth-form { min-height:max-content; }
+
+/* Create Account requires more room than Sign In. Use a dedicated desktop
+   surface, rather than an overflowing 228px-wide sign-in slot. */
+@media (min-width:821px) and (min-height:700px) {
+  .sp-root #staffportal-auth-mount.sp-auth-mode-create {
+    position:fixed !important;
+    inset:50% auto auto 50% !important;
+    transform:translate(-50%,-50%) !important;
+    width:min(420px,calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:calc(100dvh - 30px) !important;
+    min-height:0 !important;
+    z-index:1000 !important;
+    padding:18px 20px !important;
+    border:1px solid #9cc6b5 !important;
+    border-radius:20px !important;
+    background:linear-gradient(145deg,#f4fbf8,#e5f1eb) !important;
+    box-shadow:0 30px 85px rgba(7,38,30,.32) !important;
+    overflow:visible !important;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
+    height:auto !important; min-height:0 !important; gap:8px;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading {
+    max-width:100%;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {
+    font-size:20px;
+  }
+}
