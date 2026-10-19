@@ -63,7 +63,7 @@
 
 
 /* Live staging correction: contain only the existing Create Account panel
-   in its narrow desktop mount; the approved Sign-In mount is untouched. */
+   in its narrow staging mount; the approved Sign-In mount is untouched. */
 #staffportal-auth-mount.sp-auth-mode-create {
   container-type: inline-size;
   min-width: 0;
