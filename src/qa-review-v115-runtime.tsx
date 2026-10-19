@@ -1,10 +1,11 @@
-import { useEffect, useMemo, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import type { WorkforceContext } from './auth';
 import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal';
 import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/security-contract';
 import type { Company, Session } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
 import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';
 import './postlogin-premium-refinement-v1.css';
+import './staffportal-stage1-palette.css';
 import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
 
 const APPROVED_SOURCE = {
@@ -94,6 +95,7 @@ function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
 
 export default function ApprovedPostLoginV115({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
   const session = useMemo(() => sessionFor(context), [context]);
+  const [stage1Enabled, setStage1Enabled] = useState(true);
 
   useEffect(() => {
     const updateReleaseChip = () => {
@@ -121,6 +123,19 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         const close = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.trim() === 'Close');
         if (close) close.insertAdjacentElement('beforebegin', manifest); else dialog.insertAdjacentElement('beforeend', manifest);
       }
+      // Release Details owns the reversible Stage 1 view choice.
+      let stage1Toggle = dialog.querySelector<HTMLButtonElement>('[data-stage1-rollback-toggle]');
+      if (!stage1Toggle) {
+        stage1Toggle = document.createElement('button');
+        stage1Toggle.type = 'button';
+        stage1Toggle.className = 'stage1-rollback-toggle';
+        stage1Toggle.dataset.stage1RollbackToggle = 'true';
+        stage1Toggle.addEventListener('click', () => setStage1Enabled((enabled) => !enabled));
+        manifest.insertAdjacentElement('beforebegin', stage1Toggle);
+      }
+      const toggleLabel = stage1Enabled ? 'Use previous colour palette' : 'Restore Stage 1 colours';
+      if (stage1Toggle.textContent !== toggleLabel) stage1Toggle.textContent = toggleLabel;
+      stage1Toggle.setAttribute('aria-pressed', String(!stage1Enabled));
       if (manifest.dataset.commit === STAGING_BUILD.commit) return;
       manifest.dataset.commit = STAGING_BUILD.commit;
       manifest.replaceChildren();
@@ -161,7 +176,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
     const observer = new MutationObserver(updateReleaseDetails);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, []);
+  }, [stage1Enabled]);
 
   if (typeof window !== 'undefined') {
     sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
@@ -173,6 +188,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
   return (
     <div
       data-approved-postlogin="qa-review-v115"
+      data-stage1-palette={stage1Enabled ? "bright" : "previous"}
       data-approved-project={APPROVED_SOURCE.project}
       data-approved-version={APPROVED_SOURCE.version}
       data-source-commit={APPROVED_SOURCE.commit}
