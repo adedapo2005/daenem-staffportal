@@ -37,6 +37,62 @@ function securityHeaders(response: Response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+async function weatherResponse(
+  env: Env,
+  latitude: number,
+  longitude: number,
+  unitsSystem: 'IMPERIAL' | 'METRIC',
+  location: string,
+) {
+  const result = await readGoogleWeather(env, latitude, longitude, unitsSystem);
+  if (!result.data) {
+    return json(
+      { available: false, providerStatus: result.providerStatus },
+      result.providerStatus === 'provider_required' ? 200 : 502,
+    );
+  }
+  const weatherData = result.data as {
+    currentTime?: unknown; isDaytime?: unknown;
+    weatherCondition?: { description?: { text?: unknown } };
+    temperature?: unknown; feelsLikeTemperature?: unknown; relativeHumidity?: unknown;
+    precipitation?: { probability?: { percent?: unknown }; qpf?: unknown };
+    wind?: { speed?: unknown; direction?: { degrees?: unknown }; gust?: unknown };
+    currentConditionsHistory?: { maxTemperature?: unknown; minTemperature?: unknown };
+  };
+  const numberValue = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null;
+  const number = (value: unknown) => numberValue((value as { degrees?: unknown; value?: unknown; quantity?: unknown } | null)?.degrees ?? (value as { value?: unknown; quantity?: unknown } | null)?.value ?? (value as { quantity?: unknown } | null)?.quantity);
+  const current = weatherData.currentConditionsHistory || {};
+  const condition = weatherData.weatherCondition?.description?.text;
+
+  return json({
+    available: true,
+    provider: 'Google Weather',
+    providerStatus: result.providerStatus,
+    fetchedAt: result.fetchedAt,
+    cacheAgeSeconds: result.cacheAgeSeconds,
+    unitsSystem,
+    location,
+    temperature: number(weatherData.temperature),
+    apparentTemperature: number(weatherData.feelsLikeTemperature),
+    humidity: numberValue(weatherData.relativeHumidity),
+    isDay: typeof weatherData.isDaytime === 'boolean' ? weatherData.isDaytime : null,
+    precipitationProbability: numberValue(weatherData.precipitation?.probability?.percent),
+    precipitation: number(weatherData.precipitation?.qpf),
+    windSpeed: number(weatherData.wind?.speed),
+    windDirection: numberValue(weatherData.wind?.direction?.degrees),
+    windGust: number(weatherData.wind?.gust),
+    today: { high: number(current.maxTemperature), low: number(current.minTemperature) },
+    description: typeof condition === 'string' ? condition : 'Current conditions',
+    observedAt: typeof weatherData.currentTime === 'string' ? weatherData.currentTime : null,
+  });
+}
+
+async function signInWeather(env: Env) {
+  // This unauthenticated route is intentionally fixed to one public city. It
+  // cannot be used to proxy arbitrary coordinates into the paid provider.
+  return weatherResponse(env, 7.3775, 3.9470, 'METRIC', 'Ibadan, Oyo State');
+}
+
 async function weather(request: Request, env: Env) {
   if (env.WEATHER_PROVIDER_ENABLED !== 'true' || env.APP_STAGE === 'production') {
     return json({ available: false, providerStatus: 'provider_required' });
@@ -59,44 +115,8 @@ async function weather(request: Request, env: Env) {
 
   const unitsSystem = rawUnitsSystem === 'METRIC' ? 'METRIC' : rawUnitsSystem === 'IMPERIAL'
     ? 'IMPERIAL' : (await readWeatherConfiguration(env)).defaultUnits;
-  const result = await readGoogleWeather(env, lat, lon, unitsSystem);
-  if (!result.data) return json({ available: false, providerStatus: result.providerStatus }, result.providerStatus === 'provider_required' ? 200 : 502);
-  const weatherData = result.data as {
-    currentTime?: unknown; isDaytime?: unknown;
-    weatherCondition?: { description?: { text?: unknown } };
-    temperature?: unknown; feelsLikeTemperature?: unknown; relativeHumidity?: unknown;
-    precipitation?: { probability?: { percent?: unknown }; qpf?: unknown };
-    wind?: { speed?: unknown; direction?: { degrees?: unknown }; gust?: unknown };
-    currentConditionsHistory?: { maxTemperature?: unknown; minTemperature?: unknown };
-  };
-  const numberValue = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null;
-  const number = (value: unknown) => numberValue((value as { degrees?: unknown; value?: unknown; quantity?: unknown } | null)?.degrees ?? (value as { value?: unknown; quantity?: unknown } | null)?.value ?? (value as { quantity?: unknown } | null)?.quantity);
-  const current = weatherData.currentConditionsHistory || {};
-  const condition = weatherData.weatherCondition?.description?.text;
-
-  return json({
-    available: true,
-    provider: 'Google Weather',
-    providerStatus: result.providerStatus,
-    fetchedAt: result.fetchedAt,
-    cacheAgeSeconds: result.cacheAgeSeconds,
-    unitsSystem,
-    location: 'Current work location',
-    temperature: number(weatherData.temperature),
-    apparentTemperature: number(weatherData.feelsLikeTemperature),
-    humidity: numberValue(weatherData.relativeHumidity),
-    isDay: typeof weatherData.isDaytime === 'boolean' ? weatherData.isDaytime : null,
-    precipitationProbability: numberValue(weatherData.precipitation?.probability?.percent),
-    precipitation: number(weatherData.precipitation?.qpf),
-    windSpeed: number(weatherData.wind?.speed),
-    windDirection: numberValue(weatherData.wind?.direction?.degrees),
-    windGust: number(weatherData.wind?.gust),
-    today: { high: number(current.maxTemperature), low: number(current.minTemperature) },
-    description: typeof condition === 'string' ? condition : 'Current conditions',
-    observedAt: typeof weatherData.currentTime === 'string' ? weatherData.currentTime : null,
-  });
+  return weatherResponse(env, lat, lon, unitsSystem, 'Current work location');
 }
-
 
 async function readPublicSignInConfig(env: Env) {
   return readSignInConfig(env);
@@ -424,6 +444,7 @@ export default {
       });
     }
 
+    if (url.pathname === '/api/context/signin/weather' && request.method === 'GET') return securityHeaders(await signInWeather(env));
     if (url.pathname === '/api/context/signin' && request.method === 'GET') return securityHeaders(await publicSignInContext(env));
 
     const authResponse = await routeAuth(request, env);
