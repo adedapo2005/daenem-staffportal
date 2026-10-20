@@ -13,6 +13,7 @@ import { Stage1RuntimeContext, type Stage1NavigationRole } from './stage1-runtim
 import './stage1-live-search.css';
 import './stage1-context-density.css';
 import './stage1-finance-visibility.css';
+import './stage1-construction-workspace.css';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',

@@ -1,0 +1,46 @@
+/* Stage 1 Construction Command Center: reduce repeated hero dominance
+   while preserving its command buttons, active project context and all data. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context {
+  align-items: center;
+  padding: 16px 20px;
+  gap: 16px;
+  border-radius: 16px;
+  border-color: #dce6ed;
+  background: linear-gradient(115deg, #ffffff 0%, #f7f7fe 100%);
+  box-shadow: 0 9px 28px rgba(19,40,61,.07);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context::after {
+  opacity: .28;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context h2 {
+  font-size: clamp(22px, 2vw, 29px);
+  line-height: 1.14;
+  letter-spacing: -.025em;
+  margin: 4px 0 5px;
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context p {
+  color: #526578;
+  font-size: 13.5px;
+  line-height: 1.42;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context > div:last-child {
+  gap: 7px;
+  max-width: 345px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context > div:last-child button {
+  min-height: 36px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context > div:last-child button:focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context {
+    padding: 14px;
+    gap: 10px;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context h2 {
+    font-size: 23px;
+  }
+}
