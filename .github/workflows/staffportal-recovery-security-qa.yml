@@ -1,0 +1,48 @@
+name: StaffPortal Public Recovery Security QA
+
+on:
+  pull_request:
+    branches:
+      - fix/staffportal-two-auth-staging-integration-20261019
+      - feature/staffportal-mobile-auth-takeover-01
+    paths:
+      - 'worker/recovery-attempt-guard.ts'
+      - 'worker/password-auth.ts'
+      - 'worker/whatsapp-recovery.ts'
+      - 'scripts/test-recovery-attempt-guard.mjs'
+      - 'scripts/test-identity-only-recovery.mjs'
+      - '.github/workflows/staffportal-recovery-security-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery_security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test real Email and WhatsApp recovery source and atomic SQL
+        run: |
+          node scripts/test-identity-only-recovery.mjs
+          node scripts/test-signin-password-reset-sqlite.mjs
+          node scripts/test-signin-whatsapp-route-runtime.mjs
+          node scripts/test-signin-create-account-runtime.mjs
+      - name: TypeScript and Sign-In release contracts
+        run: |
+          npm run typecheck
+          node scripts/check-signin-release-blockers.mjs
+      - name: Build preserved application
+        run: npm run build
+      - name: Require closed production release gates
+        shell: bash
+        run: |
+          test "$(node -p "require('./delivery/current-state.json').productionDeployAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"

@@ -3,6 +3,7 @@ import type { SocialCryptoEnv } from './social-crypto.js';
 import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth.js';
 import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings.js';
 import { resolveRecoveryCompanyForIdentifier } from './recovery-company-resolution.js';
+import { reservePublicRecoveryAttempt } from './recovery-attempt-guard.js';
 
 export interface WhatsAppRecoveryEnv extends AuthEnv, SocialCryptoEnv {
   META_GRAPH_VERSION?: string;
@@ -97,6 +98,15 @@ export async function startPasswordRecoveryWhatsApp(
     destination:'your enrolled WhatsApp contact',
     message:'If your account is eligible and has verified WhatsApp recovery enabled, check WhatsApp for a verification code.',
   });
+  // Protect all identities, including unknown usernames, using the same
+  // atomic rate/audit reservation enforced on Email recovery.
+  let recoveryReserved: boolean;
+  try {
+    recoveryReserved = await reservePublicRecoveryAttempt(env, request, identifier, 'whatsapp');
+  } catch {
+    return json({ error: 'Account recovery is temporarily unavailable. Please try again later.' }, 503);
+  }
+  if (!recoveryReserved) return generic();
   const inferred = companyCode ? null : await resolveRecoveryCompanyForIdentifier(
     env, identifier, 'whatsapp',
   );

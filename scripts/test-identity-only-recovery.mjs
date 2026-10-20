@@ -75,3 +75,4 @@ assert.ok(whatsapp.includes("resolveRecoveryCompanyForIdentifier(\n    env, iden
 passed++;console.log('PASS: frontend and backend identity-only security contract');
 db.close();
 console.log('STAFFPORTAL_RECOVERY_AUTH_ALIGNMENT_PASS '+passed+'/'+passed);
+await import('./test-recovery-attempt-guard.mjs');
