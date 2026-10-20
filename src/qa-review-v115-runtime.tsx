@@ -23,6 +23,7 @@ import './stage1-context-density.css';
 import './stage1-finance-visibility.css';
 import './stage1-construction-workspace.css';
 import './stage1-a11y-contrast.css';
+import './stage1-large-text-reflow.css';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
@@ -132,6 +133,23 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
   );
   const paletteVariables = useMemo(() => postLoginPaletteVariables(postLoginPalette) as CSSProperties, [postLoginPalette]);
   const navigationRole = useMemo(() => companyNavigationRole(context, session.role === 'Experience Admin' ? 'Manager' : session.role), [context, session.role]);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const syncLargeTextMode = () => {
+      const rootFontSize = Number.parseFloat(window.getComputedStyle(html).fontSize || '16');
+      if (rootFontSize >= 20) html.dataset.largeText = 'true';
+      else delete html.dataset.largeText;
+    };
+    syncLargeTextMode();
+    window.addEventListener('resize', syncLargeTextMode);
+    window.visualViewport?.addEventListener('resize', syncLargeTextMode);
+    return () => {
+      window.removeEventListener('resize', syncLargeTextMode);
+      window.visualViewport?.removeEventListener('resize', syncLargeTextMode);
+      delete html.dataset.largeText;
+    };
+  }, []);
 
   useEffect(() => {
     const update = (event: Event) => {
