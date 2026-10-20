@@ -82,6 +82,7 @@ async function run() {
     await page.locator('.gw-news-ticker').hover();
     check(await page.locator('.gw-marquee').evaluate(e=>getComputedStyle(e).animationPlayState)==='paused','hover pause works');
     await page.mouse.move(900,40);
+    await page.locator('.sp-hero').click({position:{x:20,y:20}});
     const initialStory=await page.locator('.gw-news-feature-title').textContent();
     await page.clock.fastForward(61_000);
     check(await page.locator('.gw-news-feature-title').textContent()!==initialStory,'lead headlines rotate');
