@@ -762,15 +762,112 @@
   }
 }
 
-/* At standard 1920x1080, grow the Sign-In card upward into the unused
-   right-hand hero space instead of shrinking text or adding inner scrolling. */
-@media (min-width:1800px) and (max-width:1999px) and (min-height:1000px) and (max-height:1199px){
-  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin{
-    position:relative!important;
-    transform:translateY(-174px)!important;
-    height:calc(100% + 174px)!important;
-    z-index:8!important;
-    overflow:visible!important;
+/* 1920x1080: contain all controls inside the approved Sign-In column.
+   Never move the auth card over the hero, clocks, or weather. */
+@media (min-width:1800px) and (max-width:1999px) and (min-height:1000px) and (max-height:1199px) {
+ #root .sp-root.sp-day[data-approved-signin] .sp-layout.sp-reference-layout {
+   grid-template-rows:clamp(350px,33vh,370px) minmax(0,1fr)!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-content {
+   top:50%!important;transform:translateY(-50%)!important;
+   display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+   justify-content:center!important;gap:7px!important;padding:9px 0!important;
+   height:auto!important;max-height:100%!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand {
+   gap:8px!important;margin:0!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand-stage {
+   min-height:0!important;margin:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark,
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark-wrap {
+   width:62px!important;height:62px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero h1 {
+   font-size:clamp(43px,2.65vw,51px)!important;line-height:1.08!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-trust {gap:7px!important;}
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin {
+   position:relative!important;transform:none!important;top:auto!important;
+   height:100%!important;min-height:0!important;overflow:visible!important;
+   padding:12px!important;gap:4px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-topline {
+   min-height:0!important;height:72px!important;flex:0 0 72px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark,
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark-wrap {
+   width:57px!important;height:57px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-copy{gap:2px!important;}
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-tabs{
+   height:43px!important;min-height:0!important;padding:3px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form{
+   gap:7px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label {
+   gap:3px!important;grid-template-rows:16px 42px!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label > :last-child {
+   min-height:42px!important;height:42px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label input{
+   height:100%!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-primary-button{
+   height:42px!important;min-height:42px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid{
+   gap:4px!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid button{
+   min-height:43px!important;height:43px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-policy{
+   min-height:0!important;padding-top:2px!important;
+ }
+}
+
+/* Limited-height standard laptops: conserve HERO whitespace, not text. */
+@media (min-width:1280px) and (max-width:1439px) and (max-height:850px) {
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero h1 {
+   font-size:clamp(29px,2.3vw,33px)!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-topline {
+   min-height:0!important;height:50px!important;flex:0 0 50px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark,
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark-wrap {
+   width:35px!important;height:35px!important;
+ }
+}
+
+
+/* Standard desktop: keep V180 zones in place and reserve readable width for
+   provider names, credentials and the weather card. Never conceal content. */
+@media (min-width:1280px) and (max-width:1439px) and (max-height:850px) {
+  #root .sp-root.sp-day[data-approved-signin] .sp-layout.sp-reference-layout {
+    grid-template-columns:clamp(218px,17.5vw,240px) minmax(0,1fr) clamp(425px,34.5vw,465px)!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-lower-right-rail {
+    grid-template-columns:clamp(155px,12.6vw,175px) minmax(0,1fr)!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid button,
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid button span,
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-options,
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label {
+    font-size:13px!important;
+    line-height:1.15!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-primary-button {
+    font-size:13px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero {
     min-height:0!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-content {
+    max-height:100%!important;
   }
 }
