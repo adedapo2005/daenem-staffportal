@@ -441,6 +441,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [whatsAppSignInCode, setWhatsAppSignInCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  const [linkMicrosoftAfterPassword, setLinkMicrosoftAfterPassword] = useState(false);
   const [themeId] = useState<ThemeId>(() => readThemeId());
   const [secureServiceLabel, setSecureServiceLabel] = useState(() => readSignInPreferences().labels.secureService);
   const [authLabels, setAuthLabels] = useState(() => readSignInPreferences().labels.auth);
@@ -507,8 +508,21 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       oauth_state_storage_unavailable: 'The sign-in service is temporarily unavailable. Please try again shortly.',
       invalid_provider_identity: 'The identity provider response could not be verified. Please try again.',
       provider_exchange_failed: 'The identity provider could not complete sign-in. Please try again.',
+      microsoft_link_required: 'This Microsoft account is not yet connected to your approved StaffPortal employee account.',
+      microsoft_link_requires_signin: 'Sign in with your existing StaffPortal username and password to connect Microsoft.',
+      microsoft_links_unavailable: 'Microsoft account linking is temporarily unavailable. Continue with your existing StaffPortal credentials.',
     };
-    setMessage({ type: 'error', text: messages[code] || 'Social sign-in could not be completed. Please try again.' });
+    if (code === 'microsoft_link_required' || code === 'microsoft_link_requires_signin') {
+      setMessage({
+        type: 'error', text: messages[code],
+        action: { label: 'Connect after StaffPortal Sign-In', onClick: () => {
+          setLinkMicrosoftAfterPassword(true);
+          setMessage({ type: 'info', text: 'Enter your existing StaffPortal username and password. You will then securely connect your Microsoft account.' });
+        } },
+      });
+    } else {
+      setMessage({ type: 'error', text: messages[code] || 'Social sign-in could not be completed. Please try again.' });
+    }
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete('auth_error');
     cleanUrl.searchParams.delete('auth_provider');
@@ -766,6 +780,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       setPassword('');
       setShowPassword(false);
       setRemember(false);
+      if (linkMicrosoftAfterPassword) {
+        window.location.assign('/api/auth/oauth/microsoft/link');
+        return;
+      }
       onAuthenticated(me.context);
     } catch (error) {
       const authError = error as ApiError;
@@ -825,6 +843,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       setWhatsAppSignInChallenge('');
       setWhatsAppSignInDestination('');
       setWhatsAppSignInCode('');
+      if (linkMicrosoftAfterPassword) {
+        window.location.assign('/api/auth/oauth/microsoft/link');
+        return;
+      }
       onAuthenticated(me.context);
     } catch (error) {
       setMessage({ type: 'error', text: (error as Error).message });
