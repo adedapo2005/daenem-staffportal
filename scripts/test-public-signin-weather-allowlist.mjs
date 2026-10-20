@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const worker=readFileSync('worker/index.ts','utf8');
+const frontend=readFileSync('src/signin-experience.tsx','utf8');
+const ids=['ibadan','toronto','london','newyork','moscow','tokyo','beijing'];
+for(const id of ids)assert.match(worker,new RegExp('\\b'+id+': \\[','i'),'fixed city allowlist missing '+id);
+assert.match(worker,/Object\.prototype\.hasOwnProperty\.call\(PUBLIC_SIGNIN_WEATHER_CITIES, city\)/);
+assert.match(worker,/return json\(\{ error: 'Unsupported public weather city\.' \}, 400\)/);
+assert.match(worker,/return weatherResponse\(env, lat, lon, 'METRIC', label\)/);
+for(const id of ids.slice(1))assert.match(frontend,new RegExp("'"+id+"'"),'UI missing '+id);
+assert.match(frontend,/api\/context\/signin\/weather\?city=/);
+assert.match(frontend,/normalizeSignInWeather\(await response\.json\(\)\)/);
+assert.match(frontend,/Weather temporarily unavailable/);
+console.log('PUBLIC_SIGNIN_FIXED_CITY_WEATHER_QA_PASS '+ids.length+'/7');
