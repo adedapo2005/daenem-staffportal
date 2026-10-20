@@ -7,6 +7,8 @@ on:
       - 'src/signin-experience.css'
       - 'src/signin-experience.tsx'
       - 'worker/index.ts'
+      - 'worker/weather-provider.ts'
+      - 'scripts/test-public-signin-weather-allowlist.mjs'
       - 'qa/signin/**'
       - 'scripts/test-signin-browser.cjs'
       - 'scripts/test-create-account-isolated.cjs'
@@ -38,7 +40,7 @@ jobs:
           node scripts/test-create-account-isolated.cjs
           node scripts/test-signup-rail-layout.cjs
           node scripts/test-create-account-whatsapp.cjs
-          node scripts/test-google-weather-runtime-boundary.mjs
+          node scripts/test-public-signin-weather-allowlist.mjs
       # The separate full V180 baseline test has an inherited 1280px hero-placement
       # failure; retain it in source, do not claim whole-page sign-in acceptance.
       - name: TypeScript, source locks and full application build
