@@ -31,7 +31,7 @@ const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night'
   },
   newyork: {
     dawn: '/assets/global/newyork-dawn-v179-card.webp',
-    day: '/assets/global/newyork-day-v179-card.webp',
+    day: '/assets/scenery/01-manhattan-day-3840.webp',
     dusk: '/assets/global/newyork-dusk-v179-card.webp',
     night: '/assets/global/newyork-night-v179-card.webp',
   },
@@ -424,6 +424,27 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
     if (cached) applySignInWeather(root, cached, true);
 
     const controller = new AbortController();
+    // Six explicitly allowlisted global cities share the existing Google Weather
+    // Worker provider/cache; stale or missing results are never fabricated.
+    for (const cityId of ['toronto','london','newyork','moscow','tokyo','beijing']) {
+      const card = root.querySelector<HTMLElement>(`[data-city-id="${cityId}"]`);
+      if (!card) continue;
+      const summary = [...card.querySelectorAll<HTMLElement>('div,p,span')]
+        .find(node => node.childElementCount === 0 && /Connecting to weather/i.test(node.textContent || ''));
+      if (!summary) continue;
+      summary.textContent = 'Checking live weather…';
+      void fetch(`/api/context/signin/weather?city=${cityId}`, { signal: controller.signal, headers: {accept:'application/json'} })
+        .then(async response => {
+          if (!response.ok) throw new Error('Weather provider unavailable');
+          const payload = normalizeSignInWeather(await response.json());
+          if (!payload) throw new Error('No usable weather data');
+          const parts = [payload.description, payload.temperature === null ? null : `${Math.round(payload.temperature)}°C`, payload.humidity === null ? null : `Humidity ${Math.round(payload.humidity)}%`].filter(Boolean);
+          summary.textContent = parts.join(' · ');
+          card.dataset.weather = 'available';
+        }).catch((error:unknown) => {
+          if ((error as {name?:string})?.name !== 'AbortError') summary.textContent = 'Weather temporarily unavailable';
+        });
+    }
     void fetch('/api/context/signin/weather', {
       method: 'GET',
       headers: { accept: 'application/json' },

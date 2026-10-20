@@ -2,7 +2,7 @@
 
 **Updated:** 20 October 2026
 **Scope:** Authenticated StaffPortal post-login experience only
-**Current live Pre-Production source:** `c8127463d924ea1ba66136e72629899bf2d81d57`
+**Current live Pre-Production source:** `e270c0a1902b563dbc2ab5413c81fc85e8181dab`
 **Isolated integration branch:** `feature/staffportal-stage1-ocean-integration-20261020`
 
 ## Status rules
@@ -20,9 +20,9 @@ A successful build, a generated preview, or the presence of a component never ch
 
 | Item | Status | Evidence / remaining work |
 |---|---|---|
-| Latest approved Sign-In, Create Account, WhatsApp and authentication source retained | Implemented in candidate | Candidate starts from live source `c812746...`; Stage 1 is applied additively. Full auth regression and real provider acceptance remain required. |
+| Latest deployed Sign-In, Create Account, WhatsApp, weather and service-worker source retained | Implemented in candidate | Candidate includes live source `e270c0a...`; Stage 1 is applied additively. Full auth/provider acceptance remains required. |
 | Complete Stage 1 source combined with latest auth | Implemented in candidate | Enterprise navigation, Stage 1 search, workflow focus, palette, accessibility and page refinements are present in the isolated branch. |
-| Current Cloudflare Pre-Production includes complete Stage 1 | **No** | Live is still `c812746...`; do not describe Stage 1 as restored until exact candidate promotion and fingerprint verification. |
+| Current Cloudflare Pre-Production includes complete Stage 1 | **No** | Live is still `e270c0a...`; do not describe Stage 1 as restored until exact integrated candidate promotion and fingerprint verification. |
 | Production changed | **No** | Production authorization remains closed. |
 
 ## Approved appearance and palette governance
@@ -130,7 +130,7 @@ A successful build, a generated preview, or the presence of a component never ch
 
 ## Exact integrated-candidate local verification - 20 October 2026
 
-The isolated candidate is based on current Pre-Production source `c8127463d924ea1ba66136e72629899bf2d81d57`. The implementation is commit `83878f63067e452de4e1f875a48764fba85c3401`; the final review head may include a documentation-only evidence commit above it. The evidence below belongs to those exact implementation bytes.
+The isolated candidate retains the current Pre-Production source `e270c0a1902b563dbc2ab5413c81fc85e8181dab`. Stage 1 and Appearance were implemented at `83878f63067e452de4e1f875a48764fba85c3401`, with the latest deployed Sign-In/weather/service-worker lane merged at `4654c3903547196cdcddab4094a1c2b624491094`. The final review head may include documentation-only evidence above those commits. Verification is rerun after integration before promotion.
 
 | Evidence | Result | Limit |
 |---|---|---|

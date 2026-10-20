@@ -1,4 +1,4 @@
-const CACHE = 'daenem-workforce-shell-v16-postauth-live-integrations';
+const CACHE = 'daenem-workforce-shell-v17-signin-restoration';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 function isCacheableShellAsset(request, url) {

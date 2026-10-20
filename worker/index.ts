@@ -87,10 +87,25 @@ async function weatherResponse(
   });
 }
 
-async function signInWeather(env: Env) {
-  // This unauthenticated route is intentionally fixed to one public city. It
-  // cannot be used to proxy arbitrary coordinates into the paid provider.
-  return weatherResponse(env, 7.3775, 3.9470, 'METRIC', 'Ibadan, Oyo State');
+// Only these public sign-in clocks may use the weather provider.
+const PUBLIC_SIGNIN_WEATHER_CITIES = {
+  ibadan: [7.3775, 3.9470, 'Ibadan, Oyo State'],
+  toronto: [43.6532, -79.3832, 'Toronto, Canada'],
+  london: [51.5074, -0.1278, 'London, United Kingdom'],
+  newyork: [40.7128, -74.0060, 'New York, United States'],
+  moscow: [55.7558, 37.6173, 'Moscow, Russia'],
+  tokyo: [35.6762, 139.6503, 'Tokyo, Japan'],
+  beijing: [39.9042, 116.4074, 'Beijing, China'],
+} as const;
+
+async function signInWeather(env: Env, cityName: string | null = null) {
+  // No arbitrary latitude/longitude or user-provided location is accepted.
+  const city = (cityName || 'ibadan').toLowerCase();
+  if (!Object.prototype.hasOwnProperty.call(PUBLIC_SIGNIN_WEATHER_CITIES, city)) {
+    return json({ error: 'Unsupported public weather city.' }, 400);
+  }
+  const [lat, lon, label] = PUBLIC_SIGNIN_WEATHER_CITIES[city as keyof typeof PUBLIC_SIGNIN_WEATHER_CITIES];
+  return weatherResponse(env, lat, lon, 'METRIC', label);
 }
 
 async function weather(request: Request, env: Env) {
@@ -444,7 +459,7 @@ export default {
       });
     }
 
-    if (url.pathname === '/api/context/signin/weather' && request.method === 'GET') return securityHeaders(await signInWeather(env));
+    if (url.pathname === '/api/context/signin/weather' && request.method === 'GET') return securityHeaders(await signInWeather(env, url.searchParams.get('city')));
     if (url.pathname === '/api/context/signin' && request.method === 'GET') return securityHeaders(await publicSignInContext(env));
 
     const authResponse = await routeAuth(request, env);

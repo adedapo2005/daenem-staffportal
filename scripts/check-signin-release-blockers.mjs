@@ -16,7 +16,7 @@ const checks = [
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],
   ['Sign-In weather keeps a bounded local last-known-good cache', experience.includes('SIGNIN_WEATHER_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000')],
   ['Sign-In weather preserves cached data on refresh failure', experience.includes("if ((error as { name?: string })?.name !== 'AbortError' && !cached)")],
-  ['public Sign-In weather route is fixed to Ibadan', worker.includes("weatherResponse(env, 7.3775, 3.9470, 'METRIC', 'Ibadan, Oyo State')")],
+  ['public Sign-In weather route accepts only seven fixed allowlisted cities', worker.includes('PUBLIC_SIGNIN_WEATHER_CITIES') && worker.includes('Object.prototype.hasOwnProperty.call(PUBLIC_SIGNIN_WEATHER_CITIES, city)') && worker.includes("return json({ error: 'Unsupported public weather city.' }, 400)")],
   ['public Sign-In weather route is before authentication', worker.indexOf("url.pathname === '/api/context/signin/weather'") < worker.indexOf('const authResponse = await routeAuth')],
   ['arbitrary-coordinate weather route remains authenticated', worker.indexOf("url.pathname === '/api/context/weather'") > worker.indexOf('const authResponse = await routeAuth')],
   ['server weather has a 24-hour last-known-good cache', provider.includes('STALE_CACHE_TTL_SECONDS = 86_400')],
