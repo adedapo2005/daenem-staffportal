@@ -1132,7 +1132,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button className="usp-primary-button" disabled={busy || !passwordPolicySatisfied(resetChecks) || newPassword !== confirmNewPassword} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
       </form>}
 
-      {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity' || signupStep === 'work') && <>
+      {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity') && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
           <button type="button" onClick={() => startOAuth('microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>
@@ -1153,4 +1153,3 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const authPanel = mode === 'signin' ? approvedSignInPanel : legacyAuthPanel;
   return <SignInExperience authPanel={authPanel} authMode={mode} themeId={themeId} onInstall={() => void installApp()} />;
 }
-
