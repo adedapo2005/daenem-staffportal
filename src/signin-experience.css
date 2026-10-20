@@ -603,3 +603,28 @@
 #staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-track{background:#29445e!important;}
 #staffportal-auth-mount.sp-auth-mode-create .usp-password-toggle{color:#91d0fa!important;}
 #staffportal-auth-mount.sp-auth-mode-create .usp-panel-footer{color:#b4cadf!important;}
+
+/* Signup premium visual polish: preserve the approved sapphire Sign-In palette. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons>button {min-height:31px!important;border-radius:8px!important;font-size:11px!important;font-weight:700!important;letter-spacing:.008em!important;white-space:nowrap!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .usp-social-whatsapp {grid-column:1/-1!important;min-height:30px!important;gap:7px!important;justify-content:center!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .usp-social-whatsapp.is-selected {border-color:#8ad8cc!important;background:#1b4b60!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-whatsapp-check {font-size:10px!important;font-weight:500!important;color:#9ec8de!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons button .sp-social-icon {width:17px!important;height:17px!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons button .sp-provider-mark {width:16px!important;height:16px!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field>input:focus-visible {border-color:#8ac9fa!important;outline:2px solid rgba(113,192,251,.32)!important;outline-offset:1px!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {letter-spacing:-.02em!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider {letter-spacing:.02em!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-signup-whatsapp-verify {display:grid;gap:5px;padding:8px;border:1px solid rgba(124,183,205,.4);border-radius:9px;background:#10334a;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-signup-whatsapp-caption {display:flex;gap:6px;align-items:center;color:#c6e8ef;font-weight:700;font-size:11px;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-signup-whatsapp-verify small {font-size:10px;line-height:1.25;color:#b4cfe0;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-signup-whatsapp-code {display:grid;gap:6px;color:#d1e5f2;font-size:11px;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-signup-whatsapp-success {display:flex;align-items:center;gap:6px;color:#91e2c8;font-weight:700;font-size:11px;}
+@media (min-width:821px) and (max-width:1439px) {
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons {gap:3px!important;}
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons>button {min-height:25px!important;font-size:10px!important;padding:3px 2px!important;}
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .usp-social-whatsapp {min-height:23px!important;}
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-whatsapp-check {font-size:9px!important;}
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-note {display:none!important;}
+ #staffportal-auth-mount.sp-auth-mode-create .usp-signup-whatsapp-verify {padding:4px!important;gap:2px!important;}
+}

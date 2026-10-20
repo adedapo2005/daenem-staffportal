@@ -451,6 +451,11 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const [signupStep, setSignupStep] = useState<'identity' | 'contact' | 'username' | 'account' | 'work' | 'verify'>('identity');
   const [signupChallenge, setSignupChallenge] = useState('');
+  const [signupWhatsAppRequested, setSignupWhatsAppRequested] = useState(false);
+  const [signupWhatsAppChallenge, setSignupWhatsAppChallenge] = useState('');
+  const [signupWhatsAppDestination, setSignupWhatsAppDestination] = useState('');
+  const [signupWhatsAppCode, setSignupWhatsAppCode] = useState('');
+  const [signupWhatsAppVerified, setSignupWhatsAppVerified] = useState(false);
   const [signupDestination, setSignupDestination] = useState('');
   const [signupCode, setSignupCode] = useState('');
   const [signupBootstrapCode, setSignupBootstrapCode] = useState('');
@@ -641,7 +646,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setWhatsAppSignInDestination('');
     setWhatsAppSignInCode('');
     setSignup((current) => ({ ...current, password: '', confirmPassword: '' }));
-    if (next === 'signup') { setIdentity(''); setIdentityTouched(false); setSignupStep('identity'); setSignupCode(''); }
+    if (next === 'signup') { setIdentity(''); setIdentityTouched(false); setSignupStep('identity'); setSignupCode(''); setSignupWhatsAppRequested(false); setSignupWhatsAppChallenge(''); setSignupWhatsAppVerified(false); setSignupWhatsAppCode(''); }
     if (next === 'forgot') {
       setRecoveryStep('identity'); setRecoveryCode(''); setResetToken(''); setRecoveryIdentity(identity);
     }
@@ -847,6 +852,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         method: 'POST', body: JSON.stringify({ ...signup, confirmPassword: undefined }),
       });
       setSignupChallenge(result.challengeId);
+      setSignupWhatsAppChallenge('');
+      setSignupWhatsAppVerified(false);
       setSignupDestination(result.destination);
       setSignupBootstrapCode(result.bootstrapCode || '');
       setSignupCode('');
@@ -855,6 +862,47 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     } catch (error) {
       const authError = error as ApiError;
       setMessage({ type: 'error', text: authError.message, details: authError.passwordErrors });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startSignupWhatsAppVerification() {
+    if (!signupChallenge || !signup.phone.trim()) {
+      setMessage({ type: 'error', text: 'Add your WhatsApp phone number in Contact Details to verify it.' });
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await api<{ challengeId: string; destination: string }>('/api/auth/signup/whatsapp/start', {
+        method: 'POST', body: JSON.stringify({ signupChallengeId: signupChallenge }),
+      });
+      setSignupWhatsAppChallenge(result.challengeId);
+      setSignupWhatsAppDestination(result.destination);
+      setSignupWhatsAppCode('');
+      setMessage({ type: 'info', text: 'A WhatsApp verification code was sent. Email verification is still required.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: (error as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifySignupWhatsAppCode() {
+    if (!signupWhatsAppChallenge || signupWhatsAppCode.length !== 6) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await api('/api/auth/signup/whatsapp/verify', {
+        method: 'POST', body: JSON.stringify({ challengeId: signupWhatsAppChallenge, code: signupWhatsAppCode }),
+      });
+      setSignupWhatsAppVerified(true);
+      setSignupWhatsAppChallenge('');
+      setSignupWhatsAppCode('');
+      setMessage({ type: 'success', text: 'WhatsApp contact verified. Enter your email verification code to complete account creation.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: (error as Error).message });
     } finally {
       setBusy(false);
     }
@@ -1098,6 +1146,19 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {mode === 'signup' && signupStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifySignup}>
         <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationSentTo} <b>{signupDestination}</b></span></div>
         {signupBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{signupBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
+        {signupWhatsAppRequested && <div className="usp-signup-whatsapp-verify" aria-label="Optional WhatsApp contact verification">
+          <span className="usp-signup-whatsapp-caption"><WhatsAppMark size={15} /> Optional contact verification</span>
+          {signupWhatsAppVerified
+            ? <span className="usp-signup-whatsapp-success"><CheckCircle2 size={15}/> WhatsApp contact verified</span>
+            : signupWhatsAppChallenge
+              ? <div className="usp-signup-whatsapp-code">
+                  <span>Code sent to {signupWhatsAppDestination}</span>
+                  <TextField label="WhatsApp code" value={signupWhatsAppCode} onChange={(value) => setSignupWhatsAppCode(value.replace(/\D/g, '').slice(0, 6))} autoComplete="one-time-code" />
+                  <button type="button" className="usp-secondary-button" disabled={busy || signupWhatsAppCode.length !== 6} onClick={() => void verifySignupWhatsAppCode()}>Verify WhatsApp</button>
+                </div>
+              : <button type="button" className="usp-secondary-button usp-whatsapp-start" disabled={busy || !signup.phone.trim()} onClick={() => void startSignupWhatsAppVerification()}><WhatsAppMark size={15}/> Send WhatsApp code</button>}
+          <small>WhatsApp verification does not replace required email verification or administrator approval.</small>
+        </div>}
         <TextField label={authLabels.verificationCode} value={signupCode} onChange={(value) => setSignupCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
         <button className="usp-primary-button" disabled={busy || signupCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyEmailFinish}<CheckCircle2 size={17} /></button>
         <button type="button" className="usp-secondary-button" onClick={() => { setSignupStep('identity'); setSignupCode(''); setMessage(null); }}>{authLabels.changeSignupDetails}</button>
@@ -1135,10 +1196,11 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity') && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
-          <button type="button" onClick={() => startOAuth('microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</span></button>
-          <button type="button" onClick={() => startOAuth('google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">{mode === 'signup' ? authLabels.googleCreateAccount : authLabels.googleSignIn}</span></button>
+          <button type="button" aria-label="Continue with Microsoft" onClick={() => startOAuth('microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">Microsoft</span></button>
+          <button type="button" aria-label="Continue with Google" onClick={() => startOAuth('google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">Google</span></button>
+          {mode === 'signup' && <button type="button" aria-label="Add optional WhatsApp verification during account creation" className={signupWhatsAppRequested ? 'usp-social-whatsapp is-selected' : 'usp-social-whatsapp'} aria-pressed={signupWhatsAppRequested} onClick={() => setSignupWhatsAppRequested((current) => !current)}><span className="sp-social-icon"><WhatsAppMark size={15} /></span><span className="sp-social-label">WhatsApp verification</span><span className="usp-social-whatsapp-check">{signupWhatsAppRequested ? 'Selected' : 'Optional'}</span></button>}
         </div>
-        <p className="usp-social-note">{authLabels.socialNote}</p>
+        <p className="usp-social-note">{mode === 'signup' ? 'Microsoft and Google use your existing staff identity. WhatsApp verifies a contact during registration; email and approval are still required.' : authLabels.socialNote}</p>
       </>}
 
       <p className="usp-legal-copy">
