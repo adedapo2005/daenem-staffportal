@@ -8,6 +8,7 @@ import './postlogin-premium-refinement-v1.css';
 import './staffportal-stage1-palette.css';
 import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
 import Stage1SearchResults from './stage1-live-search';
+import Stage1WorkflowFocus from './stage1-workflow-focus';
 import { Stage1RuntimeContext, type Stage1NavigationRole } from './stage1-runtime-context';
 import './stage1-live-search.css';
 
@@ -226,6 +227,9 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       </Stage1RuntimeContext.Provider>
       <LivePostLoginEnhancementsV116 />
       <Stage1SearchResults enabled={stage1Enabled} />
+      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+        <Stage1WorkflowFocus />
+      </Stage1RuntimeContext.Provider>
     </div>
   );
 }
