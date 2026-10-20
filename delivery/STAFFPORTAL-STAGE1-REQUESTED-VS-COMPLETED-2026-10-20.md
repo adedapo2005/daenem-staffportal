@@ -130,7 +130,7 @@ A successful build, a generated preview, or the presence of a component never ch
 
 ## Exact integrated-candidate local verification - 20 October 2026
 
-The isolated candidate is based on current Pre-Production source `c8127463d924ea1ba66136e72629899bf2d81d57`. The commit SHA is recorded after the source is committed and pushed; the evidence below belongs to the exact working-tree content being prepared for that commit.
+The isolated candidate is based on current Pre-Production source `c8127463d924ea1ba66136e72629899bf2d81d57`. The implementation is commit `83878f63067e452de4e1f875a48764fba85c3401`; the final review head may include a documentation-only evidence commit above it. The evidence below belongs to those exact implementation bytes.
 
 | Evidence | Result | Limit |
 |---|---|---|
