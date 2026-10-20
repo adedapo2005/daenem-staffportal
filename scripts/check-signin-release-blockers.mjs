@@ -7,10 +7,17 @@ const experience = read('src/signin-experience.tsx');
 const worker = read('worker/index.ts');
 const provider = read('worker/weather-provider.ts');
 
+// Recovery uses a viewport-bound modal that must scroll on small screens.
+// Keep the Create Account no-internal-scroll gate focused on its own CSS mode.
+const createAccountHasInternalYScroll = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .some(([, selectors, declarations]) =>
+    selectors.includes('.sp-auth-mode-create') &&
+    /overflow-y\s*:\s*auto/i.test(declarations));
+
 const checks = [
   ['approved Sign-In mount remains the compact-mode measurement fallback', auth.includes("panel?.closest<HTMLElement>('.usp-form-column') || panel?.parentElement")],
   ['password requirements announce live state changes', auth.includes('aria-label={label} aria-live="polite"')],
-  ['Create Account no longer creates an internal vertical scrollbar', !/overflow-y\s*:\s*auto/i.test(css)],
+  ['Create Account no longer creates an internal vertical scrollbar', !createAccountHasInternalYScroll],
   ['password success state is visibly styled', css.includes('.usp-password-status .pass')],
   ['password failure state is visibly styled', css.includes('.usp-password-status .fail')],
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],
