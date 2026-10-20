@@ -1,0 +1,3 @@
+# Preserve the approved navigation overlay's pinned Windows byte hash on every checkout.
+# This scopes line endings to one file; source, manifest and integrity checks stay unchanged.
+src/enterprise-command-center-navigation.tsx text eol=crlf
