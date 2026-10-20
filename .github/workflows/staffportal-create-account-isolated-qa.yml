@@ -1,0 +1,44 @@
+name: StaffPortal Create Account Isolated QA
+on:
+  pull_request:
+    branches: [feature/staffportal-mobile-auth-takeover-01]
+    paths:
+      - 'src/auth.tsx'
+      - 'src/signin-experience.css'
+      - 'qa/signin/**'
+      - 'scripts/test-signin-browser.cjs'
+      - 'scripts/test-create-account-isolated.cjs'
+      - 'vite.signin-browser-qa.config.ts'
+      - '.github/workflows/staffportal-create-account-isolated-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated_create_account:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install clean locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium browser QA
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Verify Create Account geometry and steps at all seven viewports
+        run: node scripts/test-create-account-isolated.cjs
+      # The separate full V180 baseline test has an inherited 1280px hero-placement
+      # failure; retain it in source, do not claim whole-page sign-in acceptance.
+      - name: TypeScript, source locks and full application build
+        run: |
+          npm run typecheck
+          node scripts/check-signin-release-blockers.mjs
+          npm run build
+      - name: Verify production gates remain closed
+        run: |
+          test "$(node -p "require('./delivery/current-state.json').productionDeployAuthorized")" = "false"
+          test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"
