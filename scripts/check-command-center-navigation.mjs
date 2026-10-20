@@ -83,6 +83,38 @@ try {
     assert.ok(!nav.searchCommandNavigation(projected, 'construction contracts').some((page) => page.moduleId === 'construction-contracts'));
   });
 
+  check('route changes close the previous workspace while preserving nested disclosure memory', () => {
+    const remembered = {
+      'area:businesses': true,
+      'area:businesses/construction': true,
+      'area:businesses/construction/costs-payments': false,
+      'area:people': true,
+      favorites: false,
+    };
+    const next = nav.reconcileCommandExpansion(
+      remembered,
+      ['area:businesses', 'area:people', 'area:finance'],
+      ['area:finance', 'area:finance/accounting'],
+      true,
+    );
+    assert.equal(next['area:businesses'], false);
+    assert.equal(next['area:people'], false);
+    assert.equal(next['area:finance'], true);
+    assert.equal(next['area:finance/accounting'], true);
+    assert.equal(next['area:businesses/construction'], true, 'nested state is restored when the user returns');
+    assert.equal(next['area:businesses/construction/costs-payments'], false, 'explicit nested collapse is retained');
+    assert.equal(next.favorites, false, 'shortcut disclosure state is not treated as a workspace');
+
+    const sameRoute = nav.reconcileCommandExpansion(
+      { 'area:businesses': true, 'area:finance': false },
+      ['area:businesses', 'area:finance'],
+      ['area:finance'],
+      false,
+    );
+    assert.equal(sameRoute['area:businesses'], true, 'manual sibling state is not collapsed without navigation');
+    assert.equal(sameRoute['area:finance'], true, 'active ancestor is always available after navigation reconciliation');
+  });
+
   check('search matches module names and full business context', () => {
     assert.ok(nav.searchCommandNavigation(pages, 'CONSTRUCTION contracts').some((page) => page.moduleId === 'construction-contracts'));
     assert.deepEqual(nav.searchCommandNavigation(pages, 'no-such-module-z938'), []);
