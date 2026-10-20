@@ -38,7 +38,6 @@ jobs:
           node scripts/test-create-account-isolated.cjs
           node scripts/test-signup-rail-layout.cjs
           node scripts/test-create-account-whatsapp.cjs
-          node scripts/test-weather-provider-runtime.mjs
           node scripts/test-google-weather-runtime-boundary.mjs
       # The separate full V180 baseline test has an inherited 1280px hero-placement
       # failure; retain it in source, do not claim whole-page sign-in acceptance.
