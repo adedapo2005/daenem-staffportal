@@ -95,12 +95,14 @@ async function run() {
     await page.waitForFunction(()=>document.querySelector('[data-widget="spotlight"]')?.dataset.contentId==='spotlight-2');
     check((await page.locator('.gw-inspiration-quote').textContent()).includes('inspiration 2'),'both staff widgets refresh from existing service');
     await page.emulateMedia({reducedMotion:'reduce'});
+    await page.waitForFunction(()=>document.querySelectorAll('article[data-city-id][data-motion-resolved="off"]').length===7);
     check(await page.locator('.gw-marquee').evaluate(e=>getComputedStyle(e).animationName)==='none','reduced motion stops ticker');
     check(await page.locator('article[data-city-id][data-motion-resolved="off"]').count()===7,'reduced motion stops all seven weather visuals');
     const reducedStory=await page.locator('.gw-news-feature-title').textContent();
     await page.clock.fastForward(61_000);
     check(await page.locator('.gw-news-feature-title').textContent()===reducedStory,'reduced motion stops automatic story replacement');
     await page.emulateMedia({reducedMotion:'no-preference'});
+    await page.waitForFunction(()=>document.querySelectorAll('article[data-city-id][data-motion-resolved="subtle"]').length===7);
     check(await page.locator('article[data-city-id][data-motion-resolved="subtle"]').count()===7,'motion resumes when preference returns');
     await page.locator('.gw-news-ticker-viewport').focus();
     await page.clock.fastForward(15*60_000);

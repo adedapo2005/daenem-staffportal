@@ -205,7 +205,7 @@ export function connectSignInWidgets(root: HTMLElement) {
   async function request(key: string, url: string, apply: (value: unknown) => void, fail: () => void) {
     if (!active || pending.has(key)) return;
     const controller = new AbortController(); pending.set(key, controller);
-    const timeout = window.setTimeout(() => controller.abort(), 15_000);
+    const timeout = window.setTimeout(() => controller.abort(), 20_000);
     try {
       const response = await fetch(url, { headers: { accept: 'application/json' }, signal: controller.signal });
       if (!response.ok) throw new Error('Unavailable');
