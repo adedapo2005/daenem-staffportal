@@ -1,5 +1,8 @@
 import { getSessionContext, type AuthEnv, type SessionContext } from './auth';
-import { isOrganizationsStaging, linkedMicrosoftIdentityForEmployee } from './microsoft-organizations';
+import {
+  isOrganizationsStaging, linkedMicrosoftIdentityForEmployee,
+  organizationsLinkStorageReady,
+} from './microsoft-organizations';
 
 interface LinkEnv extends AuthEnv {
   MICROSOFT_AUTH_MODE?: string;
@@ -47,6 +50,11 @@ export async function accountLinkPage(request: Request, env: LinkEnv) {
     target.searchParams.set('auth_error', 'microsoft_link_requires_signin');
     target.searchParams.set('auth_provider', 'microsoft');
     return Response.redirect(target.toString(), 302);
+  }
+  if (!await organizationsLinkStorageReady(env.DB)) {
+    return new Response('Microsoft linking is being prepared. Sign in with your usual StaffPortal credentials.', {
+      status: 503, headers: { 'cache-control': 'no-store', 'content-type': 'text/plain; charset=utf-8' },
+    });
   }
   const link = await linkedMicrosoftIdentityForEmployee(env.DB, context.employee.id);
   const result = new URL(request.url).searchParams.get('result');

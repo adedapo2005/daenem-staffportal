@@ -104,13 +104,24 @@ function dbMock() {
   const links = new Map();
   const identities = new Map();
   let logins = 0;
+  let linkTablePresent = true;
   const db = {
     prepare(sql) {
       const q = sql.replace(/\s+/g, ' ');
       return {
+        async first() {
+          // Cloudflare D1 permits unbound prepared SELECT.first().
+          if (q.includes("FROM sqlite_master WHERE type='table'")) {
+            return linkTablePresent ? { name: 'staffportal_external_identity_links' } : null;
+          }
+          return null;
+        },
         bind(...args) {
           return {
             async first() {
+              if (q.includes("FROM sqlite_master WHERE type='table'")) {
+                return linkTablePresent ? { name: 'staffportal_external_identity_links' } : null;
+              }
               if (q.includes("FROM auth_sessions WHERE id=?")) return { id: args[0] };
               if (q.includes('FROM staffportal_external_identity_links WHERE provider=')) {
                 const l = employee.get(args[0]);
@@ -139,7 +150,9 @@ function dbMock() {
       };
     },
   };
-  return { db, employee, identities, loginCount:()=>logins };
+  return { db, employee, identities, loginCount:()=>logins,
+    setLinksAvailable(ready) { linkTablePresent = Boolean(ready); },
+  };
 }
 
 function harness({ mode='organizations', stage='staging', keyIssuer='https://login.microsoftonline.com/{tenantid}/v2.0' } = {}) {
@@ -325,4 +338,20 @@ for(const stage of ['production','development']){
     rules.organizationIdentity(identity(TENANT_B)))===null);
 }
 
+{
+  const h=harness();
+  h.store.setLinksAvailable(false);
+  const start=await routeProviderAuth(h.request('/api/auth/oauth/microsoft/start'),h.env);
+  const location=new URL(start.headers.get('location'));
+  test('missing staging migration fails closed before external Microsoft redirect',
+    start.status===302 && location.hostname===new URL(BASE).hostname &&
+    location.searchParams.get('auth_error')==='microsoft_links_unavailable');
+  globalThis.__testStaffSession={
+    sessionId:'staff-ready-1',employee:{id:'employee-1',status:'active'},
+  };
+  const link=await routeProviderAuth(h.request('/api/auth/oauth/microsoft/link'),h.env);
+  test('account linking page returns safe service unavailable before migration',
+    link.status===503 && !(await link.text()).includes('Connect Microsoft work account'));
+  globalThis.__testStaffSession=null;
+}
 console.log('Microsoft organizations contract passed: '+passed+' checks');

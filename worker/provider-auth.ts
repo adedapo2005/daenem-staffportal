@@ -5,6 +5,7 @@ import {
 import {
   isOrganizationsStaging, organizationIdentity, organizationSigningKeyIssuerMatches,
   linkedMicrosoftEmployee, linkedMicrosoftIdentityForEmployee, bindMicrosoftEmployeeIdentity,
+  organizationsLinkStorageReady,
 } from './microsoft-organizations';
 
 type Provider = 'google' | 'microsoft';
@@ -191,6 +192,9 @@ async function start(
   const current = config(env, provider);
   if (!current) return failure(request, provider, 'oauth_not_configured');
   if (!env.SOCIAL_CACHE) return failure(request, provider, 'oauth_state_storage_unavailable');
+  if (current.organizations && !await organizationsLinkStorageReady(env.DB)) {
+    return failure(request, provider, 'microsoft_links_unavailable');
+  }
   let employeeId: string | undefined;
   let sessionId: string | undefined;
   if (intent === 'link') {

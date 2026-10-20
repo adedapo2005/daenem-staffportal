@@ -43,6 +43,20 @@ export function organizationSigningKeyIssuerMatches(keyIssuer: unknown, identity
     (keyIssuer === issuerTemplate || keyIssuer === identity.issuer);
 }
 
+export async function organizationsLinkStorageReady(db: D1Database): Promise<boolean> {
+  try {
+    const table = await db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' " +
+      "AND name='staffportal_external_identity_links' LIMIT 1",
+    ).first<{ name: string }>();
+    return table?.name === 'staffportal_external_identity_links';
+  } catch {
+    // A staging flag must never accidentally open an unusable Microsoft flow
+    // ahead of an explicitly verified migration.
+    return false;
+  }
+}
+
 export async function linkedMicrosoftEmployee(db: D1Database, identity: OrganizationIdentity) {
   const row = await db.prepare(
     "SELECT l.employee_id AS employeeId, e.employment_status AS status " +
