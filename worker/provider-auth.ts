@@ -296,13 +296,14 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
           request, env, state.employeeId, state.sessionId,
         );
         if (!staff) return linkRedirect(request, 'microsoft_link_expired');
-        const outcome = await bindMicrosoftEmployeeIdentity(env.DB, staff.employee.id, organization);
+        const companyId = staff.companies[0]?.id;
+        if (!companyId) return linkRedirect(request, 'microsoft_link_expired');
+        // The identity association and mandatory audit are in a SINGLE D1
+        // batch transaction. Audit failure rolls back the association.
+        const outcome = await bindMicrosoftEmployeeIdentity(
+          env.DB, staff.employee.id, organization, staff.sessionId, companyId, request,
+        );
         if (outcome === 'conflict') return linkRedirect(request, 'microsoft_link_conflict');
-        await logSecurity(env, request, 'microsoft_identity_linked', {
-          employeeId: staff.employee.id, sessionId: staff.sessionId,
-          result: outcome,
-          details: { authentication: 'microsoft_organizations', tenantId: organization.tenantId },
-        });
         return linkRedirect(request, 'linked', true);
       }
       // Never grant access based on Microsoft email, UPN or preferred_username.

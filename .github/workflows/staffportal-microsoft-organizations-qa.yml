@@ -33,6 +33,7 @@ jobs:
         run: |
           node scripts/test-microsoft-organizations.mjs
           python3 scripts/test-microsoft-identity-migration.py
+          python3 scripts/test-microsoft-link-transaction.py
       - name: TypeScript and approved Sign-In release gates
         run: |
           npm run typecheck

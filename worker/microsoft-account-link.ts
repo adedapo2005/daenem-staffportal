@@ -20,6 +20,7 @@ export async function recentlyVerifiedStaffSession(
 ): Promise<SessionContext | null> {
   const context = await getSessionContext(request, env);
   if (!context || !['active', 'provisional'].includes(context.employee.status) ||
+      !context.companies.length ||
       (employeeId && context.employee.id !== employeeId) ||
       (sessionId && context.sessionId !== sessionId)) return null;
   // Linking an external identity requires a recently authenticated StaffPortal
@@ -45,7 +46,8 @@ export function linkRedirect(request: Request, status: string, success = false) 
 export async function accountLinkPage(request: Request, env: LinkEnv) {
   if (!isOrganizationsStaging(env)) return new Response('Not found', { status: 404 });
   const context = await getSessionContext(request, env);
-  if (!context || !['active', 'provisional'].includes(context.employee.status)) {
+  if (!context || !['active', 'provisional'].includes(context.employee.status) ||
+      !context.companies.length) {
     const target = new URL('/', request.url);
     target.searchParams.set('auth_error', 'microsoft_link_requires_signin');
     target.searchParams.set('auth_provider', 'microsoft');

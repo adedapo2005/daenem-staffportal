@@ -101,57 +101,93 @@ async function makeJwt(payload) {
 
 function dbMock() {
   const employee = new Map();
-  const links = new Map();
   const identities = new Map();
+  const audit = [];
   let logins = 0;
-  let linkTablePresent = true;
+  const flags = {
+    tablePresent:true, activeEmployee:true, activeMembership:true,
+    activeCompany:true, sessionValid:true, sessionFresh:true,
+    auditFails:false,
+  };
+  const eligible = () => flags.activeEmployee && flags.activeMembership &&
+    flags.activeCompany && flags.sessionValid && flags.sessionFresh;
   const db = {
     prepare(sql) {
       const q = sql.replace(/\s+/g, ' ');
       return {
         async first() {
-          // Cloudflare D1 permits unbound prepared SELECT.first().
           if (q.includes("FROM sqlite_master WHERE type='table'")) {
-            return linkTablePresent ? { name: 'staffportal_external_identity_links' } : null;
+            return flags.tablePresent ? { name:'staffportal_external_identity_links' } : null;
           }
           return null;
         },
         bind(...args) {
           return {
+            __sql:q, __args:args,
             async first() {
               if (q.includes("FROM sqlite_master WHERE type='table'")) {
-                return linkTablePresent ? { name: 'staffportal_external_identity_links' } : null;
+                return flags.tablePresent ? { name:'staffportal_external_identity_links' } : null;
               }
-              if (q.includes("FROM auth_sessions WHERE id=?")) return { id: args[0] };
+              if (q.includes('SELECT e.id FROM employees e') &&
+                  q.includes('JOIN employee_company_memberships m')) {
+                return eligible() && args[0]==='company-a' &&
+                  args[1]==='existing-staff-session-1' &&
+                  args[2]==='employee-1' ? {id:'employee-1'}:null;
+              }
+              if (q.includes('FROM auth_sessions WHERE id=?')) {
+                return flags.sessionValid && flags.sessionFresh ? {id:args[0]}:null;
+              }
               if (q.includes('FROM staffportal_external_identity_links WHERE provider=')) {
-                const l = employee.get(args[0]);
+                const l=employee.get(args[0]);
                 return l ? {tenantId:l.tenantId,objectId:l.objectId,revokedAt:l.revokedAt||null}:null;
               }
               if (q.includes('FROM staffportal_external_identity_links l')) {
-                const l = identities.get(args[0] + '/' + args[1]);
-                return l && !l.revokedAt ? {employeeId:l.employeeId,status:l.status}:null;
+                const l=identities.get(args[0]+'/'+args[1]);
+                return l && !l.revokedAt && flags.activeEmployee &&
+                  flags.activeMembership && flags.activeCompany ?
+                  {employeeId:l.employeeId}:null;
               }
-              if (q.includes('FROM app_settings WHERE setting_key')) return { setting_value: '12' };
+              if (q.includes('FROM app_settings WHERE setting_key')) return {setting_value:'12'};
               return null;
             },
             async run() {
-              if (q.includes('INSERT OR IGNORE INTO staffportal_external_identity_links')) {
-                const [,tid,oid,employeeId] = args;
-                if (!employee.has(employeeId) && !identities.has(tid+'/'+oid)) {
-                  const l={tenantId:tid,objectId:oid,employeeId,status:'active',revokedAt:null};
-                  employee.set(employeeId,l);identities.set(tid+'/'+oid,l);
-                }
-              }
               if (q.includes('INSERT INTO auth_sessions')) logins++;
-              return { success: true };
+              return { success:true };
             },
           };
         },
       };
     },
+    async batch(statements) {
+      if (statements.length!==2 ||
+          !statements[0].__sql.includes('INSERT OR IGNORE INTO staffportal_external_identity_links') ||
+          !statements[1].__sql.includes('INSERT INTO security_logs')) {
+        throw Error('Batch must contain exactly link INSERT and mandatory audit INSERT');
+      }
+      const [id,tid,oid,companyId,sessionId,employeeId]=statements[0].__args;
+      let inserted=0;
+      if (eligible() && companyId==='company-a' &&
+          sessionId==='existing-staff-session-1' &&
+          employeeId==='employee-1' &&
+          !employee.has(employeeId) && !identities.has(tid+'/'+oid)) {
+        inserted=1;
+      }
+      // Simulate D1 transactional behavior: audit failure rolls back BOTH
+      // statements without updating identity maps or producing an audit.
+      if(inserted && flags.auditFails) throw Error('mandatory audit unavailable');
+      if(inserted) {
+        const row={tenantId:tid,objectId:oid,employeeId,status:'active',revokedAt:null};
+        employee.set(employeeId,row);
+        identities.set(tid+'/'+oid,row);
+        audit.push({employeeId,tid,oid,companyId,sessionId});
+      }
+      return [{meta:{changes:inserted}}, {meta:{changes:inserted}}];
+    },
   };
-  return { db, employee, identities, loginCount:()=>logins,
-    setLinksAvailable(ready) { linkTablePresent = Boolean(ready); },
+  return {
+    db,employee,identities,flags,
+    auditCount:()=>audit.length,loginCount:()=>logins,
+    setLinksAvailable(ready){flags.tablePresent=Boolean(ready)},
   };
 }
 
@@ -266,6 +302,7 @@ for(const stage of ['production','development']){
   globalThis.__testStaffSession={
     sessionId:'existing-staff-session-1',
     employee:{id:'employee-1',status:'active'},
+    companies:[{id:'company-a'}],
   };
   globalThis.__testEvents=[];
   const info=await routeProviderAuth(h.request('/api/auth/oauth/microsoft/link'),h.env);
@@ -301,10 +338,11 @@ for(const stage of ['production','development']){
     saved?.tenantId===TENANT_B && saved?.objectId===OID &&
     result.status===302 && new URL(result.headers.get('location')).searchParams.get('result')==='linked');
   test('linking never manufactures new StaffPortal authentication sessions',
-    h.store.loginCount()===0 && globalThis.__testEvents.some(x=>x.type==='microsoft_identity_linked'));
+    h.store.loginCount()===0 && h.store.auditCount()===1);
 
-  const again=await rules.bindMicrosoftEmployeeIdentity(h.store.db,'employee-1',
-    rules.organizationIdentity(identity(TENANT_A)));
+  const again=await rules.bindMicrosoftEmployeeIdentity(
+    h.store.db,'employee-1',rules.organizationIdentity(identity(TENANT_A)),
+    'existing-staff-session-1','company-a',h.request('/api/auth/oauth/microsoft/callback'));
   test('an existing employee link cannot be silently moved to another tenant',again==='conflict');
 
   globalThis.__testStaffSession=null;
@@ -333,7 +371,7 @@ for(const stage of ['production','development']){
   }),h.env);
   test('linking without an existing StaffPortal session cannot start',new URL(forbidden.headers.get('location')).searchParams.get('error')==='microsoft_link_expired');
 
-  saved.status='inactive';
+  h.store.flags.activeEmployee=false;
   test('inactive linked employee cannot sign in',await rules.linkedMicrosoftEmployee(h.store.db,
     rules.organizationIdentity(identity(TENANT_B)))===null);
 }
@@ -348,10 +386,138 @@ for(const stage of ['production','development']){
     location.searchParams.get('auth_error')==='microsoft_links_unavailable');
   globalThis.__testStaffSession={
     sessionId:'staff-ready-1',employee:{id:'employee-1',status:'active'},
+    companies:[{id:'company-a'}],
   };
   const link=await routeProviderAuth(h.request('/api/auth/oauth/microsoft/link'),h.env);
   test('account linking page returns safe service unavailable before migration',
     link.status===503 && !(await link.text()).includes('Connect Microsoft work account'));
   globalThis.__testStaffSession=null;
 }
+
+const makeLinkArgs = (h,tid=TENANT_A) => [
+  h.store.db,'employee-1',rules.organizationIdentity(identity(tid)),
+  'existing-staff-session-1','company-a',
+  h.request('/api/auth/oauth/microsoft/callback'),
+];
+
+{
+ const h=harness();
+ h.store.flags.auditFails=true;
+ let failed=false;
+ try{await rules.bindMicrosoftEmployeeIdentity(...makeLinkArgs(h))}catch{failed=true}
+ test('mandatory audit failure rolls back identity link',
+   failed && h.store.employee.size===0 && h.store.identities.size===0 &&
+   h.store.auditCount()===0);
+}
+
+{
+ const h=harness();
+ const a=makeLinkArgs(h,TENANT_A), b=makeLinkArgs(h,TENANT_B);
+ const result=await Promise.all([
+  rules.bindMicrosoftEmployeeIdentity(...a),
+  rules.bindMicrosoftEmployeeIdentity(...b),
+ ]);
+ test('concurrent identities cannot take over same employee',
+   result.filter(x=>x==='linked').length===1 &&
+   result.filter(x=>x==='conflict').length===1 &&
+   h.store.employee.size===1 && h.store.identities.size===1);
+ test('concurrent one-winner association produces exactly one mandatory audit',
+   h.store.auditCount()===1);
+}
+
+for(const [flag,label] of [
+ ['activeMembership','revoked membership'],
+ ['activeCompany','inactive company'],
+ ['activeEmployee','disabled employee'],
+ ['sessionValid','revoked StaffPortal session'],
+ ['sessionFresh','expired recent-login eligibility'],
+]){
+ const h=harness();
+ h.store.flags[flag]=false;
+ const result=await rules.bindMicrosoftEmployeeIdentity(...makeLinkArgs(h));
+ test('reject new Microsoft account link with '+label,
+  result==='conflict' && h.store.employee.size===0 && h.store.auditCount()===0);
+}
+
+{
+ const h=harness();
+ const outcome=await rules.bindMicrosoftEmployeeIdentity(...makeLinkArgs(h));
+ test('authorized company permits audited link',outcome==='linked'&&h.store.auditCount()===1);
+ h.store.flags.activeMembership=false;
+ test('revoked membership denies subsequent linked Microsoft login',
+  await rules.linkedMicrosoftEmployee(h.store.db,rules.organizationIdentity(identity(TENANT_A)))===null);
+ h.store.flags.activeMembership=true;
+ h.store.flags.activeCompany=false;
+ test('inactive company denies subsequent linked Microsoft login',
+  await rules.linkedMicrosoftEmployee(h.store.db,rules.organizationIdentity(identity(TENANT_A)))===null);
+ h.store.flags.activeCompany=true;
+ const row=h.store.employee.get('employee-1');
+ row.revokedAt='2026-10-19T00:00:00Z';
+ test('revoked link cannot be replayed to authorize Microsoft login',
+  await rules.linkedMicrosoftEmployee(h.store.db,rules.organizationIdentity(identity(TENANT_A)))===null);
+ const result=await rules.bindMicrosoftEmployeeIdentity(...makeLinkArgs(h));
+ test('revoked identity cannot be silently re-linked',result==='conflict');
+}
+
+{
+ const h=harness();
+ globalThis.__testStaffSession={
+  sessionId:'existing-staff-session-1',
+  employee:{id:'employee-1',status:'active'},companies:[],
+ };
+ const start=await routeProviderAuth(h.request('/api/auth/oauth/microsoft/link/start',{
+  method:'POST',headers:{origin:BASE,'content-type':'application/x-www-form-urlencoded'},body:'',
+ }),h.env);
+ test('zero active companies denies account-link authorization at start',
+  new URL(start.headers.get('location')).searchParams.get('error')==='microsoft_link_expired' &&
+  h.store.employee.size===0);
+ globalThis.__testStaffSession=null;
+}
+
+async function callbackAfterRevocation(flag){
+ const h=harness();
+ globalThis.__testStaffSession={
+  sessionId:'existing-staff-session-1',
+  employee:{id:'employee-1',status:'active'},
+  companies:[{id:'company-a'}],
+ };
+ const start=await routeProviderAuth(h.request('/api/auth/oauth/microsoft/link/start',{
+   method:'POST',headers:{
+     origin:BASE,'content-type':'application/x-www-form-urlencoded',
+     cookie:'daenem_workforce_session=test-only',
+   },body:'',
+ }),h.env);
+ assert.equal(start.status,302);
+ const redirect=new URL(start.headers.get('location'));
+ const state=redirect.searchParams.get('state');
+ const cookie=start.headers.get('set-cookie').split(';')[0]+
+   '; daenem_workforce_session=test-only';
+ h.store.flags[flag]=false; // Authorization changed while Microsoft login was open.
+ const jwt=await makeJwt({
+   ...identity(TENANT_B),aud:CLIENT,nonce:redirect.searchParams.get('nonce'),
+   iat:Math.floor(Date.now()/1000)-20,exp:Math.floor(Date.now()/1000)+300,
+ });
+ h.intercept(jwt);
+ let response;
+ try{
+  response=await routeProviderAuth(h.request(
+   '/api/auth/oauth/microsoft/callback?state='+encodeURIComponent(state)+'&code=returned',{
+   headers:{cookie},
+  }),h.env);
+ }finally{h.restore();globalThis.__testStaffSession=null}
+ return {h,response};
+}
+
+for (const [flag,label] of [
+ ['activeMembership','membership revoked'],
+ ['activeCompany','company deactivated'],
+ ['activeEmployee','employee disabled'],
+ ['sessionValid','session revoked'],
+]){
+ const {h,response}=await callbackAfterRevocation(flag);
+ test('revoke between Microsoft start and callback: '+label,
+   response.status===302 && h.store.employee.size===0 &&
+   h.store.identities.size===0 && h.store.auditCount()===0);
+}
+
 console.log('Microsoft organizations contract passed: '+passed+' checks');
