@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound,
+  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound, X,
 } from 'lucide-react';
 import {
   readThemeId, type ThemeId,
@@ -264,9 +264,11 @@ function fieldPlaceholder(label: string, required = false) {
 
 function TextField({
   label, value, onChange, required = false, type = 'text', autoComplete, helper, statusText, statusTone, onBlur,
+  inputMode, maxLength,
 }: {
   label: string; value: string; onChange: (value: string) => void; required?: boolean;
   type?: string; autoComplete?: string; helper?: string; statusText?: string; statusTone?: 'valid' | 'invalid'; onBlur?: () => void;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode']; maxLength?: number;
 }) {
   return <label className="usp-field">
     <span className="usp-field-label">{label}{required ? ' *' : ''}</span>
@@ -276,6 +278,8 @@ function TextField({
       onChange={(event) => onChange(event.target.value)}
       onBlur={onBlur}
       autoComplete={autoComplete}
+      inputMode={inputMode}
+      maxLength={maxLength}
       placeholder={fieldPlaceholder(label, required)}
       aria-label={label}
       required={required}
@@ -431,6 +435,7 @@ export function WorldClocks() {
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: WorkforceContext) => void }) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
+  const returnSignupFocusRef = useRef(false);
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -440,6 +445,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [whatsAppSignInCode, setWhatsAppSignInCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  const [linkMicrosoftAfterPassword, setLinkMicrosoftAfterPassword] = useState(false);
   const [themeId] = useState<ThemeId>(() => readThemeId());
   const [secureServiceLabel, setSecureServiceLabel] = useState(() => readSignInPreferences().labels.secureService);
   const [authLabels, setAuthLabels] = useState(() => readSignInPreferences().labels.auth);
@@ -448,7 +454,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [identityTouched, setIdentityTouched] = useState(false);
   const compactAuthRef = useRef(false);
 
-  const [signupStep, setSignupStep] = useState<'identity' | 'account' | 'work' | 'verify'>('identity');
+  const [signupStep, setSignupStep] = useState<'identity' | 'contact' | 'username' | 'account' | 'work' | 'verify'>('identity');
   const [signupChallenge, setSignupChallenge] = useState('');
   const [signupDestination, setSignupDestination] = useState('');
   const [signupCode, setSignupCode] = useState('');
@@ -462,9 +468,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const [recoveryStep, setRecoveryStep] = useState<'identity' | 'verify' | 'reset'>('identity');
   const [recoveryIdentity, setRecoveryIdentity] = useState('');
-  const [recoveryCompanies, setRecoveryCompanies] = useState<Array<{code:string;name:string}>>([]);
-  const [recoveryCompanyCode, setRecoveryCompanyCode] = useState('');
-  const [recoveryMethods, setRecoveryMethods] = useState<Array<'email'|'whatsapp'>>([]);
   const [recoveryMethod, setRecoveryMethod] = useState<'email'|'whatsapp'>('email');
   const [recoveryChallenge, setRecoveryChallenge] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
@@ -501,8 +504,27 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       oauth_state_storage_unavailable: 'The sign-in service is temporarily unavailable. Please try again shortly.',
       invalid_provider_identity: 'The identity provider response could not be verified. Please try again.',
       provider_exchange_failed: 'The identity provider could not complete sign-in. Please try again.',
+      microsoft_link_required: 'This Microsoft account has not been connected to your approved StaffPortal employee account. Sign in with your existing StaffPortal credentials first.',
+      microsoft_link_requires_signin: 'Sign in with your existing StaffPortal username and password to connect Microsoft.',
+      microsoft_links_unavailable: 'Microsoft account linking is temporarily unavailable. Continue with your existing StaffPortal credentials.',
     };
-    setMessage({ type: 'error', text: messages[code] || 'Social sign-in could not be completed. Please try again.' });
+    if (code === 'microsoft_link_required' || code === 'microsoft_link_requires_signin') {
+      setMessage({
+        type: 'error', text: messages[code],
+        action: { label: 'Connect after StaffPortal Sign-In', onClick: () => {
+          setLinkMicrosoftAfterPassword(true);
+          setMessage({ type: 'info', text: 'Enter your existing StaffPortal username and password. You will then securely connect your Microsoft account.' });
+        } },
+      });
+    } else if (code === 'employee_not_authorized') {
+      setMessage({
+        type: 'error',
+        text: 'Your provider identity was verified, but StaffPortal access is not yet approved. You may request employee access without receiving any permissions automatically.',
+        action: { label: 'Create or complete your account', onClick: () => switchMode('signup') },
+      });
+    } else {
+      setMessage({ type: 'error', text: messages[code] || 'Social sign-in could not be completed. Please try again.' });
+    }
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete('auth_error');
     cleanUrl.searchParams.delete('auth_provider');
@@ -514,7 +536,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     api<PasswordPolicy>('/api/auth/password-policy').then((value) => {
       if (!active || !value || typeof value.minimumLength !== 'number') return;
       setPasswordPolicy({
-        minimumLength: Math.max(8, Math.min(128, Math.round(value.minimumLength))),
+        minimumLength: Math.max(6, Math.min(128, Math.round(value.minimumLength))),
         maximumLength: Math.max(32, Math.min(256, Math.round(value.maximumLength || 128))),
         requiresUppercase: value.requiresUppercase !== false,
         requiresLowercase: value.requiresLowercase !== false,
@@ -524,31 +546,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }).catch(() => undefined);
     return () => { active = false; };
   }, []);
-
-  useEffect(() => {
-    let active=true;
-    api<{companies:Array<{code:string;name:string}>}>('/api/auth/companies').then((result)=>{
-      if(!active)return;
-      const companies=(result.companies||[]).filter(company=>!/farm/i.test(`${company.code} ${company.name}`));
-      setRecoveryCompanies(companies);
-      setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:(companies[0]?.code||''));
-    }).catch(()=>undefined);
-    return()=>{active=false};
-  },[]);
-
-  useEffect(()=>{
-    if(mode!=='forgot'||!recoveryCompanyCode){setRecoveryMethods([]);return}
-    let active=true;
-    api<{methods:Array<'email'|'whatsapp'>}>(`/api/auth/password/recovery-options?company=${encodeURIComponent(recoveryCompanyCode)}`)
-      .then((result)=>{
-        if(!active)return;
-        const methods=result.methods||[];
-        setRecoveryMethods(methods);
-        setRecoveryMethod(current=>methods.includes(current)?current:(methods[0]||'email'));
-      })
-      .catch(()=>{if(active)setRecoveryMethods([])});
-    return()=>{active=false};
-  },[mode,recoveryCompanyCode]);
 
   useEffect(() => {
     const onSignInPreferences = (event: Event) => {
@@ -573,7 +570,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         if (measuredOverflow) compactAuthRef.current = true;
         if (mode !== 'signup' && !query.matches) compactAuthRef.current = false;
         setCompactDesktop((current) => {
-          const next = query.matches || measuredOverflow || compactAuthRef.current;
+          const next = mode === 'signup' || query.matches || measuredOverflow || compactAuthRef.current;
           return current === next ? current : next;
         });
       });
@@ -591,6 +588,16 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       window.visualViewport?.removeEventListener('resize', sync);
     };
   }, [mode, signupStep, recoveryStep, message, passwordPolicy, authLabels]);
+
+  useEffect(() => {
+    if (mode !== 'signin' || !returnSignupFocusRef.current) return;
+    returnSignupFocusRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('#staffportal-auth-mount .sp-auth-tabs button:nth-child(2)')
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode]);
 
   useEffect(() => { document.title = 'DAENEM Staff Portal'; }, [themeId]);
 
@@ -619,6 +626,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
+    if (mode !== 'signin' && next === 'signin') returnSignupFocusRef.current = true;
     compactAuthRef.current = false;
     setMode(next);
     setMessage(null);
@@ -635,6 +643,39 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
+  // The Create Account surface is a focused registration dialog, not a hidden
+  // scrollable form. Keep focus within the dialog and restore it on exit.
+  useEffect(() => {
+    if (mode === 'signin') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusable = () => [...panel.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )].filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden');
+    const initial = panel.querySelector<HTMLElement>('.usp-auth-form input:not([disabled])') || focusable()[0];
+    initial?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        switchMode('signin');
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const controls = focusable();
+      if (!controls.length) return;
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    panel.addEventListener('keydown', onKeyDown);
+    return () => panel.removeEventListener('keydown', onKeyDown);
+  }, [mode, signupStep, recoveryStep]);
+
   function validateSignupIdentity() {
     const missing = [
       !signup.firstName.trim() ? authLabels.firstName : '',
@@ -645,7 +686,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       setMessage({ type: 'error', text: 'Complete the required account details to continue.', details: missing });
       return false;
     }
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(signup.email.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signup.email.trim())) {
       setMessage({ type: 'error', text: 'Enter a valid personal email address before continuing.' });
       return false;
     }
@@ -666,6 +707,20 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     event.preventDefault();
     setMessage(null);
     if (!validateSignupIdentity()) return;
+    setSignupStep('contact');
+  }
+
+  function continueSignupContact(event: React.FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    if (!validateSignupIdentity()) return;
+    setSignupStep('username');
+  }
+
+  function continueSignupUsername(event: React.FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    if (!validateSignupUsername()) return;
     setSignupStep('account');
   }
 
@@ -684,7 +739,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setSignupStep('work');
   }
 
-  function backSignupStep(step: 'identity' | 'account') {
+  function backSignupStep(step: 'identity' | 'contact' | 'username' | 'account') {
     setMessage(null);
     setSignupStep(step);
   }
@@ -702,6 +757,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       setPassword('');
       setShowPassword(false);
       setRemember(false);
+      if (linkMicrosoftAfterPassword) {
+        window.location.assign('/api/auth/oauth/microsoft/link');
+        return;
+      }
       onAuthenticated(me.context);
     } catch (error) {
       const authError = error as ApiError;
@@ -761,6 +820,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       setWhatsAppSignInChallenge('');
       setWhatsAppSignInDestination('');
       setWhatsAppSignInCode('');
+      if (linkMicrosoftAfterPassword) {
+        window.location.assign('/api/auth/oauth/microsoft/link');
+        return;
+      }
       onAuthenticated(me.context);
     } catch (error) {
       setMessage({ type: 'error', text: (error as Error).message });
@@ -827,10 +890,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setBusy(true);
     setMessage(null);
     try {
-      if (!recoveryCompanyCode || !recoveryMethods.includes(recoveryMethod)) throw new Error('Select an available recovery method.');
+      if (!recoveryIdentity.trim()) throw new Error('Enter your email or username.');
       const endpoint=recoveryMethod==='whatsapp'?'/api/auth/password/forgot-whatsapp':'/api/auth/password/forgot';
       const result = await api<{ challengeId: string; bootstrapCode?: string; message: string }>(endpoint, {
-        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity, companyCode: recoveryCompanyCode }),
+        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity.trim() }),
       });
       setRecoveryChallenge(result.challengeId);
       setRecoveryBootstrapCode(result.bootstrapCode || '');
@@ -924,7 +987,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <div className="sp-auth-options"><label className="sp-remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Remember Me</span></label><button type="button" className="sp-forgot" onClick={() => switchMode('forgot')}><KeyRound size={14} /> Forgot Password?</button></div>
         <button type="submit" className={`sp-primary-button ${busy ? 'is-loading' : 'is-idle'}`} disabled={busy}><span>{busy ? 'Connecting…' : 'Sign In'}</span><ArrowRight size={16} /></button>
       </form>
-      {whatsAppSignInChallenge && <div className="sp-provider-flow-panel is-verify" role="status"><div className="sp-provider-flow-head"><span className="sp-provider-flow-icon"><WhatsAppMark size={17} /></span><span><b>WhatsApp Verification</b><small>Code sent to {whatsAppSignInDestination}</small></span></div><label><span className="sp-field-label">Verification Code</span><span className="sp-input-shell"><KeyRound size={16} /><input value={whatsAppSignInCode} onChange={(event) => setWhatsAppSignInCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Enter 6-digit code" /></span></label><button type="button" className="sp-provider-flow-action" disabled={busy || whatsAppSignInCode.length !== 6} onClick={() => void verifyWhatsAppSignIn()}>Verify WhatsApp Code <ArrowRight size={14} /></button></div>}
+      {whatsAppSignInChallenge && <div className="sp-provider-flow-panel is-verify" role="status"><div className="sp-provider-flow-head"><span className="sp-provider-flow-icon"><WhatsAppMark size={17} /></span><span><b>WhatsApp Verification</b><small>Code sent to {whatsAppSignInDestination}</small></span></div><label><span className="sp-field-label">Verification Code</span><span className="sp-input-shell"><KeyRound size={16} /><input value={whatsAppSignInCode} onChange={(event) => setWhatsAppSignInCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="Enter 6-digit code" /></span></label><button type="button" className="sp-provider-flow-action" disabled={busy || whatsAppSignInCode.length !== 6} onClick={() => void verifyWhatsAppSignIn()}>Verify WhatsApp Code <ArrowRight size={14} /></button></div>}
       <div className="sp-auth-divider"><span /><b>Or Continue With</b><span /></div>
       <div className="sp-social-grid sp-auth-provider-list sp-auth-provider-signin" aria-label="Sign in with another provider">
         <button type="button" className="sp-social-button" onClick={() => startOAuth('microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">Microsoft</span></button>
@@ -938,13 +1001,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   );
 
   const legacyAuthPanel = (
-    <section ref={panelRef} aria-label="Employee authentication" data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
-      <div className="usp-panel-heading">
+    <section ref={panelRef} role={mode !== 'signin' ? 'dialog' : undefined} aria-modal={mode !== 'signin' ? true : undefined} aria-labelledby={mode !== 'signin' ? 'usp-account-dialog-title' : undefined} aria-label={mode === 'signin' ? 'Employee authentication' : undefined} data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
+      <div className="usp-panel-heading sp-signup-heading">
         <div>
           <span className="usp-panel-eyebrow"><LockKeyhole size={14} /> {authLabels.secureErpAccess}</span>
-          <h1>{heading.title}</h1>
+          <h1 id={mode !== 'signin' ? 'usp-account-dialog-title' : undefined}>{heading.title}</h1>
           <p>{heading.body}</p>
         </div>
+        {mode === 'signup' && <button type="button" className="sp-signup-close" aria-label="Close Create Account and return to Sign In" onClick={() => switchMode('signin')}><X size={16} /></button>}
         {mode === 'forgot'
           ? <button type="button" className="usp-back-link" onClick={() => switchMode('signin')}>{authLabels.backToSignIn}</button>
           : <span className="usp-mfa-chip"><ShieldCheck size={14} /> {authLabels.mfaReady}</span>}
@@ -995,72 +1059,69 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <small className="usp-whatsapp-auth-note">Your password is still required. WhatsApp verification is available only for an enrolled and previously verified contact.</small>
         {whatsAppSignInChallenge && <div className="usp-whatsapp-stepup">
           <div className="usp-auth-destination usp-whatsapp-destination"><span className="usp-whatsapp-button-icon compact"><WhatsAppMark size={17} /></span><span>Verification sent to <b>{whatsAppSignInDestination}</b></span></div>
-          <TextField label="WhatsApp verification code" value={whatsAppSignInCode} onChange={(value) => setWhatsAppSignInCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+          <TextField label="WhatsApp verification code" value={whatsAppSignInCode} onChange={(value) => setWhatsAppSignInCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
           <button className="usp-primary-button" disabled={busy || whatsAppSignInCode.length !== 6} type="button" onClick={() => void verifyWhatsAppSignIn()}>
             {busy ? 'Verifying…' : 'Verify WhatsApp code'}<ArrowRight size={17} />
           </button>
         </div>}
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupIdentity}>
-        <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
-        <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
-        <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
+      {mode === 'signup' && signupStep !== 'verify' && <nav className="sp-signup-progress" aria-label="Account setup progress">
+        <span>Step {(['identity', 'contact', 'username', 'account', 'work'].indexOf(signupStep) + 1)} of 5</span>
+        <div className="sp-signup-progress-track"><i style={{ width: `${(['identity', 'contact', 'username', 'account', 'work'].indexOf(signupStep) + 1) * 20}%` }} /></div>
+      </nav>}
+      {mode === 'signup' && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={(event) => { event.preventDefault(); setMessage(null); if (!signup.firstName.trim() || !signup.lastName.trim()) { setMessage({type:'error',text:'Enter your first and last name to continue.'}); return; } setSignupStep('contact'); }}>
+        <TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" />
+        <TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" />
         <button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button>
       </form>}
-
-      {mode === 'signup' && compactDesktop && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupAccount}>
-        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="off" helper={authLabels.usernameHelper} />
-        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
-        <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
-        <PasswordStatus checks={signupChecks} password={signup.password} label={authLabels.passwordRequirements} />
-        <ConfirmPasswordStatus value={signup.confirmPassword} matches={signup.password === signup.confirmPassword} labels={authLabels} />
-        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit" disabled={!passwordPolicySatisfied(signupChecks) || signup.password !== signup.confirmPassword}>{authLabels.continue}<ArrowRight size={17} /></button></div>
-      </form>}
-
-      {mode === 'signup' && compactDesktop && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
-        <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
-        <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
-        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('account')}>{authLabels.back}</button><button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button></div>
-      </form>}
-
-      {mode === 'signup' && !compactDesktop && signupStep !== 'verify' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
-        <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
+      {mode === 'signup' && signupStep === 'contact' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupContact}>
         <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
         <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
-        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="off" helper={authLabels.usernameHelper} />
-        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button></div>
+      </form>}
+      {mode === 'signup' && signupStep === 'username' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupUsername}>
+        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper={authLabels.usernameHelper} />
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('contact')}>{authLabels.back}</button><button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button></div>
+      </form>}
+      {mode === 'signup' && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupAccount}>
+        <PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
+        <PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
         <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
         <PasswordStatus checks={signupChecks} password={signup.password} label={authLabels.passwordRequirements} />
         <ConfirmPasswordStatus value={signup.confirmPassword} matches={signup.password === signup.confirmPassword} labels={authLabels} />
-        <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('username')}>{authLabels.back}</button><button className="usp-primary-button" type="submit" disabled={!passwordPolicySatisfied(signupChecks) || signup.password !== signup.confirmPassword}>{authLabels.continue}<ArrowRight size={17} /></button></div>
+      </form>}
+      {mode === 'signup' && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
+        <TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} />
+        <TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} />
         <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
-        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button>
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('account')}>{authLabels.back}</button><button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button></div>
       </form>}
 
       {mode === 'signup' && signupStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifySignup}>
         <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationSentTo} <b>{signupDestination}</b></span></div>
         {signupBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{signupBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
-        <TextField label={authLabels.verificationCode} value={signupCode} onChange={(value) => setSignupCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+        <TextField label={authLabels.verificationCode} value={signupCode} onChange={(value) => setSignupCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
         <button className="usp-primary-button" disabled={busy || signupCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyEmailFinish}<CheckCircle2 size={17} /></button>
         <button type="button" className="usp-secondary-button" onClick={() => { setSignupStep('identity'); setSignupCode(''); setMessage(null); }}>{authLabels.changeSignupDetails}</button>
       </form>}
 
       {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" autoComplete="off" onSubmit={startRecovery}>
         <TextField label={authLabels.emailOrUsername} value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="off" />
-        <label className="usp-recovery-company"><span>Company</span><select value={recoveryCompanyCode} onChange={(event)=>setRecoveryCompanyCode(event.target.value)} required><option value="">Select company</option>{recoveryCompanies.map(company=><option key={company.code} value={company.code}>{company.name}</option>)}</select><small>Recovery methods follow the selected company's administrator policy.</small></label>
-        {recoveryMethods.length > 0 && <div className="usp-recovery-methods" role="radiogroup" aria-label="Password recovery method">
-          {recoveryMethods.includes('email') && <button type="button" className={recoveryMethod==='email'?'active':''} aria-pressed={recoveryMethod==='email'} onClick={()=>setRecoveryMethod('email')}><Mail size={17}/><span><b>Email</b><small>Send the verification code to your email on file.</small></span></button>}
-          {recoveryMethods.includes('whatsapp') && <button type="button" className={recoveryMethod==='whatsapp'?'active':''} aria-pressed={recoveryMethod==='whatsapp'} onClick={()=>setRecoveryMethod('whatsapp')}><WhatsAppMark size={18}/><span><b>WhatsApp</b><small>Send the code to your enrolled verified WhatsApp contact.</small></span></button>}
-        </div>}
+        <div className="usp-recovery-methods" role="group" aria-label="Choose password recovery method">
+          <button type="button" className={recoveryMethod==='email'?'active':''} aria-pressed={recoveryMethod==='email'} onClick={()=>setRecoveryMethod('email')}><Mail size={17}/><span><b>Email</b><small>Use your email on file, subject to company recovery settings.</small></span></button>
+          <button type="button" className={recoveryMethod==='whatsapp'?'active':''} aria-pressed={recoveryMethod==='whatsapp'} onClick={()=>setRecoveryMethod('whatsapp')}><WhatsAppMark size={18}/><span><b>WhatsApp</b><small>Use your previously verified WhatsApp contact, if enabled.</small></span></button>
+        </div>
+        <div className="usp-positive-note"><ShieldCheck size={16} /><span>StaffPortal checks your authorized company privately. You do not need to select it.</span></div>
         <div className="usp-positive-note">{recoveryMethod==='whatsapp'?<WhatsAppMark size={16}/>:<Mail size={16} />}<span>{authLabels.recoveryIdentityNote}</span></div>
-        <button className="usp-primary-button" disabled={busy||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
+        <button className="usp-primary-button" disabled={busy||!recoveryIdentity.trim()} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
       </form>}
 
       {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifyRecovery}>
         <div className="usp-auth-destination">{recoveryMethod==='whatsapp'?<WhatsAppMark size={18}/>:<Mail size={18} />}<span>{recoveryMethod==='whatsapp'?'Verification code sent to your enrolled WhatsApp contact.':authLabels.verificationCodeSent}</span></div>
         {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{recoveryBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
-        <TextField label={authLabels.verificationCode} value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+        <TextField label={authLabels.verificationCode} value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
         <button className="usp-primary-button" disabled={busy || recoveryCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyIdentity}<CheckCircle2 size={17} /></button>
         <button type="button" className="usp-secondary-button" onClick={() => { setRecoveryStep('identity'); setRecoveryCode(''); setMessage(null); }}>{authLabels.requestAnotherCode}</button>
       </form>}
@@ -1075,7 +1136,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button className="usp-primary-button" disabled={busy || !passwordPolicySatisfied(resetChecks) || newPassword !== confirmNewPassword} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
       </form>}
 
-      {mode !== 'forgot' && <>
+      {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity' || signupStep === 'work') && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
           <button type="button" onClick={() => startOAuth('microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>

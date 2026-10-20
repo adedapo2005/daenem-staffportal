@@ -1,4 +1,12 @@
 import { logSecurity, sessionCookie, type AuthEnv } from './auth';
+import {
+  sameOriginFormPost, recentlyVerifiedStaffSession, linkRedirect, accountLinkPage,
+} from './microsoft-account-link';
+import {
+  isOrganizationsStaging, organizationIdentity, organizationSigningKeyIssuerMatches,
+  linkedMicrosoftEmployee, linkedMicrosoftIdentityForEmployee, bindMicrosoftEmployeeIdentity,
+  organizationsLinkStorageReady,
+} from './microsoft-organizations';
 
 type Provider = 'google' | 'microsoft';
 
@@ -8,15 +16,20 @@ export interface ProviderAuthEnv extends AuthEnv {
   MICROSOFT_CLIENT_ID?: string; MICROSOFT_CLIENT_SECRET?: string;
   MICROSOFT_OAUTH_CLIENT_ID?: string; MICROSOFT_OAUTH_CLIENT_SECRET?: string;
   MICROSOFT_TENANT_ID?: string; MICROSOFT_OAUTH_TENANT_ID?: string;
+  MICROSOFT_AUTH_MODE?: 'single_tenant' | 'organizations';
   STAFF_PORTAL_OAUTH_ORIGIN?: string; SOCIAL_CACHE?: KVNamespace;
 }
 
 type Config = {
   clientId: string; clientSecret: string; authorizationEndpoint: string;
   tokenEndpoint: string; userInfoEndpoint: string; scope: string;
-  issuer: string; jwksEndpoint: string;
+  issuer: string; jwksEndpoint: string; organizations: boolean;
 };
-type State = { provider: Provider; state: string; verifier: string; nonce: string; expiresAt: number };
+type State = {
+  provider: Provider; state: string; verifier: string; nonce: string; expiresAt: number;
+  intent?: 'signin' | 'link'; authMode?: 'single' | 'organizations';
+  employeeId?: string; sessionId?: string;
+};
 
 const encoder = new TextEncoder();
 const cookieName = 'daenem_staffportal_oauth_state';
@@ -82,20 +95,28 @@ function config(env: ProviderAuthEnv, provider: Provider): Config | null {
       tokenEndpoint: 'https://oauth2.googleapis.com/token',
       userInfoEndpoint: 'https://openidconnect.googleapis.com/v1/userinfo', scope: 'openid email profile',
       issuer: 'https://accounts.google.com', jwksEndpoint: 'https://www.googleapis.com/oauth2/v3/certs',
+      organizations: false,
     } : null;
   }
   const clientId = env.MICROSOFT_CLIENT_ID || env.MICROSOFT_OAUTH_CLIENT_ID;
   const clientSecret = env.MICROSOFT_CLIENT_SECRET || env.MICROSOFT_OAUTH_CLIENT_SECRET;
   if (!clientId || !clientSecret) return null;
-  const tenant = env.MICROSOFT_TENANT_ID || env.MICROSOFT_OAUTH_TENANT_ID;
-  if (!tenant || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(tenant)) return null;
+  // Explicit staging-only switch. Production keeps the existing tenant guard.
+  const organizations = isOrganizationsStaging(env);
+  const tenant = organizations
+    ? 'organizations' : (env.MICROSOFT_TENANT_ID || env.MICROSOFT_OAUTH_TENANT_ID);
+  if (!tenant || (!organizations && !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(tenant))) return null;
   return {
     clientId, clientSecret,
-    authorizationEndpoint: `https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/authorize`,
-    tokenEndpoint: `https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/token`,
-    userInfoEndpoint: 'https://graph.microsoft.com/oidc/userinfo', scope: 'openid profile email User.Read',
-    issuer: `https://login.microsoftonline.com/${tenant}/v2.0`,
-    jwksEndpoint: `https://login.microsoftonline.com/${tenant}/discovery/v2.0/keys`,
+    authorizationEndpoint: 'https://login.microsoftonline.com/' + tenant + '/oauth2/v2.0/authorize',
+    tokenEndpoint: 'https://login.microsoftonline.com/' + tenant + '/oauth2/v2.0/token',
+    userInfoEndpoint: 'https://graph.microsoft.com/oidc/userinfo',
+    scope: organizations ? 'openid profile email' : 'openid profile email User.Read',
+    issuer: organizations
+      ? 'https://login.microsoftonline.com/{tenantid}/v2.0'
+      : 'https://login.microsoftonline.com/' + tenant + '/v2.0',
+    jwksEndpoint: 'https://login.microsoftonline.com/' + tenant + '/discovery/v2.0/keys',
+    organizations,
   };
 }
 function callbackUrl(request: Request, provider: Provider, env: ProviderAuthEnv) {
@@ -133,37 +154,82 @@ function jwtPart(value: string) {
 async function verifyIdentityToken(tokenValue: string, current: Config, nonce: string) {
   const parsed = jwtPart(tokenValue);
   if (!parsed || parsed.header.alg !== 'RS256' || typeof parsed.header.kid !== 'string') return null;
-  const response = await fetch(current.jwksEndpoint, { headers: { accept: 'application/json' }, cf: { cacheTtl: 900, cacheEverything: true } });
+  // Organizations tokens must contain an immutable, signed user/tenant identity.
+  const org = current.organizations ? organizationIdentity(parsed.payload) : null;
+  if (current.organizations && !org) return null;
+  const response = await fetch(current.jwksEndpoint, {
+    headers: { accept: 'application/json' }, cf: { cacheTtl: 900, cacheEverything: true },
+  });
   if (!response.ok) return null;
-  const jwks = await response.json().catch(() => ({})) as { keys?: Array<JsonWebKey & { kid?: string }> };
-  const key = (jwks.keys || []).find((candidate) => candidate.kid === parsed.header.kid);
+  const jwks = await response.json().catch(() => ({})) as {
+    keys?: Array<JsonWebKey & { kid?: string; issuer?: string; use?: string; kty?: string }>;
+  };
+  const key = (jwks.keys || []).find((candidate) => candidate.kid === parsed.header.kid &&
+    candidate.kty === 'RSA' && (!candidate.use || candidate.use === 'sig'));
   if (!key) return null;
-  const cryptoKey = await crypto.subtle.importKey('jwk', key, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
-  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', cryptoKey, parsed.signature, encoder.encode(parsed.signingInput));
+  // Tenant-independent JWKS can include keys restricted to a different issuer.
+  if (current.organizations && (!org ||
+      !organizationSigningKeyIssuerMatches(key.issuer, org))) return null;
+  const cryptoKey = await crypto.subtle.importKey('jwk', key,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', cryptoKey,
+    parsed.signature, encoder.encode(parsed.signingInput));
   if (!valid) return null;
   const payload = parsed.payload;
   const audiences = Array.isArray(payload.aud) ? payload.aud.map(String) : [String(payload.aud || '')];
   const now = Math.floor(Date.now() / 1000);
-  if (payload.iss !== current.issuer || !audiences.includes(current.clientId) || payload.nonce !== nonce || Number(payload.exp || 0) <= now) return null;
+  const issuer = current.organizations ? org!.issuer : current.issuer;
+  if (payload.iss !== issuer || !audiences.includes(current.clientId) ||
+      payload.nonce !== nonce || Number(payload.exp || 0) <= now ||
+      (payload.nbf != null && Number(payload.nbf) > now + 60) ||
+      (payload.iat != null && Number(payload.iat) > now + 60)) return null;
   return payload;
 }
-async function start(request: Request, env: ProviderAuthEnv, provider: Provider) {
+async function start(
+  request: Request, env: ProviderAuthEnv, provider: Provider,
+  intent: 'signin' | 'link' = 'signin',
+) {
   const current = config(env, provider);
   if (!current) return failure(request, provider, 'oauth_not_configured');
   if (!env.SOCIAL_CACHE) return failure(request, provider, 'oauth_state_storage_unavailable');
-  const state: State = { provider, state: token(24), verifier: token(48), nonce: token(24), expiresAt: Date.now() + ttl * 1000 };
-  await env.SOCIAL_CACHE.put('staffportal-oauth-state:' + state.state, JSON.stringify(state), { expirationTtl: ttl });
+  if (current.organizations && !await organizationsLinkStorageReady(env.DB)) {
+    return failure(request, provider, 'microsoft_links_unavailable');
+  }
+  let employeeId: string | undefined;
+  let sessionId: string | undefined;
+  if (intent === 'link') {
+    if (provider !== 'microsoft' || !current.organizations) {
+      return failure(request, provider, 'oauth_not_configured');
+    }
+    if (!sameOriginFormPost(request)) return new Response('Forbidden', { status: 403 });
+    const staff = await recentlyVerifiedStaffSession(request, env);
+    if (!staff) return linkRedirect(request, 'microsoft_link_expired');
+    employeeId = staff.employee.id;
+    sessionId = staff.sessionId;
+  }
+  const state: State = {
+    provider, state: token(24), verifier: token(48), nonce: token(24),
+    expiresAt: Date.now() + ttl * 1000,
+    intent, authMode: current.organizations ? 'organizations' : 'single',
+    employeeId, sessionId,
+  };
+  await env.SOCIAL_CACHE.put('staffportal-oauth-state:' + state.state,
+    JSON.stringify(state), { expirationTtl: ttl });
   const target = new URL(current.authorizationEndpoint);
   target.searchParams.set('client_id', current.clientId);
   target.searchParams.set('redirect_uri', callbackUrl(request, provider, env));
-  target.searchParams.set('response_type', 'code'); target.searchParams.set('scope', current.scope);
-  target.searchParams.set('state', state.state); target.searchParams.set('nonce', state.nonce); target.searchParams.set('code_challenge', b64(await sha(state.verifier)));
+  target.searchParams.set('response_type', 'code');
+  target.searchParams.set('scope', current.scope);
+  target.searchParams.set('state', state.state);
+  target.searchParams.set('nonce', state.nonce);
+  target.searchParams.set('code_challenge', b64(await sha(state.verifier)));
   target.searchParams.set('code_challenge_method', 'S256');
   if (provider === 'google') target.searchParams.set('access_type', 'online');
+  if (intent === 'link') target.searchParams.set('prompt', 'select_account');
   return new Response(null, { status: 302, headers: {
     location: target.toString(), 'cache-control': 'no-store',
     'set-cookie': stateCookie(request, await signState(env, state)),
-  }});
+  } });
 }
 async function createSession(request: Request, env: ProviderAuthEnv, employeeId: string, provider: Provider) {
   const secret = pepper(env);
@@ -199,9 +265,18 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
     await env.SOCIAL_CACHE.delete('staffportal-oauth-state:' + incomingState);
     state = stored ? JSON.parse(stored) as State : null;
   } catch { return failure(request, provider, 'invalid_oauth_state'); }
-  if (!state || !cookieState || state.provider !== provider || state.state !== incomingState || cookieState.state !== state.state || cookieState.verifier !== state.verifier || cookieState.nonce !== state.nonce) return failure(request, provider, 'invalid_oauth_state');
+  if (!state || !cookieState || state.provider !== provider || state.state !== incomingState ||
+      cookieState.state !== state.state || cookieState.verifier !== state.verifier ||
+      cookieState.nonce !== state.nonce || state.intent !== cookieState.intent ||
+      state.authMode !== cookieState.authMode ||
+      state.employeeId !== cookieState.employeeId || state.sessionId !== cookieState.sessionId) {
+    return failure(request, provider, 'invalid_oauth_state');
+  }
   const current = config(env, provider);
   if (!current) return failure(request, provider, 'oauth_not_configured');
+  if ((state.authMode || 'single') !== (current.organizations ? 'organizations' : 'single')) {
+    return failure(request, provider, 'invalid_oauth_state');
+  }
   try {
     const tokenResponse = await fetch(current.tokenEndpoint, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ client_id: current.clientId, client_secret: current.clientSecret, code,
@@ -212,16 +287,54 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
     if (!accessToken || !identityToken) return failure(request, provider, 'provider_token_missing');
     const identity = await verifyIdentityToken(identityToken, current, state.nonce);
     if (!identity || typeof identity.sub !== 'string') return failure(request, provider, 'invalid_provider_identity');
-    const profile = await providerJson(await fetch(current.userInfoEndpoint, { headers: { authorization: 'Bearer ' + accessToken } }));
-    if (typeof profile.sub === 'string' && profile.sub !== identity.sub) return failure(request, provider, 'invalid_provider_identity');
-    const email = String(identity.email || identity.preferred_username || profile.email || '').trim().toLowerCase();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return failure(request, provider, 'provider_email_missing');
-    if (provider === 'google' && identity.email_verified !== true) return failure(request, provider, 'provider_email_unverified');
-    const employee = await env.DB.prepare(`
-      SELECT id, employment_status AS status FROM employees WHERE LOWER(email) = ? LIMIT 1
-    `).bind(email).first<{ id: string; status: string }>();
-    if (!employee || !['active', 'provisional'].includes(employee.status)) return failure(request, provider, 'employee_not_authorized');
-    const session = await createSession(request, env, employee.id, provider);
+    let employeeId: string;
+    if (provider === 'microsoft' && current.organizations) {
+      const organization = organizationIdentity(identity);
+      if (!organization) return failure(request, provider, 'invalid_provider_identity');
+      if (state.intent === 'link') {
+        const staff = await recentlyVerifiedStaffSession(
+          request, env, state.employeeId, state.sessionId,
+        );
+        if (!staff) return linkRedirect(request, 'microsoft_link_expired');
+        const companyId = staff.companies[0]?.id;
+        if (!companyId) return linkRedirect(request, 'microsoft_link_expired');
+        // The identity association and mandatory audit are in a SINGLE D1
+        // batch transaction. Audit failure rolls back the association.
+        const outcome = await bindMicrosoftEmployeeIdentity(
+          env.DB, staff.employee.id, organization, staff.sessionId, companyId, request,
+        );
+        if (outcome === 'conflict') return linkRedirect(request, 'microsoft_link_conflict');
+        return linkRedirect(request, 'linked', true);
+      }
+      // Never grant access based on Microsoft email, UPN or preferred_username.
+      const linkedId = await linkedMicrosoftEmployee(env.DB, organization);
+      if (!linkedId) return failure(request, provider, 'microsoft_link_required');
+      employeeId = linkedId;
+    } else {
+      if (state.intent === 'link') return failure(request, provider, 'invalid_oauth_state');
+      const profile = await providerJson(await fetch(current.userInfoEndpoint, {
+        headers: { authorization: 'Bearer ' + accessToken },
+      }));
+      if (typeof profile.sub === 'string' && profile.sub !== identity.sub) {
+        return failure(request, provider, 'invalid_provider_identity');
+      }
+      const email = String(identity.email || identity.preferred_username || profile.email || '')
+        .trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return failure(request, provider, 'provider_email_missing');
+      }
+      if (provider === 'google' && identity.email_verified !== true) {
+        return failure(request, provider, 'provider_email_unverified');
+      }
+      const employee = await env.DB.prepare(
+        'SELECT id, employment_status AS status FROM employees WHERE LOWER(email) = ? LIMIT 1'
+      ).bind(email).first<{ id: string; status: string }>();
+      if (!employee || !['active', 'provisional'].includes(employee.status)) {
+        return failure(request, provider, 'employee_not_authorized');
+      }
+      employeeId = employee.id;
+    }
+    const session = await createSession(request, env, employeeId, provider);
     const headers = new Headers({ location: new URL('/workspace/', request.url).toString(), 'cache-control': 'no-store' });
     headers.append('set-cookie', sessionCookie(request, session.token, session.maxAge));
     headers.append('set-cookie', stateCookie(request, '', 0));
@@ -232,6 +345,13 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
 }
 export async function routeProviderAuth(request: Request, env: ProviderAuthEnv): Promise<Response | null> {
   const url = new URL(request.url);
+  if (url.pathname === '/api/auth/oauth/microsoft/link' && request.method === 'GET') {
+    return accountLinkPage(request, env);
+  }
+  if (url.pathname === '/api/auth/oauth/microsoft/link/start' && request.method === 'POST') {
+    return isOrganizationsStaging(env) ? start(request, env, 'microsoft', 'link')
+      : new Response('Not found', { status: 404 });
+  }
   const startProvider = request.method === 'GET' ? providerFromPath(url.pathname, 'start') : null;
   if (startProvider) return start(request, env, startProvider);
   const callbackProvider = request.method === 'GET' ? providerFromPath(url.pathname, 'callback') : null;

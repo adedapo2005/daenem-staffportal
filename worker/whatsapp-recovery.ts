@@ -2,6 +2,7 @@ import type { AuthEnv } from './auth.js';
 import type { SocialCryptoEnv } from './social-crypto.js';
 import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth.js';
 import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings.js';
+import { resolveRecoveryCompanyForIdentifier } from './recovery-company-resolution.js';
 
 export interface WhatsAppRecoveryEnv extends AuthEnv, SocialCryptoEnv {
   META_GRAPH_VERSION?: string;
@@ -90,14 +91,34 @@ export async function startPasswordRecoveryWhatsApp(
   const identifier = String(body.identifier || '').trim().toLowerCase();
   const companyCode = String(body.companyCode || '').trim();
   if (!identifier) return json({ error:'Enter your username or email address.' }, 400);
-  const company = await env.DB.prepare("SELECT id,code,name FROM companies WHERE active=1 AND lower(code)=lower(?) AND lower(name) NOT LIKE '%farm%' LIMIT 1")
-    .bind(companyCode).first<{id:string;code:string;name:string}>();
-  if(!company)return json({error:'Select a valid company.'},400);
-  const policy=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,company.id,'email');
-  if(!recoveryMethods(policy.value as RecoveryMethodPolicy).includes('whatsapp')){
-    return json({error:'WhatsApp password recovery is not enabled for this company.',code:'RECOVERY_METHOD_NOT_ALLOWED'},409);
-  }
   const publicChallengeId = uid('wa-auth');
+  const generic = () => json({
+    ok:true,challengeId:publicChallengeId,
+    destination:'your enrolled WhatsApp contact',
+    message:'If your account is eligible and has verified WhatsApp recovery enabled, check WhatsApp for a verification code.',
+  });
+  const inferred = companyCode ? null : await resolveRecoveryCompanyForIdentifier(
+    env, identifier, 'whatsapp',
+  );
+  const company = await env.DB.prepare(
+    "SELECT id,code,name FROM companies WHERE active=1 AND lower(code)=lower(?) AND lower(name) NOT LIKE '%farm%' LIMIT 1",
+  ).bind(companyCode || inferred?.companyCode || '').first<{id:string;code:string;name:string}>();
+  if (!company || (!companyCode && !inferred)) {
+    if (companyCode) return json({ error:'Select a valid company.' }, 400);
+    await security(env,request,'whatsapp_password_reset_requested',undefined,undefined,{accountMatched:false});
+    return generic();
+  }
+  const policy = await resolveScopedSetting(env,RECOVERY_SETTING_KEY,company.id,'email');
+  if (!recoveryMethods(policy.value as RecoveryMethodPolicy).includes('whatsapp')) {
+    if (companyCode) return json({
+      error:'WhatsApp password recovery is not enabled for this company.',
+      code:'RECOVERY_METHOD_NOT_ALLOWED',
+    },409);
+    await security(env,request,'whatsapp_password_reset_requested',undefined,undefined,{
+      accountMatched:false,
+    });
+    return generic();
+  }
   let challengeId = publicChallengeId;
   const row = await env.DB.prepare(`
     SELECT e.id AS employeeId,m.company_id AS companyId,
@@ -110,9 +131,11 @@ export async function startPasswordRecoveryWhatsApp(
       AND vc.contact_type='phone' AND vc.revoked_at IS NULL
     WHERE (LOWER(c.username)=LOWER(?) OR LOWER(e.email)=LOWER(?))
       AND e.employment_status IN ('active','provisional')
+       AND (?='' OR e.id=?)
     ORDER BY m.is_primary DESC,vc.verified_at DESC
     LIMIT 1
-  `).bind(company.id,identifier,identifier).first<{
+  `).bind(company.id,identifier,identifier,
+     inferred?.employeeId || '',inferred?.employeeId || '').first<{
     employeeId:string;companyId:string;phone:string;revision:number;
   }>();
   if (row) {
@@ -137,7 +160,7 @@ export async function startPasswordRecoveryWhatsApp(
     ok:true,
     challengeId,
     destination:'your enrolled WhatsApp contact',
-    message:'If the account is eligible and has an enrolled WhatsApp contact, a verification code has been sent.',
+    message:'If your account is eligible and has verified WhatsApp recovery enabled, check WhatsApp for a verification code.',
   });
 }
 
