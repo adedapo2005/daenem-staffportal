@@ -1,0 +1,6 @@
+# Preserve the approved navigation overlay's pinned Windows byte hash on every checkout.
+# This scopes line endings to one file; source, manifest and integrity checks stay unchanged.
+src/enterprise-command-center-navigation.tsx text eol=crlf
+source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx text eol=lf
+src/enterprise-command-center-model.ts text eol=lf
+src/enterprise-command-center-navigation.css text eol=lf

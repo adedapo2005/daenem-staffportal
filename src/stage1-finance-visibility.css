@@ -1,0 +1,35 @@
+/* Stage 1 Finance: correct inherited dark-on-dark text in the dark KPI ribbon.
+   No finance data, calculation, action or authenticated workflow is altered.
+   Scoped to the reversible Daylight presentation only. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon {
+  --p-ink: #f9fbff;
+  --p-muted: #d8e7f5;
+  color: #f9fbff;
+  border-color: #427a84;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric {
+  color: #f9fbff;
+  min-width: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > span {
+  color: #d8e7f5 !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > strong,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > strong > span {
+  color: #f9fbff !important;
+  font-variant-numeric: tabular-nums;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon > span {
+  color: #ffdf5c;
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon {
+    forced-color-adjust: auto;
+    color: CanvasText;
+    background: Canvas !important;
+    border-color: CanvasText;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon :is(span,strong) {
+    color: CanvasText !important;
+  }
+}

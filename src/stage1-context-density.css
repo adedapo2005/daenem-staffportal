@@ -1,0 +1,13 @@
+/* Stage 1 density: reduce repeated context-row padding only.
+   The three information groups and all action controls remain available. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context > div {
+  padding: 8px 12px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context {
+  margin-bottom: 12px;
+}
+@media(max-width:720px){
+ [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context > div {
+   padding: 9px 12px;
+ }
+}
