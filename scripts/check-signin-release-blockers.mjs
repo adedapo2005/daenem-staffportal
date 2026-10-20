@@ -19,10 +19,16 @@ const editorialScrollSelectors = new Set([
   '#root .sp-root.sp-day #staff-primary-information [data-widget="intelligence"] .gw-intel-focus',
 ]);
 function hasUnexpectedVerticalScroll(source) {
-  const rules = source.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g);
-  return [...rules].some(([, selectors, declarations]) =>
-    /overflow-y\s*:\s*auto/i.test(declarations)
-    && selectors.split(',').some(selector => !editorialScrollSelectors.has(selector.trim())));
+  const clean = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  const occurrences = value => (value.match(/overflow-y\s*:\s*auto/gi) || []).length;
+  let allowed = 0;
+  for (const [, selectors, declarations] of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const count = occurrences(declarations);
+    if (count && selectors.split(',').some(selector => !editorialScrollSelectors.has(selector.trim()))) return true;
+    allowed += count;
+  }
+  // Fail closed for nested declarations not covered by an approved leaf rule.
+  return allowed !== occurrences(clean);
 }
 
 const checks = [
@@ -31,6 +37,8 @@ const checks = [
     '#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }',
     '.sp-auth-card { overflow-y: auto !important; }',
     '@media (max-width: 800px) { .usp-form-column { overflow-y:auto; } }',
+    '.sp-auth-card { overflow-y:auto; & input { color:red; } }',
+    '.sp-auth-card { overflow-y:auto; @media (max-width:800px) { color:red; } }',
     [...editorialScrollSelectors][0] + ', #staffportal-auth-mount { overflow-y:auto; }',
   ].every(hasUnexpectedVerticalScroll)],
 
