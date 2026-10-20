@@ -701,3 +701,30 @@
 @media (prefers-reduced-motion:reduce) {
  #staffportal-auth-mount.sp-auth-mode-create * {transition-duration:0.01ms!important;}
 }
+
+/* Restore Sign-In inactive Create Account hover visibility without changing active tabs. */
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button:not(.is-active):hover,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button:not(.is-active):focus-visible {
+ opacity:1!important;color:#155f9e!important;
+ background:linear-gradient(120deg,rgba(222,242,255,.99),rgba(185,223,252,.97))!important;
+ box-shadow:inset 0 0 0 1px rgba(49,137,203,.42),0 2px 8px rgba(13,78,138,.13)!important;
+ filter:none!important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button.is-active:hover,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button.is-active:focus-visible {
+ opacity:1!important;color:#fff!important;filter:none!important;
+ background:linear-gradient(135deg,#2d91e3 0%,#1d6dcc 52%,#1647a4 100%)!important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button:focus-visible {
+ outline:2px solid #2b9ae8!important;outline-offset:2px!important;
+}
+/* Restore an approved genuine 4K image as a restrained lower-stage background.
+   This is not a replacement of the individual city's photographic media. */
+.sp-root .sp-reference-layout > .sp-lower-right-rail-v86 {
+ background-image:linear-gradient(155deg,rgba(229,243,253,.85),rgba(214,235,249,.77)),url('/reference-images/signin/global-executive-atrium.webp')!important;
+ background-position:center!important;background-size:cover!important;
+ background-repeat:no-repeat!important;border-radius:18px!important;
+}
+@media (prefers-reduced-motion:reduce){
+ .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button{transition:none!important;}
+}
