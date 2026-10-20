@@ -22,26 +22,26 @@ const cityZones: Record<string, string> = {
 
 const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
   toronto: {
-    day: '/assets/global/toronto-day-v115-card.jpg',
-    night: '/assets/global/toronto-night-v180-card.webp',
+    day: '/assets/global/toronto-day-v110.jpg',
+    night: '/assets/global/toronto-night-approved-v180.png',
   },
   london: {
-    day: '/assets/global/london-day-v115-card.jpg',
-    night: '/assets/global/london-night-v180-card.webp',
+    day: '/assets/global/london-day-v110.jpg',
+    night: '/assets/global/london-day-v110.jpg',
   },
   newyork: {
-    dawn: '/assets/global/newyork-dawn-v179-card.webp',
-    day: '/assets/scenery/01-manhattan-day-3840.webp',
-    dusk: '/assets/global/newyork-dusk-v179-card.webp',
-    night: '/assets/global/newyork-night-v179-card.webp',
+    dawn: '/assets/global/newyork-dawn-v179-4k.webp',
+    day: '/assets/global/newyork-day-v179-4k.webp',
+    dusk: '/assets/global/newyork-dusk-v179-4k.webp',
+    night: '/assets/global/newyork-night-v179-4k.webp',
   },
   moscow: {
-    day: '/assets/global/moscow-day-v115-card.jpg',
-    night: '/assets/global/moscow-night-v180-card.webp',
+    day: '/assets/global/moscow-day-v110.jpg',
+    night: '/assets/global/moscow-night-approved-v180.png',
   },
-  tokyo: { day: '/assets/global/tokyo-day-v115-card.jpg' },
+  tokyo: { day: '/assets/global/tokyo-day-v110.jpg' },
   beijing: {
-    day: '/assets/global/beijing-day-v115-card.jpg',
+    day: '/assets/global/beijing-day-v110.jpg',
     night: '/assets/global/beijing-night-v109.jpg',
   },
   ibadan: {
@@ -211,7 +211,7 @@ function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
 
 function resolvedMedia(cityId: string, phase: 'dawn' | 'day' | 'dusk' | 'night') {
   const media = cityMedia[cityId] || {};
-  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : [phase] as const;
+  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : phase === 'night' ? ['night', 'day'] as const : ['day', 'night'] as const;
   const mediaPhase = order.find((item) => media[item]);
   return mediaPhase ? { src: media[mediaPhase] || '', mediaPhase } : { src: '', mediaPhase: 'none' };
 }
