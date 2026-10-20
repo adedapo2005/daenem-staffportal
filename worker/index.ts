@@ -33,7 +33,7 @@ function securityHeaders(response: Response) {
   headers.set('x-permitted-cross-domain-policies', 'none');
   headers.set('cross-origin-opener-policy', 'same-origin');
   headers.set('permissions-policy', 'camera=(self), geolocation=(self), microphone=()');
-  headers.set('content-security-policy', "default-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://weather.googleapis.com; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+  headers.set('content-security-policy', "default-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://weather.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
@@ -43,12 +43,13 @@ async function weatherResponse(
   longitude: number,
   unitsSystem: 'IMPERIAL' | 'METRIC',
   location: string,
+  softUnavailable = false,
 ) {
   const result = await readGoogleWeather(env, latitude, longitude, unitsSystem);
   if (!result.data) {
     return json(
       { available: false, providerStatus: result.providerStatus },
-      result.providerStatus === 'provider_required' ? 200 : 502,
+      result.providerStatus === 'provider_required' || softUnavailable ? 200 : 502,
     );
   }
   const weatherData = result.data as {
@@ -105,7 +106,11 @@ async function signInWeather(env: Env, cityName: string | null = null) {
     return json({ error: 'Unsupported public weather city.' }, 400);
   }
   const [lat, lon, label] = PUBLIC_SIGNIN_WEATHER_CITIES[city as keyof typeof PUBLIC_SIGNIN_WEATHER_CITIES];
-  return weatherResponse(env, lat, lon, 'METRIC', label);
+  // Public Sign-In must degrade truthfully when Google's Weather API has no
+  // current-conditions coverage for an approved city (for example Tokyo or
+  // Beijing). Keep the fixed allowlist and return an explicit unavailable
+  // payload instead of surfacing a transport error to an unauthenticated UI.
+  return weatherResponse(env, lat, lon, 'METRIC', label, true);
 }
 
 async function weather(request: Request, env: Env) {
