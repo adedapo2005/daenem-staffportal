@@ -111,7 +111,7 @@ A successful build, a generated preview, or the presence of a component never ch
 | Desktop 3840/1920/1366 | **Live verified with synthetic auth** | Home role matrix and selected operational routes pass at required desktop widths; broader page-family visual inspection remains open. |
 | Tablet 1024 and narrow desktop | **Live verified with synthetic auth, bounded** | 1024 Home scenario passes without horizontal overflow; broader tablet interactions remain open. |
 | Mobile 390 and other supported phones | **Live verified with synthetic auth, bounded** | 390 role/route, selected operational routes, Appearance and palette scenarios pass; on-screen keyboard and wider device inventory remain open. |
-| Large text/zoom/long names | **Partial - 200% text fixed and verified locally** | Additive large-text reflow passes Home and Appearance at 200% root text with zero horizontal overflow and visible focus. Long-name and browser-zoom-specific acceptance remain open. |
+| Large text/zoom/long names | **Partial - 200% text + long-name stress verified locally** | Home and Appearance pass 200% root text at 1366 and 390 with zero horizontal overflow; long employee/company/job/department strings also pass the 8-scenario stress matrix. Browser-zoom-engine-specific and broader page-family acceptance remain open. |
 | No horizontal overflow | **Live verified for recorded matrix** | 18/18 live synthetic role/route scenarios reported zero horizontal overflow. This is not exhaustive across every module. |
 | Performance/bundle | Partial / build verified | Production build passes; existing >500 KB chunk advisory remains and measured browser/device performance is still required. |
 | Offline/interrupted connectivity | Partial | Existing behavior preserved; palette policy fallback is fail-safe, but end-to-end recovery needs live tests. |
@@ -177,6 +177,7 @@ A Stage 1 audit exposed horizontal overflow at 200% root text on Home and Appear
 | Forced colours | **PASS on tested candidate** | Desktop smoke; visible keyboard focus, no horizontal overflow. |
 | 200% root text - Home | **PASS on tested candidate** | Runtime detects 32px root text, switches to reflow mode, `scrollWidth == innerWidth`. |
 | 200% root text - Appearance | **PASS on tested candidate** | Gallery, policy controls and preview collapse to bounded columns, `scrollWidth == innerWidth`. |
+| Long-name stress at normal + 200% text | **8/8 PASS on current candidate** | Home and Appearance at 1366 and 390; intentionally long employee, company, job-title and department values; zero overflow/offenders/page errors. |
 | TypeScript / production build / diff hygiene | **PASS on tested candidate** | Re-run required on this rebased head; existing >500 kB chunk advisory remains. |
 
 This increment does not claim real account/provider acceptance, screen-reader certification, all browser zoom modes, long-name stress completion, or universal page-family completion.

@@ -56,6 +56,17 @@ html[data-staffportal-postlogin="true"][data-large-text="true"] :is(.p-panel,.te
 }
 
 @media (max-width: 767px) {
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .v3-overview-metrics,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .v3-overview-metrics.employee-metrics {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .v3-overview-metrics > :is(div,p),
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-secondary {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
   html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-main,
   html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.signin-studio-shell > .p-main,
   html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.nav-rail > .p-main,
