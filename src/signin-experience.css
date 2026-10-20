@@ -862,8 +862,11 @@
 .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {
   width:clamp(48px,5.6vh,150px)!important; max-width:150px!important;
 }
-.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p {
-  margin:0!important; font-size:clamp(13px,.72vw,22px)!important;
+#root .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital {
+  font-size:clamp(13px,.72vw,22px)!important; line-height:1.16!important; min-width:0!important;
+}
+#root .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p {
+  margin:0!important; margin-block:0!important; font-size:clamp(13px,.72vw,22px)!important;
   line-height:1.16!important; white-space:normal!important; overflow:visible!important;
   text-overflow:clip!important;
 }
@@ -871,7 +874,7 @@
 .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p:nth-child(3) {
   display:inline!important; padding-right:3px!important;
 }
-.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > .gw-city-local-time {
+#root .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > .gw-city-local-time {
   font-size:clamp(16px,1.1vw,36px)!important; font-weight:750!important;
 }
 .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-name {
@@ -893,10 +896,10 @@
 
 /* The detailed panel uses the six existing current-condition values. */
 .sp-root #staff-local-weather {
-  grid-template-rows:minmax(176px,.82fr) minmax(248px,1.18fr)!important;
+  grid-template-rows:minmax(min-content,.82fr) minmax(248px,1.18fr)!important;
 }
 .sp-root #staff-local-weather .sp-live-city-content {
-  display:grid!important; grid-template-rows:auto minmax(0,1fr) auto!important;
+  display:grid!important; grid-template-rows:auto minmax(min-content,1fr) auto!important;
   padding:8px!important; gap:4px!important; height:100%!important; box-sizing:border-box!important;
 }
 .sp-root #staff-local-weather .sp-live-weather-city .gw-city-identity {
@@ -979,8 +982,8 @@
   margin:0!important; font-size:13px!important; line-height:1.4!important; align-self:center!important;
 }
 .sp-root .sp-live-news-content { justify-content:center!important; gap:6px!important; }
-.sp-root .sp-live-news-title,
-.sp-root .sp-live-news-unavailable {
+.sp-root #staff-primary-information .sp-live-news-title,
+.sp-root #staff-primary-information .sp-live-news-unavailable {
   color:#fff!important; margin:0!important; font-size:clamp(13px,.85vw,24px)!important;
   line-height:1.25!important; font-weight:650!important;
   text-shadow:0 1px 3px #061523,0 0 7px #061523!important;

@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const baseline = process.argv.includes('--baseline');
-const screens = baseline ? [[1363,936],[1366,768],[1280,720],[1025,600],[1920,1080]] : [[390,844],[820,1180],[1024,768],[1025,600],[1280,720],[1363,936],[1366,768],[1920,1080],[3840,2160]];
+const screens = process.argv.includes('--states-only') ? [] : baseline ? [[1363,936],[1366,768],[1280,720],[1025,600],[1920,1080]] : [[390,844],[820,1180],[1024,768],[1025,600],[1280,720],[1363,936],[1366,768],[1920,1080],[3840,2160]];
 const cities = {ibadan:'Ibadan',toronto:'Toronto',london:'London',newyork:'New York',moscow:'Moscow',tokyo:'Tokyo',beijing:'Beijing'};
 const temperatures = {ibadan:26,toronto:12,london:9,newyork:18,moscow:3,tokyo:22,beijing:6};
 const fixture = (city, change=0) => ({available:true,provider:'Google Weather',providerStatus:'fresh',fetchedAt:new Date().toISOString(),cacheAgeSeconds:0,unitsSystem:'METRIC',location:cities[city],temperature:temperatures[city]+change,apparentTemperature:28+change,humidity:95,precipitationProbability:10,windSpeed:5,windDirection:157,windGust:8,today:{high:33,low:24},description:city==='london'?'Mostly cloudy':'Clear'});
@@ -110,12 +110,14 @@ async function run(){
      const digital=[...card.querySelectorAll('.gw-city-digital > p')].map(e=>e.getBoundingClientRect());
      const outside=[summary,clock,...digital].some(r=>r.x<c.x-1||r.right>c.right+1||r.y<c.y-1||r.bottom>c.bottom+1);
      const overlap=[clock,...digital].some(r=>Math.min(r.right,summary.right)-Math.max(r.x,summary.x)>1&&r.bottom>summary.y+1);
-     return outside||overlap?[card.dataset.cityId]:[];
+     const bounds=r=>({x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,right:r.right});
+     return outside||overlap?[{city:card.dataset.cityId,outside,overlap,card:bounds(c),summary:bounds(summary),clock:bounds(clock),digital:digital.map(bounds)}]:[];
     }));
     assert.deepEqual(overflow,[],'saved long conditions remain inside cards without overlap');
     assert.ok((await page.locator('.sp-weather-v145-footer').textContent()).includes('1 hr ago'));
     console.log('PASS '+mode+' visible age and long-condition layout');
    }catch(e){results.push({test:mode,error:String(e)});console.log('FAIL '+mode+' '+e.message);}
+   await page.screenshot({path:path.join(output,mode+'.png'),fullPage:true});
    await page.close();
   }
   if(!baseline){
