@@ -22,13 +22,13 @@ async function run() {
     const page=await browser.newPage({viewport:{width:1363,height:936},reducedMotion:'no-preference'});
     await page.clock.install();
     const errors=[]; page.on('pageerror',error=>errors.push(error.message));
-    const calls={};let version=1, weatherDescription=null, newsFailed=false, settingsOverride={};
+    const calls={};let version=1, weatherDescription=null, newsFailed=false, longReports=false, settingsOverride={};
     await page.route('**/api/**',async route=>{
       const browserNow=await page.evaluate(()=>Date.now());
       const u=new URL(route.request().url()); calls[u.pathname]=(calls[u.pathname]||0)+1;
       let body={};let status=200;
       if(u.pathname==='/api/auth/me')body={authenticated:false};
-      if(u.pathname==='/api/context/signin/news'){body=feed();if(newsFailed)status=503;}
+      if(u.pathname==='/api/context/signin/news'){body=feed();if(longReports)for(const item of [...body.latest,...Object.values(body.intelligence).flat()])item.summary='An attributed update with practical detail for teams reviewing this report. '.repeat(24);if(newsFailed)status=503;}
       if(u.pathname==='/api/context/signin/widget-settings')body={widgets:{news:{scrollBehavior:'vertical_continuous',autoScroll:true,rotationSeconds:60,wireEnabled:true,tickerSpeed:'standard',tickerDirection:'left',tickerPauseOnHover:true,showSummary:true,...settingsOverride},intelligence:{cycleSeconds:30},spotlight:{cycleSeconds:30},inspiration:{cycleSeconds:30}},contentAutomation:{intervalMinutes:10}};
       if(u.pathname==='/api/staff-content')body={spotlight:{id:'spotlight-'+version,title:'Service-backed daily spotlight '+version,body:'Clear information and coordinated decisions help every operation keep moving.',category:'Daily Practice'},inspiration:{id:'inspiration-'+version,message:'Service-backed employee inspiration '+version,attribution:'DAENEM Staff Team',category:'Professional Growth'},provider:'curated',providerConnected:false,intervalStartedAt:new Date(browserNow).toISOString(),expiresAt:new Date(browserNow+10*60_000).toISOString()};
       if(u.pathname==='/api/context/signin/weather'){
@@ -117,6 +117,20 @@ async function run() {
     await page.clock.fastForward(15*60_000);
     await page.waitForFunction(()=>document.querySelector('[data-widget="news"]')?.dataset.feedState==='saved');
     check(await page.locator('.gw-news-ticker').count()===1&&await page.locator('.gw-news-feature-title').count()===1,'failed refresh keeps usable news and ticker');
+    newsFailed=false; longReports=true;
+    await page.clock.fastForward(15*60_000);
+    await page.waitForFunction(()=>document.querySelector('.gw-news-feature-summary')?.textContent.length>1000);
+    for(const [selector,first,last] of [['.gw-news-story-copy','.gw-news-feature-title','.gw-news-feature-meta'],['.gw-intel-focus','.gw-intelligence-headline','.gw-intelligence-summary']]){
+      const reachable=await page.locator(selector).evaluate((element,{first,last})=>{
+        element.scrollTop=0;
+        const viewport=element.getBoundingClientRect(),top=element.querySelector(first).getBoundingClientRect();
+        const canScroll=element.scrollHeight>element.clientHeight+20;
+        element.scrollTop=element.scrollHeight;
+        const end=element.querySelector(last).getBoundingClientRect();
+        return{canScroll,topVisible:top.top>=viewport.top-1,endVisible:end.bottom<=viewport.bottom+1,scrollHeight:element.scrollHeight,clientHeight:element.clientHeight};
+      },{first,last});
+      check(reachable.canScroll&&reachable.topVisible&&reachable.endVisible,selector+' long text can scroll from first line to end: '+JSON.stringify(reachable));
+    }
     check(errors.length===0,'no page errors: '+errors.join(';'));
     fs.writeFileSync(path.join(output,'widget-restoration.json'),JSON.stringify({checks,geometry,visuals,calls,errors},null,2));
     await page.close();

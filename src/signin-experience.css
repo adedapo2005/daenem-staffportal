@@ -1032,10 +1032,10 @@
 .sp-root .sp-live-news-source { color:#dcefff!important; font-size:13px!important; }
 /* Hydrated editorial content stays inside the four existing photo cards. */
 .sp-root #staff-primary-information .sp-connected-news { min-height:0!important; overflow-y:auto!important; scrollbar-width:thin; }
-.sp-root #staff-primary-information [data-widget="news"] .gw-news-story-copy {
+#root .sp-root.sp-day #staff-primary-information [data-widget="news"] .gw-news-story-copy {
   background:none!important; border:0!important; box-shadow:none!important;
   backdrop-filter:none!important; -webkit-backdrop-filter:none!important;
-  justify-content:safe center!important;
+  justify-content:safe center!important; min-height:0!important; overflow-y:auto!important; scrollbar-width:thin;
 }
 .sp-root #staff-primary-information [data-widget="news"] .gw-news-ticker {
   flex-shrink:0!important; background:none!important; border:0!important;
@@ -1048,7 +1048,7 @@
 .sp-root #staff-primary-information .gw-news-ticker-pause:focus-visible {
   outline:2px solid #bde8ff!important; outline-offset:-2px!important;
 }
-.sp-root #staff-primary-information [data-widget="intelligence"] .gw-intel-focus { min-height:0!important; overflow-y:auto!important; scrollbar-width:thin; justify-content:safe center!important; }
+#root .sp-root.sp-day #staff-primary-information [data-widget="intelligence"] .gw-intel-focus { min-height:0!important; overflow-y:auto!important; scrollbar-width:thin; justify-content:safe center!important; }
 @media (min-width:1024px) and (max-height:850px) {
   .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity > div {
     display:flex!important; flex-wrap:wrap!important; align-items:baseline!important; gap:0 5px!important;
