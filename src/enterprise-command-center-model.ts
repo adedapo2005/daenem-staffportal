@@ -231,6 +231,32 @@ export function commandAncestorIds(nodes: readonly CommandCenterNode[], isActive
   });
 }
 
+/**
+ * Keeps navigation calm on route changes: the new active workspace opens,
+ * previously open top-level workspaces close, and nested disclosure memory is
+ * retained so returning to a workspace restores the user's local context.
+ */
+export function reconcileCommandExpansion(
+  expanded: Readonly<Record<string, boolean>>,
+  topAreaIds: readonly string[],
+  activeAncestorIds: readonly string[],
+  routeChanged: boolean,
+): Readonly<Record<string, boolean>> {
+  let next = expanded;
+  const set = (id: string, value: boolean) => {
+    if (next[id] === value) return;
+    if (next === expanded) next = { ...expanded };
+    (next as Record<string, boolean>)[id] = value;
+  };
+
+  if (routeChanged && activeAncestorIds.length) {
+    const activeAreaId = activeAncestorIds[0];
+    for (const areaId of topAreaIds) set(areaId, areaId === activeAreaId);
+  }
+  for (const id of activeAncestorIds) set(id, true);
+  return next;
+}
+
 /** Uses the host fallback first; handles a deep-only grant without exposing a denied root. */
 export function commandAreaDestination(
   area: CommandCenterGroup,

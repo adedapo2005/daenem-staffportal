@@ -11,6 +11,7 @@ import {
   commandAncestorIds,
   commandAreaDestination,
   flattenCommandNavigation,
+  reconcileCommandExpansion,
   searchCommandNavigation,
   type CommandCenterGroup,
   type CommandCenterNode,
@@ -94,6 +95,7 @@ function CommandCenterSession({
   const navigation = useSyncExternalStore(memory.subscribe, memory.getSnapshot, memory.getSnapshot);
   const [query, setQuery] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
+  const previousPageId = useRef<string | undefined>(undefined);
   const stage1 = useContext(Stage1RuntimeContext);
   const baseAreas = buildEnterpriseCommandNavigation({ session, canView, contextVisible });
   // Presentation order only. Every authorized destination stays available.
@@ -117,6 +119,7 @@ function CommandCenterSession({
   const isActivePage = (page: CommandCenterPage) => !contextualRouteActive && isCurrentPage(page);
   const activeAncestors = commandAncestorIds(areas, isCurrentPage);
   const activeAncestorKey = activeAncestors.join("|");
+  const topAreaKey = areas.map((area) => area.id).join("|");
   const activeAncestorSet = new Set(activeAncestors);
   const pagesById = new Map(pages.map((page) => [page.id, page]));
   const favorites = navigation.favorites.flatMap((id) => pagesById.has(id) ? [pagesById.get(id)!] : []);
@@ -128,17 +131,20 @@ function CommandCenterSession({
 
   useEffect(() => {
     const ancestors = activeAncestorKey ? activeAncestorKey.split("|") : [];
+    const topAreaIds = topAreaKey ? topAreaKey.split("|") : [];
+    const routeChanged = previousPageId.current !== currentPageId;
+    previousPageId.current = currentPageId;
     memory.update((current) => {
-      const needsExpansion = ancestors.some((id) => current.expanded[id] !== true);
+      const expanded = reconcileCommandExpansion(current.expanded, topAreaIds, ancestors, routeChanged);
       const needsRecent = currentPageId && current.recentPages[0] !== currentPageId;
-      if (!needsExpansion && !needsRecent) return current;
+      if (expanded === current.expanded && !needsRecent) return current;
       return {
         ...current,
-        expanded: needsExpansion ? { ...current.expanded, ...Object.fromEntries(ancestors.map((id) => [id, true])) } : current.expanded,
+        expanded,
         recentPages: needsRecent ? [currentPageId, ...current.recentPages.filter((id) => id !== currentPageId)].slice(0, 8) : current.recentPages,
       };
     });
-  }, [activeAncestorKey, currentPageId, memory]);
+  }, [activeAncestorKey, currentPageId, memory, topAreaKey]);
 
   const isExpanded = (id: string) => navigation.expanded[id] ?? activeAncestorSet.has(id);
   const setExpanded = (id: string, expanded: boolean) => memory.update((current) =>
