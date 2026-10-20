@@ -19,6 +19,7 @@ function recordHref(result: SearchSuggestion) {
   const route: Record<string,string> = {
     'employee': '/people', 'payroll': '/payroll', 'construction': '/construction-command',
     'leave-request': '/leave', 'document-request': '/self-service',
+    'form-submission': '/forms', 'notification': '/notifications',
   };
   return route[result.type] || undefined;
 }

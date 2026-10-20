@@ -158,6 +158,41 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
       return (rows.results || []).map((row) => suggestion('document-request', 'self-service',
         row.documentType, 'My document requests', row.id, row.status ? `Status: ${row.status}` : ''));
     });
+
+    // The user can search only submissions that they created for companies
+    // where Forms viewing is still authorized. Response answers are never returned.
+    const formCompanies = scopedCompanyIds(context, 'forms.access');
+    await lookup('My form submissions', formCompanies.length > 0, async () => {
+      const rows = await env.DB.prepare(`SELECT s.id,wf.title AS formTitle,s.status
+        FROM workflow_form_submissions s
+        JOIN workflow_forms wf ON wf.id=s.form_id AND wf.active=1
+        JOIN workflow_form_assignments a ON a.id=s.assignment_id AND a.active=1
+        WHERE s.employee_id=? AND ${placeholders(formCompanies, 's.company_id')}
+        AND (wf.company_id IS NULL OR wf.company_id=s.company_id)
+        AND (wf.title LIKE ? OR s.id LIKE ? OR s.status LIKE ?)
+        ORDER BY s.updated_at DESC LIMIT 4`)
+        .bind(context.employee.id, ...formCompanies, like, like, like).all<Record<string, unknown>>();
+      return (rows.results || []).map((row) => suggestion('form-submission', 'forms',
+        row.formTitle, 'My form submissions', row.id,
+        row.status ? `Status: ${row.status}` : ''));
+    });
+
+    // Employee notifications belong to the recipient, including personal
+    // group notices; company notices must match an active session membership.
+    await lookup('My notifications', true, async () => {
+      const scope = ownCompanies.length > 0
+        ? `(n.company_id IS NULL OR ${placeholders(ownCompanies, 'n.company_id')})`
+        : 'n.company_id IS NULL';
+      const rows = await env.DB.prepare(`SELECT n.id,n.title,n.category,n.severity
+        FROM employee_notifications n WHERE n.employee_id=? AND ${scope}
+        AND (n.expires_at IS NULL OR datetime(n.expires_at)>datetime('now'))
+        AND (n.title LIKE ? OR n.category LIKE ?)
+        ORDER BY n.created_at DESC LIMIT 4`)
+        .bind(context.employee.id, ...ownCompanies, like, like).all<Record<string, unknown>>();
+      return (rows.results || []).map((row) => suggestion('notification', 'notifications',
+        row.title, 'My notifications', row.id,
+        [row.category, row.severity].filter(Boolean).join(' / ')));
+    });
   }
 
   // Modules are still searchable, but real records are ranked before module destinations.
