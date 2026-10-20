@@ -37,7 +37,7 @@ db.exec(`
   CREATE TABLE employee_company_memberships(employee_id TEXT,company_id TEXT,active INTEGER,is_primary INTEGER,location_id TEXT);
   CREATE TABLE companies(id TEXT,code TEXT,name TEXT,active INTEGER);
   CREATE TABLE employee_roles(employee_id TEXT,role_id TEXT,company_id TEXT);
-  CREATE TABLE roles(id TEXT,code TEXT,name TEXT,active INTEGER,is_system INTEGER);
+  CREATE TABLE roles(id TEXT,code TEXT,name TEXT,company_id TEXT,active INTEGER,is_system INTEGER);
   CREATE TABLE role_permissions(role_id TEXT,permission_id TEXT,access_level TEXT);
   CREATE TABLE permissions(id TEXT,code TEXT);
   CREATE TABLE employee_permission_overrides(employee_id TEXT,permission_id TEXT,access_level TEXT,expires_at TEXT);
@@ -93,6 +93,13 @@ function requireFrom(file) {
     if (normalized === './whatsapp-recovery') return {
       startPasswordRecoveryWhatsApp: async () => { throw new Error('not used'); },
       verifyPasswordRecoveryWhatsApp: async () => { throw new Error('not used'); },
+    };
+    // This is an existing LOGIN test; company-free RECOVERY is separately
+    // exercised against the real resolver in test-identity-only-recovery.mjs.
+    if (normalized === './recovery-company-resolution') return {
+      resolveRecoveryCompanyForIdentifier: async () => {
+        throw new Error('Recovery must not execute during WhatsApp sign-in verification');
+      },
     };
     if (normalized === './scoped-settings') return {
       RECOVERY_SETTING_KEY: 'unused', recoveryMethods: () => [], resolveScopedSetting: async () => ({ value: {} }),

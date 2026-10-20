@@ -6,6 +6,11 @@ on:
       - feature/staffportal-mobile-auth-takeover-01
     paths:
       - 'worker/provider-auth.ts'
+      - 'worker/password-auth.ts'
+      - 'worker/whatsapp-recovery.ts'
+      - 'worker/recovery-company-resolution.ts'
+      - 'scripts/test-identity-only-recovery.mjs'
+      - 'scripts/test-signin-whatsapp-route-runtime.mjs'
       - 'worker/microsoft-organizations.ts'
       - 'worker/microsoft-account-link.ts'
       - 'src/auth.tsx'
@@ -32,6 +37,10 @@ jobs:
       - name: Staging-only organizations security regression
         run: |
           node scripts/test-microsoft-organizations.mjs
+          node scripts/test-identity-only-recovery.mjs
+          node scripts/test-signin-password-reset-sqlite.mjs
+          node scripts/test-signin-whatsapp-route-runtime.mjs
+          node scripts/test-signin-create-account-runtime.mjs
           python3 scripts/test-microsoft-identity-migration.py
           python3 scripts/test-microsoft-link-transaction.py
       - name: TypeScript and approved Sign-In release gates
