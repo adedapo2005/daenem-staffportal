@@ -17,6 +17,8 @@ const screens=[[390,844],[820,1180],[1025,600],[1280,720],[1366,768],[1920,1080]
     await page.goto('http://127.0.0.1:'+port+'/qa/signin/index.html',{waitUntil:'domcontentloaded',timeout:30000});
     await page.locator('.sp-auth-tabs button').nth(1).click();
     const dialog=page.getByRole('dialog');await dialog.waitFor();
+    await page.waitForFunction(()=>document.querySelector('.sp-root') && document.querySelector('#staffportal-auth-mount') && getComputedStyle(document.querySelector('.sp-root')).display==='grid');
+    await page.waitForTimeout(750);
     assert.equal(await dialog.getAttribute('aria-modal'),'true');
     const probe=async(label)=>{
       if(width<=1025) await dialog.scrollIntoViewIfNeeded();
