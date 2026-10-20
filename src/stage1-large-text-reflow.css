@@ -1,0 +1,103 @@
+/* Stage 1 large-text reflow: additive accessibility layer; retained V115 source remains byte-identical. */
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-sidebar {
+  width: clamp(260px, 25vw, 344px);
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-main {
+  min-width: 0;
+  margin-left: clamp(260px, 25vw, 344px);
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: .55rem .8rem;
+  padding-inline: 1rem;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar-leading {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar-utilities {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar-command-zone {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-command-button {
+  width: 100%;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-version-chip span,
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-weather-chip span,
+html[data-staffportal-postlogin="true"][data-large-text="true"] .p-command-hint {
+  display: none;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] :is(.p-panel,.tech-widget,.tech-dashboard-grid,.p-service-row) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-sidebar,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.signin-studio-shell > .p-sidebar {
+    width: 84px !important;
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-main,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.signin-studio-shell > .p-main,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.nav-rail > .p-main,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.nav-top > .p-main {
+    margin-left: 84px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-main,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.signin-studio-shell > .p-main,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.nav-rail > .p-main,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app.nav-top > .p-main {
+    margin-left: 0 !important;
+  }
+}
+
+html[data-staffportal-postlogin="true"][data-large-text="true"] :is(
+  .stage1-appearance-studio,
+  .stage1-appearance-header,
+  .stage1-appearance-review,
+  .stage1-appearance-admin,
+  .stage1-appearance-gallery,
+  .stage1-appearance-group,
+  .stage1-appearance-grid
+) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] :is(
+  .stage1-appearance-header,
+  .stage1-appearance-review,
+  .stage1-appearance-admin,
+  .stage1-appearance-status,
+  .stage1-appearance-admin-actions,
+  .stage1-appearance-grid
+) {
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-palette-preview {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-palette-preview aside {
+  display: none;
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-palette-swatches {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-appearance-group-heading {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}

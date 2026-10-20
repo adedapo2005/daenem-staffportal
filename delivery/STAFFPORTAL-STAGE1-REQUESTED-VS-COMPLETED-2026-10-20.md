@@ -111,7 +111,7 @@ A successful build, a generated preview, or the presence of a component never ch
 | Desktop 3840/1920/1366 | **Live verified (synthetic authenticated UI)** | Exact deployed source passed the recorded Owner matrix at 3840, 1920 and 1366 without horizontal overflow or uncaught page errors. Real-session acceptance remains required. |
 | Tablet 1024 and narrow desktop | **Live verified (synthetic authenticated UI)** | Exact deployed source passed the recorded 1024 presentation check without horizontal overflow or uncaught page errors. Touch and real-session acceptance remain required. |
 | Mobile 390 and other supported phones | **Live verified at 390 (synthetic authenticated UI)** | Owner, Manager and Employee home plus selected operational routes passed at 390 with no horizontal overflow; Notifications remains single-line. Additional phones and on-screen keyboard behavior remain open. |
-| Large text/zoom/long names | Not yet verified | Required. |
+| Large text/zoom/long names | **Partial - 200% text fixed and verified** | New additive large-text reflow passes Home and Appearance at 200% root text with zero horizontal overflow and visible focus. Long-name and browser-zoom-specific acceptance remains open. |
 | No horizontal overflow | **Live verified in recorded matrix** | 18/18 live role/route scenarios across 3840, 1920, 1366, 1024 and 390 reported zero horizontal overflow. |
 | Performance/bundle | Not yet verified | Existing >500 KB advisory remains known; build and measured browser performance required. |
 | Offline/interrupted connectivity | Partial | Existing behavior preserved; palette policy fallback is fail-safe, but end-to-end recovery needs live tests. |
@@ -177,3 +177,21 @@ The isolated candidate retains the current Pre-Production source `e270c0a1902b56
 4. Performance measurement and the known large client-chunk optimization work.
 5. The broader page-family/reference-feature items still marked Partial or Not implemented above; live deployment does not close them automatically.
 6. Final production release remains blocked until these gates and the project acceptance board are satisfied.
+
+## Large-text resilience increment - 20 October 2026
+
+A live audit exposed horizontal overflow at 200% root text on Home and Appearance. The remediation is additive: retained QA Review V115 source remains byte-pinned while `stage1-large-text-reflow.css` and runtime large-text detection adapt the authenticated shell.
+
+| Evidence | Result | Limit |
+|---|---|---|
+| Normal role/route regression matrix | **18/18 PASS** | Owner/Manager/Employee representative routes; 3840, 1920, 1366, 1024 and 390. |
+| Appearance workflows | **3/3 PASS** | Preview/apply/reset and authorized Group policy flows under synthetic authenticated context. |
+| Palette matrix | **2/2 PASS, 19 palettes each** | 1366 and 390; no page errors. |
+| Axe A/AA automated matrix | **16/16, 0 confirmed violation groups** | Incomplete/manual rules remain and require human/assistive review. |
+| Reduced motion | **PASS** | Desktop smoke; visible keyboard focus, no horizontal overflow. |
+| Forced colours | **PASS** | Desktop smoke; visible keyboard focus, no horizontal overflow. |
+| 200% root text - Home | **PASS** | Runtime detects 32px root text, switches to reflow mode, `scrollWidth == innerWidth`. |
+| 200% root text - Appearance | **PASS** | Gallery, policy controls and preview collapse to bounded columns, `scrollWidth == innerWidth`. |
+| TypeScript / production build / diff hygiene | **PASS** | Build retains the existing >500 kB chunk advisory; performance optimization remains open. |
+
+This increment does not claim real account/provider acceptance, screen-reader certification, all browser zoom modes, long-name stress completion, or universal page-family completion.
