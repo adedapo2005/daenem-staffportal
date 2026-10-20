@@ -751,3 +751,8 @@
 #staff-local-weather .sp-weather-v145-intelligence * {
   text-shadow:0 1px 2px rgba(0,10,24,.52)!important;
 }
+/* London has no approved high-resolution night original in the repo. Use the 4K day master
+   with a restrained night-phase tonal treatment rather than stretching the 295x137 card. */
+#staff-global-operations [data-city-id="london"][data-resolved-phase="night"] .gw-city-image-layer img {
+  filter:brightness(.62) saturate(.78) contrast(1.05)!important;
+}

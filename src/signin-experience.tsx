@@ -23,7 +23,7 @@ const cityZones: Record<string, string> = {
 const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
   toronto: {
     day: '/assets/global/toronto-day-v110.jpg',
-    night: '/assets/global/toronto-day-v110.jpg',
+    night: '/assets/global/toronto-night-approved-v180.png',
   },
   london: {
     day: '/assets/global/london-day-v110.jpg',
@@ -37,7 +37,7 @@ const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night'
   },
   moscow: {
     day: '/assets/global/moscow-day-v110.jpg',
-    night: '/assets/global/moscow-day-v110.jpg',
+    night: '/assets/global/moscow-night-approved-v180.png',
   },
   tokyo: { day: '/assets/global/tokyo-day-v110.jpg' },
   beijing: {
