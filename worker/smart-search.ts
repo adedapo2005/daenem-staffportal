@@ -10,7 +10,6 @@ const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.
     'x-content-type-options': 'nosniff',
   },
 });
-const owner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
 const commands = [
   ['dashboard', 'Group Overview', 'Dashboard', 'Group KPIs, approvals and current activity'],
   ['hr', 'HR & People', 'People', 'Employee master records, HR and workforce administration'],
@@ -47,17 +46,17 @@ const modulePermissions: Record<string, string | undefined> = {
   ai: 'ai_guide.access',
 };
 function moduleVisible(context: SessionContext, command: string) {
-  if (command === 'dashboard') return owner(context) || context.companies.length > 0;
-  if (owner(context)) return true;
+  if (command === 'dashboard') return context.companies.length > 0;
+  // An Owner role in one company does not grant access in another.
+  // The authenticated companyPermissions matrix includes explicit revocations.
   const permission = modulePermissions[command];
   return Boolean(permission && context.companies.some((company) =>
     hasPermission(context, permission, 'view', company.id)));
 }
 function scopedCompanyIds(context: SessionContext, permission: string) {
-  const isOwner = owner(context);
-  // Even an Owner is restricted to active memberships in the authenticated session.
+  // Never use the union of roles to bypass per-company grants or explicit "none".
   return [...new Set(context.companies.filter((company) =>
-    isOwner || hasPermission(context, permission, 'view', company.id)).map((company) => company.id))];
+    hasPermission(context, permission, 'view', company.id)).map((company) => company.id))];
 }
 const placeholders = (ids: readonly string[], column = 'company_id') =>
   ids.length ? `${column} IN (${ids.map(() => '?').join(',')})` : '1=0';
