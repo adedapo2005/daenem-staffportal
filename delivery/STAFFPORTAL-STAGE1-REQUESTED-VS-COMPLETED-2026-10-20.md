@@ -2,7 +2,7 @@
 
 **Updated:** 20 October 2026
 **Scope:** Authenticated StaffPortal post-login experience only
-**Current live Pre-Production source:** `e270c0a1902b563dbc2ab5413c81fc85e8181dab`
+**Current live Pre-Production source:** `be9b7d54867dc5100ebc9f5531f01743228b58d9`
 **Isolated integration branch:** `feature/staffportal-stage1-ocean-integration-20261020`
 
 ## Status rules
@@ -20,9 +20,9 @@ A successful build, a generated preview, or the presence of a component never ch
 
 | Item | Status | Evidence / remaining work |
 |---|---|---|
-| Latest deployed Sign-In, Create Account, WhatsApp, weather and service-worker source retained | Implemented in candidate | Candidate includes live source `e270c0a...`; Stage 1 is applied additively. Full auth/provider acceptance remains required. |
-| Complete Stage 1 source combined with latest auth | Implemented in candidate | Enterprise navigation, Stage 1 search, workflow focus, palette, accessibility and page refinements are present in the isolated branch. |
-| Current Cloudflare Pre-Production includes complete Stage 1 | **No** | Live is still `e270c0a...`; do not describe Stage 1 as restored until exact integrated candidate promotion and fingerprint verification. |
+| Latest deployed Sign-In, Create Account, WhatsApp, weather and service-worker source retained | **Live verified, bounded** | Live `be9b7d5...` contains the newer Microsoft Organizations/account-linking lane, Sign-In refinements, fixed-city weather fallback, 4K global assets and Stage 1 additively. Public shell/network verification passed; full provider login acceptance remains required. |
+| Complete Stage 1 source combined with latest auth | **Live verified, bounded** | Exact integrated SHA `be9b7d5...` is deployed. Synthetic Owner/Manager/Employee role-route and Appearance matrices pass against Cloudflare staging. Real authenticated Worker/D1 acceptance remains a separate gate. |
+| Current Cloudflare Pre-Production includes complete Stage 1 | **Yes - exact integrated SHA deployed** | Deployment run `39503611681` checked out and built `be9b7d5...`; Cloudflare version `58ab70d2-9487-4cbe-828d-d8203304fc86`; runtime and 57/57 asset integrity checks passed. |
 | Production changed | **No** | Production authorization remains closed. |
 
 ## Approved appearance and palette governance
@@ -31,7 +31,7 @@ A successful build, a generated preview, or the presence of a component never ch
 |---|---|---|
 | Option 2 + Option B as default | Implemented in candidate | `Ocean Sapphire - Azure Prestige` is the single fail-closed default: Sapphire navigation, Ocean/Royal Azure action, Cloud/Ice surfaces, Graphite ink, controlled Cyan/Gold/Violet. |
 | Wide variety of distinctive alternatives | Implemented in candidate | 19 coordinated palettes: 7 earlier approved directions plus 12 new editorial/architectural combinations. |
-| Optional selection on authenticated Admin/Appearance page | Implemented in candidate | `/theme` receives a dedicated full-page gallery with preview, personal apply/reset and authorized Group controls. Browser acceptance pending. |
+| Optional selection on authenticated Admin/Appearance page | **Live verified with synthetic auth** | `/theme` full-page gallery, preview, personal apply/reset and authorized Group controls passed the live Appearance matrix. Real authenticated persistence/API acceptance remains open. |
 | Preview before applying | Implemented in candidate | Preview is session-only until explicit Apply/Group action. Cancel Preview restores the effective policy palette. |
 | Active/default/preview distinction | Implemented in candidate | UI labels approved default and current effective palette separately; palette cards distinguish default, active and preview. |
 | Restore approved default | Implemented in candidate | Authorized Group control restores Ocean Sapphire - Azure Prestige and clears forced selection. |
@@ -108,12 +108,12 @@ A successful build, a generated preview, or the presence of a component never ch
 | Visible keyboard focus | Implemented in candidate | Palette-aware focus roles are applied. Real keyboard path acceptance remains open. |
 | Reduced motion | Implemented in candidate | New palette/Appearance interactions respect reduced motion; full application motion inventory remains open. |
 | Forced-colour support | Partial | Navigation/palette/Appearance fallbacks exist. Complete Windows high-contrast review is open. |
-| Desktop 3840/1920/1366 | Not yet verified on exact candidate | Required browser screenshots and interaction evidence pending. |
-| Tablet 1024 and narrow desktop | Not yet verified on exact candidate | Required. |
-| Mobile 390 and other supported phones | Not yet verified on exact candidate | Required; on-screen keyboard and label wrapping included. |
+| Desktop 3840/1920/1366 | **Live verified with synthetic auth** | Home role matrix and selected operational routes pass at required desktop widths; broader page-family visual inspection remains open. |
+| Tablet 1024 and narrow desktop | **Live verified with synthetic auth, bounded** | 1024 Home scenario passes without horizontal overflow; broader tablet interactions remain open. |
+| Mobile 390 and other supported phones | **Live verified with synthetic auth, bounded** | 390 role/route, selected operational routes, Appearance and palette scenarios pass; on-screen keyboard and wider device inventory remain open. |
 | Large text/zoom/long names | Not yet verified | Required. |
-| No horizontal overflow | Not yet verified on exact candidate | Previous Stage 1 evidence is not automatically evidence for this integrated palette candidate. |
-| Performance/bundle | Not yet verified | Existing >500 KB advisory remains known; build and measured browser performance required. |
+| No horizontal overflow | **Live verified for recorded matrix** | 18/18 live synthetic role/route scenarios reported zero horizontal overflow. This is not exhaustive across every module. |
+| Performance/bundle | Partial / build verified | Production build passes; existing >500 KB chunk advisory remains and measured browser/device performance is still required. |
 | Offline/interrupted connectivity | Partial | Existing behavior preserved; palette policy fallback is fail-safe, but end-to-end recovery needs live tests. |
 | Rollback to retained interface | Implemented in candidate | Release Details switch remains. Exact candidate browser rollback and style cleanup must pass before promotion. |
 
@@ -130,7 +130,7 @@ A successful build, a generated preview, or the presence of a component never ch
 
 ## Exact integrated-candidate local verification - 20 October 2026
 
-The isolated candidate retains the current Pre-Production source `e270c0a1902b563dbc2ab5413c81fc85e8181dab`. Stage 1 and Appearance were implemented at `83878f63067e452de4e1f875a48764fba85c3401`, with the latest deployed Sign-In/weather/service-worker lane merged at `4654c3903547196cdcddab4094a1c2b624491094`. The final review head may include documentation-only evidence above those commits. Verification is rerun after integration before promotion.
+The final integrated Stage 1 source is live on Cloudflare Pre-Production at `be9b7d54867dc5100ebc9f5531f01743228b58d9`. It reconciles the Stage 1/Appearance work with the newer Microsoft Organizations/account-linking, Sign-In, 4K media and fixed-city weather lane. Deployment run `39503611681` verified the exact SHA, release contracts, production safety gates, runtime health and 57/57 asset integrity.
 
 | Evidence | Result | Limit |
 |---|---|---|
@@ -148,4 +148,19 @@ The isolated candidate retains the current Pre-Production source `e270c0a1902b56
 | Production build | PASS | Server and client built; existing large-chunk advisory remains and still requires measured optimization. |
 | Human visual review | PASS for recorded candidate screenshots | Ocean anchor, opaque surfaces, single-line mobile Notifications label and desktop/mobile Appearance were inspected. Broader authenticated live acceptance remains open. |
 
-**Still not complete:** this is local exact-source evidence using synthetic authenticated fixtures. Cloudflare Pre-Production still serves the earlier source until an exact committed SHA is reviewed and promoted. Real Worker/D1 login, company isolation, revocation, actual providers, assistive-technology review, manual contrast review, performance measurement and the broader page-family work in this ledger remain open. Production remains untouched.
+**Still not complete:** Stage 1 is now on Cloudflare Pre-Production, but the authenticated browser matrix uses synthetic session fixtures. Real Worker/D1 user journeys, cross-company isolation/revocation acceptance, actual Google/Microsoft/WhatsApp provider login completion, assistive-technology review, manual contrast/zoom/large-text review, measured performance and the broader page-family work in this ledger remain open. Production remains untouched.
+
+## Final Pre-Production verification after integrated promotion
+
+- Exact promoted SHA: `be9b7d54867dc5100ebc9f5531f01743228b58d9` via staging run `39503611681`.
+- Cloudflare Worker version: `58ab70d2-9487-4cbe-828d-d8203304fc86`.
+- Workflow gates: exact-SHA checkout, release contracts, communications contracts, production-safety gates, build, legacy-shell rejection, approved post-login runtime, health, runtime/auth contract and **57/57 asset integrity PASS**.
+- Live synthetic Stage 1 role/route matrix: **18/18 PASS**; Appearance workflows: **3/3 PASS**; zero horizontal overflow; zero uncaught page errors.
+- Live palette matrix: **19/19 palettes** at 1366 and 390; both scenarios PASS with zero page errors.
+- Live Axe WCAG A/AA automated matrix: **16/16 scenarios**, zero confirmed violation groups and zero page errors. Automated incomplete/manual checks remain open.
+- Public Sign-In network: no CSP request failures after final promotion. Expected anonymous 401 responses remain on protected session/temporary-password status endpoints.
+- Public weather: Tokyo **200** and Beijing **200** through the bounded fixed-city Open-Meteo fallback; Ibadan **200** from Google Weather/cache. Arbitrary-coordinate weather remains authenticated.
+- Deployed CSP allows only the approved Google Fonts stylesheet/font origins while retaining `script-src 'self'`, `object-src 'none'` and `frame-ancestors 'none'`.
+- The previously cancelled deployment run `39502362517` had already reached Worker upload before cancellation; the final exact integrated promotion above supersedes it and includes both Stage 1 and the newer Microsoft Organizations lane.
+
+These checks establish the current Pre-Production baseline; they do **not** close the remaining real-account/provider, page-family, assistive-technology, zoom/large-text, or measured-performance acceptance items listed above.
