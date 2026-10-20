@@ -80,12 +80,13 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
   if (!q.replace(/[%_\\]/g, '').trim()) return json({ suggestions: [], sources: [], partial: false });
 
   const suggestions: Suggestion[] = [];
+  const recordBatches: Suggestion[][] = [];
   const sources: SourceStatus[] = [];
   const like = queryLike(q);
   const lookup = async (name: string, authorized: boolean, load: () => Promise<Suggestion[]>) => {
     if (!authorized) return;
     try {
-      suggestions.push(...await load());
+      recordBatches.push(await load());
       sources.push({ name, status: 'checked' });
     } catch {
       // Do not equate an unavailable provider or missing table with 'no records'.
@@ -192,6 +193,19 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
         row.title, 'My notifications', row.id,
         [row.category, row.severity].filter(Boolean).join(' / ')));
     });
+  }
+
+  // Fairly interleave authorized record sources. Without this, seven People hits,
+  // four Payroll hits and five Construction hits consume the entire 16-item
+  // budget, hiding the employee's Forms, Leave and Notifications matches.
+  // Preserve each source's database ranking, and keep modules after records.
+  let depth = 0;
+  while (suggestions.length < 16 && recordBatches.some((batch) => batch.length > depth)) {
+    for (const batch of recordBatches) {
+      if (batch[depth]) suggestions.push(batch[depth]);
+      if (suggestions.length === 16) break;
+    }
+    depth++;
   }
 
   // Modules are still searchable, but real records are ranked before module destinations.
