@@ -75,6 +75,10 @@ async function run(){
      assert.equal(await page.locator('[data-weather-metric="temperature"] dd').textContent(),'26°C','cached value must be replaced by live value');
      if(width===1363){
       const before={...calls};
+      await page.evaluate(()=>{
+       window.__weatherImageMoves=0;
+       for(const layer of document.querySelectorAll('article[data-city-id] .gw-city-image-layer'))new MutationObserver(records=>{window.__weatherImageMoves+=records.filter(r=>r.type==='childList').length;}).observe(layer,{childList:true,subtree:true});
+      });
       await page.evaluate(()=>{for(let i=0;i<10;i++){window.dispatchEvent(new Event('focus'));window.dispatchEvent(new Event('online'));}});
       await page.waitForTimeout(100);
       assert.deepEqual(calls,before,'focus/online requests throttled');
@@ -82,6 +86,7 @@ async function run(){
       await page.clock.fastForward(5*60*1000+1);
       await page.waitForFunction(()=>document.querySelector('[data-weather-metric="temperature"] dd')?.textContent==='27°C');
       assert.ok(Object.keys(cities).every(c=>calls[c]===before[c]+1),'one refresh per city');
+      assert.equal(await page.evaluate(()=>window.__weatherImageMoves),0,'clock ticks must not detach and reload the city photographs');
       data.refreshPassed=true;
      }
     }

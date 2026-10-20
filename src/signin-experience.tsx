@@ -433,13 +433,13 @@ function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: D
     inner.className = 'block relative w-full h-full overflow-hidden';
     image = inner.querySelector<HTMLImageElement>('img') || document.createElement('img');
     image.className = 'w-full h-full inset-0 absolute object-cover';
-    inner.replaceChildren(image);
-    outer.replaceChildren(inner);
-    imageLayer.replaceChildren(outer);
+    if (inner.firstElementChild !== image) inner.replaceChildren(image);
+    if (outer.firstElementChild !== inner) outer.replaceChildren(inner);
+    if (imageLayer.firstElementChild !== outer) imageLayer.replaceChildren(outer);
   } else {
     image = imageLayer.querySelector<HTMLImageElement>(':scope > img') || document.createElement('img');
     image.className = 'block h-full w-full object-cover transition-transform duration-1000 group-hover:scale-[1.025]';
-    imageLayer.replaceChildren(image);
+    if (imageLayer.firstElementChild !== image) imageLayer.replaceChildren(image);
   }
   image.loading = 'eager';
   image.decoding = 'async';
