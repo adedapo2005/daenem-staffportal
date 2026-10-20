@@ -111,7 +111,7 @@ A successful build, a generated preview, or the presence of a component never ch
 | Desktop 3840/1920/1366 | **Live verified with synthetic auth** | Home role matrix and selected operational routes pass at required desktop widths; broader page-family visual inspection remains open. |
 | Tablet 1024 and narrow desktop | **Live verified with synthetic auth, bounded** | 1024 Home scenario passes without horizontal overflow; broader tablet interactions remain open. |
 | Mobile 390 and other supported phones | **Live verified with synthetic auth, bounded** | 390 role/route, selected operational routes, Appearance and palette scenarios pass; on-screen keyboard and wider device inventory remain open. |
-| Large text/zoom/long names | Not yet verified | Required. |
+| Large text/zoom/long names | **Partial - 200% text fixed and verified locally** | Additive large-text reflow passes Home and Appearance at 200% root text with zero horizontal overflow and visible focus. Long-name and browser-zoom-specific acceptance remain open. |
 | No horizontal overflow | **Live verified for recorded matrix** | 18/18 live synthetic role/route scenarios reported zero horizontal overflow. This is not exhaustive across every module. |
 | Performance/bundle | Partial / build verified | Production build passes; existing >500 KB chunk advisory remains and measured browser/device performance is still required. |
 | Offline/interrupted connectivity | Partial | Existing behavior preserved; palette policy fallback is fail-safe, but end-to-end recovery needs live tests. |
@@ -164,3 +164,19 @@ The final integrated Stage 1 source is live on Cloudflare Pre-Production at `be9
 - The previously cancelled deployment run `39502362517` had already reached Worker upload before cancellation; the final exact integrated promotion above supersedes it and includes both Stage 1 and the newer Microsoft Organizations lane.
 
 These checks establish the current Pre-Production baseline; they do **not** close the remaining real-account/provider, page-family, assistive-technology, zoom/large-text, or measured-performance acceptance items listed above.
+
+## Large-text resilience increment - 20 October 2026
+
+A Stage 1 audit exposed horizontal overflow at 200% root text on Home and Appearance. The remediation is additive: retained QA Review V115 source remains byte-pinned while `stage1-large-text-reflow.css` and runtime large-text detection adapt the authenticated shell.
+
+| Evidence | Result | Limit |
+|---|---|---|
+| Normal role/route regression matrix | **18/18 PASS on tested candidate** | Owner/Manager/Employee representative routes; 3840, 1920, 1366, 1024 and 390. Re-run on this rebased head before promotion. |
+| Appearance workflows | **3/3 PASS on tested candidate** | Preview/apply/reset and authorized Group policy flows under synthetic authenticated context. Re-run on this rebased head before promotion. |
+| Reduced motion | **PASS on tested candidate** | Desktop smoke; visible keyboard focus, no horizontal overflow. |
+| Forced colours | **PASS on tested candidate** | Desktop smoke; visible keyboard focus, no horizontal overflow. |
+| 200% root text - Home | **PASS on tested candidate** | Runtime detects 32px root text, switches to reflow mode, `scrollWidth == innerWidth`. |
+| 200% root text - Appearance | **PASS on tested candidate** | Gallery, policy controls and preview collapse to bounded columns, `scrollWidth == innerWidth`. |
+| TypeScript / production build / diff hygiene | **PASS on tested candidate** | Re-run required on this rebased head; existing >500 kB chunk advisory remains. |
+
+This increment does not claim real account/provider acceptance, screen-reader certification, all browser zoom modes, long-name stress completion, or universal page-family completion.
