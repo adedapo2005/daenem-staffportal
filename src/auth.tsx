@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound,
+  ArrowRight, Check, CheckCircle2, Download, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound, X,
 } from 'lucide-react';
 import {
   readThemeId, type ThemeId,
@@ -431,6 +431,7 @@ export function WorldClocks() {
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: WorkforceContext) => void }) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
+  const returnSignupFocusRef = useRef(false);
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -448,7 +449,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [identityTouched, setIdentityTouched] = useState(false);
   const compactAuthRef = useRef(false);
 
-  const [signupStep, setSignupStep] = useState<'identity' | 'account' | 'work' | 'verify'>('identity');
+  const [signupStep, setSignupStep] = useState<'identity' | 'contact' | 'username' | 'account' | 'work' | 'verify'>('identity');
   const [signupChallenge, setSignupChallenge] = useState('');
   const [signupDestination, setSignupDestination] = useState('');
   const [signupCode, setSignupCode] = useState('');
@@ -573,7 +574,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         if (measuredOverflow) compactAuthRef.current = true;
         if (mode !== 'signup' && !query.matches) compactAuthRef.current = false;
         setCompactDesktop((current) => {
-          const next = query.matches || measuredOverflow || compactAuthRef.current;
+          const next = mode === 'signup' || query.matches || measuredOverflow || compactAuthRef.current;
           return current === next ? current : next;
         });
       });
@@ -591,6 +592,16 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       window.visualViewport?.removeEventListener('resize', sync);
     };
   }, [mode, signupStep, recoveryStep, message, passwordPolicy, authLabels]);
+
+  useEffect(() => {
+    if (mode !== 'signin' || !returnSignupFocusRef.current) return;
+    returnSignupFocusRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('#staffportal-auth-mount .sp-auth-tabs button:nth-child(2)')
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode]);
 
   useEffect(() => { document.title = 'DAENEM Staff Portal'; }, [themeId]);
 
@@ -619,6 +630,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
+    if (mode === 'signup' && next === 'signin') returnSignupFocusRef.current = true;
     compactAuthRef.current = false;
     setMode(next);
     setMessage(null);
@@ -635,6 +647,39 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
+  // The Create Account surface is a focused registration dialog, not a hidden
+  // scrollable form. Keep focus within the dialog and restore it on exit.
+  useEffect(() => {
+    if (mode !== 'signup') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusable = () => [...panel.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )].filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden');
+    const initial = panel.querySelector<HTMLElement>('.usp-auth-form input:not([disabled])') || focusable()[0];
+    initial?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        switchMode('signin');
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const controls = focusable();
+      if (!controls.length) return;
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    panel.addEventListener('keydown', onKeyDown);
+    return () => panel.removeEventListener('keydown', onKeyDown);
+  }, [mode, signupStep]);
+
   function validateSignupIdentity() {
     const missing = [
       !signup.firstName.trim() ? authLabels.firstName : '',
@@ -645,7 +690,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       setMessage({ type: 'error', text: 'Complete the required account details to continue.', details: missing });
       return false;
     }
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(signup.email.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signup.email.trim())) {
       setMessage({ type: 'error', text: 'Enter a valid personal email address before continuing.' });
       return false;
     }
@@ -666,6 +711,20 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     event.preventDefault();
     setMessage(null);
     if (!validateSignupIdentity()) return;
+    setSignupStep('contact');
+  }
+
+  function continueSignupContact(event: React.FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    if (!validateSignupIdentity()) return;
+    setSignupStep('username');
+  }
+
+  function continueSignupUsername(event: React.FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    if (!validateSignupUsername()) return;
     setSignupStep('account');
   }
 
@@ -684,7 +743,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setSignupStep('work');
   }
 
-  function backSignupStep(step: 'identity' | 'account') {
+  function backSignupStep(step: 'identity' | 'contact' | 'username' | 'account') {
     setMessage(null);
     setSignupStep(step);
   }
@@ -938,13 +997,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   );
 
   const legacyAuthPanel = (
-    <section ref={panelRef} aria-label="Employee authentication" data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
-      <div className="usp-panel-heading">
+    <section ref={panelRef} role={mode === 'signup' ? 'dialog' : undefined} aria-modal={mode === 'signup' ? true : undefined} aria-labelledby={mode === 'signup' ? 'usp-account-dialog-title' : undefined} aria-label={mode !== 'signup' ? 'Employee authentication' : undefined} data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
+      <div className="usp-panel-heading sp-signup-heading">
         <div>
           <span className="usp-panel-eyebrow"><LockKeyhole size={14} /> {authLabels.secureErpAccess}</span>
-          <h1>{heading.title}</h1>
+          <h1 id={mode === 'signup' ? 'usp-account-dialog-title' : undefined}>{heading.title}</h1>
           <p>{heading.body}</p>
         </div>
+        {mode === 'signup' && <button type="button" className="sp-signup-close" aria-label="Close Create Account and return to Sign In" onClick={() => switchMode('signin')}><X size={16} /></button>}
         {mode === 'forgot'
           ? <button type="button" className="usp-back-link" onClick={() => switchMode('signin')}>{authLabels.backToSignIn}</button>
           : <span className="usp-mfa-chip"><ShieldCheck size={14} /> {authLabels.mfaReady}</span>}
@@ -1002,40 +1062,37 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         </div>}
       </form>}
 
-      {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupIdentity}>
-        <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
-        <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
-        <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
+      {mode === 'signup' && signupStep !== 'verify' && <nav className="sp-signup-progress" aria-label="Account setup progress">
+        <span>Step {(['identity', 'contact', 'username', 'account', 'work'].indexOf(signupStep) + 1)} of 5</span>
+        <div className="sp-signup-progress-track"><i style={{ width: `${(['identity', 'contact', 'username', 'account', 'work'].indexOf(signupStep) + 1) * 20}%` }} /></div>
+      </nav>}
+      {mode === 'signup' && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={(event) => { event.preventDefault(); setMessage(null); if (!signup.firstName.trim() || !signup.lastName.trim()) { setMessage({type:'error',text:'Enter your first and last name to continue.'}); return; } setSignupStep('contact'); }}>
+        <TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" />
+        <TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" />
         <button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button>
       </form>}
-
-      {mode === 'signup' && compactDesktop && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupAccount}>
-        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="off" helper={authLabels.usernameHelper} />
-        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
-        <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
-        <PasswordStatus checks={signupChecks} password={signup.password} label={authLabels.passwordRequirements} />
-        <ConfirmPasswordStatus value={signup.confirmPassword} matches={signup.password === signup.confirmPassword} labels={authLabels} />
-        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit" disabled={!passwordPolicySatisfied(signupChecks) || signup.password !== signup.confirmPassword}>{authLabels.continue}<ArrowRight size={17} /></button></div>
-      </form>}
-
-      {mode === 'signup' && compactDesktop && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
-        <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
-        <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
-        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('account')}>{authLabels.back}</button><button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button></div>
-      </form>}
-
-      {mode === 'signup' && !compactDesktop && signupStep !== 'verify' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
-        <div className="usp-two"><TextField label={authLabels.firstName} value={signup.firstName} onChange={(value) => setSignup({ ...signup, firstName: value })} required autoComplete="given-name" /><TextField label={authLabels.lastName} value={signup.lastName} onChange={(value) => setSignup({ ...signup, lastName: value })} required autoComplete="family-name" /></div>
+      {mode === 'signup' && signupStep === 'contact' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupContact}>
         <TextField label={authLabels.personalEmail} type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required autoComplete="email" />
         <TextField label={authLabels.phoneWhatsApp} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} autoComplete="tel" />
-        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="off" helper={authLabels.usernameHelper} />
-        <div className="usp-two usp-password-pair"><PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /><PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} /></div>
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('identity')}>{authLabels.back}</button><button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button></div>
+      </form>}
+      {mode === 'signup' && signupStep === 'username' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupUsername}>
+        <TextField label={authLabels.createUsername} value={signup.username} onChange={(value) => setSignup({ ...signup, username: value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} required autoComplete="username" helper={authLabels.usernameHelper} />
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('contact')}>{authLabels.back}</button><button className="usp-primary-button" type="submit">{authLabels.continue}<ArrowRight size={17} /></button></div>
+      </form>}
+      {mode === 'signup' && signupStep === 'account' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={continueSignupAccount}>
+        <PasswordField label={authLabels.createPassword} value={signup.password} onChange={(value) => setSignup({ ...signup, password: value })} autoComplete="new-password" show={showSignupPassword} setShow={setShowSignupPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
+        <PasswordField label={authLabels.confirmPassword} value={signup.confirmPassword} onChange={(value) => setSignup({ ...signup, confirmPassword: value })} autoComplete="new-password" show={showSignupConfirm} setShow={setShowSignupConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
         <PasswordStrengthMeter checks={signupChecks} password={signup.password} labels={authLabels} />
         <PasswordStatus checks={signupChecks} password={signup.password} label={authLabels.passwordRequirements} />
         <ConfirmPasswordStatus value={signup.confirmPassword} matches={signup.password === signup.confirmPassword} labels={authLabels} />
-        <div className="usp-two"><TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} /><TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} /></div>
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('username')}>{authLabels.back}</button><button className="usp-primary-button" type="submit" disabled={!passwordPolicySatisfied(signupChecks) || signup.password !== signup.confirmPassword}>{authLabels.continue}<ArrowRight size={17} /></button></div>
+      </form>}
+      {mode === 'signup' && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
+        <TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} />
+        <TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} />
         <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
-        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button>
+        <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('account')}>{authLabels.back}</button><button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button></div>
       </form>}
 
       {mode === 'signup' && signupStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifySignup}>
@@ -1075,7 +1132,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button className="usp-primary-button" disabled={busy || !passwordPolicySatisfied(resetChecks) || newPassword !== confirmNewPassword} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
       </form>}
 
-      {mode !== 'forgot' && <>
+      {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity' || signupStep === 'work') && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
           <button type="button" onClick={() => startOAuth('microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>

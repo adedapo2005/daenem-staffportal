@@ -23,7 +23,7 @@ const cityZones: Record<string, string> = {
 const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
   toronto: {
     day: '/assets/global/toronto-day-v115-card.jpg',
-    night: '/assets/global/toronto-night-v180-card.webp',
+    night: '/assets/global/toronto-night-approved-v180.png',
   },
   london: {
     day: '/assets/global/london-day-v115-card.jpg',
@@ -37,7 +37,7 @@ const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night'
   },
   moscow: {
     day: '/assets/global/moscow-day-v115-card.jpg',
-    night: '/assets/global/moscow-night-v180-card.webp',
+    night: '/assets/global/moscow-night-approved-v180.png',
   },
   tokyo: { day: '/assets/global/tokyo-day-v115-card.jpg' },
   beijing: {
@@ -211,7 +211,7 @@ function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
 
 function resolvedMedia(cityId: string, phase: 'dawn' | 'day' | 'dusk' | 'night') {
   const media = cityMedia[cityId] || {};
-  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : [phase] as const;
+  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : phase === 'night' ? ['night', 'day'] as const : ['day', 'night'] as const;
   const mediaPhase = order.find((item) => media[item]);
   return mediaPhase ? { src: media[mediaPhase] || '', mediaPhase } : { src: '', mediaPhase: 'none' };
 }
@@ -269,6 +269,10 @@ function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: D
   }
   if (!imageLayer) return;
   imageLayer.className = imageLayer.className.replace(/gw-city-image-phase-(?:dawn|day|dusk|night)/g, `gw-city-image-phase-${phase}`);
+  // Clock updates run every second. Preserve an already-loaded image instead of
+  // tearing down and rebuilding the image/asset wrapper each tick.
+  const existingImage = imageLayer.querySelector<HTMLImageElement>('img');
+  if (existingImage?.getAttribute('src') === media.src) return;
   const usesApprovedImageWrapper = cityId === 'toronto' || cityId === 'london' || cityId === 'moscow';
   let image: HTMLImageElement;
   if (usesApprovedImageWrapper) {

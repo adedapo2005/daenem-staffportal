@@ -151,3 +151,723 @@
     gap: 9px;
   }
 }
+
+
+/* Runtime media corrections: keep the approved composition and copy intact. */
+#staff-global-operations .gw-city-image-layer,
+#staff-local-weather .gw-city-image-layer {
+  opacity: 1 !important;
+}
+#staff-global-operations .gw-city-image-layer img,
+#staff-local-weather .gw-city-image-layer img {
+  opacity: 1 !important;
+  image-rendering: auto;
+}
+/* Do not darken already-photographed night and dusk source images a second time. */
+#staff-global-operations .gw-city-phase-night .gw-city-image-layer,
+#staff-global-operations .gw-city-phase-dusk .gw-city-image-layer {
+  filter: none !important;
+}
+/* The local weather image remains continuous underneath both weather sections. */
+.sp-root #staff-local-weather.sp-weather-v145 {
+  isolation: isolate;
+  background-image: linear-gradient(180deg, rgba(4,19,34,.13), rgba(4,19,34,.28)), var(--sp-weather-runtime-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.sp-root #staff-local-weather.sp-weather-v145[data-weather-phase="night"] {
+  --sp-weather-runtime-image: url('/assets/staffportal-weather/ibadan-night-v125.png');
+}
+.sp-root #staff-local-weather.sp-weather-v145:not([data-weather-phase="night"]) {
+  --sp-weather-runtime-image: url('/assets/staffportal-weather/ibadan-day-v125-card.webp');
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence {
+  background: linear-gradient(180deg, rgba(4,20,37,.67), rgba(3,17,31,.82)) !important;
+}
+
+/* Signup: a single visual system shared with approved Sign-In. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
+  display:flex; flex-direction:column; justify-content:flex-start;
+  gap:10px; width:100%; height:100%; min-height:0;
+  padding:0; color:#23465b;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading {
+  display:block; margin:0; flex:none;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading > div {
+  display:grid; gap:3px;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-eyebrow,
+#staffportal-auth-mount.sp-auth-mode-create .usp-mfa-chip {
+  display:none;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {
+  color:#113d2f; font-size:clamp(16px,1.1vw,20px); line-height:1.16;
+  letter-spacing:-.025em; margin:0;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading p {
+  color:#597a71; font-size:clamp(11px,.75vw,12px);
+  line-height:1.4; margin:0;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:4px; padding:3px; flex:none;
+  border-radius:12px; border:1px solid rgba(43,105,80,.11);
+  background:rgba(220,235,226,.67);
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button {
+  min-width:0; min-height:34px; padding:5px 3px; border:0;
+  border-radius:9px; background:transparent; color:#688075;
+  font-size:clamp(11px,.75vw,12px); font-weight:650; cursor:pointer;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button.active {
+  color:#123d2f; background:#fff;
+  box-shadow:0 4px 12px -9px rgba(24,94,66,.44);
+}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress {
+  display:grid; gap:5px; flex:none;
+}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress > span {
+  color:#436759; font-size:11px; font-weight:700;
+}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress-track {
+  height:4px; overflow:hidden; background:#d5e8dc; border-radius:99px;
+}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress-track i {
+  display:block; height:100%; border-radius:99px;
+  background:linear-gradient(90deg,#128d67,#26b78b);
+  transition:width .22s ease;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-form {
+  display:grid; align-content:start; gap:9px;
+  width:100%; min-height:0; margin:0;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field-label {
+  color:#294b3e; font-size:clamp(11px,.75vw,12px);
+  font-weight:700; line-height:1.3;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field { gap:4px; }
+#staffportal-auth-mount.sp-auth-mode-create .usp-field > input,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field {
+  min-height:38px; height:clamp(38px,3.7vh,44px);
+  padding-inline:10px; border-radius:10px;
+  border:1px solid #9db8ad; color:#173d32;
+  background:#f9fdfb; font-size:12px;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field input {
+  min-width:0; width:100%; color:#173d32; font-size:12px;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field input::placeholder {
+  color:#6c857d;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field input:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field:focus-within {
+  outline:2px solid #1d9a75; outline-offset:2px;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-primary-button,
+#staffportal-auth-mount.sp-auth-mode-create .usp-secondary-button {
+  min-height:38px; border-radius:10px; font-size:12px; font-weight:700;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-primary-button {
+  background:linear-gradient(105deg,#137d5a,#24a780);
+  color:white; border:0;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-secondary-button {
+  background:#e9f3ed; color:#275843; border:1px solid #9fc8b2;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-step-actions {
+  display:grid; grid-template-columns:1fr 1fr; gap:7px;
+}
+/* Provider and legal controls are retained; never conceal approved features. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button {
+  min-height:34px; font-size:11px; border-radius:9px;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider { margin:0; font-size:10px; }
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-note,
+#staffportal-auth-mount.sp-auth-mode-create .usp-legal-copy {
+  color:#4e7466; font-size:10px; line-height:1.3; margin:0;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-message {
+  padding:6px 8px; font-size:11px; line-height:1.3; flex:none;
+}
+
+/* Prevent flex children from collapsing and visually overlapping the form. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-form,
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider,
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons,
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-note,
+#staffportal-auth-mount.sp-auth-mode-create .usp-legal-copy {
+  flex-shrink:0;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-form { min-height:max-content; }
+
+/* Create Account requires more room than Sign In. Use a dedicated desktop
+   surface, rather than an overflowing 228px-wide sign-in slot. */
+@media (min-width:821px) {
+  .sp-root #staffportal-auth-mount.sp-auth-mode-create {
+    position:fixed !important;
+    inset:50% auto auto 50% !important;
+    transform:translate(-50%,-50%) !important;
+    width:min(420px,calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:calc(100dvh - 30px) !important;
+    min-height:0 !important;
+    z-index:1000 !important;
+    padding:18px 20px !important;
+    border:1px solid #9cc6b5 !important;
+    border-radius:20px !important;
+    background:linear-gradient(145deg,#f4fbf8,#e5f1eb) !important;
+    box-shadow:0 30px 85px rgba(7,38,30,.32) !important;
+    overflow:visible !important;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
+    height:auto !important; min-height:0 !important; gap:8px;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading {
+    max-width:100%;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {
+    font-size:20px;
+  }
+}
+
+/* Phone layout: guarantee the account workflow starts inside the visible screen.
+   Preserve scroll access to all fields, provider controls, and legal links. */
+@media (max-width:820px) {
+  .sp-root #staffportal-auth-mount.sp-auth-mode-create {
+    position:fixed !important;
+    inset:12px 10px auto 10px !important;
+    transform:none !important;
+    width:calc(100vw - 20px) !important;
+    max-width:440px !important;
+    height:auto !important;
+    max-height:calc(100dvh - 24px) !important;
+    margin-inline:auto !important;
+    overflow:auto !important; /* viewport-limited mobile sheet only */
+    padding:14px !important;
+    border-radius:18px !important;
+    z-index:1000 !important;
+    background:linear-gradient(145deg,#f4fbf8,#e5f1eb) !important;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
+    height:auto !important;
+    min-height:0 !important;
+    gap:8px;
+  }
+}
+
+/* Final visual QA: the password status should never inherit dark-palette
+   low-contrast colors on the pale Create Account surface. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements {
+  background:#eaf4ee !important;
+  border:1px solid #adcdbd !important;
+  padding:9px 11px !important;
+  border-radius:12px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements > strong,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta {
+  color:#234e3e !important; font-size:11px !important; font-weight:750 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status > span,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status {
+  color:#4b6759 !important; font-size:11px !important; line-height:1.35 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status > span.pass,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status.valid {color:#096d48 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status > span.fail,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status.invalid {color:#a32a32 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-track {background:#ccdfd3 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button {
+  color:#174632 !important; background:#f8fdfb !important; border:1px solid #bdd8c9 !important;
+  white-space:normal !important; overflow-wrap:anywhere; line-height:1.2 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-toggle {color:#137e64 !important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider {color:#466a58 !important;}
+/* The reference night imagery already contains shadows. Keep the photograph
+   detailed while using a small caption gradient for text readability. */
+#staff-global-operations article[data-city-id] > div:first-child > div:nth-child(2) {
+  background:linear-gradient(180deg,rgba(2,9,12,.53),rgba(2,9,12,.09) 45%,rgba(2,9,12,.49)) !important;
+}
+#staff-local-weather article[data-city-id] > div:first-child > div:nth-child(2) {
+  background:linear-gradient(180deg,rgba(2,9,12,.54),rgba(2,9,12,.06) 45%,rgba(2,9,12,.57)) !important;
+}
+
+/* The expanded registration surface is a purpose-built dismissible dialog. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading {position:relative;padding-right:33px;}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-close {
+ position:absolute;right:0;top:0;display:grid;place-items:center;width:29px;height:29px;
+ border:1px solid #b1d2c1;border-radius:9px;background:#f8fdf9;color:#245b43;cursor:pointer;
+}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-close:hover {background:#daeee2;}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-close:focus-visible {outline:2px solid #138d69;outline-offset:2px;}
+@media (max-width:820px) {
+ #staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading {padding-right:34px;}
+}
+
+/* Compact desktop / laptop: the signup dialog must stay in the viewport even at
+   1025x600. Never send the form below the visible page or conceal fields. */
+@media (min-width:821px) and (max-height:650px) {
+  .sp-root #staffportal-auth-mount.sp-auth-mode-create {
+    padding:12px 16px !important;
+    max-height:calc(100dvh - 12px) !important;
+  }
+  #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {gap:6px !important;}
+  #staffportal-auth-mount.sp-auth-mode-create .usp-auth-form {gap:7px !important;}
+  #staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements {padding:6px 9px !important;gap:3px !important;}
+}
+
+/* Final rendered-QA polish: password strength always has clear, separated labels. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta {
+  display:flex !important;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:4px 10px !important;
+  margin-bottom:4px;
+  line-height:1.35;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta > span,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta > strong {
+  display:inline-block;
+  color:#24523f !important;
+  font-size:11px !important;
+  font-weight:700;
+}
+/* The photograph runs from the upper Ibadan clock through weather intelligence:
+   avoid blacking out its lower half with a second near-opaque overlay. */
+.sp-root #staff-local-weather .sp-weather-v145-intelligence {
+  background:linear-gradient(180deg,rgba(4,20,37,.27),rgba(3,17,31,.44)) !important;
+  text-shadow:0 1px 2px rgba(0,0,0,.75);
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer {
+  background:rgba(3,17,31,.23) !important;
+  text-shadow:0 1px 2px rgba(0,0,0,.75);
+}
+
+/* Keep the approved Ibadan photograph crisp. Earlier reference CSS applied
+   brightness(.78) to the image and a second darkening layer below the clock. */
+.sp-root #staff-local-weather .gw-city-image-layer,
+.sp-root #staff-local-weather .gw-city-image-layer img {
+  opacity:1 !important;
+  filter:none !important;
+}
+/* V180 desktop guardrail: no hidden content; compact laptop uses normal
+   page scrolling when a 600px viewport cannot fit readable widgets. */
+@media (min-width:1280px) and (max-width:1439px) and (max-height:850px) {
+  #root .sp-root.sp-day[data-approved-signin] .sp-reference-layout {
+    grid-template-rows:clamp(196px,29vh,230px) minmax(0,1fr) !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-content {
+    top:50% !important;left:clamp(19px,2vw,33px) !important;right:auto !important;
+    width:calc(100% - 80px) !important;max-width:none !important;
+    transform:translateY(-50%) !important;
+    display:flex !important;flex-flow:column nowrap !important;
+    align-items:flex-start !important;justify-content:center !important;
+    gap:2px !important;padding:0 !important;height:auto !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand {gap:8px!important;margin:0!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand-stage {margin:0!important;min-height:0!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark-wrap,
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark {width:36px!important;height:36px!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-name{font-size:15px!important;line-height:1.14!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-subtitle{font-size:11px!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-kicker{font-size:10px!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero h1{font-size:clamp(29px,2.5vw,34px)!important;line-height:1.02!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-content > p{font-size:13px!important;line-height:1.22!important;max-width:100%!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-trust{gap:5px!important;min-height:0!important;}
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-trust > *{min-height:25px!important;}
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin {
+    gap:2px!important;padding:6px 7px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-topline {
+    min-height:0!important;height:40px!important;flex:0 0 40px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark,
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark-wrap{
+    width:34px!important;height:34px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-copy{gap:2px!important;}
+}
+@media (min-width:1280px) and (max-width:1359px) and (max-height:850px){
+  #root .sp-root.sp-day[data-approved-signin] .sp-reference-layout{
+    grid-template-columns:clamp(200px,18.4vw,235px) minmax(0,1fr) 420px!important;
+  }
+}
+
+@media (min-width:1024px) and (max-width:1279px) and (max-height:850px) {
+  #root .sp-root.sp-day[data-approved-signin] {
+    width: 100vw !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    display: grid !important;
+    grid-template-rows: auto 55px !important;
+    overflow: visible !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-primary-information {
+    grid-area: info !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-template-rows: repeat(4,minmax(0,1fr)) !important;
+    gap: 7px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-primary-information > .gw-intelligence-widget {
+    min-height: 0 !important;
+    max-height: none !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero {
+    grid-area: hero !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    min-width: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-content {
+    left: 20px !important;
+    top: 50% !important;
+    right: auto !important;
+    width: calc(100% - 45px) !important;
+    max-width: none !important;
+    transform: translateY(-50%) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand {
+    gap: 7px !important;
+    margin-bottom: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark-wrap,
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark {
+    width: 29px !important;
+    height: 29px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-name {
+    font-size: 13px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-subtitle {
+    font-size: 11px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-kicker {
+    font-size: 10px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero h1 {
+    font-size: 29px !important;
+    line-height: 1.04 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-content > p {
+    font-size: 13px !important;
+    line-height: 1.22 !important;
+    max-width: 100% !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-trust {
+    gap: 4px !important;
+    min-height: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-trust > * {
+    min-height: 24px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-global-operations {
+    grid-area: global !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-global-grid-locations {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    grid-template-rows: repeat(3,minmax(0,1fr)) !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    gap: 5px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-global-city-shell {
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    overflow: visible !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-status-rail {
+    position: relative !important;
+    overflow: visible !important;
+    padding-inline: 12px !important;
+    height: 55px !important;
+    min-height: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark,
+#root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark-wrap {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-local-weather {
+    grid-area: weather !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-layout.sp-reference-layout {
+    display: grid !important;
+    grid-template-columns: 155px minmax(0,1fr) 355px !important;
+    grid-template-rows: 195px 865px !important;
+    grid-template-areas: "info hero hero" "info global rail" !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-lower-right-rail {
+    grid-area: rail !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-template-rows: 330px minmax(0,1fr) !important;
+    grid-template-areas: "weather" "auth" !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-local-weather.sp-weather-v145 {
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    grid-template-rows: minmax(0,1fr) !important;
+    gap: 5px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-local-weather .sp-weather-v145-citycard {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-local-weather .sp-weather-v145-intelligence {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 8px !important;
+    gap: 4px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin {
+    grid-area: auth !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+    padding: 7px !important;
+    gap: 3px !important;
+    overflow: visible !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-topline {
+    height: 58px !important;
+    min-height: 0 !important;
+    flex: 0 0 58px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-copy {
+    gap: 2px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-tabs {
+    height: 40px !important;
+    min-height: 0 !important;
+    padding: 2px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-tabs button {
+    min-height: 0 !important;
+    padding: 4px 6px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form {
+    gap: 5px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label {
+    gap: 2px !important;
+    grid-template-rows: 14px 38px !important;
+    min-height: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label > :last-child {
+    height: 38px !important;
+    min-height: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label input {
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-primary-button {
+    height: 39px !important;
+    min-height: 39px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid {
+    min-height: 0 !important;
+    gap: 3px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid button {
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 3px !important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-policy {
+    min-height: 0 !important;
+    padding: 2px 0 !important;
+  }
+}
+
+/* Compact clock cards: keep the actual time/clock and source status visible. */
+@media (min-width:1280px) and (max-width:1439px) and (max-height:850px) {
+ #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id]{
+   position:relative!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] .gw-city-identity{
+   padding:4px 8px 0!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] .gw-city-instrument{
+   margin-top:1px!important;padding-inline:8px!important;gap:6px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] .gw-city-clock{
+   width:58px!important;height:58px!important;flex:0 0 58px!important;min-width:58px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] > div.relative.z-10 > div:last-child{
+   position:absolute!important;left:0!important;right:0!important;bottom:2px!important;
+   padding:0 8px!important;margin:0!important;line-height:1.1!important;
+   font-size:13px!important;
+ }
+}
+
+/* Clock data fits above the source-status line at compact desktop sizes. */
+@media (min-width:1280px) and (max-width:1439px) and (max-height:850px) {
+  #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] .gw-city-local-time{
+    font-size:16px!important;line-height:16px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] .gw-city-digital > :nth-child(2){
+    margin-top:1px!important;font-size:13px!important;line-height:14px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] .gw-city-digital > :nth-child(3){
+    font-size:13px!important;line-height:14px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staff-global-operations article[data-city-id] .gw-city-digital > :nth-child(4){
+    margin-top:0!important;font-size:13px!important;line-height:14px!important;
+    overflow:visible!important;white-space:nowrap!important;text-overflow:clip!important;
+  }
+}
+
+/* 1920x1080: contain all controls inside the approved Sign-In column.
+   Never move the auth card over the hero, clocks, or weather. */
+@media (min-width:1800px) and (max-width:1999px) and (min-height:1000px) and (max-height:1199px) {
+ #root .sp-root.sp-day[data-approved-signin] .sp-layout.sp-reference-layout {
+   grid-template-rows:clamp(350px,33vh,370px) minmax(0,1fr)!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-content {
+   top:50%!important;transform:translateY(-50%)!important;
+   display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+   justify-content:center!important;gap:7px!important;padding:9px 0!important;
+   height:auto!important;max-height:100%!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand {
+   gap:8px!important;margin:0!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand-stage {
+   min-height:0!important;margin:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark,
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-brand .sp-brand-mark-wrap {
+   width:62px!important;height:62px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero h1 {
+   font-size:clamp(43px,2.65vw,51px)!important;line-height:1.08!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero-trust {gap:7px!important;}
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin {
+   position:relative!important;transform:none!important;top:auto!important;
+   height:100%!important;min-height:0!important;overflow:visible!important;
+   padding:12px!important;gap:4px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-topline {
+   min-height:0!important;height:72px!important;flex:0 0 72px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark,
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark-wrap {
+   width:57px!important;height:57px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-copy{gap:2px!important;}
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-tabs{
+   height:43px!important;min-height:0!important;padding:3px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form{
+   gap:7px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label {
+   gap:3px!important;grid-template-rows:16px 42px!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label > :last-child {
+   min-height:42px!important;height:42px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label input{
+   height:100%!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-primary-button{
+   height:42px!important;min-height:42px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid{
+   gap:4px!important;min-height:0!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid button{
+   min-height:43px!important;height:43px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-policy{
+   min-height:0!important;padding-top:2px!important;
+ }
+}
+
+/* Limited-height standard laptops: conserve HERO whitespace, not text. */
+@media (min-width:1280px) and (max-width:1439px) and (max-height:850px) {
+ #root .sp-root.sp-day[data-approved-signin] .sp-hero h1 {
+   font-size:clamp(29px,2.3vw,33px)!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-topline {
+   min-height:0!important;height:50px!important;flex:0 0 50px!important;
+ }
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark,
+ #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-brand-compact .sp-brand-mark-wrap {
+   width:35px!important;height:35px!important;
+ }
+}
+
+
+/* Standard desktop: keep V180 zones in place and reserve readable width for
+   provider names, credentials and the weather card. Never conceal content. */
+@media (min-width:1280px) and (max-width:1439px) and (max-height:850px) {
+  #root .sp-root.sp-day[data-approved-signin] .sp-layout.sp-reference-layout {
+    grid-template-columns:clamp(218px,17.5vw,240px) minmax(0,1fr) clamp(425px,34.5vw,465px)!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-lower-right-rail {
+    grid-template-columns:clamp(155px,12.6vw,175px) minmax(0,1fr)!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid button,
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-social-grid button span,
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-options,
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form > label {
+    font-size:13px!important;
+    line-height:1.15!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] #staffportal-auth-mount.sp-auth-mode-signin .sp-primary-button {
+    font-size:13px!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero {
+    min-height:0!important;
+  }
+  #root .sp-root.sp-day[data-approved-signin] .sp-hero-content {
+    max-height:100%!important;
+  }
+}
