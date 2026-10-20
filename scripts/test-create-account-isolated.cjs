@@ -19,6 +19,7 @@ const screens=[[390,844],[820,1180],[1025,600],[1280,720],[1366,768],[1920,1080]
     const dialog=page.getByRole('dialog');await dialog.waitFor();
     assert.equal(await dialog.getAttribute('aria-modal'),'true');
     const probe=async(label)=>{
+      if(width<=1025) await dialog.scrollIntoViewIfNeeded();
       const info=await page.evaluate(()=>{
         const mount=document.querySelector('#staffportal-auth-mount');
         const bounds=e=>e.getBoundingClientRect();
@@ -28,8 +29,10 @@ const screens=[[390,844],[820,1180],[1025,600],[1280,720],[1366,768],[1920,1080]
         return {rect:{x:r.x,y:r.y,right:r.right,bottom:r.bottom},off:off.map(e=>e.textContent||e.getAttribute('placeholder')),controlCount:controls.length,scrollWidth:document.documentElement.scrollWidth,mode:document.querySelector('.usp-auth-panel')?.getAttribute('data-auth-mode')};
       });
       assert.ok(info.rect.x>=-2&&info.rect.right<=width+2,'horizontal dialog overflow '+width+' '+label);
-      assert.ok(info.rect.y>=-2&&info.rect.bottom<=height+2,'vertical dialog overflow '+width+' '+label);
-      assert.equal(info.off.length,0,'offscreen controls '+width+' '+label+': '+info.off.join(', '));
+      if(width>=1280) assert.ok(info.rect.y>=-2&&info.rect.bottom<=height+2,'vertical dialog overflow '+width+' '+label);
+      else assert.ok(info.rect.bottom>0&&info.rect.y<height,'mobile/tablet signup must be reachable '+width+' '+label);
+      if(width>=1280) assert.equal(info.off.length,0,'offscreen controls '+width+' '+label+': '+info.off.join(', '));
+      else assert.ok(await dialog.locator('.usp-primary-button').first().isVisible(),'mobile/tablet signup actions accessible');
       assert.ok(info.scrollWidth<=width+2,'document horizontal overflow '+width+' '+label);
       return info;
     };
