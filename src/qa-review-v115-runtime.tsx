@@ -11,6 +11,7 @@ import Stage1SearchResults from './stage1-live-search';
 import Stage1WorkflowFocus from './stage1-workflow-focus';
 import { Stage1RuntimeContext, type Stage1NavigationRole } from './stage1-runtime-context';
 import './stage1-live-search.css';
+import './stage1-context-density.css';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
