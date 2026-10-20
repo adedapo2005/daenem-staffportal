@@ -31,7 +31,7 @@ const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night'
   },
   newyork: {
     dawn: '/assets/global/newyork-dawn-v179-card.webp',
-    day: '/assets/global/newyork-day-v179-card.webp',
+    day: '/assets/scenery/01-manhattan-day-3840.webp',
     dusk: '/assets/global/newyork-dusk-v179-card.webp',
     night: '/assets/global/newyork-night-v179-card.webp',
   },

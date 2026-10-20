@@ -728,3 +728,26 @@
 @media (prefers-reduced-motion:reduce){
  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button{transition:none!important;}
 }
+
+/* Visible Sign-In polish follow-up: eliminate inactive-tab fading and restore lower weather imagery. */
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="false"]:hover,
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="false"]:focus-visible {
+  opacity:1!important;filter:none!important;transform:none!important;
+  color:#0b4f87!important;
+  background:linear-gradient(135deg,#eef8ff 0%,#cfeaff 100%)!important;
+  border-color:rgba(43,140,207,.58)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 12px rgba(21,98,161,.14)!important;
+}
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="true"]:hover,
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="true"]:focus-visible {
+  opacity:1!important;filter:none!important;transform:none!important;color:#fff!important;
+}
+#staff-local-weather .sp-weather-v145-intelligence {
+  background:
+    linear-gradient(180deg,rgba(4,20,35,.12),rgba(4,20,35,.28)),
+    url('/assets/webflow-home/weather-cloudy-4k.jpg') center 58%/cover no-repeat!important;
+}
+#staff-local-weather .sp-weather-v145-intelligence,
+#staff-local-weather .sp-weather-v145-intelligence * {
+  text-shadow:0 1px 2px rgba(0,10,24,.52)!important;
+}
