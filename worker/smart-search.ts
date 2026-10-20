@@ -108,17 +108,22 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
         ORDER BY e.display_name LIMIT 7`)
         .bind(...peopleCompanies, like, like, like, like, like).all<Record<string, unknown>>();
       return (rows.results || []).map((row) => suggestion('employee', 'hr', row.displayName, 'People', row.id,
-        [row.employeeNo, row.jobTitle, row.department].filter(Boolean).join(' Â· ')));
+        [row.employeeNo, row.jobTitle, row.department].filter(Boolean).join(' / ')));
     });
 
     const payrollCompanies = scopedCompanyIds(context, 'payroll.access');
     await lookup('Payroll', payrollCompanies.length > 0, async () => {
-      const rows = await env.DB.prepare(`SELECT id,run_no AS runNo,status,
-        period_start AS periodStart,period_end AS periodEnd FROM payroll_runs
-        WHERE ${placeholders(payrollCompanies)} AND run_no LIKE ?
-        ORDER BY created_at DESC LIMIT 4`).bind(...payrollCompanies, like).all<Record<string, unknown>>();
-      return (rows.results || []).map((row) => suggestion('payroll', 'payroll', row.runNo, 'Payroll', row.id,
-        [row.periodStart, row.periodEnd, row.status].filter(Boolean).join(' Â· ')));
+      // payroll_runs has no run_no column in the published D1 migration chain.
+      // Search real run identifiers, periods and statuses, without disclosing pay items.
+      const rows = await env.DB.prepare(`SELECT id,period_start AS periodStart,
+        period_end AS periodEnd,status FROM payroll_runs
+        WHERE ${placeholders(payrollCompanies)} AND
+          (id LIKE ? OR period_start LIKE ? OR period_end LIKE ? OR status LIKE ?)
+        ORDER BY created_at DESC LIMIT 4`)
+        .bind(...payrollCompanies, like, like, like, like).all<Record<string, unknown>>();
+      return (rows.results || []).map((row) => suggestion('payroll', 'payroll',
+        ['Payroll period', row.periodStart, row.periodEnd].filter(Boolean).join(' - '),
+        'Payroll', row.id, row.status ? `Status: ${row.status}` : ''));
     });
 
     const constructionCompanies = scopedCompanyIds(context, 'construction.access');
@@ -130,7 +135,7 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
         ORDER BY updated_at DESC LIMIT 5`)
         .bind(...constructionCompanies, like, like, like).all<Record<string, unknown>>();
       return (rows.results || []).map((row) => suggestion('construction', 'construction', row.name, 'Construction', row.id,
-        [row.projectNo, row.locationName || row.status].filter(Boolean).join(' Â· ')));
+        [row.projectNo, row.locationName || row.status].filter(Boolean).join(' / ')));
     });
 
     const ownCompanies = [...new Set(context.companies.map((company) => company.id))];
@@ -142,7 +147,7 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
         ORDER BY created_at DESC LIMIT 5`)
         .bind(context.employee.id, ...ownCompanies, like, like, like, like).all<Record<string, unknown>>();
       return (rows.results || []).map((row) => suggestion('leave-request', 'leave', row.id, 'My leave requests', row.id,
-        [row.startDate, row.endDate, row.status].filter(Boolean).join(' Â· ')));
+        [row.startDate, row.endDate, row.status].filter(Boolean).join(' / ')));
     });
     await lookup('My document requests', ownCompanies.length > 0, async () => {
       const rows = await env.DB.prepare(`SELECT id,document_type AS documentType,status

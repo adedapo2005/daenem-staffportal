@@ -39,6 +39,9 @@ const env = {
             if (sql.includes('FROM employee_document_requests')) return { results: [
               { id: 'doc-a', documentType: 'Certificate', status: 'ready' },
             ] };
+            if (sql.includes('FROM payroll_runs')) return { results: [
+              { id: 'run-2026-09', periodStart: '2026-09-01', periodEnd: '2026-09-30', status: 'approved' },
+            ] };
             if (sql.includes('FROM employees e')) return { results: [
               { id: 'person-a', displayName: 'Person A', employeeNo: 'EMP-A' },
             ] };
@@ -90,4 +93,27 @@ test('length validation and wildcard-only queries are bounded', async () => {
   assert.equal((await request('a'.repeat(81))).status, 400);
   assert.equal((await request('___%%')).body.suggestions.length, 0);
   assert.equal(calls.length, 0);
+});
+
+test('Payroll search uses actual migrated fields and the permitted company', async () => {
+  const ctx = session(['printing']);
+  ctx.companyPermissions.printing['payroll.access'] = 'view';
+  const { body } = await request('2026-09', ctx);
+  const query = calls.find(c => c.sql.includes('FROM payroll_runs'));
+  assert.ok(query, 'Payroll SQL should run for a payroll-authorized employee');
+  assert.equal(query.sql.includes('run_no'), false, 'run_no does not exist in D1 payroll_runs');
+  assert.match(query.sql, /period_start LIKE \?/);
+  assert.match(query.sql, /period_end LIKE \?/);
+  assert.match(query.sql, /company_id IN \(\?\)/);
+  assert.deepEqual(query.args, ['printing', '%2026-09%', '%2026-09%', '%2026-09%', '%2026-09%']);
+  assert.deepEqual(body.sources.find(s => s.name === 'Payroll'), { name: 'Payroll', status: 'checked' });
+  assert.ok(body.suggestions.some(s => s.type === 'payroll' && s.label.includes('2026-09')));
+  assert.equal(body.partial, false);
+});
+
+test('Payroll source and its records remain absent without company payroll permission', async () => {
+  const { body } = await request('2026-09', session(['printing']));
+  assert.equal(calls.some(c => c.sql.includes('FROM payroll_runs')), false);
+  assert.equal(body.suggestions.some(s => s.type === 'payroll'), false);
+  assert.equal(body.sources.some(s => s.name === 'Payroll'), false);
 });
