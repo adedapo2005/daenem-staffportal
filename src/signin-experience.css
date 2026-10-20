@@ -628,3 +628,76 @@
  #staffportal-auth-mount.sp-auth-mode-create .usp-social-note {display:none!important;}
  #staffportal-auth-mount.sp-auth-mode-create .usp-signup-whatsapp-verify {padding:4px!important;gap:2px!important;}
 }
+
+/* V180 Create Account polish v2: same sapphire identity, improved rhythm and precision.
+   Scoped to signup; no Sign-In, backend, provider, or post-login modifications. */
+#staffportal-auth-mount.sp-auth-mode-create {
+  background:
+    radial-gradient(ellipse at 96% 99%,rgba(35,102,140,.18),transparent 44%),
+    linear-gradient(145deg,#10294a,#07172c 66%,#081326)!important;
+  border-color:rgba(141,192,233,.47)!important;
+  box-shadow:0 12px 34px rgba(2,18,38,.20),inset 0 1px 0 rgba(222,242,255,.08)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {font-weight:800!important;letter-spacing:-.026em!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading p {color:#b8d0e6!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs {
+  border:1px solid rgba(140,193,229,.37)!important;
+  box-shadow:inset 0 1px 3px rgba(0,11,24,.17)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button {
+  font-weight:700!important;transition:background-color .18s ease,color .18s ease,border-color .18s ease!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button.active {
+  background:linear-gradient(110deg,#1e5c90,#2579a4)!important;
+  box-shadow:0 2px 9px rgba(6,22,44,.23),inset 0 1px 0 rgba(225,247,255,.15)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-primary-button {
+  background:linear-gradient(110deg,#186ac2,#237ea6)!important;
+  font-weight:800!important;letter-spacing:.008em!important;
+  box-shadow:inset 0 1px 0 rgba(240,251,255,.17),0 3px 11px rgba(1,30,62,.23)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-primary-button:not(:disabled):hover {
+  background:linear-gradient(110deg,#267cd4,#3294b9)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field>input {
+  border-color:rgba(134,183,220,.52)!important;
+  transition:border-color .18s ease,box-shadow .18s ease!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field>input:focus {
+  border-color:#8dcaff!important;box-shadow:0 0 0 2px rgba(71,149,215,.23)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons>button {
+  border-color:rgba(133,183,222,.55)!important;
+  background:linear-gradient(180deg,#174067,#12324f)!important;
+  box-shadow:inset 0 1px 0 rgba(228,246,255,.09)!important;
+  font-weight:750!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons>button:hover {
+  background:linear-gradient(180deg,#20527b,#1b4366)!important;
+  border-color:#94cbef!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .usp-social-whatsapp {
+  background:linear-gradient(180deg,#14475b,#12374b)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .usp-social-whatsapp.is-selected {
+  background:linear-gradient(180deg,#19566a,#1d4a60)!important;
+  border-color:#8cdbce!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider {color:#adc8dc!important;}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress-track {
+  overflow:hidden!important;border-radius:999px!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress-track i {
+  border-radius:999px!important;box-shadow:0 0 10px rgba(94,173,239,.36)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-close {
+  transition:background-color .18s ease,border-color .18s ease!important;
+}
+@media (min-width:1440px) {
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons {gap:7px!important;}
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons>button {min-height:36px!important;}
+ #staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .usp-social-whatsapp {min-height:34px!important;}
+}
+@media (prefers-reduced-motion:reduce) {
+ #staffportal-auth-mount.sp-auth-mode-create * {transition-duration:0.01ms!important;}
+}
