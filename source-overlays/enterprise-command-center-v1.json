@@ -25,11 +25,11 @@
   "files": [
     {
       "path": "src/enterprise-command-center-model.ts",
-      "sha256": "dc1a8e148fb97f7d8bcc23389222026c341d7b88c54b3e34dfa706c9647b37fb"
+      "sha256": "da1deea3b1af434db4badc1ae8e911827774d1bacdb2b0619194c76f16907104"
     },
     {
       "path": "src/enterprise-command-center-navigation.tsx",
-      "sha256": "fc43b0cd7490c786d3512a1df45c7dfa626b69bba8556813ba90090cea603abe"
+      "sha256": "3887611f7819c8a573a09091a0a4442c7d9c6e219c9bd5648613935cd560e426"
     },
     {
       "path": "src/enterprise-command-center-navigation.css",
