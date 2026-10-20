@@ -1,0 +1,136 @@
+/* Stage 1 / Teal & Pearl: scoped to the post-login preview only.
+   Changing data-stage1-palette to previous restores existing colours.
+   No original V115 exported source, authentication, page content or routes change. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight {
+  --p-bg: #f6fafc;
+  --p-ink: #13283d;
+  --p-muted: #526578;
+  --p-soft: #e8f7f5;
+  --p-surface: #ffffff;
+  --p-line: #d8e7e7;
+  --p-accent: #0f766e;
+  --stage1-citrus: #ffdf5c;
+  --stage1-lavender: #f7f7fe;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight {
+  background: #f6fafc;
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar {
+  background: #e8f7f5 !important;
+  color: #13283d !important;
+  border-right: 1px solid #cbe7e3;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-shell-brand,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-company {
+  background: #dff2ed;
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-company :is(strong,small),
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-sidebar-bottom :is(button,small,strong),
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar .p-shell-utility-label {
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation {
+  --ecc-navy: #ffffff;
+  --ecc-surface: #e8f7f5;
+  --ecc-hover: #d2eee9;
+  --ecc-active: #c7eae3;
+  --ecc-teal: #0f766e;
+  --ecc-teal-soft: #0f766e;
+  --ecc-text: #13283d;
+  --ecc-muted: #526578;
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-search-box {
+  border: 1px solid #bcded9;
+  color: #526578;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-search-box input,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-page-link,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-page[data-current] .ecc-page-link {
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation :is(.ecc-disclosure,.ecc-page-link,.ecc-area-open,.ecc-favorite-button,.ecc-shortcuts-toggle,.ecc-clear-search):hover {
+  background: #d2eee9;
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation :is(a,button,input):focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 2px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-topbar {
+  background: #ffffff;
+  color: #13283d;
+  border-bottom-color: #d8e7e7;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-main {
+  background: #f6fafc;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-panel,.p-table,.p-modal) {
+  --p-surface: #fff;
+  --p-ink: #13283d;
+  --p-muted: #526578;
+}
+/* Retained dark dashboards, banners, and status surfaces own their original text colours. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-command-ribbon,.p-employee-welcome,.p-profile-cover,.v3-domain-hero) {
+  --p-ink: #f1f5ff;
+  --p-muted: #c5d4e0;
+}
+.stage1-rollback-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid #0f766e;
+  border-radius: 8px;
+  background: #f7f7fe;
+  color: #0f766e;
+  font-weight: 700;
+  cursor: pointer;
+}
+.stage1-rollback-toggle:focus-visible { outline: 3px solid #0f766e; outline-offset: 3px; }
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation { background: Canvas !important; color: CanvasText !important; }
+}
+
+/* Daylight navigation contrast repairs: inherited original navy text rules
+   must not render white labels on Stage 1's pale mint states. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-group[data-current-ancestor] > .ecc-group-row > .ecc-disclosure,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-group[data-current-ancestor] > .ecc-group-row .ecc-area-icon,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-favorite-button[aria-pressed="true"],
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-rail-button[data-current-ancestor] {
+  color: #0f766e;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation :is(.ecc-contextual-tools,.ecc-contextual-recents) button[aria-current="page"],
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation :is(.ecc-rail-button,.ecc-rail-search):hover {
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-rail-button[data-current-ancestor] {
+  box-shadow: inset 3px 0 #0f766e;
+}
+/* Citrus and lavender are restrained, legible accents, not dominant CTA colours. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-page[data-current] > .ecc-page-row {
+  box-shadow: inset 3px 0 #0f766e, 0 0 0 1px #bbdcd6;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-section-label {
+  color: #526578;
+}
+
+/* Stage 1 visual QA 2026-10-19: explicit contrast over inherited premium shell. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-shell-brand .p-logo,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-shell-brand .p-logo :is(span,strong,small) { color: #13283d !important; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-company { background: #def3ee !important; color: #13283d !important; border-color: #b4ddd3 !important; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-company :is(span,strong,small) { color: #13283d !important; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-area > .ecc-group-row .ecc-disclosure { color: #13283d; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-area > .ecc-group-row .ecc-disclosure[aria-expanded="true"] { color: #0f766e; }
+
+/* Selector specificity guard against the retained premium-shell company-button rules. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-sidebar button.p-company.p-company {
+  background: #def3ee !important;
+  background-color: #def3ee !important;
+  background-image: none !important;
+  color: #13283d !important;
+}

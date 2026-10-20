@@ -48,6 +48,11 @@ jobs:
       - name: Company-scoped access contract
         run: npm run check:company-scoped-access
 
+      - name: Enterprise Command Center preservation and navigation
+        run: |
+          node scripts/test-navigation-overlay.mjs
+          node scripts/check-command-center-navigation.mjs
+
       - name: V44 scoped settings contract
         run: node scripts/check-v44-scoped-settings.mjs
 

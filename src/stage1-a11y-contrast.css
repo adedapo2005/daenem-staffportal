@@ -1,0 +1,21 @@
+/* Reversible Stage 1 WCAG contrast corrections. Preserve all legacy source and controls. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-disclosure .ecc-group-label {
+  color: #13283d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .ecc-navigation .ecc-group[data-current-ancestor] > .ecc-group-row .ecc-group-label {
+  color: #0f766e;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-clock > small {
+  color: #42586b;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-demo-strip,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-demo-strip :is(span,strong,.p-demo-copy) {
+  color: #405365;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-form-paper > span {
+  color: #48593c;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-activity-list small,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-timeline small {
+  color: #46594e;
+}
