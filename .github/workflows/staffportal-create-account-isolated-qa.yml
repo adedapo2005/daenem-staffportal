@@ -12,6 +12,7 @@ on:
       - 'worker/v180-public-signin-widgets.ts'
       - 'scripts/test-v180-public-signin-widgets.mjs'
       - 'scripts/test-signin-widget-restoration.cjs'
+      - 'scripts/check-signin-release-blockers.mjs'
       - 'worker/index.ts'
       - 'worker/weather-provider.ts'
       - 'scripts/test-public-signin-weather-allowlist.mjs'
