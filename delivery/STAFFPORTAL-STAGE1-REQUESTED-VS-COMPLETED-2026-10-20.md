@@ -2,7 +2,7 @@
 
 **Updated:** 20 October 2026
 **Scope:** Authenticated StaffPortal post-login experience only
-**Current live Pre-Production source:** `e270c0a1902b563dbc2ab5413c81fc85e8181dab`
+**Current live Pre-Production source:** `64aeb69931f1cbb13914ebff8e8668dcf533d168`
 **Isolated integration branch:** `feature/staffportal-stage1-ocean-integration-20261020`
 
 ## Status rules
@@ -20,9 +20,9 @@ A successful build, a generated preview, or the presence of a component never ch
 
 | Item | Status | Evidence / remaining work |
 |---|---|---|
-| Latest deployed Sign-In, Create Account, WhatsApp, weather and service-worker source retained | Implemented in candidate | Candidate includes live source `e270c0a...`; Stage 1 is applied additively. Full auth/provider acceptance remains required. |
-| Complete Stage 1 source combined with latest auth | Implemented in candidate | Enterprise navigation, Stage 1 search, workflow focus, palette, accessibility and page refinements are present in the isolated branch. |
-| Current Cloudflare Pre-Production includes complete Stage 1 | **No** | Live is still `e270c0a...`; do not describe Stage 1 as restored until exact integrated candidate promotion and fingerprint verification. |
+| Latest deployed Sign-In, Create Account, WhatsApp, weather and service-worker source retained | **Live verified** | Exact integrated source `64aeb699...` is deployed. Public Sign-In/Create Account, Google, Microsoft, WhatsApp, Install StaffPortal and weather presentation are present at desktop and mobile; full provider sign-in acceptance still requires real provider accounts. |
+| Complete Stage 1 source combined with latest auth | **Live verified** | Enterprise navigation, Stage 1 search, workflow focus, palette, accessibility and page refinements are present in exact deployed source `64aeb699...`. |
+| Current Cloudflare Pre-Production includes complete Stage 1 | **Yes - live verified** | Staging controller run `39497546839` checked out and deployed exact candidate `64aeb69931f1cbb13914ebff8e8668dcf533d168`; health, runtime/auth-route and 55/55 asset-integrity checks passed. |
 | Production changed | **No** | Production authorization remains closed. |
 
 ## Approved appearance and palette governance
@@ -105,14 +105,14 @@ A successful build, a generated preview, or the presence of a component never ch
 |---|---|---|
 | One authoritative Stage 1 contrast layer | Implemented in candidate | Conflicting `stage1-accessibility.css` was removed; semantic `stage1-a11y-contrast.css` is authoritative. |
 | KPI accessible final values | Implemented in candidate | Adapter preserves visible animation and exposes stable final labels; focused tests pass. |
-| Visible keyboard focus | Implemented in candidate | Palette-aware focus roles are applied. Real keyboard path acceptance remains open. |
-| Reduced motion | Implemented in candidate | New palette/Appearance interactions respect reduced motion; full application motion inventory remains open. |
-| Forced-colour support | Partial | Navigation/palette/Appearance fallbacks exist. Complete Windows high-contrast review is open. |
-| Desktop 3840/1920/1366 | Not yet verified on exact candidate | Required browser screenshots and interaction evidence pending. |
-| Tablet 1024 and narrow desktop | Not yet verified on exact candidate | Required. |
-| Mobile 390 and other supported phones | Not yet verified on exact candidate | Required; on-screen keyboard and label wrapping included. |
+| Visible keyboard focus | **Live verified on sampled paths** | Home, Appearance, Finance and Forms each completed 24 visible keyboard focus stops in the recorded live matrix with no page exceptions. Full workflow keyboard acceptance remains open. |
+| Reduced motion | **Live verified on sampled paths** | Home, Appearance, Finance and Forms passed the live reduced-motion matrix. Full application motion inventory remains open. |
+| Forced-colour support | **Live verified on sampled paths** | Home, Appearance, Finance and Forms passed the live forced-colours matrix with keyboard focus retained and no overflow. Complete Windows high-contrast/manual review remains open. |
+| Desktop 3840/1920/1366 | **Live verified (synthetic authenticated UI)** | Exact deployed source passed the recorded Owner matrix at 3840, 1920 and 1366 without horizontal overflow or uncaught page errors. Real-session acceptance remains required. |
+| Tablet 1024 and narrow desktop | **Live verified (synthetic authenticated UI)** | Exact deployed source passed the recorded 1024 presentation check without horizontal overflow or uncaught page errors. Touch and real-session acceptance remain required. |
+| Mobile 390 and other supported phones | **Live verified at 390 (synthetic authenticated UI)** | Owner, Manager and Employee home plus selected operational routes passed at 390 with no horizontal overflow; Notifications remains single-line. Additional phones and on-screen keyboard behavior remain open. |
 | Large text/zoom/long names | Not yet verified | Required. |
-| No horizontal overflow | Not yet verified on exact candidate | Previous Stage 1 evidence is not automatically evidence for this integrated palette candidate. |
+| No horizontal overflow | **Live verified in recorded matrix** | 18/18 live role/route scenarios across 3840, 1920, 1366, 1024 and 390 reported zero horizontal overflow. |
 | Performance/bundle | Not yet verified | Existing >500 KB advisory remains known; build and measured browser performance required. |
 | Offline/interrupted connectivity | Partial | Existing behavior preserved; palette policy fallback is fail-safe, but end-to-end recovery needs live tests. |
 | Rollback to retained interface | Implemented in candidate | Release Details switch remains. Exact candidate browser rollback and style cleanup must pass before promotion. |
@@ -148,4 +148,32 @@ The isolated candidate retains the current Pre-Production source `e270c0a1902b56
 | Production build | PASS | Server and client built; existing large-chunk advisory remains and still requires measured optimization. |
 | Human visual review | PASS for recorded candidate screenshots | Ocean anchor, opaque surfaces, single-line mobile Notifications label and desktop/mobile Appearance were inspected. Broader authenticated live acceptance remains open. |
 
-**Still not complete:** this is local exact-source evidence using synthetic authenticated fixtures. Cloudflare Pre-Production still serves the earlier source until an exact committed SHA is reviewed and promoted. Real Worker/D1 login, company isolation, revocation, actual providers, assistive-technology review, manual contrast review, performance measurement and the broader page-family work in this ledger remain open. Production remains untouched.
+**Still not complete:** Cloudflare Pre-Production now serves the exact integrated Stage 1 source. Real Worker/D1 login with owner/manager/employee credentials, company isolation, revocation, actual external-provider sign-in, assistive-technology review, manual contrast review, performance measurement and the broader page-family work in this ledger remain open. Production remains untouched.
+
+
+## Live Cloudflare Pre-Production verification - 20 October 2026
+
+**Exact deployed source:** `64aeb69931f1cbb13914ebff8e8668dcf533d168`
+**Deployment workflow run:** `39497546839`
+**Scope of browser evidence:** live Cloudflare assets with synthetic authenticated UI fixtures for post-login presentation; public Sign-In inspected without an authenticated session. This does not substitute for real-account Worker/D1 or external-provider acceptance.
+
+| Live check | Result |
+|---|---|
+| Staging controller checkout/deploy | **PASS** - exact `64aeb699...`; health, runtime/auth-route and stable asset verification completed. |
+| Post-login role/route matrix | **18/18 PASS** - Owner, Manager and Employee; desktop/tablet/mobile/4K; zero horizontal overflow and zero uncaught page errors. |
+| Appearance policy workflows | **3/3 PASS** - preview/cancel, personal apply/reset, Group default, force/clear and restore approved default. |
+| Optional palette matrix | **2/2 PASS; all 19 palettes per viewport** - 1366 and 390, semantic palette roles present, no overflow/page errors. |
+| Automated WCAG A/AA scan | **16/16 scenarios; 0 confirmed violation groups; 0 page errors** - automated Axe only; incomplete/manual checks remain. |
+| Keyboard + forced-colours/reduced-motion interaction matrix | **8/8 PASS** - Home, Appearance, Finance and Forms; 24 visible focus stops per scenario, no overflow and no page errors. |
+| Public Sign-In preservation | **2/2 PASS** - 1366 and 390 show Sign-In, Create Account, Google, Microsoft, WhatsApp, Install StaffPortal and weather content, with no horizontal overflow or page exceptions. |
+| Expected anonymous API protection | **PASS** - `/api/auth/me` and temporary-password status probes return 401 while signed out. |
+| Production | **Untouched**. |
+
+### Remaining release gates
+
+1. Real authenticated Owner, Manager and Employee sessions against Worker/D1, including company isolation and access revocation.
+2. Real Google, Microsoft and WhatsApp provider flows; public control presence is verified but provider completion is not.
+3. Manual keyboard/screen-reader/high-contrast/zoom review and remaining Axe incomplete cases.
+4. Performance measurement and the known large client-chunk optimization work.
+5. The broader page-family/reference-feature items still marked Partial or Not implemented above; live deployment does not close them automatically.
+6. Final production release remains blocked until these gates and the project acceptance board are satisfied.
