@@ -28,7 +28,7 @@ async function run(){
    await page.route('**/api/**',async route=>{
     const u=new URL(route.request().url());let body={};
     if(u.pathname==='/api/auth/me')body={authenticated:false};
-    if(u.pathname==='/api/context/signin')body={source:'live',generatedAt:new Date().toISOString(),news:[{title:'Nigerian businesses expand local training programmes',source:'QA attributed source',category:'Nigeria',url:'https://example.org/news'}]};
+    if(u.pathname==='/api/context/signin/news')body={state:'partial',latest:[{id:'qa-news',title:'Nigerian businesses expand local training programmes',source:'QA attributed source',categories:'Nigeria',link:'https://example.org/news',published:new Date().toISOString(),summary:''}],intelligence:Object.fromEntries(['Security','Economy','Politics','Agriculture','Energy','Infrastructure'].map(domain=>[domain,[]])),sources:[{name:'QA attributed source'}]};
     if(u.pathname==='/api/context/signin/weather'){
      const city=u.searchParams.get('city')||'ibadan';calls[city]=(calls[city]||0)+1;body=fixture(city,change);
     }
@@ -49,7 +49,7 @@ async function run(){
      const cards=[...document.querySelectorAll('article[data-city-id]')].map(card=>{
       const summary=card.querySelector('[data-signin-weather-summary]')||card.querySelector('.gw-city-instrument')?.nextElementSibling;
       const c=box(card),s=summary?box(summary):null;
-      return{city:card.dataset.cityId,card:c,summary:s,text:summary?.textContent,inside:s&&contains(c,s),digital:[...card.querySelectorAll('.gw-city-digital > p')].map(e=>({text:e.textContent,box:box(e),inside:contains(c,box(e))}))};
+      return{city:card.dataset.cityId,clock:box(card.querySelector('.gw-city-clock')),card:c,summary:s,text:summary?.textContent,inside:s&&contains(c,s),digital:[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>({text:e.textContent,box:box(e),inside:contains(c,box(e))}))};
      });
      const weather=document.querySelector('#staff-local-weather'),w=box(weather);
      const detail=document.querySelector('.sp-weather-v145-intelligence'),d=box(detail);
@@ -63,7 +63,7 @@ async function run(){
     if(!baseline){
      assert.equal(data.metrics,6,'six Ibadan details');
      assert.equal(data.cards.length,7,'seven city cards');
-     for(const card of data.cards){assert.ok(card.inside,card.city+' weather clipped '+JSON.stringify(card));for(const row of card.digital)assert.ok(row.inside,card.city+' clock metadata clipped '+JSON.stringify(row));}
+     for(const card of data.cards){if(card.city!=='ibadan')assert.ok(card.clock.width>=83.9,'approved minimum global clock width: '+card.city);assert.ok(card.inside,card.city+' weather clipped '+JSON.stringify(card));for(const row of card.digital)assert.ok(row.inside,card.city+' clock metadata clipped '+JSON.stringify(row));}
      for(const field of data.fields)assert.ok(field.inside,'detail clipped '+JSON.stringify(field));
      assert.equal(data.overlaps.length,0,'weather readings overlap '+JSON.stringify(data.overlaps));
      assert.ok(data.scrollWidth<=width+2,'horizontal overflow');
@@ -112,7 +112,7 @@ async function run(){
     const overflow=await page.evaluate(()=>[...document.querySelectorAll('article[data-city-id]')].flatMap(card=>{
      const c=card.getBoundingClientRect(),summary=card.querySelector('[data-signin-weather-summary]').getBoundingClientRect();
      const clock=card.querySelector('.gw-city-clock').getBoundingClientRect();
-     const digital=[...card.querySelectorAll('.gw-city-digital > p')].map(e=>e.getBoundingClientRect());
+     const digital=[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect());
      const outside=[summary,clock,...digital].some(r=>r.x<c.x-1||r.right>c.right+1||r.y<c.y-1||r.bottom>c.bottom+1);
      const overlap=[clock,...digital].some(r=>Math.min(r.right,summary.right)-Math.max(r.x,summary.x)>1&&r.bottom>summary.y+1);
      const bounds=r=>({x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,right:r.right});

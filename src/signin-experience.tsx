@@ -1,6 +1,8 @@
 import { forwardRef, memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { ThemeId } from './theme-system';
+import { connectSignInWidgets } from './signin-widgets';
+import { connectSignInWeatherMotion, hydrateSignInWeatherVisual } from './signin-weather-visuals';
 import approvedSignInMarkup from './approved-signin-v180/reference-v180.html?raw';
 
 // Presentation is copied from the approved Sites V180 source; runtime code only wires live data and real authentication into it.
@@ -88,6 +90,7 @@ type SignInWeatherPayload = {
   recentHigh: number | null;
   recentLow: number | null;
   description: string;
+  isDay: boolean | null;
 };
 
 const SIGNIN_WEATHER_CACHE_KEY = 'daenem:staffportal:signin-weather:ibadan:v1';
@@ -130,6 +133,7 @@ function normalizeSignInWeather(value: unknown): SignInWeatherPayload | null {
     windGust: optionalWeatherNumber(candidate.windGust),
     recentHigh: optionalWeatherNumber(candidate.recentHigh ?? recent.high),
     recentLow: optionalWeatherNumber(candidate.recentLow ?? recent.low),
+    isDay: typeof candidate.isDay === 'boolean' ? candidate.isDay : null,
     description: typeof candidate.description === 'string' && candidate.description.trim() ? candidate.description.trim() : 'Current conditions',
   };
 }
@@ -207,19 +211,30 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
   if (!card || !summary) return;
   saved ||= Math.max(payload.cacheAgeSeconds * 1000, Date.now() - Date.parse(payload.fetchedAt)) > SIGNIN_WEATHER_REFRESH_MS;
   const unit = payload.unitsSystem === 'IMPERIAL' ? '°F' : '°C';
-  const values = [weatherText('span', 'sp-live-weather-condition', payload.description)];
-  if (payload.temperature !== null) values.unshift(weatherText('b', 'sp-live-weather-temperature', `${Math.round(payload.temperature)}${unit}`));
-  if (payload.humidity !== null) values.push(weatherText('span', 'sp-live-weather-humidity', `Humidity ${Math.round(payload.humidity)}%`));
-  if (saved) values.push(weatherText('span', 'sp-live-weather-saved', 'Saved'));
-  const summaryText = values.map((value) => value.textContent).join(' · ');
+  const readings = weatherText('span', 'sp-live-weather-readings', '');
+  if (payload.temperature !== null) readings.appendChild(weatherText('b', 'sp-live-weather-temperature', `${Math.round(payload.temperature)}${unit}`));
+  if (payload.humidity !== null) {
+    const humidity = weatherText('span', 'sp-live-weather-humidity', `💧 ${Math.round(payload.humidity)}%`);
+    humidity.setAttribute('aria-label', `Humidity ${Math.round(payload.humidity)}%`);
+    humidity.title = `Humidity ${Math.round(payload.humidity)}%`;
+    readings.appendChild(humidity);
+  }
+  if (saved) readings.appendChild(weatherText('span', 'sp-live-weather-saved', 'Saved'));
+  const values = weatherText('span', 'sp-live-weather-values', '');
+  values.appendChild(readings);
+  values.appendChild(weatherText('span', 'sp-live-weather-condition', payload.description));
+  const summaryText = `${payload.temperature === null ? '' : Math.round(payload.temperature) + unit} · ${payload.description}${payload.humidity === null ? '' : ` · Humidity ${Math.round(payload.humidity)}%`}${saved ? ' · Saved' : ''}`;
   if (summary.dataset.weatherText !== summaryText) {
-    summary.replaceChildren(...values);
+    const existing = summary.querySelector('.sp-live-weather-values');
+    if (existing) existing.replaceWith(values); else summary.replaceChildren(values);
     summary.dataset.weatherText = summaryText;
     summary.setAttribute('aria-label', summaryText);
   }
+  card.dataset.weatherDaylight = payload.isDay === null ? '' : String(payload.isDay);
   summary.title = `${payload.provider} · ${weatherFreshness(payload)}${saved ? ' · Saved update' : ''}`;
   card.dataset.weather = saved || payload.providerStatus === 'cached' ? 'cached' : 'available';
   card.dataset.weatherCondition = payload.description;
+  hydrateSignInWeatherVisual(card);
 }
 
 function applySignInWeather(root: HTMLElement, payload: SignInWeatherPayload, browserCached = false, refreshFailed = false) {
@@ -282,7 +297,7 @@ function applyUnavailableSignInWeather(root: HTMLElement, cityId = 'ibadan') {
     delete summary.dataset.weatherText;
     summary.setAttribute('aria-label', 'Weather temporarily unavailable');
   }
-  if (card) { card.dataset.weather = 'unavailable'; card.dataset.weatherCondition = 'Unavailable'; }
+  if (card) { card.dataset.weather = 'unavailable'; card.dataset.weatherCondition = 'Unavailable'; hydrateSignInWeatherVisual(card); }
   if (cityId !== 'ibadan') return;
   setTrailingText(root.querySelector<HTMLElement>('.sp-weather-v175-live-label'), 'WEATHER UPDATE');
   setTrailingText(root.querySelector<HTMLElement>('.sp-weather-v175-provider'), 'Weather data unavailable');
@@ -296,60 +311,6 @@ function applyUnavailableSignInWeather(root: HTMLElement, cityId = 'ibadan') {
   const indicator = statusItem?.querySelector<HTMLElement>('i');
   if (indicator) indicator.className = 'is-warn';
   setTrailingText(statusItem || null, 'Unavailable');
-}
-
-function publicContextStatus(root: HTMLElement, label: string, text: string, available: boolean) {
-  const status = [...root.querySelectorAll<HTMLElement>('.sp-status-rail > span')]
-    .find((item) => item.querySelector('b')?.textContent?.trim() === label);
-  const indicator = status?.querySelector<HTMLElement>('i');
-  if (indicator) indicator.className = available ? 'is-good' : 'is-warn';
-  setTrailingText(status || null, text);
-}
-
-function applyPublicSignInContext(root: HTMLElement, value: unknown) {
-  const candidate = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-  const news = candidate.source === 'live' && Array.isArray(candidate.news) ? candidate.news.filter((item): item is { title: string; source: string; url?: string; category: string } =>
-    !!item && typeof item === 'object' && item.category === 'Nigeria' && typeof item.title === 'string' && !!item.title.trim() && typeof item.source === 'string' && !!item.source.trim()) : [];
-  const body = root.querySelector<HTMLElement>('[data-widget="news"] .gw-primary-raw');
-  if (body) {
-    body.classList.add('sp-live-news-content');
-    body.replaceChildren();
-    // One fully readable lead story occupies the existing editorial widget.
-    const item = news[0];
-    if (item) {
-      let url: URL | null = null;
-      try { const parsed = new URL(item.url || ''); if (parsed.protocol === 'https:' || parsed.protocol === 'http:') url = parsed; } catch { /* A title without a safe link remains readable. */ }
-      const title = weatherText(url ? 'a' : 'p', 'sp-live-news-title', item.title);
-      if (url && title instanceof HTMLAnchorElement) { title.href = url.href; title.target = '_blank'; title.rel = 'noopener noreferrer'; }
-      const source = weatherText('span', 'sp-live-news-source', item.source);
-      body.appendChild(source);
-      body.appendChild(title);
-      publicContextStatus(root, 'Nigeria News', 'Live', true);
-    } else {
-      body.appendChild(weatherText('p', 'sp-live-news-unavailable', 'Nigerian headlines are temporarily unavailable. Please check back shortly.'));
-      publicContextStatus(root, 'Nigeria News', 'Unavailable', false);
-    }
-  }
-  // The current public response has no six-domain intelligence report feed.
-  // Unknown coverage must not be presented as six checked domains with zero reports.
-  const intelligence = root.querySelector<HTMLElement>('[data-widget="intelligence"]');
-  if (intelligence) {
-    const empty = intelligence.querySelector<HTMLElement>('.gw-intelligence-empty');
-    if (empty) empty.textContent = 'Verified intelligence updates are temporarily unavailable.';
-    const state = intelligence.querySelector<HTMLElement>('.gw-intel-domain-state');
-    if (state) state.textContent = 'Unavailable';
-    const kicker = intelligence.querySelector<HTMLElement>('.gw-intel-domain-kicker');
-    if (kicker) kicker.textContent = 'Executive briefing';
-    intelligence.querySelectorAll<HTMLElement>('.gw-intel-domain-index > span').forEach((item) => {
-      const count = item.querySelector('small');
-      if (count) count.textContent = '—';
-      item.title = item.title.replace(/:.*$/, ': reporting unavailable');
-    });
-    const coverage = intelligence.querySelector<HTMLElement>('.gw-primary-footer > span');
-    if (coverage) coverage.textContent = 'Coverage unavailable';
-    setTrailingText(intelligence.querySelector<HTMLElement>('.gw-state-badge'), 'Unavailable');
-  }
-  publicContextStatus(root, 'Nigerian Intelligence', 'Unavailable', false);
 }
 
 function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
@@ -378,6 +339,7 @@ function settleReferenceMotion(root: HTMLElement) {
 }
 
 function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: Date) {
+  const previousPhase = card.dataset.phase;
   const phase = phaseAt(now, zone);
   const localNight = phase === 'night' || phase === 'dusk';
   const media = resolvedMedia(cityId, phase);
@@ -446,6 +408,7 @@ function updateCityPhase(card: HTMLElement, cityId: string, zone: string, now: D
   if (image.getAttribute('src') !== media.src) image.src = media.src;
   const city = card.querySelector<HTMLElement>('.gw-city-name')?.textContent?.trim() || cityId;
   image.alt = `${city} at ${phase} (${media.mediaPhase} media)`;
+  if (previousPhase !== phase) hydrateSignInWeatherVisual(card);
 }
 
 function removePublicOwnerStudioLauncher(markup: string) {
@@ -469,7 +432,9 @@ function updateReferenceClocks(root: HTMLElement, now: Date) {
       second: '2-digit',
       hour12: true,
     }).format(now);
-    const compactDate = window.matchMedia('(min-width: 1024px) and (max-height: 850px)').matches || (card.dataset.cityId === 'ibadan' && window.innerWidth < 1920);
+    const compactDate = window.innerWidth < 1920;
+    const compactGlobal = compactDate && card.dataset.cityId !== 'ibadan';
+    card.classList.toggle('sp-compact-clock-date', compactGlobal);
     const date = new Intl.DateTimeFormat('en-US', {
       timeZone: zone,
       weekday: compactDate ? 'short' : 'long',
@@ -481,14 +446,14 @@ function updateReferenceClocks(root: HTMLElement, now: Date) {
     const timeNode = card.querySelector<HTMLElement>('.gw-city-local-time');
     const dateNodes = card.querySelectorAll<HTMLElement>('.gw-city-digital > p');
     if (timeNode) timeNode.textContent = time;
-    if (dateNodes[1]) dateNodes[1].textContent = date.slice(0, comma + 1);
-    if (dateNodes[2]) dateNodes[2].textContent = date.slice(comma + 2);
-    if (dateNodes[3]) {
-      const zoneName = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' })
-        .formatToParts(now)
-        .find((part) => part.type === 'timeZoneName')?.value || '';
-      dateNodes[3].textContent = `${zone} · ${zoneName}`;
-    }
+    const zoneName = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' })
+      .formatToParts(now).find((part) => part.type === 'timeZoneName')?.value || '';
+    if (dateNodes[1]) dateNodes[1].textContent = compactGlobal ? `${date} · ${zoneName}` : date.slice(0, comma + 1);
+    if (dateNodes[2]) dateNodes[2].textContent = compactGlobal ? '' : date.slice(comma + 2);
+    if (dateNodes[3]) dateNodes[3].textContent = compactGlobal ? '' : `${zone} · ${zoneName}`;
+    const digital = card.querySelector<HTMLElement>('.gw-city-digital');
+    if (digital) { digital.title = `${time} · ${date} · ${zone} (${zoneName})`; digital.setAttribute('aria-label', digital.title); }
+
 
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: zone,
@@ -638,45 +603,9 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    let active = true;
-    let pending = false;
-    let lastAttempt = 0;
-    const refreshInterval = 15 * 60 * 1000;
-    const controllers = new Set<AbortController>();
-    const refresh = async () => {
-      if (!active || pending || document.visibilityState === 'hidden' || Date.now() - lastAttempt < refreshInterval) return;
-      pending = true;
-      lastAttempt = Date.now();
-      const controller = new AbortController();
-      controllers.add(controller);
-      const timeout = window.setTimeout(() => controller.abort(new DOMException('News request timed out', 'TimeoutError')), SIGNIN_REQUEST_TIMEOUT_MS);
-      try {
-        const response = await fetch('/api/context/signin', { headers: { accept: 'application/json' }, signal: controller.signal });
-        if (!response.ok) throw new Error('News unavailable');
-        const payload: unknown = await response.json();
-        if (active && !controller.signal.aborted) applyPublicSignInContext(root, payload);
-      } catch (error: unknown) {
-        if (active) applyPublicSignInContext(root, null);
-      } finally {
-        pending = false;
-        controllers.delete(controller);
-        window.clearTimeout(timeout);
-      }
-    };
-    void refresh();
-    const refreshWhenVisible = () => { void refresh(); };
-    const timer = window.setInterval(refreshWhenVisible, refreshInterval);
-    window.addEventListener('online', refreshWhenVisible);
-    window.addEventListener('focus', refreshWhenVisible);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      active = false;
-      controllers.forEach((controller) => controller.abort());
-      window.clearInterval(timer);
-      window.removeEventListener('online', refreshWhenVisible);
-      window.removeEventListener('focus', refreshWhenVisible);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
+    const disconnectWidgets = connectSignInWidgets(root);
+    const disconnectMotion = connectSignInWeatherMotion(root);
+    return () => { disconnectWidgets(); disconnectMotion(); };
   }, []);
 
   useEffect(() => {

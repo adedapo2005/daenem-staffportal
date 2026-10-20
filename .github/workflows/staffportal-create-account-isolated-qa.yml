@@ -6,6 +6,12 @@ on:
       - 'src/auth.tsx'
       - 'src/signin-experience.css'
       - 'src/signin-experience.tsx'
+      - 'src/signin-widgets.ts'
+      - 'src/signin-weather-visuals.ts'
+      - 'worker/entry.ts'
+      - 'worker/v180-public-signin-widgets.ts'
+      - 'scripts/test-v180-public-signin-widgets.mjs'
+      - 'scripts/test-signin-widget-restoration.cjs'
       - 'worker/index.ts'
       - 'worker/weather-provider.ts'
       - 'scripts/test-public-signin-weather-allowlist.mjs'
@@ -45,6 +51,8 @@ jobs:
           node scripts/test-signin-hover-restoration.cjs
           node scripts/test-public-signin-weather-allowlist.mjs
           node scripts/test-signin-weather-content.cjs
+          node scripts/test-v180-public-signin-widgets.mjs
+          node scripts/test-signin-widget-restoration.cjs
       # The separate full V180 baseline test has an inherited 1280px hero-placement
       # failure; retain it in source, do not claim whole-page sign-in acceptance.
       - name: TypeScript, source locks and full application build
