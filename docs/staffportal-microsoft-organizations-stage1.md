@@ -30,6 +30,7 @@ An external organization's administrator may need to grant application consent u
 3. The employee chooses **Connect after StaffPortal Sign-In**, signs in with existing StaffPortal credentials, then opens the staged connection page.
 4. A **recent (15-minute) StaffPortal session** is required; the link form requires same-origin POST and then explicit Microsoft account selection.
 5. PKCE, nonce, signed one-time state, token audience, tenant-bound issuer and signing key issuer are verified. Personal-account and app-only tokens are denied.
+6. The new identity link and its mandatory security audit use a single atomic D1 batch transaction. An audit fault rolls back the link; competing links have only one winner. The employee must still have a valid recent session, an active membership, and an active company.
 6. An immutable identity mapping links provider, tenant ID and object ID to the existing employee. Conflicting or revoked mappings never auto-reassign.
 7. Subsequent Microsoft sign-in checks this mapping, live employee status and company membership before creating the normal StaffPortal session. No new roles or permissions are issued.
 
