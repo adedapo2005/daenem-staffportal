@@ -98,6 +98,66 @@ const PUBLIC_SIGNIN_WEATHER_CITIES = {
   beijing: [39.9042, 116.4074, 'Beijing, China'],
 } as const;
 
+function openMeteoDescription(code: number) {
+  if (code === 0) return 'Clear';
+  if (code <= 3) return code === 1 ? 'Mostly clear' : 'Cloudy';
+  if (code === 45 || code === 48) return 'Fog';
+  if (code >= 51 && code <= 57) return 'Drizzle';
+  if (code >= 61 && code <= 67) return 'Rain';
+  if (code >= 71 && code <= 77) return 'Snow';
+  if (code >= 80 && code <= 82) return 'Rain showers';
+  if (code >= 85 && code <= 86) return 'Snow showers';
+  if (code >= 95) return 'Thunderstorms';
+  return 'Current conditions';
+}
+
+async function fixedCityWeatherFallback(latitude: number, longitude: number, location: string) {
+  try {
+    const endpoint = new URL('https://api.open-meteo.com/v1/forecast');
+    endpoint.searchParams.set('latitude', String(latitude));
+    endpoint.searchParams.set('longitude', String(longitude));
+    endpoint.searchParams.set('current', 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,wind_speed_10m,weather_code,is_day');
+    endpoint.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min');
+    endpoint.searchParams.set('forecast_days', '1');
+    endpoint.searchParams.set('timezone', 'auto');
+    const response = await fetch(endpoint, { headers: { accept: 'application/json' }, cf: { cacheEverything: true, cacheTtl: 300 } });
+    if (!response.ok) return null;
+    const payload = await response.json() as {
+      current?: Record<string, unknown>;
+      daily?: { temperature_2m_max?: unknown[]; temperature_2m_min?: unknown[] };
+    };
+    const current = payload.current || {};
+    const number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null;
+    const code = number(current.weather_code);
+    return json({
+      available: true,
+      provider: 'Open-Meteo fallback',
+      providerStatus: 'fresh',
+      fetchedAt: new Date().toISOString(),
+      cacheAgeSeconds: 0,
+      unitsSystem: 'METRIC',
+      location,
+      temperature: number(current.temperature_2m),
+      apparentTemperature: number(current.apparent_temperature),
+      humidity: number(current.relative_humidity_2m),
+      isDay: number(current.is_day) === null ? null : number(current.is_day) === 1,
+      precipitationProbability: number(current.precipitation_probability),
+      precipitation: null,
+      windSpeed: number(current.wind_speed_10m),
+      windDirection: null,
+      windGust: null,
+      today: {
+        high: number(payload.daily?.temperature_2m_max?.[0]),
+        low: number(payload.daily?.temperature_2m_min?.[0]),
+      },
+      description: openMeteoDescription(code === null ? -1 : code),
+      observedAt: typeof current.time === 'string' ? current.time : null,
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function signInWeather(env: Env, cityName: string | null = null) {
   // No arbitrary latitude/longitude or user-provided location is accepted.
   const city = (cityName || 'ibadan').toLowerCase();
@@ -105,7 +165,9 @@ async function signInWeather(env: Env, cityName: string | null = null) {
     return json({ error: 'Unsupported public weather city.' }, 400);
   }
   const [lat, lon, label] = PUBLIC_SIGNIN_WEATHER_CITIES[city as keyof typeof PUBLIC_SIGNIN_WEATHER_CITIES];
-  return weatherResponse(env, lat, lon, 'METRIC', label);
+  const primary = await weatherResponse(env, lat, lon, 'METRIC', label);
+  if (primary.status < 500) return primary;
+  return await fixedCityWeatherFallback(lat, lon, label) || primary;
 }
 
 async function weather(request: Request, env: Env) {
