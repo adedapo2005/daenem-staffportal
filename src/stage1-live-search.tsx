@@ -62,9 +62,12 @@ export default function Stage1SearchResults({ enabled }: { enabled: boolean }): 
     if (!enabled || !host || query.trim().length < 2) {
       setResponse(null); setStatus('idle'); return;
     }
+    // Clear results immediately on input change; otherwise stale results can
+    // remain interactive during the debounce interval.
+    setResponse(null);
+    setStatus('loading');
     const controller = new AbortController();
     const pending = window.setTimeout(async () => {
-      setStatus('loading');
       try {
         const result = await fetch('/api/search/suggest?q=' + encodeURIComponent(query.trim()), {
           method: 'GET', credentials: 'same-origin', cache: 'no-store',
