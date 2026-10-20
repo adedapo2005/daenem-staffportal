@@ -1,11 +1,28 @@
-import { useEffect, useMemo, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import type { WorkforceContext } from './auth';
 import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal';
 import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/security-contract';
 import type { Company, Session } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
 import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';
 import './postlogin-premium-refinement-v1.css';
+import './staffportal-stage1-palette.css';
 import LivePostLoginEnhancementsV116 from './postlogin-live-widgets-v116';
+import Stage1SearchResults from './stage1-live-search';
+import Stage1AccessibleMetrics from './stage1-accessible-metrics';
+import Stage1WorkflowFocus from './stage1-workflow-focus';
+import Stage1AppearanceStudio from './stage1-appearance-studio';
+import {
+  POSTLOGIN_DEFAULT_PALETTE,
+  normalizePostLoginPaletteId,
+  postLoginPaletteVariables,
+  type PostLoginPaletteId,
+} from './postlogin-palette-system';
+import { Stage1RuntimeContext, type Stage1NavigationRole } from './stage1-runtime-context';
+import './stage1-live-search.css';
+import './stage1-context-density.css';
+import './stage1-finance-visibility.css';
+import './stage1-construction-workspace.css';
+import './stage1-a11y-contrast.css';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
@@ -87,6 +104,19 @@ function sessionFor(context: WorkforceContext): Session {
   };
 }
 
+function companyNavigationRole(context: WorkforceContext, fallback: Stage1NavigationRole): Stage1NavigationRole {
+  const currentCompany = context.companies.find((company) => company.primary) || context.companies[0];
+  if (!currentCompany) return fallback;
+  // Navigation is a presentation layer, not a grant: use this company's actual
+  // assigned roles rather than the global union of roles across all companies.
+  const companyRoles = context.roles.filter((role) => role.companyId === currentCompany.id);
+  if (!companyRoles.length) return fallback;
+  const names = companyRoles.map((role) => `${role.code} ${role.name}`).join(' ').toLowerCase();
+  if (/owner|super.?admin/.test(names)) return 'Owner';
+  if (/manager|admin|lead|supervisor/.test(names)) return 'Manager';
+  return 'Employee';
+}
+
 function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
   const button = (event.target as HTMLElement).closest('button');
   return button?.textContent?.trim() === 'Sign out' && Boolean(button.closest('[role="dialog"]'));
@@ -94,6 +124,53 @@ function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
 
 export default function ApprovedPostLoginV115({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
   const session = useMemo(() => sessionFor(context), [context]);
+  const [stage1Enabled, setStage1Enabled] = useState(true);
+  const [postLoginPalette, setPostLoginPalette] = useState<PostLoginPaletteId>(() =>
+    typeof window === 'undefined'
+      ? POSTLOGIN_DEFAULT_PALETTE
+      : normalizePostLoginPaletteId(window.sessionStorage.getItem('daenem-postlogin-palette')),
+  );
+  const paletteVariables = useMemo(() => postLoginPaletteVariables(postLoginPalette) as CSSProperties, [postLoginPalette]);
+  const navigationRole = useMemo(() => companyNavigationRole(context, session.role === 'Experience Admin' ? 'Manager' : session.role), [context, session.role]);
+
+  useEffect(() => {
+    const update = (event: Event) => {
+      const detail = (event as CustomEvent<{ palette?: string }>).detail;
+      const palette = normalizePostLoginPaletteId(detail?.palette);
+      setPostLoginPalette(palette);
+      window.sessionStorage.setItem('daenem-postlogin-palette', palette);
+    };
+    window.addEventListener('daenem:postlogin-palette-change', update);
+    const controller = new AbortController();
+    fetch('/api/theme/postlogin/policy', { credentials: 'include', cache: 'no-store', signal: controller.signal })
+      .then(async (response) => response.ok
+        ? await response.json() as { effectivePalette?: string }
+        : null)
+      .then((value) => {
+        if (!value?.effectivePalette) return;
+        const palette = normalizePostLoginPaletteId(value.effectivePalette);
+        setPostLoginPalette(palette);
+        window.sessionStorage.setItem('daenem-postlogin-palette', palette);
+      })
+      .catch(() => undefined);
+    return () => {
+      controller.abort();
+      window.removeEventListener('daenem:postlogin-palette-change', update);
+    };
+  }, []);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const variables = postLoginPaletteVariables(postLoginPalette);
+    html.dataset.staffportalPostlogin = 'true';
+    html.dataset.postloginPalette = postLoginPalette;
+    for (const [name, value] of Object.entries(variables)) html.style.setProperty(name, value);
+    return () => {
+      delete html.dataset.staffportalPostlogin;
+      delete html.dataset.postloginPalette;
+      for (const name of Object.keys(variables)) html.style.removeProperty(name);
+    };
+  }, [postLoginPalette]);
 
   useEffect(() => {
     const updateReleaseChip = () => {
@@ -121,6 +198,19 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         const close = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.trim() === 'Close');
         if (close) close.insertAdjacentElement('beforebegin', manifest); else dialog.insertAdjacentElement('beforeend', manifest);
       }
+      // Release Details owns the reversible Stage 1 view choice.
+      let stage1Toggle = dialog.querySelector<HTMLButtonElement>('[data-stage1-rollback-toggle]');
+      if (!stage1Toggle) {
+        stage1Toggle = document.createElement('button');
+        stage1Toggle.type = 'button';
+        stage1Toggle.className = 'stage1-rollback-toggle';
+        stage1Toggle.dataset.stage1RollbackToggle = 'true';
+        stage1Toggle.addEventListener('click', () => setStage1Enabled((enabled) => !enabled));
+        manifest.insertAdjacentElement('beforebegin', stage1Toggle);
+      }
+      const toggleLabel = stage1Enabled ? 'Use previous interface' : 'Restore Stage 1 experience';
+      if (stage1Toggle.textContent !== toggleLabel) stage1Toggle.textContent = toggleLabel;
+      stage1Toggle.setAttribute('aria-pressed', String(!stage1Enabled));
       if (manifest.dataset.commit === STAGING_BUILD.commit) return;
       manifest.dataset.commit = STAGING_BUILD.commit;
       manifest.replaceChildren();
@@ -161,7 +251,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
     const observer = new MutationObserver(updateReleaseDetails);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, []);
+  }, [stage1Enabled]);
 
   if (typeof window !== 'undefined') {
     sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
@@ -173,6 +263,9 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
   return (
     <div
       data-approved-postlogin="qa-review-v115"
+      data-stage1-palette={stage1Enabled ? "bright" : "previous"}
+      data-postlogin-palette={stage1Enabled ? postLoginPalette : "previous"}
+      style={stage1Enabled ? paletteVariables : undefined}
       data-approved-project={APPROVED_SOURCE.project}
       data-approved-version={APPROVED_SOURCE.version}
       data-source-commit={APPROVED_SOURCE.commit}
@@ -188,8 +281,16 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         void onLogout();
       }}
     >
-      <Portal />
+      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+        <Portal />
+      </Stage1RuntimeContext.Provider>
       <LivePostLoginEnhancementsV116 />
+      <Stage1SearchResults enabled={stage1Enabled} />
+      <Stage1AccessibleMetrics enabled={stage1Enabled} />
+      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+        <Stage1WorkflowFocus />
+      </Stage1RuntimeContext.Provider>
+      <Stage1AppearanceStudio enabled={stage1Enabled} />
     </div>
   );
 }

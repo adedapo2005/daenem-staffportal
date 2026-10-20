@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifyApprovedNavigationOverlay } from './lib/approved-navigation-overlay.mjs';
 
 const root = fileURLToPath(new URL('../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/', import.meta.url));
 const manifestPath = resolve(root, 'EXPORT-MANIFEST.json');
@@ -12,14 +12,26 @@ if (!existsSync(manifestPath)) {
   process.exit(1);
 }
 
-const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+let navigationOverlay;
+try {
+  navigationOverlay = verifyApprovedNavigationOverlay({ projectRoot: fileURLToPath(new URL('../', import.meta.url)) });
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
+const manifest = navigationOverlay.manifest;
 const expected = new Map(Object.entries(manifest.files || {}));
 const files = [];
 const walk = (directory) => {
+  if (!lstatSync(directory).isDirectory()) {
+    failures.push(`Exported source directory is not a real directory: ${directory}`);
+    return;
+  }
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const absolute = resolve(directory, entry.name);
     if (entry.isDirectory()) walk(absolute);
     else if (entry.isFile()) files.push(relative(root, absolute).replaceAll('\\', '/'));
+    else failures.push(`Unexpected non-regular exported source entry: ${absolute}`);
   }
 };
 walk(root);
@@ -41,7 +53,7 @@ if (missing.length) failures.push(`Missing exported files: ${missing.join(', ')}
 for (const [file, digest] of expected) {
   const absolute = resolve(root, file);
   if (!existsSync(absolute)) continue;
-  const actual = createHash('sha256').update(readFileSync(absolute)).digest('hex');
+  const actual = navigationOverlay.digestForExportFile(file, readFileSync(absolute));
   if (actual !== digest) failures.push(`Checksum mismatch: ${file}`);
 }
 
@@ -63,4 +75,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Complete QA Review V115 export passed: 683 files, 682 manifest checksums, public Sign-In excluded, Owner Studio retained.');
+console.log(`Complete QA Review V115 export passed with verified ${navigationOverlay.id} overlay: 683 files, pinned original manifest, 682 baseline checksums, public Sign-In excluded, Owner Studio retained.`);

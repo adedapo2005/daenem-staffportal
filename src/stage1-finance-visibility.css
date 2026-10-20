@@ -1,0 +1,35 @@
+/* Stage 1 Finance: correct inherited dark-on-dark text in the dark KPI ribbon.
+   No finance data, calculation, action or authenticated workflow is altered.
+   Scoped to the reversible authenticated presentation only. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon {
+  --p-ink: var(--stage1-on-anchor, #fff);
+  --p-muted: color-mix(in srgb, var(--stage1-on-anchor, #fff) 78%, var(--stage1-anchor, #173a63));
+  color: var(--stage1-on-anchor, #fff);
+  border-color: color-mix(in srgb, var(--stage1-accent, #06b6d4) 48%, var(--stage1-anchor, #173a63));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric {
+  min-width: 0;
+  color: var(--stage1-on-anchor, #fff);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > span {
+  color: color-mix(in srgb, var(--stage1-on-anchor, #fff) 78%, var(--stage1-anchor, #173a63)) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > strong,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > strong > span {
+  color: var(--stage1-on-anchor, #fff) !important;
+  font-variant-numeric: tabular-nums;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon > span {
+  color: var(--stage1-highlight, #f59e0b);
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon {
+    forced-color-adjust: auto;
+    color: CanvasText;
+    background: Canvas !important;
+    border-color: CanvasText;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon :is(span,strong) {
+    color: CanvasText !important;
+  }
+}

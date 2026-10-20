@@ -1,0 +1,55 @@
+/*
+ * Authoritative reversible Stage 1 contrast layer.
+ * All rules remain inside the authenticated Stage 1 scope and use semantic
+ * palette roles. This file replaces the former duplicate accessibility CSS.
+ */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-disclosure .ecc-group-label {
+  color: inherit;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-group[data-current-ancestor] > .ecc-group-row .ecc-group-label {
+  color: color-mix(in srgb, var(--stage1-accent) 58%, var(--stage1-on-anchor));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-clock > small {
+  color: var(--stage1-muted);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-demo-strip,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-demo-strip :is(span,strong,.p-demo-copy,button) {
+  color: var(--stage1-muted);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-form-paper > span {
+  color: color-mix(in srgb, var(--stage1-anchor) 75%, var(--stage1-ink));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-activity-list small,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-timeline small,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-timeline li > div > small {
+  color: var(--stage1-muted);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .c16-progress span[aria-label*="complete"] > b,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] span[aria-label*="complete"] > b {
+  color: var(--stage1-ink);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .c16-state.good {
+  color: var(--stage1-success);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-badge.amber {
+  color: var(--stage1-warning-ink);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-btn,.p-inline-link,.p-row-link,.ecc-page-link,.ecc-disclosure,.p-mobile-bottom-nav button) {
+  text-decoration-thickness: from-font;
+  text-underline-offset: .16em;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(input,textarea,select,button,a):disabled {
+  opacity: .55;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] *,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] *::before,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] *::after {
+    scroll-behavior: auto !important;
+  }
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-badge,.p-btn,.stage1-rollback-toggle) {
+    forced-color-adjust: auto;
+  }
+}
