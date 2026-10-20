@@ -11,8 +11,10 @@ const js = ts.transpileModule(worker, { compilerOptions: {
 }}).outputText;
 const mod = {};
 const localRequire = (name) => name === './auth'
-  ? { hasPermission: (context, permission, action, companyId) =>
-      context.companyPermissions[companyId]?.[permission] === 'view' }
+  ? { hasPermission: (context, permission, action, companyId) => {
+      const levels=['none','view','create','edit','approve','manage'];
+      return levels.indexOf(context.companyPermissions[companyId]?.[permission] || 'none') >= levels.indexOf(action);
+    }}
   : createRequire(import.meta.url)(name);
 new Function('require','exports',js)(localRequire, mod);
 
@@ -161,4 +163,28 @@ test('Personal notifications remain searchable without any active company member
   const ctx=context('printing',false);ctx.companies=[];ctx.companyPermissions={};
   const result=await search('qa notice',ctx);
   assert.deepEqual(result.suggestions.filter(x=>x.type==='notification').map(x=>x.entityId),['notice-group']);
+});
+
+test('Owner multi-company session cannot search a second company without its payroll grant', async () => {
+  const ctx=context('printing',false);
+  ctx.roles=[{id:'role-owner-print',code:'owner',companyId:'printing'}];
+  ctx.companies=[{id:'printing'},{id:'bakery'}];
+  ctx.companyPermissions={
+    printing:{'payroll.access':'manage'},
+    bakery:{'payroll.access':'none'},
+  };
+  const result=await search('2026-09',ctx);
+  const records=result.suggestions.filter(item=>item.type==='payroll');
+  assert.deepEqual(records.map(item=>item.entityId),['printing-sept']);
+  assert.equal(JSON.stringify(result).includes('bakery-sept'),false);
+  assert.equal(result.partial,false);
+});
+
+test('Owner with an explicitly revoked company grant cannot query that company at all', async () => {
+  const ctx=context('printing',false);
+  ctx.roles=[{id:'role-owner-print',code:'owner',companyId:'printing'}];
+  ctx.companyPermissions.printing['payroll.access']='none';
+  const result=await search('approved',ctx);
+  assert.equal(result.suggestions.some(item=>item.type==='payroll'),false);
+  assert.equal(result.sources.some(source=>source.name==='Payroll'),false);
 });

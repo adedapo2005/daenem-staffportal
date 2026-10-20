@@ -10,7 +10,8 @@ const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind
 const exports = {};
 const sandboxRequire = (id) => {
   if (id === './auth') return { hasPermission(context, permission, level, companyId) {
-    return context.companyPermissions[companyId]?.[permission] === 'view';
+    const levels=['none','view','create','edit','approve','manage'];
+    return levels.indexOf(context.companyPermissions[companyId]?.[permission] || 'none') >= levels.indexOf(level);
   }};
   return createRequire(import.meta.url)(id);
 };
@@ -116,4 +117,54 @@ test('Payroll source and its records remain absent without company payroll permi
   assert.equal(calls.some(c => c.sql.includes('FROM payroll_runs')), false);
   assert.equal(body.suggestions.some(s => s.type === 'payroll'), false);
   assert.equal(body.sources.some(s => s.name === 'Payroll'), false);
+});
+
+test('Owner role never bypasses a denied company-level grant', async () => {
+  const ctx=session(['printing','bakery']);
+  ctx.roles=[{id:'owner-printing',code:'owner',companyId:'printing'}];
+  ctx.companyPermissions.printing['payroll.access']='view';
+  ctx.companyPermissions.bakery['payroll.access']='none';
+  const {body}=await request('payroll',ctx);
+  const payrollQueries=calls.filter(call=>call.sql.includes('FROM payroll_runs'));
+  assert.equal(payrollQueries.length,1);
+  assert.equal(payrollQueries[0].args[0],'printing');
+  assert.equal(payrollQueries[0].args.includes('bakery'),false);
+  assert.deepEqual(body.sources.find(s=>s.name==='Payroll'),{name:'Payroll',status:'checked'});
+  assert.ok(body.suggestions.some(item=>item.type==='module'&&item.command==='payroll'));
+});
+
+test('Owner role with explicit revoked payroll permission sees no payroll source or module', async () => {
+  const ctx=session(['printing']);
+  ctx.roles=[{id:'owner-printing',code:'owner',companyId:'printing'}];
+  ctx.companyPermissions.printing['payroll.access']='none';
+  const {body}=await request('payroll',ctx);
+  assert.equal(calls.some(call=>call.sql.includes('FROM payroll_runs')),false);
+  assert.equal(body.sources.some(s=>s.name==='Payroll'),false);
+  assert.equal(body.suggestions.some(item=>item.command==='payroll'||item.command==='payroll-payments'),false);
+});
+
+test('Owner role in a different business cannot expose protected modules without grants', async () => {
+  const ctx=session(['printing','bakery']);
+  ctx.roles=[{id:'owner-printing',code:'owner',companyId:'printing'}];
+  for(const q of ['payroll','construction','finance','HR & People','security']) {
+    const {body}=await request(q,ctx);
+    assert.equal(body.suggestions.some(item=>item.type==='module'&&
+      ['payroll','payroll-payments','construction','finance','hr','security'].includes(item.command)),false,
+      'Unexpected module disclosure for '+q);
+  }
+  assert.equal(calls.some(call=>call.sql.includes('FROM payroll_runs')),false);
+});
+
+test('Owner with company-specific manage grant retains authorized payroll search', async () => {
+  const ctx=session(['printing','bakery']);
+  ctx.roles=[{id:'owner-printing',code:'owner',companyId:'printing'}];
+  ctx.companyPermissions.printing['payroll.access']='manage';
+  ctx.companyPermissions.bakery['payroll.access']='none';
+  const {body}=await request('2026-09',ctx);
+  const queries=calls.filter(call=>call.sql.includes('FROM payroll_runs'));
+  assert.equal(queries.length,1);
+  assert.deepEqual(queries[0].args.slice(0,1),['printing']);
+  assert.equal(queries[0].args.includes('bakery'),false);
+  assert.ok(body.suggestions.some(item=>item.type==='payroll'));
+  assert.equal(body.partial,false);
 });
