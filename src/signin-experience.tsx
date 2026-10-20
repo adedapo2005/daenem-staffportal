@@ -22,26 +22,26 @@ const cityZones: Record<string, string> = {
 
 const cityMedia: Record<string, Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>> = {
   toronto: {
-    day: '/assets/global/toronto-day-v115-card.jpg',
-    night: '/assets/global/toronto-night-v180-card.webp',
+    day: '/assets/global/toronto-day-v110.jpg',
+    night: '/assets/global/toronto-night-approved-v180.png',
   },
   london: {
-    day: '/assets/global/london-day-v115-card.jpg',
-    night: '/assets/global/london-night-v180-card.webp',
+    day: '/assets/global/london-day-v110.jpg',
+    night: '/assets/global/london-day-v110.jpg',
   },
   newyork: {
-    dawn: '/assets/global/newyork-dawn-v179-card.webp',
-    day: '/assets/global/newyork-day-v179-card.webp',
-    dusk: '/assets/global/newyork-dusk-v179-card.webp',
-    night: '/assets/global/newyork-night-v179-card.webp',
+    dawn: '/assets/global/newyork-dawn-v179-4k.webp',
+    day: '/assets/global/newyork-day-v179-4k.webp',
+    dusk: '/assets/global/newyork-dusk-v179-4k.webp',
+    night: '/assets/global/newyork-night-v179-4k.webp',
   },
   moscow: {
-    day: '/assets/global/moscow-day-v115-card.jpg',
-    night: '/assets/global/moscow-night-v180-card.webp',
+    day: '/assets/global/moscow-day-v110.jpg',
+    night: '/assets/global/moscow-night-approved-v180.png',
   },
-  tokyo: { day: '/assets/global/tokyo-day-v115-card.jpg' },
+  tokyo: { day: '/assets/global/tokyo-day-v110.jpg' },
   beijing: {
-    day: '/assets/global/beijing-day-v115-card.jpg',
+    day: '/assets/global/beijing-day-v110.jpg',
     night: '/assets/global/beijing-night-v109.jpg',
   },
   ibadan: {
@@ -211,7 +211,7 @@ function phaseAt(now: Date, zone: string): 'dawn' | 'day' | 'dusk' | 'night' {
 
 function resolvedMedia(cityId: string, phase: 'dawn' | 'day' | 'dusk' | 'night') {
   const media = cityMedia[cityId] || {};
-  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : [phase] as const;
+  const order = phase === 'dawn' ? ['dawn', 'day', 'night'] as const : phase === 'dusk' ? ['dusk', 'night', 'day'] as const : phase === 'night' ? ['night', 'day'] as const : ['day', 'night'] as const;
   const mediaPhase = order.find((item) => media[item]);
   return mediaPhase ? { src: media[mediaPhase] || '', mediaPhase } : { src: '', mediaPhase: 'none' };
 }
@@ -424,6 +424,27 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
     if (cached) applySignInWeather(root, cached, true);
 
     const controller = new AbortController();
+    // Six explicitly allowlisted global cities share the existing Google Weather
+    // Worker provider/cache; stale or missing results are never fabricated.
+    for (const cityId of ['toronto','london','newyork','moscow','tokyo','beijing']) {
+      const card = root.querySelector<HTMLElement>(`[data-city-id="${cityId}"]`);
+      if (!card) continue;
+      const summary = [...card.querySelectorAll<HTMLElement>('div,p,span')]
+        .find(node => node.childElementCount === 0 && /Connecting to weather/i.test(node.textContent || ''));
+      if (!summary) continue;
+      summary.textContent = 'Checking live weather…';
+      void fetch(`/api/context/signin/weather?city=${cityId}`, { signal: controller.signal, headers: {accept:'application/json'} })
+        .then(async response => {
+          if (!response.ok) throw new Error('Weather provider unavailable');
+          const payload = normalizeSignInWeather(await response.json());
+          if (!payload) throw new Error('No usable weather data');
+          const parts = [payload.description, payload.temperature === null ? null : `${Math.round(payload.temperature)}°C`, payload.humidity === null ? null : `Humidity ${Math.round(payload.humidity)}%`].filter(Boolean);
+          summary.textContent = parts.join(' · ');
+          card.dataset.weather = 'available';
+        }).catch((error:unknown) => {
+          if ((error as {name?:string})?.name !== 'AbortError') summary.textContent = 'Weather temporarily unavailable';
+        });
+    }
     void fetch('/api/context/signin/weather', {
       method: 'GET',
       headers: { accept: 'application/json' },
