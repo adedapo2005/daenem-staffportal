@@ -49,7 +49,9 @@ export default function Stage1WorkflowFocus() {
     update();
     return()=>{observer.disconnect();cancelAnimationFrame(frame);window.removeEventListener('popstate',update);window.removeEventListener('daenem:v115-navigation',update);};
   },[enabled,companyRole]);
-  if(!enabled||!target||!links.length)return null;
+  // Purpose-built record pages already expose their own task actions.
+  // Reserve this extra shortcut row for the two general landing workspaces.
+  if(!enabled||!target||!links.length||!(["/home","/work"].includes(pathname)))return null;
   return createPortal(
     <section className="stage1-workflow-focus" aria-label="Suggested authorized work areas">
       <div className="stage1-workflow-title">
