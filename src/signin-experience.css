@@ -542,3 +542,64 @@
  .sp-root #staffportal-auth-mount.sp-auth-mode-create{position:relative!important;inset:auto!important;transform:none!important;max-width:100%!important;width:100%!important;height:auto!important;max-height:none!important;min-height:460px!important;margin:0!important;overflow:visible!important;}
  .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel{height:auto!important;min-height:0!important;}
 }
+
+
+/* Sign-In/Create Account visual parity: reuse protected V180 sapphire auth tokens.
+   Scoped to registration; approved Sign-In styling remains unchanged. */
+.sp-root #staffportal-auth-mount.sp-auth-mode-create {
+ color:var(--sp-app-ink, #f3f8ff)!important;
+ background:linear-gradient(145deg,#10294a,#07172c 66%,#081326)!important;
+ border-color:rgba(132,183,228,.34)!important;
+ box-shadow:0 12px 38px rgba(7,23,44,.24)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel,
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {color:#f5f9ff!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading p,
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress>span,
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-note,
+#staffportal-auth-mount.sp-auth-mode-create .usp-legal-copy,
+#staffportal-auth-mount.sp-auth-mode-create .usp-or-divider {color:#b5c9de!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field-label {color:#c7d8ec!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field>input,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field {
+ color:#f3f8ff!important;background:#102b48!important;border-color:rgba(139,187,222,.42)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field input::placeholder {color:#a1b5cb!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs {background:#0d2340!important;border-color:rgba(125,175,222,.32)!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button {color:#b7cde3!important;background:transparent!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button.active {color:#f5faff!important;background:#1d527e!important;border:1px solid rgba(171,213,244,.28)!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-primary-button {
+ background:linear-gradient(105deg,#1769c2,#267d9b)!important;color:#fff!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-secondary-button {color:#d7e8f6!important;background:#10253b!important;border-color:#476987!important;}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress-track{background:#23465f!important;}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress-track i{background:linear-gradient(90deg,#3c9be5,#7bc9fc)!important;}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-close {color:#d3e5f4!important;background:#122e48!important;border-color:#4d7795!important;}
+#staffportal-auth-mount.sp-auth-mode-create .sp-signup-close:hover{background:#1e4566!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button {
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ gap:5px!important;min-width:0!important;padding:5px 3px!important;
+ color:#e8f4ff!important;background:#123250!important;border:1px solid #476987!important;
+ box-shadow:inset 0 1px 0 rgba(190,225,250,.07)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button:hover{background:#1e5075!important;border-color:#81b4dd!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-create .usp-primary-button:focus-visible {outline:2px solid #89d2ff!important;outline-offset:2px!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .sp-social-icon{display:grid!important;place-items:center!important;flex-shrink:0!important;width:15px!important;height:15px!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .sp-social-label{min-width:0!important;color:inherit!important;text-align:center!important;line-height:1.2!important;font-size:inherit!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .sp-provider-mark{width:15px!important;height:15px!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements{background:#122b43!important;border-color:#476987!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-requirements>strong,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta>span,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-meta>strong,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status>span,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status {color:#bfcee0!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status>span.pass,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status.valid {color:#85e3b1!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-status>span.fail,
+#staffportal-auth-mount.sp-auth-mode-create .usp-confirm-status.invalid {color:#ffb4a8!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-meter-track{background:#29445e!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-toggle{color:#91d0fa!important;}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-footer{color:#b4cadf!important;}

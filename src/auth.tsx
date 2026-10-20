@@ -1135,8 +1135,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity') && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
-          <button type="button" onClick={() => startOAuth('microsoft')}><span className="usp-microsoft-mark"><i /><i /><i /><i /></span>{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</button>
-          <button type="button" onClick={() => startOAuth('google')}><b className="usp-google-mark">G</b>{mode === 'signup' ? authLabels.googleCreateAccount : authLabels.googleSignIn}</button>
+          <button type="button" onClick={() => startOAuth('microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">{mode === 'signup' ? authLabels.microsoftCreateAccount : authLabels.microsoftSignIn}</span></button>
+          <button type="button" onClick={() => startOAuth('google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">{mode === 'signup' ? authLabels.googleCreateAccount : authLabels.googleSignIn}</span></button>
         </div>
         <p className="usp-social-note">{authLabels.socialNote}</p>
       </>}
