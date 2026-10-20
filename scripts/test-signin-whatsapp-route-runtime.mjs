@@ -101,6 +101,11 @@ function requireFrom(file) {
         throw new Error('Recovery must not execute during WhatsApp sign-in verification');
       },
     };
+    if (normalized === './recovery-attempt-guard') return {
+      reservePublicRecoveryAttempt: async () => {
+        throw new Error('Recovery rate guard must not execute during WhatsApp sign-in verification');
+      },
+    };
     if (normalized === './scoped-settings') return {
       RECOVERY_SETTING_KEY: 'unused', recoveryMethods: () => [], resolveScopedSetting: async () => ({ value: {} }),
     };
