@@ -1,7 +1,7 @@
 name: StaffPortal Create Account Isolated QA
 on:
   pull_request:
-    branches: [feature/staffportal-mobile-auth-takeover-01]
+    branches: [feature/staffportal-mobile-auth-takeover-01, feature/staffportal-stage1-ocean-integration-20261020]
     paths:
       - 'src/auth.tsx'
       - 'src/signin-experience.css'
@@ -11,6 +11,7 @@ on:
       - 'scripts/test-public-signin-weather-allowlist.mjs'
       - 'qa/signin/**'
       - 'scripts/test-signin-browser.cjs'
+      - 'scripts/test-signin-weather-content.cjs'
       - 'scripts/test-create-account-isolated.cjs'
       - 'scripts/test-signup-rail-layout.cjs'
       - 'scripts/test-create-account-whatsapp.cjs'
@@ -43,6 +44,7 @@ jobs:
           node scripts/test-create-account-whatsapp.cjs
           node scripts/test-signin-hover-restoration.cjs
           node scripts/test-public-signin-weather-allowlist.mjs
+          node scripts/test-signin-weather-content.cjs
       # The separate full V180 baseline test has an inherited 1280px hero-placement
       # failure; retain it in source, do not claim whole-page sign-in acceptance.
       - name: TypeScript, source locks and full application build
@@ -54,3 +56,4 @@ jobs:
         run: |
           test "$(node -p "require('./delivery/current-state.json').productionDeployAuthorized")" = "false"
           test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"
+

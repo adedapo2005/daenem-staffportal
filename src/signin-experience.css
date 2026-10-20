@@ -836,3 +836,176 @@
   #staffportal-auth-mount .sp-auth-tabs button,
   #staffportal-auth-mount .usp-tabs button { transition:none!important; }
 }
+
+
+/* Live weather content: every card reserves space for its actual conditions.
+   Only photographs clip to the rounded edge; text must fit its own grid track. */
+.sp-root .sp-lower-right-rail-v86 { overflow:visible!important; }
+.sp-root #staff-global-operations article.sp-live-weather-city,
+.sp-root #staff-local-weather article.sp-live-weather-city { overflow:visible!important; }
+.sp-root article.sp-live-weather-city > div:first-child {
+  overflow:hidden!important; border-radius:inherit!important;
+}
+.sp-root #staff-global-operations .sp-live-city-content {
+  display:grid!important; grid-template-rows:auto minmax(0,1fr) auto!important;
+  gap:4px!important; padding:6px 10px!important; box-sizing:border-box!important;
+  min-height:0!important; height:100%!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity,
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-instrument {
+  padding:0!important; margin:0!important; min-height:0!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-instrument {
+  display:grid!important; grid-template-columns:auto minmax(0,1fr)!important;
+  gap:8px!important; align-items:center!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {
+  width:clamp(48px,5.6vh,150px)!important; max-width:150px!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p {
+  margin:0!important; font-size:clamp(13px,.72vw,22px)!important;
+  line-height:1.16!important; white-space:normal!important; overflow:visible!important;
+  text-overflow:clip!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p:nth-child(2),
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p:nth-child(3) {
+  display:inline!important; padding-right:3px!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > .gw-city-local-time {
+  font-size:clamp(16px,1.1vw,36px)!important; font-weight:750!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-name {
+  font-size:clamp(14px,.95vw,30px)!important; line-height:1.1!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity > div > p:last-child {
+  font-size:clamp(13px,.65vw,21px)!important; line-height:1.1!important;
+}
+.sp-root .sp-live-city-weather {
+  display:flex!important; flex-wrap:wrap!important; align-items:baseline!important;
+  justify-content:flex-start!important; gap:2px 8px!important; margin:0!important;
+  padding:0!important; min-width:0!important; min-height:0!important;
+  color:#fff!important; font-size:clamp(13px,.7vw,22px)!important;
+  line-height:1.2!important; text-shadow:0 1px 3px #061523,0 0 7px #061523!important;
+  overflow:visible!important; overflow-wrap:anywhere!important;
+}
+.sp-root .sp-live-weather-temperature { font-size:1.12em!important; font-weight:800!important; }
+.sp-root .sp-live-weather-humidity { color:#e2f2ff!important; }
+
+/* The detailed panel uses the six existing current-condition values. */
+.sp-root #staff-local-weather {
+  grid-template-rows:minmax(176px,.82fr) minmax(248px,1.18fr)!important;
+}
+.sp-root #staff-local-weather .sp-live-city-content {
+  display:grid!important; grid-template-rows:auto minmax(0,1fr) auto!important;
+  padding:8px!important; gap:4px!important; height:100%!important; box-sizing:border-box!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-identity {
+  padding:0!important; margin:0!important; gap:6px!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-name {
+  font-size:clamp(14px,.82vw,26px)!important; line-height:1.1!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-identity > div > p:last-child {
+  font-size:clamp(13px,.65vw,20px)!important; line-height:1.1!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-instrument {
+  display:grid!important; grid-template-columns:auto minmax(0,1fr)!important;
+  padding:0!important; margin:0!important; gap:2px 6px!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-clock {
+  grid-column:1!important; grid-row:1 / 4!important;
+  width:clamp(62px,5vw,124px)!important; max-width:124px!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital { display:contents!important; }
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p {
+  grid-column:2!important; padding:0!important; margin:0!important;
+  font-size:clamp(13px,.65vw,20px)!important; line-height:1.12!important;
+  white-space:normal!important; overflow:visible!important; text-overflow:clip!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(1) {
+  grid-row:1!important; font-size:clamp(14px,.82vw,26px)!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(2) { grid-row:2!important; }
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(3) { grid-row:3!important; }
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(4) {
+  grid-column:1 / -1!important; grid-row:4!important; text-align:center!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence {
+  display:grid!important; grid-template-rows:auto minmax(0,1fr) auto!important;
+  gap:6px!important; padding:8px!important; min-height:0!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence-header span {
+  font-size:clamp(12px,.6vw,18px)!important; line-height:1.15!important; letter-spacing:.03em!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence-header b {
+  font-size:clamp(14px,.75vw,24px)!important; line-height:1.15!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-details {
+  display:grid!important; grid-template-rows:minmax(0,1fr) auto!important; gap:5px!important;
+  min-height:0!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metrics {
+  margin:0!important; display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(3,minmax(min-content,1fr))!important; gap:4px 8px!important; transform:none!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metric {
+  display:flex!important; flex-direction:column!important; justify-content:center!important;
+  align-items:flex-start!important; gap:1px!important; padding:2px 0!important; min-width:0!important;
+  border:0!important; border-bottom:1px solid rgba(218,240,255,.22)!important;
+  border-radius:0!important; background:none!important; box-shadow:none!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metric dt {
+  font-size:clamp(13px,.65vw,20px)!important; color:#e0f2ff!important; line-height:1.12!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metric dd {
+  margin:0!important; font-size:clamp(16px,.9vw,30px)!important; font-weight:780!important;
+  color:#fff!important; line-height:1.15!important; overflow-wrap:anywhere!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-range {
+  display:flex!important; flex-wrap:wrap!important; justify-content:space-between!important;
+  gap:2px 6px!important; margin:0!important; font-size:clamp(13px,.65vw,20px)!important;
+  line-height:1.15!important; color:#e0f2ff!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer {
+  display:flex!important; flex-direction:column!important; align-items:flex-start!important;
+  gap:2px!important; padding-top:3px!important; font-size:clamp(12px,.62vw,18px)!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer > span {
+  overflow:visible!important; white-space:normal!important; line-height:1.15!important;
+  text-overflow:clip!important; text-align:left!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer > span:first-child { font-size:clamp(13px,.65vw,20px)!important; }
+.sp-root #staff-local-weather .sp-live-weather-unavailable {
+  margin:0!important; font-size:13px!important; line-height:1.4!important; align-self:center!important;
+}
+.sp-root .sp-live-news-content { justify-content:center!important; gap:6px!important; }
+.sp-root .sp-live-news-title,
+.sp-root .sp-live-news-unavailable {
+  color:#fff!important; margin:0!important; font-size:clamp(13px,.85vw,24px)!important;
+  line-height:1.25!important; font-weight:650!important;
+  text-shadow:0 1px 3px #061523,0 0 7px #061523!important;
+}
+.sp-root .sp-live-news-title { text-decoration:none; }
+.sp-root .sp-live-news-title:hover { text-decoration:underline; }
+.sp-root .sp-live-news-title:focus-visible { outline:2px solid #bde8ff; outline-offset:3px; }
+.sp-root .sp-live-news-source { color:#dcefff!important; font-size:13px!important; }
+@media (min-width:1024px) and (max-height:850px) {
+  .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity > div {
+    display:flex!important; flex-wrap:wrap!important; align-items:baseline!important; gap:0 5px!important;
+  }
+  .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock { width:48px!important; }
+  .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity { gap:5px!important; }
+  .sp-root #staff-global-operations .sp-live-city-content { gap:3px!important; padding:5px 8px!important; }
+}
+@media (min-width:1200px) and (max-height:850px) {
+  /* A real set of conditions needs a minimum lower-stage height. Reserve it
+     from the hero's flexible track instead of clipping data or shrinking text. */
+  #root .sp-root.sp-day[data-approved-signin] .sp-layout.sp-reference-layout {
+    grid-template-rows:minmax(180px,1fr) minmax(440px,1.35fr)!important;
+  }
+}
+@media (max-width:1023px) {
+  .sp-root #staff-local-weather { grid-template-rows:minmax(200px,auto) minmax(280px,auto)!important; }
+  .sp-root #staff-global-operations .sp-live-city-content { min-height:180px!important; padding:10px!important; }
+  .sp-root #staff-local-weather .sp-live-city-content { min-height:200px!important; }
+}
