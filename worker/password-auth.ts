@@ -3,6 +3,7 @@ import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth
 import { startPasswordRecoveryWhatsApp, verifyPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings';
 import { resolveRecoveryCompanyForIdentifier } from './recovery-company-resolution';
+import { reservePublicRecoveryAttempt } from './recovery-attempt-guard';
 
 interface EmailBinding {
   send(message: {
@@ -916,15 +917,20 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
   const identifier = String(body.identifier || '').trim().toLowerCase();
   const companyCode = String(body.companyCode || '').trim();
   if (!identifier) return json({ error: 'Enter your username or email address.' }, 400);
-  const recent = await env.DB.prepare(`
-    SELECT COUNT(*) AS count FROM security_logs
-    WHERE ip_address = ? AND event_type = 'password_reset_requested'
-      AND datetime(occurred_at) >= datetime('now','-15 minutes')
-  `).bind(requestIp(request) || '').first<{ count: number }>();
-  if (Number(recent?.count || 0) >= 5) return json({ error: 'Too many recovery requests. Wait 15 minutes and try again.' }, 429);
-
   const pepperFailure = await requireProductionPepper(env, request, 'configuration');
   if (pepperFailure) return pepperFailure;
+  // Reserve and durably audit a shared Email/WhatsApp recovery attempt before
+  // resolving company membership or sending a verification code.
+  let recoveryReserved: boolean;
+  try {
+    recoveryReserved = await reservePublicRecoveryAttempt(env, request, identifier, 'email');
+  } catch (error) {
+    return controlledAuthFailure(env, request, 'public_recovery_rate_audit', error);
+  }
+  if (!recoveryReserved) return json({
+    ok: true, challengeId: uid('password-reset'), destination: 'your email on file',
+    message: 'If your account is eligible, check the email on file for a verification code.',
+  });
   if ((!env.EMAIL || typeof env.EMAIL.send !== 'function') && env.APP_STAGE !== 'bootstrap') {
     return json({ error: 'Password recovery email is temporarily unavailable. Please contact the system administrator.' }, 503);
   }
