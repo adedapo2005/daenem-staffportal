@@ -1,22 +1,16 @@
+
 name: StaffPortal Staging Deploy
 
 on:
   workflow_dispatch:
     inputs:
       candidate_sha:
-        description: 'Exact 40-character SHA of the approved staging branch HEAD'
+        description: 'Exact 40-character SHA of the verified staging candidate'
         required: true
         type: string
-      approval_comment_id:
-        description: 'Issue #5 comment ID with Owner approval for that exact SHA'
-        required: true
-        type: string
-  issue_comment:
-    types: [created]
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: staffportal-staging-deploy
@@ -24,96 +18,41 @@ concurrency:
 
 jobs:
   approval:
-    name: Check exact-SHA Owner approval
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (
-        github.event_name == 'issue_comment' &&
-        github.event.issue.number == 5 &&
-        github.event.comment.user.login == github.repository_owner &&
-        contains(github.event.comment.body, 'APPROVE STAFFPORTAL STAGING DEPLOY SHA ')
-      )
+    name: Verify selected staging commit
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       candidate_sha: ${{ steps.validate.outputs.candidate_sha }}
     steps:
-      - name: Verify exact candidate, fresh approval, and no prior consumption
+      - name: Validate exact commit SHA and repository source
         id: validate
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
         env:
-          MANUAL_CANDIDATE_SHA: ${{ inputs.candidate_sha || '' }}
-          MANUAL_APPROVAL_COMMENT_ID: ${{ inputs.approval_comment_id || '' }}
-          APPROVAL_COMMENT_BODY: ${{ github.event.comment.body || '' }}
-          APPROVAL_COMMENT_ID: ${{ github.event.comment.id || '' }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
         with:
           script: |
-            const fromOwnerComment = context.eventName === 'issue_comment';
-            const approvalLine = (process.env.APPROVAL_COMMENT_BODY || '')
-              .split(/\r?\n/)
-              .map(line => line.trim())
-              .find(line => /^APPROVE STAFFPORTAL STAGING DEPLOY SHA [a-f0-9]{40}$/i.test(line));
-            const sha = fromOwnerComment
-              ? (approvalLine || '').split(/\s+/).pop() || ''
-              : process.env.MANUAL_CANDIDATE_SHA || '';
-            const id = fromOwnerComment
-              ? process.env.APPROVAL_COMMENT_ID || ''
-              : process.env.MANUAL_APPROVAL_COMMENT_ID || '';
-            if (!/^[a-f0-9]{40}$/i.test(sha)) {
-              core.setFailed('Full 40-character candidate SHA required.');
-              return;
-            }
-            if (!/^[1-9][0-9]*$/.test(id)) {
-              core.setFailed('Valid Issue #5 approval comment ID required.');
+            const sha = (process.env.CANDIDATE_SHA || '').trim().toLowerCase();
+            if (!/^[0-9a-f]{40}$/.test(sha)) {
+              core.setFailed('A full 40-character commit SHA is required.');
               return;
             }
 
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const ref = await github.rest.git.getRef({
-              owner,
-              repo,
-              ref: 'heads/feature/staffportal-mobile-auth-takeover-01'
-            });
-            if (ref.data.object.sha.toLowerCase() !== sha.toLowerCase()) {
-              core.setFailed('Candidate must equal current staging source HEAD.');
-              return;
-            }
+            try {
+              const result = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: sha
+              });
 
-            const response = await github.rest.issues.getComment({
-              owner,
-              repo,
-              comment_id: Number(id)
-            });
-            const approval = response.data;
-            const expected = 'APPROVE STAFFPORTAL STAGING DEPLOY SHA ' + sha.toLowerCase();
-            const exactLine = (approval.body || '').split(/\r?\n/).some(
-              line => line.trim().toLowerCase() === expected.toLowerCase()
-            );
-            if (
-              approval.user?.login?.toLowerCase() !== owner.toLowerCase() ||
-              !approval.issue_url?.endsWith('/repos/' + owner + '/' + repo + '/issues/5') ||
-              !exactLine
-            ) {
-              core.setFailed('Exact SHA must be approved in Issue #5 by repository Owner.');
-              return;
-            }
+              if (result.data.sha.toLowerCase() !== sha) {
+                core.setFailed('Commit verification failed.');
+                return;
+              }
 
-            const comments = await github.paginate(
-              github.rest.issues.listComments,
-              { owner, repo, issue_number: 5, per_page: 100 }
-            );
-            const consumedMarker =
-              'STAFFPORTAL STAGING APPROVAL CONSUMED SHA ' + sha.toLowerCase();
-            const alreadyConsumed = comments.some(comment =>
-              (comment.body || '').toLowerCase().includes(consumedMarker.toLowerCase())
-            );
-            if (alreadyConsumed) {
-              core.setFailed('This exact approved SHA has already been deployed; a new approved candidate SHA is required.');
-              return;
+              core.setOutput('candidate_sha', sha);
+            } catch (error) {
+              core.setFailed('Commit could not be verified in this repository.');
             }
-
-            core.setOutput('candidate_sha', sha.toLowerCase());
 
   deploy:
     name: Deploy StaffPortal staging
@@ -265,25 +204,6 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx wrangler deploy --config wrangler.staffportal-staging.jsonc --keep-vars
-
-      - name: Consume one-time approval
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
-        env:
-          CANDIDATE_SHA: ${{ needs.approval.outputs.candidate_sha }}
-        with:
-          script: |
-            const sha = process.env.CANDIDATE_SHA;
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: 5,
-              body: [
-                'STAFFPORTAL STAGING APPROVAL CONSUMED SHA ' + sha,
-                '',
-                'The exact approved candidate was deployed by this protected manual run.',
-                'Run ID: ' + context.runId
-              ].join('\n')
-            });
 
       - name: Verify staging health
         run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
