@@ -64,7 +64,7 @@ test('employee sees own company-scoped requests, not other people', async () => 
   assert.ok(body.suggestions.some(s => s.type === 'document-request'));
   assert.equal(body.suggestions.some(s => s.type === 'employee'), false);
   assert.equal(body.partial, false);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   assert.ok(calls.every(c => c.args.includes('employee-a') && c.args.includes('printing')));
 });
 test('cross-company and revoked permissions never pass SQL bindings', async () => {
