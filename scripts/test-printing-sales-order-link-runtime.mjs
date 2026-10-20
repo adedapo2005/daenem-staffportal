@@ -451,4 +451,109 @@ assert.deepEqual(proofRace.map((item) => item.status).sort(), [200, 503], 'one v
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_proofs WHERE print_job_id='job-proof-race'").get().n, 1);
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-proof-race' AND action='proof_update'").get().n, 1);
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, proof approval/audit rollback, company isolation, payment truth PASS');
+db.exec(`CREATE TABLE print_artwork_versions (
+  id TEXT PRIMARY KEY, print_job_id TEXT NOT NULL, version_no INTEGER NOT NULL DEFAULT 1,
+  file_key TEXT, preview_key TEXT,
+  status TEXT NOT NULL DEFAULT 'received' CHECK(status IN ('received','designing','ready','approved','rejected','superseded')),
+  source TEXT NOT NULL DEFAULT 'internal' CHECK(source IN ('customer','internal','agency','other')),
+  note TEXT, created_by TEXT NOT NULL, approved_by TEXT, approved_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(print_job_id,version_no)
+);`);
+const artworkRequest = (jobId, status = 'approved', requestId = 'artwork-request', extra = {}) => new Request('https://staffportal.test/api/printing/jobs/artwork', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': requestId },
+  body: JSON.stringify({ jobId, status, ...extra }),
+});
+const seedArtworkJob = (id, company = 'company-printing') => db.prepare(`INSERT INTO print_jobs
+  (id,company_id,job_no,title,quantity,quoted_kobo,production_status,artwork_status)
+  VALUES(?,?,?,'Artwork job',1,5000,'design','received')`).run(id, company, id);
+const artworkState = (id) => ({
+  job: db.prepare('SELECT company_id,production_status,artwork_status FROM print_jobs WHERE id=?').get(id),
+  versions: db.prepare('SELECT * FROM print_artwork_versions WHERE print_job_id=? ORDER BY version_no').all(id),
+  audits: db.prepare("SELECT * FROM audit_logs WHERE entity_id=? AND action='artwork_version' ORDER BY id").all(id),
+});
+seedArtworkJob('artwork-a');
+seedArtworkJob('artwork-foreign', 'company-bakery');
+const initialArtwork = artworkState('artwork-a');
+response = await route(artworkRequest('artwork-a'), env, editOnly);
+assert.equal(response.status, 403, 'edit permission cannot approve artwork');
+response = await route(artworkRequest('artwork-a'), env, otherCompanyApprover);
+assert.equal(response.status, 403, 'foreign-company grant cannot approve artwork');
+assert.deepEqual(artworkState('artwork-a'), initialArtwork);
+const foreignArtwork = artworkState('artwork-foreign');
+response = await route(artworkRequest('artwork-foreign'), env, owner);
+assert.equal(response.status, 404, 'foreign job is concealed even from Printing management');
+assert.deepEqual(artworkState('artwork-foreign'), foreignArtwork);
+response = await route(artworkRequest('artwork-a', 'approved', 'foreign-file', { fileKey: 'printing/artwork-foreign/artwork/file' }), env, context);
+assert.equal(response.status, 400);
+assert.deepEqual(artworkState('artwork-a'), initialArtwork);
+
+// A silent audit INSERT failure must roll back both the version and the job projection.
+db.exec(`CREATE TRIGGER ignore_artwork_audit BEFORE INSERT ON audit_logs WHEN NEW.action='artwork_version'
+  BEGIN SELECT RAISE(IGNORE); END`);
+response = await route(artworkRequest('artwork-a'), env, context);
+assert.equal(response.status, 503, 'ignored artwork audit cannot return approval success');
+assert.deepEqual(artworkState('artwork-a'), initialArtwork);
+db.exec('DROP TRIGGER ignore_artwork_audit');
+for (const [table, operation] of [['print_artwork_versions', 'INSERT'], ['print_jobs', 'UPDATE'], ['audit_logs', 'INSERT']]) {
+  db.exec(`CREATE TRIGGER reject_artwork_write BEFORE ${operation} ON ${table} BEGIN SELECT RAISE(ABORT,'artwork write unavailable'); END`);
+  response = await route(artworkRequest('artwork-a'), env, context);
+  assert.equal(response.status, 503, `${table} failure is bounded`);
+  assert.deepEqual(artworkState('artwork-a'), initialArtwork, `${table} failure rolls back the transaction`);
+  db.exec('DROP TRIGGER reject_artwork_write');
+}
+for (const [table, operation] of [['print_artwork_versions', 'INSERT'], ['print_jobs', 'UPDATE']]) {
+  db.exec(`CREATE TRIGGER ignore_artwork_write BEFORE ${operation} ON ${table} BEGIN SELECT RAISE(IGNORE); END`);
+  response = await route(artworkRequest('artwork-a'), env, context);
+  assert.equal(response.status, 503, `${table} zero-row write is denied`);
+  assert.deepEqual(artworkState('artwork-a'), initialArtwork);
+  db.exec('DROP TRIGGER ignore_artwork_write');
+}
+response = await route(artworkRequest('artwork-a', 'approved', 'artwork-recovered'), env, owner);
+assert.equal(response.status, 200, 'authorized retry succeeds after rollback');
+let savedArtwork = artworkState('artwork-a');
+assert.equal(savedArtwork.job.artwork_status, 'approved');
+assert.equal(savedArtwork.versions.length, 1);
+assert.equal(savedArtwork.versions[0].approved_by, owner.employee.id);
+assert.ok(savedArtwork.versions[0].approved_at);
+assert.equal(savedArtwork.audits.length, 1);
+assert.equal(savedArtwork.audits[0].request_id, 'artwork-recovered');
+assert.equal(savedArtwork.audits[0].company_id, 'company-printing');
+response = await route(artworkRequest('artwork-a', 'rejected', 'artwork-revision'), env, editOnly);
+assert.equal(response.status, 200, 'existing edit-level revision semantics remain');
+savedArtwork = artworkState('artwork-a');
+assert.equal(savedArtwork.versions.length, 2);
+assert.equal(savedArtwork.job.artwork_status, 'ready', 'existing rejected-artwork projection remains');
+assert.equal(savedArtwork.versions[1].approved_by, null);
+
+seedArtworkJob('artwork-race');
+const artworkRace = await Promise.all([
+  route(artworkRequest('artwork-race', 'approved', 'artwork-race-a'), env, context),
+  route(artworkRequest('artwork-race', 'approved', 'artwork-race-b'), env, owner),
+]);
+assert.deepEqual(artworkRace.map((item) => item.status).sort(), [200, 503], 'one concurrent version wins');
+assert.equal(artworkState('artwork-race').versions.length, 1);
+assert.equal(artworkState('artwork-race').audits.length, 1);
+
+seedArtworkJob('artwork-moved');
+const artworkPrepare = env.DB.prepare;
+env.DB.prepare = (sql) => {
+  const prepared = artworkPrepare(sql);
+  if (sql.includes('SELECT pj.id,pj.job_no')) {
+    const first = prepared.first.bind(prepared);
+    prepared.first = async () => {
+      const row = await first();
+      if (row?.id === 'artwork-moved') db.prepare("UPDATE print_jobs SET company_id='company-bakery' WHERE id='artwork-moved'").run();
+      return row;
+    };
+  }
+  return prepared;
+};
+try {
+  response = await route(artworkRequest('artwork-moved'), env, context);
+} finally { env.DB.prepare = artworkPrepare; }
+assert.equal(response.status, 503, 'company change after initial read cannot authorize artwork writes');
+assert.equal(artworkState('artwork-moved').job.artwork_status, 'received');
+assert.equal(artworkState('artwork-moved').versions.length, 0);
+assert.equal(artworkState('artwork-moved').audits.length, 0);
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, proof and artwork audit rollback/concurrency, company isolation, payment truth PASS');
