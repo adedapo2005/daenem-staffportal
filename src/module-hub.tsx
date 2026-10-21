@@ -433,8 +433,9 @@ export function isModuleVisible(context: WorkforceContext, module: ModuleDefinit
     if (!companyId && !context.companies.some((company) => module.companyCodes?.includes(company.code))) return false;
   }
   if (module.strictOwnerOnly && !context.roles.some((role) => role.code === 'owner')) return false;
-  if (owner(context)) return true;
-  if (module.ownerOnly) return false;
+  if (module.ownerOnly && !owner(context)) return false;
+  // Owner status never overrides an explicit company permission matrix. Owner-only
+  // modules still require the Owner role, but permissioned modules remain scoped.
   if (!module.permissions?.length && !module.prefixes?.length) return true;
   const scopeIds = companyId
     ? [companyId]
