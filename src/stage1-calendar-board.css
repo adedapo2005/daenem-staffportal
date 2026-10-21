@@ -1,0 +1,237 @@
+/* Stage 1 Calendar + Board refinement.
+   Presentation-only: retained V115 scheduling, WIP, permissions and mutations remain authoritative. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-tools {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: .7rem;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 36%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-tools > input {
+  flex: 1 1 240px;
+  min-width: 180px;
+  min-height: 42px;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 9px;
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-ink, #1f2b3c);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-tools > input:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--stage1-focus, #2563eb) 28%, transparent);
+  outline-offset: 1px;
+  border-color: var(--stage1-focus, #2563eb);
+}
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-calendar.weekdays {
+  margin-bottom: .35rem;
+  padding: 0 .25rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-calendar.weekdays strong {
+  padding: .35rem .2rem;
+  color: var(--stage1-muted, #526578);
+  font-size: .72rem;
+  font-weight: 760;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-calendar.big {
+  overflow: hidden;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 14px;
+  background: var(--stage1-surface, #fff);
+  box-shadow: 0 10px 28px rgba(19,40,61,.05);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-calendar.big > .tech-calendar-day {
+  min-width: 0;
+  padding: .55rem;
+  border-color: var(--stage1-line, #d8e3ee);
+  background: var(--stage1-surface, #fff);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-day > button:first-child {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  min-height: 30px;
+  border-radius: 8px;
+  color: var(--stage1-muted, #526578);
+  background: transparent;
+  font-weight: 760;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-day > button:first-child.today {
+  background: var(--stage1-primary, #2563eb);
+  color: white;
+  box-shadow: 0 5px 13px color-mix(in srgb, var(--stage1-primary, #2563eb) 26%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-event {
+  display: grid;
+  gap: .15rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: .42rem .48rem;
+  border: 1px solid color-mix(in srgb, var(--stage1-primary, #2563eb) 17%, var(--stage1-line, #d8e3ee));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 7%, var(--stage1-surface, #fff));
+  color: color-mix(in srgb, var(--stage1-anchor, #173a63) 82%, var(--stage1-primary, #2563eb));
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-event:hover {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 40%, var(--stage1-line, #d8e3ee));
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 11%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-event:focus-visible,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-agenda > button:focus-visible,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card > button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--stage1-focus, #2563eb) 32%, transparent);
+  outline-offset: 2px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-agenda {
+  display: grid;
+  gap: .65rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-agenda > button {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: .8rem;
+  min-height: 64px;
+  padding: .75rem .85rem;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 11px;
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-ink, #1f2b3c);
+  text-align: left;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-agenda > button > svg {
+  color: var(--stage1-primary, #2563eb);
+}
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+  gap: .8rem;
+  align-items: start;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-lane {
+  min-width: 0;
+  min-height: 220px;
+  padding: .75rem;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 28%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-lane > header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  min-height: 38px;
+  margin-bottom: .55rem;
+  padding: .2rem .15rem .55rem;
+  border-bottom: 1px solid var(--stage1-line, #d8e3ee);
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 28%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-lane > header strong {
+  color: var(--stage1-anchor, #173a63);
+  font-size: .82rem;
+  letter-spacing: .015em;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card {
+  margin-bottom: .55rem;
+  padding: .75rem;
+  border: 1px solid color-mix(in srgb, var(--stage1-line, #d8e3ee) 82%, var(--stage1-primary, #2563eb));
+  border-radius: 11px;
+  background: var(--stage1-surface, #fff);
+  box-shadow: 0 7px 18px rgba(19,40,61,.045);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card:last-child {
+  margin-bottom: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card > button {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--stage1-ink, #1f2b3c);
+  text-align: left;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card h3 {
+  margin: .35rem 0;
+  font-size: .9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card p,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card small {
+  color: var(--stage1-muted, #526578);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card .p-select {
+  width: 100%;
+  margin-top: .65rem;
+}
+
+@media (max-width: 760px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-tools {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-tools > input,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-tools > :is([data-slot="select-trigger"], .p-select) {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-tools > .p-btn:not(:first-child):last-child {
+    grid-column: 1 / -1;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-calendar.weekdays strong {
+    font-size: .64rem;
+    letter-spacing: 0;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-calendar.big > .tech-calendar-day {
+    min-height: 74px;
+    padding: .3rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-event {
+    min-height: 32px;
+    padding: .28rem .32rem;
+    font-size: .67rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-event small {
+    display: none;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-agenda > button {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-agenda > button > .p-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board {
+    grid-template-columns: minmax(0,1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-lane {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-calendar-event,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .tech-board-card {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content :is(.tech-calendar-tools,.p-calendar.big,.tech-calendar-event,.tech-agenda>button,.tech-lane,.tech-board-card) {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+}
