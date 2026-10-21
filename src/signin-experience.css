@@ -1355,3 +1355,31 @@
     font-size:clamp(13px,.75vw,18px)!important;
   }
 }
+/* Card-aware narrow-column recovery: some 1600-1919 desktops yield 235px
+   cards even at higher resolutions. Adapt to the measured card, not viewport. */
+@media (min-width:1280px) and (max-width:1919px) {
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-city-content {
+    container-type:inline-size!important;container-name:global-weather-card!important;
+  }
+  @container global-weather-card (max-width:260px) {
+    .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+      left:6px!important;right:6px!important;bottom:6px!important;
+      padding:6px 7px 6px 54px!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      column-gap:5px!important;
+    }
+    .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt::after {
+      font-size:10px!important;
+    }
+    .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {
+      font-size:13px!important;
+    }
+    #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+      left:17px!important;bottom:10px!important;
+      width:34px!important;height:34px!important;
+    }
+    #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-visual {
+      width:34px!important;height:34px!important;
+    }
+  }
+}
