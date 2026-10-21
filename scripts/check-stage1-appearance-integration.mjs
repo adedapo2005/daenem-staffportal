@@ -6,6 +6,8 @@ const paletteCss = readFileSync(new URL('../src/staffportal-stage1-palette.css',
 const contrast = readFileSync(new URL('../src/stage1-a11y-contrast.css', import.meta.url), 'utf8');
 const worker = readFileSync(new URL('../worker/theme-preferences.ts', import.meta.url), 'utf8');
 const ledger = readFileSync(new URL('../delivery/STAFFPORTAL-STAGE1-REQUESTED-VS-COMPLETED-2026-10-20.md', import.meta.url), 'utf8');
+const retainedPortal = readFileSync(new URL('../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx', import.meta.url), 'utf8');
+const zipDashboard = readFileSync(new URL('../src/zip-dashboard.tsx', import.meta.url), 'utf8');
 const assertions = [];
 function check(name, condition) {
   assertions.push({ name, ok: Boolean(condition) });
@@ -28,6 +30,8 @@ check('mobile navigation preserves one-line readable labels', paletteCss.include
 check('Appearance distinguishes preview from persistence', appearance.includes("source: 'preview'") && appearance.includes('Apply to my workspace') && appearance.includes('Cancel preview'));
 check('Appearance provides governed Group controls', appearance.includes('Set selected as Group default') && appearance.includes('Force selected for Group') && appearance.includes('Restore approved default'));
 check('Appearance is explicitly post-login only', appearance.includes('They do not change Sign-In or another portal'));
+check('reviewer-facing runtime uses Pre-Production terminology', retainedPortal.includes('PRE-PRODUCTION REVIEW') && retainedPortal.includes('Pre-Production review controls') && !retainedPortal.includes('DEVELOPMENT PREVIEW ONLY') && !retainedPortal.includes('Development preview controls'));
+check('alternate dashboard surface uses Pre-Production terminology', zipDashboard.includes('PRE-PRODUCTION REVIEW') && !zipDashboard.includes('DEVELOPMENT PREVIEW ONLY'));
 check('backend uses separate post-login policy and preference routes', worker.includes("'/api/theme/postlogin/policy'") && worker.includes("'/api/theme/postlogin/preference'"));
 check('backend preserves explicit group authority and audit', worker.includes('canManageGroupTheme(context)') && worker.includes('update_postlogin_palette_policy'));
 check('requested-versus-completed ledger prevents false completion claims', ledger.includes('A successful build, a generated preview, or the presence of a component never changes an item to **Live verified**.'));
