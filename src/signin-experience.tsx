@@ -242,33 +242,35 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
     summary.setAttribute('aria-label', summaryText);
   }
 
-  let detail = card.querySelector<HTMLElement>('.sp-global-weather-details');
-  if (!detail) {
-    detail = weatherText('dl', 'sp-global-weather-details', '');
-    summary.parentElement?.appendChild(detail);
+  if (cityId !== 'ibadan') {
+    let detail = card.querySelector<HTMLElement>('.sp-global-weather-details');
+    if (!detail) {
+      detail = weatherText('dl', 'sp-global-weather-details', '');
+      summary.parentElement?.appendChild(detail);
+    }
+    const speedUnit = payload.unitsSystem === 'IMPERIAL' ? 'mph' : 'km/h';
+    const metrics: Array<[string, string, string]> = [
+      ['Temperature', payload.temperature === null ? '—' : Math.round(payload.temperature) + unit, 'temp'],
+      ['Feels like', payload.apparentTemperature === null ? '—' : Math.round(payload.apparentTemperature) + unit, 'feels'],
+      ['Humidity', payload.humidity === null ? '—' : Math.round(payload.humidity) + '%', 'humidity'],
+      ['Rain chance', payload.precipitationProbability === null ? '—' : Math.round(payload.precipitationProbability) + '%', 'rain'],
+      ['Wind', payload.windSpeed === null ? '—' : Math.round(payload.windSpeed) + ' ' + speedUnit, 'wind'],
+      ['Gusts', payload.windGust === null ? '—' : Math.round(payload.windGust) + ' ' + speedUnit, 'gusts'],
+    ];
+    const fingerprint = JSON.stringify(metrics);
+    if (detail.dataset.metricsFingerprint !== fingerprint) {
+      const rows = metrics.map(([label, value, key]) => {
+        const row = weatherText('div', 'sp-global-weather-metric', '');
+        row.dataset.metric = key;
+        row.append(weatherText('dt', '', label), weatherText('dd', '', value));
+        return row;
+      });
+      detail.replaceChildren(...rows);
+      detail.dataset.metricsFingerprint = fingerprint;
+      detail.setAttribute('aria-label', metrics.map(([label, value]) => label + ': ' + value).join(', '));
+    }
+    detail.dataset.cached = saved ? 'true' : 'false';
   }
-  const speedUnit = payload.unitsSystem === 'IMPERIAL' ? 'mph' : 'km/h';
-  const metrics: Array<[string, string, string]> = [
-    ['Temperature', payload.temperature === null ? '—' : Math.round(payload.temperature) + unit, 'temp'],
-    ['Feels like', payload.apparentTemperature === null ? '—' : Math.round(payload.apparentTemperature) + unit, 'feels'],
-    ['Humidity', payload.humidity === null ? '—' : Math.round(payload.humidity) + '%', 'humidity'],
-    ['Rain chance', payload.precipitationProbability === null ? '—' : Math.round(payload.precipitationProbability) + '%', 'rain'],
-    ['Wind', payload.windSpeed === null ? '—' : Math.round(payload.windSpeed) + ' ' + speedUnit, 'wind'],
-    ['Gusts', payload.windGust === null ? '—' : Math.round(payload.windGust) + ' ' + speedUnit, 'gusts'],
-  ];
-  const fingerprint = JSON.stringify(metrics);
-  if (detail.dataset.metricsFingerprint !== fingerprint) {
-    const rows = metrics.map(([label, value, key]) => {
-      const row = weatherText('div', 'sp-global-weather-metric', '');
-      row.dataset.metric = key;
-      row.append(weatherText('dt', '', label), weatherText('dd', '', value));
-      return row;
-    });
-    detail.replaceChildren(...rows);
-    detail.dataset.metricsFingerprint = fingerprint;
-    detail.setAttribute('aria-label', metrics.map(([label, value]) => label + ': ' + value).join(', '));
-  }
-  detail.dataset.cached = saved ? 'true' : 'false';
   card.dataset.weatherDaylight = payload.isDay === null ? '' : String(payload.isDay);
   summary.title = `${payload.provider} · ${weatherFreshness(payload)}${saved ? ' · Saved update' : ''}`;
   card.dataset.weather = saved || payload.providerStatus === 'cached' ? 'cached' : 'available';
