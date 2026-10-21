@@ -61,13 +61,26 @@
   align-items: stretch;
   gap: 14px 18px;
   padding: 18px;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   border-radius: 16px;
   background: var(--stage1-surface, #fff);
   box-shadow: 0 10px 30px rgba(18, 42, 66, .08);
 }
+.stage1-workflow-focus.stage1-role-home::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--stage1-gradient-spectrum, linear-gradient(90deg,#2563eb,#06b6d4,#7c3aed,#ef6f7c,#f59e0b));
+  pointer-events: none;
+}
 .stage1-role-home[data-role-home="owner"] {
   border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 25%, var(--stage1-line, #d8e3ee));
-  background: linear-gradient(135deg, var(--stage1-surface, #fff), color-mix(in srgb, var(--stage1-tint, #eaf3ff) 62%, var(--stage1-surface, #fff)));
+  background:
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--stage1-support-violet, #7c3aed) 11%, transparent), transparent 30%),
+    linear-gradient(135deg, var(--stage1-surface, #fff), color-mix(in srgb, var(--stage1-tint, #eaf3ff) 62%, var(--stage1-surface, #fff)));
 }
 .stage1-role-home[data-role-home="manager"] {
   border-color: color-mix(in srgb, var(--stage1-accent, #06b6d4) 24%, var(--stage1-line, #d8e3ee));
