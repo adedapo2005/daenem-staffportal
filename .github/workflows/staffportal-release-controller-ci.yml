@@ -1,0 +1,85 @@
+name: StaffPortal Pre-Production Controller CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-staffportal-staging.yml'
+      - '.github/workflows/staffportal-release-controller-ci.yml'
+      - 'delivery/PREPRODUCTION-GOVERNANCE.md'
+      - 'scripts/check-preproduction-governance.mjs'
+  push:
+    branches:
+      - 'release/staffportal-manual-staging-controller-20261018'
+    paths:
+      - '.github/workflows/deploy-staffportal-staging.yml'
+      - '.github/workflows/staffportal-release-controller-ci.yml'
+      - 'delivery/PREPRODUCTION-GOVERNANCE.md'
+      - 'scripts/check-preproduction-governance.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  controller-check:
+    name: Typecheck, Pages build, and API dry-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout controller candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: controller
+
+      - name: Verify controller hardening
+        working-directory: controller
+        run: |
+          test -f .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'name: Verify Pre-Production candidate' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'Validate exact commit SHA and repository source' .github/workflows/deploy-staffportal-staging.yml
+          ! grep -q 'approval_comment_id' .github/workflows/deploy-staffportal-staging.yml
+          ! grep -q 'issue_comment:' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'name: Release blockers clear' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'signin-desktop-internal-scrollbar' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'signin-weather-cache' .github/workflows/deploy-staffportal-staging.yml
+          grep -q 'signin-password-state-styling' .github/workflows/deploy-staffportal-staging.yml
+          RESOLVED_COUNT=$(grep -c "status: 'RESOLVED'" .github/workflows/deploy-staffportal-staging.yml)
+          test "$RESOLVED_COUNT" -eq 3
+          ! grep -Eq 'uses: actions/(checkout|setup-node|github-script)@(v|main|master)' .github/workflows/deploy-staffportal-staging.yml
+          node scripts/check-preproduction-governance.mjs
+
+      - name: Checkout official Pre-Production source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: preproduction/staffportal
+          persist-credentials: false
+          path: candidate
+
+      - name: Use Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: candidate/package-lock.json
+
+      - name: Install dependencies
+        working-directory: candidate
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: candidate
+        run: npm run typecheck
+
+      - name: Pages build
+        working-directory: candidate
+        run: npm run build
+
+      - name: API dry-run contracts
+        working-directory: candidate
+        run: |
+          node scripts/check-delivery-controller.mjs
+          node scripts/check-home-contract.mjs
+          node scripts/check-staffportal-staging-integration.mjs
+          node scripts/check-signin-release-blockers.mjs
+          npm run check:postauth-live
