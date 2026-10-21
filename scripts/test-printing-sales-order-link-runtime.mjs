@@ -212,9 +212,8 @@ db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quanti
   VALUES('job-audit-ignore-approval','company-printing','location-a','DP-I','Ignored audit',1,2500,'quoted')`).run();
 db.exec(`CREATE TRIGGER ignore_print_approval_audit BEFORE INSERT ON audit_logs
   WHEN NEW.action='customer_approved_order_link' BEGIN SELECT RAISE(IGNORE); END`);
-await assert.rejects(route(statusRequest('job-audit-ignore-approval', 'customer_approved', 'request-audit-ignore-approval'), env, context),
-  /NOT NULL constraint failed|constraint failed/i,
-  'an ignored required approval audit must abort and roll back the order link');
+response = await route(statusRequest('job-audit-ignore-approval', 'customer_approved', 'request-audit-ignore-approval'), env, context);
+assert.equal(response.status, 503, 'an ignored required approval audit must abort and roll back the order link');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE notes='Printing job job-audit-ignore-approval'").get().n, 0);
 assert.deepEqual({ ...db.prepare("SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-audit-ignore-approval'").get() }, {
   production_status: 'quoted', sales_order_id: null,
@@ -243,8 +242,8 @@ db.exec('DROP TRIGGER ignore_print_completion_audit');
 db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quantity,quoted_kobo,production_status)
   VALUES('job-audit-fail','company-printing','location-a','DP-F','Audit failure',1,2500,'quoted')`).run();
 db.exec(`CREATE TRIGGER reject_print_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'audit unavailable'); END`);
-await assert.rejects(route(statusRequest('job-audit-fail', 'customer_approved', 'request-audit-fail'), env, context), /audit unavailable/,
-  'required audit failure fails the endpoint');
+response = await route(statusRequest('job-audit-fail', 'customer_approved', 'request-audit-fail'), env, context);
+assert.equal(response.status, 503, 'required audit failure returns a bounded unavailable response');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM sales_orders WHERE notes='Printing job job-audit-fail'").get().n, 0);
 assert.equal(db.prepare("SELECT production_status,sales_order_id FROM print_jobs WHERE id='job-audit-fail'").get().production_status, 'quoted');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id='job-audit-fail'").get().n, 0);
@@ -913,4 +912,105 @@ assert.equal(concurrentFinishing.audits.length, 3);
 assert.equal(concurrentFinishing.job.finishing_cost_kobo, 2700, 'concurrent records cannot lose an aggregate cost');
 assert.equal(concurrentFinishing.job.gross_profit_kobo, 5900);
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, company isolation, payment truth PASS');
+// An approval cannot commit when any required commercial or history row is skipped.
+const seedApproval = (id, linked = false) => {
+  db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,customer_id,job_no,title,quantity,quoted_kobo,production_status)
+    VALUES(?,'company-printing','location-a','customer-a',?,'Approval integrity',2,5000,'quoted')`).run(id, id);
+  if (linked) {
+    db.prepare(`INSERT INTO sales_orders(id,company_id,location_id,customer_id,order_no,channel,order_date,status,
+      payment_status,currency,subtotal_kobo,discount_kobo,tax_kobo,total_kobo,amount_paid_kobo,notes,created_by)
+      VALUES(?,'company-printing','location-a','customer-a',?,'other',date('now'),'draft','unpaid','NGN',5000,0,0,5000,0,NULL,'employee-a')`).run(`existing-${id}`, id);
+    db.prepare('UPDATE print_jobs SET sales_order_id=? WHERE id=?').run(`existing-${id}`, id);
+  }
+};
+const approvalState = (id) => ({
+  job: db.prepare('SELECT * FROM print_jobs WHERE id=?').get(id),
+  orders: db.prepare('SELECT * FROM sales_orders WHERE id IN (?,?) ORDER BY id').all(`print-order-${id}`, `existing-${id}`),
+  items: db.prepare('SELECT * FROM sales_order_items WHERE id=? OR sales_order_id IN (?,?) ORDER BY id').all(`print-order-item-${id}`, `print-order-${id}`, `existing-${id}`),
+  events: db.prepare('SELECT * FROM print_job_status_events WHERE print_job_id=? ORDER BY id').all(id),
+  audits: db.prepare('SELECT * FROM audit_logs WHERE entity_id=? ORDER BY id').all(id),
+});
+let approvalFaults = 0;
+for (const linked of [false, true]) {
+  const id = `approval-fault-${linked}`;
+  seedApproval(id, linked);
+  const before = approvalState(id);
+  const stages = linked ? ['UPDATE ON sales_orders'] : ['INSERT ON sales_orders', 'INSERT ON sales_order_items'];
+  stages.push('UPDATE ON print_jobs', 'INSERT ON print_job_status_events', 'INSERT ON audit_logs');
+  for (const behavior of ['IGNORE', "ABORT,'approval write unavailable'"]) {
+    for (const stage of stages) {
+      db.exec(`CREATE TRIGGER fail_approval_write BEFORE ${stage} BEGIN SELECT RAISE(${behavior}); END`);
+      try {
+        response = await route(statusRequest(id, 'customer_approved', 'approval-fault'), env, context);
+        assert.equal(response.status, 503, `${linked}: ${stage} ${behavior} must fail closed`);
+        assert.deepEqual(await response.json(), { error: 'The Printing approval could not be saved. Refresh and try again.' });
+        assert.deepEqual(approvalState(id), before, 'no orphan sale, item, status, event or success audit may survive');
+        approvalFaults++;
+      } finally { db.exec('DROP TRIGGER fail_approval_write'); }
+    }
+  }
+  response = await route(statusRequest(id, 'customer_approved', `approval-retry-${linked}`), env, linked ? owner : context);
+  assert.equal(response.status, 200, 'authorized and Owner retry succeed after every rolled-back fault');
+  const saved = approvalState(id);
+  assert.equal(saved.orders.length, 1);
+  assert.equal(saved.orders[0].status, 'approved');
+  assert.equal(saved.orders[0].payment_status, 'unpaid');
+  assert.equal(saved.orders[0].amount_paid_kobo, 0);
+  assert.equal(saved.events.length, 1);
+  assert.equal(saved.audits.length, 1);
+  assert.equal(saved.audits[0].request_id, `approval-retry-${linked}`);
+  assert.equal(saved.audits[0].actor_employee_id, linked ? owner.employee.id : context.employee.id);
+  response = await route(statusRequest(id, 'customer_approved', 'approval-replay'), env, context);
+  assert.equal(response.status, 200);
+  assert.deepEqual(approvalState(id), saved, 'replay must not duplicate any order, item, event or audit');
+}
+
+// Inject an authoritative change after the reads but before the transaction starts.
+let approvalRaces = 0;
+for (const change of ['company', 'status', 'quote', 'quantity', 'customer', 'location', 'title', 'jobNo', 'link',
+  'order-company', 'order-status', 'order-payment', 'order-total']) {
+  const linked = change.startsWith('order-');
+  const id = `approval-stale-${change}`;
+  seedApproval(id, linked);
+  const originalBatch = env.DB.batch;
+  let expected;
+  env.DB.batch = async (statements) => {
+    const changes = {
+      company: "UPDATE print_jobs SET company_id='company-bakery' WHERE id=?",
+      status: "UPDATE print_jobs SET production_status='cancelled' WHERE id=?",
+      quote: 'UPDATE print_jobs SET quoted_kobo=6000 WHERE id=?',
+      quantity: 'UPDATE print_jobs SET quantity=3 WHERE id=?',
+      customer: "UPDATE print_jobs SET customer_id='customer-other' WHERE id=?",
+      location: "UPDATE print_jobs SET location_id='location-other' WHERE id=?",
+      title: "UPDATE print_jobs SET title='Changed title' WHERE id=?",
+      jobNo: "UPDATE print_jobs SET job_no='Changed reference' WHERE id=?",
+      link: "UPDATE print_jobs SET sales_order_id='foreign-order' WHERE id=?",
+      'order-company': "UPDATE sales_orders SET company_id='company-bakery' WHERE id=?",
+      'order-status': "UPDATE sales_orders SET status='cancelled' WHERE id=?",
+      'order-payment': "UPDATE sales_orders SET payment_status='refunded' WHERE id=?",
+      'order-total': 'UPDATE sales_orders SET total_kobo=6000 WHERE id=?',
+    };
+    db.prepare(changes[change]).run(linked ? `existing-${id}` : id);
+    expected = approvalState(id);
+    return originalBatch(statements);
+  };
+  try { response = await route(statusRequest(id, 'customer_approved', 'approval-stale'), env, context); }
+  finally { env.DB.batch = originalBatch; }
+  assert.equal(response.status, 503, `stale ${change} must not approve`);
+  assert.deepEqual(await response.json(), { error: 'The Printing approval could not be saved. Refresh and try again.' });
+  assert.deepEqual(approvalState(id), expected, 'stale approval preserves authoritative change without any new writes');
+  approvalRaces++;
+}
+
+// A deterministic item-ID collision must never link another sale's item or overwrite it.
+seedApproval('approval-item-collision');
+db.prepare(`INSERT INTO sales_order_items(id,sales_order_id,description,quantity,unit_price_kobo,unit_cost_kobo,discount_kobo,line_total_kobo)
+  VALUES('print-order-item-approval-item-collision','foreign-order','Other company item',1,5000,0,0,5000)`).run();
+const beforeItemCollision = approvalState('approval-item-collision');
+response = await route(statusRequest('approval-item-collision', 'customer_approved', 'approval-collision'), env, context);
+assert.equal(response.status, 503);
+assert.deepEqual(approvalState('approval-item-collision'), beforeItemCollision);
+assert.doesNotMatch(await response.text(), /foreign-order|Other company|company-bakery/);
+console.log(`Approval integrity: ${approvalFaults} write-fault rollbacks, ${approvalRaces} stale-state denials, canonical item collision, authorized/Owner retry and replay PASS`);
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, company isolation, payment truth PASS');
