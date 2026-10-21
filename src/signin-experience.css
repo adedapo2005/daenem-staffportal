@@ -1156,7 +1156,7 @@
   position:absolute!important;top:29px!important;right:8px!important;
   left:auto!important;bottom:auto!important;
   width:25px!important;height:25px!important;
-  display:block!important;min-height:0!important;
+  display:flex!important;min-height:0!important;
  }
  .sp-root #staff-global-operations .sp-live-city-weather .sp-live-weather-values {
   display:none!important;
