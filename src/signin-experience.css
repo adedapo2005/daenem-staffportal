@@ -1581,3 +1581,41 @@
    line-height:1.13!important;
  }
 }
+
+/* Compact desktop visual correction — never applies to approved 4K master.
+   The brand's rendered name exceeded its layout box and hit the access badge.
+   Reserve two real rows rather than shrinking the entire sign-in experience. */
+@media (min-width:1280px) and (max-width:1679px) {
+ #root .sp-root .sp-auth-card.sp-auth-gateway:not(.sp-auth-mode-create) .sp-auth-topline {
+   display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+   grid-template-rows:35px 19px!important;justify-items:center!important;
+   align-content:start!important;gap:1px!important;
+   height:55px!important;min-height:55px!important;max-height:55px!important;
+   padding:0!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway:not(.sp-auth-mode-create) .sp-auth-logo-v101 {
+   position:relative!important;transform:scale(.69)!important;
+   transform-origin:top center!important;
+   width:156px!important;max-width:100%!important;height:48px!important;
+   min-height:0!important;justify-self:center!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway:not(.sp-auth-mode-create) .sp-secure-chip {
+   position:relative!important;grid-row:2!important;
+   justify-self:center!important;margin:0!important;
+   min-height:17px!important;height:17px!important;max-height:17px!important;
+   font-size:9px!important;line-height:1!important;padding:1px 5px!important;
+   white-space:nowrap!important;
+ }
+ /* Give the timezone an entire weather column, beneath—not beside—the clock. */
+ #root .sp-root.sp-day #staff-local-weather .gw-city-instrument {
+   position:relative!important;padding-bottom:16px!important;
+ }
+ #root .sp-root.sp-day #staff-local-weather .gw-city-digital > p:last-child {
+   position:absolute!important;left:6px!important;right:6px!important;
+   bottom:0!important;width:auto!important;max-width:none!important;
+   margin:0!important;text-align:center!important;
+   font-size:10px!important;line-height:1.15!important;
+   white-space:nowrap!important;word-break:normal!important;
+   overflow-wrap:normal!important;
+ }
+}
