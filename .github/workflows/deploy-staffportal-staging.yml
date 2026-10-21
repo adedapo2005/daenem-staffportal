@@ -1,32 +1,97 @@
-name: StaffPortal Staging Deploy
 
-# Deployment authority moved to the manual controller on main.
-# The legacy feature-branch workflow MUST NOT deploy, even if dispatched.
+name: StaffPortal Pre-Production Deploy
+
 on:
+  push:
+    branches:
+      - 'preproduction/staffportal'
   workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: 'Exact 40-character SHA of a verified Pre-Production candidate'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: staffportal-staging-deploy-${{ github.sha }}
-  cancel-in-progress: true
+  group: staffportal-preproduction-deploy
+  cancel-in-progress: false
 
 jobs:
+  approval:
+    name: Verify Pre-Production candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      candidate_sha: ${{ steps.validate.outputs.candidate_sha }}
+    steps:
+      - name: Validate exact commit SHA and repository source
+        id: validate
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          CANDIDATE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.candidate_sha }}
+        with:
+          script: |
+            const sha = (process.env.CANDIDATE_SHA || '').trim().toLowerCase();
+            if (!/^[0-9a-f]{40}$/.test(sha)) {
+              core.setFailed('A full 40-character commit SHA is required.');
+              return;
+            }
+
+            try {
+              const result = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: sha
+              });
+
+              if (result.data.sha.toLowerCase() !== sha) {
+                core.setFailed('Commit verification failed.');
+                return;
+              }
+
+              if (context.eventName === 'push') {
+                const branch = await github.rest.repos.getBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  branch: 'preproduction/staffportal'
+                });
+                const head = branch.data.commit.sha.toLowerCase();
+                if (head !== sha) {
+                  core.setFailed(`Skipping stale Pre-Production deploy. Branch head is ${head}, run candidate is ${sha}.`);
+                  return;
+                }
+              }
+
+              core.setOutput('candidate_sha', sha);
+            } catch (error) {
+              core.setFailed('Commit could not be verified as the current Pre-Production source.');
+            }
+
   deploy:
-    if: ${{ false }} # RETIRED: Only the Owner-approved main workflow can deploy.
-    name: Deploy StaffPortal staging
+    name: Deploy StaffPortal Pre-Production
+    needs: approval
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: staffportal-api-staging
       url: https://daenem-staffportal-api-staging.adedapo2005.workers.dev/
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact approved source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.approval.outputs.candidate_sha }}
+          persist-credentials: false
+
+      - name: Assert exact approved SHA
+        env:
+          EXPECTED_SHA: ${{ needs.approval.outputs.candidate_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Use Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: npm
@@ -42,6 +107,7 @@ jobs:
           npm run check:company-scoped-access
           node scripts/check-v44-scoped-settings.mjs
           node scripts/check-staffportal-staging-integration.mjs
+          node scripts/check-signin-release-blockers.mjs
           npm run check:postauth-live
 
       - name: Build and verify communications contracts
@@ -51,6 +117,35 @@ jobs:
           npx tsc worker/communications-dispatch.ts worker/communications-webhook.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --types @cloudflare/workers-types --outDir .tmp-communications-remediation --rootDir . --noEmit false
           node scripts/test-communications-remediation.mjs
 
+      - name: Release blockers clear
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const blockers = [
+            {
+              id: 'signin-desktop-internal-scrollbar',
+              status: 'RESOLVED',
+              requirement: 'Approved desktop Sign-In must not use an internal auth-panel scrollbar.'
+            },
+            {
+              id: 'signin-weather-cache',
+              status: 'RESOLVED',
+              requirement: 'Public Sign-In weather must retain truthful cached data when refresh fails.'
+            },
+            {
+              id: 'signin-password-state-styling',
+              status: 'RESOLVED',
+              requirement: 'Create Account password requirements must expose visible success and failure states.'
+            }
+          ];
+          console.log('STAFFPORTAL_RELEASE_BLOCKERS=' + JSON.stringify(blockers));
+          const open = blockers.filter((item) => item.status !== 'RESOLVED');
+          if (open.length) {
+            console.error('::error::Known StaffPortal Sign-In release blockers remain: ' + open.map((item) => item.id).join(', '));
+            process.exit(1);
+          }
+          NODE
+
       - name: Assert production safety gates remain closed
         shell: bash
         run: |
@@ -59,11 +154,10 @@ jobs:
           test "$(node -p "require('./delivery/current-state.json').productionMigrationAuthorized")" = "false"
           test "$(node -p "require('./delivery/current-state.json').liveMetaAuthorized")" = "false"
 
-
       - name: Build StaffPortal
         env:
-          VITE_STAFFPORTAL_BUILD_SHA: ${{ github.sha }}
-          VITE_STAFFPORTAL_BUILD_REF: ${{ github.ref_name }}
+          VITE_STAFFPORTAL_BUILD_SHA: ${{ needs.approval.outputs.candidate_sha }}
+          VITE_STAFFPORTAL_BUILD_REF: preproduction/staffportal
           VITE_STAFFPORTAL_BUILD_RUN_ID: ${{ github.run_id }}
         run: |
           export VITE_STAFFPORTAL_DEPLOYED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -122,20 +216,20 @@ jobs:
           fi
           printf 'CLOUDFLARE_ACCOUNT_ID=%s\n' "$account_id" >> "$GITHUB_ENV"
 
-      - name: Deploy staging Worker
+      - name: Deploy Pre-Production Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx wrangler deploy --config wrangler.staffportal-staging.jsonc --keep-vars
 
-      - name: Verify staging health
+      - name: Verify Pre-Production health
         run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
 
-      - name: Verify staging runtime and auth route contract
+      - name: Verify Pre-Production runtime and auth route contract
         env:
           STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
         run: node scripts/test-staffportal-staging-runtime.mjs
 
-      - name: Verify versioned staging asset integrity
+      - name: Verify versioned Pre-Production asset integrity
         env:
           STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
         run: node scripts/test-staffportal-staging-assets.mjs
