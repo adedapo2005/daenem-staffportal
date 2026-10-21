@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const baseline = process.argv.includes('--baseline');
-const screens = process.argv.includes('--states-only') ? [] : baseline ? [[1363,936],[1366,768],[1280,720],[1025,600],[1920,1080]] : [[390,844],[820,1180],[1024,768],[1025,600],[1280,720],[1363,936],[1366,768],[1920,1080],[3840,2160]];
+const screens = process.argv.includes('--states-only') ? [] : baseline ? [[1363,936],[1366,768],[1280,720],[1025,600],[1920,1080]] : [[390,844],[820,1180],[1024,768],[1025,600],[1280,720],[1363,936],[1366,768],[1440,900],[1536,864],[1600,900],[1680,1050],[1920,1080],[2560,1440],[3840,2160]];
 const cities = {ibadan:'Ibadan',toronto:'Toronto',london:'London',newyork:'New York',moscow:'Moscow',tokyo:'Tokyo',beijing:'Beijing'};
 const temperatures = {ibadan:26,toronto:12,london:9,newyork:18,moscow:3,tokyo:22,beijing:6};
 const fixture = (city, change=0) => ({available:true,provider:'Google Weather',providerStatus:'fresh',fetchedAt:new Date().toISOString(),cacheAgeSeconds:0,unitsSystem:'METRIC',location:cities[city],temperature:temperatures[city]+change,apparentTemperature:28+change,humidity:95,precipitationProbability:10,windSpeed:5,windDirection:157,windGust:8,today:{high:33,low:24},description:city==='london'?'Mostly cloudy':'Clear'});
@@ -28,7 +28,7 @@ async function run(){
    await page.route('**/api/**',async route=>{
     const u=new URL(route.request().url());let body={};
     if(u.pathname==='/api/auth/me')body={authenticated:false};
-    if(u.pathname==='/api/context/signin')body={source:'live',generatedAt:new Date().toISOString(),news:[{title:'Nigerian businesses expand local training programmes',source:'QA attributed source',category:'Nigeria',url:'https://example.org/news'}]};
+    if(u.pathname==='/api/context/signin/news')body={state:'partial',latest:[{id:'qa-news',title:'Nigerian businesses expand local training programmes',source:'QA attributed source',categories:'Nigeria',link:'https://example.org/news',published:new Date().toISOString(),summary:''}],intelligence:Object.fromEntries(['Security','Economy','Politics','Agriculture','Energy','Infrastructure'].map(domain=>[domain,[]])),sources:[{name:'QA attributed source'}]};
     if(u.pathname==='/api/context/signin/weather'){
      const city=u.searchParams.get('city')||'ibadan';calls[city]=(calls[city]||0)+1;body=fixture(city,change);
     }
@@ -49,11 +49,11 @@ async function run(){
      const cards=[...document.querySelectorAll('article[data-city-id]')].map(card=>{
       const summary=card.querySelector('[data-signin-weather-summary]')||card.querySelector('.gw-city-instrument')?.nextElementSibling;
       const c=box(card),s=summary?box(summary):null;
-      return{city:card.dataset.cityId,card:c,summary:s,text:summary?.textContent,inside:s&&contains(c,s),digital:[...card.querySelectorAll('.gw-city-digital > p')].map(e=>({text:e.textContent,box:box(e),inside:contains(c,box(e))}))};
+      return{city:card.dataset.cityId,clock:box(card.querySelector('.gw-city-clock')),card:c,summary:s,text:summary?.textContent,inside:s&&contains(c,s),detail:(()=>{const e=card.querySelector('.sp-global-weather-details');return e?{box:box(e),labels:[...e.querySelectorAll('dt')].map(x=>x.textContent),values:[...e.querySelectorAll('dd')].map(x=>x.textContent)}:null})(),digital:[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>({text:e.textContent,box:box(e),inside:contains(c,box(e))}))};
      });
      const weather=document.querySelector('#staff-local-weather'),w=box(weather);
      const detail=document.querySelector('.sp-weather-v145-intelligence'),d=box(detail);
-     const fields=[...document.querySelectorAll('.sp-live-weather-metric dt,.sp-live-weather-metric dd,.sp-live-weather-range,.sp-weather-v145-footer > span')].map(e=>({text:e.textContent,box:box(e),inside:contains(w,box(e))&&contains(d,box(e)),font:parseFloat(getComputedStyle(e).fontSize)}));
+     const fields=[...document.querySelectorAll('.sp-live-weather-metric dt,.sp-live-weather-metric dd,.sp-live-weather-range,.sp-weather-v145-footer > span')].map(e=>({text:e.textContent,box:box(e),inside:contains(w,box(e))&&(e.closest('.sp-weather-v145-footer')?true:contains(d,box(e))),font:parseFloat(getComputedStyle(e).fontSize)}));
      const overlaps=fields.flatMap((a,i)=>fields.slice(i+1).filter(b=>Math.min(a.box.right,b.box.right)-Math.max(a.box.x,b.box.x)>1&&Math.min(a.box.bottom,b.box.bottom)-Math.max(a.box.y,b.box.y)>1).map(b=>[a.text,b.text]));
      const auth=document.querySelector('#staffportal-auth-mount');
      const layout=document.querySelector('.sp-reference-layout');
@@ -63,7 +63,16 @@ async function run(){
     if(!baseline){
      assert.equal(data.metrics,6,'six Ibadan details');
      assert.equal(data.cards.length,7,'seven city cards');
-     for(const card of data.cards){assert.ok(card.inside,card.city+' weather clipped '+JSON.stringify(card));for(const row of card.digital)assert.ok(row.inside,card.city+' clock metadata clipped '+JSON.stringify(row));}
+     for(const card of data.cards){
+      if(card.city!=='ibadan'){
+       assert.ok(card.clock.width >= ((data.width >= 1280 && data.width < 1920) ? 73.9 : 83.9),'responsive approved minimum global clock width: '+card.city);
+       assert.ok(card.detail,'global city weather details missing: '+card.city);
+       assert.equal(card.detail.labels.length,6,'six global weather labels: '+card.city);
+       assert.ok(card.detail.box.x>=card.card.x-1&&card.detail.box.right<=card.card.right+1&&card.detail.box.y>=card.card.y-1&&card.detail.box.bottom<=card.card.bottom+1,'global city metrics clipped: '+card.city);
+      } else assert.equal(card.detail,null,'Ibadan already has its own detailed panel');
+      assert.ok(card.inside,card.city+' weather clipped '+JSON.stringify(card));
+      for(const row of card.digital)assert.ok(row.inside,card.city+' clock metadata clipped '+JSON.stringify(row));
+     }
      for(const field of data.fields)assert.ok(field.inside,'detail clipped '+JSON.stringify(field));
      assert.equal(data.overlaps.length,0,'weather readings overlap '+JSON.stringify(data.overlaps));
      assert.ok(data.scrollWidth<=width+2,'horizontal overflow');
@@ -112,7 +121,7 @@ async function run(){
     const overflow=await page.evaluate(()=>[...document.querySelectorAll('article[data-city-id]')].flatMap(card=>{
      const c=card.getBoundingClientRect(),summary=card.querySelector('[data-signin-weather-summary]').getBoundingClientRect();
      const clock=card.querySelector('.gw-city-clock').getBoundingClientRect();
-     const digital=[...card.querySelectorAll('.gw-city-digital > p')].map(e=>e.getBoundingClientRect());
+     const digital=[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>{const range=document.createRange();range.selectNodeContents(e);return range.getBoundingClientRect()});
      const outside=[summary,clock,...digital].some(r=>r.x<c.x-1||r.right>c.right+1||r.y<c.y-1||r.bottom>c.bottom+1);
      const overlap=[clock,...digital].some(r=>Math.min(r.right,summary.right)-Math.max(r.x,summary.x)>1&&r.bottom>summary.y+1);
      const bounds=r=>({x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,right:r.right});
