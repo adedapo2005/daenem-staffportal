@@ -228,12 +228,6 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
     payload.precipitationProbability === null ? '' : `Rain ${Math.round(payload.precipitationProbability)}%`,
     payload.windSpeed === null ? '' : `Wind ${Math.round(payload.windSpeed)} ${payload.unitsSystem === 'IMPERIAL' ? 'mph' : 'km/h'}`,
   ].filter(Boolean);
-  if (false && extra.length && payload.description.length <= 16) {
-    const secondary = weatherText('span', 'sp-live-weather-secondary', [payload.apparentTemperature === null ? '' : ('Feels ' + Math.round(payload.apparentTemperature) + '°'), payload.precipitationProbability === null ? '' : ('Rain ' + Math.round(payload.precipitationProbability) + '%')].filter(Boolean).join(' · ') || extra[0]);
-    secondary.title = extra.join(' · ');
-    secondary.setAttribute('aria-label', extra.join(', '));
-    values.appendChild(secondary);
-  }
   const summaryText = `${payload.temperature === null ? '' : Math.round(payload.temperature) + unit} · ${payload.description}${payload.humidity === null ? '' : ` · Humidity ${Math.round(payload.humidity)}%`}${extra.length ? ' · ' + extra.join(' · ') : ''}${saved ? ' · Saved' : ''}`;
   if (summary.dataset.weatherText !== summaryText) {
     const existing = summary.querySelector('.sp-live-weather-values');
@@ -262,7 +256,8 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
       const rows = metrics.map(([label, value, key]) => {
         const row = weatherText('div', 'sp-global-weather-metric', '');
         row.dataset.metric = key;
-        row.append(weatherText('dt', '', label), weatherText('dd', '', value));
+        row.appendChild(weatherText('dt', '', label));
+        row.appendChild(weatherText('dd', '', value));
         return row;
       });
       detail.replaceChildren(...rows);
