@@ -1388,3 +1388,114 @@
  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt::after {font-size:10px!important;}
  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {font-size:13px!important;}
 }
+
+/* INTERMEDIATE SIGN-IN FULL-FIT OVERRIDE 2026-10-21: Keep the full sign-in flow visible in the desktop rail without an inner
+   scrollbar; the wider phone/tablet layout continues to use page scrolling. */
+@media (min-width:1680px) and (max-width:2099px) and (max-height:1100px) {
+  .sp-root .sp-auth-card.sp-auth-v86.sp-auth-gateway {
+    overflow:visible !important;
+    gap:4px !important;
+    padding:8px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-topline {
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:4px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-logo-v101 { transform:scale(.78) !important; transform-origin:left center !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-secure-chip { padding:4px 6px !important; font-size:.48rem !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy { gap:3px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 { font-size:clamp(1rem,1.08vw,1.2rem) !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child { font-size:clamp(.56rem,.58vw,.68rem) !important; line-height:1.25 !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs { padding:2px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button { min-height:27px !important; padding:3px !important; font-size:.48rem !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form { gap:4px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form label { gap:2px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label { font-size:.49rem !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell { min-height:34px !important; padding-inline:8px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input { font-size:.58rem !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-options { min-height:18px !important; font-size:.48rem !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button { min-height:35px !important; padding:6px 9px !important; font-size:.62rem !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-divider { margin-top:0 !important; font-size:.44rem !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-list { grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:3px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button { min-height:38px !important; flex-direction:column !important; justify-content:center !important; gap:2px !important; padding:3px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon { width:15px !important; height:15px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon svg { width:12px !important; height:12px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-label { font-size:.44rem !important; line-height:1.05 !important; text-align:center !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status { grid-column:1/-1 !important; gap:3px !important; font-size:.42rem !important; line-height:1.15 !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-install-card-v101 { min-height:30px !important; padding:4px 6px !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy { margin-top:0 !important; }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy p,
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy small { font-size:.40rem !important; line-height:1.2 !important; }
+}
+
+/* Intermediate desktop auth content-height closure: all controls remain present. */
+@media (min-width:1680px) and (max-width:2099px) and (max-height:1100px) {
+ #root .sp-root .sp-auth-card.sp-auth-v86.sp-auth-gateway {
+   display:flex!important; flex-direction:column!important;
+   justify-content:flex-start!important; gap:3px!important; padding:8px!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-topline {
+   height:43px!important; min-height:0!important; max-height:43px!important;
+   flex:0 0 43px!important; align-items:center!important; gap:4px!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-logo-v101 {
+   height:38px!important; min-height:0!important; max-height:38px!important;
+   transform:scale(.65)!important; transform-origin:left center!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy {
+   height:auto!important; min-height:0!important; gap:1px!important; margin:0!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {font-size:17px!important;line-height:1.08!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {font-size:11px!important;line-height:1.15!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs {height:31px!important;min-height:0!important;padding:2px!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {height:27px!important;min-height:27px!important;padding:2px 5px!important;font-size:11px!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form {gap:3px!important;min-height:0!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form label {gap:2px!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {font-size:11px!important;line-height:1.12!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {min-height:34px!important;height:34px!important;padding:4px 7px!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {font-size:11px!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-options {min-height:18px!important;height:auto!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {min-height:36px!important;height:36px!important;padding:5px!important;font-size:12px!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-divider {min-height:13px!important;margin:0!important;line-height:1.1!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-list {gap:3px!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {height:38px!important;min-height:38px!important;padding:3px!important;gap:2px!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon {width:15px!important;height:15px!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-label {font-size:11px!important;line-height:1!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-install-card-v101 {min-height:31px!important;height:31px!important;padding:3px 7px!important;margin:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy {margin:0!important;padding:0!important;}
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy :is(p,small) {font-size:10px!important;line-height:1.14!important;}
+}
+
+/* Weather provider outage: keep the complete truthful status readable inside
+   each compact Global Operations photo card; 4K master stays unchanged. */
+@media (min-width:1024px) and (max-width:2099px) {
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city[data-weather="unavailable"] .sp-live-city-weather {
+    position:absolute!important;
+    top:auto!important;bottom:7px!important;
+    left:8px!important;right:8px!important;
+    width:auto!important;max-width:none!important;height:auto!important;
+    min-height:35px!important;box-sizing:border-box!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    padding:6px 8px!important;
+    background:linear-gradient(180deg,rgba(5,22,39,.78),rgba(5,22,39,.9))!important;
+    border:1px solid rgba(158,216,245,.46)!important;border-radius:7px!important;
+    font-size:clamp(11px,.76vw,14px)!important;line-height:1.2!important;
+    font-weight:730!important;letter-spacing:0!important;text-align:center!important;
+    white-space:normal!important;overflow-wrap:normal!important;text-wrap:balance!important;
+    grid-column:auto!important;grid-row:auto!important;
+    transform:none!important;z-index:6!important;
+  }
+}
+
+/* Keep the compact outage label away from the analog clock face. */
+@media (min-width:1280px) and (max-width:1679px) {
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city[data-weather="unavailable"] .sp-live-city-weather {
+   left:calc(clamp(74px,5.1vw,124px) + 18px)!important;
+   right:7px!important;
+   min-height:41px!important;
+   font-size:12px!important;
+   line-height:1.12!important;
+ }
+}
