@@ -64,7 +64,9 @@ db.exec(`
     ('cogs-a','company-printing','5000',1);
   INSERT INTO fiscal_periods VALUES('period-a','company-printing','open','Current period',date('now','start of month'),date('now','start of month','+1 month','-1 day'));
   CREATE TABLE print_job_materials(print_job_id TEXT,actual_quantity REAL,waste_quantity REAL,unit_cost_kobo INTEGER);
-  CREATE TABLE print_finishing_records(print_job_id TEXT,cost_kobo INTEGER,result TEXT);
+  CREATE TABLE print_finishing_records(id TEXT PRIMARY KEY,print_job_id TEXT NOT NULL,finishing_type TEXT NOT NULL,
+    quantity REAL,cost_kobo INTEGER NOT NULL DEFAULT 0,result TEXT NOT NULL DEFAULT 'completed'
+    CHECK(result IN ('pending','completed','rework','rejected')),note TEXT,recorded_by TEXT NOT NULL);
   CREATE TABLE print_delivery_records(id TEXT PRIMARY KEY,print_job_id TEXT NOT NULL,method TEXT,
     recipient_name TEXT,recipient_phone TEXT,delivery_address TEXT,proof_key TEXT,note TEXT,
     dispatched_by TEXT,delivered_by TEXT,dispatched_at TEXT,delivered_at TEXT,
@@ -770,4 +772,145 @@ for (const markDelivered of [true, false]) {
   }
 }
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, company isolation, payment truth PASS');
+// Finishing evidence, aggregate costs and correlated audit form one boundary.
+const finishingRequest = (id, requestId, overrides = {}) => new Request('https://staffportal.test/api/printing/jobs/finishing', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': requestId },
+  body: JSON.stringify({ jobId: id, finishingType: 'Binding', costNaira: 12, quantity: 2, ...overrides }),
+});
+const seedFinishing = (id) => {
+  db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status,
+    material_cost_kobo,finishing_cost_kobo,labour_cost_kobo,other_cost_kobo,gross_profit_kobo,margin_basis_points)
+    VALUES(?,'company-printing',?,'Finishing integrity',2,10000,'finishing',900,300,400,100,8300,8300)`).run(id, id);
+  db.prepare('INSERT INTO print_job_materials VALUES(?,2,1,300)').run(id);
+  db.prepare(`INSERT INTO print_finishing_records(id,print_job_id,finishing_type,cost_kobo,result,recorded_by)
+    VALUES(?,?,'Existing binding',300,'completed','employee-a')`).run(`${id}-old`, id);
+  db.prepare(`INSERT INTO audit_logs(id,company_id,module,action,entity_type,entity_id,request_id)
+    VALUES(?,'company-printing','printing','finishing_record','print_job',?,'old-request')`).run(`${id}-old-audit`, id);
+};
+const finishingState = (id) => ({
+  job: db.prepare('SELECT * FROM print_jobs WHERE id=?').get(id),
+  records: db.prepare('SELECT * FROM print_finishing_records WHERE print_job_id=? ORDER BY id').all(id),
+  audits: db.prepare('SELECT * FROM audit_logs WHERE entity_id=? ORDER BY id').all(id),
+});
+seedFinishing('finishing-fault');
+const beforeFinishing = finishingState('finishing-fault');
+for (const body of ['null', '[]', '42', '"invalid"', '{']) {
+  response = await route(new Request('https://staffportal.test/api/printing/jobs/finishing', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body,
+  }), env, context);
+  assert.equal(response.status, 400, 'malformed finishing payloads return a bounded client error');
+  assert.deepEqual(await response.json(), { error: 'Invalid finishing record.' });
+  assert.deepEqual(finishingState('finishing-fault'), beforeFinishing, 'malformed payloads cannot write evidence or costs');
+}
+for (const behavior of ['IGNORE', "ABORT,'finishing write unavailable'"]) {
+  for (const stage of ['INSERT ON print_finishing_records', 'UPDATE OF material_cost_kobo ON print_jobs',
+    'UPDATE OF gross_profit_kobo ON print_jobs', 'INSERT ON audit_logs']) {
+    db.exec(`CREATE TRIGGER fail_finishing_write BEFORE ${stage} BEGIN SELECT RAISE(${behavior}); END`);
+    try {
+      response = await route(finishingRequest('finishing-fault', 'finishing-fault-request'), env, context);
+      assert.equal(response.status, 503, `${stage} ${behavior} must fail closed`);
+      assert.doesNotMatch(await response.text(), /finishingId|costKobo|SQL|constraint|finishing write unavailable/i);
+      assert.deepEqual(finishingState('finishing-fault'), beforeFinishing, 'all costs, records and audit roll back');
+    } finally { db.exec('DROP TRIGGER fail_finishing_write'); }
+  }
+}
+for (const denied of [otherCompanyApprover, editOnly]) {
+  response = await route(finishingRequest('finishing-fault', 'finishing-denied'), env, denied);
+  assert.equal(response.status, 403);
+  assert.deepEqual(finishingState('finishing-fault'), beforeFinishing);
+}
+for (const costNaira of ['invalid', 'Infinity', -1, Number.MAX_SAFE_INTEGER]) {
+  response = await route(finishingRequest('finishing-fault', 'finishing-invalid', { costNaira }), env, context);
+  assert.equal(response.status, 400);
+  assert.deepEqual(finishingState('finishing-fault'), beforeFinishing);
+}
+for (const actor of [context, owner]) {
+  response = await route(finishingRequest('finishing-fault', `finishing-${actor.employee.id}`), env, actor);
+  assert.equal(response.status, 200, 'authorized retry after rollback succeeds');
+  const { finishingId } = await response.json();
+  const record = db.prepare('SELECT * FROM print_finishing_records WHERE id=?').get(finishingId);
+  assert.equal(record.recorded_by, actor.employee.id);
+  const audit = db.prepare('SELECT * FROM audit_logs WHERE request_id=?').get(`finishing-${actor.employee.id}`);
+  assert.equal(audit.company_id, 'company-printing');
+  assert.equal(audit.actor_employee_id, actor.employee.id);
+  assert.equal(JSON.parse(audit.after_json).finishingId, finishingId);
+}
+const finishedCosts = finishingState('finishing-fault');
+assert.equal(finishedCosts.job.material_cost_kobo, 900);
+assert.equal(finishedCosts.job.finishing_cost_kobo, 2700);
+assert.equal(finishedCosts.job.gross_profit_kobo, 5900);
+assert.equal(finishedCosts.job.margin_basis_points, 5900);
+assert.equal(finishedCosts.job.production_status, 'finishing');
+assert.equal(finishedCosts.job.sales_order_id, null, 'finishing cannot fabricate sale or payment truth');
+
+for (const result of ['pending', 'rejected', 'rework']) {
+  const id = `finishing-result-${result}`;
+  seedFinishing(id);
+  response = await route(finishingRequest(id, id, { result }), env, context);
+  assert.equal(response.status, 200);
+  assert.equal(finishingState(id).job.finishing_cost_kobo, result === 'rework' ? 1500 : 300);
+}
+// Preserve the existing JS Math.round behavior, including negative half margins.
+seedFinishing('finishing-rounding');
+db.prepare("UPDATE print_jobs SET invoiced_kobo=20000,labour_cost_kobo=18801 WHERE id='finishing-rounding'").run();
+response = await route(finishingRequest('finishing-rounding', 'finishing-rounding', { costNaira: 0 }), env, editOnly);
+assert.equal(response.status, 200, 'operational staff can still record zero-cost finishing');
+assert.equal(finishingState('finishing-rounding').job.gross_profit_kobo, -101);
+assert.equal(finishingState('finishing-rounding').job.margin_basis_points, -50);
+
+for (const terminal of ['completed', 'cancelled']) {
+  const id = `finishing-${terminal}`;
+  seedFinishing(id);
+  db.prepare('UPDATE print_jobs SET production_status=? WHERE id=?').run(terminal, id);
+  const before = finishingState(id);
+  response = await route(finishingRequest(id, id), env, owner);
+  assert.equal(response.status, 409, 'Owner cannot rewrite finalized job costs through finishing');
+  assert.deepEqual(finishingState(id), before);
+}
+seedFinishing('finishing-foreign');
+db.prepare("UPDATE print_jobs SET company_id='company-bakery' WHERE id='finishing-foreign'").run();
+const beforeForeignFinishing = finishingState('finishing-foreign');
+response = await route(finishingRequest('finishing-foreign', 'finishing-foreign'), env, context);
+assert.equal(response.status, 404);
+assert.deepEqual(await response.json(), { error: 'Print job not found.' });
+assert.deepEqual(finishingState('finishing-foreign'), beforeForeignFinishing);
+
+for (const changedField of ['company', 'status']) {
+  const id = `finishing-stale-${changedField}`;
+  seedFinishing(id);
+  const prepareBeforeRace = env.DB.prepare;
+  let expected;
+  env.DB.prepare = (sql) => {
+    const statement = prepareBeforeRace(sql);
+    if (sql.startsWith('SELECT pj.id,pj.job_no')) {
+      const first = statement.first.bind(statement);
+      statement.first = async () => {
+        const row = await first();
+        if (row?.id === id) {
+          if (changedField === 'company') db.prepare("UPDATE print_jobs SET company_id='company-bakery' WHERE id=?").run(id);
+          else db.prepare("UPDATE print_jobs SET production_status='completed' WHERE id=?").run(id);
+          expected = finishingState(id);
+        }
+        return row;
+      };
+    }
+    return statement;
+  };
+  try { response = await route(finishingRequest(id, id), env, context); }
+  finally { env.DB.prepare = prepareBeforeRace; }
+  assert.equal(response.status, 503);
+  assert.deepEqual(finishingState(id), expected, 'stale finishing cannot alter another company or finalized costs');
+}
+seedFinishing('finishing-concurrent');
+const finishingRace = await Promise.all([
+  route(finishingRequest('finishing-concurrent', 'finishing-race-a'), env, context),
+  route(finishingRequest('finishing-concurrent', 'finishing-race-b'), env, context),
+]);
+assert.ok(finishingRace.every((result) => result.status === 200), 'distinct finishing records remain additive');
+const concurrentFinishing = finishingState('finishing-concurrent');
+assert.equal(concurrentFinishing.records.length, 3);
+assert.equal(concurrentFinishing.audits.length, 3);
+assert.equal(concurrentFinishing.job.finishing_cost_kobo, 2700, 'concurrent records cannot lose an aggregate cost');
+assert.equal(concurrentFinishing.job.gross_profit_kobo, 5900);
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, company isolation, payment truth PASS');
