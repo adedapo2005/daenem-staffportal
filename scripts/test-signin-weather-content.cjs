@@ -49,7 +49,7 @@ async function run(){
      const cards=[...document.querySelectorAll('article[data-city-id]')].map(card=>{
       const summary=card.querySelector('[data-signin-weather-summary]')||card.querySelector('.gw-city-instrument')?.nextElementSibling;
       const c=box(card),s=summary?box(summary):null;
-      return{city:card.dataset.cityId,clock:box(card.querySelector('.gw-city-clock')),card:c,summary:s,text:summary?.textContent,inside:s&&contains(c,s),digital:[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>({text:e.textContent,box:box(e),inside:contains(c,box(e))}))};
+      return{city:card.dataset.cityId,clock:box(card.querySelector('.gw-city-clock')),card:c,summary:s,text:summary?.textContent,inside:s&&contains(c,s),detail:(()=>{const e=card.querySelector('.sp-global-weather-details');return e?{box:box(e),labels:[...e.querySelectorAll('dt')].map(x=>x.textContent),values:[...e.querySelectorAll('dd')].map(x=>x.textContent)}:null})(),digital:[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>({text:e.textContent,box:box(e),inside:contains(c,box(e))}))};
      });
      const weather=document.querySelector('#staff-local-weather'),w=box(weather);
      const detail=document.querySelector('.sp-weather-v145-intelligence'),d=box(detail);
@@ -63,7 +63,16 @@ async function run(){
     if(!baseline){
      assert.equal(data.metrics,6,'six Ibadan details');
      assert.equal(data.cards.length,7,'seven city cards');
-     for(const card of data.cards){if(card.city!=='ibadan')assert.ok(card.clock.width>=83.9,'approved minimum global clock width: '+card.city);assert.ok(card.inside,card.city+' weather clipped '+JSON.stringify(card));for(const row of card.digital)assert.ok(row.inside,card.city+' clock metadata clipped '+JSON.stringify(row));}
+     for(const card of data.cards){
+      if(card.city!=='ibadan'){
+       assert.ok(card.clock.width>=83.9,'approved minimum global clock width: '+card.city);
+       assert.ok(card.detail,'global city weather details missing: '+card.city);
+       assert.equal(card.detail.labels.length,6,'six global weather labels: '+card.city);
+       assert.ok(card.detail.box.x>=card.card.x-1&&card.detail.box.right<=card.card.right+1&&card.detail.box.y>=card.card.y-1&&card.detail.box.bottom<=card.card.bottom+1,'global city metrics clipped: '+card.city);
+      } else assert.equal(card.detail,null,'Ibadan already has its own detailed panel');
+      assert.ok(card.inside,card.city+' weather clipped '+JSON.stringify(card));
+      for(const row of card.digital)assert.ok(row.inside,card.city+' clock metadata clipped '+JSON.stringify(row));
+     }
      for(const field of data.fields)assert.ok(field.inside,'detail clipped '+JSON.stringify(field));
      assert.equal(data.overlaps.length,0,'weather readings overlap '+JSON.stringify(data.overlaps));
      assert.ok(data.scrollWidth<=width+2,'horizontal overflow');
