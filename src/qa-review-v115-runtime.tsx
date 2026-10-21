@@ -11,6 +11,7 @@ import Stage1SearchResults from './stage1-live-search';
 import Stage1AccessibleMetrics from './stage1-accessible-metrics';
 import Stage1WorkflowFocus from './stage1-workflow-focus';
 import Stage1AppearanceStudio from './stage1-appearance-studio';
+import { ModuleHub } from './module-hub';
 import {
   POSTLOGIN_DEFAULT_PALETTE,
   normalizePostLoginPaletteId,
@@ -147,6 +148,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
   );
   const paletteVariables = useMemo(() => postLoginPaletteVariables(postLoginPalette) as CSSProperties, [postLoginPalette]);
   const navigationRole = useMemo(() => companyNavigationRole(context, session.role === 'Experience Admin' ? 'Manager' : session.role), [context, session.role]);
+  const activeCompany = useMemo(() => context.companies.find((company) => company.primary) || context.companies[0], [context.companies]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -318,6 +320,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       </Stage1RuntimeContext.Provider>
       <LivePostLoginEnhancementsV116 />
       <Stage1SearchResults enabled={stage1Enabled} />
+      {stage1Enabled && activeCompany && <ModuleHub context={context} companyId={activeCompany.id} companyCode={activeCompany.code} />}
       <Stage1AccessibleMetrics enabled={stage1Enabled} />
       <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
         <Stage1WorkflowFocus />

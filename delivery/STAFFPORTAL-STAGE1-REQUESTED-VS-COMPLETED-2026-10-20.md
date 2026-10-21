@@ -62,7 +62,7 @@ A successful build, a generated preview, or the presence of a component never ch
 
 | Requested item | Status | Evidence / remaining work |
 |---|---|---|
-| Search authorized records beyond current page | Partial | Candidate adds server-backed sources, but it is not yet universal across every record family. |
+| Search authorized records beyond current page | **Refined / partial** | Server-backed authorized search is company-scoped and record-aware for current People, Payroll, Construction and existing safe workspace families. Payroll and Construction results now carry bounded company context and can open the exact authorized record. Search is still not universal across every existing record family. |
 | People lookup | Implemented in candidate | Company-scoped and requires HR permission. |
 | Payroll runs | Implemented in candidate | Company-scoped, actual migrated columns, permission-checked. |
 | Construction projects | Implemented in candidate | Company/permission scoped. |
@@ -71,7 +71,7 @@ A successful build, a generated preview, or the presence of a component never ch
 | Personal notifications | Implemented in candidate | Recipient/company/expiry constraints retained. |
 | Fair permission-scoped ranking | Implemented in candidate | Candidate contains balanced ranking tests; exact integrated run pending. |
 | Clear partial/unavailable source states | Implemented in candidate | A failed source is not presented as an empty dataset. |
-| Record-specific deep links | Partial | Results open approved workspace destinations; complete record-specific deep linking remains open. |
+| Record-specific deep links | **Implemented / partial** | Payroll and Construction search results now open the exact authorized run/project only after the requested company is confirmed in the authenticated membership and the record is confirmed in the authorized record list. Behavioral QA passes 4/4, including foreign-company and explicit-permission-revocation blocks with zero target record API calls. Other record families still use safe approved workspace destinations until their provider-specific record-opening contracts are added. |
 | Search all existing record families | **Not implemented** | Invoice, supplier, customer, asset, inventory, recruitment and other sources require provider-by-provider authorization/freshness contracts. |
 | Search performance on supported low-cost devices | Not verified | Algorithm tests do not certify full payload/device performance. |
 
