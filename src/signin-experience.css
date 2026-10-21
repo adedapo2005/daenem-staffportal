@@ -1554,3 +1554,17 @@
    transform:none!important;
  }
 }
+
+/* Keep Ibadan's long timezone/date from shattering into individual words at
+   laptop widths. Preserve the full content for screen readers and 4K. */
+@media (min-width:1280px) and (max-width:1919px) {
+ #root .sp-root.sp-day #staff-local-weather .gw-city-digital > p:nth-child(2),
+ #root .sp-root.sp-day #staff-local-weather .gw-city-digital > p:nth-child(3) {
+   white-space:nowrap!important;overflow-wrap:normal!important;
+   word-break:normal!important;font-size:clamp(10px,.64vw,12px)!important;
+   line-height:1.15!important;letter-spacing:-.015em!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > p:nth-child(2) {
+   text-wrap:pretty!important;word-break:normal!important;overflow-wrap:normal!important;
+ }
+}
