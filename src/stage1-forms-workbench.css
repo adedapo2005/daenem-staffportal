@@ -1,0 +1,193 @@
+/* Stage 1 Forms workbench refinement.
+   Presentation-only: retains V115 form schemas, validation, submission and permissions. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  align-content: start;
+  min-width: 0;
+  min-height: 280px;
+  padding: 1.1rem;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 15px;
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-ink, #1f2b3c);
+  text-align: left;
+  box-shadow: 0 10px 28px rgba(19, 40, 61, .055);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button:hover {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 35%, var(--stage1-line, #d8e3ee));
+  box-shadow: 0 15px 34px rgba(19, 40, 61, .09);
+  transform: translateY(-2px);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button:focus-visible {
+  outline: 3px solid var(--stage1-focus, #2563eb);
+  outline-offset: 3px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button h3 {
+  margin: .85rem 0 .3rem;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button > p {
+  margin: 0 0 1rem;
+  color: var(--stage1-muted, #526578);
+  font-size: .82rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .55rem;
+  align-self: end;
+  min-height: 40px;
+  margin-top: auto;
+  padding: .55rem .7rem;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 8%, var(--stage1-tint, #eaf3ff));
+  color: color-mix(in srgb, var(--stage1-primary, #2563eb) 84%, var(--stage1-anchor, #173a63));
+  font-weight: 750;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-paper {
+  width: 100%;
+  min-height: 126px;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--stage1-line, #d8e3ee) 72%, var(--stage1-primary, #2563eb));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 32%, var(--stage1-surface, #fff));
+  box-shadow: none;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-paper > svg {
+  color: color-mix(in srgb, var(--stage1-primary, #2563eb) 68%, var(--stage1-anchor, #173a63));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-paper > span {
+  color: var(--stage1-anchor, #173a63);
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-paper > i {
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 13%, var(--stage1-line, #d8e3ee));
+}
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-grid {
+  gap: 1rem 1.1rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field {
+  gap: .42rem;
+  min-width: 0;
+  margin-bottom: .15rem;
+  color: var(--stage1-ink, #1f2b3c);
+  font-weight: 720;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field > small {
+  color: var(--stage1-muted, #526578);
+  font-weight: 520;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field :is(input, textarea, select) {
+  min-height: 44px;
+  border-color: var(--stage1-line, #d8e3ee);
+  border-radius: 10px;
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-ink, #1f2b3c);
+  box-shadow: inset 0 1px 0 rgba(19, 40, 61, .02);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field textarea {
+  min-height: 108px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field :is(input, textarea, select):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 28%, var(--stage1-line, #d8e3ee));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field :is(input, textarea, select):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--stage1-focus, #2563eb) 28%, transparent);
+  outline-offset: 1px;
+  border-color: var(--stage1-focus, #2563eb);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field :is(input, textarea, select):disabled,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field :is(input, textarea)[readonly] {
+  background: color-mix(in srgb, var(--stage1-line, #d8e3ee) 22%, var(--stage1-surface, #fff));
+  color: var(--stage1-muted, #526578);
+}
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content :is(.p-form-error, .p-form-feedback, [role="alert"]) {
+  max-width: 100%;
+  margin: .8rem 0;
+  padding: .75rem .85rem;
+  border-radius: 10px;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-error,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content [role="alert"] {
+  border: 1px solid color-mix(in srgb, #b42318 32%, var(--stage1-line, #d8e3ee));
+  background: color-mix(in srgb, #b42318 7%, var(--stage1-surface, #fff));
+  color: #8f2118;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-feedback {
+  border: 1px solid color-mix(in srgb, var(--stage1-success, #126b4d) 30%, var(--stage1-line, #d8e3ee));
+  background: color-mix(in srgb, var(--stage1-success, #126b4d) 7%, var(--stage1-surface, #fff));
+  color: color-mix(in srgb, var(--stage1-success, #126b4d) 88%, black);
+}
+
+@media (max-width: 760px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button {
+    grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: .9rem;
+    min-height: 0;
+    padding: .9rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-paper {
+    grid-row: 1 / span 3;
+    width: 78px;
+    min-height: 104px;
+    padding: .65rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-paper > svg {
+    width: 26px;
+    height: 26px;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button h3 {
+    margin: 0 0 .2rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button > p {
+    margin-bottom: .5rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button > span:last-child {
+    min-height: 36px;
+    padding: .45rem .6rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button {
+    transition: none;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button:hover {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-shelf > button,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-form-paper,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-field :is(input, textarea, select),
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content :is(.p-form-error, .p-form-feedback, [role="alert"]) {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+}
