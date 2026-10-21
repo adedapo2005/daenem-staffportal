@@ -136,17 +136,22 @@ async function delivery(request:Request,env:PrintingProductionEnv,context:Sessio
   if(!validJobFileKey(body.proofKey,jobId,['delivery']))return json({error:'Delivery proof must belong to this print job.'},400);
   if(body.markDelivered&&job.status!=='ready')return json({error:'This Printing job is not ready for delivery.'},409);
   const method=['pickup','company_delivery','courier','customer_transport','other'].includes(String(body.method))?String(body.method):'pickup';
-  const id=uid('delivery'),deliveredAt=body.markDelivered?new Date().toISOString():null;
+  const id=uid('delivery'),eventId=uid('print-event'),auditId=uid('audit'),requestId=requestCorrelationId(request);
+  const deliveredAt=body.markDelivered?new Date().toISOString():null,expectedStatus=body.markDelivered?'delivered':String(job.status);
   const statements:D1PreparedStatement[]=[];
   if(body.markDelivered){
     // The NOT NULL subject makes a stale/lost-race claim abort the whole D1 batch.
     // A delivery record must never survive without its ready -> delivered event.
-    statements.push(env.DB.prepare(`INSERT INTO print_job_status_events(id,print_job_id,from_status,to_status,changed_by,note) VALUES(?,(SELECT id FROM print_jobs WHERE id=? AND company_id=? AND production_status='ready'),'ready','delivered',?,'Delivery recorded')`).bind(uid('print-event'),jobId,companyId,context.employee.id));
-    statements.push(env.DB.prepare(`UPDATE print_jobs SET production_status='delivered',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND production_status='ready'`).bind(jobId,companyId));
+    statements.push(env.DB.prepare(`INSERT INTO print_job_status_events(id,print_job_id,from_status,to_status,changed_by,note) VALUES(?,(SELECT id FROM print_jobs WHERE id=? AND company_id=? AND production_status='ready'),'ready','delivered',?,'Delivery recorded')`).bind(eventId,jobId,companyId,context.employee.id));
+    statements.push(env.DB.prepare(`UPDATE print_jobs SET production_status='delivered',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND production_status='ready' AND changes()=1 AND EXISTS(SELECT 1 FROM print_job_status_events WHERE id=? AND print_job_id=? AND from_status='ready' AND to_status='delivered')`).bind(jobId,companyId,eventId,jobId));
   }
-  statements.push(env.DB.prepare(`INSERT INTO print_delivery_records(id,print_job_id,method,recipient_name,recipient_phone,delivery_address,proof_key,note,dispatched_by,delivered_by,dispatched_at,delivered_at,acknowledged_by_customer) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,jobId,method,body.recipientName||null,body.recipientPhone||null,body.deliveryAddress||null,body.proofKey||null,body.note||null,context.employee.id,body.markDelivered?context.employee.id:null,new Date().toISOString(),deliveredAt,body.acknowledgedByCustomer?1:0));
-  statements.push(env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'printing','delivery_record','print_job',?,?,'web',?)`).bind(uid('audit'),context.employee.id,companyId,jobId,JSON.stringify({method,markDelivered:Boolean(body.markDelivered),proofKey:body.proofKey||null}),requestCorrelationId(request)));
-  await env.DB.batch(statements);
+  statements.push(env.DB.prepare(`INSERT INTO print_delivery_records(id,print_job_id,method,recipient_name,recipient_phone,delivery_address,proof_key,note,dispatched_by,delivered_by,dispatched_at,delivered_at,acknowledged_by_customer) SELECT ?,id,?,?,?,?,?,?,?,?,?,?,? FROM print_jobs WHERE id=? AND company_id=? AND production_status=? AND (?=0 OR (changes()=1 AND EXISTS(SELECT 1 FROM print_job_status_events WHERE id=? AND print_job_id=? AND from_status='ready' AND to_status='delivered')))`).bind(id,method,body.recipientName||null,body.recipientPhone||null,body.deliveryAddress||null,body.proofKey||null,body.note||null,context.employee.id,body.markDelivered?context.employee.id:null,new Date().toISOString(),deliveredAt,body.acknowledgedByCustomer?1:0,jobId,companyId,expectedStatus,body.markDelivered?1:0,eventId,jobId));
+  statements.push(env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) SELECT ?,?,?,'printing','delivery_record','print_job',?,?,'web',? FROM print_delivery_records d JOIN print_jobs j ON j.id=d.print_job_id WHERE d.id=? AND d.print_job_id=? AND j.company_id=? AND j.production_status=? AND changes()=1`).bind(auditId,context.employee.id,companyId,jobId,JSON.stringify({method,markDelivered:Boolean(body.markDelivered),proofKey:body.proofKey||null}),requestId,id,jobId,companyId,expectedStatus));
+  // Abort within the batch on a silently ignored write; old evidence cannot satisfy this attempt.
+  statements.push(env.DB.prepare(`SELECT json_extract(CASE WHEN changes()=1 AND EXISTS(SELECT 1 FROM audit_logs WHERE id=? AND company_id=? AND module='printing' AND action='delivery_record' AND entity_type='print_job' AND entity_id=? AND request_id=?) AND EXISTS(SELECT 1 FROM print_delivery_records d JOIN print_jobs j ON j.id=d.print_job_id WHERE d.id=? AND d.print_job_id=? AND j.company_id=? AND j.production_status=? AND d.delivered_at IS ?) AND (?=0 OR EXISTS(SELECT 1 FROM print_job_status_events WHERE id=? AND print_job_id=? AND from_status='ready' AND to_status='delivered')) THEN '{}' ELSE '{' END,'$')`).bind(auditId,companyId,jobId,requestId,id,jobId,companyId,expectedStatus,deliveredAt,body.markDelivered?1:0,eventId,jobId));
+  try{await env.DB.batch(statements)}catch{
+    return json({error:'The Printing delivery could not be saved. Refresh and try again.'},503);
+  }
   return json({ok:true,deliveryId:id,delivered:Boolean(body.markDelivered)});
 }
 

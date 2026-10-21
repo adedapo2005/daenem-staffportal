@@ -284,8 +284,8 @@ env.DB.prepare = (sql) => {
   }
   return prepared;
 };
-await assert.rejects(route(deliveryRequest('job-delivery-stale', 'request-stale-delivery'), env, context), /NOT NULL constraint failed/i,
-  'a state change after the read aborts delivery, status event and audit atomically');
+response = await route(deliveryRequest('job-delivery-stale', 'request-stale-delivery'), env, context);
+assert.equal(response.status, 503, 'a state change after the read aborts delivery, status event and audit atomically');
 env.DB.prepare = originalPrepare;
 assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-delivery-stale'").get().production_status, 'on_hold');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery-stale'").get().n, 0);
@@ -296,7 +296,8 @@ db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_ko
   VALUES('job-delivery-audit','company-printing','DP-A','Delivery audit',1,5000,'ready')`).run();
 db.exec(`CREATE TRIGGER reject_delivery_audit BEFORE INSERT ON audit_logs WHEN NEW.action='delivery_record'
   BEGIN SELECT RAISE(ABORT,'delivery audit unavailable'); END`);
-await assert.rejects(route(deliveryRequest('job-delivery-audit', 'request-delivery-audit-fail'), env, context), /delivery audit unavailable/);
+response = await route(deliveryRequest('job-delivery-audit', 'request-delivery-audit-fail'), env, context);
+assert.equal(response.status, 503);
 assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-delivery-audit'").get().production_status, 'ready');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_delivery_records WHERE print_job_id='job-delivery-audit'").get().n, 0);
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-delivery-audit'").get().n, 0);
@@ -678,4 +679,95 @@ for (const changedRecord of ['job', 'order', 'company', 'order-company', 'paymen
   assert.deepEqual(completionState(id, orderId), expected, 'no partial completion or success evidence survives');
 }
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, proof/artwork rollback, completion fault matrix and single-winner, company isolation, payment truth PASS');
+// Delivery success must include this attempt's record, state event and audit.
+const deliveryState = (id) => ({
+  job: db.prepare('SELECT * FROM print_jobs WHERE id=?').get(id),
+  records: db.prepare('SELECT * FROM print_delivery_records WHERE print_job_id=? ORDER BY id').all(id),
+  events: db.prepare('SELECT * FROM print_job_status_events WHERE print_job_id=? ORDER BY id').all(id),
+  audits: db.prepare('SELECT * FROM audit_logs WHERE entity_id=? ORDER BY id').all(id),
+});
+const seedDelivery = (id) => db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES(?,'company-printing',?,'Delivery integrity',1,5000,'ready')`).run(id, id);
+for (const markDelivered of [true, false]) {
+  const id = `delivery-atomic-${markDelivered}`;
+  seedDelivery(id);
+  // Historical evidence must never substitute for the current attempt's writes.
+  db.prepare(`INSERT INTO print_job_status_events(id,print_job_id,from_status,to_status)
+    VALUES(?,?,'ready','delivered')`).run(`${id}-old-event`, id);
+  db.prepare(`INSERT INTO audit_logs(id,company_id,module,action,entity_type,entity_id,request_id)
+    VALUES(?,'company-printing','printing','delivery_record','print_job',?,'old-request')`).run(`${id}-old-audit`, id);
+  db.prepare('INSERT INTO print_delivery_records(id,print_job_id,delivered_at) VALUES(?,?,CURRENT_TIMESTAMP)').run(`${id}-old-record`, id);
+  const before = deliveryState(id);
+  const writes = [['print_delivery_records', 'INSERT'], ['audit_logs', 'INSERT']];
+  if (markDelivered) writes.push(['print_jobs', 'UPDATE'], ['print_job_status_events', 'INSERT']);
+  for (const behavior of ['IGNORE', "ABORT,'delivery write unavailable'"]) {
+    for (const [table, operation] of writes) {
+      db.exec(`CREATE TRIGGER fail_delivery_write BEFORE ${operation} ON ${table}
+        BEGIN SELECT RAISE(${behavior}); END`);
+      try {
+        response = await route(deliveryRequest(id, 'delivery-fault', markDelivered), env, context);
+        assert.deepEqual(deliveryState(id), before, `${table} ${behavior} must roll back every delivery write`);
+        assert.equal(response.status, 503, `${table} ${behavior} must fail closed`);
+        assert.doesNotMatch(await response.text(), /deliveryId|5000|delivery write unavailable|SQL|constraint/i);
+      } finally { db.exec('DROP TRIGGER fail_delivery_write'); }
+    }
+  }
+  response = await route(deliveryRequest(id, 'delivery-denied', markDelivered), env, otherCompanyApprover);
+  assert.equal(response.status, 403);
+  assert.deepEqual(deliveryState(id), before, 'foreign-company permission cannot write delivery evidence');
+  response = await route(deliveryRequest(id, 'delivery-retry', markDelivered), env, owner);
+  assert.equal(response.status, 200, 'authorized retry succeeds after a rolled-back failure');
+  const result = await response.json(), after = deliveryState(id);
+  assert.equal(result.delivered, markDelivered);
+  assert.equal(after.records.length, before.records.length + 1);
+  assert.equal(after.events.length, before.events.length + Number(markDelivered));
+  assert.equal(after.audits.length, before.audits.length + 1);
+  assert.equal(after.job.production_status, markDelivered ? 'delivered' : 'ready');
+  assert.ok(after.records.some((record) => record.id === result.deliveryId));
+  assert.equal(after.audits.find((audit) => audit.id !== `${id}-old-audit`).request_id, 'delivery-retry');
+  assert.equal(after.job.sales_order_id, null, 'delivery must not create commercial or payment truth');
+}
+seedDelivery('delivery-concurrent');
+const deliveryRace = await Promise.all([
+  route(deliveryRequest('delivery-concurrent', 'delivery-race-a'), env, context),
+  route(deliveryRequest('delivery-concurrent', 'delivery-race-b'), env, context),
+]);
+assert.equal(deliveryRace.filter((result) => result.status === 200).length, 1);
+assert.ok(deliveryRace.every((result) => [200, 409, 503].includes(result.status)));
+const deliveredOnce = deliveryState('delivery-concurrent');
+assert.equal(deliveredOnce.records.length, 1);
+assert.equal(deliveredOnce.events.length, 1);
+assert.equal(deliveredOnce.audits.length, 1);
+assert.equal(deliveredOnce.audits[0].request_id, deliveryRace[0].status === 200 ? 'delivery-race-a' : 'delivery-race-b');
+
+for (const markDelivered of [true, false]) {
+  for (const changedField of ['company', 'status']) {
+    const id = `delivery-stale-${markDelivered}-${changedField}`;
+    seedDelivery(id);
+    const prepareBeforeRace = env.DB.prepare;
+    let expected;
+    env.DB.prepare = (sql) => {
+      const statement = prepareBeforeRace(sql);
+      if (sql.startsWith('SELECT pj.id,pj.job_no')) {
+        const first = statement.first.bind(statement);
+        statement.first = async () => {
+          const row = await first();
+          if (row?.id === id) {
+            if (changedField === 'company') db.prepare("UPDATE print_jobs SET company_id='company-bakery' WHERE id=?").run(id);
+            else db.prepare("UPDATE print_jobs SET production_status='on_hold' WHERE id=?").run(id);
+            expected = deliveryState(id);
+          }
+          return row;
+        };
+      }
+      return statement;
+    };
+    try { response = await route(deliveryRequest(id, 'delivery-stale-attempt', markDelivered), env, context); }
+    finally { env.DB.prepare = prepareBeforeRace; }
+    assert.equal(response.status, 503, 'delivery and dispatch both recheck company and state within the transaction');
+    assert.doesNotMatch(await response.text(), /deliveryId|company-bakery|5000|SQL|constraint/i);
+    assert.deepEqual(deliveryState(id), expected, 'stale attempts leave no delivery/event/audit writes');
+  }
+}
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, company isolation, payment truth PASS');
