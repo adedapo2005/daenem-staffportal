@@ -207,6 +207,7 @@
 }
 @media (max-width: 700px) {
   [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-identity-bar {
+    position: static;
     grid-template-columns: minmax(0,1fr);
     grid-template-areas:"back" "identity" "facts" "actions";
     padding: .85rem;
