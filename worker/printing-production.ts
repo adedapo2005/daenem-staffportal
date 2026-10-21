@@ -315,4 +315,14 @@ async function transition(request:Request,env:PrintingProductionEnv,context:Sess
   ])}catch(error){const current=await assertJob(env,jobId);if(!current||String(current.status)!==from)return json({error:'Print job status has changed. Refresh and try again.'},409);if(to==='queued')return json({error:'The Printing queue transition could not be saved. Refresh and try again.'},503);if(to==='packaging')return json({error:'The Printing packaging transition could not be saved. Refresh and try again.'},503);throw error}
   return json({ok:true,status:to})}
 
-export async function routePrintingProduction(request:Request,env:PrintingProductionEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/printing/jobs/detail'&&request.method==='GET')return detail(request,env,context);if(url.pathname==='/api/printing/jobs/file'&&request.method==='GET')return fileResponse(request,env,context);if(url.pathname==='/api/printing/jobs/files'&&request.method==='POST')return upload(request,env,context);if(url.pathname==='/api/printing/jobs/artwork'&&request.method==='POST')return artwork(request,env,context);if(url.pathname==='/api/printing/jobs/proof'&&request.method==='POST')return proof(request,env,context);if(url.pathname==='/api/printing/jobs/finishing'&&request.method==='POST')return finishing(request,env,context);if(url.pathname==='/api/printing/jobs/delivery'&&request.method==='POST')return delivery(request,env,context);if(url.pathname==='/api/printing/jobs/note'&&request.method==='POST')return note(request,env,context);if(url.pathname==='/api/printing/jobs/status'&&request.method==='POST')return transition(request,env,context);return null}
+export async function routePrintingProduction(request:Request,env:PrintingProductionEnv,context:SessionContext):Promise<Response|null>{
+  const url=new URL(request.url);
+  if(url.pathname==='/api/printing/jobs/files'&&request.method==='POST'){
+    // Keep storage, receipt/audit and compensation failures inside the HTTP
+    // boundary so the shared runtime still applies its security/CORS headers.
+    try{return await upload(request,env,context)}catch{
+      return json({error:'The Printing file could not be saved. Please try again later.'},503);
+    }
+  }
+  if(url.pathname==='/api/printing/jobs/detail'&&request.method==='GET')return detail(request,env,context);if(url.pathname==='/api/printing/jobs/file'&&request.method==='GET')return fileResponse(request,env,context);if(url.pathname==='/api/printing/jobs/artwork'&&request.method==='POST')return artwork(request,env,context);if(url.pathname==='/api/printing/jobs/proof'&&request.method==='POST')return proof(request,env,context);if(url.pathname==='/api/printing/jobs/finishing'&&request.method==='POST')return finishing(request,env,context);if(url.pathname==='/api/printing/jobs/delivery'&&request.method==='POST')return delivery(request,env,context);if(url.pathname==='/api/printing/jobs/note'&&request.method==='POST')return note(request,env,context);if(url.pathname==='/api/printing/jobs/status'&&request.method==='POST')return transition(request,env,context);return null
+}

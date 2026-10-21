@@ -100,6 +100,12 @@ const request = ({ jobId = 'job-a', category = 'artwork', content = 'Synthetic f
   });
 };
 async function check(name, test) { await test(); cases++; console.log(`PASS ${name}`); }
+async function unavailable() {
+  const response = await route(request(), env, creator);
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(await response.json(), { error: 'The Printing file could not be saved. Please try again later.' });
+}
 async function accepted(context, requestId) {
   const before = snapshot();
   const response = await route(request({ requestId }), env, context);
@@ -157,7 +163,7 @@ try {
       await check(`${table} ${failure}: no accepted file, queue or success audit`, async () => {
         const before = snapshot(), deleteCount = deletes.length;
         db.exec(`CREATE TRIGGER reject_upload BEFORE INSERT ON ${table} BEGIN SELECT RAISE(${failure}); END;`);
-        try { await assert.rejects(() => route(request(), env, creator)); }
+        try { await unavailable(); }
         finally { db.exec('DROP TRIGGER reject_upload'); }
         assert.deepEqual(snapshot(), before, 'all prior accepted objects and audit history survive rollback');
         assert.equal(deletes.length, deleteCount + 1);
@@ -168,7 +174,7 @@ try {
   await check('company changes while R2 upload awaits: no cross-company receipt', async () => {
     const before = snapshot();
     beforeBatch = () => db.prepare("UPDATE print_jobs SET company_id='company-bakery' WHERE id='job-a'").run();
-    try { await assert.rejects(() => route(request(), env, creator)); }
+    try { await unavailable(); }
     finally {
       beforeBatch = undefined;
       db.prepare("UPDATE print_jobs SET company_id='company-printing' WHERE id='job-a'").run();
@@ -177,7 +183,7 @@ try {
   });
   await check('R2 failure cannot enqueue or audit accepted storage', async () => {
     const before = snapshot(); putFailure = true;
-    try { await assert.rejects(() => route(request(), env, creator), /Synthetic R2 failure/); }
+    try { await unavailable(); }
     finally { putFailure = false; }
     assert.deepEqual(snapshot(), before);
   });
