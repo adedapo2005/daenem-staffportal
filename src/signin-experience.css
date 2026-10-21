@@ -1122,3 +1122,22 @@
 .sp-root #staff-global-operations .sp-live-weather-values {
   gap:2px!important;
 }
+
+/* Global city cards: six measured weather fields in a separate lower area. */
+.sp-root #staff-global-operations .sp-live-city-content { position:relative!important; }
+.sp-root #staff-global-operations .sp-global-weather-details {
+ position:absolute!important; z-index:4!important; left:calc(clamp(84px,5.1vw,124px) + 18px)!important;
+ right:8px!important; bottom:5px!important; display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:3px 4px!important;
+ margin:0!important;color:#fff!important;
+ text-shadow:0 1px 3px #061523,0 0 5px #061523!important;
+}
+.sp-root #staff-global-operations .sp-global-weather-metric {min-width:0!important;}
+.sp-root #staff-global-operations .sp-global-weather-metric dt {font-size:10px!important;font-weight:650!important;line-height:1.08!important;color:#e7f4ff!important;white-space:nowrap!important;}
+.sp-root #staff-global-operations .sp-global-weather-metric dd {margin:0!important;font-size:11px!important;font-weight:800!important;line-height:1.12!important;color:#fff!important;white-space:nowrap!important;}
+@media (min-width:1920px) {
+ .sp-root #staff-global-operations .sp-global-weather-details {left:10px!important;right:10px!important;bottom:10px!important;gap:8px!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dt {font-size:clamp(12px,.6vw,18px)!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dd {font-size:clamp(14px,.78vw,23px)!important;}
+ .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {align-self:start!important;top:0!important;}
+}
