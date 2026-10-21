@@ -1100,3 +1100,11 @@
 .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital {
   position:relative!important; top:-10px!important;
 }
+
+/* A short laptop weather panel needs the two-line freshness footer slightly
+   higher; keep it within the existing panel without hiding either line. */
+@media (min-width:1280px) and (max-width:1500px) and (max-height:800px) {
+  .sp-root #staff-local-weather .sp-weather-v145-footer {
+    position:relative!important; top:-6px!important;
+  }
+}
