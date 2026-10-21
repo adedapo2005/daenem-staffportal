@@ -30,6 +30,7 @@ import './stage1-state-system.css';
 import './stage1-calendar-board.css';
 import './stage1-interaction-primitives.css';
 import './stage1-security-experience.css';
+import './stage1-kpi-chart-system.css';
 import './stage1-communications-workspace.css';
 import './stage1-construction-workspace.css';
 import './stage1-a11y-contrast.css';
