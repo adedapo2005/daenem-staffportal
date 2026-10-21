@@ -230,9 +230,8 @@ db.prepare("INSERT INTO print_job_materials VALUES('job-audit-ignore-complete',1
 db.prepare("INSERT INTO print_delivery_records(id,print_job_id,delivered_at) VALUES('delivery-audit-ignore-complete','job-audit-ignore-complete',CURRENT_TIMESTAMP)").run();
 db.exec(`CREATE TRIGGER ignore_print_completion_audit BEFORE INSERT ON audit_logs
   WHEN NEW.action='completed_sales_order_eligible' BEGIN SELECT RAISE(IGNORE); END`);
-await assert.rejects(route(statusRequest('job-audit-ignore-complete', 'completed', 'request-audit-ignore-complete'), env, context),
-  /NOT NULL constraint failed|constraint failed/i,
-  'an ignored required completion audit must abort and roll back the eligible sale');
+response = await route(statusRequest('job-audit-ignore-complete', 'completed', 'request-audit-ignore-complete'), env, context);
+assert.equal(response.status, 503, 'an ignored required completion audit must abort and roll back the eligible sale');
 assert.equal(db.prepare('SELECT status FROM sales_orders WHERE id=?').get(ignoredAuditOrder).status, 'approved');
 assert.equal(db.prepare("SELECT production_status FROM print_jobs WHERE id='job-audit-ignore-complete'").get().production_status, 'delivered');
 assert.equal(db.prepare("SELECT COUNT(*) AS n FROM print_job_status_events WHERE print_job_id='job-audit-ignore-complete' AND to_status='completed'").get().n, 0);
@@ -556,4 +555,127 @@ assert.equal(artworkState('artwork-moved').job.artwork_status, 'received');
 assert.equal(artworkState('artwork-moved').versions.length, 0);
 assert.equal(artworkState('artwork-moved').audits.length, 0);
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, proof and artwork audit rollback/concurrency, company isolation, payment truth PASS');
+// Completion must commit the job, sale, event and correlated audit together.
+async function seedCompletion(id) {
+  db.prepare(`INSERT INTO print_jobs(id,company_id,location_id,job_no,title,quantity,quoted_kobo,production_status)
+    VALUES(?,'company-printing','location-a',?,'Completion integrity',1,5200,'quoted')`).run(id, id);
+  const approved = await route(statusRequest(id, 'customer_approved', `${id}-approval`), env, context);
+  assert.equal(approved.status, 200);
+  const { salesOrderId } = await approved.json();
+  db.prepare("UPDATE print_jobs SET production_status='delivered' WHERE id=?").run(id);
+  db.prepare('INSERT INTO print_job_materials VALUES(?,1,0,0)').run(id);
+  db.prepare('INSERT INTO print_delivery_records(id,print_job_id,delivered_at) VALUES(?,?,CURRENT_TIMESTAMP)').run(`delivery-${id}`, id);
+  return salesOrderId;
+}
+const completionState = (id, orderId) => ({
+  job: db.prepare('SELECT * FROM print_jobs WHERE id=?').get(id),
+  order: db.prepare('SELECT * FROM sales_orders WHERE id=?').get(orderId),
+  events: db.prepare('SELECT * FROM print_job_status_events WHERE print_job_id=? ORDER BY id').all(id),
+  audits: db.prepare('SELECT * FROM audit_logs WHERE entity_id=? ORDER BY id').all(id),
+});
+const completionOrder = await seedCompletion('completion-atomic');
+const beforeCompletion = completionState('completion-atomic', completionOrder);
+for (const behavior of ['IGNORE', "ABORT,'completion write unavailable'"]) {
+  for (const [table, operation] of [['print_jobs', 'UPDATE'], ['sales_orders', 'UPDATE'], ['print_job_status_events', 'INSERT'], ['audit_logs', 'INSERT']]) {
+    db.exec(`CREATE TRIGGER fail_completion_write BEFORE ${operation} ON ${table}
+      BEGIN SELECT RAISE(${behavior}); END`);
+    try {
+      response = await route(statusRequest('completion-atomic', 'completed', 'completion-fault'), env, context);
+      assert.deepEqual(completionState('completion-atomic', completionOrder), beforeCompletion,
+        `${table} ${behavior} must roll back all completion writes`);
+      assert.equal(response.status, 503, `${table} ${behavior} must fail closed`);
+      assert.doesNotMatch(await response.text(), /salesOrderId|5200|completion write unavailable|SQL|constraint/i);
+    } finally { db.exec('DROP TRIGGER fail_completion_write'); }
+  }
+}
+response = await route(statusRequest('completion-atomic', 'completed', 'completion-other-company'), env, otherCompanyApprover);
+assert.equal(response.status, 403);
+assert.doesNotMatch(await response.text(), /salesOrderId|5200/);
+response = await route(statusRequest('completion-atomic', 'completed', 'completion-edit-only'), env, editOnly);
+assert.equal(response.status, 403);
+assert.deepEqual(completionState('completion-atomic', completionOrder), beforeCompletion);
+response = await route(statusRequest('completion-atomic', 'completed', 'completion-owner'), env, owner);
+assert.equal(response.status, 200, 'Owner can complete after failure recovery');
+const afterCompletion = completionState('completion-atomic', completionOrder);
+assert.equal(afterCompletion.job.production_status, 'completed');
+assert.equal(afterCompletion.order.status, 'completed');
+assert.equal(afterCompletion.order.payment_status, 'unpaid');
+assert.equal(afterCompletion.order.amount_paid_kobo, 0);
+assert.equal(afterCompletion.events.filter((event) => event.to_status === 'completed').length, 1);
+const completionAudits = afterCompletion.audits.filter((audit) => audit.action === 'completed_sales_order_eligible');
+assert.equal(completionAudits.length, 1);
+assert.equal(completionAudits[0].request_id, 'completion-owner');
+assert.equal(completionAudits[0].actor_employee_id, owner.employee.id);
+assert.equal(completionAudits[0].company_id, 'company-printing');
+response = await route(statusRequest('completion-atomic', 'completed', 'completion-replay'), env, owner);
+assert.equal(response.status, 409);
+assert.deepEqual(completionState('completion-atomic', completionOrder), afterCompletion);
+
+// Historical evidence cannot replace this operation's required event or audit write.
+for (const evidence of ['event', 'audit']) {
+  const id = `completion-old-${evidence}`, orderId = await seedCompletion(id);
+  if (evidence === 'event') {
+    db.prepare(`INSERT INTO print_job_status_events(id,print_job_id,from_status,to_status,changed_by)
+      VALUES(?,?,'delivered','completed',?)`).run(`print-event-completed-${id}`, id, context.employee.id);
+  } else {
+    db.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,request_id)
+      VALUES(?,?,'company-printing','printing','completed_sales_order_eligible','print_job',?,?)`)
+      .run(`print-audit-completed-${id}`, context.employee.id, id, `${id}-attempt`);
+  }
+  const before = completionState(id, orderId);
+  const table = evidence === 'event' ? 'print_job_status_events' : 'audit_logs';
+  db.exec(`CREATE TRIGGER ignore_current_completion_evidence BEFORE INSERT ON ${table}
+    BEGIN SELECT RAISE(IGNORE); END`);
+  try {
+    response = await route(statusRequest(id, 'completed', `${id}-attempt`), env, context);
+    assert.equal(response.status, 503, `historical ${evidence} cannot satisfy an ignored current write`);
+    assert.deepEqual(completionState(id, orderId), before, 'historical evidence and prior state remain intact');
+    assert.doesNotMatch(await response.text(), /salesOrderId|5200|SQL|constraint/i);
+  } finally { db.exec('DROP TRIGGER ignore_current_completion_evidence'); }
+}
+
+// Interleave handlers before serialized SQLite transactions; this is not real D1 concurrency.
+const completionRaceOrder = await seedCompletion('completion-race');
+const completionRace = await Promise.all([
+  route(statusRequest('completion-race', 'completed', 'completion-race-a'), env, context),
+  route(statusRequest('completion-race', 'completed', 'completion-race-b'), env, owner),
+]);
+assert.deepEqual(completionRace.map((item) => item.status).sort(), [200, 503]);
+const completionRaceState = completionState('completion-race', completionRaceOrder);
+assert.equal(completionRaceState.events.filter((event) => event.to_status === 'completed').length, 1);
+const raceAudits = completionRaceState.audits.filter((audit) => audit.action === 'completed_sales_order_eligible');
+assert.equal(raceAudits.length, 1);
+assert.equal(raceAudits[0].request_id, completionRace[0].status === 200 ? 'completion-race-a' : 'completion-race-b');
+assert.equal(completionRaceState.order.payment_status, 'unpaid');
+assert.equal(completionRaceState.order.amount_paid_kobo, 0);
+
+// A change after the handler reads the job/order must not be overwritten by completion.
+for (const changedRecord of ['job', 'order', 'company', 'order-company', 'payment']) {
+  const id = `completion-stale-${changedRecord}`, orderId = await seedCompletion(id);
+  const prepareBeforeRace = env.DB.prepare;
+  let expected;
+  env.DB.prepare = (sql) => {
+    const statement = prepareBeforeRace(sql);
+    if (sql.startsWith('SELECT status,payment_status AS paymentStatus FROM sales_orders')) {
+      const first = statement.first.bind(statement);
+      statement.first = async () => {
+        const row = await first();
+        if (changedRecord === 'job') db.prepare("UPDATE print_jobs SET production_status='on_hold' WHERE id=?").run(id);
+        else if (changedRecord === 'company') db.prepare("UPDATE print_jobs SET company_id='company-bakery' WHERE id=?").run(id);
+        else if (changedRecord === 'order-company') db.prepare("UPDATE sales_orders SET company_id='company-bakery' WHERE id=?").run(orderId);
+        else if (changedRecord === 'payment') db.prepare("UPDATE sales_orders SET payment_status='refunded' WHERE id=?").run(orderId);
+        else db.prepare("UPDATE sales_orders SET status='cancelled' WHERE id=?").run(orderId);
+        expected = completionState(id, orderId);
+        return row;
+      };
+    }
+    return statement;
+  };
+  try { response = await route(statusRequest(id, 'completed', `${id}-attempt`), env, context); }
+  finally { env.DB.prepare = prepareBeforeRace; }
+  assert.equal(response.status, 503, `${changedRecord} change cannot authorize completion`);
+  assert.doesNotMatch(await response.text(), /salesOrderId|company-bakery|5200/);
+  assert.deepEqual(completionState(id, orderId), expected, 'no partial completion or success evidence survives');
+}
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, proof/artwork rollback, completion fault matrix and single-winner, company isolation, payment truth PASS');
