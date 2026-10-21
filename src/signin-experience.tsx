@@ -468,7 +468,7 @@ function updateReferenceClocks(root: HTMLElement, now: Date) {
       second: '2-digit',
       hour12: true,
     }).format(now);
-    const compactDate = window.innerWidth < 1920;
+    const compactDate = window.innerWidth < 2560;
     const compactGlobal = compactDate && card.dataset.cityId !== 'ibadan';
     card.classList.toggle('sp-compact-clock-date', compactGlobal);
     const date = new Intl.DateTimeFormat('en-US', {
