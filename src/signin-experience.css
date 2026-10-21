@@ -1108,3 +1108,17 @@
     position:relative!important; top:-6px!important;
   }
 }
+
+/* Global Operations: clear weather hierarchy without changing approved geometry. */
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {
+  top:-13px!important;
+}
+.sp-root #staff-global-operations .sp-live-weather-secondary {
+  font-size:clamp(13px,.72vw,19px)!important;
+  font-weight:760!important; color:#fff!important;
+  text-shadow:0 1px 3px #061523,0 0 7px #061523!important;
+  letter-spacing:0!important;
+}
+.sp-root #staff-global-operations .sp-live-weather-values {
+  gap:2px!important;
+}
