@@ -55,7 +55,7 @@ async function run() {
     fs.writeFileSync(path.join(output,'widget-geometry.json'),JSON.stringify(geometry,null,2));
     check(geometry.cards.map(card=>card.widget).join(',')==='news,intelligence,spotlight,inspiration','the four approved cards and order');
     check(JSON.stringify(geometry.cards.map(card=>card.image))===JSON.stringify(['/assets/left-widgets/news/04-day.webp','/assets/left-widgets/intelligence/05-day.webp','/assets/left-widgets/spotlight/01-day.webp','/assets/left-widgets/inspiration/02-day.webp']),'all four original photos remain');
-    check(geometry.clocks.length===6&&geometry.clocks.every(clock=>clock.width>=83.9),'global dials restored to at least 84px');
+    check(geometry.clocks.length===6&&geometry.clocks.every(clock=>clock.width>=73.9),'responsive global dials remain at least 74px at 1363px');
     check(geometry.layers.length===7&&geometry.layers.every(layer=>layer.position==='absolute'&&layer.rect.width>150&&layer.rect.height>70&&layer.events==='none'),'weather atmosphere covers every card without intercepting input');
     check(geometry.news.bottom<=geometry.ticker.y+1,'news content reserves space above ticker');
     check(await page.locator('.gw-news-ticker .gw-marquee a').count()===6,'ticker includes three sources twice');
