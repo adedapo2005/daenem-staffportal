@@ -229,7 +229,7 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
     payload.windSpeed === null ? '' : `Wind ${Math.round(payload.windSpeed)} ${payload.unitsSystem === 'IMPERIAL' ? 'mph' : 'km/h'}`,
   ].filter(Boolean);
   if (extra.length) {
-    const secondary = weatherText('span', 'sp-live-weather-secondary', [payload.apparentTemperature === null ? '' : F °, payload.precipitationProbability === null ? '' : R %].filter(Boolean).join(' · ') || extra[0]);
+    const secondary = weatherText('span', 'sp-live-weather-secondary', [payload.apparentTemperature === null ? '' : ('F ' + Math.round(payload.apparentTemperature) + '°'), payload.precipitationProbability === null ? '' : ('R ' + Math.round(payload.precipitationProbability) + '%')].filter(Boolean).join(' · ') || extra[0]);
     secondary.title = extra.join(' · ');
     secondary.setAttribute('aria-label', extra.join(', '));
     values.appendChild(secondary);
