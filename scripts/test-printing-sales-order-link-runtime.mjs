@@ -1013,4 +1013,110 @@ assert.deepEqual(approvalState('approval-item-collision'), beforeItemCollision);
 assert.doesNotMatch(await response.text(), /foreign-order|Other company|company-bakery/);
 console.log(`Approval integrity: ${approvalFaults} write-fault rollbacks, ${approvalRaces} stale-state denials, canonical item collision, authorized/Owner retry and replay PASS`);
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, company isolation, payment truth PASS');
+// Exercise the effective production status handler with a QC writer winning after
+// its preflight read. This is deterministic interleaving, not remote D1 concurrency.
+db.exec(`CREATE TABLE print_quality_checks(id TEXT PRIMARY KEY,print_job_id TEXT NOT NULL,
+  result TEXT NOT NULL,checked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+const seedPackaging = (id, result = 'pass', targetCompany = 'company-printing') => {
+  db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+    VALUES(?,?,?,'Packaging QC',1,5000,'quality_control')`).run(id,targetCompany,id);
+  db.prepare('INSERT INTO print_job_materials VALUES(?,1,0,0)').run(id);
+  if (result) db.prepare('INSERT INTO print_quality_checks(id,print_job_id,result) VALUES(?,?,?)').run(`qc-${id}`,id,result);
+};
+const packagingState = (id) => ({
+  job: db.prepare('SELECT * FROM print_jobs WHERE id=?').get(id),
+  qc: db.prepare('SELECT * FROM print_quality_checks WHERE print_job_id=? ORDER BY rowid').all(id),
+  events: db.prepare('SELECT * FROM print_job_status_events WHERE print_job_id=?').all(id),
+  audits: db.prepare('SELECT * FROM audit_logs WHERE entity_id=?').all(id),
+});
+const packageJob = (id, actor = editOnly) => route(statusRequest(id, 'packaging', `package-${id}`), env, actor);
+
+for (const result of ['rework', 'reject', null]) {
+  const id = `packaging-stale-${result}`;
+  seedPackaging(id);
+  const batch = env.DB.batch;
+  let expected;
+  env.DB.batch = async (statements) => {
+    if (result) {
+      // Same checked_at must still choose the later row, as the ordinary gate does.
+      db.prepare(`INSERT INTO print_quality_checks(id,print_job_id,result,checked_at)
+        SELECT ?,print_job_id,?,checked_at FROM print_quality_checks WHERE id=?`).run(`latest-${id}`,result,`qc-${id}`);
+    } else db.prepare('DELETE FROM print_quality_checks WHERE print_job_id=?').run(id);
+    expected = packagingState(id);
+    return batch(statements);
+  };
+  try { response = await packageJob(id); }
+  finally { env.DB.batch = batch; }
+  assert.equal(response.status, 503, `stale ${result} QC cannot authorize packaging`);
+  assert.deepEqual(await response.json(), { error: 'The Printing packaging transition could not be saved. Refresh and try again.' });
+  assert.deepEqual(packagingState(id), expected, 'losing request writes no status, event or success audit');
+}
+
+for (const [id, actor, company, expectedStatus] of [
+  ['packaging-other-authority',otherCompanyApprover,'company-printing',403],
+  ['packaging-other-job',editOnly,'company-bakery',404],
+]) {
+  seedPackaging(id, 'pass', company);
+  const before = packagingState(id);
+  response = await packageJob(id, actor);
+  assert.equal(response.status, expectedStatus);
+  assert.doesNotMatch(await response.text(), /Packaging QC|qc-|company-bakery|5000/);
+  assert.deepEqual(packagingState(id), before);
+}
+for (const [id, actor] of [['packaging-editor',editOnly],['packaging-owner',owner]]) {
+  seedPackaging(id);
+  response = await packageJob(id, actor);
+  assert.equal(response.status, 200);
+  const state = packagingState(id);
+  assert.equal(state.job.production_status, 'packaging');
+  assert.equal(state.events.length, 1);
+  assert.equal(state.audits.length, 1);
+  assert.equal(state.audits[0].request_id, `package-${id}`);
+  assert.equal(state.audits[0].company_id, 'company-printing');
+  response = await packageJob(id, actor);
+  assert.equal(response.status, 409, 'retry cannot duplicate packaging evidence');
+  assert.deepEqual(packagingState(id), state);
+}
+for (const result of ['rework', 'reject', null]) {
+  const id = `packaging-invalid-${result}`;
+  seedPackaging(id, result);
+  const before = packagingState(id);
+  response = await packageJob(id, owner);
+  assert.equal(response.status, 409, 'Owner still requires current QC when configured');
+  assert.deepEqual(packagingState(id), before);
+}
+// Existing explicit policy-off behavior remains; turning it on before commit
+// must be honored even though preflight skipped the QC query.
+db.prepare('INSERT INTO app_settings VALUES(?,?)').run('printing.require_passed_qc_before_packaging','false');
+seedPackaging('packaging-policy-off', null);
+response = await packageJob('packaging-policy-off');
+assert.equal(response.status, 200);
+seedPackaging('packaging-policy-race', null);
+const policyBatch = env.DB.batch;
+const beforePolicyRace = packagingState('packaging-policy-race');
+env.DB.batch = async (statements) => {
+  db.prepare("UPDATE app_settings SET setting_value='true' WHERE setting_key='printing.require_passed_qc_before_packaging'").run();
+  return policyBatch(statements);
+};
+try { response = await packageJob('packaging-policy-race'); }
+finally { env.DB.batch = policyBatch; }
+assert.equal(response.status, 503);
+assert.deepEqual(packagingState('packaging-policy-race'), beforePolicyRace);
+db.prepare("DELETE FROM app_settings WHERE setting_key='printing.require_passed_qc_before_packaging'").run();
+
+for (const failure of ['ABORT', 'IGNORE']) {
+  const id = `packaging-audit-${failure}`;
+  seedPackaging(id);
+  const before = packagingState(id);
+  db.exec(`CREATE TRIGGER fail_packaging_audit BEFORE INSERT ON audit_logs WHEN NEW.entity_id='${id}'
+    BEGIN SELECT RAISE(${failure}${failure === 'ABORT' ? ", 'audit unavailable'" : ''}); END`);
+  try { response = await packageJob(id); }
+  finally { db.exec('DROP TRIGGER fail_packaging_audit'); }
+  assert.equal(response.status, 503);
+  assert.deepEqual(packagingState(id), before, 'audit failure rolls packaging and event back');
+  response = await packageJob(id);
+  assert.equal(response.status, 200, 'retry after audit recovery succeeds');
+}
+console.log('Packaging QC gate: 14 cases PASS (stale QC/policy, company denial, editor/Owner, replay, configured opt-out and audit rollback/recovery)');
+
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, transactional packaging QC, company isolation, payment truth PASS');
