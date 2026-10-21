@@ -1,0 +1,235 @@
+/* Stage 1 dedicated record workspace refinement.
+   Presentation-only: record identity, permissions, stages, evidence and decisions remain owned by V115. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-identity-bar {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  grid-template-areas:
+    "back actions"
+    "identity actions"
+    "facts facts";
+  gap: .7rem 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--stage1-line,#d8e3ee);
+  border-radius: 16px;
+  background: linear-gradient(120deg,var(--stage1-surface,#fff),color-mix(in srgb,var(--stage1-tint,#eaf3ff) 42%,var(--stage1-surface,#fff)));
+  box-shadow: 0 11px 30px rgba(19,40,61,.06);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-back {
+  grid-area: back;
+  justify-self: start;
+  min-height: 36px;
+  color: var(--stage1-muted,#526578);
+  font-weight: 700;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-identity {
+  grid-area: identity;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-identity > div {
+  min-width: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-identity h2 {
+  margin: .25rem 0;
+  color: var(--stage1-ink,#1f2b3c);
+  font-size: clamp(1.35rem,2vw,1.85rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-identity p {
+  margin: 0;
+  color: var(--stage1-muted,#526578);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-key-identity {
+  grid-area: facts;
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: .65rem;
+  margin: .15rem 0 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-key-identity > div {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+  padding: .65rem .75rem;
+  border: 1px solid var(--stage1-line,#d8e3ee);
+  border-radius: 10px;
+  background: var(--stage1-surface,#fff);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-key-identity dt {
+  color: var(--stage1-muted,#526578);
+  font-size: .7rem;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-key-identity dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--stage1-ink,#1f2b3c);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-header-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: .5rem;
+  flex-wrap: wrap;
+  max-width: 440px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-pager {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  border: 1px solid var(--stage1-line,#d8e3ee);
+  border-radius: 9px;
+  background: var(--stage1-surface,#fff);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-pager button {
+  width: 38px;
+  min-height: 38px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-pager span {
+  min-width: 58px;
+  text-align: center;
+  color: var(--stage1-muted,#526578);
+  font-size: .76rem;
+  font-weight: 700;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-tabs {
+  display: flex;
+  gap: .2rem;
+  max-width: 100%;
+  padding: .3rem;
+  overflow-x: auto;
+  border: 1px solid var(--stage1-line,#d8e3ee);
+  border-radius: 11px;
+  background: var(--stage1-surface,#fff);
+  scrollbar-width: thin;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-tabs button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: .55rem .8rem;
+  border-radius: 8px;
+  color: var(--stage1-muted,#526578);
+  font-size: .78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-tabs button.is-active,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-tabs button[aria-selected="true"] {
+  background: color-mix(in srgb,var(--stage1-primary,#2563eb) 10%,var(--stage1-tint,#eaf3ff));
+  color: color-mix(in srgb,var(--stage1-primary,#2563eb) 82%,var(--stage1-anchor,#173a63));
+  box-shadow: inset 0 -2px var(--stage1-primary,#2563eb);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-tab-panel {
+  min-width: 0;
+  outline-offset: 4px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview {
+  display: grid;
+  grid-template-columns: minmax(0,1.55fr) minmax(280px,.55fr);
+  gap: 1rem;
+  align-items: start;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview > aside {
+  display: grid;
+  gap: .8rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview > aside > .p-panel {
+  margin-top: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview .p-record-main {
+  border-color: color-mix(in srgb,var(--stage1-primary,#2563eb) 14%,var(--stage1-line,#d8e3ee));
+  box-shadow: 0 10px 28px rgba(19,40,61,.05);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview .p-detail-fields {
+  gap: 0;
+  border-top: 1px solid var(--stage1-line,#d8e3ee);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview .p-detail-fields > div {
+  min-width: 0;
+  padding: .75rem 0;
+  border-bottom: 1px solid var(--stage1-line,#d8e3ee);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-section-panel {
+  min-height: 240px;
+  border-color: color-mix(in srgb,var(--stage1-primary,#2563eb) 12%,var(--stage1-line,#d8e3ee));
+  box-shadow: 0 9px 26px rgba(19,40,61,.045);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-related-records > button,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-attachment {
+  min-height: 54px;
+  border-radius: 10px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-more-actions {
+  position: relative;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-more-actions > summary {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .55rem .7rem;
+  border: 1px solid var(--stage1-line,#d8e3ee);
+  border-radius: 8px;
+  background: var(--stage1-surface,#fff);
+  color: var(--stage1-ink,#1f2b3c);
+  cursor: pointer;
+  list-style: none;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-more-actions-menu {
+  z-index: 20;
+  min-width: 210px;
+  border: 1px solid var(--stage1-line,#d8e3ee);
+  border-radius: 10px;
+  background: var(--stage1-surface,#fff);
+  box-shadow: 0 16px 36px rgba(19,40,61,.14);
+}
+@media (max-width: 1024px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview {
+    grid-template-columns: minmax(0,1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview > aside {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+@media (max-width: 700px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-identity-bar {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-areas:"back" "identity" "facts" "actions";
+    padding: .85rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-record-identity {
+    display: grid;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-key-identity,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-overview > aside {
+    grid-template-columns: minmax(0,1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-header-actions {
+    justify-content: stretch;
+    max-width: none;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .dr-header-actions > * {
+    flex: 1 1 auto;
+  }
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content :is(.dr-identity-bar,.dr-key-identity>div,.dr-tabs,.dr-more-actions-menu,.dr-section-panel) {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+}
