@@ -1467,3 +1467,24 @@
  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy {margin:0!important;padding:0!important;}
  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy :is(p,small) {font-size:10px!important;line-height:1.14!important;}
 }
+
+/* Weather provider outage: keep the complete truthful status readable inside
+   each compact Global Operations photo card; 4K master stays unchanged. */
+@media (min-width:1024px) and (max-width:2099px) {
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city[data-weather="unavailable"] .sp-live-city-weather {
+    position:absolute!important;
+    top:auto!important;bottom:7px!important;
+    left:8px!important;right:8px!important;
+    width:auto!important;max-width:none!important;height:auto!important;
+    min-height:35px!important;box-sizing:border-box!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    padding:6px 8px!important;
+    background:linear-gradient(180deg,rgba(5,22,39,.78),rgba(5,22,39,.9))!important;
+    border:1px solid rgba(158,216,245,.46)!important;border-radius:7px!important;
+    font-size:clamp(11px,.76vw,14px)!important;line-height:1.2!important;
+    font-weight:730!important;letter-spacing:0!important;text-align:center!important;
+    white-space:normal!important;overflow-wrap:normal!important;text-wrap:balance!important;
+    grid-column:auto!important;grid-row:auto!important;
+    transform:none!important;z-index:6!important;
+  }
+}
