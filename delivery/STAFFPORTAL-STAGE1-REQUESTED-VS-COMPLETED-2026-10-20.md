@@ -48,14 +48,14 @@ A successful build, a generated preview, or the presence of a component never ch
 |---|---|---|
 | One continuous Enterprise Command Center | Implemented in candidate | Single hierarchy replaces nested global/context navigation inside the retained shell. |
 | Complete canonical destination coverage | Implemented in candidate | Existing Stage 1 structural suite covers 141 canonical modules and 15 access profiles. Re-run on exact integrated head required. |
-| Progressive disclosure and clear current route | Implemented in candidate | Separate disclosure and destination controls; current page and ancestors are distinct. Browser keyboard/touch acceptance pending. |
+| Progressive disclosure and clear current route | **Implemented and browser verified** | Separate disclosure and destination controls remain distinct; current page and ancestors are clear. Targeted browser acceptance confirms route transitions open the new workspace and keep navigation stable without horizontal overflow. Touch-device breadth remains part of wider responsive QA. |
 | Search deep modules with context path | Implemented in candidate | Authorized module finder is retained inside the command surface. |
 | Favorites and recents | Implemented in candidate | Session-scoped stable IDs; no private record content persisted. Server/cross-device persistence was not requested or implemented. |
 | Employee/Manager/Owner navigation ordering | Implemented in candidate | Presentation order uses actual current-company roles and does not grant access. |
 | Role-specific workflow shortcuts | Implemented in candidate | Employee, Manager and Owner focus links are additive and permission-filtered. |
-| Purpose-built role-specific home dashboards | **Partial** | Role ordering and shortcuts exist; the complete Employee/Manager/Owner dashboard information architecture is not yet redesigned page by page. |
+| Purpose-built role-specific home dashboards | **Implemented in Stage 1 candidate, bounded** | Home now presents distinct Employee, Manager and Owner command surfaces with role-specific purpose, copy and prioritized links drawn only from the permission-projected Enterprise Command Center. 6/6 desktop/mobile role scenarios and the 18/18 regression matrix pass. Deeper KPI/data composition remains governed by the retained role-aware V115 home. |
 | Delegated/multi-role context switch | **Partial** | Company-role scoping is improved. Full explicit delegated-responsibility UX and acceptance remain open. |
-| Last expanded section intelligent state | Partial | In-session disclosure memory and active ancestor expansion exist. The exact approved auto-collapse behavior still needs browser review against owner expectations. |
+| Last expanded section intelligent state | **Implemented and browser verified** | Route changes collapse the previous top-level workspace, open the new active workspace and preserve nested disclosure memory so returning restores the user's local context. The targeted rendered-browser test passes with zero page errors or horizontal overflow. |
 | Desktop/tablet/mobile navigation adaptation | Partial | Existing sidebar, Sheet and mobile bottom navigation remain connected. Exact integrated responsive interaction acceptance remains open. |
 
 ## Ask DAENEM and enterprise search
@@ -181,3 +181,19 @@ A Stage 1 audit exposed horizontal overflow at 200% root text on Home and Appear
 | TypeScript / production build / diff hygiene | **PASS on tested candidate** | Re-run required on this rebased head; existing >500 kB chunk advisory remains. |
 
 This increment does not claim real account/provider acceptance, screen-reader certification, all browser zoom modes, long-name stress completion, or universal page-family completion.
+
+## Role-specific home increment - 20 October 2026
+
+The Stage 1 Home surface now differentiates Employee, Manager and Owner intent without creating a second authorization system. Priority destinations are selected only from the currently rendered, permission-projected Enterprise Command Center links for the active company role.
+
+| Evidence | Result | Limit |
+|---|---|---|
+| Role-home source contract | **5/5 PASS** | Distinct role IA, permission-projected destinations, no second fetch/persistence authority, landing-route scope, opaque/mobile/large-text treatment. |
+| Owner desktop/mobile | **2/2 PASS** | Owner Command Center exposes only authorized priority workspaces; zero horizontal overflow/offenders/page errors. |
+| Manager desktop/mobile | **2/2 PASS** | Manager Home prioritizes authorized team workspaces; zero horizontal overflow/offenders/page errors. |
+| Employee desktop/mobile | **2/2 PASS** | Employee Home prioritizes self-service/personal work without management-only labels; zero horizontal overflow/offenders/page errors. |
+| Full role/route regression | **18/18 PASS + Appearance 3/3** | Representative Owner/Manager/Employee routes at 3840, 1920, 1366, 1024 and 390; zero uncaught page errors and horizontal overflow. |
+| Preservation/security gates | **PASS** | V115 export/lock, zero disclosure, staging integration 13/13, Sign-In blockers 15/15, post-auth integration and navigation overlay remain green. |
+| TypeScript / production build | **PASS** | Existing large-chunk advisory remains; measured device performance is still open. |
+
+This increment does not broaden role permissions or replace the retained role-aware dashboard data model. Real authenticated Worker/D1 role acceptance remains open before final release.
