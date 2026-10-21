@@ -9,6 +9,7 @@ interface SearchSuggestion {
   group: string;
   description?: string;
   entityId?: string;
+  companyId?: string;
 }
 interface SearchPayload {
   suggestions: SearchSuggestion[];
@@ -21,7 +22,14 @@ function recordHref(result: SearchSuggestion) {
     'leave-request': '/leave', 'document-request': '/self-service',
     'form-submission': '/forms', 'notification': '/notifications',
   };
-  return route[result.type] || undefined;
+  const href = route[result.type];
+  if (!href) return undefined;
+  if (result.entityId && (result.type === 'payroll' || result.type === 'construction')) {
+    const params = new URLSearchParams({ stage1Module: result.command, stage1Record: result.entityId });
+    if (result.companyId) params.set('stage1Company', result.companyId);
+    return href + '?' + params.toString();
+  }
+  return href;
 }
 export default function Stage1SearchResults({ enabled }: { enabled: boolean }): ReactNode {
   const [host, setHost] = useState<HTMLElement | null>(null);
