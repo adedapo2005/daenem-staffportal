@@ -1119,4 +1119,111 @@ for (const failure of ['ABORT', 'IGNORE']) {
 }
 console.log('Packaging QC gate: 14 cases PASS (stale QC/policy, company denial, editor/Owner, replay, configured opt-out and audit rollback/recovery)');
 
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, transactional packaging QC, company isolation, payment truth PASS');
+// Interleave a committed revision after queue preflight but before its transaction.
+// This exercises the real handler with SQLite; it is not multi-Worker D1 acceptance.
+const seedQueueJob = (id, company = 'company-printing', artwork = 1, proof = 1) => {
+  db.prepare('INSERT INTO printing_services(id,company_id,requires_artwork,requires_proof) VALUES(?,?,?,?)').run(`service-${id}`,company,artwork,proof);
+  db.prepare(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status,service_id,artwork_status,proof_status)
+    VALUES(?,?,?,'Queue gate job',1,5000,'proof',?,'approved','approved')`).run(id,company,id,`service-${id}`);
+  db.prepare(`INSERT INTO print_proofs(id,print_job_id,version_no,customer_response) VALUES(?,?,1,'approved')`).run(`proof-${id}`,id);
+};
+const queueState = (id) => ({
+  job: db.prepare('SELECT * FROM print_jobs WHERE id=?').get(id),
+  events: db.prepare('SELECT * FROM print_job_status_events WHERE print_job_id=? ORDER BY id').all(id),
+  audits: db.prepare('SELECT * FROM audit_logs WHERE entity_id=? ORDER BY id').all(id),
+});
+const queueJob = (id, actor = editOnly) => route(statusRequest(id, 'queued', `queue-${id}`), env, actor);
+let queueCases = 0;
+for (const [name, mutate] of [
+  ['artwork-revised', (id) => db.prepare("UPDATE print_jobs SET artwork_status='ready' WHERE id=?").run(id)],
+  ['proof-revised', (id) => db.prepare("UPDATE print_jobs SET proof_status='pending' WHERE id=?").run(id)],
+  ['proof-evidence-withdrawn', (id) => db.prepare("UPDATE print_proofs SET customer_response='changes_requested' WHERE print_job_id=?").run(id)],
+  ['artwork-now-required', (id) => db.prepare('UPDATE printing_services SET requires_artwork=1 WHERE id=?').run(`service-${id}`)],
+  ['proof-now-required', (id) => db.prepare('UPDATE printing_services SET requires_proof=1 WHERE id=?').run(`service-${id}`)],
+  ['policy-now-required', () => db.prepare("UPDATE app_settings SET setting_value='true' WHERE setting_key='printing.require_proof_evidence_when_service_requires_proof'").run()],
+]) {
+  const id = `queue-${name}`;
+  seedQueueJob(id);
+  if (name === 'artwork-now-required') {
+    db.prepare('UPDATE printing_services SET requires_artwork=0 WHERE id=?').run(`service-${id}`);
+    db.prepare("UPDATE print_jobs SET artwork_status='ready' WHERE id=?").run(id);
+  }
+  if (name === 'proof-now-required') {
+    db.prepare('UPDATE printing_services SET requires_proof=0 WHERE id=?').run(`service-${id}`);
+    db.prepare("UPDATE print_jobs SET proof_status='pending' WHERE id=?").run(id);
+  }
+  if (name === 'policy-now-required') {
+    db.prepare('INSERT INTO app_settings VALUES(?,?)').run('printing.require_proof_evidence_when_service_requires_proof','false');
+    db.prepare('DELETE FROM print_proofs WHERE print_job_id=?').run(id);
+  }
+  const batch = env.DB.batch;
+  let before;
+  env.DB.batch = async (statements) => {
+    mutate(id);
+    before = queueState(id);
+    return batch(statements);
+  };
+  try { response = await queueJob(id); }
+  finally { env.DB.batch = batch; }
+  assert.equal(response.status, 503, `${name} must prevent a stale production queue transition`);
+  assert.deepEqual(await response.json(), { error: 'The Printing queue transition could not be saved. Refresh and try again.' });
+  assert.deepEqual(queueState(id), before, 'failed queue attempt leaves no event or success audit');
+  db.prepare("DELETE FROM app_settings WHERE setting_key='printing.require_proof_evidence_when_service_requires_proof'").run();
+  queueCases++;
+}
+for (const [name, actor, company, expectedStatus] of [
+  ['editor',editOnly,'company-printing',200],
+  ['owner',owner,'company-printing',200],
+  ['foreign-authority',otherCompanyApprover,'company-printing',403],
+  ['foreign-job',editOnly,'company-bakery',404],
+]) {
+  const id = `queue-${name}`;
+  seedQueueJob(id,company);
+  const before = queueState(id);
+  response = await queueJob(id,actor);
+  assert.equal(response.status, expectedStatus);
+  const after = queueState(id);
+  if (expectedStatus === 200) {
+    assert.equal(after.job.production_status,'queued');
+    assert.equal(after.events.length,1);
+    assert.equal(after.audits.length,1);
+    assert.equal(after.audits[0].company_id,company);
+    assert.equal(after.audits[0].request_id,`queue-${id}`);
+    response = await queueJob(id,actor);
+    assert.equal(response.status,409);
+    assert.deepEqual(queueState(id),after,'replay cannot duplicate queue evidence');
+  } else {
+    assert.doesNotMatch(await response.text(),new RegExp(id));
+    assert.deepEqual(after,before);
+  }
+  queueCases++;
+}
+for (const failure of ['ABORT','IGNORE']) {
+  const id = `queue-audit-${failure}`;
+  seedQueueJob(id);
+  const before = queueState(id);
+  db.exec(`CREATE TRIGGER fail_queue_audit BEFORE INSERT ON audit_logs WHEN NEW.entity_id='${id}'
+    BEGIN SELECT RAISE(${failure}${failure === 'ABORT' ? ", 'audit unavailable'" : ''}); END`);
+  try { response = await queueJob(id); }
+  finally { db.exec('DROP TRIGGER fail_queue_audit'); }
+  assert.equal(response.status,503);
+  assert.deepEqual(queueState(id),before,'required audit failure rolls queue and event back');
+  response = await queueJob(id);
+  assert.equal(response.status,200,'retry after audit recovery succeeds');
+  queueCases++;
+}
+seedQueueJob('queue-no-requirements','company-printing',0,0);
+db.prepare("UPDATE print_jobs SET artwork_status='received',proof_status='pending' WHERE id='queue-no-requirements'").run();
+db.prepare("DELETE FROM print_proofs WHERE print_job_id='queue-no-requirements'").run();
+response = await queueJob('queue-no-requirements');
+assert.equal(response.status,200,'service without artwork/proof requirements remains supported');
+queueCases++;
+seedQueueJob('queue-evidence-policy-off');
+db.prepare("DELETE FROM print_proofs WHERE print_job_id='queue-evidence-policy-off'").run();
+db.prepare('INSERT INTO app_settings VALUES(?,?)').run('printing.require_proof_evidence_when_service_requires_proof','false');
+try { response = await queueJob('queue-evidence-policy-off'); }
+finally { db.prepare("DELETE FROM app_settings WHERE setting_key='printing.require_proof_evidence_when_service_requires_proof'").run(); }
+assert.equal(response.status,200,'explicit existing proof-evidence opt-out is preserved');
+queueCases++;
+console.log(`Production queue gate: ${queueCases} cases PASS (stale approvals/service/policy/evidence, company denial, editor/Owner, replay and audit rollback)`);
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, transactional packaging QC and production queue, company isolation, payment truth PASS');

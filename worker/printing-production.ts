@@ -246,6 +246,17 @@ async function transition(request:Request,env:PrintingProductionEnv,context:Sess
   }
   const eventId=uid('print-event'),auditId=uid('audit'),requestId=requestCorrelationId(request);
   try{await env.DB.batch([
+    // Revalidate current service requirements, approvals and evidence in the
+    // status/audit transaction; a revision after preflight must stop production.
+    ...(to==='queued'?[env.DB.prepare(`SELECT json_extract(CASE WHEN EXISTS(
+      SELECT 1 FROM print_jobs j LEFT JOIN printing_services s ON s.id=j.service_id AND s.company_id=j.company_id
+      WHERE j.id=? AND j.company_id=?
+        AND (COALESCE(s.requires_artwork,0)=0 OR j.artwork_status='approved')
+        AND (COALESCE(s.requires_proof,0)=0 OR (j.proof_status='approved' AND (
+          COALESCE((SELECT setting_value FROM app_settings WHERE setting_key='printing.require_proof_evidence_when_service_requires_proof'),'true')!='true'
+          OR EXISTS(SELECT 1 FROM print_proofs p WHERE p.print_job_id=j.id AND p.customer_response='approved')
+        )))
+      ) THEN '{}' ELSE '{' END,'$')`).bind(jobId,companyId)]:[]),
     // QC and its existing configurable gate must still authorize packaging at
     // commit time; an intervening rework/reject cannot reuse the preflight pass.
     ...(to==='packaging'?[env.DB.prepare(`SELECT json_extract(CASE WHEN COALESCE((SELECT setting_value FROM app_settings WHERE setting_key='printing.require_passed_qc_before_packaging'),'true')!='true' OR (SELECT q.result FROM print_quality_checks q JOIN print_jobs j ON j.id=q.print_job_id AND j.company_id=? WHERE q.print_job_id=? ORDER BY q.checked_at DESC,q.rowid DESC LIMIT 1)='pass' THEN '{}' ELSE '{' END,'$')`).bind(companyId,jobId)]:[]),
@@ -253,7 +264,7 @@ async function transition(request:Request,env:PrintingProductionEnv,context:Sess
     env.DB.prepare(`INSERT INTO print_job_status_events(id,print_job_id,from_status,to_status,changed_by,note) SELECT ?,id,?,?,?,? FROM print_jobs WHERE id=? AND company_id=? AND production_status=? AND changes()=1`).bind(eventId,from,to,context.employee.id,body.note||null,jobId,companyId,to),
     env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source,request_id) SELECT ?,?,?,'printing','status_change','print_job',?,?,?,'web',? FROM print_job_status_events WHERE id=? AND print_job_id=? AND from_status=? AND to_status=?`).bind(auditId,context.employee.id,companyId,jobId,JSON.stringify({status:from}),JSON.stringify({status:to,note:body.note||null}),requestId,eventId,jobId,from,to),
     env.DB.prepare(`SELECT json_extract(CASE WHEN EXISTS(SELECT 1 FROM print_jobs WHERE id=? AND company_id=? AND production_status=?) AND EXISTS(SELECT 1 FROM print_job_status_events WHERE id=? AND print_job_id=? AND from_status=? AND to_status=?) AND EXISTS(SELECT 1 FROM audit_logs WHERE id=? AND company_id=? AND module='printing' AND action='status_change' AND entity_id=? AND request_id=?) THEN '{}' ELSE '{' END,'$')`).bind(jobId,companyId,to,eventId,jobId,from,to,auditId,companyId,jobId,requestId),
-  ])}catch(error){const current=await assertJob(env,jobId);if(!current||String(current.status)!==from)return json({error:'Print job status has changed. Refresh and try again.'},409);if(to==='packaging')return json({error:'The Printing packaging transition could not be saved. Refresh and try again.'},503);throw error}
+  ])}catch(error){const current=await assertJob(env,jobId);if(!current||String(current.status)!==from)return json({error:'Print job status has changed. Refresh and try again.'},409);if(to==='queued')return json({error:'The Printing queue transition could not be saved. Refresh and try again.'},503);if(to==='packaging')return json({error:'The Printing packaging transition could not be saved. Refresh and try again.'},503);throw error}
   return json({ok:true,status:to})}
 
 export async function routePrintingProduction(request:Request,env:PrintingProductionEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/printing/jobs/detail'&&request.method==='GET')return detail(request,env,context);if(url.pathname==='/api/printing/jobs/file'&&request.method==='GET')return fileResponse(request,env,context);if(url.pathname==='/api/printing/jobs/files'&&request.method==='POST')return upload(request,env,context);if(url.pathname==='/api/printing/jobs/artwork'&&request.method==='POST')return artwork(request,env,context);if(url.pathname==='/api/printing/jobs/proof'&&request.method==='POST')return proof(request,env,context);if(url.pathname==='/api/printing/jobs/finishing'&&request.method==='POST')return finishing(request,env,context);if(url.pathname==='/api/printing/jobs/delivery'&&request.method==='POST')return delivery(request,env,context);if(url.pathname==='/api/printing/jobs/note'&&request.method==='POST')return note(request,env,context);if(url.pathname==='/api/printing/jobs/status'&&request.method==='POST')return transition(request,env,context);return null}
