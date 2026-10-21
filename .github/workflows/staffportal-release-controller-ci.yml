@@ -37,8 +37,8 @@ jobs:
         run: |
           test -f .github/workflows/deploy-staffportal-staging.yml
           grep -q 'name: Verify Pre-Production candidate' .github/workflows/deploy-staffportal-staging.yml
-          grep -q 'Validate exact commit SHA and repository source' .github/workflows/deploy-staffportal-staging.yml 
-          ! grep -q 'approval_comment_id' .github/workflows/deploy-staffportal-staging.yml 
+          grep -q 'Validate exact commit SHA and repository source' .github/workflows/deploy-staffportal-staging.yml
+          ! grep -q 'approval_comment_id' .github/workflows/deploy-staffportal-staging.yml
           ! grep -q 'issue_comment:' .github/workflows/deploy-staffportal-staging.yml
           grep -q 'name: Release blockers clear' .github/workflows/deploy-staffportal-staging.yml
           grep -q 'signin-desktop-internal-scrollbar' .github/workflows/deploy-staffportal-staging.yml
