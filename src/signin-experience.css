@@ -1264,3 +1264,21 @@
   bottom:6px!important;left:8px!important;right:8px!important;padding:9px 11px!important;
  }
 }
+
+
+/* Compact weather illustration belongs inside the lower detail band,
+   never over the analog clock face. Keep the premium photo intact. */
+@media(min-width:1280px) and (max-width:1919px) {
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+  padding-left:48px!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  column-gap:6px!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+  left:calc(clamp(84px,5.1vw,124px) + 18px)!important;
+  bottom:7px!important;width:36px!important;height:36px!important;
+ }
+ #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-visual {
+  width:36px!important;height:36px!important;
+ }
+}
