@@ -47,10 +47,19 @@ async function upload(request:Request,env:PrintingProductionEnv,context:SessionC
   const digest=Array.from(digestBytes,byte=>byte.toString(16).padStart(2,'0')).join('');
   const fileId=crypto.randomUUID(),key=`printing/${jobId}/${category}/${Date.now()}-${fileId}-${safeName}`,mime=file.type||'application/octet-stream';
   await env.FILES.put(key,bytes,{httpMetadata:{contentType:mime,cacheControl:'private, no-store'},customMetadata:{companyId,jobId,category,uploadedBy:context.employee.id,originalName:safeName,sha256:digest}});
+  const mirrorId=`storage-mirror-printing-${fileId}-${digest}`,idempotencyKey=`microsoft_onedrive:printing:${fileId}:${digest}`;
+  const auditId=uid('audit'),requestId=requestCorrelationId(request);
   try{
     await env.DB.batch([
-      env.DB.prepare(`INSERT OR IGNORE INTO storage_mirror_jobs(id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status) VALUES(?,'microsoft_onedrive','printing',?,?,?,?,?,?,?,?,'provider_required')`).bind(`storage-mirror-printing-${fileId}-${digest}`,fileId,companyId,key,safeName,mime,file.size,digest,`microsoft_onedrive:printing:${fileId}:${digest}`),
-      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'printing','upload_file','print_job',?,?,'web',?)`).bind(uid('audit'),context.employee.id,companyId,jobId,JSON.stringify({category,key,name:safeName,size:file.size,type:mime,sha256:digest,backupStatus:'provider_required'}),requestCorrelationId(request))
+      // R2 is outside D1's transaction. Recheck scope after that await, then
+      // require this attempt's exact receipt and audit before accepting the file.
+      env.DB.prepare(`SELECT json_extract(CASE WHEN EXISTS(SELECT 1 FROM print_jobs WHERE id=? AND company_id=?) THEN '{}' ELSE '{' END,'$')`).bind(jobId,companyId),
+      env.DB.prepare(`INSERT OR IGNORE INTO storage_mirror_jobs(id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status) VALUES(?,'microsoft_onedrive','printing',?,?,?,?,?,?,?,?,'provider_required')`).bind(mirrorId,fileId,companyId,key,safeName,mime,file.size,digest,idempotencyKey),
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'printing','upload_file','print_job',?,?,'web',?)`).bind(auditId,context.employee.id,companyId,jobId,JSON.stringify({category,key,name:safeName,size:file.size,type:mime,sha256:digest,backupStatus:'provider_required'}),requestId),
+      env.DB.prepare(`SELECT json_extract(CASE WHEN EXISTS(SELECT 1 FROM print_jobs WHERE id=? AND company_id=?)
+        AND EXISTS(SELECT 1 FROM storage_mirror_jobs WHERE id=? AND provider='microsoft_onedrive' AND source_module='printing' AND source_id=? AND company_id=? AND r2_key=? AND sha256=? AND size_bytes=? AND idempotency_key=? AND status='provider_required')
+        AND EXISTS(SELECT 1 FROM audit_logs WHERE id=? AND actor_employee_id=? AND company_id=? AND module='printing' AND action='upload_file' AND entity_type='print_job' AND entity_id=? AND request_id=?)
+        THEN '{}' ELSE '{' END,'$')`).bind(jobId,companyId,mirrorId,fileId,companyId,key,digest,file.size,idempotencyKey,auditId,context.employee.id,companyId,jobId,requestId)
     ]);
   }catch(error){await env.FILES.delete(key);throw error}
   return json({ok:true,key,name:safeName,size:file.size,sha256:digest,backupStatus:'provider_required'});
