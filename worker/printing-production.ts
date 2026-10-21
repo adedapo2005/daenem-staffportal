@@ -56,7 +56,27 @@ async function upload(request:Request,env:PrintingProductionEnv,context:SessionC
   return json({ok:true,key,name:safeName,size:file.size,sha256:digest,backupStatus:'provider_required'});
 }
 
-async function fileResponse(request:Request,env:PrintingProductionEnv,context:SessionContext){if(!can(context))return json({error:'Daenem Printing access is not assigned.'},403);const key=new URL(request.url).searchParams.get('key')||'';const parts=key.split('/');const jobId=parts[1]||'',category=parts[2]||'';if(parts[0]!=='printing'||parts.length<4||!['artwork','proof','qc','delivery','evidence'].includes(category)||!await assertJob(env,jobId))return json({error:'File not found.'},404);const object=await env.FILES.get(key);if(!object||object.customMetadata?.jobId!==jobId||object.customMetadata?.category!==category)return json({error:'File not found.'},404);try{await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'printing','protected_file_read','print_job',?,?,'web',?)`).bind(uid('audit'),context.employee.id,companyId,jobId,JSON.stringify({method:request.method,outcome:'authorized_read',category}),requestCorrelationId(request)).run()}catch{return json({error:'The file is temporarily unavailable.'},503)}const headers=new Headers();object.writeHttpMetadata(headers);headers.set('cache-control','private, no-store');headers.set('content-disposition',`inline; filename="${(object.customMetadata?.originalName||'printing-file').replace(/["\r\n]/g,'')}"`);headers.set('x-content-type-options','nosniff');headers.set('content-security-policy','default-src \'none\'; sandbox');return new Response(request.method==='HEAD'?null:object.body,{headers})}
+async function fileResponse(request:Request,env:PrintingProductionEnv,context:SessionContext){
+  if(!can(context))return json({error:'Daenem Printing access is not assigned.'},403);
+  const key=new URL(request.url).searchParams.get('key')||'',parts=key.split('/');
+  const jobId=parts[1]||'',category=parts[2]||'';
+  if(parts[0]!=='printing'||parts.length<4||!['artwork','proof','qc','delivery','evidence'].includes(category)||!await assertJob(env,jobId))return json({error:'File not found.'},404);
+  const object=await env.FILES.get(key);
+  if(!object||object.customMetadata?.jobId!==jobId||object.customMetadata?.category!==category)return json({error:'File not found.'},404);
+  try{
+    const audit=await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'printing','protected_file_read','print_job',?,?,'web',?)`).bind(uid('audit'),context.employee.id,companyId,jobId,JSON.stringify({method:request.method,outcome:'authorized_read',category}),requestCorrelationId(request)).run();
+    // A resolved INSERT can still write zero rows. This read needs its own
+    // confirmed audit before any object headers or protected bytes are exposed.
+    if(audit?.success!==true||audit.meta?.changes!==1)return json({error:'The file is temporarily unavailable.'},503);
+  }catch{return json({error:'The file is temporarily unavailable.'},503)}
+  const headers=new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set('cache-control','private, no-store');
+  headers.set('content-disposition',`inline; filename="${(object.customMetadata?.originalName||'printing-file').replace(/["\r\n]/g,'')}"`);
+  headers.set('x-content-type-options','nosniff');
+  headers.set('content-security-policy','default-src \'none\'; sandbox');
+  return new Response(request.method==='HEAD'?null:object.body,{headers});
+}
 
 async function artwork(request:Request,env:PrintingProductionEnv,context:SessionContext){
   if(!can(context,'edit'))return json({error:'Edit Printing permission is required.'},403);

@@ -88,7 +88,7 @@ const env = {
         bind(...args) { this.values = args; return this; },
         async first() { return db.prepare(sql).get(...this.values) || null; },
         async all() { return { results: db.prepare(sql).all(...this.values) }; },
-        async run() { const result = db.prepare(sql).run(...this.values); return { meta: { changes: Number(result.changes) } }; },
+        async run() { const result = db.prepare(sql).run(...this.values); return { success: true, meta: { changes: Number(result.changes) } }; },
       };
     },
     async batch(statements) {
@@ -1226,4 +1226,94 @@ finally { db.prepare("DELETE FROM app_settings WHERE setting_key='printing.requi
 assert.equal(response.status,200,'explicit existing proof-evidence opt-out is preserved');
 queueCases++;
 console.log(`Production queue gate: ${queueCases} cases PASS (stale approvals/service/policy/evidence, company denial, editor/Owner, replay and audit rollback)`);
-console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, transactional packaging QC and production queue, company isolation, payment truth PASS');
+// A protected R2 response must wait for this read's durable audit INSERT.
+// In particular, SQLite RAISE(IGNORE) resolves successfully with changes=0.
+const fileJob = 'protected-file-audit';
+seedQueueJob(fileJob);
+seedQueueJob('protected-file-foreign', 'company-bakery');
+const fileKey = `printing/${fileJob}/evidence/synthetic.txt`;
+const fileBytes = 'synthetic protected Printing evidence';
+let fileReads = 0, bodyReads = 0, headerReads = 0;
+let objectMetadata = { jobId: fileJob, category: 'evidence', companyId: 'company-printing', originalName: 'synthetic.txt' };
+env.FILES = {
+  async get(key) {
+    fileReads++;
+    assert.equal(key, fileKey);
+    return {
+      customMetadata: objectMetadata,
+      writeHttpMetadata(headers) { headerReads++; headers.set('content-type', 'text/plain'); },
+      get body() { bodyReads++; return fileBytes; },
+    };
+  },
+};
+const fileRequest = (requestId, key = fileKey) => new Request(`https://staffportal.test/api/printing/jobs/file?key=${encodeURIComponent(key)}`, {
+  headers: { 'x-request-id': requestId },
+});
+const fileAudits = () => db.prepare("SELECT * FROM audit_logs WHERE entity_id=? AND action='protected_file_read' ORDER BY rowid").all(fileJob);
+let fileCases = 0;
+for (const [name, actor] of [['editor', editOnly], ['owner', owner]]) {
+  const before = fileAudits().length;
+  response = await route(fileRequest(`file-${name}`), env, actor);
+  assert.equal(response.status, 200);
+  assert.equal(fileAudits().length, before + 1, 'audit exists before response bytes are read');
+  const audit = fileAudits().at(-1);
+  assert.equal(audit.actor_employee_id, actor.employee.id);
+  assert.equal(audit.company_id, 'company-printing');
+  assert.equal(audit.request_id, `file-${name}`);
+  assert.equal(audit.entity_type, 'print_job');
+  assert.deepEqual(JSON.parse(audit.after_json), { method: 'GET', outcome: 'authorized_read', category: 'evidence' });
+  assert.ok(!JSON.stringify(audit).includes(fileBytes), 'audit never contains protected file bytes');
+  assert.equal(response.headers.get('cache-control'), 'private, no-store');
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(response.headers.get('content-security-policy'), "default-src 'none'; sandbox");
+  assert.equal(await response.text(), fileBytes);
+  fileCases++;
+}
+for (const failure of ['IGNORE', 'ABORT']) {
+  const before = fileAudits();
+  const beforeBody = bodyReads, beforeHeaders = headerReads;
+  // A historical success (even with the same request ID) cannot authorize this read.
+  db.exec(`CREATE TRIGGER fail_file_audit BEFORE INSERT ON audit_logs WHEN NEW.action='protected_file_read'
+    BEGIN SELECT RAISE(${failure}${failure === 'ABORT' ? ", 'audit unavailable'" : ''}); END`);
+  try { response = await route(fileRequest('file-editor'), env, editOnly); }
+  finally { db.exec('DROP TRIGGER fail_file_audit'); }
+  assert.equal(response.status, 503, `${failure} audit INSERT must stop protected disclosure`);
+  assert.deepEqual(await response.json(), { error: 'The file is temporarily unavailable.' });
+  assert.equal(response.headers.get('content-disposition'), null);
+  assert.equal(bodyReads, beforeBody, 'failed audit must not access the R2 body');
+  assert.equal(headerReads, beforeHeaders, 'failed audit must not copy object headers');
+  assert.deepEqual(fileAudits(), before, 'no success audit is manufactured');
+  response = await route(fileRequest(`file-recovery-${failure}`), env, editOnly);
+  assert.equal(response.status, 200);
+  assert.equal(fileAudits().length, before.length + 1);
+  assert.equal(await response.text(), fileBytes);
+  fileCases++;
+}
+for (const [name, actor, key, status] of [
+  ['foreign-authority', otherCompanyApprover, fileKey, 403],
+  ['revoked-authority', { employee: editOnly.employee, companyPermissions: {} }, fileKey, 403],
+  ['foreign-job', editOnly, 'printing/protected-file-foreign/evidence/synthetic.txt', 404],
+  ['unknown-job', editOnly, 'printing/unknown/evidence/synthetic.txt', 404],
+  ['invalid-category', editOnly, `printing/${fileJob}/unknown/synthetic.txt`, 404],
+]) {
+  const before = fileAudits(), reads = fileReads;
+  response = await route(fileRequest(`file-${name}`, key), env, actor);
+  assert.equal(response.status, status);
+  assert.doesNotMatch(await response.text(), /synthetic|protected-file|salesOrderId/);
+  assert.equal(fileReads, reads, 'unauthorized or invalid file never reaches R2');
+  assert.deepEqual(fileAudits(), before);
+  fileCases++;
+}
+for (const metadata of [null, { ...objectMetadata, jobId: 'other' }, { ...objectMetadata, category: 'artwork' }]) {
+  const original = objectMetadata, before = fileAudits(), reads = bodyReads;
+  objectMetadata = metadata;
+  try { response = await route(fileRequest('file-metadata-mismatch'), env, editOnly); }
+  finally { objectMetadata = original; }
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { error: 'File not found.' });
+  assert.equal(bodyReads, reads);
+  assert.deepEqual(fileAudits(), before);
+  fileCases++;
+}
+console.log(`Protected Printing file audit: ${fileCases} cases PASS (current audit required, silent/throwing failure, recovery, company denial, revoked permission and object binding)`);
+console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, transactional packaging QC and production queue, protected file audit durability, company isolation, payment truth PASS');
