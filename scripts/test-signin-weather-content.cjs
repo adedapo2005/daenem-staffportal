@@ -65,7 +65,7 @@ async function run(){
      assert.equal(data.cards.length,7,'seven city cards');
      for(const card of data.cards){
       if(card.city!=='ibadan'){
-       assert.ok(card.clock.width >= ((w >= 1280 && w < 1920) ? 73.9 : 83.9),'responsive approved minimum global clock width: '+card.city);
+       assert.ok(card.clock.width >= ((data.width >= 1280 && data.width < 1920) ? 73.9 : 83.9),'responsive approved minimum global clock width: '+card.city);
        assert.ok(card.detail,'global city weather details missing: '+card.city);
        assert.equal(card.detail.labels.length,6,'six global weather labels: '+card.city);
        assert.ok(card.detail.box.x>=card.card.x-1&&card.detail.box.right<=card.card.right+1&&card.detail.box.y>=card.card.y-1&&card.detail.box.bottom<=card.card.bottom+1,'global city metrics clipped: '+card.city);
