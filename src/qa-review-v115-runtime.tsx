@@ -20,6 +20,7 @@ import {
 import { Stage1RuntimeContext, type Stage1NavigationRole } from './stage1-runtime-context';
 import './stage1-live-search.css';
 import './stage1-context-density.css';
+import './stage1-page-purpose.css';
 import './stage1-finance-visibility.css';
 import './stage1-finance-workbench.css';
 import './stage1-forms-workbench.css';
