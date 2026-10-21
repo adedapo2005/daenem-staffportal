@@ -112,7 +112,7 @@ async function run(){
     const overflow=await page.evaluate(()=>[...document.querySelectorAll('article[data-city-id]')].flatMap(card=>{
      const c=card.getBoundingClientRect(),summary=card.querySelector('[data-signin-weather-summary]').getBoundingClientRect();
      const clock=card.querySelector('.gw-city-clock').getBoundingClientRect();
-     const digital=[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect());
+     const digital=[...card.querySelectorAll('.gw-city-digital > p')].filter(e=>e.getClientRects().length).map(e=>{const range=document.createRange();range.selectNodeContents(e);return range.getBoundingClientRect()});
      const outside=[summary,clock,...digital].some(r=>r.x<c.x-1||r.right>c.right+1||r.y<c.y-1||r.bottom>c.bottom+1);
      const overlap=[clock,...digital].some(r=>Math.min(r.right,summary.right)-Math.max(r.x,summary.x)>1&&r.bottom>summary.y+1);
      const bounds=r=>({x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,right:r.right});
