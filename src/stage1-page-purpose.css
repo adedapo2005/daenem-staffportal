@@ -1,0 +1,224 @@
+/* Stage 1 page-purpose hierarchy.
+   Presentation-only: the retained header, PageContext semantics and all actions remain mounted.
+   The global header owns page identity/dominant action; PageContext becomes a compact operating brief. */
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-shell-workspace-context {
+  position: relative;
+  border-bottom: 1px solid var(--stage1-line, #d8e3ee);
+  background:
+    radial-gradient(circle at 78% -25%, color-mix(in srgb, var(--stage1-primary, #2563eb) 8%, transparent), transparent 38%),
+    linear-gradient(180deg, var(--stage1-surface, #fff) 0%, color-mix(in srgb, var(--stage1-tint, #eaf3ff) 32%, var(--stage1-surface, #fff)) 100%);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(1rem, 2.2vw, 2.25rem);
+  margin-top: .7rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-heading {
+  min-width: 0;
+  max-width: 74rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-heading h1 {
+  margin: .38rem 0 .28rem;
+  color: var(--stage1-ink, #1f2b3c);
+  font-size: clamp(1.7rem, 2.25vw, 2.45rem);
+  font-weight: 790;
+  line-height: 1.05;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-heading p {
+  max-width: 68rem;
+  margin: 0;
+  color: var(--stage1-muted, #526578);
+  font-size: .86rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-scope {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  gap: .38rem;
+  color: color-mix(in srgb, var(--stage1-anchor, #173a63) 75%, var(--stage1-primary, #2563eb));
+  font-size: .68rem;
+  font-weight: 780;
+  letter-spacing: .065em;
+  text-transform: uppercase;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .55rem;
+  max-width: min(34rem, 42vw);
+  flex-wrap: wrap;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions .p-btn {
+  min-height: 44px;
+  border-radius: 9px;
+  font-weight: 760 !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions .p-btn:not(.outline):not(.quiet):not(.danger) {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 78%, var(--stage1-anchor, #173a63));
+  background: linear-gradient(110deg,
+    color-mix(in srgb, var(--stage1-primary, #2563eb) 92%, var(--stage1-anchor, #173a63)),
+    var(--stage1-primary, #2563eb));
+  color: #fff;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--stage1-primary, #2563eb) 22%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions .p-btn.outline {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 18%, var(--stage1-line, #d8e3ee));
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-anchor, #173a63);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions .p-btn.quiet {
+  color: var(--stage1-anchor, #173a63);
+}
+
+/* The retained context surface is an operating brief, not a second page hero. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1.12fr) minmax(230px, .8fr);
+  gap: 0;
+  margin: 0 0 1rem;
+  overflow: hidden;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 12px;
+  background: var(--stage1-surface, #fff);
+  box-shadow: 0 6px 20px rgba(19, 40, 61, .035);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context > div {
+  min-width: 0;
+  padding: .7rem .85rem;
+  background: transparent;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context > div + div {
+  border-inline-start: 1px solid var(--stage1-line, #d8e3ee);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context :is(.v14-context-copy > span, .v14-context-value > strong, .v14-context-actions > strong) {
+  color: color-mix(in srgb, var(--stage1-primary, #2563eb) 76%, var(--stage1-anchor, #173a63));
+  font-size: .69rem;
+  font-weight: 790;
+  letter-spacing: .06em;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context p {
+  margin-top: .28rem;
+  color: var(--stage1-muted, #526578);
+  font-size: .78rem !important;
+  line-height: 1.42 !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions > div {
+  display: flex;
+  gap: .4rem;
+  margin-top: .4rem;
+  flex-wrap: wrap;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions button {
+  min-height: 36px;
+  padding: .42rem .58rem;
+  border: 1px solid color-mix(in srgb, var(--stage1-primary, #2563eb) 16%, var(--stage1-line, #d8e3ee));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 30%, var(--stage1-surface, #fff));
+  color: var(--stage1-anchor, #173a63);
+  font-size: .76rem;
+  font-weight: 680;
+  transform: none;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions button:hover {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 36%, var(--stage1-line, #d8e3ee));
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 7%, var(--stage1-surface, #fff));
+  transform: none;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--stage1-focus, #2563eb) 30%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+    align-items: end;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions {
+    max-width: 38vw;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions {
+    grid-column: 1 / -1;
+    border-inline-start: 0;
+    border-top: 1px solid var(--stage1-line, #d8e3ee);
+  }
+}
+@media (max-width: 767px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-shell-workspace-context {
+    padding-bottom: .9rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
+    align-items: start;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-heading h1 {
+    font-size: clamp(1.55rem, 7.3vw, 2rem);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-heading p {
+    font-size: .82rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions .p-btn {
+    flex: 1 1 100%;
+    width: 100%;
+    min-height: 46px;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context > div + div {
+    border-inline-start: 0;
+    border-top: 1px solid var(--stage1-line, #d8e3ee);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-value {
+    display: block;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions {
+    grid-column: auto;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions button {
+    min-height: 44px;
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions .p-btn,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions button {
+    transition: none !important;
+  }
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-shell-workspace-context,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context > div {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight .p-workspace-header .p-head-actions .p-btn,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content > .v14-page-context .v14-context-actions button {
+    border: 1px solid ButtonText !important;
+    background: ButtonFace !important;
+    color: ButtonText !important;
+    box-shadow: none !important;
+  }
+}
