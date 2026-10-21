@@ -228,7 +228,7 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
     payload.precipitationProbability === null ? '' : `Rain ${Math.round(payload.precipitationProbability)}%`,
     payload.windSpeed === null ? '' : `Wind ${Math.round(payload.windSpeed)} ${payload.unitsSystem === 'IMPERIAL' ? 'mph' : 'km/h'}`,
   ].filter(Boolean);
-  if (extra.length) {
+  if (extra.length && payload.description.length <= 16) {
     const secondary = weatherText('span', 'sp-live-weather-secondary', [payload.apparentTemperature === null ? '' : ('F ' + Math.round(payload.apparentTemperature) + '°'), payload.precipitationProbability === null ? '' : ('R ' + Math.round(payload.precipitationProbability) + '%')].filter(Boolean).join(' · ') || extra[0]);
     secondary.title = extra.join(' · ');
     secondary.setAttribute('aria-label', extra.join(', '));

@@ -1095,3 +1095,8 @@
   .sp-root #staff-global-operations .sp-live-city-weather { top:-11px!important; }
 }
 .sp-root #staff-global-operations .sp-live-weather-secondary { white-space:nowrap!important; text-wrap:nowrap!important; }
+
+/* Keep the digital clock above the raised weather line in compact cards. */
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital {
+  position:relative!important; top:-10px!important;
+}

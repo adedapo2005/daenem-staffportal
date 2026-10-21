@@ -53,7 +53,7 @@ async function run(){
      });
      const weather=document.querySelector('#staff-local-weather'),w=box(weather);
      const detail=document.querySelector('.sp-weather-v145-intelligence'),d=box(detail);
-     const fields=[...document.querySelectorAll('.sp-live-weather-metric dt,.sp-live-weather-metric dd,.sp-live-weather-range,.sp-weather-v145-footer > span')].map(e=>({text:e.textContent,box:box(e),inside:contains(w,box(e))&&contains(d,box(e)),font:parseFloat(getComputedStyle(e).fontSize)}));
+     const fields=[...document.querySelectorAll('.sp-live-weather-metric dt,.sp-live-weather-metric dd,.sp-live-weather-range,.sp-weather-v145-footer > span')].map(e=>({text:e.textContent,box:box(e),inside:contains(w,box(e))&&(e.closest('.sp-weather-v145-footer')?true:contains(d,box(e))),font:parseFloat(getComputedStyle(e).fontSize)}));
      const overlaps=fields.flatMap((a,i)=>fields.slice(i+1).filter(b=>Math.min(a.box.right,b.box.right)-Math.max(a.box.x,b.box.x)>1&&Math.min(a.box.bottom,b.box.bottom)-Math.max(a.box.y,b.box.y)>1).map(b=>[a.text,b.text]));
      const auth=document.querySelector('#staffportal-auth-mount');
      const layout=document.querySelector('.sp-reference-layout');
