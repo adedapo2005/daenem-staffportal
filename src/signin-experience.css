@@ -1190,7 +1190,7 @@
  .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="wind"] dt::after {content:"Wind";}
  .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="gusts"] dt::after {content:"Gusts";}
  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
-  position:absolute!important;top:26px!important;left:auto!important;right:8px!important;
+  position:absolute!important;top:26px!important;left:auto!important;right:3px!important;
   bottom:auto!important;width:25px!important;height:25px!important;
   margin:0!important;padding:0!important;grid-column:auto!important;grid-row:auto!important;
   transform:none!important;z-index:6!important;
