@@ -1568,3 +1568,16 @@
    text-wrap:pretty!important;word-break:normal!important;overflow-wrap:normal!important;
  }
 }
+
+/* 1920px: full GMT dates may exceed the second clock track. Wrap by words
+   rather than visually overflow, while preserving all date/timezone content. */
+@media (min-width:1920px) and (max-width:2099px) {
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > p:nth-child(2) {
+   white-space:normal!important;
+   overflow-wrap:normal!important;
+   word-break:normal!important;
+   text-wrap:balance!important;
+   max-width:100%!important;
+   line-height:1.13!important;
+ }
+}
