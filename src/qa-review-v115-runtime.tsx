@@ -34,6 +34,7 @@ import './stage1-kpi-chart-system.css';
 import './stage1-responsive-navigation.css';
 import './stage1-communications-workspace.css';
 import './stage1-construction-workspace.css';
+import './stage1-construction-family.css';
 import './stage1-a11y-contrast.css';
 import './stage1-large-text-reflow.css';
 
