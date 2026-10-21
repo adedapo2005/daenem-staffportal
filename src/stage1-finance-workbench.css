@@ -1,0 +1,152 @@
+/* Stage 1 Finance workbench refinement.
+   Presentation-only: keeps the retained V115 Finance calculations, records and actions intact. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-toolbar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin: 0 0 1rem;
+  padding: .75rem .85rem;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 40%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-toolbar > .p-badge {
+  margin-left: auto;
+  border: 1px solid color-mix(in srgb, var(--stage1-primary, #2563eb) 15%, var(--stage1-line, #d8e3ee));
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-muted, #526578);
+  font-weight: 700;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon > .p-metric {
+  position: relative;
+  justify-content: center;
+  min-height: 112px;
+  padding: 1.1rem 1.2rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon > .p-metric + .p-metric::before,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon > span + .p-metric::before {
+  content: "";
+  position: absolute;
+  inset: 18px auto 18px 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--stage1-on-anchor, #fff) 18%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon > span {
+  display: none;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > strong {
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon .p-metric > span {
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two {
+  grid-template-columns: minmax(0, 1.28fr) minmax(280px, .72fr);
+  align-items: stretch;
+  gap: 1rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two > .p-panel {
+  margin-top: 0;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(19, 40, 61, .055);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two > .p-panel:first-child {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 16%, var(--stage1-line, #d8e3ee));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-panel-head {
+  align-items: flex-start;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-panel-head h2 {
+  font-size: 1.03rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-viz {
+  min-height: 270px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-callout.neutral {
+  border-left: 3px solid var(--stage1-primary, #2563eb);
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 48%, var(--stage1-surface, #fff));
+  color: var(--stage1-muted, #526578);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-detail-fields.single {
+  gap: 0;
+  margin: .75rem 0 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-detail-fields.single > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: baseline;
+  padding: .8rem 0;
+  border-bottom: 1px solid var(--stage1-line, #d8e3ee);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-detail-fields.single > div:last-child {
+  border-bottom: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-detail-fields.single dd {
+  text-align: right;
+  font-weight: 700;
+  color: var(--stage1-ink, #1f2b3c);
+}
+
+@media (max-width: 1024px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-viz {
+    min-height: 230px;
+  }
+}
+@media (max-width: 640px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-toolbar {
+    align-items: stretch;
+    padding: .7rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-toolbar > * {
+    max-width: 100%;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-toolbar > .p-badge {
+    margin-left: 0;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon > .p-metric {
+    min-height: 96px;
+    padding: .9rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-detail-fields.single > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .2rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two .p-detail-fields.single dd {
+    text-align: left;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-toolbar,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .p-finance-ribbon + .p-two > .p-panel {
+    background: Canvas !important;
+    border-color: CanvasText !important;
+  }
+}
