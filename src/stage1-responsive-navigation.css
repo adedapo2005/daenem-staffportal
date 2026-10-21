@@ -1,0 +1,32 @@
+/* Stage 1 responsive navigation acceptance refinements.
+   The approved host continues to own routing, drawer state and authorized projection. */
+@media (max-width: 1024px), (pointer: coarse) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app .p-topbar-leading > .p-iconbtn[aria-label="Open Navigation"] {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: .65rem;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app .p-mobile-bottom-nav > button {
+    min-height: 3rem;
+    min-width: 0;
+    padding-inline: .25rem;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app .p-mobile-bottom-nav > button > span {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app .p-topbar-leading > .p-iconbtn[aria-label="Open Navigation"],
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app .p-mobile-bottom-nav > button {
+    border: 1px solid ButtonText;
+  }
+}
