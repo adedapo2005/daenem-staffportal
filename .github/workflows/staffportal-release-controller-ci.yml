@@ -1,4 +1,4 @@
-name: StaffPortal Release Controller CI
+name: StaffPortal Pre-Production Controller CI
 
 on:
   pull_request:
@@ -6,12 +6,16 @@ on:
     paths:
       - '.github/workflows/deploy-staffportal-staging.yml'
       - '.github/workflows/staffportal-release-controller-ci.yml'
+      - 'delivery/PREPRODUCTION-GOVERNANCE.md'
+      - 'scripts/check-preproduction-governance.mjs'
   push:
     branches:
       - 'release/staffportal-manual-staging-controller-20261018'
     paths:
       - '.github/workflows/deploy-staffportal-staging.yml'
       - '.github/workflows/staffportal-release-controller-ci.yml'
+      - 'delivery/PREPRODUCTION-GOVERNANCE.md'
+      - 'scripts/check-preproduction-governance.mjs'
 
 permissions:
   contents: read
@@ -32,7 +36,7 @@ jobs:
         working-directory: controller
         run: |
           test -f .github/workflows/deploy-staffportal-staging.yml
-          grep -q 'name: Verify selected staging commit' .github/workflows/deploy-staffportal-staging.yml 
+          grep -q 'name: Verify Pre-Production candidate' .github/workflows/deploy-staffportal-staging.yml
           grep -q 'Validate exact commit SHA and repository source' .github/workflows/deploy-staffportal-staging.yml 
           ! grep -q 'approval_comment_id' .github/workflows/deploy-staffportal-staging.yml 
           ! grep -q 'issue_comment:' .github/workflows/deploy-staffportal-staging.yml
@@ -43,11 +47,12 @@ jobs:
           RESOLVED_COUNT=$(grep -c "status: 'RESOLVED'" .github/workflows/deploy-staffportal-staging.yml)
           test "$RESOLVED_COUNT" -eq 3
           ! grep -Eq 'uses: actions/(checkout|setup-node|github-script)@(v|main|master)' .github/workflows/deploy-staffportal-staging.yml
+          node scripts/check-preproduction-governance.mjs
 
-      - name: Checkout approved staging source
+      - name: Checkout official Pre-Production source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: feature/staffportal-mobile-auth-takeover-01
+          ref: preproduction/staffportal
           persist-credentials: false
           path: candidate
 
