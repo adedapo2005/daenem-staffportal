@@ -23,6 +23,7 @@ import './stage1-context-density.css';
 import './stage1-finance-visibility.css';
 import './stage1-finance-workbench.css';
 import './stage1-forms-workbench.css';
+import './stage1-enterprise-tables.css';
 import './stage1-construction-workspace.css';
 import './stage1-a11y-contrast.css';
 import './stage1-large-text-reflow.css';
