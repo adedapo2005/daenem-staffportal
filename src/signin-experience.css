@@ -1499,3 +1499,58 @@
    line-height:1.12!important;
  }
 }
+
+/* 2026-10-21 visual-fit refinement: desktop only, 32-inch/4K untouched.
+   Keep clock/date together, preserve photo-first cards, improve rail branding. */
+@media (min-width:1280px) and (max-width:1919px) {
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital {
+   top:0!important;
+   display:flex!important;flex-direction:column!important;
+   align-items:flex-start!important;gap:1px!important;
+   line-height:1.1!important;overflow:visible!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > .gw-city-local-time {
+   font-size:clamp(14px,1.0vw,18px)!important;line-height:1.12!important;
+   letter-spacing:-.035em!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > p:nth-child(2) {
+   font-size:clamp(10px,.68vw,12px)!important;
+   line-height:1.14!important;white-space:normal!important;text-wrap:balance!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-clock {
+   top:0!important;align-self:center!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-identity {
+   min-width:0!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-name {
+   font-size:clamp(12px,.89vw,17px)!important;line-height:1.06!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-identity > div > p:last-child {
+   font-size:clamp(10px,.68vw,12px)!important;line-height:1.06!important;
+ }
+ #root .sp-root.sp-day #staff-local-weather .gw-city-digital {
+   display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+   gap:2px!important;min-width:0!important;overflow:visible!important;
+ }
+ #root .sp-root.sp-day #staff-local-weather .gw-city-digital > p {
+   white-space:normal!important;line-height:1.13!important;
+   overflow-wrap:normal!important;word-break:normal!important;
+ }
+ #root .sp-root.sp-day #staff-local-weather .gw-city-digital > p:nth-child(2) {
+   font-size:clamp(11px,.67vw,13px)!important;
+ }
+ #root .sp-root.sp-day #staff-local-weather .gw-city-clock {align-self:start!important;}
+}
+@media (min-width:1280px) and (max-width:2099px) and (max-height:1100px) {
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-topline {
+   align-items:center!important;overflow:visible!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-logo-v101 {
+   transform:none!important;width:auto!important;max-width:68%!important;
+   flex:0 1 auto!important;object-fit:contain!important;
+ }
+ #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-logo-v101 .sp-brand-mark-wrap {
+   transform:none!important;
+ }
+}
