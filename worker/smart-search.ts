@@ -1,7 +1,7 @@
 ﻿import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 
 interface Env extends AuthEnv {}
-type Suggestion = { type: string; command: string; label: string; group: string; description?: string; entityId?: string };
+type Suggestion = { type: string; command: string; label: string; group: string; description?: string; entityId?: string; companyId?: string };
 type SourceStatus = { name: string; status: 'checked' | 'unavailable' };
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), {
   status, headers: {
@@ -66,9 +66,10 @@ const queryText = (value: unknown) => safeText(value, 80).trim();
 // Remove SQL LIKE wildcards, not merely escape quote characters; all SQL uses bound values.
 const queryLike = (value: string) => `%${value.replace(/[%_\\]/g, '')}%`;
 function suggestion(kind: string, command: string, label: unknown, group: string,
-  entityId: unknown, description = ''): Suggestion {
+  entityId: unknown, description = '', companyId?: unknown): Suggestion {
   return { type: kind, command, label: safeText(label) || 'Untitled record', group,
-    entityId: safeText(entityId, 128), description: safeText(description, 240) };
+    entityId: safeText(entityId, 128), description: safeText(description, 240),
+    ...(companyId ? { companyId: safeText(companyId, 128) } : {}) };
 }
 export async function routeSmartSearch(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
@@ -115,7 +116,7 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
     await lookup('Payroll', payrollCompanies.length > 0, async () => {
       // payroll_runs has no run_no column in the published D1 migration chain.
       // Search real run identifiers, periods and statuses, without disclosing pay items.
-      const rows = await env.DB.prepare(`SELECT id,period_start AS periodStart,
+      const rows = await env.DB.prepare(`SELECT id,company_id AS companyId,period_start AS periodStart,
         period_end AS periodEnd,status FROM payroll_runs
         WHERE ${placeholders(payrollCompanies)} AND
           (id LIKE ? OR period_start LIKE ? OR period_end LIKE ? OR status LIKE ?)
@@ -123,19 +124,19 @@ export async function routeSmartSearch(request: Request, env: Env, context: Sess
         .bind(...payrollCompanies, like, like, like, like).all<Record<string, unknown>>();
       return (rows.results || []).map((row) => suggestion('payroll', 'payroll',
         ['Payroll period', row.periodStart, row.periodEnd].filter(Boolean).join(' - '),
-        'Payroll', row.id, row.status ? `Status: ${row.status}` : ''));
+        'Payroll', row.id, row.status ? `Status: ${row.status}` : '', row.companyId));
     });
 
     const constructionCompanies = scopedCompanyIds(context, 'construction.access');
     await lookup('Construction', constructionCompanies.length > 0, async () => {
-      const rows = await env.DB.prepare(`SELECT id,project_no AS projectNo,name,status,
+      const rows = await env.DB.prepare(`SELECT id,company_id AS companyId,project_no AS projectNo,name,status,
         location_name AS locationName FROM construction_projects
         WHERE ${placeholders(constructionCompanies)} AND
         (name LIKE ? OR project_no LIKE ? OR location_name LIKE ?)
         ORDER BY updated_at DESC LIMIT 5`)
         .bind(...constructionCompanies, like, like, like).all<Record<string, unknown>>();
       return (rows.results || []).map((row) => suggestion('construction', 'construction', row.name, 'Construction', row.id,
-        [row.projectNo, row.locationName || row.status].filter(Boolean).join(' / ')));
+        [row.projectNo, row.locationName || row.status].filter(Boolean).join(' / '), row.companyId));
     });
 
     const ownCompanies = [...new Set(context.companies.map((company) => company.id))];

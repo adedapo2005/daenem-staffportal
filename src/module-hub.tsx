@@ -488,9 +488,15 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
 
   useEffect(() => {
     const launchRequested = (event: Event) => {
-      const id = (event as CustomEvent<{ id?: string }>).detail?.id;
-      const module = available.find((item) => item.id === id);
-      if (module) void launch(module);
+      const detail = (event as CustomEvent<{ id?: string; recordId?: string; companyId?: string }>).detail;
+      const id = detail?.id;
+      const targetCompany = detail?.companyId ? context.companies.find((item) => item.id === detail.companyId) : null;
+      const module = targetCompany
+        ? moduleDefinitions.find((item) => item.id === id)
+        : available.find((item) => item.id === id);
+      if (module && (!targetCompany || isModuleVisible(context, module, targetCompany.id, targetCompany.code))) {
+        void launch(module, { recordId: detail?.recordId, companyId: targetCompany?.id, companyCode: targetCompany?.code });
+      }
     };
     const openRequested = () => setOpen(true);
     window.addEventListener('daenem:launch-module', launchRequested as EventListener);
@@ -500,6 +506,24 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
       window.removeEventListener('daenem:open-module-hub', openRequested);
     };
   }, [available, loading, experience, resolveExperience]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const requestedId = url.searchParams.get('stage1Module') || '';
+    const recordId = url.searchParams.get('stage1Record') || '';
+    const requestedCompanyId = url.searchParams.get('stage1Company') || '';
+    if (!requestedId || !recordId) return;
+    const targetCompany = requestedCompanyId ? context.companies.find((item) => item.id === requestedCompanyId) : null;
+    const module = moduleDefinitions.find((item) => item.id === requestedId);
+    if (!module || (requestedCompanyId && !targetCompany)) return;
+    const launchCompanyId = targetCompany?.id || companyId;
+    const launchCompanyCode = targetCompany?.code || companyCode;
+    if (!isModuleVisible(context, module, launchCompanyId, launchCompanyCode)) return;
+    const signature = url.pathname + url.search;
+    if (deepLinkLaunchRef.current === signature) return;
+    deepLinkLaunchRef.current = signature;
+    void launch(module, { recordId, companyId: launchCompanyId || undefined, companyCode: launchCompanyCode });
+  }, [companyCode, companyId, context, experience, resolveExperience]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -515,13 +539,15 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
     void launch(module);
   }, [companyCode, context, experience, resolveExperience]);
 
-  async function launch(module: ModuleDefinition) {
+  async function launch(module: ModuleDefinition, target?: { recordId?: string; companyId?: string; companyCode?: string }) {
     if (loading) return;
     setLoading(module.id);
     setMessage('');
+    const launchCompanyId = target?.companyId ?? companyId;
+    const launchCompanyCode = target?.companyCode ?? companyCode;
     try {
       const resolved = resolveExperience
-        ? await resolveExperience(module.erpId, companyId, companyCode)
+        ? await resolveExperience(module.erpId, launchCompanyId, launchCompanyCode)
         : experience?.erpId === module.erpId
           ? experience
           : { layoutId: 'executive-command', shellMode: 'command-rail', density: 'standard', motion: 'balanced', erpId: module.erpId };
@@ -542,10 +568,11 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
       await nextFrame();
       await nextFrame();
       publishExperience();
-      window.dispatchEvent(new CustomEvent('daenem:active-company-changed', { detail: { companyId, companyCode } }));
+      window.dispatchEvent(new CustomEvent('daenem:active-company-changed', { detail: { companyId: launchCompanyId, companyCode: launchCompanyCode } }));
       const opened = module.selector ? await clickWhenReady(module.selector) : true;
       if (!opened) throw new Error(`${module.label} did not finish opening. Please try once more.`);
-      if (module.event) window.dispatchEvent(new CustomEvent(module.event.name, { detail: { ...module.event.detail, companyId: companyId || '', companyCode, experience: moduleExperience } }));
+      if (module.event) window.dispatchEvent(new CustomEvent(module.event.name, { detail: { ...module.event.detail, companyId: launchCompanyId || '', companyCode: launchCompanyCode, experience: moduleExperience } }));
+      if (target?.recordId) window.dispatchEvent(new CustomEvent('daenem:stage1-search-record', { detail: { module: module.id, recordId: target.recordId, companyId: launchCompanyId || '' } }));
       setOpen(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : `${module.label} could not be opened.`);
