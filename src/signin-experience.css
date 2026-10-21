@@ -1382,4 +1382,9 @@
       width:34px!important;height:34px!important;
     }
   }
+}/* Intermediate-width cards can be narrower than 1600px cards due to grid ratios. */
+@media (min-width:1601px) and (max-width:1919px) {
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {padding-right:5px!important;column-gap:4px!important;}
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt::after {font-size:10px!important;}
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {font-size:13px!important;}
 }
