@@ -1488,3 +1488,14 @@
     transform:none!important;z-index:6!important;
   }
 }
+
+/* Keep the compact outage label away from the analog clock face. */
+@media (min-width:1280px) and (max-width:1679px) {
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city[data-weather="unavailable"] .sp-live-city-weather {
+   left:calc(clamp(74px,5.1vw,124px) + 18px)!important;
+   right:7px!important;
+   min-height:41px!important;
+   font-size:12px!important;
+   line-height:1.12!important;
+ }
+}
