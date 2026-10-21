@@ -49,6 +49,7 @@
     "APP_NAME": "DAENEM Staff Portal Staging",
     "TIMEZONE": "Africa/Lagos",
     "APP_STAGE": "staging",
+    "MICROSOFT_AUTH_MODE": "organizations",
     "WEATHER_PROVIDER_ENABLED": "true",
     "WORKFORCE_EMAIL_FROM": "portal@daenem.com",
     "META_GRAPH_VERSION": "v24.0",

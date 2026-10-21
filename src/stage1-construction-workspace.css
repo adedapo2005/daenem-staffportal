@@ -1,0 +1,40 @@
+/* Stage 1 Construction Command Center: reduce repeated hero dominance while
+   preserving its command buttons, active project context and all data. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context {
+  align-items: center;
+  padding: 16px 20px;
+  gap: 16px;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 16px;
+  background: linear-gradient(115deg, var(--stage1-surface, #fff) 0%, color-mix(in srgb, var(--stage1-tint, #eaf3ff) 45%, var(--stage1-surface, #fff)) 100%);
+  box-shadow: 0 9px 28px rgba(19,40,61,.07);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context::after { opacity: .2; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context h2 {
+  margin: 4px 0 5px;
+  color: var(--stage1-ink, #1f2b3c);
+  font-size: clamp(22px, 2vw, 29px);
+  line-height: 1.14;
+  letter-spacing: -.025em;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context p {
+  color: var(--stage1-muted, #526578);
+  font-size: 13.5px;
+  line-height: 1.42;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context > div:last-child {
+  gap: 7px;
+  max-width: 345px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context > div:last-child button { min-height: 36px; }
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context > div:last-child button:focus-visible {
+  outline: 3px solid var(--stage1-focus, #2563eb);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context {
+    padding: 14px;
+    gap: 10px;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app.theme-daylight main.p-content .c16-context h2 { font-size: 23px; }
+}

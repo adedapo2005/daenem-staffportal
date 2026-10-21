@@ -1,0 +1,195 @@
+/* Stage 1 communications refinement.
+   Presentation-only: preserves retained V115 permissions, local-message behavior, record scope and audit rules. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-workspace {
+  grid-template-columns: clamp(330px, 27vw, 430px) minmax(0, 1fr);
+  min-height: clamp(620px, 74vh, 860px);
+  border-color: var(--stage1-line, #d8e3ee);
+  border-radius: 18px;
+  background: var(--stage1-surface, #fff);
+  box-shadow: 0 18px 48px rgba(19, 40, 61, .07);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-master {
+  border-right-color: var(--stage1-line, #d8e3ee);
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 28%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-master-header,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-detail-header {
+  border-color: var(--stage1-line, #d8e3ee);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-master-header h2,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-detail-title h2 {
+  color: var(--stage1-ink, #1f2b3c);
+  font-size: 1.08rem;
+  letter-spacing: -.02em;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-list-controls {
+  gap: .65rem;
+  padding: .85rem 1rem;
+  border-color: var(--stage1-line, #d8e3ee);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-list-controls select,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-list-controls input {
+  min-height: 44px;
+  border-color: var(--stage1-line, #d8e3ee);
+  border-radius: 10px;
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-ink, #1f2b3c);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-list-controls :is(select,input):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--stage1-focus, #2563eb) 28%, transparent);
+  outline-offset: 1px;
+  border-color: var(--stage1-focus, #2563eb);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-list article {
+  border-bottom-color: var(--stage1-line, #d8e3ee);
+  background: var(--stage1-surface, #fff);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-list article.is-selected {
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 7%, var(--stage1-surface, #fff));
+  box-shadow: inset 3px 0 var(--stage1-primary, #2563eb);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-select {
+  min-height: 74px;
+  padding: .9rem 1rem .55rem;
+  border-radius: 0;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-select:hover {
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 4%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-select:focus-visible,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-quick-button:focus-visible,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-pager button:focus-visible {
+  outline: 3px solid var(--stage1-focus, #2563eb);
+  outline-offset: -3px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-select strong {
+  color: var(--stage1-ink, #1f2b3c);
+  font-size: .9rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-select small {
+  color: var(--stage1-muted, #526578);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-quick-button {
+  color: color-mix(in srgb, var(--stage1-primary, #2563eb) 82%, var(--stage1-anchor, #173a63));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-detail {
+  background: var(--stage1-surface, #fff);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-detail-header {
+  background: color-mix(in srgb, var(--stage1-surface, #fff) 96%, var(--stage1-tint, #eaf3ff));
+  backdrop-filter: none;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-detail-title p,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-pager,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-presence {
+  color: var(--stage1-muted, #526578);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-channel-pager button {
+  border-color: var(--stage1-line, #d8e3ee);
+  background: var(--stage1-surface, #fff);
+  color: var(--stage1-anchor, #173a63);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-presence {
+  border-color: var(--stage1-line, #d8e3ee);
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 24%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-presence > span {
+  background: var(--stage1-highlight, #d49a3d);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread {
+  gap: .9rem;
+  padding: 1.2rem 1.35rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--stage1-tint, #eaf3ff) 18%, transparent), transparent 180px),
+    var(--stage1-surface, #fff);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread article {
+  max-width: min(78%, 720px);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread article > div:last-child {
+  border-color: var(--stage1-line, #d8e3ee);
+  border-radius: 0 14px 14px;
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 24%, var(--stage1-surface, #fff));
+  box-shadow: 0 4px 14px rgba(19, 40, 61, .045);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread article.mine > div:last-child {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 28%, var(--stage1-line, #d8e3ee));
+  border-radius: 14px 0 14px 14px;
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 8%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread p {
+  color: var(--stage1-ink, #1f2b3c);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread small {
+  color: var(--stage1-muted, #526578);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-composer {
+  border-top-color: var(--stage1-line, #d8e3ee);
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 18%, var(--stage1-surface, #fff));
+  padding: 1rem 1.2rem;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-composer textarea {
+  min-height: 94px;
+  border-radius: 11px;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-composer [role="alert"] {
+  margin: .25rem 0 0;
+  padding: .65rem .75rem;
+  border: 1px solid color-mix(in srgb, #b42318 30%, var(--stage1-line, #d8e3ee));
+  border-radius: 9px;
+  background: color-mix(in srgb, #b42318 7%, var(--stage1-surface, #fff));
+  color: #8f2118;
+  font-size: .82rem;
+}
+
+@media (min-width: 2200px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-workspace {
+    grid-template-columns: clamp(390px, 22vw, 530px) minmax(0, 1fr);
+    min-height: 800px;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread {
+    padding: 1.6rem 2rem;
+  }
+}
+@media (min-width: 760px) and (max-width: 1100px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-workspace {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-detail-actions {
+    align-items: stretch;
+  }
+}
+@media (max-width: 759px) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-workspace {
+    min-height: calc(100dvh - 190px);
+    border-radius: 14px;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-list-controls {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread article {
+    max-width: 96%;
+  }
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-composer {
+    padding: .9rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-workspace * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-workspace,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-master,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-detail,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-thread article > div:last-child,
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .premium-shell-reset .ci-composer {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+}

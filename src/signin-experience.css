@@ -701,3 +701,690 @@
 @media (prefers-reduced-motion:reduce) {
  #staffportal-auth-mount.sp-auth-mode-create * {transition-duration:0.01ms!important;}
 }
+
+/* Restore Sign-In inactive Create Account hover visibility without changing active tabs. */
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button:not(.is-active):hover,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button:not(.is-active):focus-visible {
+ opacity:1!important;color:#155f9e!important;
+ background:linear-gradient(120deg,rgba(222,242,255,.99),rgba(185,223,252,.97))!important;
+ box-shadow:inset 0 0 0 1px rgba(49,137,203,.42),0 2px 8px rgba(13,78,138,.13)!important;
+ filter:none!important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button.is-active:hover,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button.is-active:focus-visible {
+ opacity:1!important;color:#fff!important;filter:none!important;
+ background:linear-gradient(135deg,#2d91e3 0%,#1d6dcc 52%,#1647a4 100%)!important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button:focus-visible {
+ outline:2px solid #2b9ae8!important;outline-offset:2px!important;
+}
+/* Restore an approved genuine 4K image as a restrained lower-stage background.
+   This is not a replacement of the individual city's photographic media. */
+.sp-root .sp-reference-layout > .sp-lower-right-rail-v86 {
+ background-image:linear-gradient(155deg,rgba(229,243,253,.85),rgba(214,235,249,.77)),url('/reference-images/signin/global-executive-atrium.webp')!important;
+ background-position:center!important;background-size:cover!important;
+ background-repeat:no-repeat!important;border-radius:18px!important;
+}
+@media (prefers-reduced-motion:reduce){
+ .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button{transition:none!important;}
+}
+
+/* Visible Sign-In polish follow-up: eliminate inactive-tab fading and restore lower weather imagery. */
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="false"]:hover,
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="false"]:focus-visible {
+  opacity:1!important;filter:none!important;transform:none!important;
+  color:#0b4f87!important;
+  background:linear-gradient(135deg,#eef8ff 0%,#cfeaff 100%)!important;
+  border-color:rgba(43,140,207,.58)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 12px rgba(21,98,161,.14)!important;
+}
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="true"]:hover,
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="true"]:focus-visible {
+  opacity:1!important;filter:none!important;transform:none!important;color:#fff!important;
+}
+#staff-local-weather .sp-weather-v145-intelligence {
+  background:
+    linear-gradient(180deg,rgba(4,20,35,.12),rgba(4,20,35,.28)),
+    url('/assets/webflow-home/weather-cloudy-4k.jpg') center 58%/cover no-repeat!important;
+}
+#staff-local-weather .sp-weather-v145-intelligence,
+#staff-local-weather .sp-weather-v145-intelligence * {
+  text-shadow:0 1px 2px rgba(0,10,24,.52)!important;
+}
+/* London has no approved high-resolution night original in the repo. Use the 4K day master
+   with a restrained night-phase tonal treatment rather than stretching the 295x137 card. */
+#staff-global-operations [data-city-id="london"][data-resolved-phase="night"] .gw-city-image-layer img {
+  filter:brightness(.62) saturate(.78) contrast(1.05)!important;
+}
+
+/* Live-rendered Sign-In restoration v18: target both auth tab implementations. */
+#staffportal-auth-mount .sp-auth-tabs button,
+#staffportal-auth-mount .usp-tabs button {
+  opacity:1!important;
+  filter:none!important;
+  transition:background-color .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease!important;
+}
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="false"]:hover,
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="false"]:focus-visible,
+#staffportal-auth-mount .usp-tabs button[aria-selected="false"]:hover,
+#staffportal-auth-mount .usp-tabs button[aria-selected="false"]:focus-visible,
+#staffportal-auth-mount .usp-tabs button:not(.active):hover,
+#staffportal-auth-mount .usp-tabs button:not(.active):focus-visible {
+  opacity:1!important;
+  filter:none!important;
+  transform:none!important;
+  color:#f3f9ff!important;
+  background:linear-gradient(135deg,#1f5f92 0%,#247ba5 100%)!important;
+  border-color:rgba(145,207,244,.62)!important;
+  box-shadow:inset 0 1px 0 rgba(235,250,255,.16),0 3px 12px rgba(3,31,58,.22)!important;
+}
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="true"]:hover,
+#staffportal-auth-mount .sp-auth-tabs button[aria-selected="true"]:focus-visible,
+#staffportal-auth-mount .usp-tabs button[aria-selected="true"]:hover,
+#staffportal-auth-mount .usp-tabs button[aria-selected="true"]:focus-visible,
+#staffportal-auth-mount .usp-tabs button.active:hover,
+#staffportal-auth-mount .usp-tabs button.active:focus-visible {
+  opacity:1!important;
+  filter:none!important;
+  color:#fff!important;
+  background:linear-gradient(135deg,#2f8ed6 0%,#236fb8 58%,#1a4f91 100%)!important;
+}
+
+/* Weather must never present a blank image surface. Use the existing genuine 4K weather master
+   whenever a city-specific weather photograph is unavailable. */
+#staff-local-weather .gw-city-empty-surface,
+#staff-local-weather .sp-weather-v145-intelligence {
+  background:
+    linear-gradient(180deg,rgba(4,20,35,.16),rgba(4,20,35,.42)),
+    url('/assets/webflow-home/weather-cloudy-4k.jpg') center 55%/cover no-repeat!important;
+}
+#staff-local-weather .gw-city-image-layer,
+#staff-local-weather .gw-city-image-layer img {
+  opacity:1!important;
+  visibility:visible!important;
+}
+#staff-local-weather .gw-city-image-layer img {
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+}
+
+/* Make the approved 4K lower-stage image visibly participate in the lower rail instead of
+   sitting behind fully opaque children. */
+.sp-root .sp-lower-right-rail-v86 {
+  position:relative!important;
+  isolation:isolate!important;
+  overflow:hidden!important;
+  background:
+    linear-gradient(155deg,rgba(219,239,252,.76),rgba(197,226,245,.66)),
+    url('/reference-images/signin/global-executive-atrium.webp') center/cover no-repeat!important;
+}
+.sp-root .sp-lower-right-rail-v86::before {
+  content:''!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+  background:url('/reference-images/signin/global-executive-atrium.webp') center/cover no-repeat!important;
+  opacity:.12!important;
+}
+.sp-root .sp-lower-right-rail-v86 > * {
+  position:relative!important;
+  z-index:1!important;
+}
+@media (prefers-reduced-motion:reduce) {
+  #staffportal-auth-mount .sp-auth-tabs button,
+  #staffportal-auth-mount .usp-tabs button { transition:none!important; }
+}
+
+
+/* Live weather content: every card reserves space for its actual conditions.
+   Only photographs clip to the rounded edge; text must fit its own grid track. */
+.sp-root .sp-lower-right-rail-v86 { overflow:visible!important; }
+.sp-root #staff-global-operations article.sp-live-weather-city,
+.sp-root #staff-local-weather article.sp-live-weather-city { overflow:visible!important; }
+.sp-root article.sp-live-weather-city > div:first-child {
+  overflow:hidden!important; border-radius:inherit!important;
+}
+.sp-root #staff-global-operations .sp-live-city-content {
+  display:grid!important; grid-template-columns:clamp(84px,5.1vw,124px) minmax(0,1fr)!important;
+  grid-template-rows:auto auto minmax(0,1fr)!important;
+  gap:4px 8px!important; padding:6px 10px!important; box-sizing:border-box!important;
+  min-height:0!important; height:100%!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity,
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-instrument {
+  padding:0!important; margin:0!important; min-height:0!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-instrument {
+  display:contents!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {
+  width:clamp(84px,5.1vw,124px)!important; max-width:124px!important;
+  grid-column:1!important; grid-row:2 / 4!important; align-self:center!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity {
+  grid-column:1 / -1!important; grid-row:1!important;
+}
+#root .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital {
+  font-size:clamp(13px,.72vw,22px)!important; line-height:1.16!important; min-width:0!important;
+  grid-column:2!important; grid-row:2!important; align-self:end!important;
+}
+#root .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p {
+  margin:0!important; margin-block:0!important; font-size:clamp(13px,.72vw,22px)!important;
+  line-height:1.16!important; white-space:normal!important; overflow:visible!important;
+  text-overflow:clip!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p:nth-child(2),
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > p:nth-child(3) {
+  display:inline!important; padding-right:3px!important;
+}
+#root .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital > .gw-city-local-time {
+  font-size:clamp(1.14rem,1.1vw,2.25rem)!important; font-weight:750!important;
+}
+#root .sp-root.sp-day #staff-global-operations .sp-compact-clock-date .gw-city-digital > p:nth-child(2) {
+  display:block!important; padding:0!important;
+}
+#root .sp-root.sp-day #staff-global-operations .sp-compact-clock-date .gw-city-digital > p:nth-child(3),
+#root .sp-root.sp-day #staff-global-operations .sp-compact-clock-date .gw-city-digital > p:nth-child(4) {
+  display:none!important;
+}
+.sp-root #staff-global-operations .sp-live-city-weather {
+  grid-column:2!important; grid-row:3!important; align-self:start!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-name {
+  font-size:clamp(14px,.95vw,30px)!important; line-height:1.1!important;
+}
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity > div > p:last-child {
+  font-size:clamp(13px,.65vw,21px)!important; line-height:1.1!important;
+}
+.sp-root .sp-live-city-weather {
+  display:flex!important; flex-wrap:nowrap!important; align-items:center!important;
+  justify-content:flex-start!important; gap:4px!important; margin:0!important;
+  padding:0!important; min-width:0!important; min-height:0!important;
+  color:#fff!important; font-size:clamp(13px,.7vw,22px)!important;
+  line-height:1.2!important; text-shadow:0 1px 3px #061523,0 0 7px #061523!important;
+  overflow:visible!important; overflow-wrap:anywhere!important;
+  background:none!important; border:0!important; box-shadow:none!important;
+  backdrop-filter:none!important; -webkit-backdrop-filter:none!important;
+}
+.sp-root .sp-live-weather-temperature { font-size:1.12em!important; font-weight:800!important; }
+.sp-root .sp-live-weather-humidity { color:#e2f2ff!important; }
+.sp-root .sp-live-weather-values { display:flex!important; flex-direction:column!important; min-width:0!important; gap:2px!important; }
+.sp-root .sp-live-weather-readings { display:flex!important; flex-wrap:wrap!important; gap:2px 6px!important; align-items:baseline!important; }
+.sp-root .sp-live-weather-condition { display:block!important; }
+#root .sp-root [data-signin-weather-summary] .sp-live-weather-visual {
+  display:block!important; position:relative!important; flex:0 0 auto!important;
+  width:38px!important; height:38px!important; transform:none!important;
+  margin:0!important; padding:0!important; pointer-events:none!important;
+}
+#root .sp-root [data-signin-weather-summary] .sp-live-weather-visual > svg {
+  display:block!important; width:100%!important; height:100%!important; overflow:visible!important;
+}
+#root .sp-root [data-motion-resolved="off"] .gw-atmo-layer,
+#root .sp-root .gw-global-weather-icon-motion-off * { animation:none!important; }
+@media (max-width:1919px) {
+  .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity > div {
+    display:flex!important; flex-wrap:wrap!important; align-items:baseline!important; gap:0 5px!important;
+  }
+}
+@media (min-width:1920px) {
+  #root .sp-root [data-signin-weather-summary] .sp-live-weather-visual { width:51.2px!important; height:51.2px!important; }
+}
+
+/* The detailed panel uses the six existing current-condition values. */
+.sp-root #staff-local-weather {
+  grid-template-rows:minmax(min-content,.82fr) minmax(248px,1.18fr)!important;
+}
+.sp-root #staff-local-weather .sp-live-city-content {
+  display:grid!important; grid-template-rows:auto minmax(min-content,1fr) auto!important;
+  padding:8px!important; gap:4px!important; height:100%!important; box-sizing:border-box!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-identity {
+  padding:0!important; margin:0!important; gap:6px!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-name {
+  font-size:clamp(14px,.82vw,26px)!important; line-height:1.1!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-identity > div > p:last-child {
+  font-size:clamp(13px,.65vw,20px)!important; line-height:1.1!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-instrument {
+  display:grid!important; grid-template-columns:auto minmax(0,1fr)!important;
+  padding:0!important; margin:0!important; gap:2px 6px!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-clock {
+  grid-column:1!important; grid-row:1 / 4!important;
+  width:clamp(62px,5vw,124px)!important; max-width:124px!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital { display:contents!important; }
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p {
+  grid-column:2!important; padding:0!important; margin:0!important;
+  font-size:clamp(13px,.65vw,20px)!important; line-height:1.12!important;
+  white-space:normal!important; overflow:visible!important; text-overflow:clip!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(1) {
+  grid-row:1!important; font-size:clamp(14px,.82vw,26px)!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(2) { grid-row:2!important; }
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(3) { grid-row:3!important; }
+.sp-root #staff-local-weather .sp-live-weather-city .gw-city-digital > p:nth-child(4) {
+  grid-column:1 / -1!important; grid-row:4!important; text-align:center!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence {
+  display:grid!important; grid-template-rows:auto minmax(0,1fr) auto!important;
+  gap:6px!important; padding:8px!important; min-height:0!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence-header span {
+  font-size:clamp(12px,.6vw,18px)!important; line-height:1.15!important; letter-spacing:.03em!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-intelligence-header b {
+  font-size:clamp(14px,.75vw,24px)!important; line-height:1.15!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-details {
+  display:grid!important; grid-template-rows:minmax(0,1fr) auto!important; gap:5px!important;
+  min-height:0!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metrics {
+  margin:0!important; display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(3,minmax(min-content,1fr))!important; gap:4px 8px!important; transform:none!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metric {
+  display:flex!important; flex-direction:column!important; justify-content:center!important;
+  align-items:flex-start!important; gap:1px!important; padding:2px 0!important; min-width:0!important;
+  border:0!important; border-bottom:1px solid rgba(218,240,255,.22)!important;
+  border-radius:0!important; background:none!important; box-shadow:none!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metric dt {
+  font-size:clamp(13px,.65vw,20px)!important; color:#e0f2ff!important; line-height:1.12!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-metric dd {
+  margin:0!important; font-size:clamp(16px,.9vw,30px)!important; font-weight:780!important;
+  color:#fff!important; line-height:1.15!important; overflow-wrap:anywhere!important;
+}
+.sp-root #staff-local-weather .sp-live-weather-range {
+  display:flex!important; flex-wrap:wrap!important; justify-content:space-between!important;
+  gap:2px 6px!important; margin:0!important; font-size:clamp(13px,.65vw,20px)!important;
+  line-height:1.15!important; color:#e0f2ff!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer {
+  display:flex!important; flex-direction:column!important; align-items:flex-start!important;
+  gap:2px!important; padding-top:3px!important; font-size:clamp(12px,.62vw,18px)!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer > span {
+  overflow:visible!important; white-space:normal!important; line-height:1.15!important;
+  text-overflow:clip!important; text-align:left!important;
+}
+.sp-root #staff-local-weather .sp-weather-v145-footer > span:first-child { font-size:clamp(13px,.65vw,20px)!important; }
+.sp-root #staff-local-weather .sp-live-weather-unavailable {
+  margin:0!important; font-size:13px!important; line-height:1.4!important; align-self:center!important;
+}
+.sp-root .sp-live-news-content { justify-content:center!important; gap:6px!important; }
+#root .sp-root #staff-primary-information .sp-live-news-title,
+#root .sp-root #staff-primary-information .sp-live-news-unavailable {
+  color:#fff!important; margin:0!important; font-size:clamp(13px,.85vw,24px)!important;
+  line-height:1.25!important; font-weight:650!important;
+  text-shadow:0 1px 3px #061523,0 0 7px #061523!important;
+}
+.sp-root .sp-live-news-title { text-decoration:none; }
+.sp-root .sp-live-news-title:hover { text-decoration:underline; }
+.sp-root .sp-live-news-title:focus-visible { outline:2px solid #bde8ff; outline-offset:3px; }
+.sp-root .sp-live-news-source { color:#dcefff!important; font-size:13px!important; }
+/* Hydrated editorial content stays inside the four existing photo cards. */
+.sp-root #staff-primary-information .sp-connected-news { min-height:0!important; overflow-y:auto!important; scrollbar-width:thin; }
+#root .sp-root.sp-day #staff-primary-information [data-widget="news"] .gw-news-story-copy {
+  background:none!important; border:0!important; box-shadow:none!important;
+  backdrop-filter:none!important; -webkit-backdrop-filter:none!important;
+  justify-content:safe center!important; min-height:0!important; overflow-y:auto!important; scrollbar-width:thin;
+}
+.sp-root #staff-primary-information [data-widget="news"] .gw-news-ticker {
+  flex-shrink:0!important; background:none!important; border:0!important;
+  box-shadow:none!important; backdrop-filter:none!important; -webkit-backdrop-filter:none!important;
+}
+#root .sp-root.sp-day #staff-primary-information > article[data-widget="news"][data-live-ticker="true"] > .gw-intelligence-inner {
+  padding-bottom:var(--gw-news-bottom-space,38px)!important;
+}
+.sp-root #staff-primary-information .gw-news-ticker-viewport:focus-visible,
+.sp-root #staff-primary-information .gw-news-ticker-pause:focus-visible {
+  outline:2px solid #bde8ff!important; outline-offset:-2px!important;
+}
+#root .sp-root.sp-day #staff-primary-information [data-widget="intelligence"] .gw-intel-focus { min-height:0!important; overflow-y:auto!important; scrollbar-width:thin; justify-content:safe center!important; }
+@media (min-width:1024px) and (max-height:850px) {
+  .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity > div {
+    display:flex!important; flex-wrap:wrap!important; align-items:baseline!important; gap:0 5px!important;
+  }
+  .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-identity { gap:5px!important; }
+  .sp-root #staff-global-operations .sp-live-city-content { gap:3px!important; padding:5px 8px!important; }
+}
+@media (min-width:1200px) and (max-height:850px) {
+  /* A real set of conditions needs a minimum lower-stage height. Reserve it
+     from the hero's flexible track instead of clipping data or shrinking text. */
+  #root .sp-root.sp-day[data-approved-signin] .sp-layout.sp-reference-layout {
+    grid-template-rows:minmax(180px,1fr) minmax(440px,1.35fr)!important;
+  }
+}
+@media (min-width:1280px) and (max-height:799px) {
+  #root .sp-root #staff-local-weather [data-signin-weather-summary] .sp-live-weather-visual { width:33.6px!important; height:33.6px!important; }
+}
+@media (max-width:1023px) {
+  .sp-root #staff-local-weather { grid-template-rows:minmax(200px,auto) minmax(280px,auto)!important; }
+  .sp-root #staff-global-operations .sp-live-city-content { min-height:180px!important; padding:10px!important; }
+  .sp-root #staff-local-weather .sp-live-city-content { min-height:200px!important; }
+}
+
+/* Preserve clock diameter while reclaiming a little vertical room for real
+   global weather metrics. Keep the photographs and card geometry unchanged. */
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {
+  position:relative!important; top:-5px!important;
+}
+.sp-root #staff-global-operations .sp-live-city-weather {
+  position:relative!important; top:-8px!important;
+}
+.sp-root #staff-global-operations .sp-live-weather-values {
+  max-width:100%!important; gap:1px!important;
+}
+.sp-root #staff-global-operations .sp-live-weather-secondary {
+  display:block!important; font-size:clamp(12px,.67vw,18px)!important;
+  font-weight:650!important; line-height:1.14!important; color:#e6f5ff!important;
+  text-wrap:balance!important;
+}
+@media (min-width:1024px) and (max-height:850px) {
+  .sp-root #staff-global-operations .sp-live-weather-secondary {
+    font-size:12px!important; line-height:1.1!important;
+  }
+  .sp-root #staff-global-operations .sp-live-city-weather { top:-11px!important; }
+}
+.sp-root #staff-global-operations .sp-live-weather-secondary { white-space:nowrap!important; text-wrap:nowrap!important; }
+
+/* Keep the digital clock above the raised weather line in compact cards. */
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital {
+  position:relative!important; top:-10px!important;
+}
+
+/* A short laptop weather panel needs the two-line freshness footer slightly
+   higher; keep it within the existing panel without hiding either line. */
+@media (min-width:1280px) and (max-width:1500px) and (max-height:800px) {
+  .sp-root #staff-local-weather .sp-weather-v145-footer {
+    position:relative!important; top:-6px!important;
+  }
+}
+
+/* Global Operations: clear weather hierarchy without changing approved geometry. */
+.sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {
+  top:-13px!important;
+}
+.sp-root #staff-global-operations .sp-live-weather-secondary {
+  font-size:clamp(13px,.72vw,19px)!important;
+  font-weight:760!important; color:#fff!important;
+  text-shadow:0 1px 3px #061523,0 0 7px #061523!important;
+  letter-spacing:0!important;
+}
+.sp-root #staff-global-operations .sp-live-weather-values {
+  gap:2px!important;
+}
+
+/* Global city cards: six measured weather fields in a separate lower area. */
+.sp-root #staff-global-operations .sp-live-city-content { position:relative!important; }
+.sp-root #staff-global-operations .sp-global-weather-details {
+ position:absolute!important; z-index:4!important; left:calc(clamp(84px,5.1vw,124px) + 18px)!important;
+ right:8px!important; bottom:5px!important; display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:3px 4px!important;
+ margin:0!important;color:#fff!important;
+ text-shadow:0 1px 3px #061523,0 0 5px #061523!important;
+}
+.sp-root #staff-global-operations .sp-global-weather-metric {min-width:0!important;}
+.sp-root #staff-global-operations .sp-global-weather-metric dt {font-size:10px!important;font-weight:650!important;line-height:1.08!important;color:#e7f4ff!important;white-space:nowrap!important;}
+.sp-root #staff-global-operations .sp-global-weather-metric dd {margin:0!important;font-size:11px!important;font-weight:800!important;line-height:1.12!important;color:#fff!important;white-space:nowrap!important;}
+@media (min-width:1920px) {
+ .sp-root #staff-global-operations .sp-global-weather-details {left:10px!important;right:10px!important;bottom:10px!important;gap:8px!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dt {font-size:clamp(12px,.6vw,18px)!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dd {font-size:clamp(14px,.78vw,23px)!important;}
+ .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {align-self:start!important;top:0!important;}
+}
+
+
+/* Compact laptops: readings take a true lower-right grid; the weather glyph
+   stays visible beside the time rather than occupying the six readings. */
+@media (min-width:1024px) and (max-width:1919px) {
+ .sp-root #staff-global-operations .sp-global-weather-details {
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  row-gap:2px!important;column-gap:5px!important;
+  left:calc(clamp(84px,5.1vw,124px) + 18px)!important;
+  bottom:4px!important;
+ }
+ .sp-root #staff-global-operations .sp-live-city-weather {
+  position:absolute!important;top:29px!important;right:8px!important;
+  left:auto!important;bottom:auto!important;
+  width:25px!important;height:25px!important;
+  display:flex!important;min-height:0!important;
+ }
+ .sp-root #staff-global-operations .sp-live-city-weather .sp-live-weather-values {
+  display:none!important;
+ }
+ #root .sp-root #staff-global-operations [data-signin-weather-summary] .sp-live-weather-visual {
+  width:25px!important;height:25px!important;
+ }
+ .sp-root #staff-global-operations .sp-global-weather-metric dt {font-size:10px!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dd {font-size:11px!important;}
+}
+
+
+@media (min-width:1024px) and (max-width:1919px) {
+ /* Six readable compact readings, two rows; do not cover the digital time. */
+ .sp-root #staff-global-operations .sp-global-weather-details {
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  left:calc(clamp(84px,5.1vw,124px) + 18px)!important;
+  bottom:4px!important;row-gap:2px!important;column-gap:3px!important;
+ }
+ .sp-root #staff-global-operations .sp-global-weather-metric dt {
+  font-size:0!important;line-height:1.08!important;
+ }
+ .sp-root #staff-global-operations .sp-global-weather-metric dt::after {
+  display:block!important;font-size:10px!important;line-height:1.08!important;
+  font-weight:750!important;
+ }
+ .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="temp"] dt::after {content:"Temp";}
+ .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="feels"] dt::after {content:"Feels";}
+ .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="humidity"] dt::after {content:"Humidity";}
+ .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="rain"] dt::after {content:"Rain";}
+ .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="wind"] dt::after {content:"Wind";}
+ .sp-root #staff-global-operations .sp-global-weather-metric[data-metric="gusts"] dt::after {content:"Gusts";}
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+  position:absolute!important;top:26px!important;left:auto!important;right:3px!important;
+  bottom:auto!important;width:25px!important;height:25px!important;
+  margin:0!important;padding:0!important;grid-column:auto!important;grid-row:auto!important;
+  transform:none!important;z-index:6!important;
+ }
+ #root .sp-root #staff-global-operations .sp-live-city-weather .sp-live-weather-visual {
+  position:relative!important;left:0!important;top:0!important;
+ }
+}
+
+
+/* Weather detail density fix: on short desktops, prioritise readable
+   temperature and humidity, and restore the substantial weather illustration.
+   The other readings remain accessible in the weather summary and at XL. */
+@media (min-width:1280px) and (max-width:1919px) {
+ .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {top:-22px!important;}
+ .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-digital {top:-13px!important;}
+ .sp-root #staff-global-operations .sp-global-weather-details {
+   left:calc(clamp(84px,5.1vw,124px) + 56px)!important;
+   right:9px!important;bottom:9px!important;
+   grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:0 9px!important;
+ }
+ .sp-root #staff-global-operations .sp-global-weather-metric:not([data-metric="temp"]):not([data-metric="humidity"]) {display:none!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dt {font-size:0!important;line-height:1.15!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dt::after {font-size:11px!important;line-height:1.15!important;font-weight:760!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dd {font-size:14px!important;line-height:1.2!important;font-weight:850!important;}
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+  position:absolute!important;top:auto!important;left:calc(clamp(84px,5.1vw,124px) + 9px)!important;
+  right:auto!important;bottom:6px!important;width:40px!important;height:40px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;z-index:6!important;
+ }
+ #root .sp-root #staff-global-operations [data-signin-weather-summary] .sp-live-weather-visual {width:40px!important;height:40px!important;}
+}
+
+
+/* Approved weather-card composition: clock above, restrained condition,
+   separate readable lower information zone. Preserve all outer card geometry. */
+.sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+ background:linear-gradient(180deg,rgba(5,22,39,.73),rgba(5,22,39,.89))!important;
+ border-top:1px solid rgba(158,216,245,.5)!important;
+ border-radius:0 0 9px 9px!important;
+ padding:7px 9px!important;
+ text-shadow:0 1px 2px #061523!important;
+}
+.sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt {
+ color:#d1efff!important;
+}
+.sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {
+ color:#fff!important;
+}
+@media(min-width:1280px) and (max-width:1919px) {
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+  left:calc(clamp(84px,5.1vw,124px) + 12px)!important;
+  right:5px!important;bottom:3px!important;
+  padding:5px 7px!important;
+  border-radius:6px!important;
+  gap:4px!important;
+ }
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt {font-size:0!important;}
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt::after {font-size:11px!important;}
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {font-size:14px!important;}
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+  left:calc(clamp(84px,5.1vw,124px) - 20px)!important;
+  bottom:8px!important;
+  width:30px!important;height:30px!important;
+ }
+ #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-visual {width:30px!important;height:30px!important;}
+}
+@media(min-width:1920px) {
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+  bottom:6px!important;left:8px!important;right:8px!important;padding:9px 11px!important;
+ }
+}
+
+
+/* Compact weather illustration belongs inside the lower detail band,
+   never over the analog clock face. Keep the premium photo intact. */
+@media(min-width:1280px) and (max-width:1919px) {
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+  padding-left:48px!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  column-gap:6px!important;
+ }
+ #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+  left:calc(clamp(84px,5.1vw,124px) + 18px)!important;
+  bottom:7px!important;width:36px!important;height:36px!important;
+ }
+ #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-visual {
+  width:36px!important;height:36px!important;
+ }
+}
+
+/* GLOBAL OPERATIONS RESPONSIVE CLOSURE (2026-10-21)
+   Keep the 4K/32-inch approved composition untouched.
+   On smaller desktop cards, adapt the clock track and lower weather group to
+   available space without clipping text or changing the other Sign-In rails. */
+@media (min-width:1280px) and (max-width:1919px) {
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-city-content {
+    grid-template-columns:clamp(74px,5.3vw,84px) minmax(0,1fr)!important;
+    column-gap:6px!important;row-gap:3px!important;padding:5px 7px!important;
+  }
+  .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-clock {
+    width:clamp(74px,5.3vw,84px)!important;max-width:84px!important;
+    top:-9px!important;
+  }
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital {
+    top:-8px!important;min-width:0!important;max-width:100%!important;
+  }
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > .gw-city-local-time {
+    font-size:clamp(15px,1.08vw,20px)!important;line-height:1.1!important;
+    white-space:nowrap!important;
+  }
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > p:nth-child(2) {
+    font-size:12px!important;line-height:1.12!important;
+    white-space:nowrap!important;
+  }
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+    left:calc(clamp(74px,5.3vw,84px) + 12px)!important;right:4px!important;
+    bottom:3px!important;padding:5px 6px 5px 48px!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;column-gap:5px!important;
+    row-gap:2px!important;min-width:0!important;
+  }
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric {
+    min-width:0!important;
+  }
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt::after {
+    font-size:clamp(10px,.72vw,12px)!important;
+  }
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {
+    font-size:clamp(12px,.94vw,15px)!important;line-height:1.16!important;
+  }
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+    top:auto!important;bottom:7px!important;
+    left:calc(clamp(74px,5.3vw,84px) + 18px)!important;
+    width:clamp(30px,2.4vw,36px)!important;
+    height:clamp(30px,2.4vw,36px)!important;
+  }
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-visual {
+    width:clamp(30px,2.4vw,36px)!important;
+    height:clamp(30px,2.4vw,36px)!important;
+  }
+}
+@media (min-width:1920px) and (max-width:2559px) {
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital {
+    top:-6px!important;min-width:0!important;
+  }
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > .gw-city-local-time {
+    font-size:clamp(18px,1.03vw,25px)!important;line-height:1.1!important;
+    white-space:nowrap!important;
+  }
+  #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .gw-city-digital > p:nth-child(2) {
+    font-size:clamp(12px,.7vw,15px)!important;white-space:nowrap!important;
+  }
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+    min-width:0!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    column-gap:6px!important;
+  }
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt {
+    font-size:clamp(11px,.6vw,14px)!important;
+  }
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {
+    font-size:clamp(13px,.75vw,18px)!important;
+  }
+}
+/* Card-aware narrow-column recovery: some 1600-1919 desktops yield 235px
+   cards even at higher resolutions. Adapt to the measured card, not viewport. */
+@media (min-width:1280px) and (max-width:1919px) {
+  .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-city-content {
+    container-type:inline-size!important;container-name:global-weather-card!important;
+  }
+  @container global-weather-card (max-width:260px) {
+    .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {
+      left:6px!important;right:6px!important;bottom:6px!important;
+      padding:6px 7px 6px 54px!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      column-gap:5px!important;
+    }
+    .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt::after {
+      font-size:10px!important;
+    }
+    .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {
+      font-size:13px!important;
+    }
+    #root .sp-root.sp-day #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+      left:17px!important;bottom:10px!important;
+      width:34px!important;height:34px!important;
+    }
+    #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-visual {
+      width:34px!important;height:34px!important;
+    }
+  }
+}/* Intermediate-width cards can be narrower than 1600px cards due to grid ratios. */
+@media (min-width:1601px) and (max-width:1919px) {
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-details {padding-right:5px!important;column-gap:4px!important;}
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dt::after {font-size:10px!important;}
+ .sp-root #staff-global-operations article.sp-live-weather-city .sp-global-weather-metric dd {font-size:13px!important;}
+}

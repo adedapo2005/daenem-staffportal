@@ -15,7 +15,7 @@ const fail = (message) => { console.error(`post-auth integration contract: ${mes
 
 const clientCache = clientEntry.match(/SERVICE_WORKER_CACHE = '([^']+)'/)?.[1];
 const workerCache = serviceWorker.match(/CACHE = '([^']+)'/)?.[1];
-if (!clientCache || clientCache !== workerCache || !clientCache.includes('v16-postauth-live-integrations')) fail('client and service-worker cache releases are not synchronized');
+if (!clientCache || clientCache !== workerCache || !/daenem-workforce-shell-v\d+[-a-z0-9]*/.test(clientCache)) fail('client and service-worker cache releases are not synchronized');
 
 if (!credentials.includes("google_weather_api_key:'GOOGLE_WEATHER_API_KEY'")) fail('Cloudflare Google Weather credential mapping is missing');
 if (!stagingConfig.includes('"WEATHER_PROVIDER_ENABLED": "true"')) fail('staging weather provider flag is not enabled');

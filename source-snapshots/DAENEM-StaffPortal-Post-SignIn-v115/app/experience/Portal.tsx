@@ -169,6 +169,9 @@ import {
   type StudioSectionId,
   type GlobalNavigationItem,
 } from "./navigation-adapter";
+import { EnterpriseCommandCenterNavigation } from "../../../../src/enterprise-command-center-navigation";
+import { resolveGlobalNavigationOwner } from "../../../../src/enterprise-command-center-model";
+import "../../../../src/enterprise-command-center-navigation.css";
 export interface Preferences {
   radius?: number;
   effects?: { glow?: string; glass?: string; ambient?: string };
@@ -1177,23 +1180,19 @@ export default function Portal() {
       : entry.id === "cloud-storage"
         ? cloudStorageAccess
       : canView(byId(entry.permissionModuleId), session);
+  const canonicalDestinationForGlobalItem = (item: GlobalNavigationItem) =>
+    allowed.find((definition) => resolveGlobalNavigationOwner(definition.id)?.id === item.id);
   const visibleGlobal = (item: GlobalNavigationItem) =>
-    item.id === "admin"
+    (item.id === "admin"
       ? canView(byId("admin"), session) || studioAccess
       : canView(byId(item.permissionModuleId), session) ||
-        item.context.some((entry) => contextVisible(entry));
+        item.context.some((entry) => contextVisible(entry))) ||
+    Boolean(canonicalDestinationForGlobalItem(item));
   const visibleGlobalItems = GLOBAL_NAVIGATION.filter(visibleGlobal);
   const pinnedGlobalItems = visibleGlobalItems.filter((item) => item.pinned);
   const mobileHome = visibleGlobalItems.find((item) => item.id === "home");
   const mobileMyWork = visibleGlobalItems.find((item) => item.id === "my-work");
-  const requestedGlobal = GLOBAL_NAVIGATION.find((item) =>
-    item.id === "admin"
-      ? moduleId === "admin" || moduleId === "signin-design"
-      : item.context.some(
-          (entry) =>
-            entry.moduleId === moduleId || entry.permissionModuleId === moduleId,
-        ),
-  );
+  const requestedGlobal = resolveGlobalNavigationOwner(moduleId);
   const activeGlobal =
     requestedGlobal && visibleGlobal(requestedGlobal)
       ? requestedGlobal
@@ -1203,15 +1202,20 @@ export default function Portal() {
       item.id === "admin"
         ? canView(byId("admin"), session)
         : canView(byId(item.permissionModuleId), session);
+    const studioFallback = item.id === "admin" && !rootVisible && studioAccess;
+    const contextFallback = item.context.find((entry) => contextVisible(entry));
+    const canonicalFallback = canonicalDestinationForGlobalItem(item);
     return {
-      route:
-        item.id === "admin" && !rootVisible
-          ? "/admin/experience"
-          : rootVisible
-            ? item.route
-            : item.context.find((entry) => contextVisible(entry))?.route || item.route,
-      capabilityModuleId:
-        item.id === "admin" && !rootVisible ? "signin-design" : undefined,
+      route: studioFallback
+        ? "/admin/experience"
+        : rootVisible
+          ? item.route
+          : contextFallback?.route || canonicalFallback?.canonicalPath || item.route,
+      capabilityModuleId: studioFallback
+        ? "signin-design"
+        : rootVisible
+          ? undefined
+          : contextFallback?.permissionModuleId || canonicalFallback?.id,
     };
   };
   const authorizedModule = m && canView(m, session) ? m : undefined;
@@ -1408,77 +1412,31 @@ export default function Portal() {
         </span>
         <ChevronDown size={14} />
       </button>
-      <div className="p-adaptive-navigation">
-        <nav className="p-global-nav" aria-label="Global modules">
-          {pinnedGlobalItems.length > 0 && (
-            <div className="p-nav-cluster p-pinned-nav">
-              <span className="p-nav-label"><Pin size={11} aria-hidden="true" /> PINNED</span>
-              {pinnedGlobalItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeGlobal?.id === item.id;
-                return (
-                  <button
-                    key={`pinned-${item.id}`}
-                    className={isActive ? "active" : ""}
-                    aria-label={`Pinned: ${item.label}`}
-                    onClick={() => {
-                      if (shellNavCollapsed) setShellNavCollapsed(false);
-                      goRoute(item.route, item.moduleId);
-                    }}
-                  >
-                    <Icon size={17} aria-hidden="true" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          <span className="p-nav-label">AREAS</span>
-          {visibleGlobalItems.map((item) => {
-            const Icon = item.icon;
-            const destination = destinationForGlobalItem(item);
-            const isActive = activeGlobal?.id === item.id;
-            return (
-              <button
-                key={item.id}
-                className={isActive ? "active" : ""}
-                title={item.description}
-                aria-label={item.label}
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => {
-                  if (shellNavCollapsed) setShellNavCollapsed(false);
-                  goRoute(destination.route, destination.capabilityModuleId);
-                }}
-              >
-                <Icon size={18} aria-hidden="true" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <nav className="p-context-nav" aria-label={`${activeGlobal?.label || "Workspace"} contextual navigation`}>
-          <span className="p-nav-label">{activeGlobal?.label || "Workspace"}</span>
-          <div className="p-context-heading">
-            <strong>Available Pages</strong>
-          </div>
-          {contextualItems.map((entry) => (
-            <button
-              key={entry.id}
-              className={activeContext(entry) ? "active" : ""}
-              aria-current={activeContext(entry) ? "page" : undefined}
-              onClick={() => goRoute(entry.route, entry.permissionModuleId)}
-            >
-              <ChevronRight size={14} aria-hidden="true" />
-              <span>{entry.label}</span>
-            </button>
-          ))}
-          {activeGlobal?.id === "admin" && (adminContext === "experience" || isStudioPath) && (studioAccess || globalShellAccess) && (
+      <EnterpriseCommandCenterNavigation
+        session={session}
+        sessionScopeKey={activeSessionScopeKey}
+        moduleId={moduleId}
+        activeGlobalId={activeGlobal?.id}
+        activeContext={activeContext}
+        contextualRouteActive={isGlobalShellPath}
+        canView={canView}
+        contextVisible={contextVisible}
+        destinationForGlobalItem={destinationForGlobalItem}
+        goRoute={goRoute}
+        collapsed={shellNavCollapsed}
+        onExpand={() => {
+          if (window.matchMedia("(max-width: 1024px)").matches && !mobile) {
+            openMobileNavigation();
+          } else {
+            setShellNavCollapsed(false);
+          }
+        }}
+        contextualTools={
+          activeGlobal?.id === "admin" && (adminContext === "experience" || isStudioPath) && (studioAccess || globalShellAccess) && (
             <div className="p-context-branch">
               <span className="p-nav-label">EXPERIENCE</span>
               {studioAccess && (
                 <button
-                  className={isStudioPath ? "active" : ""}
-                  aria-current={isStudioPath ? "page" : undefined}
                   onClick={() => goRoute(studioSectionPath("Home"), "signin-design")}
                 >
                   <Sparkles size={15} aria-hidden="true" />
@@ -1496,8 +1454,10 @@ export default function Portal() {
                 </button>
               )}
             </div>
-          )}
-          {recentRows.length > 0 && (
+          )
+        }
+        contextualRecents={
+          recentRows.length > 0 && (
             <div className="p-context-recents">
               <span className="p-nav-label">RECENT</span>
               {recentRows.slice(0, 3).map((row) => (
@@ -1507,9 +1467,9 @@ export default function Portal() {
                 </button>
               ))}
             </div>
-          )}
-        </nav>
-      </div>
+          )
+        }
+      />
       <div className="p-sidebar-bottom">
         <div className="p-shell-utility-label">
           <Shield size={14} aria-hidden="true" />

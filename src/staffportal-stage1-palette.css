@@ -1,0 +1,368 @@
+/*
+ * Stage 1 authenticated palette contract.
+ *
+ * Ocean Sapphire - Azure Prestige is the approved default. Every optional
+ * palette supplies the same semantic --stage1-* roles from the runtime
+ * wrapper; pages never invent their own palette. Changing data-stage1-palette
+ * to "previous" restores the retained V115 presentation without touching
+ * routes, permissions, data, calculations, forms, Sign-In or authentication.
+ */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] {
+  --stage1-anchor: #173a63;
+  --stage1-primary: #2563eb;
+  --stage1-accent: #06b6d4;
+  --stage1-highlight: #f59e0b;
+  --stage1-tint: #eaf3ff;
+  --stage1-canvas: #f1f5f9;
+  --stage1-surface: #ffffff;
+  --stage1-ink: #1f2b3c;
+  --stage1-on-primary: #ffffff;
+  --stage1-on-anchor: #ffffff;
+  --stage1-extra: #7c3aed;
+  --stage1-muted: #526578;
+  --stage1-line: color-mix(in srgb, var(--stage1-anchor) 14%, var(--stage1-surface));
+  --stage1-soft-line: color-mix(in srgb, var(--stage1-anchor) 8%, var(--stage1-surface));
+  --stage1-focus: var(--stage1-primary);
+  --stage1-success: #126b4d;
+  --stage1-danger: #b83b4b;
+  --stage1-warning-ink: #80510f;
+}
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app {
+  --p-bg: var(--stage1-canvas);
+  --p-ink: var(--stage1-ink);
+  --p-muted: var(--stage1-muted);
+  --p-soft: var(--stage1-tint);
+  --p-surface: var(--stage1-surface);
+  --p-line: var(--stage1-line);
+  --p-accent: var(--stage1-primary);
+  background: var(--stage1-canvas);
+  color: var(--stage1-ink);
+}
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app :is(a,button,input,textarea,[tabindex]):focus-visible,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-modal,.p-side-sheet) :focus-visible {
+  outline-color: var(--stage1-focus);
+}
+
+/* One continuous premium command surface: dark anchor, restrained active blue. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-mobile-nav {
+  background: var(--stage1-anchor) !important;
+  color: color-mix(in srgb, var(--stage1-on-anchor) 84%, var(--stage1-anchor)) !important;
+  border-color: color-mix(in srgb, var(--stage1-on-anchor) 15%, transparent) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-shell-brand,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-logo,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-mobile-nav .p-logo {
+  color: var(--stage1-on-anchor) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-shell-collapse,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-sidebar-bottom > button,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-shell-utility-label {
+  color: color-mix(in srgb, var(--stage1-on-anchor) 82%, var(--stage1-anchor)) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar button.p-company.p-company {
+  background: color-mix(in srgb, var(--stage1-on-anchor) 8%, var(--stage1-anchor)) !important;
+  background-image: none !important;
+  border-color: color-mix(in srgb, var(--stage1-on-anchor) 22%, var(--stage1-anchor)) !important;
+  color: var(--stage1-on-anchor) !important;
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--stage1-anchor) 78%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-company :is(span,strong,small) {
+  color: inherit !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-company small {
+  opacity: .72;
+}
+
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation {
+  --ecc-navy: color-mix(in srgb, var(--stage1-on-anchor) 8%, var(--stage1-anchor));
+  --ecc-surface: var(--stage1-anchor);
+  --ecc-hover: color-mix(in srgb, var(--stage1-on-anchor) 10%, var(--stage1-anchor));
+  --ecc-active: var(--stage1-primary);
+  --ecc-teal: var(--stage1-accent);
+  --ecc-teal-soft: color-mix(in srgb, var(--stage1-accent) 62%, var(--stage1-on-anchor));
+  --ecc-text: var(--stage1-on-anchor);
+  --ecc-muted: color-mix(in srgb, var(--stage1-on-anchor) 68%, var(--stage1-anchor));
+  color: var(--stage1-on-anchor);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-search-box {
+  border: 1px solid color-mix(in srgb, var(--stage1-on-anchor) 17%, var(--stage1-anchor));
+  background: color-mix(in srgb, var(--stage1-on-anchor) 8%, var(--stage1-anchor));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-search-box:focus-within {
+  box-shadow: inset 0 0 0 2px var(--stage1-accent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(.ecc-page-link,.ecc-disclosure,.ecc-area-open,.ecc-favorite-button,.ecc-shortcuts-toggle,.ecc-clear-search,.ecc-rail-button,.ecc-rail-search) {
+  color: var(--ecc-text);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(.ecc-section-label,.ecc-eyebrow,.ecc-page-path,.ecc-result-count,.ecc-no-results,.p-nav-label) {
+  color: var(--ecc-muted) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-area-icon,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-chevron {
+  color: var(--ecc-muted);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-group[data-current-ancestor] > .ecc-group-row > .ecc-disclosure,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-group[data-current-ancestor] > .ecc-group-row .ecc-area-icon,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-favorite-button[aria-pressed="true"] {
+  color: color-mix(in srgb, var(--stage1-accent) 58%, var(--stage1-on-anchor));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-page[data-current] > .ecc-page-row,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(.ecc-contextual-tools,.ecc-contextual-recents) button[aria-current="page"] {
+  background: var(--stage1-primary);
+  box-shadow: inset 3px 0 var(--stage1-accent), 0 8px 20px color-mix(in srgb, var(--stage1-anchor) 52%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-page[data-current] .ecc-page-link,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(.ecc-contextual-tools,.ecc-contextual-recents) button[aria-current="page"] {
+  color: var(--stage1-on-primary);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(.ecc-disclosure,.ecc-page-link,.ecc-area-open,.ecc-favorite-button,.ecc-shortcuts-toggle,.ecc-clear-search,.ecc-rail-button,.ecc-rail-search):hover {
+  background: var(--ecc-hover);
+  color: var(--stage1-on-anchor);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(a,button,input):focus-visible {
+  outline-color: var(--stage1-accent);
+}
+
+/* Bright, opaque workspace hierarchy. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-main,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] main.p-content {
+  background: var(--stage1-canvas);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-topbar,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-shell-workspace-context,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-footer {
+  background: var(--stage1-surface);
+  color: var(--stage1-ink);
+  border-color: var(--stage1-line);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-command-button {
+  border: 1px solid var(--stage1-line);
+  border-radius: .65rem;
+  background: color-mix(in srgb, var(--stage1-tint) 58%, var(--stage1-surface));
+  color: var(--stage1-ink);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-command-button:hover,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-iconbtn:hover {
+  background: var(--stage1-tint);
+  color: var(--stage1-primary);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-ai-orb {
+  background: var(--stage1-primary);
+  color: var(--stage1-on-primary);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--stage1-primary) 30%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-demo-strip {
+  background: color-mix(in srgb, var(--stage1-tint) 54%, var(--stage1-canvas));
+  color: var(--stage1-muted);
+  border-color: var(--stage1-line);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-demo-strip :is(span,strong,.p-demo-copy,button) {
+  color: inherit;
+}
+
+/* Shared components use colour to clarify state, not to create a card wall. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-panel,.p-table,.p-modal,.p-side-sheet,.p-record-table,.p-module-tile,.p-people-card,.p-social-week) {
+  --p-surface: var(--stage1-surface);
+  --p-ink: var(--stage1-ink);
+  --p-muted: var(--stage1-muted);
+  border-color: var(--stage1-line) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-panel {
+  box-shadow: 0 5px 18px rgba(19,40,61,.045);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-btn:not(.outline):not(.quiet):not(.danger),.p-auth-submit) {
+  background: var(--stage1-primary);
+  color: var(--stage1-on-primary);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-btn:not(.outline):not(.quiet):not(.danger),.p-auth-submit):hover {
+  background: color-mix(in srgb, var(--stage1-primary) 84%, var(--stage1-anchor));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-btn.outline {
+  border-color: color-mix(in srgb, var(--stage1-primary) 28%, var(--stage1-line));
+  background: var(--stage1-surface);
+  color: var(--stage1-ink);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-btn.outline:hover {
+  background: var(--stage1-tint);
+  color: var(--stage1-anchor);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-inline-link,.p-tabs [data-state="active"],.p-module-tile > button,.p-person-info > button) {
+  color: var(--stage1-primary) !important;
+  border-color: var(--stage1-primary) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(input,textarea,.p-select,.p-search,.p-attachment) {
+  border-color: var(--stage1-line) !important;
+  background: var(--stage1-surface);
+  color: var(--stage1-ink);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(input,textarea,.p-select,.p-search):focus-within {
+  border-color: var(--stage1-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--stage1-primary) 16%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-record-table th {
+  background: color-mix(in srgb, var(--stage1-tint) 44%, var(--stage1-surface));
+  color: var(--stage1-muted);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-record-table td,.p-action-list > button,.p-attention-list > button,.p-business-list > button,.p-day-task,.p-document-row,.p-setting-row) {
+  border-color: var(--stage1-line) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-badge.blue,.p-badge:not(.green):not(.amber):not(.red)) {
+  background: var(--stage1-tint);
+  color: color-mix(in srgb, var(--stage1-primary) 72%, var(--stage1-anchor));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-badge.green {
+  background: #e2f5ec;
+  color: #166b4d;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-badge.amber {
+  background: color-mix(in srgb, var(--stage1-highlight) 18%, white);
+  color: var(--stage1-warning-ink);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-badge.red {
+  background: #fdebed;
+  color: #962f3d;
+}
+
+/* High-value workspace accents: dark anchor carries white text; charts stay legible. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-command-ribbon,.p-employee-welcome,.p-profile-cover,.v3-domain-hero,.p-notice-board .featured) {
+  --p-ink: var(--stage1-on-anchor);
+  --p-muted: color-mix(in srgb, var(--stage1-on-anchor) 72%, var(--stage1-anchor));
+  background: var(--stage1-anchor) !important;
+  color: var(--stage1-on-anchor) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-command-ribbon,.p-employee-welcome,.p-profile-cover,.v3-domain-hero,.p-notice-board .featured) :is(h1,h2,h3,strong) {
+  color: var(--stage1-on-anchor);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-command-ribbon,.p-employee-welcome,.p-profile-cover,.v3-domain-hero,.p-notice-board .featured) :is(p,small,.p-kicker,.p-metric > span) {
+  color: color-mix(in srgb, var(--stage1-on-anchor) 72%, var(--stage1-anchor));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-chart-legend i,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-bar-row i,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-progress i {
+  background: var(--stage1-primary);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-chart-legend span:nth-child(2) i {
+  background: var(--stage1-accent);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-viz .recharts-cartesian-grid line {
+  stroke: var(--stage1-soft-line);
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-viz text {
+  fill: var(--stage1-muted);
+}
+
+/* Mobile keeps the same identity and readable labels. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-mobile-bottom-nav {
+  background: color-mix(in srgb, var(--stage1-anchor) 96%, black) !important;
+  border-color: color-mix(in srgb, var(--stage1-on-anchor) 16%, transparent) !important;
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-mobile-bottom-nav button {
+  color: color-mix(in srgb, var(--stage1-on-anchor) 70%, var(--stage1-anchor));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-mobile-bottom-nav button.active {
+  background: var(--stage1-primary);
+  color: var(--stage1-on-primary);
+}
+
+.stage1-rollback-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--stage1-primary,#2563eb);
+  border-radius: 8px;
+  background: var(--stage1-surface,#fff);
+  color: var(--stage1-primary,#2563eb);
+  font-weight: 700;
+  cursor: pointer;
+}
+.stage1-rollback-toggle:focus-visible {
+  outline: 3px solid var(--stage1-focus,#2563eb);
+  outline-offset: 3px;
+}
+
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-sidebar,.p-mobile-nav,.p-mobile-bottom-nav,.p-command-ribbon,.p-employee-welcome,.p-profile-cover) {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+}
+
+/* Final cascade authority for the retained premium shell and portaled surfaces.
+   These selectors intentionally outrank the original Daylight shell rules. */
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app:not(.theme-midnight):not(.theme-carbon):not(.theme-dark).premium-shell-reset > .p-sidebar,
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app:not(.theme-midnight):not(.theme-carbon):not(.theme-dark) > .p-sidebar {
+  background: var(--stage1-anchor) !important;
+  background-image: none !important;
+  color: color-mix(in srgb, var(--stage1-on-anchor) 84%, var(--stage1-anchor)) !important;
+}
+html[data-staffportal-postlogin="true"] .p-mobile-nav:has([data-approved-postlogin].ecc-navigation),
+html[data-staffportal-postlogin="true"] .p-responsive-navigation-sheet:has([data-approved-postlogin].ecc-navigation) {
+  background: var(--stage1-anchor) !important;
+  background-image: none !important;
+  color: var(--stage1-on-anchor) !important;
+}
+html[data-staffportal-postlogin="true"] :is(.p-topbar,.v3-workspace-clocks,.tech-clock,.p-mobile-bottom-nav) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html[data-staffportal-postlogin="true"] .p-topbar,
+html[data-staffportal-postlogin="true"] .v3-workspace-clocks,
+html[data-staffportal-postlogin="true"] .tech-clock {
+  background: var(--stage1-surface) !important;
+}
+html[data-staffportal-postlogin="true"] .p-mobile-bottom-nav {
+  background: color-mix(in srgb, var(--stage1-anchor) 96%, black) !important;
+}
+@media (max-width: 520px) {
+  html[data-staffportal-postlogin="true"] .p-mobile-bottom-nav button {
+    font-size: .65rem !important;
+    letter-spacing: -.015em;
+  }
+  html[data-staffportal-postlogin="true"] .p-mobile-bottom-nav button span {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    line-height: 1.05;
+  }
+}
+@media (max-width: 380px) {
+  html[data-staffportal-postlogin="true"] .p-mobile-bottom-nav button {
+    font-size: .61rem !important;
+  }
+}
+
+/* Confirmed rendered contrast repairs from the exact built candidate. */
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-logo > span > small,
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-sidebar .p-user-card > span:nth-child(2) > small {
+  color: color-mix(in srgb, var(--stage1-on-anchor) 82%, var(--stage1-anchor)) !important;
+  opacity: 1 !important;
+}
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-workspace-heading > p {
+  color: var(--stage1-muted) !important;
+}
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .tech-world .tech-clock.night,
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .tech-clock.night {
+  background: var(--stage1-surface) !important;
+  background-image: none !important;
+  color: var(--stage1-ink) !important;
+  border-color: var(--stage1-line) !important;
+}
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .tech-clock.night .tech-clock-city {
+  color: color-mix(in srgb, var(--stage1-primary) 78%, var(--stage1-anchor)) !important;
+}
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .tech-clock.night .tech-time {
+  color: var(--stage1-ink) !important;
+}
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .tech-clock.night small {
+  color: var(--stage1-muted) !important;
+}
+
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .tech-clock.night small {
+  opacity: 1 !important;
+}

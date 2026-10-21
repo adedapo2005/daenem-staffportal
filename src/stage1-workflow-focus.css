@@ -1,0 +1,165 @@
+.stage1-workflow-focus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 22px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 13px 17px;
+  border: 1px solid var(--stage1-line, #d8e3ee);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 44%, var(--stage1-surface, #fff));
+  color: var(--stage1-ink, #1f2b3c);
+}
+.stage1-workflow-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: min(100%, 250px);
+}
+.stage1-workflow-title strong {
+  font-size: 14px;
+  font-weight: 750;
+}
+.stage1-workflow-title > span:not(.stage1-role-eyebrow) {
+  font-size: 13px;
+  color: var(--stage1-muted, #526578);
+}
+.stage1-workflow-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stage1-workflow-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--stage1-primary, #2563eb) 10%, var(--stage1-tint, #eaf3ff));
+  border-radius: 8px;
+  background: var(--stage1-tint, #eaf3ff);
+  color: color-mix(in srgb, var(--stage1-primary, #2563eb) 82%, var(--stage1-anchor, #173a63));
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.stage1-workflow-links a:hover {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 30%, var(--stage1-tint, #eaf3ff));
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 11%, var(--stage1-tint, #eaf3ff));
+}
+.stage1-workflow-links a:focus-visible {
+  outline: 3px solid var(--stage1-focus, #2563eb);
+  outline-offset: 2px;
+}
+
+/* Home becomes a purpose-built role command surface while the Work route
+   retains the compact shortcut row above. All destinations come from the
+   already-authorized Enterprise Command Center projection. */
+.stage1-workflow-focus.stage1-role-home {
+  display: grid;
+  grid-template-columns: minmax(210px, .8fr) minmax(0, 1.5fr);
+  align-items: stretch;
+  gap: 14px 18px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--stage1-surface, #fff);
+  box-shadow: 0 10px 30px rgba(18, 42, 66, .08);
+}
+.stage1-role-home[data-role-home="owner"] {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 25%, var(--stage1-line, #d8e3ee));
+  background: linear-gradient(135deg, var(--stage1-surface, #fff), color-mix(in srgb, var(--stage1-tint, #eaf3ff) 62%, var(--stage1-surface, #fff)));
+}
+.stage1-role-home[data-role-home="manager"] {
+  border-color: color-mix(in srgb, var(--stage1-accent, #06b6d4) 24%, var(--stage1-line, #d8e3ee));
+}
+.stage1-role-home[data-role-home="employee"] {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 12%, var(--stage1-line, #d8e3ee));
+}
+.stage1-role-home .stage1-workflow-title {
+  justify-content: center;
+  gap: 6px;
+}
+.stage1-role-eyebrow {
+  color: color-mix(in srgb, var(--stage1-primary, #2563eb) 82%, var(--stage1-anchor, #173a63));
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .13em;
+}
+.stage1-role-home .stage1-workflow-title strong {
+  color: var(--stage1-ink, #1f2b3c);
+  font-size: clamp(18px, 1.7vw, 24px);
+  line-height: 1.12;
+  letter-spacing: -.025em;
+}
+.stage1-role-home .stage1-workflow-title > span:not(.stage1-role-eyebrow) {
+  max-width: 520px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.stage1-role-home .stage1-workflow-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
+  gap: 8px;
+}
+.stage1-role-home .stage1-workflow-links a {
+  min-width: 0;
+  min-height: 58px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  padding: 10px 12px;
+  border-color: var(--stage1-line, #d8e3ee);
+  background: color-mix(in srgb, var(--stage1-tint, #eaf3ff) 42%, var(--stage1-surface, #fff));
+}
+.stage1-role-home .stage1-workflow-links a[data-priority="primary"] {
+  border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 32%, var(--stage1-line, #d8e3ee));
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 9%, var(--stage1-surface, #fff));
+}
+.stage1-role-home .stage1-workflow-links a > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.stage1-role-home .stage1-workflow-links a small {
+  color: var(--stage1-muted, #526578);
+  font-size: 10px;
+  font-weight: 600;
+}
+.stage1-role-footnote {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--stage1-muted, #526578);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+@media (max-width: 920px) {
+  .stage1-workflow-focus.stage1-role-home {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .stage1-workflow-focus {
+    padding: 12px;
+    align-items: flex-start;
+  }
+  .stage1-workflow-links {
+    width: 100%;
+  }
+  .stage1-workflow-links a {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .stage1-workflow-focus.stage1-role-home {
+    padding: 14px;
+  }
+  .stage1-role-home .stage1-workflow-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-workflow-focus.stage1-role-home {
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-role-home .stage1-workflow-links {
+  grid-template-columns: minmax(0, 1fr);
+}

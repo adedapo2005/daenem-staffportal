@@ -1,0 +1,64 @@
+#ask-daenem-command .stage1-live-search {
+  margin-top: 12px;
+  padding: 12px 2px 4px;
+  border-top: 1px solid var(--stage1-line, #d8e3ee);
+  color: var(--stage1-ink, #1f2b3c);
+}
+#ask-daenem-command .stage1-search-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+}
+#ask-daenem-command .stage1-search-heading span,
+#ask-daenem-command .stage1-search-empty {
+  color: var(--stage1-muted, #526578);
+  font-size: 13px;
+}
+#ask-daenem-command .stage1-search-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#ask-daenem-command .stage1-search-list li :is(a,span) {
+  display: block;
+  min-height: 42px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--stage1-ink, #1f2b3c);
+  overflow-wrap: anywhere;
+}
+#ask-daenem-command .stage1-search-list li a { text-decoration: none; }
+#ask-daenem-command .stage1-search-list li a:hover {
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 10%, var(--stage1-tint, #eaf3ff));
+}
+#ask-daenem-command .stage1-search-list li a:focus-visible {
+  outline: 3px solid var(--stage1-focus, #2563eb);
+  outline-offset: 1px;
+}
+#ask-daenem-command .stage1-search-list li small {
+  display: block;
+  margin-top: 2px;
+  color: var(--stage1-muted, #526578);
+}
+
+/* The existing guidance row is flex; the portaled live-record list must own
+   the available dialog width rather than becoming a narrow flex item. */
+#ask-daenem-command .p-ai-search-guidance:has(.stage1-live-search) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+#ask-daenem-command .p-ai-search-guidance > .stage1-live-search {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#ask-daenem-command .stage1-search-list li { min-width: 0; }

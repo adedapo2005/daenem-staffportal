@@ -21,6 +21,11 @@ check('AI copy generation is audited without prompt content', source.includes("'
 check('Theme policy accepts only approved themes', source.includes('!validTheme(body.defaultTheme)') && source.includes('!validTheme(body.forcedTheme, true)'));
 check('Theme policy rejects empty mutations', source.includes("No theme policy changes supplied."));
 check('Theme policy and audit persist atomically', source.includes("'update_group_policy'") && source.includes("JSON.stringify(planned)") && source.indexOf("'update_group_policy'") < source.lastIndexOf('await env.DB.batch(statements)'));
+check('Post-login appearance keeps an explicit Ocean Azure default', source.includes("const POSTLOGIN_DEFAULT_PALETTE = 'ocean-azure-prestige'"));
+check('Post-login palette writes use separate keys from Sign-In theme settings', source.includes("ui.postlogin_default_palette") && source.includes('postLoginPreferenceKey(context.employee.id)'));
+check('Personal post-login palettes respect force and choice policies', source.includes('if (current.forcedPalette)') && source.includes('if (!current.allowEmployeeChoice)'));
+check('Shared post-login policy requires the existing group theme authority', source.includes("/api/theme/postlogin/policy") && source.includes("if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403)"));
+check('Post-login palette preference and policy changes are audited', source.includes("update_postlogin_palette_preference") && source.includes("update_postlogin_palette_policy"));
 check('All theme responses disable caching', source.includes("'cache-control': 'no-store'"));
 
 for (const result of assertions) console.log(`${result.ok ? '✓' : '✗'} ${result.name}`);

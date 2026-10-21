@@ -15,6 +15,26 @@ const themes = [
   'urban-property-skyline', 'cargo-flow', 'executive-boardroom', 'job-market-pulse',
   'global-operations-mesh', 'minimal-tech-white',
 ];
+const POSTLOGIN_DEFAULT_PALETTE = 'ocean-azure-prestige';
+const postLoginPalettes = [
+  POSTLOGIN_DEFAULT_PALETTE,
+  'teal-pearl', 'emerald-luxe', 'emerald-gold', 'royal-orchid', 'royal-violet', 'midnight-jade',
+  'atlantic-copper', 'peacock-coral', 'aubergine-chartreuse', 'petrol-apricot',
+  'oxblood-opal', 'espresso-iris', 'olive-porcelain', 'ink-saffron',
+  'cobalt-persimmon', 'mineral-rose', 'plum-glacier', 'graphite-citron',
+] as const;
+type PostLoginPaletteId = typeof postLoginPalettes[number];
+const postLoginPaletteSet = new Set<string>(postLoginPalettes);
+const postLoginPreferenceKey = (employeeId: string) => `ui.postlogin_palette.${employeeId}`;
+const normalizePostLoginPalette = (value: unknown, allowBlank = false): PostLoginPaletteId | '' => {
+  const id = String(value || '');
+  if (!id && allowBlank) return '';
+  return postLoginPaletteSet.has(id) ? id as PostLoginPaletteId : POSTLOGIN_DEFAULT_PALETTE;
+};
+const validPostLoginPalette = (value: unknown, allowBlank = false) => {
+  const id = String(value || '');
+  return (allowBlank && id === '') || postLoginPaletteSet.has(id);
+};
 const aliases: Record<string, string> = {
   executive: 'executive-boardroom', 'executive-night': 'executive-boardroom', horizon: 'lagos-sunrise',
   midnight: 'auto-showroom-night', clean: 'minimal-tech-white', glass: 'digital-indigo',
@@ -351,6 +371,29 @@ async function policy(env: Env, context: SessionContext) {
   const preferredTheme = normalize(preference?.theme || '');
   return { forcedTheme, defaultTheme, allowEmployeeChoice, preferredTheme, effectiveTheme: forcedTheme || preferredTheme || defaultTheme, canManage: canManageGroupTheme(context), themes };
 }
+async function postLoginPolicy(env: Env, context: SessionContext) {
+  const forcedPalette = normalizePostLoginPalette(
+    await setting(env, 'ui.postlogin_forced_palette', ''), true,
+  );
+  const defaultPalette = normalizePostLoginPalette(
+    await setting(env, 'ui.postlogin_default_palette', POSTLOGIN_DEFAULT_PALETTE),
+  ) as PostLoginPaletteId;
+  const allowEmployeeChoice =
+    (await setting(env, 'ui.allow_employee_postlogin_palette_choice', 'true')) === 'true';
+  const preferredPalette = normalizePostLoginPalette(
+    await setting(env, postLoginPreferenceKey(context.employee.id), ''), true,
+  );
+  const effectivePalette = (forcedPalette || preferredPalette || defaultPalette) as PostLoginPaletteId;
+  return {
+    forcedPalette,
+    defaultPalette,
+    allowEmployeeChoice,
+    preferredPalette,
+    effectivePalette,
+    canManage: canManageGroupTheme(context),
+    palettes: postLoginPalettes,
+  };
+}
 const normalize = (value: unknown, allowBlank = false) => {
   const id = String(value || '');
   if (!id && allowBlank) return '';
@@ -385,6 +428,90 @@ export async function routeThemePreferences(request: Request, env: Env, context:
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/theme/')) return null;
   const canManage = canManageGroupTheme(context);
+  if (url.pathname === '/api/theme/postlogin/policy' && request.method === 'GET') {
+    return json(await postLoginPolicy(env, context));
+  }
+  if (url.pathname === '/api/theme/postlogin/preference' && request.method === 'POST') {
+    let body: { palette?: unknown };
+    try { body = await request.json(); } catch { return json({ error: 'Invalid post-login palette request.' }, 400); }
+    const current = await postLoginPolicy(env, context);
+    if (current.forcedPalette) {
+      return json({ error: 'The Owner has currently selected a Group-wide StaffPortal palette.' }, 409);
+    }
+    if (!current.allowEmployeeChoice) {
+      return json({ error: 'Personal StaffPortal palette selection is currently disabled.' }, 403);
+    }
+    if (!validPostLoginPalette(body.palette, true)) {
+      return json({ error: 'Select an approved StaffPortal palette.' }, 400);
+    }
+    const palette = normalizePostLoginPalette(body.palette, true);
+    const key = postLoginPreferenceKey(context.employee.id);
+    const statements: D1PreparedStatement[] = palette
+      ? [env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
+          VALUES(?,?,'string',?,CURRENT_TIMESTAMP)
+          ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,
+          value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
+          .bind(key, palette, context.employee.id)]
+      : [env.DB.prepare('DELETE FROM app_settings WHERE setting_key=?').bind(key)];
+    statements.push(env.DB.prepare(`INSERT INTO audit_logs
+      (id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+      VALUES(?,?,'theme',?,'employee',?,?,'web')`)
+      .bind(uid('audit'), context.employee.id,
+        palette ? 'update_postlogin_palette_preference' : 'clear_postlogin_palette_preference',
+        context.employee.id, JSON.stringify({ palette: palette || null })));
+    await env.DB.batch(statements);
+    return json({ ok: true, ...await postLoginPolicy(env, context) });
+  }
+  if (url.pathname === '/api/theme/postlogin/policy' && request.method === 'POST') {
+    if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403);
+    let body: { defaultPalette?: unknown; forcedPalette?: unknown; allowEmployeeChoice?: unknown };
+    try { body = await request.json(); } catch { return json({ error: 'Invalid post-login palette policy request.' }, 400); }
+    if (body.defaultPalette !== undefined && !validPostLoginPalette(body.defaultPalette)) {
+      return json({ error: 'Invalid default StaffPortal palette.' }, 400);
+    }
+    if (body.forcedPalette !== undefined && !validPostLoginPalette(body.forcedPalette, true)) {
+      return json({ error: 'Invalid forced StaffPortal palette.' }, 400);
+    }
+    if (body.allowEmployeeChoice !== undefined && typeof body.allowEmployeeChoice !== 'boolean') {
+      return json({ error: 'Personal palette choice must be true or false.' }, 400);
+    }
+    const current = await postLoginPolicy(env, context);
+    const planned = {
+      defaultPalette: body.defaultPalette === undefined
+        ? current.defaultPalette
+        : normalizePostLoginPalette(body.defaultPalette),
+      forcedPalette: body.forcedPalette === undefined
+        ? current.forcedPalette
+        : normalizePostLoginPalette(body.forcedPalette, true),
+      allowEmployeeChoice: body.allowEmployeeChoice === undefined
+        ? current.allowEmployeeChoice
+        : body.allowEmployeeChoice as boolean,
+    };
+    const statements: D1PreparedStatement[] = [];
+    const upsert = (key: string, value: string, type: 'string' | 'boolean') =>
+      env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
+        VALUES(?,?,?,?,CURRENT_TIMESTAMP)
+        ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,
+        value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
+        .bind(key, value, type, context.employee.id);
+    if (body.defaultPalette !== undefined) {
+      statements.push(upsert('ui.postlogin_default_palette', planned.defaultPalette, 'string'));
+    }
+    if (body.forcedPalette !== undefined) {
+      statements.push(upsert('ui.postlogin_forced_palette', planned.forcedPalette, 'string'));
+    }
+    if (body.allowEmployeeChoice !== undefined) {
+      statements.push(upsert('ui.allow_employee_postlogin_palette_choice', planned.allowEmployeeChoice ? 'true' : 'false', 'boolean'));
+    }
+    if (!statements.length) return json({ error: 'No post-login palette policy changes supplied.' }, 400);
+    statements.push(env.DB.prepare(`INSERT INTO audit_logs
+      (id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+      VALUES(?,?,'theme','update_postlogin_palette_policy','app_setting',
+      'ui.postlogin_palette_policy',?,'web')`)
+      .bind(uid('audit'), context.employee.id, JSON.stringify(planned)));
+    await env.DB.batch(statements);
+    return json({ ok: true, ...await postLoginPolicy(env, context) });
+  }
   if (url.pathname === '/api/theme/policy' && request.method === 'GET') return json(await policy(env, context));
   if (url.pathname === '/api/theme/preference' && request.method === 'POST') {
     let body: { theme?: string };

@@ -1,0 +1,28 @@
+.gitattributes text eol=lf
+
+# The retained V115 export is byte-pinned. Treat every exported file as opaque
+# by default so Git never rewrites its historical mixed line endings or binary
+# assets. The one reviewed Portal overlay is explicitly authored in LF.
+source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/** -text
+source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx text eol=lf
+
+# Reviewed Enterprise Command Center sources have explicit portable endings.
+src/enterprise-command-center-navigation.tsx text eol=crlf
+src/enterprise-command-center-model.ts text eol=lf
+src/enterprise-command-center-navigation.css text eol=lf
+
+# Current approved V180 Sign-In CSS is byte-pinned and authored with LF.
+public/approved-signin-v180.css text eol=lf
+src/approved-signin-v180/staff-portal.css text eol=lf
+src/approved-signin-v180/staff-portal-v3.css text eol=lf
+
+# Stage 1 integration sources, tests and evidence use portable LF endings.
+src/stage1-*.css text eol=lf
+src/stage1-*.tsx text eol=lf
+src/postlogin-palette-system.ts text eol=lf
+src/qa-review-v115-runtime.tsx text eol=lf
+src/staffportal-stage1-palette.css text eol=lf
+worker/theme-preferences.ts text eol=lf
+scripts/test-postlogin-palette-*.mjs text eol=lf
+scripts/check-stage1-appearance-integration.mjs text eol=lf
+delivery/STAFFPORTAL-STAGE1-REQUESTED-VS-COMPLETED-2026-10-20.md text eol=lf
