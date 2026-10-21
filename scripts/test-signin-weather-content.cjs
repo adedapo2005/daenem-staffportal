@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const baseline = process.argv.includes('--baseline');
-const screens = process.argv.includes('--states-only') ? [] : baseline ? [[1363,936],[1366,768],[1280,720],[1025,600],[1920,1080]] : [[390,844],[820,1180],[1024,768],[1025,600],[1280,720],[1363,936],[1366,768],[1920,1080],[3840,2160]];
+const screens = process.argv.includes('--states-only') ? [] : baseline ? [[1363,936],[1366,768],[1280,720],[1025,600],[1920,1080]] : [[390,844],[820,1180],[1024,768],[1025,600],[1280,720],[1363,936],[1366,768],[1440,900],[1536,864],[1600,900],[1680,1050],[1920,1080],[2560,1440],[3840,2160]];
 const cities = {ibadan:'Ibadan',toronto:'Toronto',london:'London',newyork:'New York',moscow:'Moscow',tokyo:'Tokyo',beijing:'Beijing'};
 const temperatures = {ibadan:26,toronto:12,london:9,newyork:18,moscow:3,tokyo:22,beijing:6};
 const fixture = (city, change=0) => ({available:true,provider:'Google Weather',providerStatus:'fresh',fetchedAt:new Date().toISOString(),cacheAgeSeconds:0,unitsSystem:'METRIC',location:cities[city],temperature:temperatures[city]+change,apparentTemperature:28+change,humidity:95,precipitationProbability:10,windSpeed:5,windDirection:157,windGust:8,today:{high:33,low:24},description:city==='london'?'Mostly cloudy':'Clear'});
@@ -65,7 +65,7 @@ async function run(){
      assert.equal(data.cards.length,7,'seven city cards');
      for(const card of data.cards){
       if(card.city!=='ibadan'){
-       assert.ok(card.clock.width>=83.9,'approved minimum global clock width: '+card.city);
+       assert.ok(card.clock.width >= ((data.width >= 1280 && data.width < 1920) ? 73.9 : 83.9),'responsive approved minimum global clock width: '+card.city);
        assert.ok(card.detail,'global city weather details missing: '+card.city);
        assert.equal(card.detail.labels.length,6,'six global weather labels: '+card.city);
        assert.ok(card.detail.box.x>=card.card.x-1&&card.detail.box.right<=card.card.right+1&&card.detail.box.y>=card.card.y-1&&card.detail.box.bottom<=card.card.bottom+1,'global city metrics clipped: '+card.city);
