@@ -1141,3 +1141,29 @@
  .sp-root #staff-global-operations .sp-global-weather-metric dd {font-size:clamp(14px,.78vw,23px)!important;}
  .sp-root.sp-day #staff-global-operations .sp-live-weather-city .gw-city-clock {align-self:start!important;top:0!important;}
 }
+
+
+/* Compact laptops: readings take a true lower-right grid; the weather glyph
+   stays visible beside the time rather than occupying the six readings. */
+@media (min-width:1024px) and (max-width:1919px) {
+ .sp-root #staff-global-operations .sp-global-weather-details {
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  row-gap:2px!important;column-gap:5px!important;
+  left:calc(clamp(84px,5.1vw,124px) + 18px)!important;
+  bottom:4px!important;
+ }
+ .sp-root #staff-global-operations .sp-live-city-weather {
+  position:absolute!important;top:29px!important;right:8px!important;
+  left:auto!important;bottom:auto!important;
+  width:25px!important;height:25px!important;
+  display:block!important;min-height:0!important;
+ }
+ .sp-root #staff-global-operations .sp-live-city-weather .sp-live-weather-values {
+  display:none!important;
+ }
+ #root .sp-root #staff-global-operations [data-signin-weather-summary] .sp-live-weather-visual {
+  width:25px!important;height:25px!important;
+ }
+ .sp-root #staff-global-operations .sp-global-weather-metric dt {font-size:10px!important;}
+ .sp-root #staff-global-operations .sp-global-weather-metric dd {font-size:11px!important;}
+}
