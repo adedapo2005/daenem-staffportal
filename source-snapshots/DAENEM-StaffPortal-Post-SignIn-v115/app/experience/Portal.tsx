@@ -1567,7 +1567,7 @@ export default function Portal() {
               </p>
               <Btn onClick={() => setPendingSignout(true)}>Sign out</Btn>
               <details>
-                <summary>Development preview controls</summary>
+                <summary>Pre-Production review controls</summary>
                 <Btn variant="outline" onClick={() => setDev(true)}>
                   Change simulated profile
                 </Btn>
@@ -1736,7 +1736,7 @@ export default function Portal() {
                 <div className="p-demo-strip">
                   <span>
                     <Shield size={13} />
-                    <strong>DEVELOPMENT PREVIEW ONLY</strong>
+                    <strong>PRE-PRODUCTION REVIEW</strong>
                     <span className="p-demo-copy">
                       Fictional Records · Local Simulations
                     </span>
@@ -2190,7 +2190,7 @@ export default function Portal() {
           </Dialog>
           <Dialog open={signed && dev} onOpenChange={setDev}>
             <DialogContent className="p-modal">
-              <DialogTitle>Development preview controls</DialogTitle>
+              <DialogTitle>Pre-Production review controls</DialogTitle>
               <DialogDescription>
                 Change the simulated session and inspect failure states. No real
                 access or production data changes.
