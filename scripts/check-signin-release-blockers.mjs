@@ -8,10 +8,43 @@ const worker = read('worker/index.ts');
 const deployedEntry = read('worker/entry.ts');
 const provider = read('worker/weather-provider.ts');
 
+
+// Preserve the existing overflow-y:auto guard while allowing the editorial
+// widgets' required scrolling. Browser QA checks the computed auth geometry.
+// Keep this allowlist exact so a combined or unrelated selector cannot grant
+// scrolling to Create Account when this shared stylesheet is extended.
+const editorialScrollSelectors = new Set([
+  '.sp-root #staff-primary-information .sp-connected-news',
+  '#root .sp-root.sp-day #staff-primary-information [data-widget="news"] .gw-news-story-copy',
+  '#root .sp-root.sp-day #staff-primary-information [data-widget="intelligence"] .gw-intel-focus',
+]);
+function hasUnexpectedVerticalScroll(source) {
+  const clean = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  const occurrences = value => (value.match(/overflow-y\s*:\s*auto/gi) || []).length;
+  let allowed = 0;
+  for (const [, selectors, declarations] of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const count = occurrences(declarations);
+    if (count && selectors.split(',').some(selector => !editorialScrollSelectors.has(selector.trim()))) return true;
+    allowed += count;
+  }
+  // Fail closed for nested declarations not covered by an approved leaf rule.
+  return allowed !== occurrences(clean);
+}
+
 const checks = [
+  ['scrollbar guard allows only the approved editorial containers', [...editorialScrollSelectors].every(selector => !hasUnexpectedVerticalScroll(`@media (max-width: 800px) { ${selector} { overflow-y:auto!important; } }`))],
+  ['scrollbar guard still rejects authentication and mixed-selector scrollers', [
+    '#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }',
+    '.sp-auth-card { overflow-y: auto !important; }',
+    '@media (max-width: 800px) { .usp-form-column { overflow-y:auto; } }',
+    '.sp-auth-card { overflow-y:auto; & input { color:red; } }',
+    '.sp-auth-card { overflow-y:auto; @media (max-width:800px) { color:red; } }',
+    [...editorialScrollSelectors][0] + ', #staffportal-auth-mount { overflow-y:auto; }',
+  ].every(hasUnexpectedVerticalScroll)],
+
   ['approved Sign-In mount remains the compact-mode measurement fallback', auth.includes("panel?.closest<HTMLElement>('.usp-form-column') || panel?.parentElement")],
   ['password requirements announce live state changes', auth.includes('aria-label={label} aria-live="polite"')],
-  ['Create Account no longer creates an internal vertical scrollbar', !/overflow-y\s*:\s*auto/i.test(css)],
+  ['Create Account no longer creates an internal vertical scrollbar', !hasUnexpectedVerticalScroll(css)],
   ['password success state is visibly styled', css.includes('.usp-password-status .pass')],
   ['password failure state is visibly styled', css.includes('.usp-password-status .fail')],
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],
@@ -33,3 +66,4 @@ if (failed.length) {
   process.exit(1);
 }
 console.log(`Sign-In release blocker contract passed: ${checks.length}/${checks.length}.`);
+
