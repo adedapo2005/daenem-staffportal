@@ -1316,4 +1316,89 @@ for (const metadata of [null, { ...objectMetadata, jobId: 'other' }, { ...object
   fileCases++;
 }
 console.log(`Protected Printing file audit: ${fileCases} cases PASS (current audit required, silent/throwing failure, recovery, company denial, revoked permission and object binding)`);
+
+// Exercise the real note handler against the migration-defined note table.
+const noteMigration = await readFile(new URL('../migrations/0012_printing_production_controls.sql', import.meta.url), 'utf8');
+// This fixture's employee lookup table predates the note FK; give its IDs the
+// same uniqueness required by the production employee primary key.
+db.exec(`CREATE UNIQUE INDEX note_fixture_employee_id ON employees(id);
+  INSERT OR IGNORE INTO employees(id,display_name) VALUES
+    ('employee-a','Approver'),('employee-edit','Editor'),('employee-owner','Owner');`);
+db.exec(noteMigration.match(/CREATE TABLE IF NOT EXISTS print_job_notes \([\s\S]*?\n\);/)[0]);
+db.exec(`INSERT INTO print_jobs(id,company_id,job_no,title,quantity,quoted_kobo,production_status)
+  VALUES('job-note-a','company-printing','NOTE-A','Note test',1,100,'quoted'),
+        ('job-note-b','company-bakery','NOTE-B','Hidden note test',1,100,'quoted');`);
+const noteRequest = (jobId, noteType, requestId) => new Request('https://staffportal.test/api/printing/jobs/note', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': requestId },
+  body: JSON.stringify({ jobId, noteType, note: 'Private note body retained only on the job' }),
+});
+const noteSnapshot = () => ({
+  notes: db.prepare('SELECT * FROM print_job_notes ORDER BY id').all(),
+  audits: db.prepare("SELECT * FROM audit_logs WHERE action='note_record' ORDER BY id").all(),
+});
+let noteCases = 0;
+for (const [actor, type] of [[editOnly, 'production'], [context, 'finance'], [owner, 'finance']]) {
+  const requestId = `note-success-${actor.employee.id}`;
+  response = await route(noteRequest('job-note-a', type, requestId), env, actor);
+  assert.equal(response.status, 200);
+  const { noteId } = await response.json();
+  const saved = db.prepare('SELECT * FROM print_job_notes WHERE id=?').get(noteId);
+  assert.equal(saved.created_by, actor.employee.id);
+  assert.equal(saved.note_type, type);
+  const audit = db.prepare("SELECT * FROM audit_logs WHERE action='note_record' AND request_id=?").get(requestId);
+  assert.ok(audit, 'a successful note must have its own required audit');
+  assert.equal(audit.company_id, 'company-printing');
+  assert.equal(audit.actor_employee_id, actor.employee.id);
+  assert.equal(audit.entity_id, 'job-note-a');
+  assert.deepEqual(JSON.parse(audit.after_json), { noteId, noteType: type });
+  assert.doesNotMatch(JSON.stringify(audit), /Private note body/);
+  noteCases++;
+}
+for (const [actor, jobId, type, status] of [
+  [otherCompanyApprover, 'job-note-a', 'internal', 403],
+  [editOnly, 'job-note-b', 'internal', 400],
+  [editOnly, 'missing-job', 'internal', 400],
+  [editOnly, 'job-note-a', 'finance', 403],
+  [{ ...editOnly, companyPermissions: {} }, 'job-note-a', 'internal', 403],
+]) {
+  const before = noteSnapshot();
+  response = await route(noteRequest(jobId, type, 'note-denied'), env, actor);
+  assert.equal(response.status, status);
+  assert.doesNotMatch(await response.text(), /NOTE-B|Hidden note|noteId|Private note body/);
+  assert.deepEqual(noteSnapshot(), before, 'denial must not write notes or audit success');
+  noteCases++;
+}
+for (const table of ['print_job_notes', 'audit_logs']) {
+  for (const failure of ["RAISE(ABORT,'injected failure')", 'RAISE(IGNORE)']) {
+    const before = noteSnapshot();
+    db.exec(`CREATE TRIGGER reject_note_write BEFORE INSERT ON ${table}
+      ${table === 'audit_logs' ? "WHEN NEW.action='note_record'" : ''}
+      BEGIN SELECT ${failure}; END;`);
+    try { response = await route(noteRequest('job-note-a', 'finance', 'note-failed'), env, context); }
+    finally { db.exec('DROP TRIGGER reject_note_write'); }
+    assert.equal(response.status, 503, 'throwing and silent note/audit failures must fail closed');
+    assert.doesNotMatch(await response.text(), /noteId|Private note body|injected failure/);
+    assert.deepEqual(noteSnapshot(), before, 'the note and current attempt audit must roll back together');
+    noteCases++;
+  }
+}
+const beforeStaleNote = noteSnapshot(), noteBatch = env.DB.batch;
+env.DB.batch = async (statements) => {
+  db.prepare("UPDATE print_jobs SET company_id='company-bakery' WHERE id='job-note-a'").run();
+  return noteBatch.call(env.DB, statements);
+};
+try { response = await route(noteRequest('job-note-a', 'finance', 'note-stale-company'), env, context); }
+finally {
+  env.DB.batch = noteBatch;
+  db.prepare("UPDATE print_jobs SET company_id='company-printing' WHERE id='job-note-a'").run();
+}
+assert.equal(response.status, 503);
+assert.deepEqual(noteSnapshot(), beforeStaleNote, 'a company change after the initial read cannot create a note');
+noteCases++;
+response = await route(noteRequest('job-note-a', 'finance', 'note-recovery'), env, context);
+assert.equal(response.status, 200);
+assert.equal(noteSnapshot().notes.length, beforeStaleNote.notes.length + 1);
+assert.equal(noteSnapshot().audits.length, beforeStaleNote.audits.length + 1);
+noteCases++;
+console.log(`Printing note audit atomicity: ${noteCases} cases PASS (authorized/Owner, company/revocation/finance denial, abort/ignore rollback, stale company and recovery)`);
 console.log('Printing Worker-handler SQLite acceptance: order/Finance linkage, delivery/status CAS, delivery fault matrix and single-winner, proof/artwork rollback, completion fault matrix and single-winner, finishing cost/audit atomicity and stale-company/terminal guards, approval integrity, transactional packaging QC and production queue, protected file audit durability, company isolation, payment truth PASS');
