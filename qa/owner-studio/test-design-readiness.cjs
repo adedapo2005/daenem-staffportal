@@ -70,6 +70,13 @@ const base={
   {id:'auth',kind:'auth',label:'Protected Sign-In',x:20,y:180,width:310,height:290,items:[]},
  ]
 };
+// Compact desktop must not silently pass a design clipped at 1024px.
+const shifted={...base,blocks:base.blocks.map(b=>b.kind==='auth'?{...b,x:800}:b)};
+const compact=readiness.exports.inspectSignInDesign(shifted);
+assert.equal(compact.structuralPass,false);
+assert.ok(compact.blockers.some(s=>s.includes('1024px')),'Compact desktop clipping must block review');
+const negative={...base,blocks:base.blocks.map(b=>b.kind==='brand'?{...b,x:-10}:b)};
+assert.equal(readiness.exports.inspectSignInDesign(negative).structuralPass,false,'Negative component coordinates must fail');
 (async()=>{
  let r=await route(req('/readiness','POST',{libraryRevision:0,designIndex:0}),db.env||{DB:db},staff);
  assert.equal(r.status,403,'Only Owner allowed to check readiness');
