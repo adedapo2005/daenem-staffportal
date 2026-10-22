@@ -1,4 +1,4 @@
-import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { getSessionContext, hasPermission, type AuthEnv, type SessionContext } from './auth';
 
 interface PrintingEnv extends AuthEnv {}
 
@@ -347,6 +347,11 @@ async function qualityCheck(request: Request, env: PrintingEnv, context: Session
   try { body = await request.json(); } catch { return json({ error: 'Invalid quality check request.' }, 400); }
   if (!body.jobId || !['pass','rework','reject'].includes(String(body.result))) return json({ error: 'Job and QC result are required.' }, 400);
   const job = await env.DB.prepare(`SELECT id, production_status AS status FROM print_jobs WHERE id = ? AND company_id = ?`).bind(body.jobId, companyId).first<{ id: string; status: string }>();
+  // Parsing and the job read can outlast the initial session/permission snapshot.
+  // Reauthorize the same actor and session before status disclosure or QC writes.
+  const currentContext = await getSessionContext(request, env);
+  if (!currentContext || currentContext.sessionId !== context.sessionId || currentContext.employee.id !== context.employee.id) return json({ error: 'Authentication required.' }, 401);
+  if (!canPrint(currentContext, 'edit')) return json({ error: 'Edit Printing Job permission is required.' }, 403);
   if (!job) return json({ error: 'Print job not found.' }, 404);
   if (!['quality_control','finishing','printing'].includes(job.status)) return json({ error: 'Quality control can only be recorded for a job in production/QC stages.' }, 409);
   const checkId = uid('print-qc');
@@ -384,6 +389,10 @@ export async function routePrinting(request: Request, env: PrintingEnv, context:
   if (url.pathname === '/api/printing/jobs' && request.method === 'POST') return createJob(request, env, context);
   if (url.pathname === '/api/printing/jobs/status' && request.method === 'POST') return transitionJob(request, env, context);
   if (url.pathname === '/api/printing/jobs/materials' && request.method === 'POST') return addMaterial(request, env, context);
-  if (url.pathname === '/api/printing/jobs/qc' && request.method === 'POST') return qualityCheck(request, env, context);
+  if (url.pathname === '/api/printing/jobs/qc' && request.method === 'POST') {
+    try { return await qualityCheck(request, env, context); } catch {
+      return json({ error: 'The Printing quality check could not be saved. Refresh and try again.' }, 503);
+    }
+  }
   return null;
 }

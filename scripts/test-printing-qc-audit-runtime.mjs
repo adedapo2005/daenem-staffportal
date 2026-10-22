@@ -44,7 +44,7 @@ const output = ts.transpileModule(source, { compilerOptions: {
 const module = { exports: {} };
 new Function('exports', 'require', 'module', output)(module.exports, (specifier) => {
   assert.equal(specifier, './auth');
-  return { hasPermission: (context, code, minimum, companyId) => {
+  return { getSessionContext: async () => editor, hasPermission: (context, code, minimum, companyId) => {
     assert.equal(companyId, 'company-printing');
     const levels = ['none', 'view', 'create', 'edit', 'approve', 'manage'];
     return levels.indexOf(context.companyPermissions?.[companyId]?.[code] || 'none') >= levels.indexOf(minimum);
@@ -93,7 +93,9 @@ assert.equal(count('audit_logs'), 2);
 
 db.prepare("UPDATE print_jobs SET production_status='quality_control' WHERE id='job-a'").run();
 db.exec("CREATE TRIGGER reject_qc_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'audit unavailable'); END");
-await assert.rejects(submit('job-a', 'pass'), /audit unavailable/);
+response = await submit('job-a', 'pass');
+assert.equal(response.status, 503);
+assert.doesNotMatch(await response.text(), /audit unavailable|SELECT|INSERT/);
 assert.equal(count('print_quality_checks'), 2, 'audit failure rolls back QC');
 assert.equal(count('audit_logs'), 2);
 db.exec('DROP TRIGGER reject_qc_audit');
