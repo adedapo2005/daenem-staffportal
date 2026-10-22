@@ -240,6 +240,14 @@ async function delivery(request:Request,env:PrintingProductionEnv,context:Sessio
   if(!job)return json({error:'Print job not found.'},404);
   if(!validJobFileKey(body.proofKey,jobId,['delivery']))return json({error:'Delivery proof must belong to this print job.'},400);
   if(body.markDelivered&&job.status!=='ready')return json({error:'This Printing job is not ready for delivery.'},409);
+  // The job read can outlast the original session or its edit grant. Revalidate
+  // the same actor and target-company authority before dispatch or delivery writes.
+  let currentContext:SessionContext|null;
+  try{currentContext=await getSessionContext(request,env)}catch{
+    return json({error:'The Printing delivery could not be saved. Refresh and try again.'},503);
+  }
+  if(!currentContext||currentContext.sessionId!==context.sessionId||currentContext.employee.id!==context.employee.id)return json({error:'Authentication required.'},401);
+  if(!can(currentContext,'edit'))return json({error:'Edit Printing permission is required.'},403);
   const method=['pickup','company_delivery','courier','customer_transport','other'].includes(String(body.method))?String(body.method):'pickup';
   const id=uid('delivery'),eventId=uid('print-event'),auditId=uid('audit'),requestId=requestCorrelationId(request);
   const deliveredAt=body.markDelivered?new Date().toISOString():null,expectedStatus=body.markDelivered?'delivered':String(job.status);
