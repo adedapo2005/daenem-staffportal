@@ -27,6 +27,7 @@ for (const [file, tables] of [
 }
 let jobReads = 0, batches = 0, networkCalls = 0, putFailure = false, deleteFailure = false;
 let getFailure = false, afterGet = null, fileReads = 0, bodyReads = 0, headerReads = 0;
+let failReadAuthorization = false;
 const objects = new Map(), puts = [], deletes = [];
 const env = {
   APP_STAGE: 'test', AUTH_PEPPER: 'synthetic-printing-test-only',
@@ -38,6 +39,7 @@ const env = {
         bind(...values) { this.values = values; return this; },
         async first() {
           if (sql.includes('FROM print_jobs pj')) jobReads++;
+          if (failReadAuthorization && sql.includes('FROM auth_sessions')) throw new Error('Injected private authorization failure');
           return db.prepare(sql).get(...this.values) || null;
         },
         async all() { return { results: db.prepare(sql).all(...this.values) }; },
@@ -382,6 +384,29 @@ try {
       try { await readDenied('viewer', readKey, status, true); } finally { db.exec(restore); }
     });
   }
+  for (const [name, revoke, restore, status] of [
+    ['session revocation', "UPDATE auth_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE id='viewer'", "UPDATE auth_sessions SET revoked_at=NULL WHERE id='viewer'", 401],
+    ['session expiry', "UPDATE auth_sessions SET expires_at=datetime('now','-1 hour') WHERE id='viewer'", "UPDATE auth_sessions SET expires_at=datetime('now','+1 hour') WHERE id='viewer'", 401],
+    ['employee deactivation', "UPDATE employees SET employment_status='inactive' WHERE id='viewer'", "UPDATE employees SET employment_status='active' WHERE id='viewer'", 401],
+    ['session actor replacement', "UPDATE auth_sessions SET employee_id='creator' WHERE id='viewer'", "UPDATE auth_sessions SET employee_id='viewer' WHERE id='viewer'", 401],
+    ['membership revocation', "UPDATE employee_company_memberships SET active=0 WHERE employee_id='viewer' AND company_id='company-printing'", "UPDATE employee_company_memberships SET active=1 WHERE employee_id='viewer' AND company_id='company-printing'", 403],
+    ['company deactivation', "UPDATE companies SET active=0 WHERE id='company-printing'", "UPDATE companies SET active=1 WHERE id='company-printing'", 403],
+    ['role revocation', "UPDATE roles SET active=0 WHERE id='viewer'", "UPDATE roles SET active=1 WHERE id='viewer'", 403],
+    ['permission revocation', "UPDATE role_permissions SET access_level='none' WHERE role_id='viewer'", "UPDATE role_permissions SET access_level='view' WHERE role_id='viewer'", 403],
+    ['explicit deny', "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by) VALUES('read-deny','viewer','company-printing','print-access','none','Fixture','owner')", "DELETE FROM employee_permission_overrides_v2 WHERE id='read-deny'", 403],
+  ]) {
+    await check(`${name} during R2 await: no file headers, bytes or success audit`, async () => {
+      afterGet = () => db.exec(revoke);
+      try { await readDenied('viewer', readKey, status); }
+      finally { afterGet = null; db.exec(restore); }
+    });
+  }
+  await check('authorization lookup failure after R2: neutral 503 without file or audit disclosure', async () => {
+    afterGet = () => { failReadAuthorization = true; };
+    try { await readDenied('viewer', readKey, 503); }
+    finally { afterGet = null; failReadAuthorization = false; }
+  });
+  await check('restored authorized reader succeeds with exactly one fresh audit', () => readAccepted('viewer', readKey));
   assert.equal(networkCalls, 0);
   console.log(`Printing upload composed runtime/session/SQLite/R2 acceptance: ${cases}/${cases} PASS; zero provider calls; productionMutated=false`);
 } finally { globalThis.fetch = originalFetch; db.close(); }

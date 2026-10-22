@@ -83,6 +83,11 @@ async function fileResponse(request:Request,env:PrintingProductionEnv,context:Se
   if(parts[0]!=='printing'||parts.length<4||!['artwork','proof','qc','delivery','evidence'].includes(category)||!await assertJob(env,jobId))return json({error:'File not found.'},404);
   const object=await env.FILES.get(key);
   if(!object||object.customMetadata?.companyId!==companyId||object.customMetadata?.jobId!==jobId||object.customMetadata?.category!==category)return json({error:'File not found.'},404);
+  // Storage can outlive the original permission snapshot. Revalidate the same
+  // session and actor before recording a successful read or exposing the object.
+  const currentContext=await getSessionContext(request,env);
+  if(!currentContext||currentContext.sessionId!==context.sessionId||currentContext.employee.id!==context.employee.id)return json({error:'Authentication required.'},401);
+  if(!can(currentContext))return json({error:'Daenem Printing access is not assigned.'},403);
   try{
     // The R2 await must not turn an earlier job lookup into authority to read
     // a job that has since left this company. Bind this read's audit to current scope.
