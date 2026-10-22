@@ -153,6 +153,34 @@ await iframe.locator('#staff-global-operations').waitFor({timeout:20000});
 const active4k=await iframe.locator('html').evaluate(e=>e.ownerDocument.defaultView.innerWidth);
 if(active4k!==3840)throw Error('real iframe 4K width failed '+active4k);
 await page.screenshot({path:'qa/owner-studio/studio-4k-editor.png',fullPage:false});
+const cloudPage=await browser.newPage({viewport:{width:1366,height:850}});
+let cloudRevision=0,cloudDesigns=[],explicitPosts=0;
+await cloudPage.route('**/staff-portal-signin?*',r=>r.fulfill({status:302,headers:{location:'/qa/signin/index.html?studioReview=signin-v180'},body:''}));
+await cloudPage.route('**/api/**',r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA unavailable'})}));
+await cloudPage.route('**/api/theme/signin/designs',async r=>{
+ if(r.request().method()==='GET')return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({revision:cloudRevision,designs:cloudDesigns})});
+ explicitPosts++;
+ const incoming=r.request().postDataJSON();
+ if(incoming.revision!==cloudRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Designs were changed in another session.'})});
+ cloudRevision++;cloudDesigns=incoming.designs;
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision:cloudRevision,designs:cloudDesigns})});
+});
+await cloudPage.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
+await cloudPage.locator('[data-builder-enter]').click();
+await cloudPage.locator('[data-builder-cloud-load]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library loaded'}).waitFor();
+await cloudPage.locator('[data-builder-add="weather"]').click();
+await cloudPage.locator('[data-builder-save]').click();
+if(explicitPosts!==0)throw Error('concept edits caused unintended cloud write');
+await cloudPage.locator('[data-builder-cloud-save]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library saved'}).waitFor();
+if(explicitPosts!==1||cloudDesigns.length!==1)throw Error('explicit Owner cloud save failed');
+cloudRevision=7;
+await cloudPage.locator('[data-builder-cloud-save]').click();
+await cloudPage.getByRole('status').filter({hasText:'changed in another session'}).waitFor();
+if(explicitPosts!==2||cloudDesigns.length!==1)throw Error('cloud conflict handling failed');
+await cloudPage.close();
+
 
 }finally{await page.close();await browser.close();await server.close();}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
