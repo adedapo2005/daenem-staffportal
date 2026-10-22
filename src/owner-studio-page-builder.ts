@@ -1,9 +1,11 @@
 import './owner-studio-page-builder.css';
 
 type BlockKind='heading'|'text'|'clock'|'weather'|'brand'|'auth';
-type Block={id:string;kind:BlockKind;label:string;x:number;y:number;width:number;height:number};
+type InnerItem={id:string;label:string;x:number;y:number};
+type Block={id:string;kind:BlockKind;label:string;x:number;y:number;width:number;height:number;items?:InnerItem[]};
 type Draft={name:string;blocks:Block[]};
 const blank=():Draft=>({name:'New DAENEM Sign-In Design',blocks:[]});
+const widgetItems=(kind:BlockKind):InnerItem[]=>(kind==='weather'?['Weather Icon','Temperature','Location','Forecast']:kind==='clock'?['Clock Face','Time','City Name','Timezone']:[]).map((label,i)=>({id:'item-'+i,label,x:12+(i%2)*85,y:12+Math.floor(i/2)*48}));
 const catalogue:{kind:BlockKind;label:string;width:number;height:number}[]=[
  {kind:'brand',label:'DAENEM Branding',width:210,height:60},
  {kind:'heading',label:'Page Heading',width:330,height:65},
@@ -18,10 +20,10 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  const host=document.createElement('section');host.className='owner-builder';host.hidden=true;
  host.innerHTML='<header class="owner-builder-head"><div><small>ALTERNATE DESIGN WORKSPACE</small><h4>Create A New Sign-In Design</h4><p>Build a separate design without replacing the approved Sign-In. This is a local, unsaved preview only.</p></div><button type="button" data-builder-exit>Return To Approved Design</button></header>'+
  '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="768">Tablet · 768px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-save>Save Concept</button><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button></div>'+
- '<div class="owner-builder-shell"><aside><h5>Add Components</h5>'+catalogue.map(c=>'<button type="button" data-builder-add="'+c.kind+'">+ '+esc(c.label)+'</button>').join('')+'<p>Authentication remains a protected component; visual edits cannot alter login security or providers.</p></aside><div class="owner-builder-stage"><div class="owner-builder-canvas" data-builder-canvas></div></div><aside><h5>Selected Component</h5><p data-builder-selection>No component selected</p><label>Display Text <input data-builder-text maxlength="100"></label><label>Horizontal Position <input data-builder-x type="number" min="0" max="3600"></label><label>Vertical Position <input data-builder-y type="number" min="0" max="2000"></label><label>Width <input data-builder-width type="number" min="80" max="900"></label><label>Height <input data-builder-height type="number" min="40" max="600"></label><button type="button" data-builder-remove>Remove Component</button></aside></div>'+
+ '<div class="owner-builder-shell"><aside><h5>Add Components</h5>'+catalogue.map(c=>'<button type="button" data-builder-add="'+c.kind+'">+ '+esc(c.label)+'</button>').join('')+'<p>Authentication remains a protected component; visual edits cannot alter login security or providers.</p></aside><div class="owner-builder-stage"><div class="owner-builder-canvas" data-builder-canvas></div></div><aside><h5>Selected Component</h5><p data-builder-selection>No component selected</p><label>Display Text <input data-builder-text maxlength="100"></label><label>Horizontal Position <input data-builder-x type="number" min="0" max="3600"></label><label>Vertical Position <input data-builder-y type="number" min="0" max="2000"></label><label>Width <input data-builder-width type="number" min="80" max="900"></label><label>Height <input data-builder-height type="number" min="40" max="600"></label><button type="button" data-builder-remove>Remove Component</button><div class="owner-builder-inner"><h5>Widget Items</h5><label>Item <select data-builder-item><option value="">Select An Item</option></select></label><label>Label <input data-inner-label maxlength="60"></label><label>Move Item Horizontally <input data-inner-x type="number" min="0" max="800"></label><label>Move Item Vertically <input data-inner-y type="number" min="0" max="500"></label><button type="button" data-inner-add>Add Widget Item</button></div></aside></div>'+
  '<p class="owner-builder-warning">This is a concept canvas, not a deployable Sign-In page. Concepts survive reloads in this browser tab only; publishing and durable account storage require separate verification and Owner approval.</p>';
  studio.appendChild(host);
- let draft=blank();let undo:Draft[]=[],redo:Draft[]=[],selected:string|null=null,serial=0;
+ let draft=blank();let undo:Draft[]=[],redo:Draft[]=[],selected:string|null=null,selectedInner:string|null=null,serial=0;
  const library:Draft[]=[];
  const libraryKey='daenem-owner-studio-concept-library-v1';
  try{
@@ -45,18 +47,25 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   const canvas=$<HTMLElement>('[data-builder-canvas]');canvas.style.width=width()+'px';canvas.style.height=(width()<=430?850:width()<=768?1024:width()>=3840?2160:900)+'px';
   const stage=$<HTMLElement>('.owner-builder-stage');const zoom=Math.min(1,(stage.clientWidth-32)/width());canvas.style.zoom=String(Math.max(.2,zoom));
   canvas.innerHTML=draft.blocks.map(b=>'<button type="button" class="owner-builder-block'+(selected===b.id?' is-selected':'')+'" data-block="'+b.id+'" style="left:'+b.x+'px;top:'+b.y+'px;width:'+b.width+'px;height:'+b.height+'px">'+
-    (b.kind==='clock'?'<span class="owner-builder-dial">◷</span>':b.kind==='auth'?'<strong>Sign In</strong><span>Email Address</span><span>Password</span><em>Continue Securely</em>':b.kind==='weather'?'<strong>Weather</strong><span>Live provider preview unavailable</span>':esc(b.label))+'</button>').join('');
+    (b.kind==='auth'?'<strong>Sign In</strong><span>Email Address</span><span>Password</span><em>Continue Securely</em>':b.items?.length?b.items.map(item=>'<span class="owner-builder-inner-item" data-inner-id="'+esc(item.id)+'" style="left:'+item.x+'px;top:'+item.y+'px">'+esc(item.label)+'</span>').join(''):esc(b.label))+'</button>').join('');
   const b=draft.blocks.find(b=>b.id===selected);$<HTMLElement>('[data-builder-selection]').textContent=b?b.kind.toUpperCase()+' · '+b.id:'No component selected';
   for(const k of ['x','y','width','height'] as const){$<HTMLInputElement>('[data-builder-'+k+']').value=b?String(b[k]):'';}
   $<HTMLInputElement>('[data-builder-text]').value=b?.label||'';
+  const items=b?.items||[];const innerSelect=$<HTMLSelectElement>('[data-builder-item]');
+  innerSelect.replaceChildren(new Option('Select An Item',''),...items.map(item=>new Option(item.label,item.id)));
+  if(!items.some(item=>item.id===selectedInner))selectedInner=null;
+  innerSelect.value=selectedInner||'';const item=items.find(item=>item.id===selectedInner);
+  $<HTMLInputElement>('[data-inner-label]').value=item?.label||'';
+  $<HTMLInputElement>('[data-inner-x]').value=item?String(item.x):'';
+  $<HTMLInputElement>('[data-inner-y]').value=item?String(item.y):'';
   $<HTMLButtonElement>('[data-builder-undo]').disabled=!undo.length;$<HTMLButtonElement>('[data-builder-redo]').disabled=!redo.length;
  };
  const switchMode=(on:boolean)=>{host.hidden=!on;studio.classList.toggle('owner-builder-active',on);draw();};
  const modeButton=document.createElement('button');modeButton.type='button';modeButton.textContent='Create New Sign-In Design';modeButton.dataset.builderEnter='';
  studio.querySelector('.owner-pro-nav')?.appendChild(modeButton);
  modeButton.addEventListener('click',()=>switchMode(true));$<HTMLButtonElement>('[data-builder-exit]').addEventListener('click',()=>switchMode(false));
- for(const c of catalogue){$<HTMLButtonElement>('[data-builder-add="'+c.kind+'"]').addEventListener('click',()=>{record();const id='b'+(++serial);draft.blocks.push({id,kind:c.kind,label:c.label,x:30+(draft.blocks.length%5)*42,y:25+(draft.blocks.length%5)*70,width:c.width,height:c.height});selected=id;draw();});}
- $<HTMLElement>('[data-builder-canvas]').addEventListener('click',e=>{const btn=(e.target as HTMLElement).closest<HTMLElement>('[data-block]');if(!btn)return;selected=btn.dataset.block||null;draw();});
+ for(const c of catalogue){$<HTMLButtonElement>('[data-builder-add="'+c.kind+'"]').addEventListener('click',()=>{record();const id='b'+(++serial);draft.blocks.push({id,kind:c.kind,label:c.label,x:30+(draft.blocks.length%5)*42,y:25+(draft.blocks.length%5)*70,width:c.width,height:c.height,items:widgetItems(c.kind)});selected=id;draw();});}
+ $<HTMLElement>('[data-builder-canvas]').addEventListener('click',e=>{const target=e.target as HTMLElement;const btn=target.closest<HTMLElement>('[data-block]');if(!btn)return;selected=btn.dataset.block||null;selectedInner=target.closest<HTMLElement>('[data-inner-id]')?.dataset.innerId||null;draw();});
  const canvas=$<HTMLElement>('[data-builder-canvas]');
  canvas.addEventListener('pointerdown',e=>{
   const node=(e.target as HTMLElement).closest<HTMLElement>('[data-block]');
@@ -78,6 +87,19 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  canvas.addEventListener('pointercancel',()=>{if(!drag)return;drag=null;draw();});
  for(const k of ['x','y','width','height'] as const){$<HTMLInputElement>('[data-builder-'+k+']').addEventListener('change',e=>{const b=draft.blocks.find(b=>b.id===selected);if(!b)return;record();b[k]=Math.max(0,Math.min(k==='x'?3600:k==='y'?2000:k==='width'?900:600,Number((e.target as HTMLInputElement).value)||0));draw();});}
  $<HTMLInputElement>('[data-builder-text]').addEventListener('change',e=>{const b=draft.blocks.find(b=>b.id===selected);if(!b||b.kind==='auth')return;record();b.label=(e.target as HTMLInputElement).value.slice(0,100);draw();});
+ const selectedItem=()=>draft.blocks.find(b=>b.id===selected)?.items?.find(i=>i.id===selectedInner);
+ $<HTMLSelectElement>('[data-builder-item]').addEventListener('change',e=>{selectedInner=(e.target as HTMLSelectElement).value||null;draw();});
+ $<HTMLInputElement>('[data-inner-label]').addEventListener('change',e=>{const item=selectedItem();if(!item)return;const value=(e.target as HTMLInputElement).value.slice(0,60);if(item.label===value)return;record();item.label=value;draw();});
+ for(const axis of ['x','y'] as const)$<HTMLInputElement>('[data-inner-'+axis+']').addEventListener('change',e=>{
+  const item=selectedItem();if(!item)return;
+  const value=Math.max(0,Math.min(axis==='x'?800:500,Number((e.target as HTMLInputElement).value)||0));if(item[axis]===value)return;record();item[axis]=value;draw();
+ });
+ $<HTMLButtonElement>('[data-inner-add]').addEventListener('click',()=>{
+  const b=draft.blocks.find(b=>b.id===selected);
+  if(!b||b.kind==='auth'||!['clock','weather'].includes(b.kind)||(b.items||[]).length>=12)return;
+  record();b.items=b.items||[];const id='custom-'+(++serial);
+  b.items.push({id,label:'New Widget Item',x:16,y:16});selectedInner=id;draw();
+ });
  $<HTMLButtonElement>('[data-builder-remove]').addEventListener('click',()=>{if(!selected)return;record();draft.blocks=draft.blocks.filter(b=>b.id!==selected);selected=null;draw();});
  $<HTMLButtonElement>('[data-builder-clear]').addEventListener('click',()=>{record();draft=blank();selected=null;draw();});
  $<HTMLButtonElement>('[data-builder-undo]').addEventListener('click',()=>{if(!undo.length)return;redo.push(clone());draft=undo.pop()!;selected=null;draw();});
