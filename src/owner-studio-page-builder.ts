@@ -24,7 +24,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  let draft=blank();let undo:Draft[]=[],redo:Draft[]=[],selected:string|null=null,serial=0;
  const library:Draft[]=[];
  let drag:{id:string;x:number;y:number;startX:number;startY:number;zoom:number}|null=null;
- const $=<T extends Element>(s:string)=>host.querySelector(s) as unknown as T;
+ const $=<T>(s:string)=>host.querySelector(s) as unknown as T;
  const clone=()=>JSON.parse(JSON.stringify(draft)) as Draft;
  const record=()=>{undo.push(clone());if(undo.length>60)undo.shift();redo=[];};
  const width=()=>Number($<HTMLSelectElement>('[data-builder-device]').value);
