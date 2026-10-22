@@ -52,7 +52,7 @@ function apply(){
  const rules:string[]=[];
  for(const [key,value] of Object.entries(snap.edits)){
   const sep=key.indexOf('|');if(key.slice(0,sep)!==activeDevice)continue;const selector=key.slice(sep+1);
-  try{if(!doc.querySelector(selector))continue;rules.push(selector+'{translate:'+value.x+'px '+value.y+'px!important;scale:'+value.scale+'!important;rotate:'+value.rotate+'deg!important;opacity:'+value.opacity+'!important;'+(value.glow?'filter:drop-shadow(0 0 '+value.glow/4+'px rgba(60,205,255,.8))!important;':'')+'}');}
+  try{if(!doc.querySelector(selector))continue;rules.push(selector+'{translate:'+value.x+'px '+value.y+'px!important;scale:'+value.scale+'!important;rotate:'+value.rotate+'deg!important;opacity:'+value.opacity+'!important;'+(value.width?'width:'+value.width+'px!important;':'')+(value.height?'height:'+value.height+'px!important;':'')+(value.radius?'border-radius:'+value.radius+'px!important;':'')+(value.glow?'filter:drop-shadow(0 0 '+value.glow/4+'px rgba(60,205,255,.8))!important;':'')+'}');}
   catch{/* invalid draft selectors remain ignored without affecting other layers */}
  }
  style.textContent=clockCss()+' [data-studio-selected]{outline:2px dashed #14baad !important;outline-offset:3px !important;}'+rules.join('\n');
