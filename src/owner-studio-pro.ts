@@ -1,7 +1,7 @@
 import './owner-studio-pro.css';
 
 /** Preview-only editing surface. Never writes published Sign-In preferences. */
-type ElementEdit={x:number;y:number;width:number;height:number;scale:number;opacity:number;rotate:number;glow:number;radius:number};
+type ElementEdit={x:number;y:number;width:number;height:number;scale:number;opacity:number;rotate:number;glow:number;radius:number;fontSize:number;letterSpacing:number;color:string};
 type ClockLook='approved'|'champagne'|'emerald'|'midnight'|'ice'|'minimal';
 const selectors=[
  ['Global Operations','#staff-global-operations'],
@@ -19,7 +19,7 @@ const selectors=[
  ['Ibadan clock','#staff-local-weather .gw-city-clock']
 ] as const;
 const presets=[['Mobile · 360×800',360,800],['Mobile · 390×844',390,844],['Mobile · 430×932',430,932],['Tablet · 768×1024',768,1024],['Tablet · 1024×768',1024,768],['Laptop · 1280×720',1280,720],['Laptop · 1366×768',1366,768],['Desktop · 1680×900',1680,900],['Desktop · 1920×1080',1920,1080],['WQHD · 2560×1440',2560,1440],['32-inch 4K · 3840×2160',3840,2160]] as const;
-const defaults=():ElementEdit=>({x:0,y:0,width:0,height:0,scale:1,opacity:1,rotate:0,glow:0,radius:0});
+const defaults=():ElementEdit=>({x:0,y:0,width:0,height:0,scale:1,opacity:1,rotate:0,glow:0,radius:0,fontSize:0,letterSpacing:0,color:''});
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 type Snapshot={edits:Record<string,ElementEdit>;clock:ClockLook;animation:string;glow:number;};
 const clone=(v:Snapshot)=>JSON.parse(JSON.stringify(v)) as Snapshot;
@@ -52,7 +52,7 @@ function apply(){
  const rules:string[]=[];
  for(const [key,value] of Object.entries(snap.edits)){
   const sep=key.indexOf('|');if(key.slice(0,sep)!==activeDevice)continue;const selector=key.slice(sep+1);
-  try{if(!doc.querySelector(selector))continue;rules.push(selector+'{translate:'+value.x+'px '+value.y+'px!important;scale:'+value.scale+'!important;rotate:'+value.rotate+'deg!important;opacity:'+value.opacity+'!important;'+(value.width?'width:'+value.width+'px!important;':'')+(value.height?'height:'+value.height+'px!important;':'')+(value.radius?'border-radius:'+value.radius+'px!important;':'')+(value.glow?'filter:drop-shadow(0 0 '+value.glow/4+'px rgba(60,205,255,.8))!important;':'')+'}');}
+  try{if(!doc.querySelector(selector))continue;rules.push(selector+'{translate:'+value.x+'px '+value.y+'px!important;scale:'+value.scale+'!important;rotate:'+value.rotate+'deg!important;opacity:'+value.opacity+'!important;'+(value.width?'width:'+value.width+'px!important;':'')+(value.height?'height:'+value.height+'px!important;':'')+(value.radius?'border-radius:'+value.radius+'px!important;':'')+(value.fontSize?'font-size:'+value.fontSize+'px!important;':'')+(value.letterSpacing?'letter-spacing:'+value.letterSpacing+'px!important;':'')+(value.color?'color:'+value.color+'!important;':'')+(value.glow?'filter:drop-shadow(0 0 '+value.glow/4+'px rgba(60,205,255,.8))!important;':'')+'}');}
   catch{/* invalid draft selectors remain ignored without affecting other layers */}
  }
  style.textContent=clockCss()+' [data-studio-selected]{outline:2px dashed #14baad !important;outline-offset:3px !important;}'+rules.join('\n');
@@ -62,10 +62,11 @@ function apply(){
 function highlight(){const doc=getDoc();if(!doc)return;doc.querySelectorAll('[data-studio-selected]').forEach(el=>el.removeAttribute('data-studio-selected'));q()?.setAttribute('data-studio-selected','');}
 function updateControls(){
  if(!editor)return;const e=entry();
- for(const [name,value] of Object.entries(e)){const input=editor.querySelector<HTMLInputElement>('[data-prop="'+name+'"]');if(input)input.value=String(value);const display=editor.querySelector<HTMLElement>('[data-value="'+name+'"]');if(display)display.textContent=Number(value).toFixed(name==='opacity'||name==='scale'?2:0);}
+ for(const [name,value] of Object.entries(e)){const input=editor.querySelector<HTMLInputElement>('[data-prop="'+name+'"]');if(input)input.value=String(value);const display=editor.querySelector<HTMLElement>('[data-value="'+name+'"]');if(display)display.textContent=Number(value||0).toFixed(name==='opacity'||name==='scale'?2:0);}
  const look=selectNode(editor,'[data-clock-look]');if(look)look.value=snap.clock;
  const motion=selectNode(editor,'[data-clock-motion]');if(motion)motion.value=snap.animation;
  const clockGlow=editor.querySelector<HTMLInputElement>('[data-clock-glow]');if(clockGlow)clockGlow.value=String(snap.glow);
+ const colorInput=editor.querySelector<HTMLInputElement>('[data-prop-color]');if(colorInput)colorInput.value=e.color||'#ffffff';
  const info=editor.querySelector('[data-studio-selection]');if(info)info.textContent=selectedLabel;
  const state=editor.querySelector('[data-studio-state]');if(state)state.textContent='PREVIEW ONLY · '+undo.length+' undo steps';
  (editor.querySelector('[data-undo]') as HTMLButtonElement|null)?.toggleAttribute('disabled',undo.length===0);
@@ -148,7 +149,7 @@ export function mountOwnerStudioPro(root:HTMLElement){
  '<div class="owner-pro-actions"><button type="button" data-undo>Undo</button><button type="button" data-redo>Redo</button><button type="button" data-reset-element>Revert element</button><button type="button" data-reset-all>Revert everything</button><button type="button" data-zoom-fit>Fit entire device</button><span data-device-size>1366 × 768</span></div>'+
  '<div class="owner-pro-content"><div class="owner-pro-canvas" style="--owner-pro-width:1366px;--owner-pro-height:768px"><div class="owner-pro-canvas-inner"><iframe title="Approved Sign-In owner preview · interactive" data-owner-pro-frame src="/staff-portal-signin?studioReview=signin-v180" loading="lazy"></iframe></div></div>'+
  '<aside class="owner-pro-inspector"><h5>Selected: <span data-studio-selection></span></h5><p>Move or resize your selected layer. Touch devices can use the sliders. Changes can be undone instantly.</p>'+
- propMarkup('Move horizontally','x',-800,800,1)+propMarkup('Move vertically','y',-800,800,1)+propMarkup('Width · 0 = automatic','width',0,800,1)+propMarkup('Height · 0 = automatic','height',0,800,1)+propMarkup('Size','scale',.4,2.5,.01)+propMarkup('Rotate','rotate',-180,180,1)+propMarkup('Round corners','radius',0,100,1)+propMarkup('Transparency','opacity',.15,1,.01)+propMarkup('Glow','glow',0,100,1)+
+ propMarkup('Move horizontally','x',-800,800,1)+propMarkup('Move vertically','y',-800,800,1)+propMarkup('Width · 0 = automatic','width',0,800,1)+propMarkup('Height · 0 = automatic','height',0,800,1)+propMarkup('Size','scale',.4,2.5,.01)+propMarkup('Rotate','rotate',-180,180,1)+propMarkup('Round corners','radius',0,100,1)+propMarkup('Font size · 0 = automatic','fontSize',0,60,1)+propMarkup('Letter spacing','letterSpacing',-2,8,.1)+'<label class="owner-pro-setting">Text colour (preview)<input data-prop-color type="color" value="#ffffff"></label><button type="button" data-reset-color>Restore Text Colour</button>'+propMarkup('Transparency','opacity',.15,1,.01)+propMarkup('Glow','glow',0,100,1)+
  '<div class="owner-pro-clock-controls"><h5>Analog clock studio</h5><label>Clock design<select data-clock-look>'+(['approved','champagne','emerald','midnight','ice','minimal'] as const).map(x=>'<option value="'+x+'">'+x+'</option>').join('')+'</select></label>'+
  '<label>Motion<select data-clock-motion><option value="approved">Approved default</option><option value="still">Still</option><option value="float">Levitation</option><option value="pulse">Glow pulse</option><option value="spin">Artistic dial rotation</option></select></label>'+
  '<label>Glow strength<input type="range" min="0" max="100" step="1" data-clock-glow value="0"></label></div></aside></div>'+
@@ -165,6 +166,8 @@ export function mountOwnerStudioPro(root:HTMLElement){
  layer?.addEventListener('change',()=>{selected=layer.value;selectedLabel=selectors.find(([,sel])=>sel===selected)?.[0]||'Element';apply();updateControls();});
  selectNode(studio,'[data-owner-pro-preset]')?.addEventListener('change',e=>deviceChanged(e.target as HTMLSelectElement));
  for(const input of studio.querySelectorAll<HTMLInputElement>('[data-prop]'))input.addEventListener('input',()=>{const name=input.dataset.prop as keyof ElementEdit;const next={...entry(),[name]:Number(input.value)};setEntry(next);});
+ studio.querySelector<HTMLInputElement>('[data-prop-color]')?.addEventListener('input',e=>setEntry({...entry(),color:(e.target as HTMLInputElement).value}));
+ studio.querySelector('[data-reset-color]')?.addEventListener('click',()=>setEntry({...entry(),color:''}));
  studio.querySelector('[data-undo]')?.addEventListener('click',()=>stack('undo'));
  studio.querySelector('[data-redo]')?.addEventListener('click',()=>stack('redo'));
  studio.querySelector('[data-reset-element]')?.addEventListener('click',()=>stack('reset-element'));
