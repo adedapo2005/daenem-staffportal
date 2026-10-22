@@ -127,6 +127,15 @@ async function artwork(request:Request,env:PrintingProductionEnv,context:Session
   if(status==='approved'&&!can(context,'approve'))return json({error:'Printing approval permission is required to approve artwork.'},403);
   if(!validJobFileKey(body.fileKey,jobId,['artwork'])||!validJobFileKey(body.previewKey,jobId,['artwork']))return json({error:'Artwork files must belong to this print job.'},400);
   const latest=await env.DB.prepare(`SELECT COALESCE(MAX(av.version_no),0) AS versionNo FROM print_artwork_versions av JOIN print_jobs pj ON pj.id=av.print_job_id AND pj.company_id=? WHERE av.print_job_id=?`).bind(companyId,jobId).first<{versionNo:number}>();
+  // Body parsing and version reads can outlast the original authority. Require
+  // the same current actor/session and target-company grant before any write.
+  let currentContext:SessionContext|null;
+  try{currentContext=await getSessionContext(request,env)}catch{
+    return json({error:'The Printing artwork could not be saved. Refresh and try again.'},503);
+  }
+  if(!currentContext||currentContext.sessionId!==context.sessionId||currentContext.employee.id!==context.employee.id)return json({error:'Authentication required.'},401);
+  if(!can(currentContext,'edit'))return json({error:'Edit Printing permission is required.'},403);
+  if(status==='approved'&&!can(currentContext,'approve'))return json({error:'Printing approval permission is required to approve artwork.'},403);
   const version=Number(latest?.versionNo||0)+1,id=uid('artwork'),auditId=uid('audit'),requestId=requestCorrelationId(request);
   const jobStatus=status==='rejected'||status==='superseded'?'ready':status;
   // The unique job/version constraint chooses one writer. Each subsequent write

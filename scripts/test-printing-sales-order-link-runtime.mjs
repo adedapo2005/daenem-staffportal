@@ -111,16 +111,22 @@ const env = {
 const source = await readFile(new URL('../worker/printing-production.ts', import.meta.url), 'utf8');
 const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const module = { exports: {} };
+// This persistence-only fixture supplies explicit actors; canonical session
+// revocation is exercised by test-printing-artwork-composed-runtime.mjs.
+const requestActors = new WeakMap();
 new Function('exports', 'require', 'module', output)(module.exports, (specifier) => {
   assert.equal(specifier, './auth');
-  return { hasPermission: (candidate, code, minimum, targetCompanyId) => {
+  return { getSessionContext: async request => requestActors.get(request) || null, hasPermission: (candidate, code, minimum, targetCompanyId) => {
     assert.equal(targetCompanyId, 'company-printing');
     const levels = ['none', 'view', 'create', 'edit', 'approve', 'manage'];
     const granted = candidate.companyPermissions?.[targetCompanyId]?.[code] || 'none';
     return levels.indexOf(granted) >= levels.indexOf(minimum);
   } };
 }, module);
-const route = module.exports.routePrintingProduction;
+const route = (request, env, context) => {
+  requestActors.set(request, context);
+  return module.exports.routePrintingProduction(request, env, context);
+};
 const financeSource = await readFile(new URL('../worker/finance-sales-autopost.ts', import.meta.url), 'utf8');
 const financeOutput = ts.transpileModule(financeSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { postFulfilledSalesOrder } = await import(`data:text/javascript;base64,${Buffer.from(financeOutput).toString('base64')}`);
