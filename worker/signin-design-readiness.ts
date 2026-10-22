@@ -19,6 +19,8 @@ export type SignInDesignReview = {
 const viewports = [
   { name: 'Mobile 390px', width: 390, height: 844, scrollVertical: true },
   { name: 'Tablet 768px', width: 768, height: 1024, scrollVertical: true },
+  { name: 'Compact desktop 1024px', width: 1024, height: 768, scrollVertical: false },
+  { name: 'Standard desktop 1280px', width: 1280, height: 720, scrollVertical: false },
   { name: 'Laptop 1366px', width: 1366, height: 900, scrollVertical: false },
   { name: 'Desktop 1920px', width: 1920, height: 1080, scrollVertical: false },
   { name: '32-inch 4K 3840px', width: 3840, height: 2160, scrollVertical: false },
@@ -53,6 +55,7 @@ export function inspectSignInDesign(design: { name: string; blocks: Block[] }): 
   for (const viewport of viewports) {
     const sf = Math.max(1, viewport.width/1366);
     const offscreen = blocks.filter(b => (
+      b.x < 0 || b.y < 0 || b.width <= 0 || b.height <= 0 ||
       (b.x+b.width)*sf > viewport.width+.5 ||
       (!viewport.scrollVertical && (b.y+b.height)*sf > viewport.height+.5)
     ));
@@ -68,7 +71,7 @@ export function inspectSignInDesign(design: { name: string; blocks: Block[] }): 
     pendingAcceptance: [
       'Real authenticated Sign-In, Create Account, Forgot Password, and provider integrations',
       'Keyboard focus, screen-reader labels, accessibility and reduced-motion acceptance',
-      'Owner visual approval at 390px, 768px, 1366px, 1920px and true 3840px',
+      'Owner visual approval at 390px, 768px, 1024px, 1280px, 1366px, 1920px and true 3840px',
       'Cloudflare Pre-Production release validation with unchanged approved V180 fallback',
       'Independent authenticated publish and one-click rollback rehearsal',
     ],
