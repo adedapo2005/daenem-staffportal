@@ -19,7 +19,7 @@ db.exec(`
     quantity REAL, unit_cost_kobo INTEGER, from_location_id TEXT, reference_type TEXT, reference_id TEXT,
     reason TEXT, created_by TEXT);
   CREATE TABLE audit_logs(id TEXT PRIMARY KEY, actor_employee_id TEXT, company_id TEXT, module TEXT,
-    action TEXT, entity_type TEXT, entity_id TEXT, after_json TEXT, source TEXT);
+    action TEXT, entity_type TEXT, entity_id TEXT, after_json TEXT, source TEXT, request_id TEXT);
   INSERT INTO company_locations VALUES('location-a','company-printing',1);
   INSERT INTO inventory_items VALUES('paper-a','company-printing','Paper',100,1);
   INSERT INTO print_jobs(id,company_id,production_status,quoted_kobo) VALUES
@@ -46,7 +46,7 @@ const output = ts.transpileModule(source, { compilerOptions: { module: ts.Module
 const module = { exports: {} };
 new Function('exports', 'require', 'module', output)(module.exports, (specifier) => {
   assert.equal(specifier, './auth');
-  return { hasPermission: (context, code, minimum, companyId) => {
+  return { getSessionContext: async () => authorized, hasPermission: (context, code, minimum, companyId) => {
     assert.equal(companyId, 'company-printing');
     const levels = ['none', 'view', 'create', 'edit', 'approve', 'manage'];
     return levels.indexOf(context.companyPermissions?.[companyId]?.[code] || 'none') >= levels.indexOf(minimum);
@@ -107,7 +107,7 @@ assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE id='balance-a
 assert.equal(count('print_job_materials'), 2);
 
 db.exec(`CREATE TRIGGER reject_print_material_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'audit unavailable'); END`);
-await assert.rejects(issue('job-a', 1), /audit unavailable/);
+assert.equal((await issue('job-a', 1)).status, 503);
 assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE id='balance-a'").get().quantity, 3);
 assert.equal(count('print_job_materials'), 2);
 assert.equal(count('stock_movements'), 2);
@@ -115,7 +115,7 @@ assert.equal(count('audit_logs'), 2);
 db.exec('DROP TRIGGER reject_print_material_audit');
 db.exec(`CREATE TRIGGER reject_print_material_summary BEFORE UPDATE OF material_cost_kobo ON print_jobs
   BEGIN SELECT RAISE(ABORT,'summary unavailable'); END`);
-await assert.rejects(issue('job-a', 1), /summary unavailable/);
+assert.equal((await issue('job-a', 1)).status, 503);
 assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE id='balance-a'").get().quantity, 3);
 assert.equal(count('print_job_materials'), 2);
 assert.equal(count('stock_movements'), 2);

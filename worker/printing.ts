@@ -258,38 +258,62 @@ async function addMaterial(request: Request, env: PrintingEnv, context: SessionC
   if (koboFromNaira(body.unitCostNaira) > 0 && !canViewPrintFinancials(context)) {
     return json({ error: 'Printing approval or Finance view permission is required to override material cost.' }, 403);
   }
+  // Each awaited preflight can outlast the original authority. Recheck before
+  // disclosing job/stock state and immediately before the mutation batch.
+  const revalidate = async () => {
+    const current = await getSessionContext(request, env);
+    if (!current || current.sessionId !== context.sessionId || current.employee.id !== context.employee.id) return json({ error: 'Authentication required.' }, 401);
+    if (!canPrint(current, 'create')) return json({ error: 'Create Printing data permission is required.' }, 403);
+    if (koboFromNaira(body.unitCostNaira) > 0 && !canViewPrintFinancials(current)) return json({ error: 'Printing approval or Finance view permission is required to override material cost.' }, 403);
+    return null;
+  };
   const [job, item] = await Promise.all([
     env.DB.prepare(`SELECT id, production_status AS status FROM print_jobs WHERE id = ? AND company_id = ?`).bind(body.jobId, companyId).first<{ id: string; status: string }>(),
     env.DB.prepare(`SELECT id, name, unit_cost_kobo AS unitCostKobo FROM inventory_items WHERE id = ? AND company_id = ? AND active = 1`).bind(body.itemId, companyId).first<{ id: string; name: string; unitCostKobo: number }>(),
   ]);
+  const jobDenial = await revalidate();
+  if (jobDenial) return jobDenial;
   if (!job || !item) return json({ error: 'Print job or Printing inventory item was not found.' }, 404);
   if (['completed','cancelled'].includes(job.status)) return json({ error: 'Materials cannot be added to a completed or cancelled job.' }, 409);
   const locationId = String(body.locationId || 'location-printing-hq');
   const location = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(locationId, companyId).first();
+  const locationDenial = await revalidate();
+  if (locationDenial) return locationDenial;
   if (!location) return json({ error: 'Selected Printing stock location was not found.' }, 400);
   const balance = await env.DB.prepare(`SELECT id, quantity, reserved_quantity AS reservedQuantity FROM stock_balances WHERE company_id = ? AND location_id = ? AND item_id = ?`).bind(companyId, locationId, body.itemId).first<{ id: string; quantity: number; reservedQuantity: number }>();
+  const stockDenial = await revalidate();
+  if (stockDenial) return stockDenial;
   const required = actual + waste;
   if (!balance || Number(balance.quantity) - Number(balance.reservedQuantity || 0) < required) {
     return json({ error: `Insufficient stock for ${item.name}. Available quantity is ${Math.max(0, Number(balance?.quantity || 0) - Number(balance?.reservedQuantity || 0))}.` }, 409);
   }
   const unitCostKobo = body.unitCostNaira == null ? Number(item.unitCostKobo || 0) : koboFromNaira(body.unitCostNaira);
+  const requestId = (request.headers.get('x-request-id') || request.headers.get('cf-ray') || crypto.randomUUID()).slice(0, 128);
+  // Every write must affect one row, including required audit and cost summary.
+  // A silently skipped write aborts the same batch and restores consumed stock.
   try {
     await env.DB.batch([
     env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND location_id = ? AND item_id = ? AND quantity - COALESCE(reserved_quantity, 0) >= ? AND EXISTS (SELECT 1 FROM print_jobs WHERE id = ? AND company_id = ? AND production_status NOT IN ('completed','cancelled'))`).bind(required, balance.id, companyId, locationId, body.itemId, required, body.jobId, companyId),
     env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`INSERT INTO print_job_materials (id, print_job_id, item_id, actual_quantity, waste_quantity, unit_cost_kobo, issued_from_location_id, issued_by, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(uid('print-material'), body.jobId, body.itemId, actual, waste, unitCostKobo, locationId, context.employee.id, body.note || null),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`INSERT INTO stock_movements (id, company_id, item_id, movement_type, quantity, unit_cost_kobo, from_location_id, reference_type, reference_id, reason, created_by) VALUES (?, ?, ?, 'issue', ?, ?, ?, 'print_job', ?, ?, ?)`).bind(uid('stock-movement'), companyId, body.itemId, required, unitCostKobo, locationId, body.jobId, body.note || 'Print job material usage', context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'printing', 'record_material_usage', 'print_job', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, body.jobId, JSON.stringify({ itemId: body.itemId, actual, waste, unitCostKobo })),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
+    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source, request_id) VALUES (?, ?, ?, 'printing', 'record_material_usage', 'print_job', ?, ?, 'web', ?)`).bind(uid('audit'), context.employee.id, companyId, body.jobId, JSON.stringify({ itemId: body.itemId, actual, waste, unitCostKobo }), requestId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`WITH cost AS (SELECT COALESCE(ROUND(SUM((actual_quantity + waste_quantity) * unit_cost_kobo)), 0) AS amount FROM print_job_materials WHERE print_job_id = ?)
       UPDATE print_jobs SET
         material_cost_kobo = (SELECT amount FROM cost),
         gross_profit_kobo = COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) - (SELECT amount FROM cost) - COALESCE(labour_cost_kobo, 0) - COALESCE(finishing_cost_kobo, 0) - COALESCE(other_cost_kobo, 0),
         margin_basis_points = CASE WHEN COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) > 0 THEN ROUND((COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) - (SELECT amount FROM cost) - COALESCE(labour_cost_kobo, 0) - COALESCE(finishing_cost_kobo, 0) - COALESCE(other_cost_kobo, 0)) * 10000.0 / COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0)) ELSE 0 END,
         updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`).bind(body.jobId, body.jobId, companyId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     ]);
   } catch (error) {
     const current = await env.DB.prepare(`SELECT quantity - COALESCE(reserved_quantity, 0) AS available FROM stock_balances WHERE id = ? AND company_id = ? AND location_id = ? AND item_id = ?`).bind(balance.id, companyId, locationId, body.itemId).first<{ available: number }>();
     const openJob = await env.DB.prepare(`SELECT id FROM print_jobs WHERE id = ? AND company_id = ? AND production_status NOT IN ('completed','cancelled')`).bind(body.jobId, companyId).first();
+    const failureDenial = await revalidate();
+    if (failureDenial) return failureDenial;
     if (!openJob || !current || Number(current.available) < required) return json({ error: 'Printing stock or job status changed. Refresh and try again.' }, 409);
     throw error;
   }
@@ -388,7 +412,11 @@ export async function routePrinting(request: Request, env: PrintingEnv, context:
   if (url.pathname === '/api/printing/jobs' && request.method === 'GET') return listJobs(request, env, context);
   if (url.pathname === '/api/printing/jobs' && request.method === 'POST') return createJob(request, env, context);
   if (url.pathname === '/api/printing/jobs/status' && request.method === 'POST') return transitionJob(request, env, context);
-  if (url.pathname === '/api/printing/jobs/materials' && request.method === 'POST') return addMaterial(request, env, context);
+  if (url.pathname === '/api/printing/jobs/materials' && request.method === 'POST') {
+    try { return await addMaterial(request, env, context); } catch {
+      return json({ error: 'The Printing material usage could not be saved. Refresh and try again.' }, 503);
+    }
+  }
   if (url.pathname === '/api/printing/jobs/qc' && request.method === 'POST') {
     try { return await qualityCheck(request, env, context); } catch {
       return json({ error: 'The Printing quality check could not be saved. Refresh and try again.' }, 503);
