@@ -309,7 +309,7 @@ const ALL_EFFECT_LEVELS: EffectLevel[] = ['calm', 'balanced', 'vivid'];
 const ALL_THEME_MODES: SignInThemeMode[] = ['day', 'night'];
 const ALL_ZONES: SignInZone[] = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'];
 const ALL_BACKGROUND_IDS = SIGNIN_BACKGROUND_OPTIONS.map((item) => item.id);
-const ALL_EFFECT_PRESETS: EffectPreset[] = ['quiet', 'glass', 'accent', 'soft'];
+const ALL_EFFECT_PRESETS: EffectPreset[] = ['quiet', 'accent', 'soft'];
 const MAX_LABEL_LENGTH = 120;
 const DEFAULT_LEGAL_PREFIX = 'By continuing to login, you agree to Daenem Group';
 const LEGACY_LEGAL_PREFIXES = new Set([
@@ -481,11 +481,11 @@ const DEFAULT_CONTENT: SignInContent = {
 
 function defaultInstances(): SignInWidgetInstance[] {
   return [
-    { id: 'weather', kind: 'weather', variant: 'standard', zone: 'live-context', order: 0, visible: true, label: DEFAULT_SIGNIN_LABELS.widgetLabels.weather, effectPreset: 'glass' },
+    { id: 'weather', kind: 'weather', variant: 'standard', zone: 'live-context', order: 0, visible: true, label: DEFAULT_SIGNIN_LABELS.widgetLabels.weather, effectPreset: 'soft' },
     { id: 'status', kind: 'status', variant: 'operational', zone: 'live-context', order: 1, visible: true, label: DEFAULT_SIGNIN_LABELS.widgetLabels.status, effectPreset: 'soft' },
     { id: 'inspiration', kind: 'inspiration', variant: 'insight-card', zone: 'today', order: 2, visible: true, label: DEFAULT_SIGNIN_LABELS.widgetLabels.inspiration, effectPreset: 'accent' },
     { id: 'motivation', kind: 'motivation', variant: 'momentum-card', zone: 'today', order: 3, visible: true, label: DEFAULT_SIGNIN_LABELS.widgetLabels.motivation, effectPreset: 'soft' },
-    { id: 'news', kind: 'news', variant: 'headline-stack', zone: 'today', order: 4, visible: true, label: DEFAULT_SIGNIN_LABELS.widgetLabels.news, effectPreset: 'glass' },
+    { id: 'news', kind: 'news', variant: 'headline-stack', zone: 'today', order: 4, visible: true, label: DEFAULT_SIGNIN_LABELS.widgetLabels.news, effectPreset: 'soft' },
   ];
 }
 
@@ -498,9 +498,9 @@ export const DEFAULT_SIGNIN_PREFERENCES: SignInExperiencePreferences = {
   clockZones: WORLD_CLOCKS.map((item) => item.zone),
   temperatureUnit: 'F',
   logoPosition: 'left',
-  logo: { position: 'left', size: 'prominent', alignment: 'start', glass: true, animation: 'float' },
+  logo: { position: 'left', size: 'prominent', alignment: 'start', glass: false, animation: 'float' },
   effectLevel: 'balanced',
-  effects: { ambientGlow: true, glassIntensity: 72, backgroundBreathing: true, cardFloat: true, logoMotion: true, statusPulse: true, widgetEntrance: true, shimmer: false },
+  effects: { ambientGlow: true, glassIntensity: 0, backgroundBreathing: true, cardFloat: true, logoMotion: true, statusPulse: true, widgetEntrance: true, shimmer: false },
   themeMode: 'day',
   backgroundId: 'unified-daylight',
   darkStart: '19:00',
@@ -625,7 +625,7 @@ function normalizeInstances(value: unknown, hiddenWidgets: SignInWidgetId[], lab
     const zone = ALL_ZONES.includes(raw.zone as SignInZone) ? raw.zone as SignInZone : defaultZone;
     const visible = typeof raw.visible === 'boolean' ? raw.visible : !hiddenWidgets.includes(kind);
     const label = cleanText(raw.label, labels.widgetLabels[kind], SIGNIN_LABEL_LIMITS.widget);
-    const effectPreset = ALL_EFFECT_PRESETS.includes(raw.effectPreset as EffectPreset) ? raw.effectPreset as EffectPreset : 'glass';
+    const effectPreset = ALL_EFFECT_PRESETS.includes(raw.effectPreset as EffectPreset) ? raw.effectPreset as EffectPreset : 'soft';
     instances.push({
       id, kind, zone, visible, label, effectPreset,
       variant: normalizeWidgetVariant(kind, raw.variant),
@@ -645,10 +645,9 @@ export function nextSignInWidgetId(kind: SignInWidgetId, instances: Pick<SignInW
 
 function normalizeEffects(value: unknown): SignInEffects {
   const source = candidateRecord(value);
-  const number = Number(source.glassIntensity);
-  return {
+ return {
     ambientGlow: source.ambientGlow !== false,
-    glassIntensity: Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number))) : DEFAULT_SIGNIN_PREFERENCES.effects.glassIntensity,
+    glassIntensity: 0,
     backgroundBreathing: source.backgroundBreathing !== false,
     cardFloat: source.cardFloat !== false,
     logoMotion: source.logoMotion !== false,
@@ -690,7 +689,7 @@ export function normalizeSignInPreferences(value: unknown): SignInExperiencePref
       position,
       size: ALL_LOGO_SIZES.includes(logoSource.size as LogoSizePreset) ? logoSource.size as LogoSizePreset : DEFAULT_SIGNIN_PREFERENCES.logo.size,
       alignment: ALL_LOGO_ALIGNMENTS.includes(logoSource.alignment as LogoAlignment) ? logoSource.alignment as LogoAlignment : DEFAULT_SIGNIN_PREFERENCES.logo.alignment,
-      glass: logoSource.glass !== false,
+      glass: false,
       animation: ALL_LOGO_ANIMATIONS.includes(logoSource.animation as LogoAnimation) ? logoSource.animation as LogoAnimation : DEFAULT_SIGNIN_PREFERENCES.logo.animation,
     },
     effectLevel: ALL_EFFECT_LEVELS.includes(candidate.effectLevel as EffectLevel) ? candidate.effectLevel as EffectLevel : DEFAULT_SIGNIN_PREFERENCES.effectLevel,
