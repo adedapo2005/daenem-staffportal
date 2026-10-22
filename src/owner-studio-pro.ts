@@ -21,9 +21,15 @@ const selectors=[
 const presets=[['Mobile · 360×800',360,800],['Mobile · 390×844',390,844],['Mobile · 430×932',430,932],['Tablet · 768×1024',768,1024],['Tablet · 1024×768',1024,768],['Laptop · 1280×720',1280,720],['Laptop · 1366×768',1366,768],['Desktop · 1680×900',1680,900],['Desktop · 1920×1080',1920,1080],['WQHD · 2560×1440',2560,1440],['32-inch 4K · 3840×2160',3840,2160]] as const;
 const defaults=():ElementEdit=>({x:0,y:0,width:0,height:0,scale:1,opacity:1,rotate:0,glow:0,radius:0,fontSize:0,letterSpacing:0,color:''});
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
-type Snapshot={edits:Record<string,ElementEdit>;clock:ClockLook;animation:string;glow:number;};
+type ClockEdit={look:ClockLook;animation:string;glow:number};
+type Snapshot={edits:Record<string,ElementEdit>;clocks:Record<string,ClockEdit>;};
 const clone=(v:Snapshot)=>JSON.parse(JSON.stringify(v)) as Snapshot;
-let snap:Snapshot={edits:{},clock:'approved',animation:'approved',glow:0};
+let snap:Snapshot={edits:{},clocks:{}};
+const clockTargets=selectors.filter(([name])=>name.toLowerCase().includes('clock'));
+const clockKey=()=>activeDevice+'|'+selected;
+const defaultClock=():ClockEdit=>({look:'approved',animation:'approved',glow:0});
+const clockEntry=()=>snap.clocks[clockKey()]||defaultClock();
+function setSelectedClock(change:Partial<ClockEdit>){history();snap.clocks[clockKey()]={...clockEntry(),...change};apply();updateControls();}
 let undo:Snapshot[]=[],redo:Snapshot[]=[];
 let selected=selectors[0][1] as string, selectedLabel='Global Operations';
 let activeDevice='1366x768';
@@ -41,10 +47,18 @@ function setEntry(value:ElementEdit,record=true){if(JSON.stringify(entry())===JS
 const styleId='daenem-owner-studio-preview-style';
 function clockCss(){
  const styles:Record<ClockLook,string>={approved:'',champagne:'filter:drop-shadow(0 0 9px rgba(226,184,96,.8)) sepia(.32) saturate(1.45);',emerald:'filter:drop-shadow(0 0 12px rgba(36,217,162,.85)) hue-rotate(64deg) saturate(1.3);',midnight:'filter:drop-shadow(0 0 12px rgba(52,126,255,.8)) contrast(1.2) brightness(.85);',ice:'filter:drop-shadow(0 0 12px rgba(121,231,255,.85)) brightness(1.15);',minimal:'filter:grayscale(1) contrast(1.08);'};
- const glow=snap.glow>0?'filter:drop-shadow(0 0 '+(snap.glow/5).toFixed(0)+'px rgba(82,210,255,.8));':'';
- const animation=snap.animation==='float'?'animation:studio-clock-float 3s ease-in-out infinite alternate !important;':snap.animation==='pulse'?'animation:studio-clock-pulse 2.4s ease-in-out infinite alternate !important;':snap.animation==='still'?'animation:none !important;':'';
- const orbit=snap.animation==='spin'?'.sp-root .gw-city-clock{position:relative!important}.sp-root .gw-city-clock::after{content:"";position:absolute;inset:-4px;border:2px dashed rgba(106,229,245,.7);border-radius:50%;pointer-events:none;animation:studio-clock-spin 14s linear infinite;}':'';
- return '.sp-root .gw-city-clock{'+(styles[snap.clock]||'')+glow+animation+'}'+orbit+' @keyframes studio-clock-float{to{translate:0 -5px}} @keyframes studio-clock-pulse{to{filter:brightness(1.23) drop-shadow(0 0 14px #69dcff)}} @keyframes studio-clock-spin{to{rotate:360deg}} @media (prefers-reduced-motion: reduce){.sp-root .gw-city-clock,.sp-root .gw-city-clock::after{animation:none!important}}';
+ const rules:string[]=[];
+ for(const [key,style] of Object.entries(snap.clocks)){
+  const sep=key.indexOf('|');if(key.slice(0,sep)!==activeDevice)continue;
+  const selector=key.slice(sep+1);if(!clockTargets.some(([,s])=>s===selector))continue;
+  const glow=style.glow>0?'drop-shadow(0 0 '+Math.round(style.glow/5)+'px rgba(82,210,255,.8)) ':'';
+  const appearance=(styles[style.look]||'').replace(/^filter:/,'').replace(/;$/,'');
+  const filters=glow+(appearance||'');
+  const motion=style.animation==='float'?'animation:studio-clock-float 3s ease-in-out infinite alternate!important;':style.animation==='pulse'?'animation:studio-clock-pulse 2.4s ease-in-out infinite alternate!important;':style.animation==='still'?'animation:none!important;':'';
+  rules.push(selector+'{'+(filters?'filter:'+filters+'!important;':'')+motion+'}');
+  if(style.animation==='spin')rules.push(selector+'::after{content:"";position:absolute;inset:-4px;border:2px dashed rgba(106,229,245,.7);border-radius:50%;pointer-events:none;animation:studio-clock-spin 14s linear infinite;}');
+ }
+ return rules.join('')+'@keyframes studio-clock-float{to{translate:0 -5px}} @keyframes studio-clock-pulse{to{filter:brightness(1.23) drop-shadow(0 0 14px #69dcff)}} @keyframes studio-clock-spin{to{rotate:360deg}} @media (prefers-reduced-motion: reduce){.sp-root .gw-city-clock,.sp-root .gw-city-clock::after{animation:none!important}}';
 }
 function apply(){
  const doc=getDoc();if(!doc)return;
@@ -63,9 +77,9 @@ function highlight(){const doc=getDoc();if(!doc)return;doc.querySelectorAll('[da
 function updateControls(){
  if(!editor)return;const e=entry();
  for(const [name,value] of Object.entries(e)){const input=editor.querySelector<HTMLInputElement>('[data-prop="'+name+'"]');if(input)input.value=String(value);const display=editor.querySelector<HTMLElement>('[data-value="'+name+'"]');if(display)display.textContent=Number(value||0).toFixed(name==='opacity'||name==='scale'?2:0);}
- const look=selectNode(editor,'[data-clock-look]');if(look)look.value=snap.clock;
- const motion=selectNode(editor,'[data-clock-motion]');if(motion)motion.value=snap.animation;
- const clockGlow=editor.querySelector<HTMLInputElement>('[data-clock-glow]');if(clockGlow)clockGlow.value=String(snap.glow);
+ const clock=clockEntry();const look=selectNode(editor,'[data-clock-look]');if(look)look.value=clock.look;
+ const motion=selectNode(editor,'[data-clock-motion]');if(motion)motion.value=clock.animation;
+ const clockGlow=editor.querySelector<HTMLInputElement>('[data-clock-glow]');if(clockGlow)clockGlow.value=String(clock.glow);
  const colorInput=editor.querySelector<HTMLInputElement>('[data-prop-color]');if(colorInput)colorInput.value=e.color||'#ffffff';
  const info=editor.querySelector('[data-studio-selection]');if(info)info.textContent=selectedLabel;
  const state=editor.querySelector('[data-studio-state]');if(state)state.textContent='PREVIEW ONLY · '+undo.length+' undo steps';
@@ -111,7 +125,7 @@ function installFrame(){
 }
 let lastDrag:{x:number;y:number}|null=null;
 
-function setClock<K extends keyof Pick<Snapshot,'clock'|'animation'|'glow'>>(key:K,value:Snapshot[K]){history();snap[key]=value;apply();updateControls();}
+function setClock<K extends keyof ClockEdit>(key:K,value:ClockEdit[K]){if(!clockTargets.some(([,s])=>s===selected))return;setSelectedClock({[key]:value});}
 function fitPreview(){
  const stage=editor?.querySelector<HTMLElement>('.owner-pro-canvas');const inner=editor?.querySelector<HTMLElement>('.owner-pro-canvas-inner');
  if(!stage||!inner||!frame)return;
@@ -134,7 +148,7 @@ function stack(action:'undo'|'redo'|'reset-element'|'reset-all'){
  if(action==='undo'&&undo.length){redo.push(clone(snap));snap=undo.pop()!;}
  if(action==='redo'&&redo.length){undo.push(clone(snap));snap=redo.pop()!;}
  if(action==='reset-element'){history();delete snap.edits[currentKey()];}
- if(action==='reset-all'){history();snap={edits:{},clock:'approved',animation:'approved',glow:0};}
+ if(action==='reset-all'){history();snap={edits:{},clocks:{}};}
  apply();updateControls();
 }
 function propMarkup(label:string,id:keyof ElementEdit,min:number,max:number,step:number){
@@ -173,7 +187,7 @@ export function mountOwnerStudioPro(root:HTMLElement){
  studio.querySelector('[data-reset-element]')?.addEventListener('click',()=>stack('reset-element'));
  studio.querySelector('[data-reset-all]')?.addEventListener('click',()=>stack('reset-all'));
  studio.querySelector('[data-zoom-fit]')?.addEventListener('click',fitPreview);
- selectNode(studio,'[data-clock-look]')?.addEventListener('change',e=>setClock('clock',(e.target as HTMLSelectElement).value as ClockLook));
+ selectNode(studio,'[data-clock-look]')?.addEventListener('change',e=>setClock('look',(e.target as HTMLSelectElement).value as ClockLook));
  selectNode(studio,'[data-clock-motion]')?.addEventListener('change',e=>setClock('animation',(e.target as HTMLSelectElement).value));
  studio.querySelector<HTMLInputElement>('[data-clock-glow]')?.addEventListener('input',e=>setClock('glow',Number((e.target as HTMLInputElement).value)));
  frame?.addEventListener('load',installFrame);
