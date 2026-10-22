@@ -110,17 +110,27 @@ export async function routeSignInDesignLibrary(request: Request, env: Env, conte
   const next: Library = { revision: current.revision + 1, designs };
   const nextJSON = JSON.stringify(next);
   if (nextJSON.length > MAX_BODY) return json({ error: 'Design library exceeds the storage limit.' }, 413);
-  const result = row
-    ? await env.DB.prepare(`UPDATE app_settings SET setting_value=?,value_type='json',updated_by=?,updated_at=CURRENT_TIMESTAMP
-        WHERE setting_key=? AND setting_value=?`).bind(nextJSON, context.employee.id, KEY, old).run()
-    : await env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
+  const mutation = row
+    ? env.DB.prepare(`UPDATE app_settings SET setting_value=?,value_type='json',updated_by=?,updated_at=CURRENT_TIMESTAMP
+        WHERE setting_key=? AND setting_value=?`).bind(nextJSON, context.employee.id, KEY, old)
+    : env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
         VALUES(?,?,'json',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO NOTHING`)
-      .bind(KEY, nextJSON, context.employee.id).run();
-  if (result.meta.changes !== 1) return json({ error: 'Concurrent edit detected. Reload before saving.' }, 409);
-  await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
-     VALUES(?,?,'theme','save_signin_design_library','app_setting',?,?,'web')`)
-    .bind('audit-'+crypto.randomUUID(), context.employee.id, KEY, JSON.stringify({ revision: next.revision, designCount: designs.length }))
-    .run();
+      .bind(KEY, nextJSON, context.employee.id);
+  const audit = env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+    SELECT ?,?,'theme','save_signin_design_library','app_setting',?,?,'web'
+    FROM app_settings WHERE setting_key=? AND setting_value=? AND changes()=1`)
+    .bind('audit-'+crypto.randomUUID(), context.employee.id, KEY,
+      JSON.stringify({ revision: next.revision, designCount: designs.length }), KEY, nextJSON);
+  try {
+    // D1 batch is a transaction: an audit failure must roll back the design mutation.
+    // The audit SELECT only inserts after a successful CAS update/insert in this batch.
+    const results = await env.DB.batch([mutation, audit]);
+    if (results[0]?.meta?.changes !== 1 || results[1]?.meta?.changes !== 1) {
+      return json({ error: 'Concurrent edit detected. Reload before saving.' }, 409);
+    }
+  } catch {
+    return json({ error: 'Design Library save and audit could not be completed safely.' }, 503);
+  }
   return json({ ok: true, ...next });
 }
 
