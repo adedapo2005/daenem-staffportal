@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { stage1PreproductionCopyOverlay } from './lib/stage1-preproduction-copy-overlay.mjs';
+const file=fileURLToPath(new URL('../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx',import.meta.url));
+const source=fs.readFileSync(file,'utf8');
+const plugin=stage1PreproductionCopyOverlay();
+const output=plugin.transform(source,file);
+assert.ok(output?.code);
+assert.equal(output.code.split('Pre-Production review controls').length-1,2);
+assert.equal(output.code.split('PRE-PRODUCTION REVIEW').length-1,1);
+assert.equal(plugin.transform(source,fileURLToPath(new URL('../src/qa-review-v115-runtime.tsx',import.meta.url))),null);
+assert.throws(()=>plugin.transform(source+' ',file),/protected Portal checksum/);
+console.log('STAGE1_PREPRODUCTION_COPY_OVERLAY_PASS');

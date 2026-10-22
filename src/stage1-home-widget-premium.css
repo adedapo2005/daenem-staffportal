@@ -1,0 +1,148 @@
+/*
+ * Stage One Owner-managed home widget refinement.
+ * Borrow the approved Sign-In's rich tonal depth and readable location hierarchy,
+ * not its photography/Sign-In elements or authentication styling.
+ */
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content {
+  --s1-home-widget-line: color-mix(in srgb, var(--stage1-primary, #2563eb) 17%, var(--p-line, #d8e3ee));
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content :is(.p-panel, .tech-widget, .tech-weather, .tech-clock) {
+  border-color: var(--s1-home-widget-line);
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content :is(.p-panel-head h2, .p-panel-head h3, .v116-widget-header h3) {
+  font-size: clamp(1.05rem, 1.1vw, 1.42rem);
+  line-height: 1.22;
+  letter-spacing: -.022em;
+  text-wrap: balance;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-widget {
+  background: linear-gradient(135deg,
+    var(--stage1-surface, #fff) 0%,
+    color-mix(in srgb, var(--stage1-tint, #eaf3ff) 56%, var(--stage1-surface, #fff)) 100%);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(16,45,82,.075), inset 0 1px rgba(255,255,255,.75);
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-widget::after {
+  height: 3px;
+  opacity: .75;
+  background: var(--stage1-gradient-spectrum, linear-gradient(90deg, #2563eb, #06b6d4, #7c3aed));
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-widget-header {
+  align-items: center;
+  gap: 13px;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-widget-icon {
+  width: clamp(42px, 2.4vw, 60px);
+  height: clamp(42px, 2.4vw, 60px);
+  border-radius: 15px;
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--stage1-primary, #2563eb) 10%, transparent);
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-widget-icon svg {
+  width: clamp(22px, 1.45vw, 30px);
+  height: clamp(22px, 1.45vw, 30px);
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content :is(.v116-widget-header small, .v116-headlines small, .v116-focus-action, .v116-provider-state) {
+  font-size: clamp(.76rem, .7vw, .93rem);
+  line-height: 1.45;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-headlines a > span {
+  font-size: clamp(.93rem, .88vw, 1.12rem);
+  line-height: 1.42;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-headlines a:is(:hover,:focus-visible) {
+  background: color-mix(in srgb, var(--stage1-primary, #2563eb) 7%, var(--stage1-surface, #fff));
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-weather {
+  padding: clamp(15px, 1vw, 25px);
+  border-radius: 19px;
+  background: linear-gradient(148deg,
+    color-mix(in srgb, var(--stage1-anchor, #173a63) 87%, #122c47),
+    color-mix(in srgb, var(--stage1-primary, #2563eb) 38%, #122c47));
+  color: #fff;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-weather :is(h2, p, strong, .p-kicker, .v116-weather-glyph) {
+  color: #f7fbff;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-weather :is(h2 small, .tech-temperature > span:last-child, .tech-temperature small, .v116-provider-state, .tech-weather-facts) {
+  color: #dce8f7;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-weather-glyph svg {
+  width: clamp(45px, 2.8vw, 72px);
+  height: clamp(45px, 2.8vw, 72px);
+  filter: drop-shadow(0 4px 14px rgba(95,198,255,.28));
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-weather .v116-icon-button {
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.36);
+  color: #fff;
+}
+[data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .tech-world .tech-clock {
+  min-width: 0;
+  border-radius: 15px;
+  padding: clamp(10px, .8vw, 19px);
+  border: 1px solid var(--s1-home-widget-line);
+  background: linear-gradient(150deg, #fff,
+    color-mix(in srgb, var(--stage1-tint, #eaf3ff) 58%, #fff));
+  box-shadow: 0 9px 23px rgba(15,43,76,.075);
+  transition: border-color 200ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+}
+@media (hover:hover) and (pointer:fine) {
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .tech-world .tech-clock:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--stage1-primary, #2563eb) 35%, var(--p-line, #d8e3ee));
+    box-shadow: 0 16px 30px rgba(15,43,76,.13);
+  }
+}
+@media (min-width: 2560px) {
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content :is(.v116-widget, .home-weather, .home-pulse, .home-queue) {
+    padding: clamp(24px, 1vw, 36px);
+  }
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .tech-world .tech-clock {
+    min-height: 172px;
+    padding: 18px;
+  }
+  /* At 4K the responsive grid still gives each city clock roughly 180px.
+     Enlarge its readable content instead of forcing a wider card that overlaps neighbours. */
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .tech-world .tech-clock .tech-time {
+    font-size: clamp(1.18rem, .73vw, 1.55rem);
+    line-height: 1.22;
+    font-variant-numeric: tabular-nums;
+  }
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .tech-world .tech-clock .tech-clock-city {
+    font-size: clamp(.84rem, .48vw, 1rem);
+    line-height: 1.3;
+  }
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content :is(.v116-widget-header small, .v116-provider-state) {
+    font-size: clamp(.9rem, .46vw, 1.08rem);
+    line-height: 1.4;
+  }
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-headlines a > span {
+    font-size: clamp(1.04rem, .53vw, 1.28rem);
+    line-height: 1.46;
+  }
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-inspiration blockquote {
+    font-size: clamp(1.18rem, 1vw, 1.65rem);
+    line-height: 1.45;
+  }
+}
+@media (max-width: 760px) {
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-widget-icon {
+    width: 42px; height: 42px;
+  }
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-weather {
+    padding: 15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .tech-world .tech-clock {
+    transform: none !important; transition: none !important;
+  }
+}
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"] .p-app .v3-home-content .v116-weather {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+    forced-color-adjust: auto;
+  }
+}

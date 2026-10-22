@@ -925,7 +925,7 @@ function QaReviewPostAuthShell({
         <nav className="qa-v115-breadcrumb" aria-label="Breadcrumb"><button type="button" onClick={() => onNavigate('overview')}>Staff Portal</button><ChevronRight size={13} /><strong aria-current="page">{moduleLabel}</strong></nav>
         <div className="qa-v115-heading"><div><span className="qa-v115-scope"><MapPin size={13} /> {company.name || 'Assigned workspace'}</span><h1 id="qa-v115-workspace-title">{moduleLabel}</h1><p>{moduleDescription}</p></div><div className="qa-v115-heading-action"><button type="button" className="qa-v115-btn primary" onClick={onOpenModuleHub}><Grid3X3 size={14} /> Authorized Workspaces</button></div></div>
       </section>
-      <div className="qa-v115-preview"><span><strong>DEVELOPMENT PREVIEW ONLY</strong> · Fictional records and authorised Staff Portal data</span><span>{release.version}</span></div>
+      <div className="qa-v115-preview"><span><strong>PRE-PRODUCTION REVIEW</strong> · Fictional records and authorised Staff Portal data</span><span>{release.version}</span></div>
       <main className="qa-v115-content" id="main-content">{home}</main>
       <footer className="qa-v115-footer"><span>DAENEM · Staff Portal</span><span>Staging · {release.version}</span><span>Authorised Staff Portal data only</span></footer>
       <nav className="qa-v115-mobile-nav" aria-label="Mobile primary navigation"><button type="button" className={view === 'overview' ? 'active' : ''} onClick={() => onNavigate('overview')}><Gauge size={17} /><span>Overview</span></button><button type="button" onClick={onOpenModuleHub}><Grid3X3 size={17} /><span>Workspaces</span></button><button type="button" onClick={() => onOpenModule('profile')}><Users size={17} /><span>Profile</span></button></nav>
