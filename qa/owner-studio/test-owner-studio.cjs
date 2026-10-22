@@ -1,0 +1,37 @@
+const {chromium}=require('playwright');const {createServer}=require('vite');
+(async()=>{const server=await createServer({configFile:'vite.signin-browser-qa.config.ts',server:{host:'127.0.0.1',port:0,strictPort:false},logLevel:'error'});await server.listen();
+const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});const errors=[];const writes=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET'&&r.url().includes('/api/theme/signin'))writes.push(r.url())});
+const origin='http://127.0.0.1:'+server.httpServer.address().port;
+await page.route('**/staff-portal-signin?*',r=>r.fulfill({status:302,headers:{location:'/qa/signin/index.html?studioReview=signin-v180'},body:''}));
+await page.route('**/api/**',r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA mock'})}));
+try{
+await page.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
+await page.locator('.owner-pro-studio').waitFor({timeout:10000});
+const iframe=page.frameLocator('[data-owner-pro-frame]');
+await iframe.locator('#staff-global-operations').waitFor({timeout:20000});
+await page.locator('[data-prop="x"]').fill('40');
+await page.locator('[data-prop="x"]').dispatchEvent('input');
+let before=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(!before.includes('40px'))throw Error('element move did not apply '+before);
+await page.locator('[data-undo]').click();
+let after=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(after.includes('40px'))throw Error('undo did not revert '+after);
+await iframe.locator('#staff-global-operations .gw-city-clock').first().click();
+const chosen=await page.locator('[data-studio-selection]').textContent();
+if(!chosen||chosen==='Global Operations')throw Error('in-frame element picking did not select a child');
+await page.locator('[data-owner-pro-preset]').selectOption('1');
+let mobile=await iframe.locator('html').evaluate(e=>e.ownerDocument.defaultView.innerWidth);
+if(mobile!==390)throw Error('mobile frame width incorrect '+mobile);
+await page.locator('[data-clock-look]').selectOption('emerald');
+let hasClock=await iframe.locator('#daenem-owner-studio-preview-style').evaluate(e=>e.textContent.includes('emerald')||e.textContent.includes('hue-rotate'));
+if(!hasClock)throw Error('clock preset did not apply');
+await page.locator('[data-reset-all]').click();
+let reset=await iframe.locator('#daenem-owner-studio-preview-style').evaluate(e=>e.textContent.includes('hue-rotate'));
+if(reset)throw Error('reset failed');
+if(writes.length)throw Error('editor made unauthorized writes '+JSON.stringify(writes));
+if(errors.length)throw Error('page errors: '+errors.join(';'));
+console.log('PASS: admin editor mounted, live iframe content, move, undo, mobile viewport, clock style, revert, no server writes');
+await page.screenshot({path:'qa/owner-studio/studio-preview.png',fullPage:true});
+}finally{await page.close();await browser.close();await server.close();}
+})().catch(e=>{console.error(e.stack||e);process.exitCode=1});

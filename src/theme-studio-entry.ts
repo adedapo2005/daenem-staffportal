@@ -1,4 +1,5 @@
 import './theme-studio.css';
+import { mountOwnerStudioPro } from './owner-studio-pro';
 import { applyThemeToDocument, normalizeThemeId, themeList } from './theme-system';
 import { fetchAdminSignInDraft, fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInDraft, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
 
@@ -307,6 +308,7 @@ function renderSignInAdmin() {
       '<div class="studio-review-footer"><span>Frame: ' + reviewViewport.width + ' × ' + reviewViewport.height + '</span><button type="button" data-signin-preview>Open review in a new tab</button></div></section>' +
       '<section class="signin-admin-section signin-admin-recovery"><h4>RESET / RECOVERY</h4><button type="button" data-signin-reset="complete">Reset draft to safe defaults</button><button type="button" data-signin-reset="published">Reset draft to published</button><button type="button" data-signin-reset="widgets">Reset widgets</button><span>Draft edits can be restored before publishing.</span></section>' +
     '</div>';
+  mountOwnerStudioPro(root);
   const state = document.querySelector<HTMLElement>('.signin-theme-save-state');
   if (state) {
     state.dataset.state = signInSaveState;
