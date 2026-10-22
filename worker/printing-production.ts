@@ -179,6 +179,14 @@ async function proof(request:Request,env:PrintingProductionEnv,context:SessionCo
   }
   statements.push(env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) SELECT ?,?,?,'printing','proof_update','print_job',?,?, 'web',? FROM print_jobs WHERE id=? AND company_id=? AND changes()=1 AND EXISTS(SELECT 1 FROM print_proofs WHERE id=? AND print_job_id=?)`).bind(auditId,context.employee.id,companyId,jobId,JSON.stringify({action,proofId,response:body.response||null}),requestId,jobId,companyId,proofId,jobId));
   statements.push(env.DB.prepare(`SELECT json_extract(CASE WHEN EXISTS(SELECT 1 FROM audit_logs WHERE id=? AND company_id=? AND module='printing' AND action='proof_update' AND entity_id=? AND request_id=?) AND EXISTS(SELECT 1 FROM print_proofs p JOIN print_jobs j ON j.id=p.print_job_id AND j.company_id=? WHERE p.id=? AND p.print_job_id=? AND p.version_no=(SELECT MAX(version_no) FROM print_proofs WHERE print_job_id=?) AND j.proof_status=?) THEN '{}' ELSE '{' END,'$')`).bind(auditId,companyId,jobId,requestId,companyId,proofId,jobId,jobId,action==='create'?'pending':action==='sent'?'sent':response==='approved'?'approved':response==='pending'?'pending':'changes_requested'));
+  // Parsing and job/version reads may outlast the original authority. All
+  // proof actions require the same current session and company edit grant.
+  let currentContext:SessionContext|null;
+  try{currentContext=await getSessionContext(request,env)}catch{
+    return json({error:'The Printing proof could not be saved. Refresh and try again.'},503);
+  }
+  if(!currentContext||currentContext.sessionId!==context.sessionId||currentContext.employee.id!==context.employee.id)return json({error:'Authentication required.'},401);
+  if(!can(currentContext,'edit'))return json({error:'Edit Printing permission is required.'},403);
   try{await env.DB.batch(statements)}catch{
     return json({error:'The Printing proof could not be saved. Refresh and try again.'},503);
   }
