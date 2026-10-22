@@ -19,7 +19,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  if(studio.querySelector('.owner-builder'))return;
  const host=document.createElement('section');host.className='owner-builder';host.hidden=true;
  host.innerHTML='<header class="owner-builder-head"><div><small>ALTERNATE DESIGN WORKSPACE</small><h4>Create A New Sign-In Design</h4><p>Build a separate design without replacing the approved Sign-In. This is a local, unsaved preview only.</p></div><button type="button" data-builder-exit>Return To Approved Design</button></header>'+
- '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="768">Tablet · 768px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-save>Save Concept</button><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button><button type="button" data-builder-export>Export Design</button><label class="owner-builder-import">Import Design <input type="file" accept="application/json,.json" data-builder-import></label></div>'+
+ '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="768">Tablet · 768px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-save>Save Concept</button><button type="button" data-builder-cloud-save>Save Owner Library</button><button type="button" data-builder-cloud-load>Load Owner Library</button><span data-builder-cloud-status role="status" aria-live="polite"></span><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button><button type="button" data-builder-export>Export Design</button><label class="owner-builder-import">Import Design <input type="file" accept="application/json,.json" data-builder-import></label></div>'+
  '<div class="owner-builder-shell"><aside><h5>Add Components</h5>'+catalogue.map(c=>'<button type="button" data-builder-add="'+c.kind+'">+ '+esc(c.label)+'</button>').join('')+'<p>Authentication remains a protected component; visual edits cannot alter login security or providers.</p></aside><div class="owner-builder-stage"><div class="owner-builder-canvas" data-builder-canvas></div></div><aside><h5>Selected Component</h5><p data-builder-selection>No component selected</p><label>Display Text <input data-builder-text maxlength="100"></label><label>Horizontal Position <input data-builder-x type="number" min="0" max="3600"></label><label>Vertical Position <input data-builder-y type="number" min="0" max="2000"></label><label>Width <input data-builder-width type="number" min="80" max="900"></label><label>Height <input data-builder-height type="number" min="40" max="600"></label><button type="button" data-builder-remove>Remove Component</button><div class="owner-builder-inner"><h5>Widget Items</h5><label>Item <select data-builder-item><option value="">Select An Item</option></select></label><label>Label <input data-inner-label maxlength="60"></label><label>Move Item Horizontally <input data-inner-x type="number" min="0" max="800"></label><label>Move Item Vertically <input data-inner-y type="number" min="0" max="500"></label><button type="button" data-inner-add>Add Widget Item</button></div></aside></div>'+
  '<p class="owner-builder-warning">This is a concept canvas, not a deployable Sign-In page. Concepts survive reloads in this browser tab only; publishing and durable account storage require separate verification and Owner approval.</p>';
  studio.appendChild(host);
@@ -38,6 +38,16 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   }
  }catch{/* session data may be unavailable or malformed */}
  const persistLibrary=()=>{try{sessionStorage.setItem(libraryKey,JSON.stringify(library.slice(-20)));}catch{/* private browsing or quota restrictions */}};
+ let cloudRevision:number|null=null;
+ const cloudStatus=(message:string)=>{const el=host.querySelector<HTMLElement>('[data-builder-cloud-status]');if(el)el.textContent=message;};
+ const libraryEndpoint='/api/theme/signin/designs';
+ const loadCloud=async()=>{
+  const response=await fetch(libraryEndpoint,{method:'GET',credentials:'same-origin',cache:'no-store'});
+  const result=await response.json() as {revision?:number;designs?:Draft[];error?:string};
+  if(!response.ok||!Array.isArray(result.designs)||typeof result.revision!=='number')throw Error(result.error||'Owner library could not be loaded.');
+  cloudRevision=result.revision;return result.designs;
+ };
+
  let drag:{id:string;x:number;y:number;startX:number;startY:number;zoom:number;innerId?:string}|null=null;
  const $=<T>(s:string)=>host.querySelector(s) as unknown as T;
  const clone=()=>JSON.parse(JSON.stringify(draft)) as Draft;
@@ -117,6 +127,23 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  $<HTMLButtonElement>('[data-builder-save]').addEventListener('click',()=>{
   draft.name=$<HTMLInputElement>('[data-builder-name]').value.trim().slice(0,70)||'Untitled Design';
   library.push(clone());persistLibrary();refreshLibrary();$<HTMLSelectElement>('[data-builder-library]').value=String(library.length-1);
+ });
+ $<HTMLButtonElement>('[data-builder-cloud-load]').addEventListener('click',async()=>{
+  try{
+   const remote=await loadCloud();
+   library.splice(0,library.length,...remote);persistLibrary();refreshLibrary();
+   cloudStatus('Owner Library loaded · '+remote.length+' saved designs');
+  }catch(error){cloudStatus(error instanceof Error?error.message:'Owner Library load failed');}
+ });
+ $<HTMLButtonElement>('[data-builder-cloud-save]').addEventListener('click',async()=>{
+  try{
+   if(cloudRevision===null)throw Error('Load Owner Library before saving to prevent overwriting existing designs.');
+   const response=await fetch(libraryEndpoint,{method:'POST',credentials:'same-origin',
+    headers:{'content-type':'application/json'},body:JSON.stringify({revision:cloudRevision,designs:library})});
+   const result=await response.json() as {revision?:number;error?:string};
+   if(!response.ok||typeof result.revision!=='number')throw Error(result.error||'Owner Library save failed');
+   cloudRevision=result.revision;cloudStatus('Owner Library saved · revision '+result.revision);
+  }catch(error){cloudStatus(error instanceof Error?error.message:'Owner Library save failed');}
  });
  $<HTMLButtonElement>('[data-builder-load]').addEventListener('click',()=>{
   const index=Number($<HTMLSelectElement>('[data-builder-library]').value);
