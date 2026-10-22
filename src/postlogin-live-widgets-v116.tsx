@@ -16,26 +16,7 @@ import {
   Wind,
 } from 'lucide-react';
 import './postlogin-live-widgets-v116.css';
-
-type Headline = {
-  id: string;
-  title: string;
-  url: string;
-  source: string;
-  category: string;
-  publishedAt: string | null;
-};
-
-type PostLoginContext = {
-  generatedAt: string;
-  status: 'live' | 'partial' | 'unavailable';
-  activeSourceCount: number;
-  configuredSourceCount: number;
-  successfulFeedCount: number;
-  news: Headline[];
-  intelligence: Headline[];
-  inspiration: { title: string; message: string; action: string };
-};
+import { normalizePostLoginContext, type Headline, type PostLoginContext } from './postlogin-context-normalization';
 
 type WeatherContext = {
   available: boolean;
@@ -145,9 +126,10 @@ function NewsWidget({ context, loading, onRefresh }: {
   loading: boolean;
   onRefresh: () => void;
 }) {
-  const detail = context
-    ? `${context.activeSourceCount} active sources · refreshed ${timeAgo(context.generatedAt)}`
-    : 'Nigerian business and operational coverage';
+  const detail = loading ? 'Checking verified news sources'
+    : !context ? 'News sources currently unavailable'
+    : context.status === 'unavailable' ? 'No verified news feeds available'
+    : `${context.activeSourceCount} verified sources · updated ${timeAgo(context.generatedAt)}`;
   return (
     <section className="tech-widget size-wide v116-widget" data-widget-id="live-news-v116" aria-label="News">
       <WidgetHeader icon={<Newspaper size={19} />} kicker="LIVE NEWSROOM" title="News" detail={detail} onRefresh={onRefresh} busy={loading} />
@@ -161,13 +143,17 @@ function IntelligenceWidget({ context, loading, onRefresh }: {
   loading: boolean;
   onRefresh: () => void;
 }) {
+  const detail = loading ? 'Checking intelligence feeds'
+    : !context ? 'Intelligence feeds currently unavailable'
+    : context.status === 'unavailable' ? 'No verified intelligence feeds available'
+    : `${context.successfulFeedCount} feeds responding · ${context.status === 'partial' ? 'Limited coverage' : 'Live coverage'}`;
   return (
     <section className="tech-widget size-wide v116-widget" data-widget-id="live-intelligence-v116" aria-label="Business intelligence">
       <WidgetHeader
         icon={<Globe2 size={19} />}
         kicker="LOCAL + INTERNATIONAL"
         title="Business intelligence"
-        detail={context ? `${context.successfulFeedCount} feeds responding · ${context.status}` : 'Nigeria, Africa and global signals'}
+        detail={detail}
         onRefresh={onRefresh}
         busy={loading}
       />
@@ -266,7 +252,8 @@ export default function LivePostLoginEnhancementsV116() {
     try {
       const response = await fetch('/api/context/postlogin', { credentials: 'same-origin', headers: { accept: 'application/json' } });
       if (!response.ok) throw new Error(`Post-login context request failed: ${response.status}`);
-      setContext(await response.json() as PostLoginContext);
+      const payload: unknown = await response.json();
+      setContext(normalizePostLoginContext(payload));
     } catch { setContext(null); }
     finally { setLoadingContext(false); }
   }, []);
