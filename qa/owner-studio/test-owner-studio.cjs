@@ -8,6 +8,18 @@ await page.route('**/api/**',r=>r.fulfill({status:503,contentType:'application/j
 try{
 await page.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
 await page.locator('.owner-pro-studio').waitFor({timeout:10000});
+await page.locator('[data-builder-enter]').click();
+await page.locator('[data-builder-add="heading"]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('blank builder add failed');
+await page.locator('[data-builder-x]').fill('190');
+await page.locator('[data-builder-x]').dispatchEvent('change');
+const xpos=await page.locator('[data-builder-canvas] [data-block]').evaluate(e=>e.style.left);
+if(xpos!=='190px')throw Error('blank builder positioning failed '+xpos);
+await page.locator('[data-builder-undo]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('blank builder undo removed element');
+await page.locator('[data-builder-device]').selectOption('390');
+if((await page.locator('[data-builder-canvas]').evaluate(e=>e.style.width))!=='390px')throw Error('blank builder mobile preview width failed');
+await page.locator('[data-builder-exit]').click();
 const iframe=page.frameLocator('[data-owner-pro-frame]');
 await iframe.locator('#staff-global-operations').waitFor({timeout:20000});
 await page.locator('[data-prop="x"]').fill('40');

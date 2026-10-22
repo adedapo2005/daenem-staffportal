@@ -1,4 +1,5 @@
 import './owner-studio-pro.css';
+import { mountSignInPageBuilder } from './owner-studio-page-builder';
 
 /** Preview-only editing surface. Never writes published Sign-In preferences. */
 type ElementEdit={x:number;y:number;width:number;height:number;scale:number;opacity:number;rotate:number;glow:number;radius:number;fontSize:number;letterSpacing:number;color:string};
@@ -169,6 +170,7 @@ export function mountOwnerStudioPro(root:HTMLElement){
  '<label>Glow strength<input type="range" min="0" max="100" step="1" data-clock-glow value="0"></label></div></aside></div>'+
  '<p class="owner-pro-note">Session-only preview. This studio cannot publish or alter the authenticated Sign-In without an explicit release action. Use the existing review controls for the separate publish workflow.</p>';
  section.appendChild(studio);
+ mountSignInPageBuilder(studio);
  studio.querySelectorAll<HTMLButtonElement>('[data-studio-jump]').forEach(button=>button.addEventListener('click',()=>{
   const target=button.dataset.studioJump;
   const map:Record<string,string>={canvas:'.owner-pro-canvas',media:'.signin-background-section',widgets:'.signin-admin-section:has([data-signin-widget])',clock:'.owner-pro-clock-controls',publish:'.studio-review-draft-actions'};
