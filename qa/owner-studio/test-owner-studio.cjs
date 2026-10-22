@@ -30,6 +30,13 @@ if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Er
 await page.locator('[data-builder-device]').selectOption('390');
 if((await page.locator('[data-builder-canvas]').evaluate(e=>e.style.width))!=='390px')throw Error('blank builder mobile preview width failed');
 await page.locator('[data-builder-exit]').click();
+await page.reload({waitUntil:'domcontentloaded'});
+await page.locator('[data-builder-enter]').click();
+if(await page.locator('[data-builder-library] option').count()!==2)throw Error('saved design did not survive reload');
+await page.locator('[data-builder-library]').selectOption('0');
+await page.locator('[data-builder-load]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('saved design could not reload');
+await page.locator('[data-builder-exit]').click();
 const iframe=page.frameLocator('[data-owner-pro-frame]');
 await iframe.locator('#staff-global-operations').waitFor({timeout:20000});
 await page.locator('[data-prop="x"]').fill('40');
