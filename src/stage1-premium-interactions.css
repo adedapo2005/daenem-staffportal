@@ -1,0 +1,237 @@
+/*
+ * Stage One / Post-Login: Executive Interaction Polish V1.
+ * Owner-managed manual frontend only. The approved Sign-In, V115 snapshot,
+ * routes, auth, module data, theme choices and production V16 are untouched.
+ *
+ * Motion is feedback, not decoration. No floating perpetual cards, glass,
+ * automated disclosure of private data or broad all-property transitions.
+ */
+[data-approved-postlogin="qa-review-v115"] {
+  --s1-motion-quick: 140ms;
+  --s1-motion-standard: 220ms;
+  --s1-motion-settle: 340ms;
+  --s1-motion-ease: cubic-bezier(.22, 1, .36, 1);
+  --s1-motion-focus: var(--stage1-focus, #2563eb);
+  --s1-motion-accent: var(--stage1-primary, #2563eb);
+  --s1-motion-line: var(--stage1-line, #d8e3ee);
+  --s1-motion-ink: var(--stage1-ink, #1f2b3c);
+  --s1-motion-soft: color-mix(in srgb, var(--s1-motion-accent) 9%, var(--stage1-surface, #fff));
+  --s1-motion-shadow: 0 16px 32px rgba(20, 45, 80, .11), 0 4px 9px rgba(20, 45, 80, .035);
+  --s1-motion-highlight: 0 0 0 3px color-mix(in srgb, var(--s1-motion-accent) 16%, transparent);
+}
+
+/* Cross-module interactions: properties are deliberately limited to paints,
+   translation and shadow to avoid layout shift and heavy repaints. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-btn, .p-iconbtn, .p-command-button, .p-avatar-button,
+      .p-inline-link, .p-sidebar nav button, .p-sidebar-bottom > button,
+      .p-mobile-nav nav button, .p-module-tile, .p-mobile-record,
+      .p-record-table tbody tr, .p-audit-stream > button,
+      .p-attention-list > button, .p-select,
+      .ecc-page-link, .ecc-disclosure, .ecc-area-open, .ecc-favorite-button,
+      .ecc-rail-button, .ecc-shortcuts-toggle, .ecc-clear-search,
+      .stage1-workflow-links a, .v116-icon-button, .nav-item,
+      .topbar-icon, .icon-button, .primary-button, .secondary-button) {
+  transition:
+    color var(--s1-motion-quick) ease,
+    background-color var(--s1-motion-standard) ease,
+    border-color var(--s1-motion-standard) ease,
+    box-shadow var(--s1-motion-standard) var(--s1-motion-ease),
+    opacity var(--s1-motion-quick) ease,
+    transform var(--s1-motion-standard) var(--s1-motion-ease);
+}
+
+/* Icons react to actionable parent state; static decor does not spin. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-btn, .p-iconbtn, .p-command-button, .p-inline-link,
+      .p-mobile-nav button, .ecc-disclosure, .ecc-page-link,
+      .ecc-favorite-button, .ecc-rail-button, .stage1-workflow-links a,
+      .v116-icon-button) > svg {
+  transition:
+    transform var(--s1-motion-standard) var(--s1-motion-ease),
+    color var(--s1-motion-quick) ease,
+    opacity var(--s1-motion-quick) ease;
+  transform-origin: center;
+}
+
+/* Keyboard and touch focus is always meaningful, with an opaque ring. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(a, button, input, textarea, select, [role="tab"], [role="button"],
+      [role="option"], [tabindex]):focus-visible,
+[data-approved-postlogin="qa-review-v115"] :is(.p-modal, .p-side-sheet)
+  :is(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--s1-motion-focus);
+  outline-offset: 3px;
+}
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-search, .p-command-button, .ecc-search-box):focus-within {
+  border-color: color-mix(in srgb, var(--s1-motion-focus) 48%, var(--s1-motion-line));
+  box-shadow: var(--s1-motion-highlight);
+  transition: border-color var(--s1-motion-standard) ease,
+              box-shadow var(--s1-motion-standard) ease;
+}
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(input, textarea, select):not(:disabled):focus {
+  border-color: var(--s1-motion-focus);
+  box-shadow: var(--s1-motion-highlight);
+  transition: border-color var(--s1-motion-standard) ease,
+              box-shadow var(--s1-motion-standard) ease;
+}
+
+/* Selection is persistent and unmistakable without relying on colour alone.
+   Keep existing theme backgrounds; add only a restrained inset marker. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-mobile-record, .p-audit-stream > button, .p-attention-list > button,
+      .p-module-tile, [role="tab"]):is(.selected, [aria-selected="true"],
+      [aria-current="page"], [data-state="active"]),
+[data-approved-postlogin="qa-review-v115"] .ecc-navigation
+  :is(.ecc-page-link, .ecc-area-open)[aria-current="page"] {
+  box-shadow: inset 3px 0 var(--s1-motion-accent),
+              0 5px 14px rgba(25, 55, 89, .055);
+}
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-btn, .p-iconbtn, .p-inline-link, .ecc-favorite-button,
+      .stage1-workflow-links a)[aria-pressed="true"] {
+  box-shadow: var(--s1-motion-highlight),
+              inset 0 0 0 1px var(--s1-motion-accent);
+}
+
+/* Soft elevation and optical highlight: only on bounded card surfaces. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-panel, .p-module-tile, .p-mobile-record, .stage1-role-home,
+      .panel-surface, .tech-widget, .v14-command-grid > div, .v14-finance-overview > div) {
+  transition:
+    border-color var(--s1-motion-standard) ease,
+    box-shadow var(--s1-motion-settle) var(--s1-motion-ease),
+    transform var(--s1-motion-standard) var(--s1-motion-ease);
+}
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-panel, .p-module-tile, .p-mobile-record, .stage1-role-home,
+      .panel-surface, .tech-widget):focus-within {
+  border-color: color-mix(in srgb, var(--s1-motion-accent) 32%, var(--s1-motion-line));
+  box-shadow: var(--s1-motion-shadow);
+}
+
+/* Charts animate data changes; neither value nor geometry is fabricated. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-bar-row i, .p-viz rect, .p-viz circle, .recharts-bar-rectangle,
+      .recharts-sector, .recharts-symbols, .recharts-dot) {
+  transition: opacity var(--s1-motion-standard) ease,
+              fill var(--s1-motion-standard) ease,
+              stroke var(--s1-motion-standard) ease,
+              filter var(--s1-motion-standard) ease;
+}
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  .p-bar-row i {
+  transition: width var(--s1-motion-settle) var(--s1-motion-ease),
+              background-color var(--s1-motion-standard) ease;
+}
+
+/* Table rows use colour, not transform, to avoid shifting aligned columns. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is(.p-record-table tbody tr, .p-audit-stream > button):focus-within {
+  background-color: var(--s1-motion-soft);
+  box-shadow: inset 3px 0 var(--s1-motion-accent);
+}
+
+/* Loading is truthful: animate only existing loading indicators. */
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app) .p-skeleton {
+  animation-duration: 1.65s;
+  animation-timing-function: ease-in-out;
+}
+[data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+  :is([role="progressbar"], progress) {
+  transition: opacity var(--s1-motion-standard) ease,
+              border-color var(--s1-motion-standard) ease;
+}
+
+/* Dialogs and sheets settle once when opened. Keep Radix focus and close
+   behaviour in charge; visual CSS does not intercept pointer events. */
+@keyframes stage1-surface-enter {
+  from { opacity: .86; }
+  to   { opacity: 1; }
+}
+[data-approved-postlogin="qa-review-v115"] :is(.p-modal, .p-side-sheet)[data-state="open"] {
+  animation: stage1-surface-enter var(--s1-motion-standard) var(--s1-motion-ease) both;
+}
+
+/* Limited lift is opt-in to genuine hover hardware; disabled controls
+   remain still. Protect disclosure icons from perpetual animation. */
+@media (hover: hover) and (pointer: fine) {
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-btn, .p-iconbtn, .p-command-button, .p-inline-link,
+        .stage1-workflow-links a):not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-btn, .stage1-workflow-links a):not(:disabled):hover {
+    box-shadow: 0 9px 21px rgba(18, 50, 89, .14);
+  }
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-iconbtn, .ecc-favorite-button, .ecc-rail-button,
+        .stage1-workflow-links a, .p-inline-link):not(:disabled):is(:hover, :focus-visible) > svg {
+    transform: translateY(-1px) scale(1.08);
+  }
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-panel, .p-module-tile, .p-mobile-record,
+        .stage1-role-home):hover {
+    border-color: color-mix(in srgb, var(--s1-motion-accent) 22%, var(--s1-motion-line));
+    box-shadow: var(--s1-motion-shadow);
+    transform: translateY(-2px);
+  }
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-record-table tbody tr, .p-audit-stream > button):hover {
+    background-color: var(--s1-motion-soft);
+  }
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-btn, .p-iconbtn, .p-command-button,
+        .stage1-workflow-links a, .p-inline-link):not(:disabled):active {
+    transform: translateY(0) scale(.985);
+    transition-duration: var(--s1-motion-quick);
+  }
+}
+
+/* Touch gives pressed/focus feedback without hover leftovers or card jumps. */
+@media (hover: none), (pointer: coarse) {
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-panel, .p-module-tile, .p-mobile-record, .stage1-role-home) {
+    transform: none;
+  }
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-btn, .p-iconbtn, .stage1-workflow-links a):not(:disabled):active {
+    transform: scale(.99);
+    box-shadow: var(--s1-motion-highlight);
+  }
+}
+
+/* Existing user-selected Motion Off and OS Reduced Motion win absolutely. */
+[data-approved-postlogin="qa-review-v115"] :is(.motion-off, [data-motion="off"]) *,
+[data-approved-postlogin="qa-review-v115"] :is(.motion-off, [data-motion="off"]) *::before,
+[data-approved-postlogin="qa-review-v115"] :is(.motion-off, [data-motion="off"]) *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-approved-postlogin="qa-review-v115"] *,
+  [data-approved-postlogin="qa-review-v115"] *::before,
+  [data-approved-postlogin="qa-review-v115"] *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Accessibility in Windows High Contrast / Forced Colors. */
+@media (forced-colors: active) {
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(.p-panel, .p-module-tile, .p-mobile-record, [role="tab"]):is(
+      [aria-selected="true"], [aria-current="page"], .selected) {
+    border: 2px solid Highlight;
+  }
+  [data-approved-postlogin="qa-review-v115"] :is(.p-app, .csp-root, .lab-app)
+    :is(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+}

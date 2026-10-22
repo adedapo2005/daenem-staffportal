@@ -176,3 +176,58 @@ html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-workflow
 html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-role-home .stage1-workflow-links {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* Stage One: large-text accessibility without 4K full-width shortcut buttons. */
+@media (min-width: 1440px) {
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-role-home .stage1-workflow-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 1320px;
+    width: 100%;
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-role-home .stage1-workflow-links a {
+    min-width: 0;
+  }
+}
+
+/* Physical 32-inch 4K: the automatic large-text mode must not strand the
+   command shortcuts in a narrow strip. Keep readable large targets but use
+   all the genuinely available canvas. Other desktop/mobile modes are intact. */
+@media (min-width: 2560px) {
+  html[data-staffportal-postlogin="true"] .stage1-workflow-focus.stage1-role-home,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-workflow-focus.stage1-role-home {
+    grid-template-columns: minmax(420px, .77fr) minmax(0, 2.23fr);
+    align-items: center;
+    gap: clamp(18px, .8vw, 32px) clamp(24px, 1vw, 42px);
+    padding: clamp(24px, 1.05vw, 40px);
+  }
+  html[data-staffportal-postlogin="true"] .stage1-role-home .stage1-workflow-links,
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-role-home .stage1-workflow-links {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(12px, .5vw, 20px);
+    align-content: center;
+  }
+  html[data-staffportal-postlogin="true"] .stage1-role-home .stage1-workflow-links a {
+    min-height: clamp(74px, 2.15vw, 88px);
+    padding: 13px clamp(14px, .58vw, 23px);
+    border-radius: 12px;
+    font-size: clamp(15px, .52vw, 20px);
+  }
+  html[data-staffportal-postlogin="true"] .stage1-role-home .stage1-workflow-links a small {
+    font-size: clamp(13px, .42vw, 16px);
+    line-height: 1.4;
+  }
+  html[data-staffportal-postlogin="true"] .stage1-role-home .stage1-workflow-title strong {
+    font-size: clamp(26px, 1vw, 38px);
+    line-height: 1.16;
+  }
+  html[data-staffportal-postlogin="true"] .stage1-role-home .stage1-workflow-title > span:not(.stage1-role-eyebrow) {
+    font-size: clamp(15px, .5vw, 19px);
+    line-height: 1.55;
+  }
+  html[data-staffportal-postlogin="true"] .stage1-role-home .stage1-role-footnote {
+    font-size: clamp(13px, .42vw, 16px);
+    line-height: 1.45;
+  }
+}
