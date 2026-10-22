@@ -1,4 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { routeSignInDesignLibrary } from './signin-design-library';
 
 interface Env extends AuthEnv { AI?: Ai }
 
@@ -427,6 +428,8 @@ async function generateAiOptions(env: Env, kind: 'inspiration' | 'motivation') {
 export async function routeThemePreferences(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/theme/')) return null;
+  const designLibraryResponse = await routeSignInDesignLibrary(request, env, context);
+  if (designLibraryResponse) return designLibraryResponse;
   const canManage = canManageGroupTheme(context);
   if (url.pathname === '/api/theme/postlogin/policy' && request.method === 'GET') {
     return json(await postLoginPolicy(env, context));
