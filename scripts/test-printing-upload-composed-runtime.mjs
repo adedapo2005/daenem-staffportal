@@ -26,6 +26,7 @@ for (const [file, tables] of [
   }
 }
 let jobReads = 0, batches = 0, networkCalls = 0, putFailure = false, deleteFailure = false;
+let getFailure = false, afterGet = null, fileReads = 0, bodyReads = 0, headerReads = 0;
 const objects = new Map(), puts = [], deletes = [];
 const env = {
   APP_STAGE: 'test', AUTH_PEPPER: 'synthetic-printing-test-only',
@@ -60,6 +61,18 @@ const env = {
     },
   },
   FILES: {
+    async get(key) {
+      fileReads++;
+      if (getFailure) throw new Error('Injected private storage read error');
+      const object = objects.get(key);
+      if (!object) return null;
+      if (afterGet) afterGet();
+      return {
+        customMetadata: object.customMetadata,
+        writeHttpMetadata(headers) { headerReads++; headers.set('content-type', object.httpMetadata.contentType); },
+        get body() { bodyReads++; return object.bytes; },
+      };
+    },
     async put(key, bytes, options) {
       if (putFailure) throw new Error('Injected storage error with private object metadata');
       assert.ok(!objects.has(key));
@@ -103,7 +116,7 @@ const runtime = await load('runtime', dependencies);
 const staging = await load('staffportal-staging', {
   './runtime': runtime, './workspace-route': workspace,
   './v180-public-assets': { routeV180PublicAssets: async request => {
-    assert.equal(new URL(request.url).pathname, '/api/printing/jobs/files');
+    assert.ok(['/api/printing/jobs/files', '/api/printing/jobs/file'].includes(new URL(request.url).pathname));
     return null;
   } },
 });
@@ -202,6 +215,45 @@ const accepted = async actor => {
   assert.equal(audit.entity_id, 'job-a');
   assert.equal(JSON.parse(audit.after_json).key, body.key);
   assert.doesNotMatch(JSON.stringify(audit), /Private fixture upload bytes|synthetic-session/);
+  return body.key;
+};
+const readRequest = (actor, key, requestId = `printing-read-${++requestCount}`) => new Request(
+  `https://staffportal.test/api/printing/jobs/file?key=${encodeURIComponent(key)}`, {
+    headers: { origin: 'https://staffportal.test', 'x-request-id': requestId,
+      ...(actor ? { cookie: `daenem_workforce_session=${tokens.get(actor) || 'invalid-fixture-session'}` } : {}) },
+  });
+const readDenied = async (actor, key, status, beforeStorage = false, requestId) => {
+  const before = snapshot(), reads = fileReads, bodies = bodyReads, headers = headerReads;
+  const response = await send(readRequest(actor, key, requestId));
+  assert.equal(response.status, status);
+  const body = await response.text();
+  assert.doesNotMatch(body, /PRINT-SECRET|Protected job|Private fixture|Injected|SELECT|INSERT|sha256|printing\//);
+  assert.equal(response.headers.get('content-disposition'), null);
+  assert.equal(bodyReads, bodies, 'denial must not access protected object bytes');
+  assert.equal(headerReads, headers, 'denial must not copy object headers');
+  if (beforeStorage) assert.equal(fileReads, reads, 'denied caller must not reach R2');
+  assert.deepEqual(snapshot(), before, 'no success audit or storage mutation on denial');
+  return body;
+};
+const readAccepted = async (actor, key, requestId) => {
+  const before = snapshot(), input = readRequest(actor, key, requestId);
+  const response = await send(input);
+  assert.equal(response.status, 200);
+  const after = snapshot();
+  assert.equal(after.audits.length, before.audits.length + 1, 'required audit persists before bytes are returned');
+  const audit = after.audits.find(row => !before.audits.some(old => old.id === row.id));
+  assert.equal(audit.actor_employee_id, actor);
+  assert.equal(audit.company_id, 'company-printing');
+  assert.equal(audit.entity_id, 'job-a');
+  assert.equal(audit.action, 'protected_file_read');
+  assert.equal(audit.request_id, input.headers.get('x-request-id'));
+  assert.deepEqual(JSON.parse(audit.after_json), { method: 'GET', outcome: 'authorized_read', category: 'artwork' });
+  assert.doesNotMatch(JSON.stringify(audit), /Private fixture|synthetic-session|sha256|printing\//);
+  assert.equal(response.headers.get('content-type'), 'text/plain');
+  assert.match(response.headers.get('content-disposition'), /fixture\.txt/);
+  assert.equal(await response.text(), 'Private fixture upload bytes');
+  assert.deepEqual(after.queue, before.queue, 'reading must not enqueue another secondary copy');
+  assert.deepEqual(after.objects, before.objects);
 };
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async () => { networkCalls++; throw new Error('Network forbidden in isolated acceptance'); };
@@ -276,5 +328,60 @@ try {
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
     assert.equal(networkCalls, 0);
   });
+  const readKey = await accepted('creator');
+  for (const actor of ['viewer', 'creator', 'owner']) {
+    await check(`${actor}: uploaded bytes readable only after correlated read audit`, () => readAccepted(actor, readKey, `read-${actor}`));
+  }
+  for (const [actor, status] of [[null, 401], ['invalid', 401], ['other', 403]]) {
+    await check(`${actor}: protected read denies before storage`, () => readDenied(actor, readKey, status, true));
+  }
+  await check('foreign, unknown and malformed keys reveal no job or object', async () => {
+    const bodies = [];
+    for (const key of ['printing/job-b/artwork/fixture.txt', 'printing/unknown/artwork/fixture.txt',
+      'printing/job-a/unknown/fixture.txt', `${readKey}-missing`]) {
+      bodies.push(await readDenied('viewer', key, 404, !key.endsWith('-missing')));
+    }
+    assert.equal(new Set(bodies).size, 1);
+  });
+  for (const [field, value] of [['companyId', 'company-bakery'], ['companyId', undefined], ['jobId', 'job-b'], ['category', 'proof']]) {
+    await check(`stored ${field}=${value}: deny metadata mismatch without audit or bytes`, async () => {
+      const metadata = objects.get(readKey).customMetadata, original = metadata[field];
+      metadata[field] = value;
+      try { await readDenied('viewer', readKey, 404); } finally { metadata[field] = original; }
+    });
+  }
+  for (const mode of ['ABORT', 'IGNORE']) {
+    await check(`read audit ${mode}: historical success cannot authorize a new disclosure`, async () => {
+      db.exec(`CREATE TRIGGER read_fault BEFORE INSERT ON audit_logs WHEN NEW.action='protected_file_read'
+        BEGIN SELECT RAISE(${mode}${mode === 'ABORT' ? ",'Injected private audit error'" : ''}); END;`);
+      try { await readDenied('viewer', readKey, 503, false, 'read-viewer'); }
+      finally { db.exec('DROP TRIGGER read_fault'); }
+      await readAccepted('viewer', readKey, 'read-viewer');
+    });
+  }
+  await check('job company changed during storage fetch: no success audit or bytes', async () => {
+    afterGet = () => db.exec("UPDATE print_jobs SET company_id='company-bakery' WHERE id='job-a'");
+    try { await readDenied('viewer', readKey, 503); }
+    finally {
+      afterGet = null;
+      db.exec("UPDATE print_jobs SET company_id='company-printing' WHERE id='job-a'");
+    }
+  });
+  await check('storage read failure: bounded 503 with runtime security headers', async () => {
+    getFailure = true;
+    try { await readDenied('viewer', readKey, 503); } finally { getFailure = false; }
+  });
+  for (const [name, revoke, restore, status] of [
+    ['session', "UPDATE auth_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE id='viewer'", "UPDATE auth_sessions SET revoked_at=NULL WHERE id='viewer'", 401],
+    ['membership', "UPDATE employee_company_memberships SET active=0 WHERE employee_id='viewer' AND company_id='company-printing'", "UPDATE employee_company_memberships SET active=1 WHERE employee_id='viewer' AND company_id='company-printing'", 403],
+    ['role', "UPDATE roles SET active=0 WHERE id='viewer'", "UPDATE roles SET active=1 WHERE id='viewer'", 403],
+    ['explicit deny', "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by) VALUES('read-deny','viewer','company-printing','print-access','none','Fixture','owner')", "DELETE FROM employee_permission_overrides_v2 WHERE id='read-deny'", 403],
+  ]) {
+    await check(`${name} revoked after successful read: same cookie denied before storage`, async () => {
+      db.exec(revoke);
+      try { await readDenied('viewer', readKey, status, true); } finally { db.exec(restore); }
+    });
+  }
+  assert.equal(networkCalls, 0);
   console.log(`Printing upload composed runtime/session/SQLite/R2 acceptance: ${cases}/${cases} PASS; zero provider calls; productionMutated=false`);
 } finally { globalThis.fetch = originalFetch; db.close(); }

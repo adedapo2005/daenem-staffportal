@@ -71,9 +71,11 @@ async function fileResponse(request:Request,env:PrintingProductionEnv,context:Se
   const jobId=parts[1]||'',category=parts[2]||'';
   if(parts[0]!=='printing'||parts.length<4||!['artwork','proof','qc','delivery','evidence'].includes(category)||!await assertJob(env,jobId))return json({error:'File not found.'},404);
   const object=await env.FILES.get(key);
-  if(!object||object.customMetadata?.jobId!==jobId||object.customMetadata?.category!==category)return json({error:'File not found.'},404);
+  if(!object||object.customMetadata?.companyId!==companyId||object.customMetadata?.jobId!==jobId||object.customMetadata?.category!==category)return json({error:'File not found.'},404);
   try{
-    const audit=await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) VALUES(?,?,?,'printing','protected_file_read','print_job',?,?,'web',?)`).bind(uid('audit'),context.employee.id,companyId,jobId,JSON.stringify({method:request.method,outcome:'authorized_read',category}),requestCorrelationId(request)).run();
+    // The R2 await must not turn an earlier job lookup into authority to read
+    // a job that has since left this company. Bind this read's audit to current scope.
+    const audit=await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id) SELECT ?,?,?,'printing','protected_file_read','print_job',id,?,'web',? FROM print_jobs WHERE id=? AND company_id=?`).bind(uid('audit'),context.employee.id,companyId,JSON.stringify({method:request.method,outcome:'authorized_read',category}),requestCorrelationId(request),jobId,companyId).run();
     // A resolved INSERT can still write zero rows. This read needs its own
     // confirmed audit before any object headers or protected bytes are exposed.
     if(audit?.success!==true||audit.meta?.changes!==1)return json({error:'The file is temporarily unavailable.'},503);
@@ -324,5 +326,10 @@ export async function routePrintingProduction(request:Request,env:PrintingProduc
       return json({error:'The Printing file could not be saved. Please try again later.'},503);
     }
   }
-  if(url.pathname==='/api/printing/jobs/detail'&&request.method==='GET')return detail(request,env,context);if(url.pathname==='/api/printing/jobs/file'&&request.method==='GET')return fileResponse(request,env,context);if(url.pathname==='/api/printing/jobs/artwork'&&request.method==='POST')return artwork(request,env,context);if(url.pathname==='/api/printing/jobs/proof'&&request.method==='POST')return proof(request,env,context);if(url.pathname==='/api/printing/jobs/finishing'&&request.method==='POST')return finishing(request,env,context);if(url.pathname==='/api/printing/jobs/delivery'&&request.method==='POST')return delivery(request,env,context);if(url.pathname==='/api/printing/jobs/note'&&request.method==='POST')return note(request,env,context);if(url.pathname==='/api/printing/jobs/status'&&request.method==='POST')return transition(request,env,context);return null
+  if(url.pathname==='/api/printing/jobs/file'&&request.method==='GET'){
+    try{return await fileResponse(request,env,context)}catch{
+      return json({error:'The file is temporarily unavailable.'},503);
+    }
+  }
+  if(url.pathname==='/api/printing/jobs/detail'&&request.method==='GET')return detail(request,env,context);if(url.pathname==='/api/printing/jobs/artwork'&&request.method==='POST')return artwork(request,env,context);if(url.pathname==='/api/printing/jobs/proof'&&request.method==='POST')return proof(request,env,context);if(url.pathname==='/api/printing/jobs/finishing'&&request.method==='POST')return finishing(request,env,context);if(url.pathname==='/api/printing/jobs/delivery'&&request.method==='POST')return delivery(request,env,context);if(url.pathname==='/api/printing/jobs/note'&&request.method==='POST')return note(request,env,context);if(url.pathname==='/api/printing/jobs/status'&&request.method==='POST')return transition(request,env,context);return null
 }
