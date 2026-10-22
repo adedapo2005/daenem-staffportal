@@ -17,6 +17,7 @@ function hasPermission(context, permission, minimum, companyId) {
 }
 new Function('require', 'exports', compiled)((id) => {
   if (id === './auth') return { hasPermission };
+  if (id === './signin-design-library') return { routeSignInDesignLibrary: async () => null };
   throw new Error(`Unexpected import ${id}`);
 }, exports);
 const route = exports.routeThemePreferences;
