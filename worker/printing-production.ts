@@ -58,6 +58,18 @@ async function upload(request:Request,env:PrintingProductionEnv,context:SessionC
   const digest=Array.from(digestBytes,byte=>byte.toString(16).padStart(2,'0')).join('');
   const fileId=crypto.randomUUID(),key=`printing/${jobId}/${category}/${Date.now()}-${fileId}-${safeName}`,mime=file.type||'application/octet-stream';
   await env.FILES.put(key,bytes,{httpMetadata:{contentType:mime,cacheControl:'private, no-store'},customMetadata:{companyId,jobId,category,uploadedBy:context.employee.id,originalName:safeName,sha256:digest}});
+  // Uploading to R2 can outlast the session or its create permission. Do not
+  // accept a mirror receipt or success audit under the pre-upload authority.
+  let currentContext:SessionContext|null;
+  try{currentContext=await getSessionContext(request,env)}catch(error){await env.FILES.delete(key);throw error}
+  if(!currentContext||currentContext.sessionId!==context.sessionId||currentContext.employee.id!==context.employee.id){
+    await env.FILES.delete(key);
+    return json({error:'Authentication required.'},401);
+  }
+  if(!can(currentContext,'create')){
+    await env.FILES.delete(key);
+    return json({error:'Create Printing permission is required.'},403);
+  }
   const mirrorId=`storage-mirror-printing-${fileId}-${digest}`,idempotencyKey=`microsoft_onedrive:printing:${fileId}:${digest}`;
   const auditId=uid('audit'),requestId=requestCorrelationId(request);
   try{

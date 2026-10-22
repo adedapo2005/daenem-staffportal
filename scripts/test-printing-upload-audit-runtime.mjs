@@ -9,8 +9,11 @@ import ts from 'typescript';
 const db = new DatabaseSync(':memory:');
 db.exec('PRAGMA foreign_keys=ON');
 for (const [file, tables] of [
-  ['0001_core.sql', ['companies', 'company_locations', 'employees', 'employee_company_memberships', 'audit_logs']],
+  ['0001_core.sql', ['companies', 'company_locations', 'employees', 'employee_company_memberships', 'audit_logs',
+    'roles', 'employee_roles', 'permissions', 'role_permissions', 'employee_permission_overrides', 'auth_sessions']],
+  ['0002_identity_auth.sql', ['employee_preferences']],
   ['0005_commerce_printing.sql', ['customers', 'sales_orders', 'printing_services', 'print_jobs']],
+  ['0019_employee_permission_overrides_v2.sql', ['employee_permission_overrides_v2']],
   ['0077_storage_mirror_queue.sql', ['storage_mirror_jobs']],
 ]) {
   const migration = await readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8');
@@ -29,6 +32,22 @@ db.exec(`
     ('job-a','company-printing','PRINT-A','Private Printing job','creator'),
     ('job-b','company-bakery','PRINT-B','Other private job','other');
 `);
+// The upload handler reauthorizes after R2. Give the direct persistence fixture
+// real synthetic sessions so that recheck uses the canonical auth implementation.
+const authPepper = 'synthetic-printing-upload-audit-only';
+db.exec("INSERT INTO permissions(id,code,module,action) VALUES('print-access','printing.access','printing','access')");
+for (const [id, company, level] of [
+  ['creator', 'company-printing', 'create'], ['owner', 'company-printing', 'manage'], ['other', 'company-bakery', 'manage'],
+]) {
+  db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id) VALUES(?,?,?)').run(id, id, company);
+  db.prepare('INSERT INTO roles(id,company_id,code,name,is_system) VALUES(?,?,?,?,?)')
+    .run(id, id === 'owner' ? null : company, id, id, id === 'owner' ? 1 : 0);
+  db.prepare('INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES(?,?,?,?)').run(id, id, company, id);
+  db.prepare('INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,?,?)').run(id, id, 'print-access', level);
+  const hash = createHash('sha256').update(`synthetic-session-${id}:${authPepper}`).digest('hex');
+  db.prepare("INSERT INTO auth_sessions(id,employee_id,token_hash,expires_at) VALUES(?,?,?,datetime('now','+1 hour'))")
+    .run(id, id, hash);
+}
 async function load(file, dependencies = {}) {
   const source = await readFile(new URL(`../worker/${file}.ts`, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: {
@@ -44,6 +63,7 @@ async function load(file, dependencies = {}) {
 const auth = await load('auth');
 const { routePrintingProduction: route } = await load('printing-production', { './auth': auth });
 const actor = (id, company, level) => ({
+  sessionId: id,
   employee: { id }, roles: [{ code: id === 'owner' ? 'owner' : 'employee' }],
   permissions: { 'printing.access': 'manage' },
   companyPermissions: { [company]: { 'printing.access': level } },
@@ -54,6 +74,7 @@ const other = actor('other', 'company-bakery', 'manage');
 const objects = new Map(), puts = [], deletes = [];
 let beforeBatch, putFailure = false, networkCalls = 0, cases = 0;
 const env = {
+  AUTH_PEPPER: authPepper,
   DB: {
     prepare(sql) {
       return {
@@ -61,6 +82,10 @@ const env = {
         bind(...values) { this.values = values; return this; },
         async first() { return db.prepare(sql).get(...this.values) || null; },
         async all() { return { results: db.prepare(sql).all(...this.values) }; },
+        async run() {
+          const result = db.prepare(sql).run(...this.values);
+          return { success: true, meta: { changes: Number(result.changes) } };
+        },
       };
     },
     async batch(statements) {
@@ -91,12 +116,12 @@ const snapshot = () => ({
   audits: db.prepare('SELECT * FROM audit_logs ORDER BY id').all(),
   objects: [...objects.entries()],
 });
-const request = ({ jobId = 'job-a', category = 'artwork', content = 'Synthetic file bytes', requestId = 'upload-request' } = {}) => {
+const request = ({ jobId = 'job-a', category = 'artwork', content = 'Synthetic file bytes', requestId = 'upload-request', actorId = 'creator' } = {}) => {
   const data = new FormData();
   data.set('jobId', jobId); data.set('category', category);
   data.set('file', new File([content], 'sample artwork.txt', { type: 'text/plain' }));
   return new Request('https://staffportal.test/api/printing/jobs/files', {
-    method: 'POST', headers: { 'x-request-id': requestId }, body: data,
+    method: 'POST', headers: { 'x-request-id': requestId, cookie: `daenem_workforce_session=synthetic-session-${actorId}` }, body: data,
   });
 };
 async function check(name, test) { await test(); cases++; console.log(`PASS ${name}`); }
@@ -108,7 +133,7 @@ async function unavailable() {
 }
 async function accepted(context, requestId) {
   const before = snapshot();
-  const response = await route(request({ requestId }), env, context);
+  const response = await route(request({ requestId, actorId: context.employee.id }), env, context);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('cache-control'), 'no-store');
   const body = await response.json();

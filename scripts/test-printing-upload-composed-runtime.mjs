@@ -27,7 +27,7 @@ for (const [file, tables] of [
 }
 let jobReads = 0, batches = 0, networkCalls = 0, putFailure = false, deleteFailure = false;
 let getFailure = false, afterGet = null, fileReads = 0, bodyReads = 0, headerReads = 0;
-let failReadAuthorization = false;
+let failReadAuthorization = false, afterPut = null;
 const objects = new Map(), puts = [], deletes = [];
 const env = {
   APP_STAGE: 'test', AUTH_PEPPER: 'synthetic-printing-test-only',
@@ -80,6 +80,7 @@ const env = {
       assert.ok(!objects.has(key));
       objects.set(key, { bytes: Buffer.from(bytes), ...options });
       puts.push(key);
+      if (afterPut) afterPut();
     },
     async delete(key) {
       deletes.push(key);
@@ -287,6 +288,59 @@ try {
       try { await deny(request('creator'), status, true); } finally { db.exec(restore); }
     });
   }
+  for (const [name, revoke, restore, status] of [
+    ['session revocation', "UPDATE auth_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE id='creator'", "UPDATE auth_sessions SET revoked_at=NULL WHERE id='creator'", 401],
+    ['session expiry', "UPDATE auth_sessions SET expires_at=datetime('now','-1 hour') WHERE id='creator'", "UPDATE auth_sessions SET expires_at=datetime('now','+1 hour') WHERE id='creator'", 401],
+    ['employee deactivation', "UPDATE employees SET employment_status='inactive' WHERE id='creator'", "UPDATE employees SET employment_status='active' WHERE id='creator'", 401],
+    ['session actor replacement', "UPDATE auth_sessions SET employee_id='owner' WHERE id='creator'", "UPDATE auth_sessions SET employee_id='creator' WHERE id='creator'", 401],
+    ['membership revocation', "UPDATE employee_company_memberships SET active=0 WHERE employee_id='creator' AND company_id='company-printing'", "UPDATE employee_company_memberships SET active=1 WHERE employee_id='creator' AND company_id='company-printing'", 403],
+    ['company deactivation', "UPDATE companies SET active=0 WHERE id='company-printing'", "UPDATE companies SET active=1 WHERE id='company-printing'", 403],
+    ['role revocation', "UPDATE roles SET active=0 WHERE id='creator'", "UPDATE roles SET active=1 WHERE id='creator'", 403],
+    ['permission downgrade', "UPDATE role_permissions SET access_level='view' WHERE role_id='creator'", "UPDATE role_permissions SET access_level='create' WHERE role_id='creator'", 403],
+    ['explicit deny', "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by) VALUES('upload-deny','creator','company-printing','print-access','none','Fixture','owner')", "DELETE FROM employee_permission_overrides_v2 WHERE id='upload-deny'", 403],
+  ]) {
+    await check(`${name} during R2 upload: exact-object cleanup without receipt or success audit`, async () => {
+      const batchCount = batches, deleteCount = deletes.length, putCount = puts.length;
+      afterPut = () => db.exec(revoke);
+      try { await deny(request('creator'), status); }
+      finally { afterPut = null; db.exec(restore); }
+      assert.equal(puts.length, putCount + 1);
+      assert.equal(deletes.length, deleteCount + 1);
+      assert.equal(deletes.at(-1), puts.at(-1));
+      assert.equal(batches, batchCount, 'revoked authority must not attempt acceptance writes');
+    });
+  }
+  await check('authorization lookup failure after upload: neutral 503 and exact-object cleanup', async () => {
+    const batchCount = batches, deleteCount = deletes.length;
+    afterPut = () => { failReadAuthorization = true; };
+    try { await deny(request('creator'), 503); }
+    finally { afterPut = null; failReadAuthorization = false; }
+    assert.equal(deletes.length, deleteCount + 1);
+    assert.equal(deletes.at(-1), puts.at(-1));
+    assert.equal(batches, batchCount);
+  });
+  await check('revocation cleanup failure: neutral 503 without accepted receipt or success audit', async () => {
+    const before = snapshot(), batchCount = batches, deleteCount = deletes.length;
+    afterPut = () => db.exec("UPDATE auth_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE id='creator'");
+    deleteFailure = true;
+    try {
+      const response = await send(request('creator'));
+      assert.equal(response.status, 503);
+      assert.deepEqual(await response.json(), { error: 'The Printing file could not be saved. Please try again later.' });
+      assert.deepEqual(snapshot().queue, before.queue);
+      assert.deepEqual(snapshot().audits, before.audits);
+      assert.equal(batches, batchCount);
+      assert.equal(objects.size, before.objects.length + 1, 'failed cleanup is not reported as successful compensation');
+      assert.equal(deletes.length, deleteCount + 1, 'cleanup is attempted once');
+      assert.equal(deletes.at(-1), puts.at(-1));
+      for (const [key, object] of before.objects) assert.deepEqual(objects.get(key), object);
+    } finally {
+      afterPut = null; deleteFailure = false;
+      db.exec("UPDATE auth_sessions SET revoked_at=NULL WHERE id='creator'");
+      objects.delete(puts.at(-1)); // Fixture-only cleanup of the unaccepted object.
+    }
+  });
+  await check('restored upload authority accepts exactly one new receipt and audit', () => accepted('creator'));
   for (const table of ['storage_mirror_jobs', 'audit_logs']) {
     for (const mode of ['ABORT', 'IGNORE']) {
       await check(`${table} ${mode}: neutral 503 with headers, rollback and exact-object cleanup`, async () => {
