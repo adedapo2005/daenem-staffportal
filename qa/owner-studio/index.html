@@ -2,7 +2,13 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Owner Studio isolated QA</title></head><body>
 <main><section class="signin-admin-preview"><h2>Authorized editor QA fixture</h2></section></main>
 <script type="module">
-import { mountOwnerStudioPro } from '../../src/owner-studio-pro.ts';
+import { mountOwnerStudioPro, resetOwnerStudioProSession } from '../../src/owner-studio-pro.ts';
 mountOwnerStudioPro(document.body);
+document.addEventListener('daenem-auth-changed',()=>{
+ resetOwnerStudioProSession();
+ sessionStorage.removeItem('daenem-owner-studio-concept-library-v1');
+ document.querySelector('main').innerHTML='<section class="signin-admin-preview"><h2>New authorized editor session</h2></section>';
+});
+document.addEventListener('qa-owner-studio-remount',()=>mountOwnerStudioPro(document.body));
 </script>
 </body></html>

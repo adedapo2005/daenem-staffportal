@@ -125,6 +125,17 @@ function installFrame(){
  apply();
 }
 let lastDrag:{x:number;y:number}|null=null;
+/** Destroy private editor state on login/logout, while retaining it across ordinary Studio rerenders. */
+export function resetOwnerStudioProSession(){
+ const doc=getDoc();
+ doc?.getElementById(styleId)?.remove();
+ doc?.querySelectorAll('[data-studio-selected]').forEach(node=>node.removeAttribute('data-studio-selected'));
+ if(listeningFrame)listeningFrame.removeEventListener('click',locate,true);
+ snap={edits:{},clocks:{}};undo=[];redo=[];
+ selected=selectors[0][1];selectedLabel='Global Operations';activeDevice='1366x768';
+ dragOrigin=null;lastDrag=null;listeningFrame=null;frame=null;editor=null;
+}
+
 
 function setClock<K extends keyof ClockEdit>(key:K,value:ClockEdit[K]){if(!clockTargets.some(([,s])=>s===selected))return;setSelectedClock({[key]:value});}
 function fitPreview(){

@@ -1,5 +1,5 @@
 import './theme-studio.css';
-import { mountOwnerStudioPro } from './owner-studio-pro';
+import { mountOwnerStudioPro, resetOwnerStudioProSession } from './owner-studio-pro';
 import { applyThemeToDocument, normalizeThemeId, themeList } from './theme-system';
 import { fetchAdminSignInDraft, fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInDraft, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
 
@@ -44,6 +44,7 @@ let reviewSurface: StudioReviewSurface = 'signin-v180';
 let reviewViewport = { width: 390, height: 844 };
 let draftName = 'New Sign-In draft';
 const REVIEW_DRAFT_KEY = 'daenem:signin-review-draft';
+let authGeneration = 0;
 
 const signInWidgetLabels: Record<SignInWidgetId, string> = {
   weather: 'Live Weather',
@@ -585,6 +586,7 @@ function handleSignInAdminClick(event: Event) {
   }
 }
 async function loadSignInAdmin(canManage: boolean) {
+  const generation=authGeneration;
   const section = document.querySelector<HTMLElement>('.signin-theme-admin');
   if (!section) return;
   section.hidden = !canManage;
@@ -593,10 +595,12 @@ async function loadSignInAdmin(canManage: boolean) {
   renderSignInAdmin();
   try {
     const result = await fetchAdminSignInPreferences();
+    if(generation!==authGeneration)return;
     signInPublishedConfig = cloneSignInConfigFrom(result.config);
     signInConfig = cloneSignInConfigFrom(result.config);
     try {
       const draftResult = await fetchAdminSignInDraft();
+      if(generation!==authGeneration)return;
       if (draftResult.canManage && draftResult.draft) {
         signInConfig = draftResult.draft;
         signInSaveState = 'draft';
@@ -608,21 +612,27 @@ async function loadSignInAdmin(canManage: boolean) {
     section.hidden = !result.canManage;
     renderSignInAdmin();
   } catch {
+    if(generation!==authGeneration)return;
     signInSaveState = 'error';
     renderSignInAdmin();
   }
 }
 
 async function loadPolicy() {
+  const generation=authGeneration;
   try {
-    policy = await apiJson<ThemePolicy>('/api/theme/policy');
+    const result=await apiJson<ThemePolicy>('/api/theme/policy');
+    if(generation!==authGeneration)return;
+    policy=result;
     if (policy.effectiveTheme && normalizeThemeId(policy.effectiveTheme) !== currentTheme()) setVisualTheme(policy.effectiveTheme);
     const owner = document.querySelector<HTMLElement>('.theme-owner-controls');
     if (owner) owner.hidden = !policy.canManage;
     await loadSignInAdmin(Boolean(policy.canManage));
+    if(generation!==authGeneration)return;
     if (policy.forcedTheme) showThemeMessage(`Group-wide theme is currently forced to ${themes.find((t) => t.id === policy!.forcedTheme)?.name || policy.forcedTheme}.`, 'info');
     else showThemeMessage('', 'info');
   } catch {
+    if(generation!==authGeneration)return;
     policy = null;
   }
 }
@@ -684,6 +694,21 @@ function boot() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
+window.addEventListener('daenem-auth-changed',()=>{
+ authGeneration++;
+ closeStudio();
+ resetOwnerStudioProSession();
+ const admin=document.querySelector<HTMLElement>('.signin-theme-admin');
+ if(admin){admin.hidden=true;admin.replaceChildren();}
+ policy=null;aiOptions={};draggedWidgetId=null;
+ signInSaveState='idle';
+ signInConfig=normalizeSignInPreferences(null);
+ signInPublishedConfig=normalizeSignInPreferences(null);
+ try{
+  sessionStorage.removeItem(REVIEW_DRAFT_KEY);
+  sessionStorage.removeItem('daenem-owner-studio-concept-library-v1');
+ }catch{/* unavailable session storage is not a blocker */}
+});
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeStudio(); });
 new MutationObserver(() => refreshSelectedState()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
