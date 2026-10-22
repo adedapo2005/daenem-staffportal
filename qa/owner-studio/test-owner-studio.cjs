@@ -17,6 +17,8 @@ const xpos=await page.locator('[data-builder-canvas] [data-block]').evaluate(e=>
 if(xpos!=='190px')throw Error('blank builder positioning failed '+xpos);
 await page.locator('[data-builder-save]').click();
 if(await page.locator('[data-builder-library] option').count()!==2)throw Error('design library save failed');
+const sessionSaved=await page.evaluate(()=>sessionStorage.getItem('daenem-owner-studio-concept-library-v1'));
+if(!sessionSaved||!sessionSaved.includes('New DAENEM Sign-In Design'))throw Error('session recovery failed');
 await page.locator('[data-builder-clear]').click();
 if(await page.locator('[data-builder-canvas] [data-block]').count()!==0)throw Error('clear canvas failed');
 await page.locator('[data-builder-load]').click();
