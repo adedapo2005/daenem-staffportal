@@ -19,10 +19,23 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  host.innerHTML='<header class="owner-builder-head"><div><small>ALTERNATE DESIGN WORKSPACE</small><h4>Create A New Sign-In Design</h4><p>Build a separate design without replacing the approved Sign-In. This is a local, unsaved preview only.</p></div><button type="button" data-builder-exit>Return To Approved Design</button></header>'+
  '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="768">Tablet · 768px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-save>Save Concept</button><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button></div>'+
  '<div class="owner-builder-shell"><aside><h5>Add Components</h5>'+catalogue.map(c=>'<button type="button" data-builder-add="'+c.kind+'">+ '+esc(c.label)+'</button>').join('')+'<p>Authentication remains a protected component; visual edits cannot alter login security or providers.</p></aside><div class="owner-builder-stage"><div class="owner-builder-canvas" data-builder-canvas></div></div><aside><h5>Selected Component</h5><p data-builder-selection>No component selected</p><label>Display Text <input data-builder-text maxlength="100"></label><label>Horizontal Position <input data-builder-x type="number" min="0" max="3600"></label><label>Vertical Position <input data-builder-y type="number" min="0" max="2000"></label><label>Width <input data-builder-width type="number" min="80" max="900"></label><label>Height <input data-builder-height type="number" min="40" max="600"></label><button type="button" data-builder-remove>Remove Component</button></aside></div>'+
- '<p class="owner-builder-warning">This is a visual concept canvas, not a deployable Sign-In page. Publishing, provider connections, and persistence require separate verified implementation and Owner approval.</p>';
+ '<p class="owner-builder-warning">This is a concept canvas, not a deployable Sign-In page. Concepts survive reloads in this browser tab only; publishing and durable account storage require separate verification and Owner approval.</p>';
  studio.appendChild(host);
  let draft=blank();let undo:Draft[]=[],redo:Draft[]=[],selected:string|null=null,serial=0;
  const library:Draft[]=[];
+ const libraryKey='daenem-owner-studio-concept-library-v1';
+ try{
+  const stored=JSON.parse(sessionStorage.getItem(libraryKey)||'[]') as unknown;
+  if(Array.isArray(stored)){
+   for(const item of stored.slice(0,20)){
+    if(item&&typeof item==='object'&&typeof item.name==='string'&&Array.isArray(item.blocks)&&item.blocks.length<=100){
+     const valid=item.blocks.every((b:unknown)=>!!b&&typeof b==='object'&&typeof (b as Block).id==='string'&&typeof (b as Block).kind==='string'&&typeof (b as Block).label==='string'&&['x','y','width','height'].every(k=>Number.isFinite((b as unknown as Record<string,unknown>)[k] as number)));
+     if(valid)library.push(item as Draft);
+    }
+   }
+  }
+ }catch{/* session data may be unavailable or malformed */}
+ const persistLibrary=()=>{try{sessionStorage.setItem(libraryKey,JSON.stringify(library.slice(-20)));}catch{/* private browsing or quota restrictions */}};
  let drag:{id:string;x:number;y:number;startX:number;startY:number;zoom:number}|null=null;
  const $=<T>(s:string)=>host.querySelector(s) as unknown as T;
  const clone=()=>JSON.parse(JSON.stringify(draft)) as Draft;
@@ -75,7 +88,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  };
  $<HTMLButtonElement>('[data-builder-save]').addEventListener('click',()=>{
   draft.name=$<HTMLInputElement>('[data-builder-name]').value.trim().slice(0,70)||'Untitled Design';
-  library.push(clone());refreshLibrary();$<HTMLSelectElement>('[data-builder-library]').value=String(library.length-1);
+  library.push(clone());persistLibrary();refreshLibrary();$<HTMLSelectElement>('[data-builder-library]').value=String(library.length-1);
  });
  $<HTMLButtonElement>('[data-builder-load]').addEventListener('click',()=>{
   const index=Number($<HTMLSelectElement>('[data-builder-library]').value);
@@ -85,6 +98,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  $<HTMLButtonElement>('[data-builder-duplicate]').addEventListener('click',()=>{
   record();draft=clone();draft.name=(draft.name+' Copy').slice(0,70);$<HTMLInputElement>('[data-builder-name]').value=draft.name;selected=null;draw();
  });
+ refreshLibrary();
  $<HTMLSelectElement>('[data-builder-device]').addEventListener('change',draw);
  $<HTMLInputElement>('[data-builder-name]').addEventListener('change',e=>{record();draft.name=(e.target as HTMLInputElement).value.slice(0,70);});
  draw();
