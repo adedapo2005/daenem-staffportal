@@ -2,11 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 import { stage1WorkspaceCalloutOverlay } from './scripts/lib/stage1-workspace-callout-overlay.mjs';
+import { stage1PreproductionCopyOverlay } from './scripts/lib/stage1-preproduction-copy-overlay.mjs';
 
 // Local-only canonical visual QA. The production Worker integration remains
 // in vite.config.ts; this harness intentionally has no Cloudflare runtime.
 export default defineConfig({
-  plugins: [stage1WorkspaceCalloutOverlay(), react()],
+  plugins: [stage1PreproductionCopyOverlay(), stage1WorkspaceCalloutOverlay(), react()],
   resolve: {
     alias: [
       { find: 'next/navigation', replacement: fileURLToPath(new URL('./src/next-navigation-shim.ts', import.meta.url)) },
