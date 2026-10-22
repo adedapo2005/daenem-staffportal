@@ -209,6 +209,15 @@ async function finishing(request:Request,env:PrintingProductionEnv,context:Sessi
   const id=uid('finishing'),auditId=uid('audit'),requestId=requestCorrelationId(request);
   const revenue=`COALESCE(NULLIF(invoiced_kobo,0),quoted_kobo,0)`;
   const profit=`(${revenue}-material_cost_kobo-finishing_cost_kobo-COALESCE(labour_cost_kobo,0)-COALESCE(other_cost_kobo,0))`;
+  // Job reads can outlast the original session or its financial grant. Recheck
+  // both operational and cost authority for the same actor before writing.
+  let currentContext:SessionContext|null;
+  try{currentContext=await getSessionContext(request,env)}catch{
+    return json({error:'The Printing finishing record could not be saved. Refresh and try again.'},503);
+  }
+  if(!currentContext||currentContext.sessionId!==context.sessionId||currentContext.employee.id!==context.employee.id)return json({error:'Authentication required.'},401);
+  if(!can(currentContext,'create'))return json({error:'Create Printing permission is required.'},403);
+  if(costNaira>0&&!canViewFinancials(currentContext))return json({error:'Printing approval or Finance view permission is required to record finishing cost.'},403);
   // Recompute from durable rows inside the same transaction as the new evidence.
   // Every stage must win; a silent zero-row write also rolls the entire attempt back.
   try{await env.DB.batch([
