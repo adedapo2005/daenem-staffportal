@@ -33,7 +33,7 @@ let frame:HTMLIFrameElement|null=null;
 let listeningFrame:Document|null=null;
 let dragOrigin:{x:number;y:number;base:ElementEdit}|null=null;
 const getDoc=()=>{try{return frame?.contentDocument||null;}catch{return null;}};
-const selectNode=(root:ParentNode,selector:string)=>root.querySelector(selector) as unknown as HTMLSelectElement|null;
+const selectNode=(root:unknown,selector:string)=>(root as {querySelector(selector:string):unknown}).querySelector(selector) as HTMLSelectElement|null;
 const q=()=>getDoc()?.querySelector<HTMLElement>(selected)||null;
 function history(){undo.push(clone(snap));if(undo.length>80)undo.shift();redo=[];}
 function entry(){return snap.edits[currentKey()]||defaults();}
@@ -85,7 +85,7 @@ function pickElement(target:EventTarget|null){
  }
  if(!selector)return false;
  selected=selector;selectedLabel=(el.textContent||'').trim().slice(0,25)||el.localName||'Element';
- const layer=editor?.querySelector<HTMLSelectElement>('[data-owner-pro-layer]');
+ const layer=editor?selectNode(editor,'[data-owner-pro-layer]'):null;
  if(layer&&!Array.from(layer.options).some(o=>o.value===selector)){
   const option=document.createElement('option');option.value=selector;option.textContent='Selected · '+selectedLabel;layer.appendChild(option);
  }
