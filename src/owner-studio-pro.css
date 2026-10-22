@@ -47,3 +47,18 @@
 .owner-pro-canvas{border-color:#8fb7d1}
 @media(max-width:600px){.owner-pro-nav{gap:3px}.owner-pro-nav button{font-size:10px;padding:6px 8px}}
 @media(prefers-reduced-motion:reduce){.owner-pro-nav button{transition:none}}
+
+/* Unified owner-only studio refinement: opaque surfaces, consistent controls. */
+.owner-pro-studio{--studio-ink:#11394c;--studio-emerald:#087d6f;--studio-gold:#c89439;background:linear-gradient(160deg,#fafdfd,#eaf4f8 72%,#dfedf5);box-shadow:0 20px 50px #082d4521}
+.owner-pro-inspector button,.owner-pro-clock-controls button,.owner-pro-studio [data-reset-color]{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 12px;border:1px solid #9ebdcb;border-radius:9px;background:#f8fbfd;color:#155167;font:800 11px Manrope,Inter,system-ui,sans-serif;cursor:pointer}
+.owner-pro-inspector button:hover,.owner-pro-clock-controls button:hover{background:#e6f3f3;border-color:#168c7d}
+.owner-pro-inspector input[type=color]{width:100%;height:36px;padding:4px;background:#fff;border:1px solid #a9c7d8;border-radius:8px;cursor:pointer}
+.owner-pro-inspector input[type=range]:focus-visible,.owner-pro-studio select:focus-visible{outline:3px solid #126c9c;outline-offset:2px}
+.owner-pro-canvas{background:repeating-linear-gradient(45deg,#d6e4ed,#d6e4ed 10px,#eaf2f7 10px,#eaf2f7 20px)}
+.owner-pro-nav button:last-child{background:#0c655b;color:#fff;border-color:#0a7165}
+.owner-pro-nav button:last-child:hover{background:#075048}
+.owner-pro-actions [data-reset-all]{background:#e5f5ec;border-color:#90c9a9;color:#145d43}
+.owner-pro-inspector output{color:#0e816c;font-weight:900;font-variant-numeric:tabular-nums}
+.owner-pro-inspector label{line-height:1.3}
+.owner-pro-studio input,.owner-pro-studio select,.owner-pro-studio button{font-family:Manrope,Inter,system-ui,sans-serif}
+@media(max-width:850px){.owner-pro-inspector{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}.owner-pro-canvas{height:min(570px,62vh)}}
