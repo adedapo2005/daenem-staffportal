@@ -138,5 +138,21 @@ if(writes.length)throw Error('editor made unauthorized writes '+JSON.stringify(w
 if(errors.length)throw Error('page errors: '+errors.join(';'));
 console.log('PASS: admin editor mounted, live iframe content, move, undo, mobile viewport, clock style, revert, no server writes');
 await page.screenshot({path:'qa/owner-studio/studio-preview.png',fullPage:true});
+await page.setViewportSize({width:3840,height:2160});
+await page.evaluate(()=>{
+ const main=document.querySelector('main');
+ const shell=document.createElement('div');shell.className='theme-studio';
+ if(main){main.parentElement?.insertBefore(shell,main);shell.appendChild(main);}
+});
+const studioWidth=await page.locator('.theme-studio').evaluate(e=>e.getBoundingClientRect().width);
+if(studioWidth<3000)throw Error('32-inch 4K Studio remains a compressed modal '+studioWidth);
+const panelWidth=await page.locator('.owner-pro-inspector').evaluate(e=>e.getBoundingClientRect().width);
+if(panelWidth<300)throw Error('4K owner inspector too narrow '+panelWidth);
+await page.locator('[data-owner-pro-preset]').selectOption('10');
+await iframe.locator('#staff-global-operations').waitFor({timeout:20000});
+const active4k=await iframe.locator('html').evaluate(e=>e.ownerDocument.defaultView.innerWidth);
+if(active4k!==3840)throw Error('real iframe 4K width failed '+active4k);
+await page.screenshot({path:'qa/owner-studio/studio-4k-editor.png',fullPage:false});
+
 }finally{await page.close();await browser.close();await server.close();}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
