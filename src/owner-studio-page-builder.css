@@ -18,3 +18,27 @@
 .owner-builder-warning{border-top:1px solid #bdd5df;padding-top:10px}
 .owner-builder-inner-item:hover{background:#f6e9bb}
 @media(prefers-reduced-motion:reduce){.owner-builder-block[data-block]{transition:none!important}}
+
+/* Owner-only review process: solid surfaces, no glass, no automatic activation. */
+.owner-builder-review{display:grid;gap:13px;margin-top:18px;padding:clamp(18px,1.2vw,32px);border:1px solid #a2c5cc;border-radius:16px;background:#ffffff;color:#184155;box-shadow:0 8px 26px #0a3b4d12}
+.owner-builder-review header small{font-size:11px;letter-spacing:.12em;font-weight:900;color:#0b7366}
+.owner-builder-review header h5{font-size:clamp(18px,1vw,30px);letter-spacing:-.02em;margin:7px 0;color:#123b51}
+.owner-builder-review header p{font-size:13px;line-height:1.5;color:#486c79;margin:0}
+.owner-builder-review-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.owner-builder-review-actions button{min-height:40px;padding:9px 13px;border-radius:9px;border:1px solid #a4c8d3;font:800 12px Manrope,Inter,system-ui,sans-serif;color:#15546b;background:#edf4f7}
+.owner-builder-review-actions [data-builder-check]{background:#0d7b6b;color:#fff;border-color:#067667}
+.owner-builder-review-actions [data-builder-request]{background:#133c53;color:#fff;border-color:#133c53}
+.owner-builder-review-actions button:disabled{opacity:.5;cursor:not-allowed;background:#e0e7eb;color:#57707c;border-color:#bed0d9}
+.owner-builder-review-actions button:not(:disabled):hover{filter:brightness(.94)}
+.owner-builder-review [data-builder-review-status]{font-size:12px;line-height:1.55;margin:2px 0;padding:11px 13px;border:1px solid #c5dce5;border-radius:10px;background:#f2f7fa;color:#295567}
+.owner-builder-review [data-builder-review-report]{font-size:12px;line-height:1.5}
+.owner-builder-review [data-builder-review-report]:empty{display:none}
+.owner-builder-review [data-builder-review-report] strong{color:#0c6457;display:block;font-size:14px;margin:6px 0}
+.owner-builder-review [data-builder-review-report] ul{margin:8px 0;padding-left:22px;columns:2;column-gap:32px}
+.owner-builder-review [data-builder-review-report] li{break-inside:avoid;margin-bottom:7px}
+.owner-builder-review [data-builder-review-report] .is-blocked{color:#9b4d27;font-weight:800}
+.owner-builder-review [data-builder-review-report] .is-passed{color:#145f4c}
+.owner-builder-review [data-builder-review-report] p{font-size:12px;color:#486575;margin:10px 0 0}
+.owner-builder-review-note{font-size:11px;line-height:1.6;color:#526f7c;border-top:1px solid #d7e4e9;padding-top:12px;margin:0}
+@media(max-width:850px){.owner-builder-review [data-builder-review-report] ul{columns:1}.owner-builder-review-actions button{flex:1 1 180px}}
+@media(min-width:1920px){.owner-builder-review header p,.owner-builder-review [data-builder-review-status]{font-size:clamp(14px,.65vw,21px)}.owner-builder-review-actions button{font-size:clamp(13px,.65vw,19px);min-height:clamp(44px,2vw,64px)}.owner-builder-review [data-builder-review-report]{font-size:clamp(12px,.6vw,18px)}}

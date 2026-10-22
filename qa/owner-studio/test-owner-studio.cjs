@@ -165,6 +165,35 @@ await cloudPage.route('**/api/theme/signin/designs',async r=>{
  cloudRevision++;cloudDesigns=incoming.designs;
  return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision:cloudRevision,designs:cloudDesigns})});
 });
+let reviewRevision=0,reviewCandidate=null,reviewWrites=0;
+await cloudPage.route('**/api/theme/signin/designs/readiness',async r=>{
+ const input=r.request().postDataJSON();
+ if(input.libraryRevision!==cloudRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Reload saved designs.'})});
+ const design=cloudDesigns[input.designIndex];
+ const valid=Boolean(design&&design.blocks.filter(b=>b.kind==='auth').length===1&&
+  design.blocks.some(b=>b.kind==='brand')&&design.blocks.some(b=>b.kind==='heading')&&
+  design.blocks.every(b=>b.x+b.width<=390));
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  structuralPass:valid,readyToPublish:false,designName:design?.name||'Unknown',
+  checks:[{name:'Protected Sign-In and mobile fit',passed:valid,detail:valid?'Ready for visual review.':'Missing protected auth or mobile clipping.'}],
+  blockers:valid?[]:['Protected authentication and mobile fit required.'],
+  pendingAcceptance:['Authenticated Sign-In and accessibility tests','Owner Pre-Production release gate']
+ })});
+});
+await cloudPage.route('**/api/theme/signin/designs/review',async r=>{
+ const method=r.request().method();
+ if(method==='GET')return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  revision:reviewRevision,candidate:reviewCandidate,stale:false,published:false
+ })});
+ reviewWrites++;const input=r.request().postDataJSON();
+ if(input.reviewRevision!==reviewRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Another Owner session updated review.'})});
+ reviewRevision++;
+ if(method==='DELETE')reviewCandidate=null;
+ else reviewCandidate={designName:cloudDesigns[input.designIndex]?.name||'Unknown',status:'awaiting-authenticated-acceptance'};
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  ok:true,revision:reviewRevision,candidate:reviewCandidate,published:false
+ })});
+});
 await cloudPage.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
 await cloudPage.locator('[data-builder-enter]').click();
 await cloudPage.locator('[data-builder-cloud-load]').click();
@@ -179,6 +208,32 @@ cloudRevision=7;
 await cloudPage.locator('[data-builder-cloud-save]').click();
 await cloudPage.getByRole('status').filter({hasText:'changed in another session'}).waitFor();
 if(explicitPosts!==2||cloudDesigns.length!==1)throw Error('cloud conflict handling failed');
+await cloudPage.locator('[data-builder-cloud-load]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library loaded'}).waitFor();
+await cloudPage.locator('[data-builder-library]').selectOption('0');
+await cloudPage.locator('[data-builder-check]').click();
+await cloudPage.locator('[data-builder-review-report]').getByText('Corrections Needed Before Release Review').waitFor();
+if(await cloudPage.locator('[data-builder-request]').isEnabled())throw Error('Incomplete design allowed release review');
+if(reviewWrites!==0)throw Error('Readiness check mutated review');
+await cloudPage.locator('[data-builder-starter]').click();
+if(await cloudPage.locator('[data-builder-canvas] [data-block]').count()!==3)throw Error('Premium starter missing protected components');
+await cloudPage.locator('[data-builder-save]').click();
+await cloudPage.locator('[data-builder-cloud-save]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library saved'}).waitFor();
+if(cloudDesigns.length!==2)throw Error('Premium concept not saved to Owner Library');
+await cloudPage.locator('[data-builder-library]').selectOption('1');
+await cloudPage.locator('[data-builder-check]').click();
+await cloudPage.locator('[data-builder-review-report]').getByText('Structure Passed').waitFor();
+if(!(await cloudPage.locator('[data-builder-request]').isEnabled()))throw Error('Valid concept could not request review');
+await cloudPage.locator('[data-builder-request]').click();
+await cloudPage.locator('[data-builder-review-status]').getByText('Owner review requested').waitFor();
+if(!reviewCandidate||reviewWrites!==1)throw Error('Explicit Owner review submission failed');
+await cloudPage.locator('[data-builder-review-refresh]').click();
+await cloudPage.locator('[data-builder-review-status]').getByText('Awaiting authenticated acceptance').waitFor();
+await cloudPage.locator('[data-builder-review-withdraw]').click();
+await cloudPage.locator('[data-builder-review-status]').getByText('Pending review withdrawn').waitFor();
+if(reviewCandidate!==null||reviewWrites!==2)throw Error('Review withdrawal failed');
+
 await cloudPage.close();
 
 
