@@ -33,3 +33,17 @@
 
 .owner-pro-canvas-inner{margin-inline:auto}
 .theme-studio:has(.owner-pro-studio){width:min(98vw,1700px)!important;max-height:96vh!important}
+
+/* Consolidate the historical V180 review stage and Owner Studio Pro into one canvas. */
+.signin-admin-preview:has(.owner-pro-studio) > .studio-review-toolbar,
+.signin-admin-preview:has(.owner-pro-studio) > .studio-review-stage,
+.signin-admin-preview:has(.owner-pro-studio) > .studio-review-footer,
+.signin-admin-preview:has(.owner-pro-studio) > .studio-review-status {display:none!important}
+.owner-pro-nav{display:flex;flex-wrap:wrap;gap:8px;padding:6px;margin:0 0 16px;border-radius:13px;background:#e1edf5;border:1px solid #b5d4e4}
+.owner-pro-nav button{min-height:36px;border:1px solid transparent;border-radius:9px;background:transparent;padding:7px 12px;font-size:11px;font-weight:800;color:#36566a;cursor:pointer;transition:background .18s ease,border-color .18s ease,color .18s ease}
+.owner-pro-nav button:hover,.owner-pro-nav button[aria-current=page]{background:#fff;color:#075b59;border-color:#89c4c6;box-shadow:0 2px 8px #10414b18}
+.owner-pro-studio .owner-pro-header h4{letter-spacing:-.028em}
+.owner-pro-inspector{border-color:#a6cbd7;box-shadow:0 8px 25px #1a4d6410}
+.owner-pro-canvas{border-color:#8fb7d1}
+@media(max-width:600px){.owner-pro-nav{gap:3px}.owner-pro-nav button{font-size:10px;padding:6px 8px}}
+@media(prefers-reduced-motion:reduce){.owner-pro-nav button{transition:none}}

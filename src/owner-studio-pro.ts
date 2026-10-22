@@ -33,6 +33,7 @@ let frame:HTMLIFrameElement|null=null;
 let listeningFrame:Document|null=null;
 let dragOrigin:{x:number;y:number;base:ElementEdit}|null=null;
 const getDoc=()=>{try{return frame?.contentDocument||null;}catch{return null;}};
+const selectNode=(root:ParentNode,selector:string)=>root.querySelector(selector) as unknown as HTMLSelectElement|null;
 const q=()=>getDoc()?.querySelector<HTMLElement>(selected)||null;
 function history(){undo.push(clone(snap));if(undo.length>80)undo.shift();redo=[];}
 function entry(){return snap.edits[currentKey()]||defaults();}
@@ -62,8 +63,8 @@ function highlight(){const doc=getDoc();if(!doc)return;doc.querySelectorAll('[da
 function updateControls(){
  if(!editor)return;const e=entry();
  for(const [name,value] of Object.entries(e)){const input=editor.querySelector<HTMLInputElement>('[data-prop="'+name+'"]');if(input)input.value=String(value);const display=editor.querySelector<HTMLElement>('[data-value="'+name+'"]');if(display)display.textContent=Number(value).toFixed(name==='opacity'||name==='scale'?2:0);}
- const look=editor.querySelector<HTMLSelectElement>('[data-clock-look]');if(look)look.value=snap.clock;
- const motion=editor.querySelector<HTMLSelectElement>('[data-clock-motion]');if(motion)motion.value=snap.animation;
+ const look=selectNode(editor,'[data-clock-look]');if(look)look.value=snap.clock;
+ const motion=selectNode(editor,'[data-clock-motion]');if(motion)motion.value=snap.animation;
  const clockGlow=editor.querySelector<HTMLInputElement>('[data-clock-glow]');if(clockGlow)clockGlow.value=String(snap.glow);
  const info=editor.querySelector('[data-studio-selection]');if(info)info.textContent=selectedLabel;
  const state=editor.querySelector('[data-studio-state]');if(state)state.textContent='PREVIEW ONLY · '+undo.length+' undo steps';
@@ -142,7 +143,7 @@ export function mountOwnerStudioPro(root:HTMLElement){
  const section=root.querySelector<HTMLElement>('.signin-admin-preview');if(!section)return;
  if(section.querySelector('.owner-pro-studio'))return;
  const studio=document.createElement('section');studio.className='owner-pro-studio';editor=studio;
- studio.innerHTML='<div class="owner-pro-header"><div><span>OWNER STUDIO · PRECISION CANVAS</span><h4>Live visual designer</h4><p>The current approved Sign-In is the source. Everything below stays in this private review and never publishes automatically.</p></div><strong data-studio-state>PREVIEW ONLY</strong></div>'+
+ studio.innerHTML='<nav class="owner-pro-nav" aria-label="Owner Studio sections"><button type="button" data-studio-jump="canvas">Design Canvas</button><button type="button" data-studio-jump="media">Media Library</button><button type="button" data-studio-jump="widgets">Widget Management</button><button type="button" data-studio-jump="clock">Clock Studio</button><button type="button" data-studio-jump="publish">Review & Publish</button></nav><div class="owner-pro-header"><div><span>OWNER STUDIO · PRECISION CANVAS</span><h4>Live visual designer</h4><p>The current approved Sign-In is the source. Everything below stays in this private review and never publishes automatically.</p></div><strong data-studio-state>PREVIEW ONLY</strong></div>'+
  '<div class="owner-pro-bar"><label>Device viewport<select data-owner-pro-preset>'+presets.map(([label,width,height],i)=>'<option value="'+i+'"'+(width===1366?' selected':'')+'>'+label+'</option>').join('')+'</select></label><label>Layer<select data-owner-pro-layer>'+selectors.map(([label,sel])=>'<option value="'+sel.replace(/"/g,'&quot;')+'">'+label+'</option>').join('')+'</select></label><label class="owner-pro-check"><input data-select-mode type="checkbox" checked> Pick layer</label><label class="owner-pro-check"><input data-drag-mode type="checkbox"> Drag in preview</label></div>'+
  '<div class="owner-pro-actions"><button type="button" data-undo>Undo</button><button type="button" data-redo>Redo</button><button type="button" data-reset-element>Revert element</button><button type="button" data-reset-all>Revert everything</button><button type="button" data-zoom-fit>Fit entire device</button><span data-device-size>1366 × 768</span></div>'+
  '<div class="owner-pro-content"><div class="owner-pro-canvas" style="--owner-pro-width:1366px;--owner-pro-height:768px"><div class="owner-pro-canvas-inner"><iframe title="Approved Sign-In owner preview · interactive" data-owner-pro-frame src="/staff-portal-signin?studioReview=signin-v180" loading="lazy"></iframe></div></div>'+
@@ -153,18 +154,24 @@ export function mountOwnerStudioPro(root:HTMLElement){
  '<label>Glow strength<input type="range" min="0" max="100" step="1" data-clock-glow value="0"></label></div></aside></div>'+
  '<p class="owner-pro-note">Session-only preview. This studio cannot publish or alter the authenticated Sign-In without an explicit release action. Use the existing review controls for the separate publish workflow.</p>';
  section.appendChild(studio);
+ studio.querySelectorAll<HTMLButtonElement>('[data-studio-jump]').forEach(button=>button.addEventListener('click',()=>{
+  const target=button.dataset.studioJump;
+  const map:Record<string,string>={canvas:'.owner-pro-canvas',media:'.signin-background-section',widgets:'.signin-admin-section:has([data-signin-widget])',clock:'.owner-pro-clock-controls',publish:'.studio-review-draft-actions'};
+  (root.querySelector(map[target||'canvas'])||studio)?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  studio.querySelectorAll('[data-studio-jump]').forEach(item=>item.setAttribute('aria-current',item===button?'page':'false'));
+ }));
  frame=studio.querySelector<HTMLIFrameElement>('[data-owner-pro-frame]');
- const layer=studio.querySelector<HTMLSelectElement>('[data-owner-pro-layer]');
+ const layer=selectNode(studio,'[data-owner-pro-layer]');
  layer?.addEventListener('change',()=>{selected=layer.value;selectedLabel=selectors.find(([,sel])=>sel===selected)?.[0]||'Element';apply();updateControls();});
- studio.querySelector<HTMLSelectElement>('[data-owner-pro-preset]')?.addEventListener('change',e=>deviceChanged(e.target as HTMLSelectElement));
+ selectNode(studio,'[data-owner-pro-preset]')?.addEventListener('change',e=>deviceChanged(e.target as HTMLSelectElement));
  for(const input of studio.querySelectorAll<HTMLInputElement>('[data-prop]'))input.addEventListener('input',()=>{const name=input.dataset.prop as keyof ElementEdit;const next={...entry(),[name]:Number(input.value)};setEntry(next);});
  studio.querySelector('[data-undo]')?.addEventListener('click',()=>stack('undo'));
  studio.querySelector('[data-redo]')?.addEventListener('click',()=>stack('redo'));
  studio.querySelector('[data-reset-element]')?.addEventListener('click',()=>stack('reset-element'));
  studio.querySelector('[data-reset-all]')?.addEventListener('click',()=>stack('reset-all'));
  studio.querySelector('[data-zoom-fit]')?.addEventListener('click',fitPreview);
- studio.querySelector<HTMLSelectElement>('[data-clock-look]')?.addEventListener('change',e=>setClock('clock',(e.target as HTMLSelectElement).value as ClockLook));
- studio.querySelector<HTMLSelectElement>('[data-clock-motion]')?.addEventListener('change',e=>setClock('animation',(e.target as HTMLSelectElement).value));
+ selectNode(studio,'[data-clock-look]')?.addEventListener('change',e=>setClock('clock',(e.target as HTMLSelectElement).value as ClockLook));
+ selectNode(studio,'[data-clock-motion]')?.addEventListener('change',e=>setClock('animation',(e.target as HTMLSelectElement).value));
  studio.querySelector<HTMLInputElement>('[data-clock-glow]')?.addEventListener('input',e=>setClock('glow',Number((e.target as HTMLInputElement).value)));
  frame?.addEventListener('load',installFrame);
  updateControls();requestAnimationFrame(fitPreview);if(frame?.contentDocument?.readyState==='complete')installFrame();
