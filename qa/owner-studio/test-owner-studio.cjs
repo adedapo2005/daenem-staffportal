@@ -235,6 +235,19 @@ await cloudPage.locator('[data-builder-review-status]').getByText('Pending revie
 if(reviewCandidate!==null||reviewWrites!==2)throw Error('Review withdrawal failed');
 
 await cloudPage.close();
+await page.locator('[data-owner-pro-preset]').selectOption('6');
+await page.locator('[data-owner-pro-layer]').selectOption('#staff-global-operations');
+await page.locator('[data-prop="x"]').fill('73');
+await page.locator('[data-prop="x"]').dispatchEvent('input');
+if((await page.locator('[data-prop="x"]').inputValue())!=='73')throw Error('auth-isolation setup failed');
+await page.evaluate(()=>document.dispatchEvent(new Event('daenem-auth-changed')));
+if(await page.locator('.owner-pro-studio').count())throw Error('old Owner Studio visible after auth change');
+await page.evaluate(()=>document.dispatchEvent(new Event('qa-owner-studio-remount')));
+await page.locator('[data-owner-pro-frame]').waitFor();
+if((await page.locator('[data-prop="x"]').inputValue())!=='0')throw Error('precision draft crossed authentication boundary');
+if(!(await page.locator('[data-undo]').isDisabled()))throw Error('cross-session Undo history retained');
+if((await page.locator('[data-builder-library] option').count())!==1)throw Error('session concept library crossed auth boundary');
+
 
 
 }finally{await page.close();await browser.close();await server.close();}

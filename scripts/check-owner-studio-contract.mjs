@@ -4,6 +4,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 const approvedSignIn = readFileSync(join(root, 'src/approved-signin-v180/reference-v180.html'), 'utf8');
 const studio = readFileSync(join(root, 'src/theme-studio-entry.ts'), 'utf8');
+const studioPro = readFileSync(join(root, 'src/owner-studio-pro.ts'), 'utf8');
 const runtimeSignIn = readFileSync(join(root, 'src/signin-experience.tsx'), 'utf8');
 const main = readFileSync(join(root, 'src/main.tsx'), 'utf8');
 const preferences = readFileSync(join(root, 'src/signin-preferences.ts'), 'utf8');
@@ -34,4 +35,8 @@ assert(studio.includes('section.hidden = !canManage'), 'Owner Studio UI is not h
 assert(themeApi.includes("if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403);"), 'Theme API publish route is missing the server-side authorization guard.');
 assert(themeApi.includes("/api/theme/signin/draft"), 'Durable Owner Studio draft API is missing.');
 assert(studio.includes('fetchAdminSignInDraft') && studio.includes('saveSignInDraft'), 'Owner Studio is not connected to durable draft storage.');
+assert(studioPro.includes('export function resetOwnerStudioProSession'), 'Owner Studio must support authenticated-session isolation.');
+assert(studio.includes("window.addEventListener('daenem-auth-changed'"), 'Theme Studio must respond to authentication changes.');
+assert(studio.includes('authGeneration'), 'Theme Studio must reject stale asynchronous Owner policy results.');
+assert(studio.includes("sessionStorage.removeItem('daenem-owner-studio-concept-library-v1')"), 'Private concept drafts must clear on authentication change.');
 console.log('Owner Studio contract passed.');
