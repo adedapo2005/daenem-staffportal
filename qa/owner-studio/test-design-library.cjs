@@ -24,9 +24,12 @@ const db={prepare(sql){
  }};
  return st;
 }};
+const readiness={exports:{}};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.resolve('worker/signin-design-readiness.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:readiness.exports,module:readiness});
 const mod={exports:{}};
 vm.runInNewContext(transformed,{exports:mod.exports,module:mod,require(name){
  if(name==='./auth')return {hasPermission:(_ctx,module,action)=>module==='settings.access'&&action==='manage'};
+ if(name==='./signin-design-readiness')return readiness.exports;
  throw Error('Unexpected dependency '+name);
 },Response,Request,URL,crypto:require('node:crypto').webcrypto,console});
 const route=mod.exports.routeSignInDesignLibrary;

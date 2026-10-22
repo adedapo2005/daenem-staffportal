@@ -18,11 +18,17 @@ const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 export function mountSignInPageBuilder(studio:HTMLElement){
  if(studio.querySelector('.owner-builder'))return;
  const host=document.createElement('section');host.className='owner-builder';host.hidden=true;
- host.innerHTML='<header class="owner-builder-head"><div><small>ALTERNATE DESIGN WORKSPACE</small><h4>Create A New Sign-In Design</h4><p>Build a separate design without replacing the approved Sign-In. This is a local, unsaved preview only.</p></div><button type="button" data-builder-exit>Return To Approved Design</button></header>'+
- '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="768">Tablet · 768px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-save>Save Concept</button><button type="button" data-builder-cloud-save>Save Owner Library</button><button type="button" data-builder-cloud-load>Load Owner Library</button><span data-builder-cloud-status role="status" aria-live="polite"></span><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button><button type="button" data-builder-export>Export Design</button><label class="owner-builder-import">Import Design <input type="file" accept="application/json,.json" data-builder-import></label></div>'+
+ host.innerHTML='<header class="owner-builder-head"><div><small>ALTERNATE DESIGN WORKSPACE</small><h4>Create A New Sign-In Design</h4><p>Build a separate design without replacing the approved Sign-In. Drafts remain private until you explicitly save or submit them for review.</p></div><button type="button" data-builder-exit>Return To Approved Design</button></header>'+
+ '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="768">Tablet · 768px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-starter>Start From Premium Layout</button><button type="button" data-builder-save>Save Concept</button><button type="button" data-builder-cloud-save>Save Owner Library</button><button type="button" data-builder-cloud-load>Load Owner Library</button><span data-builder-cloud-status role="status" aria-live="polite"></span><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button><button type="button" data-builder-export>Export Design</button><label class="owner-builder-import">Import Design <input type="file" accept="application/json,.json" data-builder-import></label></div>'+
  '<div class="owner-builder-shell"><aside><h5>Add Components</h5>'+catalogue.map(c=>'<button type="button" data-builder-add="'+c.kind+'">+ '+esc(c.label)+'</button>').join('')+'<p>Authentication remains a protected component; visual edits cannot alter login security or providers.</p></aside><div class="owner-builder-stage"><div class="owner-builder-canvas" data-builder-canvas></div></div><aside><h5>Selected Component</h5><p data-builder-selection>No component selected</p><label>Display Text <input data-builder-text maxlength="100"></label><label>Horizontal Position <input data-builder-x type="number" min="0" max="3600"></label><label>Vertical Position <input data-builder-y type="number" min="0" max="2000"></label><label>Width <input data-builder-width type="number" min="80" max="900"></label><label>Height <input data-builder-height type="number" min="40" max="600"></label><button type="button" data-builder-remove>Remove Component</button><div class="owner-builder-inner"><h5>Widget Items</h5><label>Item <select data-builder-item><option value="">Select An Item</option></select></label><label>Label <input data-inner-label maxlength="60"></label><label>Move Item Horizontally <input data-inner-x type="number" min="0" max="800"></label><label>Move Item Vertically <input data-inner-y type="number" min="0" max="500"></label><button type="button" data-inner-add>Add Widget Item</button></div></aside></div>'+
- '<p class="owner-builder-warning">This is a concept canvas, not a deployable Sign-In page. Concepts survive reloads in this browser tab only; publishing and durable account storage require separate verification and Owner approval.</p>';
+ '<p class="owner-builder-warning">This is a concept canvas, not a deployable Sign-In page. Concepts are private drafts. Owner Library saves and release-review requests are explicit, auditable actions; neither publishes a new Sign-In.</p>';
  studio.appendChild(host);
+ const reviewPanel=document.createElement('section');reviewPanel.className='owner-builder-review';
+ reviewPanel.innerHTML='<header><div><small>PROTECTED RELEASE PROCESS</small><h5>Design Readiness & Owner Review</h5><p>Verify a saved design before requesting authenticated release acceptance. This never replaces Approved V180.</p></div></header>'+
+ '<div class="owner-builder-review-actions"><button type="button" data-builder-check>Check Saved Design</button><button type="button" data-builder-request disabled>Submit For Release Review</button><button type="button" data-builder-review-refresh>Review Status</button><button type="button" data-builder-review-withdraw>Withdraw Review</button></div>'+
+ '<p data-builder-review-status role="status" aria-live="polite">No review requested. Approved V180 remains live.</p><div data-builder-review-report aria-live="polite"></div>'+
+ '<p class="owner-builder-review-note">Structural checks do not establish functional authentication, accessibility or production readiness. Only the existing authenticated release gates can authorize an eventual activation.</p>';
+ host.appendChild(reviewPanel);
  let draft=blank();let undo:Draft[]=[],redo:Draft[]=[],selected:string|null=null,selectedInner:string|null=null,serial=0;
  const library:Draft[]=[];
  const libraryKey='daenem-owner-studio-concept-library-v1';
@@ -39,17 +45,58 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  }catch{/* session data may be unavailable or malformed */}
  const persistLibrary=()=>{try{sessionStorage.setItem(libraryKey,JSON.stringify(library.slice(-20)));}catch{/* private browsing or quota restrictions */}};
  let cloudRevision:number|null=null;
+ let syncedLibrarySignature:string|null=null;
  const cloudStatus=(message:string)=>{const el=host.querySelector<HTMLElement>('[data-builder-cloud-status]');if(el)el.textContent=message;};
  const libraryEndpoint='/api/theme/signin/designs';
  const loadCloud=async()=>{
   const response=await fetch(libraryEndpoint,{method:'GET',credentials:'same-origin',cache:'no-store'});
   const result=await response.json() as {revision?:number;designs?:Draft[];error?:string};
   if(!response.ok||!Array.isArray(result.designs)||typeof result.revision!=='number')throw Error(result.error||'Owner library could not be loaded.');
-  cloudRevision=result.revision;return result.designs;
+  cloudRevision=result.revision;syncedLibrarySignature=JSON.stringify(result.designs);return result.designs;
  };
 
  let drag:{id:string;x:number;y:number;startX:number;startY:number;zoom:number;innerId?:string}|null=null;
  const $=<T>(s:string)=>host.querySelector(s) as unknown as T;
+ let reviewEligible:{index:number;revision:number}|null=null;
+ const setReviewStatus=(message:string)=>{const el=$<HTMLElement>('[data-builder-review-status]');el.textContent=message;};
+ const invalidateReadiness=()=>{
+  reviewEligible=null;$<HTMLButtonElement>('[data-builder-request]').disabled=true;
+ };
+ const selectedSavedDesign=()=>{
+  const value=$<HTMLSelectElement>('[data-builder-library]').value;
+  if(value===''||!Number.isInteger(Number(value))||!library[Number(value)])throw Error('Select a saved concept in the design library first.');
+  if(cloudRevision===null)throw Error('Load Owner Library and save your concept before release review.');
+  if(syncedLibrarySignature!==JSON.stringify(library))throw Error('Save your current Owner Library changes before checking release readiness.');
+  return {index:Number(value),revision:cloudRevision};
+ };
+ const requestReview=async(url:string,method:string,body?:Record<string,unknown>)=>{
+  const response=await fetch(url,{method,credentials:'same-origin',cache:'no-store',
+   headers:body?{'content-type':'application/json'}:undefined,
+   body:body?JSON.stringify(body):undefined});
+  const result=await response.json() as Record<string,unknown>;
+  if(!response.ok)throw Error(String(result.error||'Review request failed.'));
+  return result;
+ };
+ const renderReadiness=(report:Record<string,unknown>)=>{
+  const container=$<HTMLElement>('[data-builder-review-report]');
+  const blockers=Array.isArray(report.blockers)?report.blockers.map(String):[];
+  const checks=Array.isArray(report.checks)?report.checks as Array<{name:string;passed:boolean;detail:string}>:[];
+  const pending=Array.isArray(report.pendingAcceptance)?report.pendingAcceptance.map(String):[];
+  container.replaceChildren();
+  const heading=document.createElement('strong');heading.textContent=Boolean(report.structuralPass)?
+   'Structure Passed — Manual Acceptance Still Required':'Corrections Needed Before Release Review';
+  container.appendChild(heading);
+  const list=document.createElement('ul');
+  for(const check of checks){
+   const line=document.createElement('li');line.textContent=(check.passed?'Pass: ':'Review: ')+check.name+' — '+check.detail;
+   line.className=check.passed?'is-passed':'is-blocked';list.appendChild(line);
+  }
+  container.appendChild(list);
+  if(blockers.length){const note=document.createElement('p');note.textContent=blockers.length+' structural blockers must be corrected.';container.appendChild(note);}
+  if(pending.length){
+   const manual=document.createElement('p');manual.textContent='Not yet verified: '+pending.join(' • ');container.appendChild(manual);
+  }
+ };
  const clone=()=>JSON.parse(JSON.stringify(draft)) as Draft;
  const record=()=>{undo.push(clone());if(undo.length>60)undo.shift();redo=[];};
  const width=()=>Number($<HTMLSelectElement>('[data-builder-device]').value);
@@ -118,6 +165,16 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  });
  $<HTMLButtonElement>('[data-builder-remove]').addEventListener('click',()=>{if(!selected)return;record();draft.blocks=draft.blocks.filter(b=>b.id!==selected);selected=null;draw();});
  $<HTMLButtonElement>('[data-builder-clear]').addEventListener('click',()=>{record();draft=blank();selected=null;draw();});
+ $<HTMLButtonElement>('[data-builder-starter]').addEventListener('click',()=>{
+  record();const prefix='starter-'+(++serial)+'-';
+  draft={name:'DAENEM Executive Emerald Concept',blocks:[
+   {id:prefix+'brand',kind:'brand',label:'DAENEM Branding',x:20,y:20,width:210,height:60,items:[]},
+   {id:prefix+'heading',kind:'heading',label:'One Secure Workspace. Live On Every Device.',x:20,y:100,width:330,height:65,items:[]},
+   {id:prefix+'auth',kind:'auth',label:'Protected Sign-In',x:20,y:190,width:310,height:290,items:[]},
+  ]};
+  $<HTMLInputElement>('[data-builder-name]').value=draft.name;
+  selected=null;selectedInner=null;draw();invalidateReadiness();
+ });
  $<HTMLButtonElement>('[data-builder-undo]').addEventListener('click',()=>{if(!undo.length)return;redo.push(clone());draft=undo.pop()!;selected=null;draw();});
  $<HTMLButtonElement>('[data-builder-redo]').addEventListener('click',()=>{if(!redo.length)return;undo.push(clone());draft=redo.pop()!;selected=null;draw();});
  const refreshLibrary=()=>{
@@ -126,13 +183,16 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  };
  $<HTMLButtonElement>('[data-builder-save]').addEventListener('click',()=>{
   draft.name=$<HTMLInputElement>('[data-builder-name]').value.trim().slice(0,70)||'Untitled Design';
-  library.push(clone());persistLibrary();refreshLibrary();$<HTMLSelectElement>('[data-builder-library]').value=String(library.length-1);
+  if(library.length>=20){cloudStatus('Design library is full. Export a design before saving another.');return;}
+  library.push(clone());persistLibrary();refreshLibrary();invalidateReadiness();$<HTMLSelectElement>('[data-builder-library]').value=String(library.length-1);
  });
  $<HTMLButtonElement>('[data-builder-cloud-load]').addEventListener('click',async()=>{
   try{
    const remote=await loadCloud();
-   library.splice(0,library.length,...remote);persistLibrary();refreshLibrary();
-   cloudStatus('Owner Library loaded · '+remote.length+' saved designs');
+   const unsynced=library.filter(local=>!remote.some(stored=>JSON.stringify(stored)===JSON.stringify(local)));
+   if(remote.length+unsynced.length>20)throw Error('Your saved concepts exceed the 20-design limit. Export them before loading the Owner Library.');
+   library.splice(0,library.length,...remote,...unsynced);persistLibrary();refreshLibrary();invalidateReadiness();
+   cloudStatus('Owner Library loaded · '+remote.length+' remote designs, '+unsynced.length+' local concepts retained');
   }catch(error){cloudStatus(error instanceof Error?error.message:'Owner Library load failed');}
  });
  $<HTMLButtonElement>('[data-builder-cloud-save]').addEventListener('click',async()=>{
@@ -142,7 +202,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
     headers:{'content-type':'application/json'},body:JSON.stringify({revision:cloudRevision,designs:library})});
    const result=await response.json() as {revision?:number;error?:string};
    if(!response.ok||typeof result.revision!=='number')throw Error(result.error||'Owner Library save failed');
-   cloudRevision=result.revision;cloudStatus('Owner Library saved · revision '+result.revision);
+   cloudRevision=result.revision;syncedLibrarySignature=JSON.stringify(library);invalidateReadiness();cloudStatus('Owner Library saved · revision '+result.revision);
   }catch(error){cloudStatus(error instanceof Error?error.message:'Owner Library save failed');}
  });
  $<HTMLButtonElement>('[data-builder-load]').addEventListener('click',()=>{
@@ -194,6 +254,57 @@ export function mountSignInPageBuilder(studio:HTMLElement){
    serial=Math.max(serial,result.blocks.length+20);
    $<HTMLInputElement>('[data-builder-name]').value=draft.name;draw();
   }catch{/* malformed imported concepts are ignored */}
+ });
+ $<HTMLSelectElement>('[data-builder-library]').addEventListener('change',invalidateReadiness);
+ $<HTMLButtonElement>('[data-builder-check]').addEventListener('click',async()=>{
+  invalidateReadiness();
+  try{
+   const saved=selectedSavedDesign();
+   const report=await requestReview(libraryEndpoint+'/readiness','POST',{
+    libraryRevision:saved.revision,designIndex:saved.index,
+   });
+   renderReadiness(report);
+   if(report.structuralPass){
+    reviewEligible=saved;$<HTMLButtonElement>('[data-builder-request]').disabled=false;
+    setReviewStatus('Structural checks passed. Authenticated, visual and release acceptance remain outstanding.');
+   }else setReviewStatus('Design requires structural corrections; it cannot be submitted for review yet.');
+  }catch(error){setReviewStatus(error instanceof Error?error.message:'Readiness check failed.');}
+ });
+ $<HTMLButtonElement>('[data-builder-review-refresh]').addEventListener('click',async()=>{
+  try{
+   const current=await requestReview(libraryEndpoint+'/review','GET');
+   const candidate=current.candidate as {designName?:string;status?:string}|null;
+   setReviewStatus(candidate
+    ?'Review candidate: '+String(candidate.designName||'Untitled')+
+      ' · '+(current.stale?'Source designs changed; resubmit after checking readiness.':
+      'Awaiting authenticated acceptance. Approved V180 remains live.')
+    :'No pending review. Approved V180 remains live.');
+  }catch(error){setReviewStatus(error instanceof Error?error.message:'Review status unavailable.');}
+ });
+ $<HTMLButtonElement>('[data-builder-request]').addEventListener('click',async()=>{
+  try{
+   const saved=selectedSavedDesign();
+   if(!reviewEligible||saved.index!==reviewEligible.index||saved.revision!==reviewEligible.revision){
+    throw Error('Run the release readiness check again for the selected saved concept.');
+   }
+   const current=await requestReview(libraryEndpoint+'/review','GET');
+   const result=await requestReview(libraryEndpoint+'/review','POST',{
+    reviewRevision:current.revision,libraryRevision:saved.revision,designIndex:saved.index,
+   });
+   invalidateReadiness();
+   const candidate=result.candidate as {designName?:string}|null;
+   setReviewStatus('Owner review requested for '+String(candidate?.designName||'the selected design')+
+    '. Authentication and visual acceptance are still mandatory. Approved V180 remains live.');
+  }catch(error){invalidateReadiness();setReviewStatus(error instanceof Error?error.message:'Could not submit review.');}
+ });
+ $<HTMLButtonElement>('[data-builder-review-withdraw]').addEventListener('click',async()=>{
+  try{
+   const current=await requestReview(libraryEndpoint+'/review','GET');
+   if(!current.candidate){setReviewStatus('No pending review to withdraw. Approved V180 remains live.');return;}
+   await requestReview(libraryEndpoint+'/review','DELETE',{reviewRevision:current.revision});
+   invalidateReadiness();
+   setReviewStatus('Pending review withdrawn. No public Sign-In change occurred.');
+  }catch(error){setReviewStatus(error instanceof Error?error.message:'Could not withdraw review.');}
  });
  $<HTMLSelectElement>('[data-builder-device]').addEventListener('change',draw);
  $<HTMLInputElement>('[data-builder-name]').addEventListener('change',e=>{record();draft.name=(e.target as HTMLInputElement).value.slice(0,70);});

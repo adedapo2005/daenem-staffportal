@@ -1,4 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { inspectSignInDesign } from './signin-design-readiness';
 
 /**
  * Owner-only storage for draft Sign-In concepts.
@@ -16,6 +17,9 @@ type Block = { id: string; kind: string; label: string; x: number; y: number; wi
 type Design = { name: string; blocks: Block[] };
 type Library = { revision: number; designs: Design[] };
 const KEY = 'ui.signin_design_library_v1';
+const REVIEW_KEY = 'ui.signin_design_review_v1';
+const READINESS_PATH = '/api/theme/signin/designs/readiness';
+const REVIEW_PATH = '/api/theme/signin/designs/review';
 const KINDS = new Set(['heading', 'text', 'clock', 'weather', 'brand', 'auth']);
 const MAX_BODY = 240_000;
 const allowed = (value: unknown, length: number) => typeof value === 'string' && value.length <= length && !/[\u0000-\u001f\u007f]/.test(value);
@@ -79,9 +83,12 @@ function parsed(raw: string): Library {
 
 export async function routeSignInDesignLibrary(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (url.pathname !== '/api/theme/signin/designs') return null;
+  if (url.pathname !== '/api/theme/signin/designs' && url.pathname !== READINESS_PATH && url.pathname !== REVIEW_PATH) return null;
   if (!context.roles.some(role => role.code === 'owner') || !hasPermission(context, 'settings.access', 'manage')) {
     return json({ error: 'Owner authorization is required to manage Sign-In designs.' }, 403);
+  }
+  if (url.pathname === READINESS_PATH || url.pathname === REVIEW_PATH) {
+    return handleDesignReleaseReview(request, env, context, url.pathname);
   }
   if (request.method !== 'GET' && request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   const row = await env.DB.prepare('SELECT setting_value FROM app_settings WHERE setting_key=?')
@@ -115,4 +122,109 @@ export async function routeSignInDesignLibrary(request: Request, env: Env, conte
     .bind('audit-'+crypto.randomUUID(), context.employee.id, KEY, JSON.stringify({ revision: next.revision, designCount: designs.length }))
     .run();
   return json({ ok: true, ...next });
+}
+
+type ReviewCandidate = {
+  requestId: string; index: number; libraryRevision: number; designName: string;
+  requestedAt: string; requestedBy: string; status: 'awaiting-authenticated-acceptance';
+  design: Design;
+};
+type ReviewState = { revision: number; candidate: ReviewCandidate | null };
+const defaultReview = (): ReviewState => ({ revision: 0, candidate: null });
+function parseReview(raw: string): ReviewState {
+  if (!raw) return defaultReview();
+  const value = JSON.parse(raw) as Record<string, unknown>;
+  if (!Number.isInteger(value.revision) || !finite(value.revision, 0, 1_000_000_000)) throw Error('Invalid review revision');
+  if (value.candidate !== null && (!value.candidate || typeof value.candidate !== 'object')) throw Error('Invalid review candidate');
+  return { revision: value.revision as number, candidate: value.candidate as ReviewCandidate | null };
+}
+async function handleDesignReleaseReview(
+  request: Request, env: Env, context: SessionContext, pathname: string,
+): Promise<Response> {
+  if (pathname === READINESS_PATH && request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
+  if (pathname === REVIEW_PATH && !['GET', 'POST', 'DELETE'].includes(request.method)) return json({ error: 'Method not allowed.' }, 405);
+  const libraryRow = await env.DB.prepare('SELECT setting_value FROM app_settings WHERE setting_key=?')
+    .bind(KEY).first<{ setting_value: string }>();
+  let library: Library;
+  try { library = parsed(libraryRow?.setting_value || ''); }
+  catch { return json({ error: 'Saved designs must be repaired before release review.' }, 409); }
+  const reviewRow = pathname === REVIEW_PATH
+    ? await env.DB.prepare('SELECT setting_value FROM app_settings WHERE setting_key=?')
+      .bind(REVIEW_KEY).first<{ setting_value: string }>() : null;
+  const oldReview = reviewRow?.setting_value || '';
+  let review: ReviewState;
+  try { review = parseReview(oldReview); }
+  catch { return json({ error: 'The existing review record requires Owner investigation.' }, 409); }
+
+  if (request.method === 'GET') {
+    return json({
+      ...review, stale: Boolean(review.candidate && review.candidate.libraryRevision !== library.revision),
+      published: false, currentPublicDesign: 'Approved V180 Sign-In',
+      note: 'Review records cannot activate or replace the public Sign-In.',
+    });
+  }
+  if (Number(request.headers.get('content-length') || 0) > 4096) return json({ error: 'Review request too large.' }, 413);
+  const text = await request.text();
+  if (text.length > 4096) return json({ error: 'Review request too large.' }, 413);
+  let payload: Record<string, unknown>;
+  try { payload = JSON.parse(text) as Record<string, unknown>; } catch { return json({ error: 'Invalid review request.' }, 400); }
+  if (!payload || typeof payload !== 'object') return json({ error: 'Invalid review request.' }, 400);
+  if (pathname === REVIEW_PATH && (!Number.isInteger(payload.reviewRevision) || !finite(payload.reviewRevision, 0, 1_000_000_000))) {
+    return json({ error: 'Expected review revision is required.' }, 400);
+  }
+  if (pathname === REVIEW_PATH && payload.reviewRevision !== review.revision) return json({
+    error: 'A different Owner session changed the release review. Reload before proceeding.',
+    revision: review.revision,
+  }, 409);
+  let candidate: ReviewCandidate | null = null;
+  let preflight: ReturnType<typeof inspectSignInDesign> | null = null;
+  if (request.method !== 'DELETE') {
+    if (!Number.isInteger(payload.libraryRevision) || payload.libraryRevision !== library.revision) {
+      return json({ error: 'Saved designs changed. Reload the Owner Library before requesting review.', revision: library.revision }, 409);
+    }
+    if (!Number.isInteger(payload.designIndex) ||
+        !finite(payload.designIndex, 0, Math.max(0, library.designs.length-1))) {
+      return json({ error: 'Choose a saved design for review.' }, 400);
+    }
+    const index = payload.designIndex as number;
+    const design = library.designs[index];
+    if (!design) return json({ error: 'The selected saved design no longer exists.' }, 404);
+    preflight = inspectSignInDesign(design);
+    if (pathname === READINESS_PATH) return json({ designName: design.name, libraryRevision: library.revision, ...preflight });
+    if (!preflight.structuralPass) {
+      return json({ error: 'Design requires corrections before release review.', designName: design.name, ...preflight }, 422);
+    }
+    candidate = {
+      requestId: crypto.randomUUID(), index, libraryRevision: library.revision,
+      designName: design.name, requestedAt: new Date().toISOString(),
+      requestedBy: context.employee.id, status: 'awaiting-authenticated-acceptance', design,
+    };
+  }
+  const next: ReviewState = { revision: review.revision + 1, candidate };
+  const nextJSON = JSON.stringify(next);
+  const action = request.method === 'DELETE' ? 'withdraw_signin_design_review' : 'request_signin_design_review';
+  const write = reviewRow
+    ? env.DB.prepare(`UPDATE app_settings SET setting_value=?,value_type='json',updated_by=?,updated_at=CURRENT_TIMESTAMP
+      WHERE setting_key=? AND setting_value=?`).bind(nextJSON,context.employee.id,REVIEW_KEY,oldReview)
+    : env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
+      VALUES(?,?,'json',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO NOTHING`)
+      .bind(REVIEW_KEY,nextJSON,context.employee.id);
+  const audit = env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+    SELECT ?,?,'theme',?,'app_setting',?,?,'web' FROM app_settings WHERE setting_key=? AND setting_value=?`)
+    .bind('audit-'+crypto.randomUUID(),context.employee.id,action,REVIEW_KEY,JSON.stringify({
+      revision: next.revision, libraryRevision: candidate?.libraryRevision,
+      requestId: candidate?.requestId, designName: candidate?.designName,
+      publicDesignChanged: false,
+    }),REVIEW_KEY,nextJSON);
+  try {
+    // D1 batch uses an atomic transaction: audit failure rolls back the review state.
+    const results = await env.DB.batch([write,audit]);
+    if (results[0]?.meta?.changes !== 1 || results[1]?.meta?.changes !== 1) {
+      return json({ error: 'Concurrent review update or missing audit. Reload before proceeding.' }, 409);
+    }
+  } catch { return json({ error: 'Release review could not be stored and audited.' }, 503); }
+  return json({
+    ok: true, ...next, published: false, currentPublicDesign: 'Approved V180 Sign-In',
+    preflight, note: 'Review submitted. No public Sign-In change has occurred.',
+  });
 }
