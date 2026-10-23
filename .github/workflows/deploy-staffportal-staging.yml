@@ -107,6 +107,7 @@ jobs:
           node scripts/check-staffportal-staging-integration.mjs
           node scripts/check-signin-release-blockers.mjs
           npm run check:postauth-live
+          node scripts/test-payroll-run-list-schema.mjs
 
       - name: Build and verify communications contracts
         run: |
