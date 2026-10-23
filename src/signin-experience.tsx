@@ -97,6 +97,102 @@ type SignInWeatherPayload = {
 const SIGNIN_WEATHER_CACHE_KEY = 'daenem:staffportal:signin-weather:ibadan:v1';
 const SIGNIN_WEATHER_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SIGNIN_WEATHER_REFRESH_MS = 5 * 60 * 1000;
+const SIGNIN_LAYOUT_STABILITY_CSS = `
+@media (min-width: 721px) {
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 {
+    grid-template-columns: minmax(0, var(--sp-weather-column-fr, 16fr)) minmax(0, var(--sp-auth-column-fr, 20fr)) !important;
+    grid-template-areas: "weather auth" !important;
+  }
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount.sp-auth-mode-create,
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount.sp-auth-mode-forgot {
+    grid-area: auth !important;
+    position: relative !important; inset: auto !important; transform: none !important;
+    align-self: stretch !important;
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+    height: 100% !important; min-height: 0 !important; max-height: 100% !important;
+    margin: 0 !important; z-index: auto !important;
+  }
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staff-local-weather {
+    display: grid !important; grid-area: weather !important; align-self: stretch !important;
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+    height: 100% !important; min-height: 0 !important; max-height: 100% !important;
+  }
+}
+@media (max-width: 720px) {
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(680px, auto) minmax(410px, auto) !important;
+    grid-template-areas: "auth" "weather" !important;
+    gap: 10px !important;
+  }
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount.sp-auth-mode-create,
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount.sp-auth-mode-forgot {
+    grid-area: auth !important;
+    position: relative !important; inset: auto !important; transform: none !important;
+    align-self: stretch !important;
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+    height: 680px !important; min-height: 680px !important; max-height: 680px !important;
+    margin: 0 !important; z-index: auto !important;
+  }
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staff-local-weather {
+    display: grid !important; grid-area: weather !important; align-self: stretch !important;
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+    height: 410px !important; min-height: 410px !important; max-height: 410px !important;
+  }
+}
+@media (max-width: 520px) {
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 { min-height: 1100px !important; }
+}
+@media (min-width: 521px) and (max-width: 720px) {
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 {
+    grid-template-rows: minmax(697px, auto) minmax(410px, auto) !important;
+    min-height: 1117px !important;
+  }
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount.sp-auth-mode-create,
+  #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount.sp-auth-mode-forgot {
+    height: 697px !important; min-height: 697px !important; max-height: 697px !important;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1919px) {
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-city-weather {
+    position: absolute !important; top: auto !important;
+    left: calc(clamp(74px, 5.3vw, 84px) + 18px) !important; right: 8px !important;
+    bottom: 48px !important; width: auto !important; height: 27px !important;
+    margin: 0 !important; padding: 0 !important; display: flex !important;
+    align-items: center !important; justify-content: flex-start !important; gap: 4px !important;
+    overflow: hidden !important; z-index: 7 !important;
+  }
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-visual {
+    position: relative !important; left: 0 !important; top: 0 !important;
+    flex: 0 0 22px !important; width: 22px !important; height: 22px !important;
+  }
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-values {
+    display: flex !important; flex: 1 1 auto !important; flex-direction: column !important;
+    justify-content: center !important; align-items: flex-start !important;
+    min-width: 0 !important; max-width: none !important; gap: 1px !important;
+  }
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-readings { display: none !important; }
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-condition {
+    display: block !important; max-width: 100% !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; white-space: nowrap !important;
+    font-size: clamp(9px, .65vw, 12px) !important; line-height: 1.08 !important; font-weight: 750 !important;
+  }
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-freshness {
+    display: block !important; max-width: 100% !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; white-space: nowrap !important;
+    font-size: clamp(8px, .52vw, 10px) !important; line-height: 1.05 !important;
+  }
+  #root .sp-root #staff-local-weather .sp-live-weather-saved { display: none !important; }
+  @container global-weather-card (max-width: 260px) {
+    #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-freshness { display: none !important; }
+    #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-city-weather { left: 68px !important; right: 5px !important; gap: 3px !important; }
+  }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-city-weather { top: 65px !important; bottom: auto !important; }
+}
+`;
+
 const SIGNIN_REQUEST_TIMEOUT_MS = 15_000;
 
 function weatherCacheKey(cityId: string) {
@@ -551,9 +647,14 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
     if (!root) return;
     const mount = root.querySelector<HTMLElement>('#staffportal-auth-mount');
     if (!mount) return;
+    const layoutStyle = document.createElement('style');
+    layoutStyle.dataset.signinLayoutStability = 'true';
+    layoutStyle.textContent = SIGNIN_LAYOUT_STABILITY_CSS;
+    document.head.appendChild(layoutStyle);
     setAuthMount(mount);
     settleReferenceMotion(root);
     updateReferenceClocks(root, new Date());
+    return () => layoutStyle.remove();
   }, []);
 
   useEffect(() => {
