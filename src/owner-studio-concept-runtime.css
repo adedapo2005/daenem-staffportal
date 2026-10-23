@@ -135,3 +135,10 @@
 /* Keep the mobile Create Account tab readable on one line. */
 .owner-concept-auth .sp-auth-tabs button{font-size:.91em;gap:3px;white-space:nowrap}
 .owner-concept-auth .sp-auth-tabs button svg{width:1em;height:1em;flex-shrink:0}
+
+/* Editable nested widget concept layout: positions mirror the Owner's unsaved design. */
+.owner-concept-widget{position:relative;display:block;width:100%;background:#fffdf7;color:#163c49;border:1px solid #b7d0c8;border-radius:calc(10px * var(--concept-scale));padding:calc(8px * var(--concept-scale));box-shadow:0 10px 20px #002c2e24}
+.owner-concept-widget-title{display:block;color:#0e675e;font-weight:850;font-size:calc(12px * var(--concept-scale));line-height:1.2;white-space:nowrap}
+.owner-concept-widget-content{position:relative;width:100%;height:calc(110px * var(--concept-scale));margin-top:calc(7px * var(--concept-scale))}
+.owner-concept-widget-item{position:absolute;display:inline-block;padding:calc(3px * var(--concept-scale)) calc(5px * var(--concept-scale));max-width:90%;border:1px solid #d2e5de;border-radius:5px;background:#ecf7f2;color:#255d60;font-weight:700;font-size:calc(10px * var(--concept-scale));line-height:1.25;white-space:nowrap}
+.owner-concept-widget-note{display:block;font-size:calc(9px * var(--concept-scale));color:#56736b;line-height:1.4;margin-top:calc(6px * var(--concept-scale))}

@@ -106,3 +106,14 @@ node qa/owner-studio/live-preproduction-anonymous-boundary.cjs
 - The local alternate-design preview was visually inspected at nine sizes, but its appearance is **not** visual acceptance for the live Cloudflare page. Do not merge PR #99 or activate a design on the strength of this evidence alone.
 
 Screenshots and metrics are stored only in the local `qa/owner-studio/live-evidence/` folder. Do not commit screenshots that may include dynamic headlines or other transient public media. The QA scripts, factual findings, and pass/fail statuses are the reproducible evidence.
+
+## Follow-on Owner Studio live-preview QA — 22 October 2026 ET
+
+- Browser QA identified a genuine behavioral defect: typing a heading updated the alternate live preview, but duplicate `change` notifications could add two Undo records, requiring more than one Undo to restore the prior state.
+- The development candidate now ignores no-op edits in text, geometry and design-name controls and schedules live React preview updates for unsaved canvas edits, drag operations, Undo/Redo, and name changes.
+- The real authentication renderer remains the same protected component. Form submissions and provider redirects remain blocked in the private design preview; reading/sign-in states are test-only there.
+- A screenshot of a manually added weather widget exposed unintended overlap: adding a widget had disabled the otherwise untouched Premium Starter split layout. The candidate retains the starter's responsive split while placing unmodified supplemental widgets in the left column; the mobile preset places supplements below the authentication panel for normal vertical scrolling. Owner-modified component coordinates are not silently overwritten.
+- Nested weather and clock concept items are now shown at their edited positions in the alternate preview and explicitly labelled as **layout concepts, not live data**; actual weather/provider/backend acceptance is still open.
+- `qa/owner-studio/test-live-preview-sync.cjs` is the focused repeatable Playwright regression, including a true 390px full-size mobile scroll screenshot, desktop non-overlap checks, nested-item position changes, one-step Undo, and rejection when the protected authentication block is removed.
+- Locally inspected screenshots: `qa/owner-studio/live-undo-diagnostic.png`, `live-nested-item-update.png`, `live-nested-item-mobile.png`, `live-nested-item-mobile-scroll.png`. These screenshot files remain local and are not release artifacts.
+- All other outstanding gates from the acceptance board remain **open**. This development work does not authorize publication, authenticated D1 acceptance, or a change to V180.

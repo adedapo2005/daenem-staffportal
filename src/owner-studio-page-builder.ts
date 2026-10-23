@@ -30,8 +30,10 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  const liveStage=host.querySelector<HTMLElement>('.owner-builder-live-stage')!;
  const liveMount=host.querySelector<HTMLElement>('[data-builder-live-root]')!;
  let previewGeneration=0;
+ let queuedPreviewFrame=0;
  const closeLive=()=>{
   previewGeneration++;
+  if(queuedPreviewFrame){cancelAnimationFrame(queuedPreviewFrame);queuedPreviewFrame=0;}
   livePanel.classList.remove('is-fullsize');
   host.querySelector<HTMLButtonElement>('[data-builder-live-fullsize]')!.setAttribute('aria-pressed','false');
   host.querySelector<HTMLButtonElement>('[data-builder-live-fullsize]')!.textContent='View At Full Size';
@@ -49,6 +51,15 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   liveRoot.render(React.createElement(AuthScreen,{
    onAuthenticated:()=>undefined,ownerConcept:JSON.parse(JSON.stringify(draft)) as Draft,ownerViewport:width(),
   }));
+ };
+ // The live preview follows unsaved edits, drag operations and Undo/Redo without remounting AuthScreen.
+ const queueLivePreview=()=>{
+  if(livePanel.hidden||!host.isConnected)return;
+  if(queuedPreviewFrame)cancelAnimationFrame(queuedPreviewFrame);
+  queuedPreviewFrame=requestAnimationFrame(()=>{
+   queuedPreviewFrame=0;
+   if(!livePanel.hidden&&host.isConnected)void paintLive();
+  });
  };
  host.querySelector<HTMLButtonElement>('[data-builder-live-preview]')!.addEventListener('click',()=>void paintLive());
  host.querySelector<HTMLButtonElement>('[data-builder-live-close]')!.addEventListener('click',closeLive);
@@ -169,12 +180,26 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   $<HTMLInputElement>('[data-inner-x]').value=item?String(item.x):'';
   $<HTMLInputElement>('[data-inner-y]').value=item?String(item.y):'';
   $<HTMLButtonElement>('[data-builder-undo]').disabled=!undo.length;$<HTMLButtonElement>('[data-builder-redo]').disabled=!redo.length;
+  queueLivePreview();
  };
  const switchMode=(on:boolean)=>{if(!on)closeLive();host.hidden=!on;studio.classList.toggle('owner-builder-active',on);draw();};
  const modeButton=document.createElement('button');modeButton.type='button';modeButton.textContent='Create New Sign-In Design';modeButton.dataset.builderEnter='';
  studio.querySelector('.owner-pro-nav')?.appendChild(modeButton);
  modeButton.addEventListener('click',()=>switchMode(true));$<HTMLButtonElement>('[data-builder-exit]').addEventListener('click',()=>switchMode(false));
- for(const c of catalogue){$<HTMLButtonElement>('[data-builder-add="'+c.kind+'"]').addEventListener('click',()=>{record();const id='b'+(++serial);draft.blocks.push({id,kind:c.kind,label:c.label,x:30+(draft.blocks.length%5)*42,y:25+(draft.blocks.length%5)*70,width:c.width,height:c.height,items:widgetItems(c.kind)});selected=id;draw();});}
+ for(const c of catalogue){$<HTMLButtonElement>('[data-builder-add="'+c.kind+'"]').addEventListener('click',()=>{
+  record();
+  const id='b'+(++serial);
+  const starterCore=draft.blocks.some(b=>b.kind==='brand'&&b.x===20&&b.y===20&&b.width===210&&b.height===60)
+   &&draft.blocks.some(b=>b.kind==='heading'&&b.x===20&&b.y===100&&b.width===330&&b.height===65)
+   &&draft.blocks.some(b=>b.kind==='auth'&&b.x===20&&b.y===190&&b.width===310&&b.height===290);
+  const extraIndex=draft.blocks.filter(b=>!['brand','heading','auth'].includes(b.kind)).length;
+  const autoPlace=starterCore&&['text','weather','clock'].includes(c.kind);
+  draft.blocks.push({id,kind:c.kind,label:c.label,
+   x:autoPlace?70:30+(draft.blocks.length%5)*42,
+   y:autoPlace?510+extraIndex*190:25+(draft.blocks.length%5)*70,
+   width:c.width,height:c.height,items:widgetItems(c.kind)});
+  selected=id;draw();
+ });}
  $<HTMLElement>('[data-builder-canvas]').addEventListener('click',e=>{const target=e.target as HTMLElement;const btn=target.closest<HTMLElement>('[data-block]');if(!btn)return;selected=btn.dataset.block||null;selectedInner=target.closest<HTMLElement>('[data-inner-id]')?.dataset.innerId||null;draw();});
  const canvas=$<HTMLElement>('[data-builder-canvas]');
  canvas.addEventListener('pointerdown',e=>{
@@ -197,11 +222,12 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   const node=Array.from(canvas.querySelectorAll<HTMLElement>('[data-block]')).find(el=>el.dataset.block===block.id);
   const child=item?Array.from(node?.querySelectorAll<HTMLElement>('[data-inner-id]')||[]).find(el=>el.dataset.innerId===item.id):node;
   if(child){child.style.left=Math.round(target.x*deviceScale())+'px';child.style.top=Math.round(target.y*deviceScale())+'px';}
+  queueLivePreview();
  });
  canvas.addEventListener('pointerup',()=>{if(!drag)return;drag=null;draw();});
  canvas.addEventListener('pointercancel',()=>{if(!drag)return;drag=null;draw();});
- for(const k of ['x','y','width','height'] as const){$<HTMLInputElement>('[data-builder-'+k+']').addEventListener('change',e=>{const b=draft.blocks.find(b=>b.id===selected);if(!b)return;record();b[k]=Math.max(0,Math.min(k==='x'?3600:k==='y'?2000:k==='width'?900:600,Number((e.target as HTMLInputElement).value)||0));draw();});}
- $<HTMLInputElement>('[data-builder-text]').addEventListener('change',e=>{const b=draft.blocks.find(b=>b.id===selected);if(!b||b.kind==='auth')return;record();b.label=(e.target as HTMLInputElement).value.slice(0,100);draw();});
+ for(const k of ['x','y','width','height'] as const){$<HTMLInputElement>('[data-builder-'+k+']').addEventListener('change',e=>{const b=draft.blocks.find(b=>b.id===selected);if(!b)return;const next=Math.max(0,Math.min(k==='x'?3600:k==='y'?2000:k==='width'?900:600,Number((e.target as HTMLInputElement).value)||0));if(next===b[k])return;record();b[k]=next;draw();});}
+ $<HTMLInputElement>('[data-builder-text]').addEventListener('change',e=>{const b=draft.blocks.find(b=>b.id===selected);if(!b||b.kind==='auth')return;const next=(e.target as HTMLInputElement).value.slice(0,100);if(next===b.label)return;record();b.label=next;draw();});
  const selectedItem=()=>draft.blocks.find(b=>b.id===selected)?.items?.find(i=>i.id===selectedInner);
  $<HTMLSelectElement>('[data-builder-item]').addEventListener('change',e=>{selectedInner=(e.target as HTMLSelectElement).value||null;draw();});
  $<HTMLInputElement>('[data-inner-label]').addEventListener('change',e=>{const item=selectedItem();if(!item)return;const value=(e.target as HTMLInputElement).value.slice(0,60);if(item.label===value)return;record();item.label=value;draw();});
@@ -359,6 +385,6 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   }catch(error){setReviewStatus(error instanceof Error?error.message:'Could not withdraw review.');}
  });
  $<HTMLSelectElement>('[data-builder-device]').addEventListener('change',()=>{draw();if(!livePanel.hidden)void paintLive();});
- $<HTMLInputElement>('[data-builder-name]').addEventListener('change',e=>{record();draft.name=(e.target as HTMLInputElement).value.slice(0,70);});
+ $<HTMLInputElement>('[data-builder-name]').addEventListener('change',e=>{const next=(e.target as HTMLInputElement).value.slice(0,70);if(next===draft.name)return;record();draft.name=next;queueLivePreview();});
  draw();
 }

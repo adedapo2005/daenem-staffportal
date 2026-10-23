@@ -1,0 +1,73 @@
+const {chromium}=require('playwright'),{createServer}=require('vite');
+(async()=>{
+ const server=await createServer({configFile:'vite.signin-browser-qa.config.ts',server:{host:'127.0.0.1',port:0,strictPort:false},logLevel:'error'});await server.listen();
+ const browser=await chromium.launch({headless:true}); const page=await browser.newPage({viewport:{width:1366,height:900},reducedMotion:'reduce'});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ try{
+  const base='http://127.0.0.1:'+server.httpServer.address().port;
+  await page.route('**/api/**',r=>r.fulfill({status:503,contentType:'application/json',body:'{"error":"QA mock"}'}));
+  await page.goto(base+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
+  await page.locator('[data-builder-enter]').click();
+  await page.locator('[data-builder-starter]').click();
+  await page.locator('[data-builder-live-preview]').click();
+  await page.locator('[data-builder-live-root] .sp-auth-form').waitFor({timeout:15000});
+  const snapshot=async(step)=>{
+   const result=await page.evaluate(()=>({canvas:[...document.querySelectorAll('[data-builder-canvas] [data-block]')].map(el=>({id:el.getAttribute('data-block'),text:el.textContent?.slice(0,70)})),preview:document.querySelector('[data-builder-live-root] .owner-concept-heading h1')?.textContent,undo:(document.querySelector('[data-builder-undo]')||{}).disabled,selected:document.querySelector('[data-builder-selection]')?.textContent,editorValue:document.querySelector('[data-builder-text]')?.value}));
+   console.log(JSON.stringify({step,...result,errors}));
+   return result;
+  };
+  await snapshot('starter');
+  await page.locator('[data-builder-canvas] [data-block$="heading"]').click();
+  await snapshot('selected');
+  await page.locator('[data-builder-text]').fill('Owner Live Design Update');
+  await page.locator('[data-builder-text]').dispatchEvent('change');
+  await page.waitForFunction(()=>document.querySelector('[data-builder-live-root] .owner-concept-heading h1')?.textContent==='Owner Live Design Update',{timeout:10000});
+  await snapshot('edited');
+  await page.locator('[data-builder-undo]').click();
+  await page.waitForTimeout(500);
+  const undone=await snapshot('undone');
+  if(undone.preview!=='One Secure Workspace. Live On Every Device.'||undone.canvas[1]?.text!==undone.preview)throw Error('A single Undo must restore both draft canvas and live preview');
+  await page.locator('.owner-builder-live').screenshot({path:'qa/owner-studio/live-undo-diagnostic.png'});
+  await page.locator('[data-builder-add="weather"]').click();
+  const item=page.locator('[data-builder-live-root] .owner-concept-weather [data-concept-item="item-1"]');
+  await item.waitFor({timeout:10000});
+  await page.locator('[data-builder-item]').selectOption('item-1');
+  await page.locator('[data-inner-x]').fill('170');
+  await page.locator('[data-inner-x]').dispatchEvent('change');
+  await page.waitForFunction(()=>parseFloat(document.querySelector('[data-builder-live-root] .owner-concept-weather [data-concept-item="item-1"]')?.style.left||'0')===170);
+  const noOverlap=async()=>{
+   const result=await page.evaluate(()=>{
+    const a=document.querySelector('.owner-concept-auth')?.getBoundingClientRect(),b=document.querySelector('.owner-concept-weather')?.getBoundingClientRect();
+    if(!a||!b)return {missing:true};
+    const x=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left));
+    const y=Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+    return{area:Math.round(x*y),authTop:Math.round(a.top),authBottom:Math.round(a.bottom),widgetTop:Math.round(b.top)};
+   });
+   if(result.missing||result.area>100)throw Error('Premium starter widget overlaps real authentication preview: '+JSON.stringify(result));
+  };
+  await noOverlap();
+  await page.locator('.owner-builder-live').screenshot({path:'qa/owner-studio/live-nested-item-update.png'});
+  await page.locator('[data-builder-device]').selectOption('390');
+  await page.waitForFunction(()=>parseFloat(document.querySelector('.owner-concept-runtime')?.style.width||'0')===390);
+  await noOverlap();
+  await page.locator('[data-builder-live-fullsize]').click();
+  await page.setViewportSize({width:390,height:844});
+  const mobile=await page.evaluate(()=>{const stage=document.querySelector('.owner-builder-live-stage');return{scrollHeight:stage?.scrollHeight,clientHeight:stage?.clientHeight,innerWidth:innerWidth}});
+  if(mobile.innerWidth!==390||mobile.scrollHeight<=mobile.clientHeight)throw Error('Mobile review must provide vertical access to supplemental widgets: '+JSON.stringify(mobile));
+  await page.screenshot({path:'qa/owner-studio/live-nested-item-mobile.png'});
+  await page.locator('.owner-builder-live-stage').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  await page.screenshot({path:'qa/owner-studio/live-nested-item-mobile-scroll.png'});
+  await page.setViewportSize({width:1366,height:900});
+  await page.locator('[data-builder-live-fullsize]').click();
+  await page.locator('[data-builder-device]').selectOption('1366');
+  await page.waitForFunction(()=>parseFloat(document.querySelector('.owner-concept-runtime')?.style.width||'0')===1366);
+  await page.locator('[data-builder-undo]').click();
+  await page.waitForFunction(()=>parseFloat(document.querySelector('[data-builder-live-root] .owner-concept-weather [data-concept-item="item-1"]')?.style.left||'0')===97);
+  await page.locator('[data-builder-clear]').click();
+  await page.locator('[data-builder-live-root] .owner-concept-invalid').waitFor();
+  await page.locator('[data-builder-undo]').click();
+  await page.locator('[data-builder-live-root] .sp-auth-form').waitFor();
+  if(errors.length)throw Error('Owner preview JavaScript error: '+errors.join('; '));
+  console.log('PASS: unsaved edits, nested widget positioning, one-step Undo, fail-closed missing-auth preview, no JavaScript errors');
+ }finally{await page.close();await browser.close();await server.close()}
+})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
