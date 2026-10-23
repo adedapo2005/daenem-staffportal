@@ -33,6 +33,12 @@ const sources = Object.fromEntries(
     .filter(([, value]) => value)
     .map(([name]) => [name, 'GitHub environment']),
 );
+const requiredNames = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'MICROSOFT_CLIENT_ID',
+];
+const hasRequired = () => requiredNames.every((name) => Boolean(values[name]));
 
 function isUsable(value) {
   return typeof value === 'string'
@@ -100,7 +106,7 @@ async function recoverThroughApi() {
     const pageVersions = Array.isArray(body.result) ? body.result : [];
     versions.push(...pageVersions);
     inspectBindings(pageVersions, 'Cloudflare version list');
-    if (Object.values(values).every(Boolean)) return;
+    if (hasRequired()) return;
     const totalPages = Number(body.result_info?.total_pages || 1);
     if (page >= totalPages || pageVersions.length === 0) break;
   }
@@ -113,7 +119,7 @@ async function recoverThroughApi() {
       + '/versions/' + encodeURIComponent(id),
     );
     inspectBindings(body.result, 'Cloudflare version ' + id);
-    if (Object.values(values).every(Boolean)) return;
+    if (hasRequired()) return;
   }
 }
 
@@ -129,11 +135,11 @@ function recoverThroughWrangler() {
   for (const id of collectVersionIds(list)) {
     const details = run(['versions', 'view', id, '--json']);
     inspectBindings(details, 'Wrangler version ' + id);
-    if (Object.values(values).every(Boolean)) return;
+    if (hasRequired()) return;
   }
 }
 
-if (!Object.values(values).every(Boolean)) {
+if (!hasRequired()) {
   try {
     await recoverThroughApi();
   } catch {
@@ -141,7 +147,7 @@ if (!Object.values(values).every(Boolean)) {
   }
 }
 
-if (!Object.values(values).every(Boolean)) {
+if (!hasRequired()) {
   try {
     recoverThroughWrangler();
   } catch {
@@ -149,20 +155,21 @@ if (!Object.values(values).every(Boolean)) {
   }
 }
 
-const missing = Object.entries(values)
-  .filter(([, value]) => !value)
-  .map(([name]) => name);
+const missing = requiredNames.filter((name) => !values[name]);
 
 if (missing.length) {
   console.error('::error::Unable to recover required Pre-Production OAuth bindings: ' + missing.join(', '));
   process.exit(1);
 }
 
-for (const value of Object.values(values)) {
+for (const value of Object.values(values).filter(Boolean)) {
   console.log('::add-mask::' + value);
 }
 
-writeFileSync(outputPath, JSON.stringify(values), { mode: 0o600 });
+const deployValues = Object.fromEntries(
+  Object.entries(values).filter(([, value]) => Boolean(value)),
+);
+writeFileSync(outputPath, JSON.stringify(deployValues), { mode: 0o600 });
 chmodSync(outputPath, 0o600);
 
 const recovered = Object.entries(sources)
@@ -173,4 +180,4 @@ console.log(
     ? 'Recovered existing Pre-Production OAuth bindings from Cloudflare version history: ' + recovered.join(', ')
     : 'Using encrypted GitHub environment OAuth bindings.',
 );
-console.log('Prepared all four OAuth provider bindings without exposing values.');
+console.log('Prepared required OAuth provider bindings without exposing values.');
