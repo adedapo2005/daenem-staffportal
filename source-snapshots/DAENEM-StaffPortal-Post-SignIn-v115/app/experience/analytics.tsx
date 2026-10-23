@@ -187,6 +187,7 @@ export function RecordChart({
             <PieChart accessibilityLayer={false}>
               <Pie
                 data={visible}
+                rootTabIndex={-1}
                 dataKey="value"
                 nameKey="name"
                 innerRadius={kind === "Donut" ? 65 : 0}
