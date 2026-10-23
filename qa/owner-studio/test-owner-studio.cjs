@@ -9,6 +9,13 @@ try{
 await page.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
 await page.locator('.owner-pro-studio').waitFor({timeout:10000});
 await page.locator('[data-builder-enter]').click();
+// The real approved authentication is available only through an explicit private reference action.
+if(await page.locator('[data-builder-auth-frame]').getAttribute('src'))throw Error('protected auth reference loaded before Owner request');
+await page.locator('[data-builder-auth-preview]').click();
+if(await page.locator('[data-builder-auth-frame]').getAttribute('src')!=='/staff-portal-signin?studioReview=signin-v180')throw Error('protected canonical auth reference URL incorrect');
+if(await page.locator('[data-builder-auth-preview]').getAttribute('aria-expanded')!=='true')throw Error('auth reference accessibility state incorrect');
+await page.locator('[data-builder-auth-preview]').click();
+if(await page.locator('#owner-builder-protected-auth').isVisible())throw Error('closed auth reference still visible');
 await page.locator('[data-builder-add="heading"]').click();
 if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('blank builder add failed');
 await page.locator('[data-builder-x]').fill('190');
