@@ -1619,3 +1619,178 @@
    overflow-wrap:normal!important;
  }
 }
+
+/* Company-free recovery remains inside the approved sign-in card as a guided flow. */
+#staffportal-auth-mount.sp-auth-mode-forgot {
+  container-type: inline-size;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .sp-auth-runtime.sp-auth-recovery {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: clamp(10px, 1.2vh, 16px);
+  overflow: visible;
+}
+#staffportal-auth-mount .sp-auth-recovery .sp-auth-topline {
+  min-width: 0;
+}
+#staffportal-auth-mount .sp-auth-recovery .sp-auth-copy {
+  min-width: 0;
+  margin: 0;
+}
+#staffportal-auth-mount .sp-recovery-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 3px 0;
+  border: 0;
+  color: #8ed0ff;
+  background: transparent;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+#staffportal-auth-mount .sp-recovery-back svg {
+  transform: rotate(180deg);
+}
+#staffportal-auth-mount .sp-recovery-back:focus-visible,
+#staffportal-auth-mount .sp-recovery-secondary-actions button:focus-visible {
+  outline: 2px solid #91d4ff;
+  outline-offset: 3px;
+  border-radius: 5px;
+}
+#staffportal-auth-mount .sp-recovery-progress {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 7px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+#staffportal-auth-mount .sp-recovery-progress-step {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: #90aabd;
+  font-size: .64rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+#staffportal-auth-mount .sp-recovery-step-number {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  place-items: center;
+  border: 1px solid rgba(151,185,211,.35);
+  border-radius: 50%;
+  color: #a8c0d2;
+  background: rgba(11,35,54,.75);
+  font-size: .61rem;
+}
+#staffportal-auth-mount .sp-recovery-progress-step.is-current {
+  color: #eff8ff;
+}
+#staffportal-auth-mount .sp-recovery-progress-step.is-current .sp-recovery-step-number,
+#staffportal-auth-mount .sp-recovery-progress-step.is-complete .sp-recovery-step-number {
+  border-color: rgba(102,211,190,.75);
+  color: #062d35;
+  background: linear-gradient(145deg,#8ce8d0,#58bfae);
+}
+#staffportal-auth-mount .sp-auth-recovery .sp-auth-form {
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+}
+#staffportal-auth-mount .sp-auth-recovery .usp-field,
+#staffportal-auth-mount .sp-auth-recovery .usp-password-block {
+  min-width: 0;
+}
+#staffportal-auth-mount .sp-recovery-note,
+#staffportal-auth-mount .sp-recovery-delivery {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid rgba(112,198,231,.24);
+  border-radius: 12px;
+  color: #b9d5e9;
+  background: rgba(11,39,61,.72);
+  font-size: .68rem;
+  line-height: 1.45;
+}
+#staffportal-auth-mount .sp-recovery-note svg,
+#staffportal-auth-mount .sp-recovery-delivery svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #77d9c1;
+}
+#staffportal-auth-mount .sp-recovery-delivery.is-verified {
+  border-color: rgba(91,209,165,.28);
+  color: #c2f1dc;
+}
+#staffportal-auth-mount .sp-recovery-secondary-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+#staffportal-auth-mount .sp-recovery-secondary-actions .sp-text-button {
+  min-height: 30px;
+  padding: 3px 0;
+  border: 0;
+  color: #8ed0ff;
+  background: transparent;
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+#staffportal-auth-mount .sp-recovery-policy {
+  margin-top: auto;
+}
+#staffportal-auth-mount .usp-signup-admin-note {
+  margin: 0;
+  padding: 9px 10px;
+  border-left: 2px solid #65cdb9;
+  border-radius: 0 8px 8px 0;
+  color: #adc8da;
+  background: rgba(12,42,61,.65);
+  font-size: .66rem;
+  line-height: 1.4;
+}
+@media (max-width: 720px) {
+  #staffportal-auth-mount .sp-recovery-progress-step {
+    gap: 5px;
+    font-size: .58rem;
+  }
+  #staffportal-auth-mount .sp-recovery-step-number {
+    width: 22px;
+    height: 22px;
+    flex-basis: 22px;
+  }
+  #staffportal-auth-mount .sp-recovery-secondary-actions {
+    flex-wrap: wrap;
+  }
+}
+@media (min-width: 821px) and (max-height: 760px) {
+  #staffportal-auth-mount.sp-auth-mode-forgot .sp-auth-runtime.sp-auth-recovery {
+    gap: 8px;
+  }
+  #staffportal-auth-mount .sp-auth-recovery .sp-auth-form {
+    gap: 8px;
+  }
+  #staffportal-auth-mount .sp-recovery-note,
+  #staffportal-auth-mount .sp-recovery-delivery {
+    padding: 7px 9px;
+  }
+}

@@ -263,16 +263,17 @@ function fieldPlaceholder(label: string, required = false) {
 }
 
 function TextField({
-  label, value, onChange, required = false, type = 'text', autoComplete, helper, statusText, statusTone, onBlur,
+  label, value, onChange, required = false, type = 'text', autoComplete, inputMode, helper, statusText, statusTone, onBlur,
 }: {
   label: string; value: string; onChange: (value: string) => void; required?: boolean;
-  type?: string; autoComplete?: string; helper?: string; statusText?: string; statusTone?: 'valid' | 'invalid'; onBlur?: () => void;
+  type?: string; autoComplete?: string; inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode']; helper?: string; statusText?: string; statusTone?: 'valid' | 'invalid'; onBlur?: () => void;
 }) {
   return <label className="usp-field">
     <span className="usp-field-label">{label}{required ? ' *' : ''}</span>
     <input
       type={type}
       value={value}
+      inputMode={inputMode}
       onChange={(event) => onChange(event.target.value)}
       onBlur={onBlur}
       autoComplete={autoComplete}
@@ -464,15 +465,11 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   const [signup, setSignup] = useState({
     firstName: '', lastName: '', email: '', phone: '', username: '', password: '', confirmPassword: '',
-    jobTitle: '', department: '', requestedRole: '',
+    jobTitle: '', department: '',
   });
 
   const [recoveryStep, setRecoveryStep] = useState<'identity' | 'verify' | 'reset'>('identity');
   const [recoveryIdentity, setRecoveryIdentity] = useState('');
-  const [recoveryCompanies, setRecoveryCompanies] = useState<Array<{code:string;name:string}>>([]);
-  const [recoveryCompanyCode, setRecoveryCompanyCode] = useState('');
-  const [recoveryMethods, setRecoveryMethods] = useState<Array<'email'|'whatsapp'>>([]);
-  const [recoveryMethod, setRecoveryMethod] = useState<'email'|'whatsapp'>('email');
   const [recoveryChallenge, setRecoveryChallenge] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryBootstrapCode, setRecoveryBootstrapCode] = useState('');
@@ -546,31 +543,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }, []);
 
   useEffect(() => {
-    let active=true;
-    api<{companies:Array<{code:string;name:string}>}>('/api/auth/companies').then((result)=>{
-      if(!active)return;
-      const companies=(result.companies||[]).filter(company=>!/farm/i.test(`${company.code} ${company.name}`));
-      setRecoveryCompanies(companies);
-      setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:(companies[0]?.code||''));
-    }).catch(()=>undefined);
-    return()=>{active=false};
-  },[]);
-
-  useEffect(()=>{
-    if(mode!=='forgot'||!recoveryCompanyCode){setRecoveryMethods([]);return}
-    let active=true;
-    api<{methods:Array<'email'|'whatsapp'>}>(`/api/auth/password/recovery-options?company=${encodeURIComponent(recoveryCompanyCode)}`)
-      .then((result)=>{
-        if(!active)return;
-        const methods=result.methods||[];
-        setRecoveryMethods(methods);
-        setRecoveryMethod(current=>methods.includes(current)?current:(methods[0]||'email'));
-      })
-      .catch(()=>{if(active)setRecoveryMethods([])});
-    return()=>{active=false};
-  },[mode,recoveryCompanyCode]);
-
-  useEffect(() => {
     const onSignInPreferences = (event: Event) => {
       const config = (event as CustomEvent<{ labels?: { secureService?: string; auth?: typeof authLabels } }>).detail;
       if (config?.labels?.secureService) setSecureServiceLabel(config.labels.secureService);
@@ -625,6 +597,15 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   useEffect(() => { document.title = 'DAENEM Staff Portal'; }, [themeId]);
 
   useEffect(() => {
+    if (mode !== 'forgot') return;
+    const frame = requestAnimationFrame(() => {
+      document.querySelector<HTMLInputElement>(`#staffportal-auth-mount .sp-auth-recovery [data-recovery-step="${recoveryStep}"] input:not([disabled])`)
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode, recoveryStep]);
+
+  useEffect(() => {
     panelRef.current?.scrollTo({ top: 0, behavior: 'auto' });
   }, [mode, signupStep, recoveryStep]);
 
@@ -662,7 +643,16 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setSignup((current) => ({ ...current, password: '', confirmPassword: '' }));
     if (next === 'signup') { setIdentity(''); setIdentityTouched(false); setSignupStep('identity'); setSignupCode(''); setSignupWhatsAppRequested(false); setSignupWhatsAppChallenge(''); setSignupWhatsAppVerified(false); setSignupWhatsAppCode(''); }
     if (next === 'forgot') {
-      setRecoveryStep('identity'); setRecoveryCode(''); setResetToken(''); setRecoveryIdentity(identity);
+      setRecoveryStep('identity');
+      setRecoveryChallenge('');
+      setRecoveryCode('');
+      setRecoveryBootstrapCode('');
+      setResetToken('');
+      setRecoveryIdentity(identity);
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setShowNewPassword(false);
+      setShowNewConfirm(false);
     }
   }
 
@@ -951,15 +941,13 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
-  async function startRecovery(event: React.FormEvent) {
-    event.preventDefault();
+  async function startRecovery(event?: React.FormEvent) {
+    event?.preventDefault();
     setBusy(true);
     setMessage(null);
     try {
-      if (!recoveryCompanyCode || !recoveryMethods.includes(recoveryMethod)) throw new Error('Select an available recovery method.');
-      const endpoint=recoveryMethod==='whatsapp'?'/api/auth/password/forgot-whatsapp':'/api/auth/password/forgot';
-      const result = await api<{ challengeId: string; bootstrapCode?: string; message: string }>(endpoint, {
-        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity, companyCode: recoveryCompanyCode }),
+      const result = await api<{ challengeId: string; bootstrapCode?: string; message: string }>('/api/auth/password/forgot', {
+        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity }),
       });
       setRecoveryChallenge(result.challengeId);
       setRecoveryBootstrapCode(result.bootstrapCode || '');
@@ -978,8 +966,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setBusy(true);
     setMessage(null);
     try {
-      const endpoint=recoveryMethod==='whatsapp'?'/api/auth/password/verify-reset-whatsapp':'/api/auth/password/verify-reset';
-      const result = await api<{ resetToken: string; message: string }>(endpoint, {
+      const result = await api<{ resetToken: string; message: string }>('/api/auth/password/verify-reset', {
         method: 'POST', body: JSON.stringify({ challengeId: recoveryChallenge, code: recoveryCode }),
       });
       setResetToken(result.resetToken);
@@ -1064,6 +1051,127 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       <button type="button" className="sp-install-card sp-install-card-v101" onClick={() => void installApp()}><span className="sp-install-icon"><Download size={16} /></span><span className="sp-install-copy"><b>Install StaffPortal App</b><small>Fast Access From Your Home Screen</small></span><span className="sp-install-state">Shortcut</span></button>
       <div className="sp-auth-policy"><p>By Continuing, You Agree To The DAENEM Staff Portal <a href="/terms-and-conditions.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a> And <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p><small>{secureServiceLabel}</small></div>
     </div>
+  );
+
+  const recoverySteps: Array<{ id: 'identity' | 'verify' | 'reset'; label: string }> = [
+    { id: 'identity', label: 'Account' },
+    { id: 'verify', label: 'Verify' },
+    { id: 'reset', label: 'New Password' },
+  ];
+  const recoveryStepIndex = recoverySteps.findIndex((step) => step.id === recoveryStep);
+
+  const approvedForgotPanel = (
+    <section
+      ref={panelRef}
+      className="sp-auth-runtime sp-auth-recovery"
+      aria-labelledby="sp-recovery-heading"
+      data-auth-mode={`forgot-${recoveryStep}`}
+    >
+      <div className="sp-auth-topline">
+        <Brand compact className="sp-auth-logo-v101" />
+        <span className="sp-secure-chip"><ShieldCheck size={14} /> Secure Recovery</span>
+      </div>
+      <div className="sp-auth-copy">
+        <p className="sp-eyebrow">ACCOUNT ACCESS</p>
+        <h2 id="sp-recovery-heading">{heading.title}</h2>
+        <p>{heading.body}</p>
+      </div>
+      <button type="button" className="sp-recovery-back" onClick={() => switchMode('signin')}>
+        <ArrowRight size={14} aria-hidden="true" /> {authLabels.backToSignIn}
+      </button>
+      <nav className="sp-recovery-progress" aria-label={`Password recovery, step ${recoveryStepIndex + 1} of 3`}>
+        {recoverySteps.map((step, index) => {
+          const current = step.id === recoveryStep;
+          const complete = index < recoveryStepIndex;
+          return (
+            <div
+              className={`sp-recovery-progress-step ${current ? 'is-current' : ''} ${complete ? 'is-complete' : ''}`}
+              key={step.id}
+              aria-current={current ? 'step' : undefined}
+            >
+              <span className="sp-recovery-step-number">{complete ? <Check size={13} /> : `0${index + 1}`}</span>
+              <span>{step.label}</span>
+            </div>
+          );
+        })}
+      </nav>
+      {message && (
+        <div
+          className={`sp-auth-notice ${message.type === 'error' ? 'is-error' : message.type === 'success' ? 'is-success' : ''}`}
+          role={message.type === 'error' ? 'alert' : 'status'}
+          aria-live={message.type === 'error' ? 'assertive' : 'polite'}
+        >
+          <span>{message.text}</span>
+          {message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}
+        </div>
+      )}
+
+      {recoveryStep === 'identity' && (
+        <form className="sp-auth-form sp-recovery-form" data-recovery-step="identity" autoComplete="off" onSubmit={startRecovery}>
+          <TextField
+            label={authLabels.emailOrUsername}
+            value={recoveryIdentity}
+            onChange={setRecoveryIdentity}
+            required
+            autoComplete="username"
+          />
+          <p className="sp-recovery-note"><LockKeyhole size={15} /> We’ll use the verified recovery contact already connected to your account.</p>
+          <button type="submit" className={`sp-primary-button ${busy ? 'is-loading' : 'is-idle'}`} disabled={busy || !recoveryIdentity.trim()}>
+            <span>{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}</span><ArrowRight size={16} />
+          </button>
+        </form>
+      )}
+
+      {recoveryStep === 'verify' && (
+        <form className="sp-auth-form sp-recovery-form" data-recovery-step="verify" autoComplete="off" onSubmit={verifyRecovery}>
+          <div className="sp-recovery-delivery" role="status">
+            <ShieldCheck size={17} />
+            <span>Enter the six-digit code for this recovery request. You can request a new code or update the email or username below.</span>
+          </div>
+          {recoveryBootstrapCode && (
+            <div className="usp-bootstrap-code">
+              <span>{authLabels.privateBootstrapCode}</span><strong>{recoveryBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small>
+            </div>
+          )}
+          <TextField
+            label={authLabels.verificationCode}
+            value={recoveryCode}
+            onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))}
+            required
+            autoComplete="one-time-code"
+            inputMode="numeric"
+          />
+          <button type="submit" className={`sp-primary-button ${busy ? 'is-loading' : 'is-idle'}`} disabled={busy || recoveryCode.length !== 6}>
+            <span>{busy ? authLabels.verifying : authLabels.verifyIdentity}</span><CheckCircle2 size={16} />
+          </button>
+          <div className="sp-recovery-secondary-actions">
+            <button type="button" className="sp-text-button" disabled={busy} onClick={() => void startRecovery()}>Resend code</button>
+            <button type="button" className="sp-text-button" onClick={() => { setRecoveryStep('identity'); setRecoveryCode(''); setMessage(null); }}>Change email or username</button>
+          </div>
+        </form>
+      )}
+
+      {recoveryStep === 'reset' && (
+        <form className="sp-auth-form sp-recovery-form" data-recovery-step="reset" autoComplete="off" onSubmit={resetPassword}>
+          <div className="sp-recovery-delivery is-verified" role="status">
+            <CheckCircle2 size={17} />
+            <span>Choose a strong, unique password to secure your account.</span>
+          </div>
+          <PasswordField label={authLabels.newPassword} value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
+          <PasswordField label={authLabels.confirmNewPassword} value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
+          <PasswordStrengthMeter checks={resetChecks} password={newPassword} labels={authLabels} />
+          <PasswordStatus checks={resetChecks} password={newPassword} label={authLabels.passwordRequirements} />
+          <ConfirmPasswordStatus value={confirmNewPassword} matches={newPassword === confirmNewPassword} labels={authLabels} />
+          <button type="submit" className={`sp-primary-button ${busy ? 'is-loading' : 'is-idle'}`} disabled={busy || !passwordPolicySatisfied(resetChecks) || newPassword !== confirmNewPassword}>
+            <span>{busy ? authLabels.securingAccount : authLabels.createNewPassword}</span><KeyRound size={16} />
+          </button>
+        </form>
+      )}
+      <div className="sp-auth-policy sp-recovery-policy">
+        <p>Workspace access, company membership, and permissions remain managed by your Staff Portal administrator.</p>
+        <small>{secureServiceLabel}</small>
+      </div>
+    </section>
   );
 
   const legacyAuthPanel = (
@@ -1161,7 +1269,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       {mode === 'signup' && signupStep === 'work' && <form className="usp-auth-form usp-signup-form" autoComplete="off" noValidate onSubmit={startSignup}>
         <TextField label={authLabels.departmentWorkArea} value={signup.department} onChange={(value) => setSignup({ ...signup, department: value })} />
         <TextField label={authLabels.jobTitle} value={signup.jobTitle} onChange={(value) => setSignup({ ...signup, jobTitle: value })} />
-        <TextField label={authLabels.rolePosition} value={signup.requestedRole} onChange={(value) => setSignup({ ...signup, requestedRole: value })} />
+        <p className="usp-signup-admin-note">Workspace membership, roles, and permissions are assigned by your administrator after account verification.</p>
         <div className="usp-step-actions"><button type="button" className="usp-secondary-button" onClick={() => backSignupStep('account')}>{authLabels.back}</button><button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingVerification : authLabels.createAccountTab}<ArrowRight size={17} /></button></div>
       </form>}
 
@@ -1186,35 +1294,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button type="button" className="usp-secondary-button" onClick={() => { setSignupStep('identity'); setSignupCode(''); setMessage(null); }}>{authLabels.changeSignupDetails}</button>
       </form>}
 
-      {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" autoComplete="off" onSubmit={startRecovery}>
-        <TextField label={authLabels.emailOrUsername} value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="off" />
-        <label className="usp-recovery-company"><span>Company</span><select value={recoveryCompanyCode} onChange={(event)=>setRecoveryCompanyCode(event.target.value)} required><option value="">Select company</option>{recoveryCompanies.map(company=><option key={company.code} value={company.code}>{company.name}</option>)}</select><small>Recovery methods follow the selected company's administrator policy.</small></label>
-        {recoveryMethods.length > 0 && <div className="usp-recovery-methods" role="radiogroup" aria-label="Password recovery method">
-          {recoveryMethods.includes('email') && <button type="button" className={recoveryMethod==='email'?'active':''} aria-pressed={recoveryMethod==='email'} onClick={()=>setRecoveryMethod('email')}><Mail size={17}/><span><b>Email</b><small>Send the verification code to your email on file.</small></span></button>}
-          {recoveryMethods.includes('whatsapp') && <button type="button" className={recoveryMethod==='whatsapp'?'active':''} aria-pressed={recoveryMethod==='whatsapp'} onClick={()=>setRecoveryMethod('whatsapp')}><WhatsAppMark size={18}/><span><b>WhatsApp</b><small>Send the code to your enrolled verified WhatsApp contact.</small></span></button>}
-        </div>}
-        <div className="usp-positive-note">{recoveryMethod==='whatsapp'?<WhatsAppMark size={16}/>:<Mail size={16} />}<span>{authLabels.recoveryIdentityNote}</span></div>
-        <button className="usp-primary-button" disabled={busy||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
-      </form>}
-
-      {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifyRecovery}>
-        <div className="usp-auth-destination">{recoveryMethod==='whatsapp'?<WhatsAppMark size={18}/>:<Mail size={18} />}<span>{recoveryMethod==='whatsapp'?'Verification code sent to your enrolled WhatsApp contact.':authLabels.verificationCodeSent}</span></div>
-        {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{recoveryBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
-        <TextField label={authLabels.verificationCode} value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
-        <button className="usp-primary-button" disabled={busy || recoveryCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyIdentity}<CheckCircle2 size={17} /></button>
-        <button type="button" className="usp-secondary-button" onClick={() => { setRecoveryStep('identity'); setRecoveryCode(''); setMessage(null); }}>{authLabels.requestAnotherCode}</button>
-      </form>}
-
-      {mode === 'forgot' && recoveryStep === 'reset' && <form className="usp-auth-form" autoComplete="off" onSubmit={resetPassword}>
-        <div className="usp-reset-unlocked"><CheckCircle2 size={20} /><div><strong>{authLabels.identityVerified}</strong><span>{authLabels.resetAccessNote}</span></div></div>
-        <PasswordField label={authLabels.newPassword} value={newPassword} onChange={setNewPassword} autoComplete="new-password" show={showNewPassword} setShow={setShowNewPassword} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
-        <PasswordField label={authLabels.confirmNewPassword} value={confirmNewPassword} onChange={setConfirmNewPassword} autoComplete="new-password" show={showNewConfirm} setShow={setShowNewConfirm} showLabel={authLabels.showPassword} hideLabel={authLabels.hidePassword} />
-        <PasswordStrengthMeter checks={resetChecks} password={newPassword} labels={authLabels} />
-        <PasswordStatus checks={resetChecks} password={newPassword} label={authLabels.passwordRequirements} />
-        <ConfirmPasswordStatus value={confirmNewPassword} matches={newPassword === confirmNewPassword} labels={authLabels} />
-        <button className="usp-primary-button" disabled={busy || !passwordPolicySatisfied(resetChecks) || newPassword !== confirmNewPassword} type="submit">{busy ? authLabels.securingAccount : authLabels.createNewPassword}<KeyRound size={17} /></button>
-      </form>}
-
       {mode !== 'forgot' && (mode !== 'signup' || signupStep === 'identity') && <>
         <div className="usp-or-divider"><span />{authLabels.or}<span /></div>
         <div className="usp-social-buttons">
@@ -1234,6 +1313,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     </section>
   );
 
-  const authPanel = mode === 'signin' ? approvedSignInPanel : legacyAuthPanel;
+  const authPanel = mode === 'signin'
+    ? approvedSignInPanel
+    : mode === 'forgot'
+      ? approvedForgotPanel
+      : legacyAuthPanel;
   return <SignInExperience authPanel={authPanel} authMode={mode} themeId={themeId} onInstall={() => void installApp()} />;
 }

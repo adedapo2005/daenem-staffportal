@@ -22,6 +22,7 @@ export type WhatsAppAuthPurpose =
 
 export interface StartWhatsAppChallengeInput {
   purpose: WhatsAppAuthPurpose;
+  challengeId?: string;
   companyId: string;
   employeeId?: string;
   signupVerificationId?: string;
@@ -276,7 +277,7 @@ export async function startWhatsAppChallenge(
 
   const template = await loadAuthenticationTemplate(env, input.companyId, eventId);
   if (!template) throw new Error('WHATSAPP_AUTH_TEMPLATE_NOT_READY');
-  const challengeId = uid('wa-auth');
+  const challengeId = input.challengeId || uid('wa-auth');
   const code = randomCode();
   const digest = await challengeHash(env,input.purpose,challengeId,code);
   const minutes = Number(await setting(env,'communications.whatsapp_auth_code_minutes','5')) || 5;
