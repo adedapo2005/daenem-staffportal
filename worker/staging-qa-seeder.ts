@@ -65,18 +65,21 @@ function anchors(): Row[] {
 }
 
 function financialRows(): Row[] {
-  return scopes.flatMap(scope => [
-    { table: 'payroll_runs', fixed: { id: id(`payroll-${scope}`), company_id: id(`company-${scope}`),
-      period_start: '2000-01-01', period_end: '2000-01-31', prepared_by: id('owner'), currency: 'NGN' },
-      live: { status: 'draft', gross_total_kobo: 100, net_total_kobo: 100, deduction_total_kobo: 0 } },
-    { table: 'payroll_items', fixed: { id: id(`payroll-item-${scope}`), payroll_run_id: id(`payroll-${scope}`),
-      employee_id: id(scope === 'a' ? 'manager' : 'employee'), calculation_json: '{"fixture":"QA Staging","synthetic":true}' },
-      live: { base_kobo: 100, gross_kobo: 100, net_kobo: 100 } },
-    { table: 'finance_receivables', fixed: { id: id(`receivable-${scope}`), company_id: id(`company-${scope}`),
-      customer_name: 'QA Synthetic Customer', invoice_no: id(`invoice-${scope}`), invoice_date: '2000-01-01',
-      source_module: namespace, source_id: id(`receivable-${scope}`), notes: 'QA synthetic fixture; no payment or provider activity.',
-      created_by: id('owner'), amount_kobo: 100 }, live: { status: 'open', balance_kobo: 100, paid_kobo: 0 } },
-  ]);
+  return scopes.flatMap(scope => {
+    const rows: Row[] = [
+      { table: 'payroll_runs', fixed: { id: id(`payroll-${scope}`), company_id: id(`company-${scope}`),
+        period_start: '2000-01-01', period_end: '2000-01-31', prepared_by: id('owner'), currency: 'NGN' },
+        live: { status: 'draft', gross_total_kobo: 100, net_total_kobo: 100, deduction_total_kobo: 0 } },
+      { table: 'payroll_items', fixed: { id: id(`payroll-item-${scope}`), payroll_run_id: id(`payroll-${scope}`),
+        employee_id: id(scope === 'a' ? 'manager' : 'employee'), calculation_json: '{"fixture":"QA Staging","synthetic":true}' },
+        live: { base_kobo: 100, gross_kobo: 100, net_kobo: 100 } },
+      { table: 'finance_receivables', fixed: { id: id(`receivable-${scope}`), company_id: id(`company-${scope}`),
+        customer_name: 'QA Synthetic Customer', invoice_no: id(`invoice-${scope}`), invoice_date: '2000-01-01',
+        source_module: namespace, source_id: id(`receivable-${scope}`), notes: 'QA synthetic fixture; no payment or provider activity.',
+        created_by: id('owner'), amount_kobo: 100 }, live: { status: 'open', balance_kobo: 100, paid_kobo: 0 } },
+    ];
+    return rows;
+  });
 }
 
 function transaction(env: StagingQaEnv) {
