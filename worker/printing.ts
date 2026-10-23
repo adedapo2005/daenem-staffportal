@@ -205,14 +205,29 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
     quotedNaira?: number; designerId?: string; operatorId?: string; locationId?: string;
   };
   try { body = await request.json(); } catch { return json({ error: 'Invalid print job request.' }, 400); }
+  let currentContext = context;
+  const revalidate = async () => {
+    const current = await getSessionContext(request, env);
+    if (!current || current.sessionId !== context.sessionId || current.employee.id !== context.employee.id) return json({ error: 'Authentication required.' }, 401);
+    if (!canPrint(current, 'create')) return json({ error: 'Create Printing Job permission is required.' }, 403);
+    if (koboFromNaira(body.quotedNaira) > 0 && !canViewPrintFinancials(current)) return json({ error: 'Printing approval or Finance view permission is required to set quoted value.' }, 403);
+    currentContext = current;
+    return null;
+  };
+  let denied = await revalidate();
+  if (denied) return denied;
   const title = String(body.title || '').trim();
   if (!title) return json({ error: 'Print job title is required.' }, 400);
   if (body.customerId) {
     const customer = await env.DB.prepare(`SELECT id FROM customers WHERE id = ? AND company_id = ? AND active = 1`).bind(body.customerId, companyId).first();
+    denied = await revalidate();
+    if (denied) return denied;
     if (!customer) return json({ error: 'Selected Printing customer was not found.' }, 400);
   }
   if (body.serviceId) {
     const service = await env.DB.prepare(`SELECT id FROM printing_services WHERE id = ? AND company_id = ? AND active = 1`).bind(body.serviceId, companyId).first();
+    denied = await revalidate();
+    if (denied) return denied;
     if (!service) return json({ error: 'Selected Printing service was not found.' }, 400);
   }
   if (koboFromNaira(body.quotedNaira) > 0 && !canViewPrintFinancials(context)) {
@@ -220,6 +235,8 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
   }
   const locationId = String(body.locationId || 'location-printing-hq');
   const location = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(locationId, companyId).first();
+  denied = await revalidate();
+  if (denied) return denied;
   if (!location) return json({ error: 'Selected Printing location was not found.' }, 400);
   for (const [employeeId, label] of [[body.designerId, 'designer'], [body.operatorId, 'operator']] as const) {
     if (!employeeId) continue;
@@ -229,12 +246,30 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
       WHERE e.id = ? AND m.company_id = ? AND m.active = 1 AND e.employment_status = 'active'
       LIMIT 1
     `).bind(employeeId, companyId).first();
+    denied = await revalidate();
+    if (denied) return denied;
     if (!employee) return json({ error: `Selected Printing ${label} is not an active company employee.` }, 400);
   }
   const jobNo = await nextNumber(env, 'DP', 'print_jobs', 'job_no');
+  denied = await revalidate();
+  if (denied) return denied;
   const id = uid('print-job');
   const quotedKobo = koboFromNaira(body.quotedNaira);
+  const requestId = (request.headers.get('x-request-id') || request.headers.get('cf-ray') || crypto.randomUUID()).slice(0, 128);
+  // Repeat reference eligibility inside the transaction: preflight reads can
+  // become stale before the job, initial event and required audit are committed.
   await env.DB.batch([
+    env.DB.prepare(`SELECT json_extract(CASE WHEN
+      EXISTS(SELECT 1 FROM company_locations WHERE id = ? AND company_id = ? AND active = 1)
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM customers WHERE id = ? AND company_id = ? AND active = 1))
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM printing_services WHERE id = ? AND company_id = ? AND active = 1))
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM employees e JOIN employee_company_memberships m ON m.employee_id = e.id WHERE e.id = ? AND m.company_id = ? AND m.active = 1 AND e.employment_status = 'active'))
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM employees e JOIN employee_company_memberships m ON m.employee_id = e.id WHERE e.id = ? AND m.company_id = ? AND m.active = 1 AND e.employment_status = 'active'))
+      THEN '{}' ELSE '{' END, '$')`).bind(locationId, companyId,
+      body.customerId || null, body.customerId || null, companyId,
+      body.serviceId || null, body.serviceId || null, companyId,
+      body.designerId || null, body.designerId || null, companyId,
+      body.operatorId || null, body.operatorId || null, companyId),
     env.DB.prepare(`
       INSERT INTO print_jobs (
         id, company_id, location_id, customer_id, service_id, job_no, title, description,
@@ -242,10 +277,15 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
         quoted_kobo, assigned_designer_id, assigned_operator_id, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(id, companyId, locationId, body.customerId || null, body.serviceId || null, jobNo, title, body.description || null, Math.max(1, numberValue(body.quantity, 1)), body.unit || 'job', body.sizeSpec || null, body.colorSpec || null, body.finishingSpec || null, body.priority || 'normal', body.dueAt || null, quotedKobo, body.designerId || null, body.operatorId || null, context.employee.id),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`INSERT INTO print_job_status_events (id, print_job_id, from_status, to_status, changed_by, note) VALUES (?, ?, NULL, 'enquiry', ?, 'Print job created')`).bind(uid('print-event'), id, context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'printing', 'create_job', 'print_job', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, id, JSON.stringify({ jobNo, title, quotedKobo })),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
+    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source, request_id) VALUES (?, ?, ?, 'printing', 'create_job', 'print_job', ?, ?, 'web', ?)`).bind(uid('audit'), context.employee.id, companyId, id, JSON.stringify({ jobNo, title, quotedKobo }), requestId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
   ]);
-  return json({ ok: true, job: { id, jobNo, title, status: 'enquiry', ...(canViewPrintFinancials(context) ? { quotedKobo } : {}) } }, 201);
+  denied = await revalidate();
+  if (denied) return denied;
+  return json({ ok: true, job: { id, jobNo, title, status: 'enquiry', ...(canViewPrintFinancials(context) && canViewPrintFinancials(currentContext) ? { quotedKobo } : {}) } }, 201);
 }
 
 async function addMaterial(request: Request, env: PrintingEnv, context: SessionContext) {
@@ -410,7 +450,11 @@ export async function routePrinting(request: Request, env: PrintingEnv, context:
   if (url.pathname === '/api/printing/customers' && request.method === 'GET') return customers(env, context, url.searchParams.get('q') || '');
   if (url.pathname === '/api/printing/customers' && request.method === 'POST') return createCustomer(request, env, context);
   if (url.pathname === '/api/printing/jobs' && request.method === 'GET') return listJobs(request, env, context);
-  if (url.pathname === '/api/printing/jobs' && request.method === 'POST') return createJob(request, env, context);
+  if (url.pathname === '/api/printing/jobs' && request.method === 'POST') {
+    try { return await createJob(request, env, context); } catch {
+      return json({ error: 'The Printing job could not be saved. Refresh and try again.' }, 503);
+    }
+  }
   if (url.pathname === '/api/printing/jobs/status' && request.method === 'POST') return transitionJob(request, env, context);
   if (url.pathname === '/api/printing/jobs/materials' && request.method === 'POST') {
     try { return await addMaterial(request, env, context); } catch {
