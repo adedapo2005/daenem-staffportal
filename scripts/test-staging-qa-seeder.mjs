@@ -146,6 +146,7 @@ async function main() {
   const before = snapshot();
   const missingPepper = await operation('seed', { env: { ...env, AUTH_PEPPER: undefined } });
   check(missingPepper.headers.get('x-qa-error-class') === 'configuration', 'Bounded failure classification');
+  check(missingPepper.headers.get('x-qa-error-phase') === 'fixture-configuration', 'Configuration failure phase');
   await summary(missingPepper, 503, 'Missing pepper fails closed');
   same(snapshot(), before, 'Missing pepper leaves DB intact');
   await summary(await operation('reset'), 200, 'Absent fixture reset');
@@ -153,7 +154,9 @@ async function main() {
   check(resetBatchLength <= 50, 'Reset stays within the lowest D1 per-invocation query limit');
   same(snapshot(), before, 'Absent reset has no state change');
   failureIndex = 35;
-  await summary(await operation('seed'), 503, 'Forced seed failure');
+  const forcedSeedFailure = await operation('seed');
+  check(forcedSeedFailure.headers.get('x-qa-error-phase') === 'database-batch', 'Database failure phase');
+  await summary(forcedSeedFailure, 503, 'Forced seed failure');
   same(snapshot(), before, 'Seed rollback preserves entire DB');
   failureIndex = -1;
   await summary(await operation('seed'), 200, 'Authorized seed');
