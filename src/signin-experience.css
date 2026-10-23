@@ -2428,3 +2428,296 @@
   font-size: 10.5px !important;
   line-height: 1.35 !important;
 }
+
+
+/* Responsive QA closure v2 (2026-10-23)
+   Raise selector specificity over the legacy compact rules and correct the
+   real small-screen media surface issues found in live Browser Use QA. */
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+  background: #f8fbfd !important;
+  border: 1px solid #c5d4df !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell::after {
+  display: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell > svg:first-child {
+  width: 18px !important;
+  height: 18px !important;
+  color: #5d7890 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+  min-width: 0 !important;
+  color: #173c58 !important;
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input::placeholder {
+  color: #647f92 !important;
+  opacity: 1 !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell:focus-within {
+  border-color: #2b83c8 !important;
+  box-shadow: 0 0 0 3px rgba(43,131,200,.16) !important;
+  background: #fff !important;
+  transform: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-show-password {
+  background: transparent !important;
+  border: 0 !important;
+  color: #285f84 !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {
+  font-size: 22px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {
+  font-size: 11px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {
+  font-size: 12px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {
+  font-size: 11px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-options {
+  font-size: 11px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {
+  font-size: 14px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-divider {
+  font-size: 11px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+  min-height: 40px !important;
+  height: 40px !important;
+  flex-direction: row !important;
+  gap: 7px !important;
+  padding-inline: 7px !important;
+  background: #f8fbfd !important;
+  border: 1px solid #b9cbd7 !important;
+  box-shadow: none !important;
+  color: #1e4c68 !important;
+  font-size: 12px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon {
+  width: 19px !important;
+  height: 19px !important;
+  flex-basis: 19px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon svg {
+  width: 19px !important;
+  height: 19px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-label {
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status {
+  font-size: 10px !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy p,
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy small {
+  font-size: 10px !important;
+}
+
+/* 1280-1679px rails are narrow by design; keep labels readable by using a
+   compact stacked provider tile rather than sub-10px horizontal labels. */
+@media (min-width: 1280px) and (max-width: 1679px) and (max-height: 1100px) {
+  #root .sp-root .sp-auth-card.sp-auth-v86.sp-auth-gateway {
+    gap: 4px !important;
+    padding: 9px !important;
+    overflow: hidden !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-topline {
+    height: 29px !important;
+    min-height: 29px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {
+    font-size: 20px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {
+    font-size: 11px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs {
+    height: 34px !important;
+    min-height: 34px !important;
+    margin-top: 3px !important;
+    padding: 2px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {
+    min-height: 30px !important;
+    height: 30px !important;
+    font-size: 11px !important;
+    gap: 3px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form {
+    gap: 3px !important;
+    margin-top: 3px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form label {
+    gap: 2px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {
+    font-size: 10.5px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding-inline: 8px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+    font-size: 13px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-options {
+    min-height: 17px !important;
+    height: 17px !important;
+    font-size: 10.5px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {
+    min-height: 36px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-divider {
+    min-height: 14px !important;
+    font-size: 10.5px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+    min-height: 39px !important;
+    height: 39px !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    padding: 3px 2px !important;
+    font-size: 10.5px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon,
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon svg {
+    width: 17px !important;
+    height: 17px !important;
+    flex-basis: 17px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-label {
+    font-size: 10.5px !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status {
+    font-size: 9px !important;
+  }
+}
+
+/* Prevent the inline 100% scene size from tiling in portrait/tablet crops. */
+#root .sp-root .sp-hero-scene {
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+}
+
+/* Keep the hero statement and information footer inside their own boxes on
+   narrow screens. */
+#root .sp-root #staff-primary-information {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+#root .sp-root #staff-primary-information .gw-primary-footer {
+  position: relative !important;
+  inset-inline: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  overflow: hidden !important;
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+}
+#root .sp-root #staff-primary-information .gw-primary-footer > span {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+}
+@media (max-width: 720px) {
+  #root .sp-root .sp-hero-content {
+    left: 18px !important;
+    right: 18px !important;
+    width: auto !important;
+    max-width: calc(100% - 36px) !important;
+    box-sizing: border-box !important;
+  }
+  #root .sp-root .sp-hero h1,
+  #root .sp-root .sp-hero-statement-v173,
+  #root .sp-root .sp-hero-line,
+  #root .sp-root .sp-hero-line-surface {
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+  #root .sp-root .sp-hero h1 {
+    font-size: clamp(2rem, 9vw, 2.55rem) !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-tabs {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 3px !important;
+    gap: 4px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-tabs button {
+    min-height: 36px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Restore true 4K auth scale after compact laptop overrides. */
+@media (min-width: 2100px) {
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {
+    font-size: clamp(26px, 1.35vw, 34px) !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {
+    font-size: 15px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {
+    min-height: 41px !important;
+    height: 41px !important;
+    font-size: 16px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {
+    font-size: 15px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+    min-height: 52px !important;
+    height: 52px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+    font-size: 17px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {
+    min-height: 52px !important;
+    height: 52px !important;
+    font-size: 17px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+    min-height: 52px !important;
+    height: 52px !important;
+    font-size: 15px !important;
+  }
+}
