@@ -971,7 +971,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       });
       setResetToken(result.resetToken);
       setRecoveryStep('reset');
-      setMessage({ type: 'success', text: result.message });
+      setMessage(null);
     } catch (error) {
       setMessage({ type: 'error', text: (error as Error).message });
     } finally {
