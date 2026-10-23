@@ -41,6 +41,13 @@
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(input,textarea,select,button,a):disabled {
   opacity: .55;
 }
+/* Current destination remains identifiable on hover, rather than losing its active state. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-page[data-current] .ecc-page-link:hover,
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation :is(.ecc-contextual-tools,.ecc-contextual-recents) button[aria-current="page"]:hover {
+  background: var(--stage1-primary);
+  color: var(--stage1-on-primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] *,
   [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] *::before,

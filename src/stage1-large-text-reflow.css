@@ -112,3 +112,83 @@ html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-appearan
   align-items: flex-start;
   flex-wrap: wrap;
 }
+
+/* 32-inch 4K / scaled-4K Owner review: retain accessible large type without
+   creating an unnecessary second topbar row or wrapping sidebar module names.
+   Never affect 1920px, compact desktops, tablets, mobile, Sign-In, or V115. */
+@media (min-width: 3200px) {
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-sidebar {
+    width: clamp(416px, 12vw, 472px);
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-app > .p-main {
+    margin-left: clamp(416px, 12vw, 472px);
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar {
+    grid-template-columns: minmax(250px, .28fr) minmax(650px, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: clamp(18px, .6vw, 28px);
+    min-height: clamp(92px, 3vw, 120px);
+    padding-inline: clamp(22px, .8vw, 32px);
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar-leading {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar-command-zone {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar-command-zone .p-command-button {
+    width: min(100%, 1460px);
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"][data-large-text="true"] .p-topbar-utilities {
+    grid-column: 3;
+    grid-row: 1;
+    max-width: none;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+}
+
+/* Tablet post-login shell: give the command search its own row so it cannot
+   collide with the clock, release status, or utility controls at narrow widths. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  html[data-staffportal-postlogin="true"] .p-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: .45rem .7rem;
+  }
+  html[data-staffportal-postlogin="true"] .p-topbar-leading {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"] .p-topbar-utilities {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: .3rem;
+  }
+  html[data-staffportal-postlogin="true"] .p-topbar-command-zone {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"] .p-command-button {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
