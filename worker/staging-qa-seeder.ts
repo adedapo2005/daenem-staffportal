@@ -147,7 +147,10 @@ function transaction(env: StagingQaEnv) {
   return { statements, add, check, collisionMany, ensureMany };
 }
 
-async function apply(env: StagingQaEnv, action: 'seed' | 'reset') {
+type FailurePhase = 'request' | 'fixture-configuration' | 'credential-derivation' | 'database-batch';
+
+async function apply(env: StagingQaEnv, action: 'seed' | 'reset', setPhase: (phase: FailurePhase) => void) {
+  setPhase('fixture-configuration');
   const tx = transaction(env), rows = anchors(), financial = financialRows();
   const employees = personas.map(persona => id(persona));
   const companies = scopes.map(scope => id(`company-${scope}`));
@@ -182,6 +185,7 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset') {
   if (action === 'seed') {
     const passwords = [env.STAFFPORTAL_QA_OWNER_PASSWORD, env.STAFFPORTAL_QA_MANAGER_PASSWORD, env.STAFFPORTAL_QA_EMPLOYEE_PASSWORD];
     if (!env.AUTH_PEPPER || passwords.some(value => typeof value !== 'string' || value.length < 16 || value.length > 128)) throw new Error('Unavailable');
+    setPhase('credential-derivation');
     tx.ensureMany(rows);
     const credentials: Row[] = [];
     const grants: Array<{ grantId: string; roleId: string; code: string; level: string }> = [];
@@ -262,6 +266,7 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset') {
     [...employees, ...employees, ...employees, ...employees, ...employees, ...personas.map(p => id(`role-${p}`)),
       ...companies, ...scopes.map(scope => id(`site-${scope}`)), ...resetFinancial, id('owner'), id('audit-reset')]);
   }
+  setPhase('database-batch');
   await env.DB.batch(tx.statements);
 }
 
@@ -269,6 +274,7 @@ export async function routeStagingQaSeeder(request: Request, env: StagingQaEnv):
   if (new URL(request.url).pathname !== '/api/staging/qa-fixture') return null;
   // Must precede headers/body, every secret lookup, and DB access (including prepare).
   if (env.APP_STAGE !== 'staging' || env.STAFFPORTAL_DATABASE_NAME !== 'daenem-staffportal-staging-db') return reply(404);
+  let phase: FailurePhase = 'request';
   try {
     if (request.method !== 'POST' || request.headers.has('origin')) return reply(404);
     const expected = env.STAFFPORTAL_QA_ADMIN_SECRET;
@@ -293,11 +299,12 @@ export async function routeStagingQaSeeder(request: Request, env: StagingQaEnv):
     const body: unknown = JSON.parse(text);
     if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== 1 || !('action' in body) ||
         (body.action !== 'seed' && body.action !== 'reset')) return reply(400);
-    await apply(env, body.action);
+    await apply(env, body.action, next => { phase = next; });
     return reply(200, { ok: true, fixture: namespace, action: body.action });
   } catch (error) {
     const response = reply(503);
     response.headers.set('x-qa-error-class', failureClass(error));
+    response.headers.set('x-qa-error-phase', phase);
     return response;
   }
 }
