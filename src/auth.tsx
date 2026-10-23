@@ -711,6 +711,18 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     return () => panel.removeEventListener('keydown', onKeyDown);
   }, [mode, signupStep, recoveryStep]);
 
+  // The dashboard layout creates an isolated stacking context around the
+  // right rail. Raise that context while recovery is open so weather cards
+  // cannot paint over the modal, then restore the existing layout on exit.
+  useEffect(() => {
+    if (mode !== 'forgot') return;
+    const rail = panelRef.current?.closest<HTMLElement>('.sp-lower-right-rail');
+    if (!rail) return;
+    const previousZIndex = rail.style.zIndex;
+    rail.style.zIndex = '1200';
+    return () => { rail.style.zIndex = previousZIndex; };
+  }, [mode]);
+
   function validateSignupIdentity() {
     const missing = [
       !signup.firstName.trim() ? authLabels.firstName : '',
