@@ -1942,3 +1942,175 @@
     line-height: 1.35 !important;
   }
 }
+
+/* 32-inch/4K auth acceptance: legibility and balanced vertical composition.
+   This is strictly internal to the existing authentication footprint. */
+@media (min-width: 2100px) and (min-height: 1300px) {
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin {
+    justify-content: center !important;
+    gap: clamp(14px, .56vw, 23px) !important;
+    padding: clamp(24px, 1.05vw, 42px) !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-copy h2 {
+    font-size: clamp(30px, 1vw, 39px) !important;
+    line-height: 1.15 !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-copy p:last-child {
+    font-size: clamp(16px, .49vw, 19px) !important;
+    line-height: 1.42 !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-eyebrow {
+    font-size: 14px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-tabs button {
+    min-height: 52px !important;
+    font-size: 17px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-form {
+    gap: 16px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-field-label {
+    font-size: 17px !important;
+    line-height: 1.3 !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-credential-shell {
+    min-height: 62px !important;
+    height: 62px !important;
+    border-radius: 12px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-credential-shell input {
+    font-size: 20px !important;
+    line-height: 1.3 !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-credential-shell > svg:first-child,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-show-password svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-remember,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-forgot {
+    font-size: 15px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-primary-button {
+    min-height: 62px !important;
+    height: 62px !important;
+    font-size: 19px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-divider {
+    font-size: 14px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-social-button {
+    min-height: 58px !important;
+    height: 58px !important;
+    font-size: 17px !important;
+    gap: 10px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-social-label {
+    font-size: 17px !important;
+    letter-spacing: 0 !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-social-icon,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-social-icon svg {
+    width: 25px !important;
+    height: 25px !important;
+    flex-basis: 25px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-provider-status {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-install-card-v101 {
+    min-height: 55px !important;
+    height: auto !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-install-copy b {
+    font-size: 15px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-install-copy small {
+    font-size: 12px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-policy p,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-signin .sp-auth-policy small {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-auth-panel {
+    justify-content: center !important;
+    gap: 15px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {
+    font-size: 34px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading p {
+    font-size: 17px !important;
+    line-height: 1.4 !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-tabs button {
+    min-height: 54px !important;
+    font-size: 18px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .sp-signup-progress > span,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-field-label {
+    font-size: 17px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-field > input,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-password-field {
+    min-height: 62px !important;
+    height: 62px !important;
+    font-size: 19px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-primary-button,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-secondary-button {
+    min-height: 58px !important;
+    font-size: 18px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button {
+    min-height: 51px !important;
+    font-size: 16px !important;
+  }
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-social-note,
+  #root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-legal-copy {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* Registration field parity: one intentional focus ring per control. Password
+   text inherits explicit light foreground against the approved dark signup skin. */
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-password-field input,
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-password-field input:focus,
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-password-field input:focus-visible {
+  min-width: 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #f5faff !important;
+  caret-color: #8fd7ff !important;
+}
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-password-field input::placeholder {
+  color: #adc9df !important;
+  opacity: 1 !important;
+}
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-password-field {
+  border-color: #668eae !important;
+  box-shadow: none !important;
+}
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-password-field:focus-within {
+  outline: 2px solid #7ccaff !important;
+  outline-offset: 1px !important;
+  border-color: #7ccaff !important;
+  box-shadow: none !important;
+}
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-field > input {
+  color: #f5faff !important;
+  caret-color: #8fd7ff !important;
+}
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-field > input:focus,
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create .usp-field > input:focus-visible {
+  border-color: #7ccaff !important;
+  outline: 2px solid #7ccaff !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
