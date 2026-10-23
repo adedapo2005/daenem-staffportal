@@ -84,60 +84,92 @@ export async function startPasswordRecoveryWhatsApp(
   request: Request,
   env: WhatsAppRecoveryEnv,
 ) {
-  let body: { identifier?:string; companyCode?:string };
+  let body: { identifier?:string };
   try { body = await request.json(); }
   catch { return json({ error:'Invalid request body.' }, 400); }
   const identifier = String(body.identifier || '').trim().toLowerCase();
-  const companyCode = String(body.companyCode || '').trim();
   if (!identifier) return json({ error:'Enter your username or email address.' }, 400);
-  const company = await env.DB.prepare("SELECT id,code,name FROM companies WHERE active=1 AND lower(code)=lower(?) AND lower(name) NOT LIKE '%farm%' LIMIT 1")
-    .bind(companyCode).first<{id:string;code:string;name:string}>();
-  if(!company)return json({error:'Select a valid company.'},400);
-  const policy=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,company.id,'email');
-  if(!recoveryMethods(policy.value as RecoveryMethodPolicy).includes('whatsapp')){
-    return json({error:'WhatsApp password recovery is not enabled for this company.',code:'RECOVERY_METHOD_NOT_ALLOWED'},409);
+  if (!pepper(env)) return json({error:'Password recovery is temporarily unavailable. Please contact the system administrator.'},503);
+
+  const recent = await env.DB.prepare(`
+    SELECT COUNT(*) AS count FROM security_logs
+    WHERE ip_address=? AND event_type IN ('password_reset_requested','whatsapp_password_reset_requested','login_access_activation_requested')
+      AND datetime(occurred_at)>=datetime('now','-15 minutes')
+  `).bind(requestIp(request) || '').first<{count:number}>();
+  if (Number(recent?.count || 0) >= 5) {
+    return json({error:'Too many recovery requests. Wait 15 minutes and try again.'},429);
   }
-  const publicChallengeId = uid('wa-auth');
-  let challengeId = publicChallengeId;
-  const row = await env.DB.prepare(`
-    SELECT e.id AS employeeId,m.company_id AS companyId,
-      vc.normalized_value AS phone,vc.revision
-    FROM employee_credentials c
-    JOIN employees e ON e.id=c.employee_id
-    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1
-    JOIN employee_verified_contacts vc
-      ON vc.employee_id=e.id AND vc.company_id=m.company_id
-      AND vc.contact_type='phone' AND vc.revoked_at IS NULL
-    WHERE (LOWER(c.username)=LOWER(?) OR LOWER(e.email)=LOWER(?))
+
+  const account = await env.DB.prepare(`
+    SELECT e.id AS employeeId,m.company_id AS companyId
+    FROM employees e
+    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
+    JOIN companies co ON co.id=m.company_id AND co.active=1 AND lower(co.name) NOT LIKE '%farm%'
+    LEFT JOIN employee_credentials c ON c.employee_id=e.id
+    WHERE (
+      (c.employee_id IS NOT NULL AND (LOWER(c.username)=LOWER(?) OR LOWER(e.email)=LOWER(?)))
+      OR
+      (c.employee_id IS NULL AND
+        (LOWER(e.email)=LOWER(?) OR LOWER(COALESCE(
+          (SELECT preferred_username FROM employee_login_access_requests ar
+           WHERE ar.employee_id=e.id AND ar.status='ready'
+           ORDER BY requested_at DESC LIMIT 1),
+          (SELECT setting_value FROM app_settings WHERE setting_key='owner.bootstrap_username')
+        ))=LOWER(?))
+        AND (
+          EXISTS(SELECT 1 FROM employee_login_access_requests ar WHERE ar.employee_id=e.id AND ar.status='ready' AND (ar.expires_at IS NULL OR datetime(ar.expires_at)>datetime('now')))
+          OR EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner')
+        )
+      )
+    )
       AND e.employment_status IN ('active','provisional')
-    ORDER BY m.is_primary DESC,vc.verified_at DESC
+    ORDER BY m.is_primary DESC,co.id ASC
     LIMIT 1
-  `).bind(company.id,identifier,identifier).first<{
-    employeeId:string;companyId:string;phone:string;revision:number;
-  }>();
-  if (row) {
-    try {
-      const challenge = await startWhatsAppChallenge(env,request,{
-        purpose:'password_reset',
-        companyId:row.companyId,
-        employeeId:row.employeeId,
-        phone:row.phone,
-        contactRevision:Number(row.revision || 1),
-        contactAlreadyVerified:true,
-      });
-      challengeId = challenge.challengeId;
-    } catch {
-      challengeId = publicChallengeId;
+  `).bind(identifier,identifier,identifier,identifier).first<{employeeId:string;companyId:string}>();
+
+  let challengeId = uid('wa-auth');
+  let employeeId:string|undefined;
+  let companyId:string|undefined;
+  let accountMatched = false;
+  if (account) {
+    const policy=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,account.companyId,'email');
+    if (recoveryMethods(policy.value as RecoveryMethodPolicy).includes('whatsapp')) {
+      const contact = await env.DB.prepare(`
+        SELECT normalized_value AS phone,revision
+        FROM employee_verified_contacts
+        WHERE employee_id=? AND company_id=?
+          AND contact_type='phone' AND revoked_at IS NULL
+        ORDER BY verified_at DESC
+        LIMIT 1
+      `).bind(account.employeeId,account.companyId).first<{phone:string;revision:number}>();
+      if (contact) {
+        employeeId=account.employeeId;
+        companyId=account.companyId;
+        accountMatched=true;
+        try {
+          const challenge = await startWhatsAppChallenge(env,request,{
+            purpose:'password_reset',
+            companyId:account.companyId,
+            employeeId:account.employeeId,
+            phone:contact.phone,
+            contactRevision:Number(contact.revision || 1),
+            contactAlreadyVerified:true,
+          });
+          challengeId = challenge.challengeId;
+        } catch {
+          // Keep the response indistinguishable when delivery is unavailable.
+        }
+      }
     }
   }
-  await security(env,request,'whatsapp_password_reset_requested',row?.employeeId,row?.companyId,{
-    accountMatched:Boolean(row),
+  await security(env,request,'whatsapp_password_reset_requested',employeeId,companyId,{
+    accountMatched,
   });
   return json({
     ok:true,
     challengeId,
-    destination:'your enrolled WhatsApp contact',
-    message:'If the account is eligible and has an enrolled WhatsApp contact, a verification code has been sent.',
+    destination:'your verified recovery contact',
+    message:'If the account details match an eligible employee login, a verification code has been sent to the verified recovery contact on file.',
   });
 }
 

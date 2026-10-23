@@ -9,12 +9,12 @@ const deployedEntry = read('worker/entry.ts');
 const provider = read('worker/weather-provider.ts');
 const authRefinement = read('worker/auth-refinement.ts');
 const passwordAuth = read('worker/password-auth.ts');
+const whatsappRecovery = read('worker/whatsapp-recovery.ts');
 
 
-// Keep overflow-y:auto limited to approved editorial copy and the focused
-// password-recovery dialog, whose content can exceed a short mobile viewport.
-// Exact selectors ensure this exception cannot grant scrolling to Sign-In or
-// Create Account when the shared stylesheet is extended.
+// Keep overflow-y:auto limited to approved editorial copy and the guided
+// password-recovery screen, whose content can exceed a short mobile viewport.
+// Exact selectors keep Sign-In and Create Account free of internal scrollbars.
 const approvedScrollSelectors = new Set([
   '.sp-root #staff-primary-information .sp-connected-news',
   '#root .sp-root.sp-day #staff-primary-information [data-widget="news"] .gw-news-story-copy',
@@ -47,14 +47,16 @@ const checks = [
 
   ['approved Sign-In mount remains the compact-mode measurement fallback', auth.includes("panel?.closest<HTMLElement>('.usp-form-column') || panel?.parentElement")],
   ['password requirements announce live state changes', auth.includes('aria-label={label} aria-live="polite"')],
-  ['Forgot Password raises its isolated rail above overlapping dashboard cards and restores it on exit', auth.includes("closest<HTMLElement>('.sp-lower-right-rail')") && auth.includes("rail.style.zIndex = '1200'") && auth.includes('rail.style.zIndex = previousZIndex')],
+  ['Forgot Password remains an in-flow guided screen rather than a modal dialog', auth.includes('const approvedForgotPanel =') && auth.includes('className="sp-auth-runtime sp-auth-recovery"') && !auth.includes("role={mode === 'forgot'")],
   ['Create Account no longer creates an internal vertical scrollbar', !hasUnexpectedVerticalScroll(css)],
-  ['bounded scrolling is limited to the Forgot Password dialog', !hasUnexpectedVerticalScroll('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot { overflow-y:auto!important; }') && hasUnexpectedVerticalScroll('#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }') && css.includes('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot {')],
-  ['Forgot Password requires an identity and explicit company selection before sending', auth.includes("setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:'');") && auth.includes('disabled={busy||!recoveryIdentity.trim()||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)}')],
-  ['owner activation recovery validates the selected company email policy', passwordAuth.includes('export async function recoveryPolicyForCompany') && authRefinement.includes('recoveryPolicyForCompany(env,companyCode)') && authRefinement.includes("recoveryMethods(recoveryPolicy.policy).includes('email')")],
-  ['owner activation recovery shares the 15-minute per-IP request throttle', authRefinement.includes("event_type IN ('password_reset_requested','login_access_activation_requested')") && authRefinement.includes("datetime(occurred_at)>=datetime('now','-15 minutes')") && authRefinement.includes('Too many recovery requests. Wait 15 minutes and try again.')],
-  ['owner recovery scopes eligible accounts to the selected active company', authRefinement.includes('JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1') && authRefinement.includes('.bind(recoveryPolicy.company.id,identifier,identifier)')],
-  ['owner recovery fails closed without a production pepper and records attempts before email delivery', authRefinement.includes("if(!pepper(env))return json({error:'Password recovery is temporarily unavailable. Please contact the system administrator.'},503);") && authRefinement.includes("try{await security(env,request,'login_access_activation_requested',employee.id,{destination:maskEmail(employee.email)});const delivery=await sendCode")],
+  ['bounded scrolling is limited to the guided Forgot Password screen', !hasUnexpectedVerticalScroll('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot { overflow-y:auto!important; }') && hasUnexpectedVerticalScroll('#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }') && css.includes('#staffportal-auth-mount.sp-auth-mode-forgot {')],
+  ['Sign-In and recovery do not require company selection', auth.includes('JSON.stringify({ identifier: recoveryIdentity })') && !auth.includes('recoveryCompanyCode') && !auth.includes('companyCode:') && !auth.includes('Select company')],
+  ['signup company assignment is resolved server-side rather than from the request', !authRefinement.includes('companyCode?:string') && !authRefinement.includes('b.companyCode')],
+  ['owner activation recovery follows the account primary-company email policy', passwordAuth.includes('export async function recoveryPolicyForEmployee') && authRefinement.includes('recoveryPolicyForEmployee(env,employee.id)') && authRefinement.includes("methods.includes('email')")],
+  ['verified WhatsApp recovery is a server-selected fallback with no company input', passwordAuth.includes("methods.includes('whatsapp')") && authRefinement.includes("methods.includes('whatsapp')") && whatsappRecovery.includes('employee_verified_contacts') && whatsappRecovery.includes('ORDER BY m.is_primary DESC,co.id ASC') && !whatsappRecovery.includes('companyCode')],
+  ['owner activation recovery shares the 15-minute per-IP request throttle', authRefinement.includes("event_type IN ('password_reset_requested','login_access_activation_requested','whatsapp_password_reset_requested')") && authRefinement.includes("datetime(occurred_at)>=datetime('now','-15 minutes')") && authRefinement.includes('Too many recovery requests. Wait 15 minutes and try again.')],
+  ['recovery company is resolved from the account primary active membership', passwordAuth.includes('ORDER BY m.is_primary DESC,co.id ASC') && authRefinement.includes('ORDER BY m.is_primary DESC,co.id ASC') && authRefinement.includes('.bind(identifier,identifier)')],
+  ['owner recovery fails closed without a production pepper and records attempts before email delivery', authRefinement.includes("if(!pepper(env))return json({error:'Password recovery is temporarily unavailable. Please contact the system administrator.'},503);") && authRefinement.includes("await security(env,request,'login_access_activation_requested',employee.id,{destination:maskEmail(employee.email)});") && authRefinement.includes('const delivery=await sendCode')],
   ['password success state is visibly styled', css.includes('.usp-password-status .pass')],
   ['password failure state is visibly styled', css.includes('.usp-password-status .fail')],
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],

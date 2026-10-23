@@ -887,64 +887,80 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
   );
 }
 
-export async function recoveryPolicyForCompany(env:PasswordAuthEnv,companyCode:string){
-  const company=await env.DB.prepare(
-    "SELECT id,code,name FROM companies WHERE active=1 AND lower(code)=lower(?) AND lower(name) NOT LIKE '%farm%' LIMIT 1",
-  ).bind(companyCode).first<{id:string;code:string;name:string}>();
+export async function recoveryPolicyForEmployee(env:PasswordAuthEnv,employeeId:string){
+  const company=await env.DB.prepare(`
+    SELECT co.id,co.code,co.name
+    FROM employee_company_memberships m
+    JOIN companies co ON co.id=m.company_id AND co.active=1 AND lower(co.name) NOT LIKE '%farm%'
+    WHERE m.employee_id=? AND m.active=1
+    ORDER BY m.is_primary DESC,co.id ASC
+    LIMIT 1
+  `).bind(employeeId).first<{id:string;code:string;name:string}>();
   if(!company)return null;
   const resolved=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,company.id,'email');
   return {company,policy:resolved.value as RecoveryMethodPolicy,source:resolved.source};
 }
 
-async function recoveryOptions(request:Request,env:PasswordAuthEnv){
-  const companyCode=String(new URL(request.url).searchParams.get('company')||'').trim();
-  if(!companyCode)return json({error:'Select your company.'},400);
-  const resolved=await recoveryPolicyForCompany(env,companyCode);
-  if(!resolved)return json({error:'Select a valid company.'},400);
-  return json({
-    company:{code:resolved.company.code,name:resolved.company.name},
-    methods:recoveryMethods(resolved.policy),
-    policy:resolved.policy,
-    source:resolved.source,
-  });
+async function recoveryOptions(_request:Request,_env:PasswordAuthEnv){
+  return json({error:'Recovery routing is resolved securely from the account record.'},410);
+}
+
+async function recoveryAccountForIdentifier(env:PasswordAuthEnv,identifier:string){
+  return env.DB.prepare(`
+    SELECT e.id,e.email,e.display_name AS displayName,m.company_id AS companyId
+    FROM employee_credentials c
+    JOIN employees e ON e.id=c.employee_id
+    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
+    JOIN companies co ON co.id=m.company_id AND co.active=1 AND lower(co.name) NOT LIKE '%farm%'
+    WHERE (LOWER(c.username)=LOWER(?) OR LOWER(e.email)=LOWER(?))
+      AND e.employment_status IN ('active','provisional')
+    ORDER BY m.is_primary DESC,co.id ASC
+    LIMIT 1
+  `).bind(identifier,identifier).first<{id:string;email?:string;displayName:string;companyId:string}>();
 }
 
 async function forgotPassword(request: Request, env: PasswordAuthEnv) {
-  let body: { identifier?: string; companyCode?: string };
+  let body: { identifier?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
   const identifier = String(body.identifier || '').trim().toLowerCase();
-  const companyCode = String(body.companyCode || '').trim();
   if (!identifier) return json({ error: 'Enter your username or email address.' }, 400);
-  const recoveryPolicy = await recoveryPolicyForCompany(env, companyCode);
-  if (!recoveryPolicy) return json({ error: 'Select a valid company.' }, 400);
-  if (!recoveryMethods(recoveryPolicy.policy).includes('email')) {
-    return json({ error: 'Email password recovery is not enabled for this company.', code: 'RECOVERY_METHOD_NOT_ALLOWED' }, 409);
-  }
   const pepperFailure = await requireProductionPepper(env, request, 'configuration');
   if (pepperFailure) return pepperFailure;
-  if ((!env.EMAIL || typeof env.EMAIL.send !== 'function') && env.APP_STAGE !== 'bootstrap') {
-    return json({ error: 'Password recovery email is temporarily unavailable. Please contact the system administrator.' }, 503);
-  }
 
   const recent = await env.DB.prepare(`
     SELECT COUNT(*) AS count FROM security_logs
-    WHERE ip_address = ? AND event_type = 'password_reset_requested'
+    WHERE ip_address = ? AND event_type IN ('password_reset_requested','whatsapp_password_reset_requested','login_access_activation_requested')
       AND datetime(occurred_at) >= datetime('now','-15 minutes')
   `).bind(requestIp(request) || '').first<{ count: number }>();
   if (Number(recent?.count || 0) >= 5) return json({ error: 'Too many recovery requests. Wait 15 minutes and try again.' }, 429);
 
-  const challengeId = uid('password-reset');
-  const employee = await env.DB.prepare(`
-    SELECT e.id, e.email, e.display_name AS displayName
-    FROM employee_credentials c
-    JOIN employees e ON e.id = c.employee_id
-    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1
-    WHERE (LOWER(c.username) = LOWER(?) OR LOWER(e.email) = LOWER(?))
-      AND e.employment_status IN ('active','provisional')
-    LIMIT 1
-  `).bind(recoveryPolicy.company.id, identifier, identifier).first<{ id: string; email?: string; displayName: string }>();
+  const employee = await recoveryAccountForIdentifier(env,identifier);
+  const recoveryPolicy = employee ? await recoveryPolicyForEmployee(env,employee.id) : null;
+  const methods: readonly ('email'|'whatsapp')[] = recoveryPolicy ? recoveryMethods(recoveryPolicy.policy) : [];
+  if (employee && recoveryPolicy && (!methods.includes('email') || !employee.email) && methods.includes('whatsapp')) {
+    const headers = new Headers(request.headers);
+    headers.set('content-type','application/json');
+    headers.delete('content-length');
+    return startPasswordRecoveryWhatsApp(
+      new Request(request.url,{method:'POST',headers,body:JSON.stringify({identifier})}),
+      env,
+    );
+  }
 
-  if (employee?.email) {
+  const challengeId = uid('password-reset');
+  if (employee?.email && recoveryPolicy && methods.includes('email')) {
+    if ((!env.EMAIL || typeof env.EMAIL.send !== 'function') && env.APP_STAGE !== 'bootstrap') {
+      if (methods.includes('whatsapp')) {
+        const headers = new Headers(request.headers);
+        headers.set('content-type','application/json');
+        headers.delete('content-length');
+        return startPasswordRecoveryWhatsApp(
+          new Request(request.url,{method:'POST',headers,body:JSON.stringify({identifier})}),
+          env,
+        );
+      }
+      return json({ error: 'Password recovery email is temporarily unavailable. Please contact the system administrator.' }, 503);
+    }
     const code = randomCode();
     const digest = await codeHash(env, 'password-reset', challengeId, code);
     const minutes = Number(await setting(env, 'security.password_reset_code_minutes', '10')) || 10;
@@ -955,25 +971,27 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
       ) VALUES (?, ?, ?, ?, ?, ?)
     `).bind(challengeId, employee.id, digest, requestIp(request) || null, request.headers.get('user-agent'), expiresAt).run();
 
+    await logSecurity(env, request, 'password_reset_requested', {
+      employeeId: employee.id, result: 'requested', details: { destination: maskEmail(employee.email) },
+    });
     try {
       const delivery = await sendCode(env, { to: employee.email, name: employee.displayName, code, purpose: 'reset' });
-      await logSecurity(env, request, 'password_reset_requested', {
-        employeeId: employee.id, result: delivery.delivered ? 'delivered' : 'bootstrap', details: { destination: maskEmail(employee.email) },
-      });
       return json({
-        ok: true, challengeId, destination: 'your email on file',
+        ok: true, challengeId, destination: 'your verified recovery contact',
         ...(delivery.bootstrapCode ? { bootstrapCode: delivery.bootstrapCode } : {}),
-        message: 'If the account details match an employee login, a password reset verification code has been sent to the email on file.',
+        message: 'If the account details match an eligible employee login, a verification code has been sent to the verified recovery contact on file.',
       });
     } catch {
       await env.DB.prepare('DELETE FROM password_reset_challenges WHERE id = ?').bind(challengeId).run();
     }
   }
 
-  await logSecurity(env, request, 'password_reset_requested', { result: 'generic', details: { accountMatched: Boolean(employee) } });
+  await logSecurity(env, request, 'password_reset_requested', {
+    result: 'generic', details: { accountMatched: Boolean(employee) },
+  });
   return json({
-    ok: true, challengeId, destination: 'your email on file',
-    message: 'If the account details match an employee login, a password reset verification code has been sent to the email on file.',
+    ok: true, challengeId, destination: 'your verified recovery contact',
+    message: 'If the account details match an eligible employee login, a verification code has been sent to the verified recovery contact on file.',
   });
 }
 
@@ -989,7 +1007,16 @@ async function verifyReset(request: Request, env: PasswordAuthEnv) {
   const row = await env.DB.prepare(`
     SELECT * FROM password_reset_challenges WHERE id = ? LIMIT 1
   `).bind(challengeId).first<Record<string, unknown>>();
-  if (!row || row.consumed_at || new Date(String(row.expires_at)).getTime() <= Date.now()) {
+  if (!row) {
+    const headers = new Headers(request.headers);
+    headers.set('content-type','application/json');
+    headers.delete('content-length');
+    return verifyPasswordRecoveryWhatsApp(
+      new Request(request.url,{method:'POST',headers,body:JSON.stringify({challengeId,code})}),
+      env,
+    );
+  }
+  if (row.consumed_at || new Date(String(row.expires_at)).getTime() <= Date.now()) {
     return json({ error: 'This password reset verification is invalid or has expired.' }, 401);
   }
   if (Number(row.attempts) >= Number(row.max_attempts)) return json({ error: 'Too many verification attempts. Start password recovery again.' }, 429);
