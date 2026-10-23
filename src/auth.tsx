@@ -429,7 +429,7 @@ export function WorldClocks() {
   </div>;
 }
 
-export function AuthScreen({ onAuthenticated, ownerConcept }: { onAuthenticated: (context: WorkforceContext) => void; ownerConcept?: ConceptDesign }) {
+export function AuthScreen({ onAuthenticated, ownerConcept, ownerViewport }: { onAuthenticated: (context: WorkforceContext) => void; ownerConcept?: ConceptDesign; ownerViewport?: number }) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
   const returnSignupFocusRef = useRef(false);
@@ -1236,6 +1236,6 @@ export function AuthScreen({ onAuthenticated, ownerConcept }: { onAuthenticated:
   );
 
   const authPanel = mode === 'signin' ? approvedSignInPanel : legacyAuthPanel;
-  if(ownerConcept) return <OwnerConceptRuntime design={ownerConcept} authPanel={authPanel} />;
+  if(ownerConcept) return <OwnerConceptRuntime design={ownerConcept} authPanel={authPanel} viewportWidth={ownerViewport} />;
   return <SignInExperience authPanel={authPanel} authMode={mode} themeId={themeId} onInstall={() => void installApp()} />;
 }

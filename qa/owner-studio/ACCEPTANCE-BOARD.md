@@ -60,3 +60,60 @@ There were **zero JavaScript page errors** in this read-only run. This audit mea
 - [ ] **Reverify protected staging deployment gates** and secure explicit Owner visual approval before merging PR #99 into the Pre-Production release branch.
 
 **Current conclusion:** The Owner Studio editing and review work is substantially implemented and CI-tested, but **an alternative blank-canvas Sign-In must not be promoted or marked complete** until those acceptance gates are verified. Keep all other frontend/backend lanes within their authorized file ownership.
+
+## Owner-mandated visual QA standard — 22 October 2026
+
+**Do not mark any Studio task COMPLETE from a green CI check, implemented code, or a mock alone.** Inspect the actual rendered candidate, record discovered defects, fix them, rerun visual and behavioral tests, and separately validate the authenticated Cloudflare release candidate. This is a standing internal QA requirement; routine visual decisions must not be redirected back to the Owner. Production activation remains subject to its explicit release authorization.
+
+### Reproducible isolated browser inspection
+
+```sh
+node qa/owner-studio/test-owner-studio.cjs
+node qa/owner-studio/visual-acceptance-audit.cjs
+```
+
+The second command records screenshot evidence at 390, 430, 768, 1024, 1280, 1366, 1920, 2560 and 3840px in the local uncommitted `qa/owner-studio/visual-acceptance/` folder. It includes an explicit full-size preview, checks for runtime design-width mismatch and horizontal clipping, and reports desktop auth panels extending below their canvas. This is **not** a substitute for authenticated Pre-Production acceptance.
+
+| Visual finding | Parent/root cause | Local candidate remedy | Release status |
+| --- | --- | --- | --- |
+| Mobile alternative Sign-In cropped and partly unstyled | Concept runtime fixed at 1366px; missing isolated authentication presentation | Responsive canvas dimensions, viewport-fit/full-size modes, scoped solid auth controls | Development QA only |
+| 4K preview rendered as 1366px miniature | Fixed runtime width and small Owner controls | Actual 3840px canvas; scalable layout, typography, controls | Development QA only |
+| Auth input placeholder truncated | Global `.owner-builder input` max-width leaked into nested actual auth input | Selector scoped to editor toolbar and inspector | Development QA only |
+| Create Account tabs/buttons lacked consistent presentation | The alternative React auth state did not inherit approved V180 card CSS | Explicit non-glass, emerald/champagne scoped design for signup/recovery | Development QA only |
+| Blank starter produced huge empty desktop space and overflowed vertically | Mobile-stack coordinates reused unconditionally on desktop | Untouched starter alone uses split responsive presentation; manually edited layouts retain Owner coordinates | Development QA only |
+| Private preview accidentally allowed authentication actions | Actual React auth forms/providers mounted interactively | Capture unsafe submits, provider actions and redirects; permit only safe local mode changes | Development QA only |
+| Native 4K control readability, keyboard contrast | Static 11px controls and low-contrast secondary copy | Scale Owner tools at 2400px+ and raise copy/focus contrast | Development QA only |
+
+**Unchanged release blockers:** Actual Pre-Production 1024px Sign-In vertical overflow, authenticated Owner Library/D1 and session acceptance, production-like provider/weather/Install App integration acceptance, exact approved branding and fully editable per-viewport alternatives, audited activation with tested instant rollback, plus final verified release-candidate visuals and accessibility. None may be marked complete on the basis of this isolated preview.
+
+## Actual Cloudflare Pre-Production visual/security evidence — 22 October 2026 ET
+
+Source: `https://daenem-staffportal-api-staging.adedapo2005.workers.dev/`, tested from authorized Daenem_Group machine in a new unauthenticated Chromium context. Only GET/HEAD permitted; no real sign-in, staging writes, or deployment.
+
+Commands:
+
+```sh
+node qa/owner-studio/live-preproduction-visual-evidence.cjs
+node qa/owner-studio/live-preproduction-layout-diagnostics.cjs
+node qa/owner-studio/live-preproduction-anonymous-boundary.cjs
+```
+
+- Actual live public HTTP 200 at 390, 768, 1024, 1280, 1366, 1920, 3840px. Zero detected JavaScript page errors and zero non-GET requests in the initial seven-size visual run.
+- Public 390px and 768px layouts scroll vertically (permitted). 1366px, 1920px and 3840px fit their respective viewports in the observed run.
+- **Fail — 1024×768**: live page height ~2,515–2,528px after load; no horizontal overflow. Root cause matrix: `.sp-layout.sp-reference-layout` rendered at ~2,473px, auth+weather/right rail at y≈426–1117 (691px), Global Operations at y≈1130–1975 (845px), forcing stacked desktop sections below the 768px fold. This is **the approved public page**, not the private Owner Studio renderer. Protected V180 is deliberately unchanged by the Studio PR; responsibility remains with the authorized Sign-In source owner.
+- **Monitor — 1280×720**: one first-load audit showed transient extreme vertical height (~12,194px), whereas a fresh isolated repeat at ~1.6s and ~6.6s measured a stable 720px. Not reproducibly confirmed; do not claim fixed. Recheck with repeated load and stress/error handling before actual public acceptance.
+- Anonymous GET `/api/theme/signin/designs` → HTTP **401**; `/api/theme/signin/designs/review` → HTTP **401**. No protected Owner JSON exposed. This verifies only unauthenticated rejection, **not** Owner read/write authorization, cross-company isolation, D1 atomic persistence in staging, or audit readback.
+- The local alternate-design preview was visually inspected at nine sizes, but its appearance is **not** visual acceptance for the live Cloudflare page. Do not merge PR #99 or activate a design on the strength of this evidence alone.
+
+Screenshots and metrics are stored only in the local `qa/owner-studio/live-evidence/` folder. Do not commit screenshots that may include dynamic headlines or other transient public media. The QA scripts, factual findings, and pass/fail statuses are the reproducible evidence.
+
+## Follow-on Owner Studio live-preview QA — 22 October 2026 ET
+
+- Browser QA identified a genuine behavioral defect: typing a heading updated the alternate live preview, but duplicate `change` notifications could add two Undo records, requiring more than one Undo to restore the prior state.
+- The development candidate now ignores no-op edits in text, geometry and design-name controls and schedules live React preview updates for unsaved canvas edits, drag operations, Undo/Redo, and name changes.
+- The real authentication renderer remains the same protected component. Form submissions and provider redirects remain blocked in the private design preview; reading/sign-in states are test-only there.
+- A screenshot of a manually added weather widget exposed unintended overlap: adding a widget had disabled the otherwise untouched Premium Starter split layout. The candidate retains the starter's responsive split while placing unmodified supplemental widgets in the left column; the mobile preset places supplements below the authentication panel for normal vertical scrolling. Owner-modified component coordinates are not silently overwritten.
+- Nested weather and clock concept items are now shown at their edited positions in the alternate preview and explicitly labelled as **layout concepts, not live data**; actual weather/provider/backend acceptance is still open.
+- `qa/owner-studio/test-live-preview-sync.cjs` is the focused repeatable Playwright regression, including a true 390px full-size mobile scroll screenshot, desktop non-overlap checks, nested-item position changes, one-step Undo, and rejection when the protected authentication block is removed.
+- Locally inspected screenshots: `qa/owner-studio/live-undo-diagnostic.png`, `live-nested-item-update.png`, `live-nested-item-mobile.png`, `live-nested-item-mobile-scroll.png`. These screenshot files remain local and are not release artifacts.
+- All other outstanding gates from the acceptance board remain **open**. This development work does not authorize publication, authenticated D1 acceptance, or a change to V180.
