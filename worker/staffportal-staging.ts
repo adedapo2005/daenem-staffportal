@@ -1,6 +1,7 @@
 import runtimeHandler from './runtime';
 import { routeWorkspaceShell } from './workspace-route';
 import { routeV180PublicAssets } from './v180-public-assets';
+import type { StagingQaEnv } from './staging-qa-seeder';
 
 interface Env {
   STAFF_PORTAL_FRONTEND_ORIGIN?: string;
@@ -58,6 +59,11 @@ function preflight(request:Request,env:Env){
 
 export default {
   async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
+    if(new URL(request.url).pathname==='/api/staging/qa-fixture'){
+      const { routeStagingQaSeeder }=await import('./staging-qa-seeder');
+      const qaResponse=await routeStagingQaSeeder(request,env as unknown as StagingQaEnv);
+      if(qaResponse)return qaResponse;
+    }
     if(request.method==='OPTIONS')return preflight(request,env);
     const url=new URL(request.url);
     if(url.pathname==='/health'){
