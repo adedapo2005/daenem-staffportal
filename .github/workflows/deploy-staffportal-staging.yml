@@ -225,14 +225,35 @@ jobs:
       - name: Verify Pre-Production runtime and auth route contract
         env:
           STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
-        run: node scripts/test-staffportal-staging-runtime.mjs
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if node scripts/test-staffportal-staging-runtime.mjs; then exit 0; fi
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            echo "Runtime assets are still propagating; retrying in 5 seconds."
+            sleep 5
+          done
 
       - name: Verify deployed public asset contract
         env:
           STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
-        run: node scripts/test-staffportal-staging-public-assets.mjs
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if node scripts/test-staffportal-staging-public-assets.mjs; then exit 0; fi
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            echo "Public assets are still propagating; retrying in 5 seconds."
+            sleep 5
+          done
 
       - name: Verify versioned Pre-Production asset integrity
         env:
           STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
-        run: node scripts/test-staffportal-staging-assets.mjs
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if node scripts/test-staffportal-staging-assets.mjs; then exit 0; fi
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            echo "Versioned assets are still propagating; retrying in 5 seconds."
+            sleep 5
+          done
