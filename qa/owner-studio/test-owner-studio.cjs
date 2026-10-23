@@ -1,0 +1,361 @@
+const {chromium}=require('playwright');const {createServer}=require('vite');
+(async()=>{const server=await createServer({configFile:'vite.signin-browser-qa.config.ts',server:{host:'127.0.0.1',port:0,strictPort:false},logLevel:'error'});await server.listen();
+const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});const errors=[];const writes=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET'&&r.url().includes('/api/theme/signin'))writes.push(r.url())});
+const origin='http://127.0.0.1:'+server.httpServer.address().port;
+await page.route('**/staff-portal-signin?*',r=>r.fulfill({status:302,headers:{location:'/qa/signin/index.html?studioReview=signin-v180'},body:''}));
+await page.route('**/api/**',r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA mock'})}));
+try{
+await page.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
+await page.locator('.owner-pro-studio').waitFor({timeout:10000});
+await page.locator('[data-builder-enter]').click();
+// The real approved authentication is available only through an explicit private reference action.
+if(await page.locator('[data-builder-auth-frame]').getAttribute('src'))throw Error('protected auth reference loaded before Owner request');
+await page.locator('[data-builder-auth-preview]').click();
+if(await page.locator('[data-builder-auth-frame]').getAttribute('src')!=='/staff-portal-signin?studioReview=signin-v180')throw Error('protected canonical auth reference URL incorrect');
+if(await page.locator('[data-builder-auth-preview]').getAttribute('aria-expanded')!=='true')throw Error('auth reference accessibility state incorrect');
+await page.locator('[data-builder-auth-preview]').click();
+if(await page.locator('#owner-builder-protected-auth').isVisible())throw Error('closed auth reference still visible');
+await page.locator('[data-builder-add="heading"]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('blank builder add failed');
+await page.locator('[data-builder-x]').fill('190');
+await page.locator('[data-builder-x]').dispatchEvent('change');
+const xpos=await page.locator('[data-builder-canvas] [data-block]').evaluate(e=>e.style.left);
+if(xpos!=='190px')throw Error('blank builder positioning failed '+xpos);
+await page.locator('[data-builder-add="weather"]').click();
+await page.locator('[data-builder-item]').selectOption('item-1');
+await page.locator('[data-inner-x]').fill('132');
+await page.locator('[data-inner-x]').dispatchEvent('change');
+const nestedX=await page.locator('[data-builder-canvas] [data-block="b2"] [data-inner-id="item-1"]').evaluate(e=>e.style.left);
+if(nestedX!=='132px')throw Error('nested widget item move failed '+nestedX);
+await page.locator('[data-inner-label]').fill('Custom Temperature');
+await page.locator('[data-inner-label]').dispatchEvent('change');
+if(!(await page.locator('[data-builder-canvas] [data-block="b2"]').textContent()).includes('Custom Temperature'))throw Error('nested widget item label failed');
+await page.locator('[data-builder-undo]').click();
+if((await page.locator('[data-builder-canvas] [data-block="b2"]').textContent()).includes('Custom Temperature'))throw Error('nested widget undo failed '+await page.locator('[data-builder-canvas] [data-block="b2"]').textContent());
+const exported=page.waitForEvent('download');
+await page.locator('[data-builder-export]').click();
+const exportDownload=await exported;
+if(exportDownload.suggestedFilename()!=='daenem-signin-design.json')throw Error('concept export filename failed');
+await page.locator('[data-builder-clear]').click();
+const imported={schemaVersion:1,name:'DAENEM Owner Concept',blocks:[{id:'import1',kind:'weather',label:'Weather',x:50,y:60,width:250,height:145,items:[{id:'item-1',label:'Rain Chance',x:12,y:24}]}]};
+await page.locator('[data-builder-import]').setInputFiles({name:'concept.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(imported))});
+await page.locator('[data-builder-name]').waitFor();
+await page.waitForFunction(()=>document.querySelector('[data-builder-name]')?.value==='DAENEM Owner Concept');
+if(!(await page.locator('[data-builder-canvas]').textContent()).includes('Rain Chance'))throw Error('concept import failed');
+const dragTarget=page.locator('[data-builder-canvas] [data-inner-id="item-1"]');
+const dragBefore=await dragTarget.evaluate(e=>Number.parseInt(e.style.left,10));
+const dragBox=await dragTarget.boundingBox();if(!dragBox)throw Error('nested item missing on canvas');
+await page.mouse.move(dragBox.x+dragBox.width/2,dragBox.y+dragBox.height/2);
+await page.mouse.down();
+await page.mouse.move(dragBox.x+dragBox.width/2+24,dragBox.y+dragBox.height/2+14,{steps:5});
+await page.mouse.up();
+const dragAfter=await dragTarget.evaluate(e=>Number.parseInt(e.style.left,10));
+if(dragAfter<=dragBefore)throw Error('direct nested item drag failed '+dragBefore+' -> '+dragAfter);
+await page.screenshot({path:'qa/owner-studio/builder-preview.png',fullPage:true});
+await page.locator('[data-builder-device]').selectOption('3840');
+if((await page.locator('[data-builder-canvas]').evaluate(e=>e.style.width))!=='3840px')throw Error('4K canvas width failed');
+const widget4k=await page.locator('[data-builder-canvas] [data-block]').evaluate(e=>Number.parseInt(e.style.width,10));
+if(widget4k<650)throw Error('4K widget stayed at laptop size '+widget4k);
+await page.screenshot({path:'qa/owner-studio/builder-4k-preview.png',fullPage:true});
+await page.locator('[data-builder-device]').selectOption('1366');
+
+
+await page.locator('[data-builder-save]').click();
+if(await page.locator('[data-builder-library] option').count()!==2)throw Error('design library save failed');
+const sessionSaved=await page.evaluate(()=>sessionStorage.getItem('daenem-owner-studio-concept-library-v1'));
+if(!sessionSaved||!sessionSaved.includes('DAENEM Owner Concept'))throw Error('session recovery failed');
+await page.locator('[data-builder-clear]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==0)throw Error('clear canvas failed');
+await page.locator('[data-builder-load]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('design library load failed');
+await page.locator('[data-builder-duplicate]').click();
+if(!(await page.locator('[data-builder-name]').inputValue()).includes('Copy'))throw Error('design duplicate failed');
+await page.locator('[data-builder-undo]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('blank builder undo removed element');
+await page.locator('[data-builder-device]').selectOption('390');
+if((await page.locator('[data-builder-canvas]').evaluate(e=>e.style.width))!=='390px')throw Error('blank builder mobile preview width failed');
+await page.locator('[data-builder-exit]').click();
+await page.reload({waitUntil:'domcontentloaded'});
+await page.locator('[data-builder-enter]').click();
+if(await page.locator('[data-builder-library] option').count()!==2)throw Error('saved design did not survive reload');
+await page.locator('[data-builder-library]').selectOption('0');
+await page.locator('[data-builder-load]').click();
+if(await page.locator('[data-builder-canvas] [data-block]').count()!==1)throw Error('saved design could not reload');
+await page.locator('[data-builder-exit]').click();
+const iframe=page.frameLocator('[data-owner-pro-frame]');
+await iframe.locator('#staff-global-operations').waitFor({timeout:20000});
+await page.locator('[data-prop="x"]').fill('40');
+await page.locator('[data-prop="x"]').dispatchEvent('input');
+let before=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(!before.includes('40px'))throw Error('element move did not apply '+before);
+await page.locator('[data-prop="width"]').fill('280');
+await page.locator('[data-prop="width"]').dispatchEvent('input');
+let editedWidth=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).width);
+if(editedWidth!=='280px')throw Error('precision width failed '+editedWidth);
+await page.locator('[data-undo]').click();
+await page.locator('[data-undo]').click();
+let after=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(after.includes('40px'))throw Error('undo did not revert '+after);
+await iframe.locator('#staff-global-operations .gw-city-clock').first().click();
+const chosen=await page.locator('[data-studio-selection]').textContent();
+if(!chosen||chosen==='Global Operations')throw Error('in-frame element picking did not select a child');
+await page.locator('[data-owner-pro-preset]').selectOption('1');
+let mobile=await iframe.locator('html').evaluate(e=>e.ownerDocument.defaultView.innerWidth);
+if(mobile!==390)throw Error('mobile frame width incorrect '+mobile);
+await page.locator('[data-owner-pro-layer]').selectOption('#staff-global-operations');
+await page.locator('[data-prop="x"]').fill('23');
+await page.locator('[data-prop="x"]').dispatchEvent('input');
+const shiftedMobile=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(!shiftedMobile.includes('23px'))throw Error('mobile-only edit did not apply '+shiftedMobile);
+await page.locator('[data-owner-pro-preset]').selectOption('6');
+const shiftedDesktop=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(shiftedDesktop.includes('23px'))throw Error('mobile edit leaked into desktop '+shiftedDesktop);
+await page.locator('[data-owner-pro-preset]').selectOption('1');
+const restoredMobile=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(!restoredMobile.includes('23px'))throw Error('mobile edit lost on viewport change '+restoredMobile);
+await page.locator('[data-undo]').click();
+const undoMobile=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(undoMobile.includes('23px'))throw Error('mobile undo failed '+undoMobile);
+await page.locator('[data-redo]').click();
+const redoMobile=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).translate);
+if(!redoMobile.includes('23px'))throw Error('mobile redo failed '+redoMobile);
+await page.locator('[data-owner-pro-layer]').selectOption('#staff-global-operations');
+await page.locator('[data-prop="fontSize"]').fill('19');
+await page.locator('[data-prop="fontSize"]').dispatchEvent('input');
+let font=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).fontSize);
+if(font!=='19px')throw Error('typography control failed '+font);
+await page.locator('[data-prop-color]').fill('#efb947');
+await page.locator('[data-prop-color]').dispatchEvent('input');
+let color=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).color);
+if(!(await iframe.locator('#daenem-owner-studio-preview-style').textContent()).includes('color:#efb947!important'))throw Error('text color preview CSS not updated');
+await page.locator('[data-undo]').click();
+let originalColor=await iframe.locator('#staff-global-operations').evaluate(e=>getComputedStyle(e).color);
+if((await iframe.locator('#daenem-owner-studio-preview-style').textContent()).includes('color:#efb947!important'))throw Error('text color undo failed');
+await page.locator('[data-owner-pro-layer]').selectOption('#staff-global-operations [data-city-id="toronto"] .gw-city-clock');
+await page.locator('[data-clock-look]').selectOption('emerald');
+const onlyToronto=await iframe.locator('#daenem-owner-studio-preview-style').evaluate(e=>({toronto:e.textContent.includes('[data-city-id="toronto"] .gw-city-clock{filter:'),london:e.textContent.includes('[data-city-id="london"] .gw-city-clock{filter:')}));
+if(!onlyToronto.toronto||onlyToronto.london)throw Error('Clock preview style leaked across cities '+JSON.stringify(onlyToronto));
+let hasClock=await iframe.locator('#daenem-owner-studio-preview-style').evaluate(e=>e.textContent.includes('emerald')||e.textContent.includes('hue-rotate'));
+if(!hasClock)throw Error('clock preset did not apply');
+await page.locator('[data-reset-all]').click();
+let reset=await iframe.locator('#daenem-owner-studio-preview-style').evaluate(e=>e.textContent.includes('hue-rotate'));
+if(reset)throw Error('reset failed');
+if(writes.length)throw Error('editor made unauthorized writes '+JSON.stringify(writes));
+if(errors.length)throw Error('page errors: '+errors.join(';'));
+console.log('PASS: admin editor mounted, live iframe content, move, undo, mobile viewport, clock style, revert, no server writes');
+await page.screenshot({path:'qa/owner-studio/studio-preview.png',fullPage:true});
+await page.setViewportSize({width:3840,height:2160});
+await page.evaluate(()=>{
+ const main=document.querySelector('main');
+ const shell=document.createElement('div');shell.className='theme-studio';
+ if(main){main.parentElement?.insertBefore(shell,main);shell.appendChild(main);}
+});
+const studioWidth=await page.locator('.theme-studio').evaluate(e=>e.getBoundingClientRect().width);
+if(studioWidth<3000)throw Error('32-inch 4K Studio remains a compressed modal '+studioWidth);
+const panelWidth=await page.locator('.owner-pro-inspector').evaluate(e=>e.getBoundingClientRect().width);
+if(panelWidth<300)throw Error('4K owner inspector too narrow '+panelWidth);
+await page.locator('[data-owner-pro-preset]').selectOption('10');
+await iframe.locator('#staff-global-operations').waitFor({timeout:20000});
+const active4k=await iframe.locator('html').evaluate(e=>e.ownerDocument.defaultView.innerWidth);
+if(active4k!==3840)throw Error('real iframe 4K width failed '+active4k);
+await page.screenshot({path:'qa/owner-studio/studio-4k-editor.png',fullPage:false});
+const cloudPage=await browser.newPage({viewport:{width:1366,height:850}});
+let cloudRevision=0,cloudDesigns=[],explicitPosts=0;
+await cloudPage.route('**/staff-portal-signin?*',r=>r.fulfill({status:302,headers:{location:'/qa/signin/index.html?studioReview=signin-v180'},body:''}));
+await cloudPage.route('**/api/**',r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA unavailable'})}));
+await cloudPage.route('**/api/theme/signin/designs',async r=>{
+ if(r.request().method()==='GET')return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({revision:cloudRevision,designs:cloudDesigns})});
+ explicitPosts++;
+ const incoming=r.request().postDataJSON();
+ if(incoming.revision!==cloudRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Designs were changed in another session.'})});
+ cloudRevision++;cloudDesigns=incoming.designs;
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision:cloudRevision,designs:cloudDesigns})});
+});
+let reviewRevision=0,reviewCandidate=null,reviewWrites=0;
+await cloudPage.route('**/api/theme/signin/designs/readiness',async r=>{
+ const input=r.request().postDataJSON();
+ if(input.libraryRevision!==cloudRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Reload saved designs.'})});
+ const design=cloudDesigns[input.designIndex];
+ const valid=Boolean(design&&design.blocks.filter(b=>b.kind==='auth').length===1&&
+  design.blocks.some(b=>b.kind==='brand')&&design.blocks.some(b=>b.kind==='heading')&&
+  design.blocks.every(b=>b.x+b.width<=390));
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  structuralPass:valid,readyToPublish:false,designName:design?.name||'Unknown',
+  checks:[{name:'Protected Sign-In and mobile fit',passed:valid,detail:valid?'Ready for visual review.':'Missing protected auth or mobile clipping.'}],
+  blockers:valid?[]:['Protected authentication and mobile fit required.'],
+  pendingAcceptance:['Authenticated Sign-In and accessibility tests','Owner Pre-Production release gate']
+ })});
+});
+await cloudPage.route('**/api/theme/signin/designs/review',async r=>{
+ const method=r.request().method();
+ if(method==='GET')return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  revision:reviewRevision,candidate:reviewCandidate,stale:false,published:false
+ })});
+ reviewWrites++;const input=r.request().postDataJSON();
+ if(input.reviewRevision!==reviewRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Another Owner session updated review.'})});
+ reviewRevision++;
+ if(method==='DELETE')reviewCandidate=null;
+ else reviewCandidate={requestId:'qa-review-'+reviewRevision,index:input.designIndex,libraryRevision:input.libraryRevision,designName:cloudDesigns[input.designIndex]?.name||'Unknown',status:'awaiting-authenticated-acceptance'};
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  ok:true,revision:reviewRevision,candidate:reviewCandidate,published:false
+ })});
+});
+let rehearsalRevision=0,rehearsalEntry=null,rehearsalWrites=0;
+await cloudPage.route('**/api/theme/signin/designs/rehearsal',async r=>{
+ const method=r.request().method();
+ if(method==='GET')return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  revision:rehearsalRevision,entry:rehearsalEntry,stale:false,published:false,
+  activationAvailable:false,currentPublicDesign:'Approved V180 Sign-In'
+ })});
+ const input=r.request().postDataJSON();
+ if(input.rehearsalRevision!==rehearsalRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Stale rehearsal checkpoint.'})});
+ if(method==='POST'){
+  if(rehearsalEntry||!reviewCandidate||input.reviewRequestId!==reviewCandidate.requestId||
+   input.reviewRevision!==reviewRevision||input.libraryRevision!==reviewCandidate.libraryRevision||
+   input.designIndex!==reviewCandidate.index)
+   return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Current saved Owner review required.'})});
+  rehearsalEntry={rehearsalId:'qa-rehearsal-'+(rehearsalRevision+1),
+   reviewRequestId:reviewCandidate.requestId,designName:reviewCandidate.designName,
+   designFingerprint:'a'.repeat(64),status:'prepared-not-published'};
+ }else if(method==='DELETE'){
+  if(!rehearsalEntry||input.rehearsalId!==rehearsalEntry.rehearsalId)
+   return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Rehearsal no longer current.'})});
+  rehearsalEntry=null;
+ }else return r.fulfill({status:405,contentType:'application/json',body:'{"error":"Method not allowed"}'});
+ rehearsalWrites++;rehearsalRevision++;
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  revision:rehearsalRevision,entry:rehearsalEntry,published:false,
+  readyToPublish:false,activationAvailable:false,currentPublicDesign:'Approved V180 Sign-In',
+ })});
+});
+await cloudPage.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
+await cloudPage.locator('[data-builder-enter]').click();
+await cloudPage.locator('[data-builder-cloud-load]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library loaded'}).waitFor();
+await cloudPage.locator('[data-builder-add="weather"]').click();
+await cloudPage.locator('[data-builder-save]').click();
+if(explicitPosts!==0)throw Error('concept edits caused unintended cloud write');
+await cloudPage.locator('[data-builder-cloud-save]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library saved'}).waitFor();
+if(explicitPosts!==1||cloudDesigns.length!==1)throw Error('explicit Owner cloud save failed');
+cloudRevision=7;
+await cloudPage.locator('[data-builder-cloud-save]').click();
+await cloudPage.getByRole('status').filter({hasText:'changed in another session'}).waitFor();
+if(explicitPosts!==2||cloudDesigns.length!==1)throw Error('cloud conflict handling failed');
+await cloudPage.locator('[data-builder-cloud-load]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library loaded'}).waitFor();
+await cloudPage.locator('[data-builder-library]').selectOption('0');
+await cloudPage.locator('[data-builder-check]').click();
+await cloudPage.locator('[data-builder-review-report]').getByText('Corrections Needed Before Release Review').waitFor();
+if(await cloudPage.locator('[data-builder-request]').isEnabled())throw Error('Incomplete design allowed release review');
+if(reviewWrites!==0)throw Error('Readiness check mutated review');
+await cloudPage.locator('[data-builder-starter]').click();
+if(await cloudPage.locator('[data-builder-canvas] [data-block]').count()!==3)throw Error('Premium starter missing protected components');
+await cloudPage.locator('[data-builder-save]').click();
+await cloudPage.locator('[data-builder-cloud-save]').click();
+await cloudPage.getByRole('status').filter({hasText:'Owner Library saved'}).waitFor();
+if(cloudDesigns.length!==2)throw Error('Premium concept not saved to Owner Library');
+await cloudPage.locator('[data-builder-library]').selectOption('1');
+await cloudPage.locator('[data-builder-check]').click();
+await cloudPage.locator('[data-builder-review-report]').getByText('Structure Passed').waitFor();
+if(!(await cloudPage.locator('[data-builder-request]').isEnabled()))throw Error('Valid concept could not request review');
+await cloudPage.locator('[data-builder-request]').click();
+await cloudPage.locator('[data-builder-review-status]').getByText('Owner review requested').waitFor();
+if(!reviewCandidate||reviewWrites!==1)throw Error('Explicit Owner review submission failed');
+await cloudPage.locator('[data-builder-review-refresh]').click();
+await cloudPage.locator('[data-builder-review-status]').getByText('Awaiting authenticated acceptance').waitFor();
+await cloudPage.locator('[data-rehearsal-refresh]').click();
+await cloudPage.locator('[data-rehearsal-status]').getByText('Saved Owner review is available').waitFor();
+if(rehearsalWrites!==0)throw Error('Rehearsal status GET caused an unintended write');
+if(!(await cloudPage.locator('[data-rehearsal-prepare]').isEnabled()))throw Error('Current reviewed design cannot prepare an isolated rehearsal');
+if(await cloudPage.locator('[data-rehearsal-rollback]').isEnabled())throw Error('Rollback enabled without a rehearsal');
+await cloudPage.locator('[data-rehearsal-prepare]').click();
+await cloudPage.locator('[data-rehearsal-status]').getByText('Rehearsal Prepared — Not Published').waitFor();
+if(rehearsalWrites!==1||!rehearsalEntry)throw Error('Explicit rehearsal preparation failed');
+if(await cloudPage.locator('[data-rehearsal-prepare]').isEnabled())throw Error('Duplicate rehearsal preparation left enabled');
+if(!(await cloudPage.locator('[data-rehearsal-rollback]').isEnabled()))throw Error('Immediate rehearsal rollback is not available');
+if(!(await cloudPage.locator('[data-rehearsal-details]').textContent()).includes('Fingerprint'))
+ throw Error('Rehearsal fingerprint not visible to the Owner');
+await cloudPage.locator('.owner-builder-rehearsal').screenshot({path:'qa/owner-studio/rehearsal-1366.png'});
+await cloudPage.setViewportSize({width:390,height:844});
+const mobileRehearsal=await cloudPage.locator('.owner-builder-rehearsal').evaluate(el=>{
+ const ancestors=[];let node=el;
+ for(let depth=0;node&&depth<8;depth++,node=node.parentElement){
+  const rect=node.getBoundingClientRect();
+  ancestors.push({name:typeof node.className==='string'?node.className.slice(0,65):node.tagName,
+   width:Math.round(rect.width),left:Math.round(rect.left),right:Math.round(rect.right)});
+ }
+ const r=el.getBoundingClientRect();return {width:r.width,right:r.right,viewport:innerWidth,ancestors};
+});
+console.log('REHEARSAL_MOBILE_LAYOUT '+JSON.stringify(mobileRehearsal));
+if(mobileRehearsal.right>mobileRehearsal.viewport+2||
+ mobileRehearsal.width<mobileRehearsal.viewport-70)
+ throw Error('390px rehearsal controls are clipped or unnecessarily compressed '+JSON.stringify(mobileRehearsal));
+await cloudPage.locator('.owner-builder-rehearsal').screenshot({path:'qa/owner-studio/rehearsal-390.png'});
+await cloudPage.setViewportSize({width:3840,height:2160});
+await cloudPage.locator('.owner-builder-rehearsal').screenshot({path:'qa/owner-studio/rehearsal-3840.png'});
+await cloudPage.setViewportSize({width:1366,height:850});
+await cloudPage.locator('[data-rehearsal-rollback]').click();
+await cloudPage.locator('[data-rehearsal-status]').getByText('No prepared rehearsal').waitFor();
+if(rehearsalWrites!==2||rehearsalEntry!==null)throw Error('Explicit rehearsal rollback failed');
+if(await cloudPage.locator('[data-rehearsal-rollback]').isEnabled())throw Error('Rollback remains enabled with no checkpoint');
+await cloudPage.locator('[data-builder-review-withdraw]').click();
+await cloudPage.locator('[data-builder-review-status]').getByText('Pending review withdrawn').waitFor();
+if(reviewCandidate!==null||reviewWrites!==2)throw Error('Review withdrawal failed');
+
+await cloudPage.locator('[data-builder-starter]').click();
+await cloudPage.locator('[data-builder-live-preview]').click();
+await cloudPage.locator('[data-builder-live-root] .sp-auth-form input').first().waitFor({timeout:15000});
+if(await cloudPage.locator('[data-builder-live-root] .sp-auth-form').count()!==1)throw Error('Real React authentication not rendered in Owner concept preview');
+// Live concept should reflect unsaved typography/geometry changes and undo without closing or remounting.
+await cloudPage.locator('[data-builder-canvas] [data-block$="heading"]').click();
+await cloudPage.locator('[data-builder-text]').fill('Owner Live Design Update');
+await cloudPage.locator('[data-builder-text]').dispatchEvent('change');
+await cloudPage.waitForFunction(()=>document.querySelector('[data-builder-live-root] .owner-concept-heading h1')?.textContent==='Owner Live Design Update');
+await cloudPage.locator('.owner-builder-live').screenshot({path:'qa/owner-studio/live-concept-unsaved-update.png'});
+await cloudPage.locator('[data-builder-undo]').click();
+await cloudPage.waitForFunction(()=>document.querySelector('[data-builder-live-root] .owner-concept-heading h1')?.textContent==='One Secure Workspace. Live On Every Device.');
+await cloudPage.locator('[data-builder-canvas] [data-block$="heading"]').click();
+await cloudPage.locator('[data-builder-x]').fill('75');
+await cloudPage.locator('[data-builder-x]').dispatchEvent('change');
+await cloudPage.waitForFunction(()=>Math.abs(parseFloat(document.querySelector('[data-builder-live-root] .owner-concept-heading')?.style.left||'')-75)<1);
+await cloudPage.locator('[data-builder-undo]').click();
+await cloudPage.waitForFunction(()=>parseFloat(document.querySelector('[data-builder-live-root] .owner-concept-heading')?.style.left||'0')<75);
+const authPosts=[];
+cloudPage.on('request',req=>{if(req.method()!=='GET'&&req.url().includes('/api/auth/'))authPosts.push(req.url())});
+const authWritesBefore=reviewWrites;
+await cloudPage.locator('[data-builder-live-root] .sp-primary-button').first().click();
+await cloudPage.locator('[data-builder-live-root] .sp-social-button').first().click();
+if(reviewWrites!==authWritesBefore||authPosts.length)throw Error('concept preview triggered authentication or design write');
+if(await cloudPage.locator('[data-builder-live-root] .usp-auth-panel').count())throw Error('preview changed mode through unsafe action');
+await cloudPage.locator('[data-builder-live-root] .sp-auth-tabs [role="tab"]').nth(1).click();
+await cloudPage.locator('[data-builder-live-root] .usp-auth-panel').waitFor();
+if(!await cloudPage.locator('[data-builder-live-root] .usp-field input').count())throw Error('real Create Account fields absent');
+await cloudPage.locator('[data-builder-live-root] .sp-signup-close').click();
+await cloudPage.locator('[data-builder-live-root] .sp-auth-form').waitFor();
+await cloudPage.locator('[data-builder-live-fullsize]').click();
+if(!await cloudPage.locator('.owner-builder-live.is-fullsize').count())throw Error('full-size mode did not open');
+await cloudPage.locator('[data-builder-live-fullsize]').focus();
+await cloudPage.keyboard.press('Escape');
+if(await cloudPage.locator('.owner-builder-live.is-fullsize').count())throw Error('Escape did not restore studio-size preview');
+if(authPosts.length)throw Error('safe Owner preview created authentication requests');
+await cloudPage.locator('[data-builder-live-close]').click();
+await cloudPage.close();
+await page.locator('[data-owner-pro-preset]').selectOption('6');
+await page.locator('[data-owner-pro-layer]').selectOption('#staff-global-operations');
+await page.locator('[data-prop="x"]').fill('73');
+await page.locator('[data-prop="x"]').dispatchEvent('input');
+if((await page.locator('[data-prop="x"]').inputValue())!=='73')throw Error('auth-isolation setup failed');
+await page.evaluate(()=>document.dispatchEvent(new Event('daenem-auth-changed')));
+if(await page.locator('.owner-pro-studio').count())throw Error('old Owner Studio visible after auth change');
+await page.evaluate(()=>document.dispatchEvent(new Event('qa-owner-studio-remount')));
+await page.locator('[data-owner-pro-frame]').waitFor();
+if((await page.locator('[data-prop="x"]').inputValue())!=='0')throw Error('precision draft crossed authentication boundary');
+if(!(await page.locator('[data-undo]').isDisabled()))throw Error('cross-session Undo history retained');
+if((await page.locator('[data-builder-library] option').count())!==1)throw Error('session concept library crossed auth boundary');
+
+
+
+}finally{await page.close();await browser.close();await server.close();}
+})().catch(e=>{console.error(e.stack||e);process.exitCode=1});

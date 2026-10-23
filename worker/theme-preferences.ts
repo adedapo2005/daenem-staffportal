@@ -1,4 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { routeSignInDesignLibrary } from './signin-design-library';
 
 interface Env extends AuthEnv { AI?: Ai }
 
@@ -54,7 +55,7 @@ const CLOCK_ZONES = [
 const STANDARD_CLOCK_ZONES = CLOCK_ZONES.slice(0, 7);
 const CLOCK_STYLES = ['minimal', 'detailed', 'neon', 'classic'] as const;
 const EFFECT_LEVELS = ['calm', 'balanced', 'vivid'] as const;
-const EFFECT_PRESETS = ['quiet', 'glass', 'accent', 'soft'] as const;
+const EFFECT_PRESETS = ['quiet', 'accent', 'soft'] as const;
 const LABEL_LIMITS = {
   brandEyebrow: 40, brandTitle: 48, brandTagline: 90, workspaceLabel: 48,
   workspaceHeadline: 90, workspaceDescription: 180, sectionHeading: 40, widget: 42, display: 64, support: 110,
@@ -139,19 +140,19 @@ const defaultSignInConfig = {
   widgetOrder: ['weather', 'inspiration', 'motivation', 'news', 'status'],
   hiddenWidgets: [] as string[],
   widgetInstances: [
-    { id: 'weather', kind: 'weather', variant: 'standard', zone: 'live-context', order: 0, visible: true, label: DEFAULT_LABELS.widgetLabels.weather, effectPreset: 'glass' },
+    { id: 'weather', kind: 'weather', variant: 'standard', zone: 'live-context', order: 0, visible: true, label: DEFAULT_LABELS.widgetLabels.weather, effectPreset: 'soft' },
     { id: 'status', kind: 'status', variant: 'operational', zone: 'live-context', order: 1, visible: true, label: DEFAULT_LABELS.widgetLabels.status, effectPreset: 'soft' },
     { id: 'inspiration', kind: 'inspiration', variant: 'insight-card', zone: 'today', order: 2, visible: true, label: DEFAULT_LABELS.widgetLabels.inspiration, effectPreset: 'accent' },
     { id: 'motivation', kind: 'motivation', variant: 'momentum-card', zone: 'today', order: 3, visible: true, label: DEFAULT_LABELS.widgetLabels.motivation, effectPreset: 'soft' },
-    { id: 'news', kind: 'news', variant: 'headline-stack', zone: 'today', order: 4, visible: true, label: DEFAULT_LABELS.widgetLabels.news, effectPreset: 'glass' },
+    { id: 'news', kind: 'news', variant: 'headline-stack', zone: 'today', order: 4, visible: true, label: DEFAULT_LABELS.widgetLabels.news, effectPreset: 'soft' },
   ],
   clockStyle: 'detailed',
   clockZones: [...STANDARD_CLOCK_ZONES],
   temperatureUnit: 'F',
   logoPosition: 'left',
-  logo: { position: 'left', size: 'prominent', alignment: 'start', glass: true, animation: 'float' },
+  logo: { position: 'left', size: 'prominent', alignment: 'start', glass: false, animation: 'float' },
   effectLevel: 'balanced',
-  effects: { ambientGlow: true, glassIntensity: 72, backgroundBreathing: true, cardFloat: true, logoMotion: true, statusPulse: true, widgetEntrance: true, shimmer: false },
+  effects: { ambientGlow: true, glassIntensity: 0, backgroundBreathing: true, cardFloat: true, logoMotion: true, statusPulse: true, widgetEntrance: true, shimmer: false },
   themeMode: 'day',
   backgroundId: 'unified-daylight',
   darkStart: '19:00',
@@ -274,7 +275,7 @@ function cleanInstances(value: unknown, hidden: string[], labels: ReturnType<typ
     result.push({
       id, kind, variant: variant(kind, raw.variant), zone, order: Number.isFinite(Number(raw.order)) ? Number(raw.order) : index,
       visible: typeof raw.visible === 'boolean' ? raw.visible : !hidden.includes(kind),
-      label, effectPreset: EFFECT_PRESETS.includes(raw.effectPreset as typeof EFFECT_PRESETS[number]) ? String(raw.effectPreset) : 'glass',
+      label, effectPreset: EFFECT_PRESETS.includes(raw.effectPreset as typeof EFFECT_PRESETS[number]) ? String(raw.effectPreset) : 'soft',
     });
   });
   return result.sort((a, b) => Number(a.order) - Number(b.order)).map((item, index) => ({ ...item, order: index }));
@@ -307,13 +308,13 @@ export function cleanSignInConfig(value: unknown) {
       position,
       size: ['compact', 'standard', 'prominent'].includes(String(logo.size)) ? String(logo.size) : 'prominent',
       alignment: ['start', 'center', 'end'].includes(String(logo.alignment)) ? String(logo.alignment) : 'start',
-      glass: logo.glass !== false,
+      glass: false,
       animation: ['none', 'float', 'orbit', 'pulse'].includes(String(logo.animation)) ? String(logo.animation) : 'float',
     },
     effectLevel: EFFECT_LEVELS.includes(candidate.effectLevel as typeof EFFECT_LEVELS[number]) ? String(candidate.effectLevel) : 'balanced',
     effects: {
       ambientGlow: record(candidate.effects).ambientGlow !== false,
-      glassIntensity: Math.max(0, Math.min(100, Math.round(Number(record(candidate.effects).glassIntensity) || 72))),
+      glassIntensity: 0,
       backgroundBreathing: record(candidate.effects).backgroundBreathing !== false,
       cardFloat: record(candidate.effects).cardFloat !== false,
       logoMotion: record(candidate.effects).logoMotion !== false,
@@ -427,6 +428,8 @@ async function generateAiOptions(env: Env, kind: 'inspiration' | 'motivation') {
 export async function routeThemePreferences(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/theme/')) return null;
+  const designLibraryResponse = await routeSignInDesignLibrary(request, env, context);
+  if (designLibraryResponse) return designLibraryResponse;
   const canManage = canManageGroupTheme(context);
   if (url.pathname === '/api/theme/postlogin/policy' && request.method === 'GET') {
     return json(await postLoginPolicy(env, context));

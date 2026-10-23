@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "prebuild": "node scripts/check-owner-studio-contract.mjs && node scripts/check-complete-v115-export.mjs && node scripts/check-approved-experience-lock.mjs && node scripts/check-zero-disclosure.mjs && node scripts/check-staffportal-staging-integration.mjs && node scripts/check-signin-release-blockers.mjs && node scripts/check-postauth-live-integrations.mjs && tsc --noEmit",
+    "prebuild": "node scripts/check-owner-studio-contract.mjs && node qa/owner-studio/test-design-library.cjs && node qa/owner-studio/test-design-library-sql.cjs && node qa/owner-studio/test-design-readiness.cjs && node qa/owner-studio/test-release-rehearsal.cjs && node qa/owner-studio/test-owner-origin-guard.cjs && node qa/owner-studio/test-live-preprod-acceptance-contract.cjs && node qa/owner-studio/test-no-glass.cjs && node scripts/check-complete-v115-export.mjs && node scripts/check-approved-experience-lock.mjs && node scripts/check-zero-disclosure.mjs && node scripts/check-staffportal-staging-integration.mjs && node scripts/check-signin-release-blockers.mjs && node scripts/check-postauth-live-integrations.mjs && tsc --noEmit",
     "check:postauth-live": "node scripts/check-postauth-live-integrations.mjs",
     "build": "vite build",
     "preview": "npm run build && vite preview",

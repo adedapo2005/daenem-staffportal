@@ -1,4 +1,5 @@
 import './theme-studio.css';
+import { mountOwnerStudioPro, resetOwnerStudioProSession } from './owner-studio-pro';
 import { applyThemeToDocument, normalizeThemeId, themeList } from './theme-system';
 import { fetchAdminSignInDraft, fetchAdminSignInPreferences, normalizeSignInPreferences, nextSignInWidgetId, readSignInPreferences, saveSignInDraft, saveSignInPreferences, WORLD_CLOCK_CATALOG, DEFAULT_SIGNIN_PREFERENCES, SIGNIN_BACKGROUND_OPTIONS, SIGNIN_LABEL_LIMITS, SIGNIN_WIDGET_VARIANTS, type SignInExperiencePreferences, type SignInWidgetId, type SignInWidgetInstance } from './signin-preferences';
 
@@ -43,6 +44,7 @@ let reviewSurface: StudioReviewSurface = 'signin-v180';
 let reviewViewport = { width: 390, height: 844 };
 let draftName = 'New Sign-In draft';
 const REVIEW_DRAFT_KEY = 'daenem:signin-review-draft';
+let authGeneration = 0;
 
 const signInWidgetLabels: Record<SignInWidgetId, string> = {
   weather: 'Live Weather',
@@ -199,7 +201,7 @@ function signInWidgetRow(instance: SignInWidgetInstance, index: number) {
     '<select data-widget-zone="' + escapeHtml(instance.id) + '" aria-label="Move ' + escapeHtml(instance.label) + ' to zone">' + optionMarkup(['workspace-spotlight', 'live-context', 'today', 'auxiliary'], instance.zone, { 'workspace-spotlight': 'Workspace Spotlight', 'live-context': 'Live Context', today: 'Today', auxiliary: 'Auxiliary' }) + '</select>' +
     '<select data-widget-kind="' + escapeHtml(instance.id) + '" aria-label="Replace ' + escapeHtml(instance.label) + '">' + optionMarkup(Object.keys(signInWidgetLabels), instance.kind, signInWidgetLabels) + '</select>' +
     '<select data-widget-variant="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' variant">' + optionMarkup(variants, instance.variant) + '</select>' +
-    '<select data-widget-effect="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' effect">' + optionMarkup(['quiet', 'glass', 'accent', 'soft'], instance.effectPreset) + '</select>' +
+    '<select data-widget-effect="' + escapeHtml(instance.id) + '" aria-label="Choose ' + escapeHtml(instance.label) + ' effect">' + optionMarkup(['quiet', 'accent', 'soft'], instance.effectPreset) + '</select>' +
     '<span class="signin-admin-order"><button type="button" data-widget-move="' + escapeHtml(instance.id) + '" data-direction="-1" ' + (index === 0 ? 'disabled' : '') + ' aria-label="Move ' + escapeHtml(instance.label) + ' up">↑</button><button type="button" data-widget-move="' + escapeHtml(instance.id) + '" data-direction="1" ' + (index === signInConfig.widgetInstances.length - 1 ? 'disabled' : '') + ' aria-label="Move ' + escapeHtml(instance.label) + ' down">↓</button></span>' +
     '<button type="button" class="signin-admin-remove" data-widget-remove="' + escapeHtml(instance.id) + '" aria-label="Remove ' + escapeHtml(instance.label) + '">×</button>' +
   '</div>';
@@ -241,7 +243,7 @@ function renderSignInAdmin() {
         '<label>Size<select data-signin-field="logo.size">' + optionMarkup(['compact', 'standard', 'prominent'], signInConfig.logo.size) + '</select></label>' +
         '<label>Alignment<select data-signin-field="logo.alignment">' + optionMarkup(['start', 'center', 'end'], signInConfig.logo.alignment) + '</select></label>' +
         '<label>Animation<select data-signin-field="logo.animation">' + optionMarkup(['none', 'float', 'orbit', 'pulse'], signInConfig.logo.animation) + '</select></label>' +
-        '<label class="signin-check"><input type="checkbox" data-signin-field="logo.glass"' + (signInConfig.logo.glass ? ' checked' : '') + '> Glass backing</label>' +
+
       '</div></section>' +
       '<section class="signin-admin-section signin-background-section"><h4>Sign-In Background Image</h4><p>Choose a curated daylight image. The selected background previews immediately and saves to central V3 settings.</p><div class="signin-background-preview" data-signin-background-preview style="--signin-preview-image:url(\'' + escapeHtml(activeBackground.src) + '\')"><strong>' + escapeHtml(activeBackground.name) + '</strong><span>' + escapeHtml(activeBackground.description) + '</span></div><div class="signin-background-grid">' + SIGNIN_BACKGROUND_OPTIONS.map((option) => signInBackgroundCard(option, signInConfig.backgroundId)).join('') + '</div><button type="button" class="signin-background-reset" data-signin-background-reset>Restore Default Background</button></section>' +
       '<section class="signin-admin-section"><h4>WIDGETS</h4><p>Add, remove, show, hide, reorder, move between responsive zones, and choose a presentation variant.</p><div class="signin-widget-list">' + signInConfig.widgetInstances.map(signInWidgetRow).join('') + '</div><label class="signin-add-widget">Add widget<select data-widget-add><option value="">Choose a widget…</option>' + optionMarkup(['weather', 'status', 'inspiration', 'motivation', 'news'], '', signInWidgetLabels) + '</select></label></section>' +
@@ -295,7 +297,7 @@ function renderSignInAdmin() {
         '<label>Visible clocks<select data-signin-field="globalOperations.maxClocks">' + optionMarkup(['1', '2', '3', '4', '5', '6', '7'], String(signInConfig.globalOperations.maxClocks)) + '</select></label>' +
         '<label class="signin-check"><input type="checkbox" data-signin-field="globalOperations.visible"' + (signInConfig.globalOperations.visible ? ' checked' : '') + '> Show Global Operations</label>' +
       '</div><div class="signin-display-toggles">' + [['showAnalog','Analog clock'],['showDigital','Digital time'],['showDate','Date'],['showTimezone','Timezone'],['showDayNight','Day/night'],['showWeather','Weather'],['showFeelsLike','Feels like'],['showHumidity','Humidity'],['showWind','Wind'],['showPrecipitation','Precipitation'],['showHighLow','High / low'],['showSunriseSunset','Sunrise / sunset']].map(([key,label]) => '<label class="signin-check"><input type="checkbox" data-signin-field="globalOperations.' + key + '"' + (signInConfig.globalOperations[key as keyof typeof signInConfig.globalOperations] ? ' checked' : '') + '> ' + label + '</label>').join('') + '</div><div class="signin-admin-grid"><label>Weather style<select data-signin-field="globalOperations.weatherStyle">' + optionMarkup(['detailed', 'compact', 'visual'], signInConfig.globalOperations.weatherStyle) + '</select></label><label>Weather animation<select data-signin-field="globalOperations.weatherAnimation">' + optionMarkup(['none', 'subtle', 'expressive'], signInConfig.globalOperations.weatherAnimation) + '</select></label></div><div class="signin-location-list">' + locationRows + '</div></section>' +
-      '<section class="signin-admin-section"><h4>EFFECTS</h4><div class="signin-display-toggles">' + [['ambientGlow','Ambient glow'],['backgroundBreathing','Background breathing'],['cardFloat','Card float'],['logoMotion','Logo motion'],['statusPulse','Status pulse'],['widgetEntrance','Widget entrance'],['shimmer','Shimmer']].map(([key,label]) => '<label class="signin-check"><input type="checkbox" data-signin-field="effects.' + key + '"' + (signInConfig.effects[key as keyof typeof signInConfig.effects] ? ' checked' : '') + '> ' + label + '</label>').join('') + '</div><label>Glass intensity<input type="range" min="0" max="100" step="1" data-signin-field="effects.glassIntensity" value="' + signInConfig.effects.glassIntensity + '"></label></section>' +
+      '<section class="signin-admin-section"><h4>EFFECTS</h4><div class="signin-display-toggles">' + [['ambientGlow','Ambient glow'],['backgroundBreathing','Background breathing'],['cardFloat','Card float'],['logoMotion','Logo motion'],['statusPulse','Status pulse'],['widgetEntrance','Widget entrance'],['shimmer','Shimmer']].map(([key,label]) => '<label class="signin-check"><input type="checkbox" data-signin-field="effects.' + key + '"' + (signInConfig.effects[key as keyof typeof signInConfig.effects] ? ' checked' : '') + '> ' + label + '</label>').join('') + '</div></section>' +
       '<section class="signin-admin-section"><h4>AI CONTENT</h4>' + aiMarkup('inspiration') + aiMarkup('motivation') + '<p class="signin-admin-note">News remains source-bound to verified RSS headlines; AI cannot fabricate news.</p></section>' +
       '<section class="signin-admin-section signin-admin-preview"><h4>REVIEW MODE</h4><p>Review the selected approved surface at any viewport before publishing. Draft edits stay isolated to this Owner Studio session until you explicitly publish Sign-In changes.</p>' +
       '<div class="studio-review-toolbar"><label>Surface<select data-review-surface><option value="signin-v180"' + (reviewSurface === 'signin-v180' ? ' selected' : '') + '>Approved Sign-In · V180</option><option value="postlogin-v115"' + (reviewSurface === 'postlogin-v115' ? ' selected' : '') + '>QA Review post-sign-in · V115</option></select></label>' +
@@ -307,6 +309,7 @@ function renderSignInAdmin() {
       '<div class="studio-review-footer"><span>Frame: ' + reviewViewport.width + ' × ' + reviewViewport.height + '</span><button type="button" data-signin-preview>Open review in a new tab</button></div></section>' +
       '<section class="signin-admin-section signin-admin-recovery"><h4>RESET / RECOVERY</h4><button type="button" data-signin-reset="complete">Reset draft to safe defaults</button><button type="button" data-signin-reset="published">Reset draft to published</button><button type="button" data-signin-reset="widgets">Reset widgets</button><span>Draft edits can be restored before publishing.</span></section>' +
     '</div>';
+  mountOwnerStudioPro(root);
   const state = document.querySelector<HTMLElement>('.signin-theme-save-state');
   if (state) {
     state.dataset.state = signInSaveState;
@@ -436,7 +439,7 @@ function handleSignInAdminChange(event: Event) {
     const kind = addKind as SignInWidgetId;
     if (!(kind in SIGNIN_WIDGET_VARIANTS)) return;
     const next = cloneSignInConfig();
-    next.widgetInstances.push({ id: nextSignInWidgetId(kind, next.widgetInstances), kind, variant: SIGNIN_WIDGET_VARIANTS[kind][0], zone: kind === 'weather' || kind === 'status' ? 'live-context' : 'today', order: next.widgetInstances.length, visible: true, label: next.labels.widgetLabels[kind], effectPreset: 'glass' });
+    next.widgetInstances.push({ id: nextSignInWidgetId(kind, next.widgetInstances), kind, variant: SIGNIN_WIDGET_VARIANTS[kind][0], zone: kind === 'weather' || kind === 'status' ? 'live-context' : 'today', order: next.widgetInstances.length, visible: true, label: next.labels.widgetLabels[kind], effectPreset: 'soft' });
     queueSignInConfigSave(next);
   }
 }
@@ -583,6 +586,7 @@ function handleSignInAdminClick(event: Event) {
   }
 }
 async function loadSignInAdmin(canManage: boolean) {
+  const generation=authGeneration;
   const section = document.querySelector<HTMLElement>('.signin-theme-admin');
   if (!section) return;
   section.hidden = !canManage;
@@ -591,10 +595,12 @@ async function loadSignInAdmin(canManage: boolean) {
   renderSignInAdmin();
   try {
     const result = await fetchAdminSignInPreferences();
+    if(generation!==authGeneration)return;
     signInPublishedConfig = cloneSignInConfigFrom(result.config);
     signInConfig = cloneSignInConfigFrom(result.config);
     try {
       const draftResult = await fetchAdminSignInDraft();
+      if(generation!==authGeneration)return;
       if (draftResult.canManage && draftResult.draft) {
         signInConfig = draftResult.draft;
         signInSaveState = 'draft';
@@ -606,21 +612,27 @@ async function loadSignInAdmin(canManage: boolean) {
     section.hidden = !result.canManage;
     renderSignInAdmin();
   } catch {
+    if(generation!==authGeneration)return;
     signInSaveState = 'error';
     renderSignInAdmin();
   }
 }
 
 async function loadPolicy() {
+  const generation=authGeneration;
   try {
-    policy = await apiJson<ThemePolicy>('/api/theme/policy');
+    const result=await apiJson<ThemePolicy>('/api/theme/policy');
+    if(generation!==authGeneration)return;
+    policy=result;
     if (policy.effectiveTheme && normalizeThemeId(policy.effectiveTheme) !== currentTheme()) setVisualTheme(policy.effectiveTheme);
     const owner = document.querySelector<HTMLElement>('.theme-owner-controls');
     if (owner) owner.hidden = !policy.canManage;
     await loadSignInAdmin(Boolean(policy.canManage));
+    if(generation!==authGeneration)return;
     if (policy.forcedTheme) showThemeMessage(`Group-wide theme is currently forced to ${themes.find((t) => t.id === policy!.forcedTheme)?.name || policy.forcedTheme}.`, 'info');
     else showThemeMessage('', 'info');
   } catch {
+    if(generation!==authGeneration)return;
     policy = null;
   }
 }
@@ -682,6 +694,21 @@ function boot() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
+window.addEventListener('daenem-auth-changed',()=>{
+ authGeneration++;
+ closeStudio();
+ resetOwnerStudioProSession();
+ const admin=document.querySelector<HTMLElement>('.signin-theme-admin');
+ if(admin){admin.hidden=true;admin.replaceChildren();}
+ policy=null;aiOptions={};draggedWidgetId=null;
+ signInSaveState='idle';
+ signInConfig=normalizeSignInPreferences(null);
+ signInPublishedConfig=normalizeSignInPreferences(null);
+ try{
+  sessionStorage.removeItem(REVIEW_DRAFT_KEY);
+  sessionStorage.removeItem('daenem-owner-studio-concept-library-v1');
+ }catch{/* unavailable session storage is not a blocker */}
+});
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeStudio(); });
 new MutationObserver(() => refreshSelectedState()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
