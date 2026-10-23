@@ -119,3 +119,10 @@
  .owner-builder-toolbar label:has([data-builder-name]){min-width:clamp(380px,13vw,560px)}
  .owner-builder-import input[type=file]{font-size:clamp(17px,.62vw,24px);max-width:none;min-height:58px;padding:12px}
 }
+
+/* Full-screen review is portalled above the app; keep its typography independent of ancestors. */
+.owner-builder-live{font-family:Manrope,Inter,system-ui,sans-serif;color:#163f50}
+.owner-builder-live>header strong{font-family:Manrope,Inter,system-ui,sans-serif;font-weight:800}
+.owner-builder-live.is-fullsize>header{position:relative;z-index:2}
+
+.owner-builder-live-actions button:focus-visible{outline:3px solid #0b7664;outline-offset:3px;box-shadow:0 0 0 5px #f7e5b7}

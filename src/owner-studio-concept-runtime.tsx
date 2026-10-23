@@ -26,6 +26,24 @@ export function OwnerConceptRuntime({design,authPanel,viewportWidth=1366}:{
   const height=heights[width];
   const factor=Math.max(1,width/1366);
   const auth=design.blocks.filter(b=>b.kind==='auth');
+  const previewRef=React.useRef<HTMLElement|null>(null);
+  React.useEffect(()=>{
+    const root=previewRef.current;
+    if(!root)return;
+    const protectFields=()=>{
+      for(const field of root.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>('.owner-concept-auth input,.owner-concept-auth textarea')){
+        if(field instanceof HTMLInputElement&&['checkbox','radio','hidden','button','submit'].includes(field.type))continue;
+        if(!field.readOnly)field.readOnly=true;
+        if(field.getAttribute('autocomplete')!=='off')field.setAttribute('autocomplete','off');
+        if(field.getAttribute('aria-description')!=='Credentials are disabled in this design preview.')
+          field.setAttribute('aria-description','Credentials are disabled in this design preview.');
+      }
+    };
+    protectFields();
+    const observer=new MutationObserver(protectFields);
+    observer.observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['readonly','autocomplete']});
+    return ()=>observer.disconnect();
+  },[auth.length,authPanel]);
   if(auth.length!==1)return <div className="owner-concept-invalid" role="status">Add exactly one Protected Sign-In component to preview this layout.</div>;
   const safeBlocks=design.blocks.filter(b=>['brand','heading','text','clock','weather','auth'].includes(b.kind)&&
     [b.x,b.y,b.width,b.height].every(n=>Number.isFinite(n)&&n>=0&&n<=4000));
@@ -58,13 +76,13 @@ export function OwnerConceptRuntime({design,authPanel,viewportWidth=1366}:{
       minHeight:Math.max(b.kind==='auth'?290:0,b.height)*factor};
   };
   const runtimeStyle={width,minHeight:height,'--concept-scale':String(factor)} as CSSProperties;
-  return <section className="owner-concept-runtime" style={runtimeStyle}
+  return <section ref={previewRef} className="owner-concept-runtime" style={runtimeStyle}
     aria-label={design.name+' — Private Owner Preview'}
     onClickCapture={stopPreviewClick} onSubmitCapture={stopPreviewAction} onKeyDownCapture={stopPreviewKey}>
-    <span className="owner-concept-sr" role="status">Private Owner Preview. Form submissions and provider actions are disabled. Nothing is published.</span>
+    <span className="owner-concept-sr" role="status">Private Owner Preview. All credential entry, form submissions and provider actions are disabled. Nothing is published.</span>
     {safeBlocks.map(block=><div key={block.id} className={'owner-concept-block owner-concept-'+block.kind}
       style={blockStyle(block)}>
-      {block.kind==='auth'?<div id="staffportal-auth-mount" className="sp-auth-mode-signin" data-auth-gateway="preview-only">{authPanel}</div>:
+      {block.kind==='auth'?<div id="staffportal-auth-mount" className="sp-auth-mode-signin" data-auth-gateway="preview-only"><p className="owner-concept-preview-notice">Design Preview Only · Credentials Disabled</p>{authPanel}</div>:
         block.kind==='heading'?<h1>{block.label}</h1>:
         block.kind==='brand'?<div className="owner-concept-identity"><strong>DAENEM</strong><small>STAFF PORTAL</small></div>:
         block.kind==='clock'||block.kind==='weather'?<div className="owner-concept-widget" role="group" aria-label={block.label+' — editable concept, not live data'} style={{minHeight:block.height*factor}}>

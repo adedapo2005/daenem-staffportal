@@ -243,7 +243,7 @@ if(reviewCandidate!==null||reviewWrites!==2)throw Error('Review withdrawal faile
 
 await cloudPage.locator('[data-builder-starter]').click();
 await cloudPage.locator('[data-builder-live-preview]').click();
-await cloudPage.locator('[data-builder-live-root] .sp-auth-form input[autocomplete="username"]').waitFor({timeout:15000});
+await cloudPage.locator('[data-builder-live-root] .sp-auth-form input').first().waitFor({timeout:15000});
 if(await cloudPage.locator('[data-builder-live-root] .sp-auth-form').count()!==1)throw Error('Real React authentication not rendered in Owner concept preview');
 // Live concept should reflect unsaved typography/geometry changes and undo without closing or remounting.
 await cloudPage.locator('[data-builder-canvas] [data-block$="heading"]').click();
