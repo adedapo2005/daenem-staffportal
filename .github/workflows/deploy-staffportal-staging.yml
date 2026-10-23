@@ -52,17 +52,15 @@ jobs:
                 return;
               }
 
-              if (context.eventName === 'push') {
-                const branch = await github.rest.repos.getBranch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  branch: 'preproduction/staffportal'
-                });
-                const head = branch.data.commit.sha.toLowerCase();
-                if (head !== sha) {
-                  core.setFailed(`Skipping stale Pre-Production deploy. Branch head is ${head}, run candidate is ${sha}.`);
-                  return;
-                }
+              const branch = await github.rest.repos.getBranch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: 'preproduction/staffportal'
+              });
+              const head = branch.data.commit.sha.toLowerCase();
+              if (head !== sha) {
+                core.setFailed(`Skipping unapproved Pre-Production deploy. Branch head is ${head}, run candidate is ${sha}.`);
+                return;
               }
 
               core.setOutput('candidate_sha', sha);
@@ -228,6 +226,11 @@ jobs:
         env:
           STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
         run: node scripts/test-staffportal-staging-runtime.mjs
+
+      - name: Verify deployed public asset contract
+        env:
+          STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
+        run: node scripts/test-staffportal-staging-public-assets.mjs
 
       - name: Verify versioned Pre-Production asset integrity
         env:
