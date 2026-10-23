@@ -143,7 +143,7 @@ try {
   const storedTotals = database.prepare(
     'SELECT gross_total_kobo, deduction_total_kobo, net_total_kobo FROM payroll_runs WHERE id=?',
   ).get(created.run.id);
-  assert.deepEqual(storedTotals, {
+  assert.deepEqual({ ...storedTotals }, {
     gross_total_kobo: 110000,
     deduction_total_kobo: 5000,
     net_total_kobo: 105000,
