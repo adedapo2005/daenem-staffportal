@@ -1,5 +1,6 @@
 import { getSessionContext, hasPermission, routeAuth, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
 import { readSignInConfig } from './theme-preferences';
+import { openMeteoDescription } from './weather-condition-code';
 import { DASHBOARD_FIELD_PERMISSIONS, type DashboardAggregateField } from '../src/dashboard-capabilities';
 import { readGoogleWeather, readWeatherConfiguration } from './weather-provider';
 import { routeIncidentResponse } from './incident-response';
@@ -99,19 +100,6 @@ const PUBLIC_SIGNIN_WEATHER_CITIES = {
   beijing: [39.9042, 116.4074, 'Beijing, China'],
 } as const;
 
-function openMeteoDescription(code: number) {
-  if (code === 0) return 'Clear';
-  if (code <= 3) return code === 1 ? 'Mostly clear' : 'Cloudy';
-  if (code === 45 || code === 48) return 'Fog';
-  if (code >= 51 && code <= 57) return 'Drizzle';
-  if (code >= 61 && code <= 67) return 'Rain';
-  if (code >= 71 && code <= 77) return 'Snow';
-  if (code >= 80 && code <= 82) return 'Rain showers';
-  if (code >= 85 && code <= 86) return 'Snow showers';
-  if (code >= 95) return 'Thunderstorms';
-  return 'Current conditions';
-}
-
 async function fixedCityWeatherFallback(latitude: number, longitude: number, location: string) {
   try {
     const endpoint = new URL('https://api.open-meteo.com/v1/forecast');
@@ -151,7 +139,7 @@ async function fixedCityWeatherFallback(latitude: number, longitude: number, loc
         high: number(payload.daily?.temperature_2m_max?.[0]),
         low: number(payload.daily?.temperature_2m_min?.[0]),
       },
-      description: openMeteoDescription(code === null ? -1 : code),
+      description: openMeteoDescription(code),
       observedAt: typeof current.time === 'string' ? current.time : null,
     });
   } catch {

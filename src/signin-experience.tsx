@@ -77,6 +77,7 @@ type SignInWeatherPayload = {
   provider: string;
   providerStatus: 'fresh' | 'cached';
   fetchedAt: string;
+  observedAt: string | null;
   cacheAgeSeconds: number;
   unitsSystem: 'IMPERIAL' | 'METRIC';
   location: string;
@@ -106,6 +107,15 @@ function optionalWeatherNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function normalizeWeatherCondition(value: unknown) {
+  if (typeof value !== 'string') return 'Condition unavailable';
+  const condition = value.replace(/^(?:saved|cached)(?:\s*·\s*|\s+)/i, '').trim().replace(/\s+/g, ' ');
+  if (!condition || /^(unknown|unavailable|unclear|current conditions|weather unavailable|not available)$/i.test(condition)) {
+    return 'Condition unavailable';
+  }
+  return condition[0].toLocaleUpperCase() + condition.slice(1);
+}
+
 function normalizeSignInWeather(value: unknown): SignInWeatherPayload | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const candidate = value as Record<string, unknown>;
@@ -121,6 +131,7 @@ function normalizeSignInWeather(value: unknown): SignInWeatherPayload | null {
     provider: typeof candidate.provider === 'string' && candidate.provider.trim() ? candidate.provider.trim() : 'Google Weather',
     providerStatus: candidate.providerStatus,
     fetchedAt: candidate.fetchedAt,
+    observedAt: typeof candidate.observedAt === 'string' && Number.isFinite(Date.parse(candidate.observedAt)) ? candidate.observedAt : null,
     cacheAgeSeconds: Math.max(0, optionalWeatherNumber(candidate.cacheAgeSeconds) || 0),
     unitsSystem: candidate.unitsSystem === 'IMPERIAL' ? 'IMPERIAL' : 'METRIC',
     location: typeof candidate.location === 'string' && candidate.location.trim() ? candidate.location.trim() : 'Ibadan',
@@ -134,7 +145,7 @@ function normalizeSignInWeather(value: unknown): SignInWeatherPayload | null {
     recentHigh: optionalWeatherNumber(candidate.recentHigh ?? recent.high),
     recentLow: optionalWeatherNumber(candidate.recentLow ?? recent.low),
     isDay: typeof candidate.isDay === 'boolean' ? candidate.isDay : null,
-    description: typeof candidate.description === 'string' && candidate.description.trim() ? candidate.description.trim() : 'Current conditions',
+    description: normalizeWeatherCondition(candidate.description),
   };
 }
 
@@ -176,7 +187,9 @@ function setTrailingText(element: HTMLElement | null, value: string) {
 }
 
 function weatherFreshness(payload: SignInWeatherPayload) {
-  const ageSeconds = Math.max(payload.cacheAgeSeconds, Math.floor((Date.now() - Date.parse(payload.fetchedAt)) / 1000));
+  const fetchedAge = Math.max(0, Math.floor((Date.now() - Date.parse(payload.fetchedAt)) / 1000));
+  const observedAge = payload.observedAt ? Math.max(0, Math.floor((Date.now() - Date.parse(payload.observedAt)) / 1000)) : 0;
+  const ageSeconds = Math.max(payload.cacheAgeSeconds, fetchedAge, observedAge);
   if (ageSeconds < 60) return 'Updated just now';
   const minutes = Math.floor(ageSeconds / 60);
   if (minutes < 60) return `Updated ${minutes} min ago`;
@@ -210,25 +223,14 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
   const summary = card?.querySelector<HTMLElement>('[data-signin-weather-summary]');
   if (!card || !summary) return;
   saved ||= Math.max(payload.cacheAgeSeconds * 1000, Date.now() - Date.parse(payload.fetchedAt)) > SIGNIN_WEATHER_REFRESH_MS;
+  const cached = saved || payload.providerStatus === 'cached';
   const unit = payload.unitsSystem === 'IMPERIAL' ? '°F' : '°C';
-  const readings = weatherText('span', 'sp-live-weather-readings', '');
-  if (payload.temperature !== null) readings.appendChild(weatherText('b', 'sp-live-weather-temperature', `${Math.round(payload.temperature)}${unit}`));
-  if (payload.humidity !== null) {
-    const humidity = weatherText('span', 'sp-live-weather-humidity', `💧 ${Math.round(payload.humidity)}%`);
-    humidity.setAttribute('aria-label', `Humidity ${Math.round(payload.humidity)}%`);
-    humidity.title = `Humidity ${Math.round(payload.humidity)}%`;
-    readings.appendChild(humidity);
-  }
-  if (saved) readings.appendChild(weatherText('span', 'sp-live-weather-saved', 'Saved'));
+  const condition = normalizeWeatherCondition(payload.description);
   const values = weatherText('span', 'sp-live-weather-values', '');
-  values.appendChild(readings);
-  values.appendChild(weatherText('span', 'sp-live-weather-condition', payload.description));
-  const extra = [
-    payload.apparentTemperature === null ? '' : `Feels ${Math.round(payload.apparentTemperature)}${unit}`,
-    payload.precipitationProbability === null ? '' : `Rain ${Math.round(payload.precipitationProbability)}%`,
-    payload.windSpeed === null ? '' : `Wind ${Math.round(payload.windSpeed)} ${payload.unitsSystem === 'IMPERIAL' ? 'mph' : 'km/h'}`,
-  ].filter(Boolean);
-  const summaryText = `${payload.temperature === null ? '' : Math.round(payload.temperature) + unit} · ${payload.description}${payload.humidity === null ? '' : ` · Humidity ${Math.round(payload.humidity)}%`}${extra.length ? ' · ' + extra.join(' · ') : ''}${saved ? ' · Saved' : ''}`;
+  values.appendChild(weatherText('span', 'sp-live-weather-condition', condition));
+  const freshness = cached ? `Cached · ${weatherFreshness(payload)}` : '';
+  if (freshness) values.appendChild(weatherText('span', 'sp-live-weather-freshness', freshness));
+  const summaryText = freshness ? `${condition} · ${freshness}` : condition;
   if (summary.dataset.weatherText !== summaryText) {
     const existing = summary.querySelector('.sp-live-weather-values');
     if (existing) existing.replaceWith(values); else summary.replaceChildren(values);
@@ -264,12 +266,12 @@ function applyCityWeather(root: HTMLElement, cityId: string, payload: SignInWeat
       detail.dataset.metricsFingerprint = fingerprint;
       detail.setAttribute('aria-label', metrics.map(([label, value]) => label + ': ' + value).join(', '));
     }
-    detail.dataset.cached = saved ? 'true' : 'false';
+    detail.dataset.cached = cached ? 'true' : 'false';
   }
   card.dataset.weatherDaylight = payload.isDay === null ? '' : String(payload.isDay);
-  summary.title = `${payload.provider} · ${weatherFreshness(payload)}${saved ? ' · Saved update' : ''}`;
-  card.dataset.weather = saved || payload.providerStatus === 'cached' ? 'cached' : 'available';
-  card.dataset.weatherCondition = payload.description;
+  summary.title = `${payload.provider} · ${cached ? 'Cached' : 'Live'} · ${weatherFreshness(payload)}`;
+  card.dataset.weather = cached ? 'cached' : 'available';
+  card.dataset.weatherCondition = condition;
   hydrateSignInWeatherVisual(card);
 }
 
@@ -281,7 +283,7 @@ function applySignInWeather(root: HTMLElement, payload: SignInWeatherPayload, br
   const measure = (value: number | null, suffix: string) => value === null ? '—' : `${Math.round(value)}${suffix}`;
   const direction = payload.windDirection === null ? '' : ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'][Math.round(payload.windDirection / 22.5) % 16];
   const cached = browserCached || payload.providerStatus === 'cached';
-  setTrailingText(root.querySelector<HTMLElement>('.sp-weather-v175-live-label'), browserCached ? 'SAVED WEATHER' : 'CURRENT WEATHER');
+  setTrailingText(root.querySelector<HTMLElement>('.sp-weather-v175-live-label'), browserCached ? 'CACHED WEATHER' : 'CURRENT WEATHER');
   const heading = root.querySelector<HTMLElement>('.sp-weather-v145-intelligence-header b');
   if (heading) heading.textContent = 'Ibadan conditions';
   setTrailingText(root.querySelector<HTMLElement>('.sp-weather-v175-provider'), `${payload.provider} · ${cached ? 'Cached' : 'Live'}`);
@@ -321,7 +323,7 @@ function applySignInWeather(root: HTMLElement, payload: SignInWeatherPayload, br
     .find((item) => item.querySelector('b')?.textContent?.trim() === 'Weather Data');
   const statusIndicator = statusItem?.querySelector<HTMLElement>('i') || null;
   if (statusIndicator) statusIndicator.className = refreshFailed ? 'is-warn' : 'is-good';
-  setTrailingText(statusItem || null, refreshFailed ? 'Saved update' : cached ? 'Cached' : 'Live');
+  setTrailingText(statusItem || null, refreshFailed ? 'Cached update' : cached ? 'Cached' : 'Live');
 }
 
 function applyUnavailableSignInWeather(root: HTMLElement, cityId = 'ibadan') {

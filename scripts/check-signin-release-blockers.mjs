@@ -10,6 +10,8 @@ const provider = read('worker/weather-provider.ts');
 const authRefinement = read('worker/auth-refinement.ts');
 const passwordAuth = read('worker/password-auth.ts');
 const whatsappRecovery = read('worker/whatsapp-recovery.ts');
+const weatherCodes = read('worker/weather-condition-code.ts');
+const weatherCodeTest = read('scripts/test-open-meteo-weather-codes.cjs');
 
 
 // Keep overflow-y:auto limited to approved editorial copy and the guided
@@ -49,6 +51,8 @@ const checks = [
   ['password requirements announce live state changes', auth.includes('aria-label={label} aria-live="polite"')],
   ['Forgot Password remains an in-flow guided screen rather than a modal dialog', auth.includes('const approvedForgotPanel =') && auth.includes('className="sp-auth-runtime sp-auth-recovery"') && !auth.includes("role={mode === 'forgot'")],
   ['Create Account no longer creates an internal vertical scrollbar', !hasUnexpectedVerticalScroll(css)],
+  ['Create Account remains an in-flow accessible region without a modal focus trap', auth.includes('role="region" aria-labelledby=') && !auth.includes("role={mode === 'signup' ? 'dialog'") && !auth.includes('aria-modal={mode ===') && !auth.includes('Keep focus within the dialog')],
+  ['authentication modes preserve the shared auth, weather, rail and hero geometry', !css.includes('.sp-lower-right-rail:has(#staffportal-auth-mount.sp-auth-mode-forgot)') && !css.includes('.sp-lower-right-rail:has(#staffportal-auth-mount.sp-auth-mode-create)') && !css.includes('.sp-root:has(#staffportal-auth-mount.sp-auth-mode-forgot) .sp-hero-content') && !css.includes('.sp-root:has(#staffportal-auth-mount.sp-auth-mode-create) .sp-hero-content') && !css.includes('inset:50% auto auto 50%') && !css.includes('inset:12px 10px auto 10px')],
   ['bounded scrolling is limited to the guided Forgot Password screen', !hasUnexpectedVerticalScroll('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot { overflow-y:auto!important; }') && hasUnexpectedVerticalScroll('#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }') && css.includes('#staffportal-auth-mount.sp-auth-mode-forgot {')],
   ['Sign-In and recovery do not require company selection', auth.includes('JSON.stringify({ identifier: recoveryIdentity })') && !auth.includes('recoveryCompanyCode') && !auth.includes('companyCode:') && !auth.includes('Select company')],
   ['signup company assignment is resolved server-side rather than from the request', !authRefinement.includes('companyCode?:string') && !authRefinement.includes('b.companyCode')],
@@ -62,6 +66,8 @@ const checks = [
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],
   ['Sign-In weather keeps a bounded local last-known-good cache', experience.includes('SIGNIN_WEATHER_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000')],
   ['Sign-In weather preserves cached data on refresh failure', experience.includes("if ((error as { name?: string })?.name !== 'AbortError' && !cached)")],
+  ['weather condition summaries avoid duplicate metrics and Saved labels', experience.includes('normalizeWeatherCondition(candidate.description)') && experience.includes('sp-live-weather-condition') && experience.includes('sp-live-weather-freshness') && !experience.includes('sp-live-weather-saved') && experience.includes('observedAt:')],
+  ['Open-Meteo weather codes have exact labels, unknown fallbacks, and executable coverage', weatherCodes.includes("2: 'Partly cloudy'") && weatherCodes.includes("3: 'Overcast'") && weatherCodes.includes("48: 'Freezing fog'") && weatherCodes.includes("99: 'Severe thunderstorms with hail'") && weatherCodes.includes("'Condition unavailable'") && weatherCodeTest.includes('for (const [code, label] of expected)') && worker.includes('description: openMeteoDescription(code)')],
   ['public Sign-In weather route accepts only seven fixed allowlisted cities', worker.includes('PUBLIC_SIGNIN_WEATHER_CITIES') && worker.includes('Object.prototype.hasOwnProperty.call(PUBLIC_SIGNIN_WEATHER_CITIES, city)') && worker.includes("return json({ error: 'Unsupported public weather city.' }, 400)")],
   ['public Sign-In weather degrades unavailable provider regions through the fixed-city fallback', worker.includes("const primary = await weatherResponse(env, lat, lon, 'METRIC', label)") && worker.includes("return await fixedCityWeatherFallback(lat, lon, label) || primary") && worker.includes('https://api.open-meteo.com/v1/forecast')],
   ['Sign-In CSP permits only the explicitly used Google Fonts stylesheet and font origins', worker.includes("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com") && worker.includes("font-src 'self' data: https://fonts.gstatic.com") && deployedEntry.includes("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com") && deployedEntry.includes("font-src 'self' data: https://fonts.gstatic.com") && !worker.includes("script-src 'self' 'unsafe-inline'") && !deployedEntry.includes("script-src 'self' 'unsafe-inline'")],
