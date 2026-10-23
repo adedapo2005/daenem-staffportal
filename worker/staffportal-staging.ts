@@ -1,6 +1,7 @@
 import runtimeHandler from './runtime';
 import { routeWorkspaceShell } from './workspace-route';
 import { routeV180PublicAssets } from './v180-public-assets';
+import type { StagingQaEnv } from './staging-qa-seeder';
 
 interface Env {
   STAFF_PORTAL_FRONTEND_ORIGIN?: string;
@@ -30,7 +31,6 @@ function secure(response:Response,request:Request,env:Env){
   headers.set('referrer-policy','no-referrer');
   headers.set('x-frame-options','DENY');
   headers.set('x-content-type-options','nosniff');
-  headers.set('x-staffportal-auth-runtime','worker-password-auth-v1');
   if(!(new URL(request.url).pathname==='/api/assets'&&response.status===200))headers.set('cache-control','no-store');
   const origin=corsOrigin(request,env);
   if(origin){
@@ -57,20 +57,13 @@ function preflight(request:Request,env:Env){
   return secure(new Response(null,{status:204,headers}),request,env);
 }
 
-async function routeLegacySceneryAsset(request:Request,env:Env):Promise<Response|null>{
-  if(!env.ASSETS || (request.method!=='GET' && request.method!=='HEAD'))return null;
-  const url=new URL(request.url);
-  if(!url.pathname.startsWith('/assets/scenery/') || !url.pathname.endsWith('.jpg'))return null;
-  // The approved V115 source keeps its original .jpg references, while the
-  // deployed runtime contains the verified responsive WebP derivatives.
-  const stem=url.pathname.slice(0,-4);
-  const assetUrl=new URL(`${stem}-1280.webp`,url);
-  const response=await env.ASSETS.fetch(new Request(assetUrl,{method:request.method,headers:request.headers}));
-  return response.status===200?response:null;
-}
-
 export default {
   async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
+    if(new URL(request.url).pathname==='/api/staging/qa-fixture'){
+      const { routeStagingQaSeeder }=await import('./staging-qa-seeder');
+      const qaResponse=await routeStagingQaSeeder(request,env as unknown as StagingQaEnv);
+      if(qaResponse)return qaResponse;
+    }
     if(request.method==='OPTIONS')return preflight(request,env);
     const url=new URL(request.url);
     if(url.pathname==='/health'){
@@ -79,9 +72,6 @@ export default {
 
     const publicAssetsResponse=await routeV180PublicAssets(request);
     if(publicAssetsResponse)return secure(publicAssetsResponse,request,env);
-
-    const legacySceneryResponse=await routeLegacySceneryAsset(request,env);
-    if(legacySceneryResponse)return secure(legacySceneryResponse,request,env);
 
     // Reuse the canonical session, company-hint and exact-asset guard. Never
     // let a direct URL fall through to an unprotected SPA asset.
