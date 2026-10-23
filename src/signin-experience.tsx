@@ -182,7 +182,7 @@ const SIGNIN_LAYOUT_STABILITY_CSS = `
     text-overflow: ellipsis !important; white-space: nowrap !important;
     font-size: clamp(8px, .52vw, 10px) !important; line-height: 1.05 !important;
   }
-  #root .sp-root #staff-local-weather .sp-live-weather-saved { display: none !important; }
+  #root .sp-root #staff-local-weather .sp-live-weather-readings > span:last-of-type { display: none !important; }
   @container global-weather-card (max-width: 260px) {
     #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-weather-freshness { display: none !important; }
     #root .sp-root #staff-global-operations article.sp-live-weather-city .sp-live-city-weather { left: 68px !important; right: 5px !important; gap: 3px !important; }
@@ -654,7 +654,7 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
     setAuthMount(mount);
     settleReferenceMotion(root);
     updateReferenceClocks(root, new Date());
-    return () => layoutStyle.remove();
+    return () => { layoutStyle.remove(); };
   }, []);
 
   useEffect(() => {
