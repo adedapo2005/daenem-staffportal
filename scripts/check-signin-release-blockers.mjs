@@ -7,6 +7,8 @@ const experience = read('src/signin-experience.tsx');
 const worker = read('worker/index.ts');
 const deployedEntry = read('worker/entry.ts');
 const provider = read('worker/weather-provider.ts');
+const authRefinement = read('worker/auth-refinement.ts');
+const passwordAuth = read('worker/password-auth.ts');
 
 
 // Keep overflow-y:auto limited to approved editorial copy and the focused
@@ -49,6 +51,10 @@ const checks = [
   ['Create Account no longer creates an internal vertical scrollbar', !hasUnexpectedVerticalScroll(css)],
   ['bounded scrolling is limited to the Forgot Password dialog', !hasUnexpectedVerticalScroll('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot { overflow-y:auto!important; }') && hasUnexpectedVerticalScroll('#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }') && css.includes('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot {')],
   ['Forgot Password requires an identity and explicit company selection before sending', auth.includes("setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:'');") && auth.includes('disabled={busy||!recoveryIdentity.trim()||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)}')],
+  ['owner activation recovery validates the selected company email policy', passwordAuth.includes('export async function recoveryPolicyForCompany') && authRefinement.includes('recoveryPolicyForCompany(env,companyCode)') && authRefinement.includes("recoveryMethods(recoveryPolicy.policy).includes('email')")],
+  ['owner activation recovery shares the 15-minute per-IP request throttle', authRefinement.includes("event_type IN ('password_reset_requested','login_access_activation_requested')") && authRefinement.includes("datetime(occurred_at)>=datetime('now','-15 minutes')") && authRefinement.includes('Too many recovery requests. Wait 15 minutes and try again.')],
+  ['owner recovery scopes eligible accounts to the selected active company', authRefinement.includes('JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1') && authRefinement.includes('.bind(recoveryPolicy.company.id,identifier,identifier)')],
+  ['owner recovery fails closed without a production pepper and records attempts before email delivery', authRefinement.includes("if(!pepper(env))return json({error:'Password recovery is temporarily unavailable. Please contact the system administrator.'},503);") && authRefinement.includes("try{await security(env,request,'login_access_activation_requested',employee.id,{destination:maskEmail(employee.email)});const delivery=await sendCode")],
   ['password success state is visibly styled', css.includes('.usp-password-status .pass')],
   ['password failure state is visibly styled', css.includes('.usp-password-status .fail')],
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],
