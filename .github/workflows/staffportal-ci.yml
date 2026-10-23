@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+      - preproduction/staffportal
   workflow_dispatch:
 
 permissions:
