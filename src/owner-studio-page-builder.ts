@@ -33,7 +33,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  const previewLaunch=host.querySelector<HTMLButtonElement>('[data-builder-live-preview]')!;
  const fullSize=livePanel.querySelector<HTMLButtonElement>('[data-builder-live-fullsize]')!;
  const panelHome=document.createComment('Owner Studio Preview Home');
- livePanel.before(panelHome);
+ livePanel.parentNode?.insertBefore(panelHome,livePanel);
  let restorePreviewFocus:HTMLElement|null=null;
  let previousBodyOverflow='';
  let inertBackground:Array<{node:HTMLElement;wasInert:boolean}>=[];
@@ -46,7 +46,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   livePanel.removeAttribute('role');
   livePanel.removeAttribute('aria-modal');
   livePanel.removeAttribute('aria-labelledby');
-  panelHome.after(livePanel);
+  panelHome.parentNode?.insertBefore(livePanel,panelHome.nextSibling);
   fullSize.setAttribute('aria-pressed','false');
   fullSize.textContent='View At Full Size';
   const prior=restorePreviewFocus;
