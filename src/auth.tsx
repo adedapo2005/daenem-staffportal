@@ -433,6 +433,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
   const returnSignupFocusRef = useRef(false);
+  const returnRecoveryFocusRef = useRef(false);
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -594,6 +595,16 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     return () => cancelAnimationFrame(frame);
   }, [mode]);
 
+  useEffect(() => {
+    if (mode !== 'signin' || !returnRecoveryFocusRef.current) return;
+    returnRecoveryFocusRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('#staffportal-auth-mount .sp-forgot')
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode]);
+
   useEffect(() => { document.title = 'DAENEM Staff Portal'; }, [themeId]);
 
   useEffect(() => {
@@ -631,6 +642,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
     if (mode === 'signup' && next === 'signin') returnSignupFocusRef.current = true;
+    if (mode === 'forgot' && next === 'signin') returnRecoveryFocusRef.current = true;
     compactAuthRef.current = false;
     setMode(next);
     setMessage(null);

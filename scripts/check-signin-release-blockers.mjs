@@ -7,16 +7,19 @@ const experience = read('src/signin-experience.tsx');
 const worker = read('worker/index.ts');
 const deployedEntry = read('worker/entry.ts');
 const provider = read('worker/weather-provider.ts');
+const authRefinement = read('worker/auth-refinement.ts');
+const passwordAuth = read('worker/password-auth.ts');
+const whatsappRecovery = read('worker/whatsapp-recovery.ts');
 
 
-// Preserve the existing overflow-y:auto guard while allowing the editorial
-// widgets' required scrolling. Browser QA checks the computed auth geometry.
-// Keep this allowlist exact so a combined or unrelated selector cannot grant
-// scrolling to Create Account when this shared stylesheet is extended.
-const editorialScrollSelectors = new Set([
+// Keep overflow-y:auto limited to approved editorial copy and the guided
+// password-recovery screen, whose content can exceed a short mobile viewport.
+// Exact selectors keep Sign-In and Create Account free of internal scrollbars.
+const approvedScrollSelectors = new Set([
   '.sp-root #staff-primary-information .sp-connected-news',
   '#root .sp-root.sp-day #staff-primary-information [data-widget="news"] .gw-news-story-copy',
   '#root .sp-root.sp-day #staff-primary-information [data-widget="intelligence"] .gw-intel-focus',
+  '.sp-root #staffportal-auth-mount.sp-auth-mode-forgot',
 ]);
 function hasUnexpectedVerticalScroll(source) {
   const clean = source.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -24,7 +27,7 @@ function hasUnexpectedVerticalScroll(source) {
   let allowed = 0;
   for (const [, selectors, declarations] of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const count = occurrences(declarations);
-    if (count && selectors.split(',').some(selector => !editorialScrollSelectors.has(selector.trim()))) return true;
+    if (count && selectors.split(',').some(selector => !approvedScrollSelectors.has(selector.trim()))) return true;
     allowed += count;
   }
   // Fail closed for nested declarations not covered by an approved leaf rule.
@@ -32,19 +35,28 @@ function hasUnexpectedVerticalScroll(source) {
 }
 
 const checks = [
-  ['scrollbar guard allows only the approved editorial containers', [...editorialScrollSelectors].every(selector => !hasUnexpectedVerticalScroll(`@media (max-width: 800px) { ${selector} { overflow-y:auto!important; } }`))],
+  ['scrollbar guard allows only approved content and recovery surfaces', [...approvedScrollSelectors].every(selector => !hasUnexpectedVerticalScroll(`@media (max-width: 800px) { ${selector} { overflow-y:auto!important; } }`))],
   ['scrollbar guard still rejects authentication and mixed-selector scrollers', [
     '#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }',
     '.sp-auth-card { overflow-y: auto !important; }',
     '@media (max-width: 800px) { .usp-form-column { overflow-y:auto; } }',
     '.sp-auth-card { overflow-y:auto; & input { color:red; } }',
     '.sp-auth-card { overflow-y:auto; @media (max-width:800px) { color:red; } }',
-    [...editorialScrollSelectors][0] + ', #staffportal-auth-mount { overflow-y:auto; }',
+    [...approvedScrollSelectors][0] + ', #staffportal-auth-mount { overflow-y:auto; }',
   ].every(hasUnexpectedVerticalScroll)],
 
   ['approved Sign-In mount remains the compact-mode measurement fallback', auth.includes("panel?.closest<HTMLElement>('.usp-form-column') || panel?.parentElement")],
   ['password requirements announce live state changes', auth.includes('aria-label={label} aria-live="polite"')],
+  ['Forgot Password remains an in-flow guided screen rather than a modal dialog', auth.includes('const approvedForgotPanel =') && auth.includes('className="sp-auth-runtime sp-auth-recovery"') && !auth.includes("role={mode === 'forgot'")],
   ['Create Account no longer creates an internal vertical scrollbar', !hasUnexpectedVerticalScroll(css)],
+  ['bounded scrolling is limited to the guided Forgot Password screen', !hasUnexpectedVerticalScroll('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot { overflow-y:auto!important; }') && hasUnexpectedVerticalScroll('#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }') && css.includes('#staffportal-auth-mount.sp-auth-mode-forgot {')],
+  ['Sign-In and recovery do not require company selection', auth.includes('JSON.stringify({ identifier: recoveryIdentity })') && !auth.includes('recoveryCompanyCode') && !auth.includes('companyCode:') && !auth.includes('Select company')],
+  ['signup company assignment is resolved server-side rather than from the request', !authRefinement.includes('companyCode?:string') && !authRefinement.includes('b.companyCode')],
+  ['owner activation recovery follows the account primary-company email policy', passwordAuth.includes('export async function recoveryPolicyForEmployee') && authRefinement.includes('recoveryPolicyForEmployee(env,employee.id)') && authRefinement.includes("methods.includes('email')")],
+  ['verified WhatsApp recovery is a server-selected fallback with no company input', passwordAuth.includes("methods.includes('whatsapp')") && authRefinement.includes("methods.includes('whatsapp')") && whatsappRecovery.includes('employee_verified_contacts') && whatsappRecovery.includes('ORDER BY m.is_primary DESC,co.id ASC') && !whatsappRecovery.includes('companyCode')],
+  ['owner activation recovery shares the 15-minute per-IP request throttle', authRefinement.includes("event_type IN ('password_reset_requested','login_access_activation_requested','whatsapp_password_reset_requested')") && authRefinement.includes("datetime(occurred_at)>=datetime('now','-15 minutes')") && authRefinement.includes('Too many recovery requests. Wait 15 minutes and try again.')],
+  ['recovery company is resolved from the account primary active membership', passwordAuth.includes('ORDER BY m.is_primary DESC,co.id ASC') && authRefinement.includes('ORDER BY m.is_primary DESC,co.id ASC') && authRefinement.includes('.bind(identifier,identifier)')],
+  ['owner recovery fails closed without a production pepper and records attempts before email delivery', authRefinement.includes("if(!pepper(env))return json({error:'Password recovery is temporarily unavailable. Please contact the system administrator.'},503);") && authRefinement.includes("await security(env,request,'login_access_activation_requested',employee.id,{destination:maskEmail(employee.email)});") && authRefinement.includes('const delivery=await sendCode')],
   ['password success state is visibly styled', css.includes('.usp-password-status .pass')],
   ['password failure state is visibly styled', css.includes('.usp-password-status .fail')],
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],
