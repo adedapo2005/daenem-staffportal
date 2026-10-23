@@ -196,9 +196,37 @@ await cloudPage.route('**/api/theme/signin/designs/review',async r=>{
  if(input.reviewRevision!==reviewRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Another Owner session updated review.'})});
  reviewRevision++;
  if(method==='DELETE')reviewCandidate=null;
- else reviewCandidate={designName:cloudDesigns[input.designIndex]?.name||'Unknown',status:'awaiting-authenticated-acceptance'};
+ else reviewCandidate={requestId:'qa-review-'+reviewRevision,index:input.designIndex,libraryRevision:input.libraryRevision,designName:cloudDesigns[input.designIndex]?.name||'Unknown',status:'awaiting-authenticated-acceptance'};
  return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
   ok:true,revision:reviewRevision,candidate:reviewCandidate,published:false
+ })});
+});
+let rehearsalRevision=0,rehearsalEntry=null,rehearsalWrites=0;
+await cloudPage.route('**/api/theme/signin/designs/rehearsal',async r=>{
+ const method=r.request().method();
+ if(method==='GET')return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  revision:rehearsalRevision,entry:rehearsalEntry,stale:false,published:false,
+  activationAvailable:false,currentPublicDesign:'Approved V180 Sign-In'
+ })});
+ const input=r.request().postDataJSON();
+ if(input.rehearsalRevision!==rehearsalRevision)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Stale rehearsal checkpoint.'})});
+ if(method==='POST'){
+  if(rehearsalEntry||!reviewCandidate||input.reviewRequestId!==reviewCandidate.requestId||
+   input.reviewRevision!==reviewRevision||input.libraryRevision!==reviewCandidate.libraryRevision||
+   input.designIndex!==reviewCandidate.index)
+   return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Current saved Owner review required.'})});
+  rehearsalEntry={rehearsalId:'qa-rehearsal-'+(rehearsalRevision+1),
+   reviewRequestId:reviewCandidate.requestId,designName:reviewCandidate.designName,
+   designFingerprint:'a'.repeat(64),status:'prepared-not-published'};
+ }else if(method==='DELETE'){
+  if(!rehearsalEntry||input.rehearsalId!==rehearsalEntry.rehearsalId)
+   return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Rehearsal no longer current.'})});
+  rehearsalEntry=null;
+ }else return r.fulfill({status:405,contentType:'application/json',body:'{"error":"Method not allowed"}'});
+ rehearsalWrites++;rehearsalRevision++;
+ return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  revision:rehearsalRevision,entry:rehearsalEntry,published:false,
+  readyToPublish:false,activationAvailable:false,currentPublicDesign:'Approved V180 Sign-In',
  })});
 });
 await cloudPage.goto(origin+'/qa/owner-studio/index.html',{waitUntil:'domcontentloaded'});
@@ -237,6 +265,41 @@ await cloudPage.locator('[data-builder-review-status]').getByText('Owner review 
 if(!reviewCandidate||reviewWrites!==1)throw Error('Explicit Owner review submission failed');
 await cloudPage.locator('[data-builder-review-refresh]').click();
 await cloudPage.locator('[data-builder-review-status]').getByText('Awaiting authenticated acceptance').waitFor();
+await cloudPage.locator('[data-rehearsal-refresh]').click();
+await cloudPage.locator('[data-rehearsal-status]').getByText('Saved Owner review is available').waitFor();
+if(rehearsalWrites!==0)throw Error('Rehearsal status GET caused an unintended write');
+if(!(await cloudPage.locator('[data-rehearsal-prepare]').isEnabled()))throw Error('Current reviewed design cannot prepare an isolated rehearsal');
+if(await cloudPage.locator('[data-rehearsal-rollback]').isEnabled())throw Error('Rollback enabled without a rehearsal');
+await cloudPage.locator('[data-rehearsal-prepare]').click();
+await cloudPage.locator('[data-rehearsal-status]').getByText('Rehearsal Prepared — Not Published').waitFor();
+if(rehearsalWrites!==1||!rehearsalEntry)throw Error('Explicit rehearsal preparation failed');
+if(await cloudPage.locator('[data-rehearsal-prepare]').isEnabled())throw Error('Duplicate rehearsal preparation left enabled');
+if(!(await cloudPage.locator('[data-rehearsal-rollback]').isEnabled()))throw Error('Immediate rehearsal rollback is not available');
+if(!(await cloudPage.locator('[data-rehearsal-details]').textContent()).includes('Fingerprint'))
+ throw Error('Rehearsal fingerprint not visible to the Owner');
+await cloudPage.locator('.owner-builder-rehearsal').screenshot({path:'qa/owner-studio/rehearsal-1366.png'});
+await cloudPage.setViewportSize({width:390,height:844});
+const mobileRehearsal=await cloudPage.locator('.owner-builder-rehearsal').evaluate(el=>{
+ const ancestors=[];let node=el;
+ for(let depth=0;node&&depth<8;depth++,node=node.parentElement){
+  const rect=node.getBoundingClientRect();
+  ancestors.push({name:typeof node.className==='string'?node.className.slice(0,65):node.tagName,
+   width:Math.round(rect.width),left:Math.round(rect.left),right:Math.round(rect.right)});
+ }
+ const r=el.getBoundingClientRect();return {width:r.width,right:r.right,viewport:innerWidth,ancestors};
+});
+console.log('REHEARSAL_MOBILE_LAYOUT '+JSON.stringify(mobileRehearsal));
+if(mobileRehearsal.right>mobileRehearsal.viewport+2||
+ mobileRehearsal.width<mobileRehearsal.viewport-70)
+ throw Error('390px rehearsal controls are clipped or unnecessarily compressed '+JSON.stringify(mobileRehearsal));
+await cloudPage.locator('.owner-builder-rehearsal').screenshot({path:'qa/owner-studio/rehearsal-390.png'});
+await cloudPage.setViewportSize({width:3840,height:2160});
+await cloudPage.locator('.owner-builder-rehearsal').screenshot({path:'qa/owner-studio/rehearsal-3840.png'});
+await cloudPage.setViewportSize({width:1366,height:850});
+await cloudPage.locator('[data-rehearsal-rollback]').click();
+await cloudPage.locator('[data-rehearsal-status]').getByText('No prepared rehearsal').waitFor();
+if(rehearsalWrites!==2||rehearsalEntry!==null)throw Error('Explicit rehearsal rollback failed');
+if(await cloudPage.locator('[data-rehearsal-rollback]').isEnabled())throw Error('Rollback remains enabled with no checkpoint');
 await cloudPage.locator('[data-builder-review-withdraw]').click();
 await cloudPage.locator('[data-builder-review-status]').getByText('Pending review withdrawn').waitFor();
 if(reviewCandidate!==null||reviewWrites!==2)throw Error('Review withdrawal failed');

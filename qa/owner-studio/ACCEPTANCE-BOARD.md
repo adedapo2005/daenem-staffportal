@@ -131,3 +131,18 @@ Screenshots and metrics are stored only in the local `qa/owner-studio/live-evide
 Focused command: `node qa/owner-studio/test-private-preview-accessibility.cjs`. Existing regression: `node qa/owner-studio/test-owner-studio.cjs`. Geometry: `node qa/owner-studio/visual-acceptance-audit.cjs`.
 
 **Release position:** this is development-candidate evidence. Keep PR #99 draft and public Pre-Production/Production untouched until all authenticated, security, visual, accessibility, rollback and release gates pass.
+
+## Guarded release rehearsal and rollback — 22 October 2026 (development candidate)
+
+**Purpose:** close the missing audited rollback *rehearsal* gate before any actual design activation can be considered. No new public Sign-In renderer, no live publication key, no production changes.
+
+- `GET /api/theme/signin/designs/rehearsal`: returns Owner-only revision, prepared fingerprint, staleness and explicit `published:false` / `activationAvailable:false`.
+- `POST /api/theme/signin/designs/rehearsal`: requires a current saved design, matching library revision, intact Owner review ID/revision and structural preflight. Writes an Owner-only `prepared-not-published` checkpoint with a SHA-256 fingerprint. D1 write compares source library and review values *within the same transaction* to reject a concurrent save/withdrawal.
+- `DELETE /api/theme/signin/designs/rehearsal`: Owner-only one-action rollback by exact rehearsal ID and revision. Repeated/stale rollback attempts fail closed.
+- Mutations append action-specific audits `prepare_signin_design_rehearsal` / `rollback_signin_design_rehearsal` in the same D1 batch, using the prior CAS `changes()=1` guard. Audit failure rolls back the checkpoint. No public active-design setting is written.
+- Same-origin browser mutation boundary is checked; unsupported methods and untrusted/stale payloads fail closed.
+- New dedicated SQLite-backed `qa/owner-studio/test-release-rehearsal.cjs` verifies Owner boundary, no active publication, deterministic 64-digit fingerprint, tampering detection even without revision increment, source concurrency, audit failure rollback, duplicate prevention, and withdrawal safety.
+- New Owner-facing **Release & Rollback Rehearsal** section in the Design Readiness panel includes explicit Status / Prepare / Rollback controls. It never auto-writes or claims publication. Actions require deliberate clicks and authoritative backend confirmation.
+- Visual QA screenshots captured locally by the Owner Studio browser regression: `rehearsal-390.png`, `rehearsal-1366.png`, `rehearsal-3840.png`. Screenshots are evidence only and are **not committed**. Mobile padding and 4K typography were refined after inspection.
+
+**Strict status:** development candidate only. Even a fully passing rehearsal does not prove real login, provider integrations, authorized production rollout or immediate live rollback. Do **not** merge PR #99, activate the public Sign-In, deploy to Pre-Production/Production, or mark full Owner Studio COMPLETE until authenticated browser acceptance, release control integration, security/accessibility audit and final responsive visual verification pass.
