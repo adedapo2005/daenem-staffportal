@@ -20,6 +20,8 @@ const KEY = 'ui.signin_design_library_v1';
 const REVIEW_KEY = 'ui.signin_design_review_v1';
 const READINESS_PATH = '/api/theme/signin/designs/readiness';
 const REVIEW_PATH = '/api/theme/signin/designs/review';
+const REHEARSAL_PATH = '/api/theme/signin/designs/rehearsal';
+const REHEARSAL_KEY = 'ui.signin_design_release_rehearsal_v1';
 const KINDS = new Set(['heading', 'text', 'clock', 'weather', 'brand', 'auth']);
 const MAX_BODY = 240_000;
 const allowed = (value: unknown, length: number) => typeof value === 'string' && value.length <= length && !/[\u0000-\u001f\u007f]/.test(value);
@@ -83,10 +85,11 @@ function parsed(raw: string): Library {
 
 export async function routeSignInDesignLibrary(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if (url.pathname !== '/api/theme/signin/designs' && url.pathname !== READINESS_PATH && url.pathname !== REVIEW_PATH) return null;
+  if (url.pathname !== '/api/theme/signin/designs' && url.pathname !== READINESS_PATH && url.pathname !== REVIEW_PATH && url.pathname !== REHEARSAL_PATH) return null;
   if (!context.roles.some(role => role.code === 'owner') || !hasPermission(context, 'settings.access', 'manage')) {
     return json({ error: 'Owner authorization is required to manage Sign-In designs.' }, 403);
   }
+  if (url.pathname === REHEARSAL_PATH) return handleSignInDesignRehearsal(request, env, context);
   if (url.pathname === READINESS_PATH || url.pathname === REVIEW_PATH) {
     return handleDesignReleaseReview(request, env, context, url.pathname);
   }
@@ -236,5 +239,194 @@ async function handleDesignReleaseReview(
   return json({
     ok: true, ...next, published: false, currentPublicDesign: 'Approved V180 Sign-In',
     preflight, note: 'Review submitted. No public Sign-In change has occurred.',
+  });
+}
+
+
+/**
+ * Safe release rehearsal checkpoint.
+ *
+ * This state is NOT consulted by the public Sign-In renderer and CANNOT publish
+ * a design. It rehearses the Owner's guarded prepare -> rollback transaction,
+ * with optimistic concurrency and audit evidence before release activation exists.
+ */
+type RehearsalEntry = {
+  rehearsalId: string; reviewRequestId: string; libraryRevision: number;
+  reviewRevision: number; designIndex: number; designName: string;
+  preparedBy: string; preparedAt: string; designFingerprint: string;
+  status: 'prepared-not-published';
+};
+type RehearsalState = { revision: number; entry: RehearsalEntry | null };
+const emptyRehearsal = (): RehearsalState => ({ revision: 0, entry: null });
+
+function parseRehearsal(raw: string): RehearsalState {
+  if (!raw) return emptyRehearsal();
+  const value = JSON.parse(raw) as Record<string, unknown>;
+  if (!Number.isInteger(value.revision) || !finite(value.revision, 0, 1_000_000_000)) {
+    throw Error('Invalid rehearsal revision');
+  }
+  if (value.entry !== null) {
+    if (!value.entry || typeof value.entry !== 'object') throw Error('Invalid rehearsal entry');
+    const entry = value.entry as Record<string, unknown>;
+    if (!allowed(entry.rehearsalId, 80) || !(entry.rehearsalId as string).trim() ||
+      !allowed(entry.reviewRequestId, 80) || !(entry.reviewRequestId as string).trim() ||
+      !allowed(entry.designName, 70) || !(entry.designName as string).trim() ||
+      !allowed(entry.preparedBy, 80) || !allowed(entry.preparedAt, 80) ||
+      !allowed(entry.designFingerprint, 64) || !/^[a-f0-9]{64}$/.test(entry.designFingerprint as string) ||
+      !Number.isInteger(entry.libraryRevision) || !finite(entry.libraryRevision, 0, 1_000_000_000) ||
+      !Number.isInteger(entry.reviewRevision) || !finite(entry.reviewRevision, 0, 1_000_000_000) ||
+      !Number.isInteger(entry.designIndex) || !finite(entry.designIndex, 0, 19) ||
+      entry.status !== 'prepared-not-published') throw Error('Invalid stored rehearsal checkpoint');
+  }
+  return { revision: value.revision as number, entry: value.entry as RehearsalEntry | null };
+}
+
+async function fingerprintDesign(design: Design, libraryRevision: number, reviewRequestId: string) {
+  const input = JSON.stringify({ design, libraryRevision, reviewRequestId });
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function handleSignInDesignRehearsal(
+  request: Request, env: Env, context: SessionContext,
+): Promise<Response> {
+  if (!['GET', 'POST', 'DELETE'].includes(request.method)) return json({ error: 'Method not allowed.' }, 405);
+  const origin = request.headers.get('origin');
+  if (request.method !== 'GET' && origin && origin !== new URL(request.url).origin) {
+    return json({ error: 'Cross-origin release rehearsal changes are not permitted.' }, 403);
+  }
+  const read = async (key: string) => env.DB.prepare('SELECT setting_value FROM app_settings WHERE setting_key=?')
+    .bind(key).first<{ setting_value: string }>();
+  const [libraryRow, reviewRow, row] = await Promise.all([read(KEY), read(REVIEW_KEY), read(REHEARSAL_KEY)]);
+  const oldRehearsal = row?.setting_value || '';
+  let library: Library;
+  let review: ReviewState;
+  let current: RehearsalState;
+  try {
+    library = parsed(libraryRow?.setting_value || '');
+    review = parseReview(reviewRow?.setting_value || '');
+    current = parseRehearsal(oldRehearsal);
+  } catch {
+    return json({ error: 'Saved design, review or rehearsal records require investigation before changes.' }, 409);
+  }
+
+  const entry = current.entry;
+  const reviewedDesign = entry ? library.designs[entry.designIndex] : null;
+  const fingerprintMatches = Boolean(entry && reviewedDesign && review.candidate &&
+    JSON.stringify(reviewedDesign) === JSON.stringify(review.candidate.design) &&
+    await fingerprintDesign(reviewedDesign, entry.libraryRevision, entry.reviewRequestId) === entry.designFingerprint);
+  const stale = Boolean(entry && (
+    !fingerprintMatches || library.revision !== entry.libraryRevision ||
+    review.revision !== entry.reviewRevision ||
+    review.candidate?.status !== 'awaiting-authenticated-acceptance' ||
+    review.candidate?.requestId !== entry.reviewRequestId ||
+    review.candidate?.libraryRevision !== entry.libraryRevision ||
+    review.candidate?.index !== entry.designIndex
+  ));
+  const envelope = {
+    ...current, stale, published: false, readyToPublish: false,
+    currentPublicDesign: 'Approved V180 Sign-In', activationAvailable: false,
+  };
+  if (request.method === 'GET') return json({
+    ...envelope, note: 'Release rehearsal only. No public Sign-In is activated by this record.',
+  });
+
+  if (Number(request.headers.get('content-length') || 0) > 4096) return json({ error: 'Rehearsal request too large.' }, 413);
+  const text = await request.text();
+  if (text.length > 4096) return json({ error: 'Rehearsal request too large.' }, 413);
+  let payload: Record<string, unknown>;
+  try { payload = JSON.parse(text) as Record<string, unknown>; }
+  catch { return json({ error: 'Invalid rehearsal request.' }, 400); }
+  if (!payload || typeof payload !== 'object' ||
+      !Number.isInteger(payload.rehearsalRevision) ||
+      !finite(payload.rehearsalRevision, 0, 1_000_000_000)) {
+    return json({ error: 'Expected rehearsal revision is required.' }, 400);
+  }
+  if (payload.rehearsalRevision !== current.revision) return json({
+    error: 'Another Owner session updated the rehearsal. Refresh before continuing.',
+    revision: current.revision,
+  }, 409);
+
+  let nextEntry: RehearsalEntry | null = null;
+  if (request.method === 'DELETE') {
+    if (!entry || payload.rehearsalId !== entry.rehearsalId) {
+      return json({ error: 'That rehearsal is no longer current. Refresh before rollback.' }, 409);
+    }
+  } else {
+    if (entry) return json({ error: 'Roll back the existing rehearsal before preparing another.' }, 409);
+    const candidate = review.candidate;
+    if (!candidate || candidate.status !== 'awaiting-authenticated-acceptance' ||
+      !allowed(payload.reviewRequestId, 80) || payload.reviewRequestId !== candidate.requestId ||
+      payload.reviewRevision !== review.revision ||
+      payload.libraryRevision !== library.revision ||
+      payload.libraryRevision !== candidate.libraryRevision ||
+      payload.designIndex !== candidate.index) {
+      return json({ error: 'A current saved Owner review is required for release rehearsal.' }, 409);
+    }
+    const design = library.designs[candidate.index];
+    if (!design || JSON.stringify(design) !== JSON.stringify(candidate.design) ||
+      !inspectSignInDesign(design).structuralPass) {
+      return json({ error: 'The reviewed design changed or failed structural validation.' }, 422);
+    }
+    nextEntry = {
+      rehearsalId: crypto.randomUUID(), reviewRequestId: candidate.requestId,
+      libraryRevision: library.revision, reviewRevision: review.revision,
+      designIndex: candidate.index, designName: design.name,
+      preparedAt: new Date().toISOString(), preparedBy: context.employee.id,
+      designFingerprint: await fingerprintDesign(design, library.revision, candidate.requestId),
+      status: 'prepared-not-published',
+    };
+  }
+
+  const next: RehearsalState = { revision: current.revision + 1, entry: nextEntry };
+  const nextJSON = JSON.stringify(next);
+  // Preparing a rehearsal also compares the exact saved review and library rows
+  // INSIDE the D1 write transaction. A concurrent withdrawal/save cannot arm stale data.
+  const sourceReview = reviewRow?.setting_value || '';
+  const sourceLibrary = libraryRow?.setting_value || '';
+  const mutation = request.method === 'POST'
+    ? row
+      ? env.DB.prepare(`UPDATE app_settings SET setting_value=?,value_type='json',updated_by=?,updated_at=CURRENT_TIMESTAMP
+          WHERE setting_key=? AND setting_value=?
+          AND (SELECT setting_value FROM app_settings WHERE setting_key=?)=?
+          AND (SELECT setting_value FROM app_settings WHERE setting_key=?)=?`)
+        .bind(nextJSON, context.employee.id, REHEARSAL_KEY, oldRehearsal,
+          REVIEW_KEY, sourceReview, KEY, sourceLibrary)
+      : env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at)
+          SELECT ?,?,'json',?,CURRENT_TIMESTAMP
+          WHERE (SELECT setting_value FROM app_settings WHERE setting_key=?)=?
+          AND (SELECT setting_value FROM app_settings WHERE setting_key=?)=?
+          ON CONFLICT(setting_key) DO NOTHING`)
+        .bind(REHEARSAL_KEY, nextJSON, context.employee.id,
+          REVIEW_KEY, sourceReview, KEY, sourceLibrary)
+    : env.DB.prepare(`UPDATE app_settings SET setting_value=?,value_type='json',updated_by=?,updated_at=CURRENT_TIMESTAMP
+        WHERE setting_key=? AND setting_value=?`)
+      .bind(nextJSON, context.employee.id, REHEARSAL_KEY, oldRehearsal);
+  const audit = env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+      SELECT ?,?,'theme',?,'app_setting',?,?,'web'
+      FROM app_settings WHERE setting_key=? AND setting_value=? AND changes()=1`)
+    .bind('audit-'+crypto.randomUUID(), context.employee.id,
+      request.method === 'DELETE' ? 'rollback_signin_design_rehearsal' : 'prepare_signin_design_rehearsal',
+      REHEARSAL_KEY, JSON.stringify({
+        revision: next.revision, rehearsalId: entry?.rehearsalId || nextEntry?.rehearsalId,
+        reviewRequestId: entry?.reviewRequestId || nextEntry?.reviewRequestId,
+        designFingerprint: entry?.designFingerprint || nextEntry?.designFingerprint,
+        publicDesignChanged: false,
+      }), REHEARSAL_KEY, nextJSON);
+  try {
+    // D1 batch is transactional. An audit constraint error rolls back the checkpoint write.
+    const results = await env.DB.batch([mutation, audit]);
+    if (results[0]?.meta?.changes !== 1 || results[1]?.meta?.changes !== 1) {
+      return json({ error: 'Rehearsal conflict or missing audit. Refresh before proceeding.' }, 409);
+    }
+  } catch {
+    return json({ error: 'Release rehearsal and audit could not be saved atomically.' }, 503);
+  }
+  return json({
+    ...next, published: false, readyToPublish: false, activationAvailable: false,
+    currentPublicDesign: 'Approved V180 Sign-In',
+    note: request.method === 'DELETE'
+      ? 'Rehearsal rolled back. Approved V180 was never replaced.'
+      : 'Non-public release rehearsal prepared. Authentication and publication gates remain outstanding.',
   });
 }

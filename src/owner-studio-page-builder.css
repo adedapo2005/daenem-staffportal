@@ -126,3 +126,52 @@
 .owner-builder-live.is-fullsize>header{position:relative;z-index:2}
 
 .owner-builder-live-actions button:focus-visible{outline:3px solid #0b7664;outline-offset:3px;box-shadow:0 0 0 5px #f7e5b7}
+
+/* Owner-only release & rollback rehearsal — solid, non-public and fully reversible. */
+.owner-builder-rehearsal{display:grid;gap:12px;margin-top:15px;padding:clamp(14px,.9vw,28px);border:1px solid #bda46a;border-radius:14px;background:#fffaf0;color:#234450}
+.owner-builder-rehearsal>header{display:flex;align-items:start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.owner-builder-rehearsal>header small{font-size:clamp(12px,.45vw,18px);letter-spacing:.12em;font-weight:900;color:#916728}
+.owner-builder-rehearsal>header h6{font-size:clamp(18px,.85vw,32px);line-height:1.2;margin:6px 0;color:#173f4b;font-weight:850;letter-spacing:-.02em}
+.owner-builder-rehearsal>header p{font-size:clamp(13px,.53vw,20px);max-width:78ch;line-height:1.55;margin:0;color:#44636b}
+.owner-builder-rehearsal [data-rehearsal-public]{font-size:clamp(12px,.49vw,19px);letter-spacing:.04em;line-height:1.4;padding:8px 12px;white-space:normal;border:1px solid #abd2c4;border-radius:8px;background:#e8f4ed;color:#0b6354}
+.owner-builder-rehearsal-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.owner-builder-rehearsal-actions button{flex:0 1 auto;min-height:44px;padding:11px 15px;border-radius:9px;border:1px solid #a4c5bd;background:#f0f7f3;color:#155a53;font:800 clamp(13px,.53vw,20px) Manrope,Inter,system-ui,sans-serif}
+.owner-builder-rehearsal-actions [data-rehearsal-prepare]{background:#106e61;border-color:#106e61;color:#fff}
+.owner-builder-rehearsal-actions [data-rehearsal-rollback]{background:#193f50;border-color:#193f50;color:#fff}
+.owner-builder-rehearsal-actions button:disabled{opacity:.48;cursor:not-allowed;background:#e5e7e6;border-color:#bac9c5;color:#45616a}
+.owner-builder-rehearsal-actions button:not(:disabled):hover{filter:brightness(.94)}
+.owner-builder-rehearsal-actions button:focus-visible{outline:3px solid #0c7060;outline-offset:3px}
+.owner-builder-rehearsal [data-rehearsal-status]{font-size:clamp(13px,.53vw,20px);font-weight:800;line-height:1.5;margin:0;padding:10px 12px;border:1px solid #d9c498;border-radius:8px;background:#fffdf8;color:#315359}
+.owner-builder-rehearsal [data-rehearsal-details]{font-size:clamp(12px,.49vw,18px);line-height:1.55;margin:0;color:#44656a;overflow-wrap:anywhere}
+.owner-builder-rehearsal-disclaimer{font-size:clamp(12px,.47vw,18px);line-height:1.55;margin:0;padding-top:9px;border-top:1px solid #e4d7b8;color:#5d644f}
+@media(max-width:767px){.owner-builder-rehearsal{padding:14px}.owner-builder-rehearsal-actions button{flex:1 1 100%}}
+@media(prefers-reduced-motion:reduce){.owner-builder-rehearsal *{transition:none!important}}
+
+/* Genuine 32-inch / 4K Owner review: use canvas real estate instead of miniature controls. */
+@media(min-width:2400px){
+ .owner-builder-rehearsal{
+  grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);
+  grid-template-areas:"rehearsal-head rehearsal-head" "rehearsal-actions rehearsal-state" "rehearsal-actions rehearsal-details" "rehearsal-note rehearsal-note";
+  column-gap:clamp(28px,1.3vw,56px);row-gap:clamp(16px,.8vw,32px);
+  padding:clamp(30px,1.45vw,64px);
+ }
+ .owner-builder-rehearsal>header{grid-area:rehearsal-head;padding-bottom:clamp(18px,.65vw,28px);border-bottom:1px solid #e4d7b8}
+ .owner-builder-rehearsal>header small{font-size:clamp(20px,.6vw,26px)}
+ .owner-builder-rehearsal>header h6{font-size:clamp(38px,1.18vw,54px);margin:12px 0}
+ .owner-builder-rehearsal>header p{font-size:clamp(23px,.7vw,30px)}
+ .owner-builder-rehearsal [data-rehearsal-public]{font-size:clamp(19px,.62vw,28px);padding:15px 22px}
+ .owner-builder-rehearsal-actions{grid-area:rehearsal-actions;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:clamp(15px,.7vw,30px)}
+ .owner-builder-rehearsal-actions [data-rehearsal-refresh]{grid-column:1/-1}
+ .owner-builder-rehearsal-actions button{min-height:clamp(68px,2.3vw,94px);padding:18px 24px;font-size:clamp(22px,.7vw,31px)}
+ .owner-builder-rehearsal [data-rehearsal-status]{grid-area:rehearsal-state;font-size:clamp(22px,.73vw,31px);padding:20px 24px;align-self:start}
+ .owner-builder-rehearsal [data-rehearsal-details]{grid-area:rehearsal-details;font-size:clamp(18px,.6vw,26px);margin:0}
+ .owner-builder-rehearsal-disclaimer{grid-area:rehearsal-note;font-size:clamp(19px,.58vw,26px);padding-top:18px}
+}
+
+/* Mobile space recovery: remove redundant nested Studio padding, not legible text. */
+@media(max-width:767px){
+ .owner-pro-studio:has(.owner-builder){padding:8px!important}
+ .owner-builder{padding:6px!important}
+ .owner-builder-review{padding:7px!important}
+ .owner-builder-rehearsal{padding:10px!important}
+}

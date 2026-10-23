@@ -146,6 +146,10 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  reviewPanel.innerHTML='<header><div><small>PROTECTED RELEASE PROCESS</small><h5>Design Readiness & Owner Review</h5><p>Verify a saved design before requesting authenticated release acceptance. This never replaces Approved V180.</p></div></header>'+
  '<div class="owner-builder-review-actions"><button type="button" data-builder-check>Check Saved Design</button><button type="button" data-builder-request disabled>Submit For Release Review</button><button type="button" data-builder-review-refresh>Review Status</button><button type="button" data-builder-review-withdraw>Withdraw Review</button></div>'+
  '<p data-builder-review-status role="status" aria-live="polite">No review requested. Approved V180 remains live.</p><div data-builder-review-report aria-live="polite"></div>'+
+ '<section class="owner-builder-rehearsal" aria-labelledby="owner-rehearsal-heading"><header><div><small>NON-PUBLIC CHECKPOINT</small><h6 id="owner-rehearsal-heading">Release & Rollback Rehearsal</h6><p>Prepare an audited checkpoint for a saved, reviewed design and prove the rollback works. This is not a Sign-In activation.</p></div><strong data-rehearsal-public>PUBLIC: APPROVED V180</strong></header>'+
+ '<div class="owner-builder-rehearsal-actions"><button type="button" data-rehearsal-refresh>Check Rehearsal Status</button><button type="button" data-rehearsal-prepare disabled>Prepare Non-Public Rehearsal</button><button type="button" data-rehearsal-rollback disabled>Rollback Rehearsal</button></div>'+
+ '<p id="owner-rehearsal-status" data-rehearsal-status role="status" aria-live="polite">Check rehearsal status after submitting a saved design for Owner review.</p><p data-rehearsal-details></p>'+
+ '<p class="owner-builder-rehearsal-disclaimer">No live design switch, credential collection or production publication is possible through these controls. Authenticated acceptance and separate release approval remain mandatory.</p></section>'+
  '<p class="owner-builder-review-note">Structural checks do not establish functional authentication, accessibility or production readiness. Only the existing authenticated release gates can authorize an eventual activation.</p>';
  host.appendChild(reviewPanel);
  let draft=blank();let undo:Draft[]=[],redo:Draft[]=[],selected:string|null=null,selectedInner:string|null=null,serial=0;
@@ -195,6 +199,35 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   const result=await response.json() as Record<string,unknown>;
   if(!response.ok)throw Error(String(result.error||'Review request failed.'));
   return result;
+ };
+ const rehearsalEndpoint=libraryEndpoint+'/rehearsal';
+ const setRehearsalStatus=(message:string)=>{$<HTMLElement>('[data-rehearsal-status]').textContent=message;};
+ const refreshRehearsal=async()=>{
+  const [review,state]=await Promise.all([
+   requestReview(libraryEndpoint+'/review','GET'),
+   requestReview(rehearsalEndpoint,'GET'),
+  ]);
+  const candidate=review.candidate as {requestId?:string;index?:number;libraryRevision?:number;status?:string;designName?:string}|null;
+  const entry=state.entry as {rehearsalId?:string;designName?:string;designFingerprint?:string;status?:string}|null;
+  const allowed=Boolean(candidate&&!review.stale&&candidate.status==='awaiting-authenticated-acceptance'&&
+   typeof candidate.requestId==='string'&&!entry);
+  $<HTMLButtonElement>('[data-rehearsal-prepare]').disabled=rehearsalBusy||!allowed;
+  $<HTMLButtonElement>('[data-rehearsal-rollback]').disabled=rehearsalBusy||!entry||!entry.rehearsalId;
+  $<HTMLElement>('[data-rehearsal-public]').textContent='PUBLIC: '+String(state.currentPublicDesign||'Approved V180 Sign-In').toUpperCase();
+  const details=$<HTMLElement>('[data-rehearsal-details]');
+  if(entry){
+   setRehearsalStatus((state.stale?'Stale checkpoint — rollback required: ':'Rehearsal Prepared — Not Published: ')+
+    String(entry.designName||'Saved Sign-In Concept'));
+   details.textContent='Checkpoint '+String(entry.rehearsalId||'Unknown')+
+    ' · Fingerprint '+String(entry.designFingerprint||'Unavailable').slice(0,16)+
+    '… · Release activation unavailable · Approved V180 unaffected.';
+  }else{
+   setRehearsalStatus(candidate&&!review.stale
+    ?'Saved Owner review is available for a non-public release rehearsal. Approved V180 remains live.'
+    :'No prepared rehearsal. Submit a current saved design for Owner review before preparing one.');
+   details.textContent='There is no active alternative design. This rehearsal cannot publish anything.';
+  }
+  return {review,state,candidate,entry};
  };
  const renderReadiness=(report:Record<string,unknown>)=>{
   const container=$<HTMLElement>('[data-builder-review-report]');
@@ -440,6 +473,60 @@ export function mountSignInPageBuilder(studio:HTMLElement){
    setReviewStatus('Pending review withdrawn. No public Sign-In change occurred.');
   }catch(error){setReviewStatus(error instanceof Error?error.message:'Could not withdraw review.');}
  });
+ // Release rehearsal is explicit, Owner-only and independently reversible.
+ // Nothing in this UI writes the public Sign-In activation key.
+ let rehearsalBusy=false;
+ const refreshRehearsalButton=$<HTMLButtonElement>('[data-rehearsal-refresh]');
+ const prepareRehearsalButton=$<HTMLButtonElement>('[data-rehearsal-prepare]');
+ const rollbackRehearsalButton=$<HTMLButtonElement>('[data-rehearsal-rollback]');
+ const rehearseAction=async(action:'refresh'|'prepare'|'rollback')=>{
+  if(rehearsalBusy)return;
+  rehearsalBusy=true;
+  refreshRehearsalButton.disabled=true;
+  prepareRehearsalButton.disabled=true;
+  rollbackRehearsalButton.disabled=true;
+  try{
+   const current=await refreshRehearsal();
+   if(action==='prepare'){
+    const candidate=current.candidate;
+    if(!candidate||current.review.stale||current.entry||
+      typeof candidate.requestId!=='string'||
+      !Number.isInteger(candidate.index)||!Number.isInteger(candidate.libraryRevision)) {
+     throw Error('A current saved Owner design review is required. Refresh before preparing a rehearsal.');
+    }
+    const result=await requestReview(rehearsalEndpoint,'POST',{
+     rehearsalRevision:current.state.revision,reviewRevision:current.review.revision,
+     reviewRequestId:candidate.requestId,libraryRevision:candidate.libraryRevision,
+     designIndex:candidate.index,
+    });
+    if(result.published!==false||result.activationAvailable!==false||!result.entry){
+     throw Error('The response does not confirm a non-public rehearsal. Do not proceed.');
+    }
+   }else if(action==='rollback'){
+    if(!current.entry?.rehearsalId)throw Error('No active release rehearsal to roll back.');
+    const result=await requestReview(rehearsalEndpoint,'DELETE',{
+     rehearsalRevision:current.state.revision,rehearsalId:current.entry.rehearsalId,
+    });
+    if(result.published!==false||result.entry!==null) {
+     throw Error('Rollback could not be verified. Refresh Owner rehearsal status.');
+    }
+   }
+   rehearsalBusy=false;
+   await refreshRehearsal();
+   if(action==='rollback')setRehearsalStatus(
+    'Rollback Verified — No prepared rehearsal. Approved V180 Sign-In remains live.');
+  }catch(error){
+   rehearsalBusy=false;
+   prepareRehearsalButton.disabled=true;
+   rollbackRehearsalButton.disabled=true;
+   setRehearsalStatus(error instanceof Error?error.message:'Release rehearsal action was not verified.');
+  }finally{
+   refreshRehearsalButton.disabled=false;
+  }
+ };
+ refreshRehearsalButton.addEventListener('click',()=>void rehearseAction('refresh'));
+ prepareRehearsalButton.addEventListener('click',()=>void rehearseAction('prepare'));
+ rollbackRehearsalButton.addEventListener('click',()=>void rehearseAction('rollback'));
  $<HTMLSelectElement>('[data-builder-device]').addEventListener('change',()=>{draw();if(!livePanel.hidden)void paintLive();});
  $<HTMLInputElement>('[data-builder-name]').addEventListener('change',e=>{const next=(e.target as HTMLInputElement).value.slice(0,70);if(next===draft.name)return;record();draft.name=next;queueLivePreview();});
  draw();
