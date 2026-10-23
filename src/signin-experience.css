@@ -2721,3 +2721,17 @@
     font-size: 15px !important;
   }
 }
+
+/* Narrow-rail provider label closure (2026-10-23): keep every provider name
+   fully legible inside the three equal tiles at 1280–1679px. */
+@media (min-width: 1280px) and (max-width: 1679px) and (max-height: 1100px) {
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+    gap: 1px !important;
+    padding-inline: 1px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-label {
+    min-width: 0 !important;
+    font-size: 10px !important;
+    letter-spacing: -.025em !important;
+  }
+}
