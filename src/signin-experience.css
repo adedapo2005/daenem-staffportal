@@ -1876,3 +1876,69 @@
 #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount {
   height:100%!important;min-height:0!important;align-self:stretch!important;
 }
+
+/* Owner acceptance refinement: isolated auth surface only; leave shell geometry,
+   weather and OAuth routing untouched. */
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+  background: #f8fbfd !important;
+  border: 1px solid #a9bdcd !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input,
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input:focus,
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input:focus-visible {
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0 !important;
+  width: 100%;
+  color: #17374d !important;
+  caret-color: #146ca9 !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell:focus-within {
+  border-color: #1979ba !important;
+  outline: 2px solid #1979ba !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+  background: #fff !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input::placeholder {
+  color: #4c6476 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell > svg:first-child {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+  border-color: #b3c9d9 !important;
+  background: #f8fbfd !important;
+  box-shadow: none !important;
+}
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button:focus-visible,
+#root .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button:focus-visible {
+  outline: 2px solid #1979ba !important;
+  outline-offset: 3px !important;
+}
+@media (min-width: 2100px) {
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-social-label {
+    font-size: 15px !important;
+    letter-spacing: 0 !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-field-status {
+    font-size: 14px !important;
+  }
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status,
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy p,
+  #root .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy small {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+}
