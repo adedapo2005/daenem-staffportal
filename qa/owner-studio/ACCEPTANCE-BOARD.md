@@ -60,3 +60,28 @@ There were **zero JavaScript page errors** in this read-only run. This audit mea
 - [ ] **Reverify protected staging deployment gates** and secure explicit Owner visual approval before merging PR #99 into the Pre-Production release branch.
 
 **Current conclusion:** The Owner Studio editing and review work is substantially implemented and CI-tested, but **an alternative blank-canvas Sign-In must not be promoted or marked complete** until those acceptance gates are verified. Keep all other frontend/backend lanes within their authorized file ownership.
+
+## Owner-mandated visual QA standard — 22 October 2026
+
+**Do not mark any Studio task COMPLETE from a green CI check, implemented code, or a mock alone.** Inspect the actual rendered candidate, record discovered defects, fix them, rerun visual and behavioral tests, and separately validate the authenticated Cloudflare release candidate. This is a standing internal QA requirement; routine visual decisions must not be redirected back to the Owner. Production activation remains subject to its explicit release authorization.
+
+### Reproducible isolated browser inspection
+
+```sh
+node qa/owner-studio/test-owner-studio.cjs
+node qa/owner-studio/visual-acceptance-audit.cjs
+```
+
+The second command records screenshot evidence at 390, 430, 768, 1024, 1280, 1366, 1920, 2560 and 3840px in the local uncommitted `qa/owner-studio/visual-acceptance/` folder. It includes an explicit full-size preview, checks for runtime design-width mismatch and horizontal clipping, and reports desktop auth panels extending below their canvas. This is **not** a substitute for authenticated Pre-Production acceptance.
+
+| Visual finding | Parent/root cause | Local candidate remedy | Release status |
+| --- | --- | --- | --- |
+| Mobile alternative Sign-In cropped and partly unstyled | Concept runtime fixed at 1366px; missing isolated authentication presentation | Responsive canvas dimensions, viewport-fit/full-size modes, scoped solid auth controls | Development QA only |
+| 4K preview rendered as 1366px miniature | Fixed runtime width and small Owner controls | Actual 3840px canvas; scalable layout, typography, controls | Development QA only |
+| Auth input placeholder truncated | Global `.owner-builder input` max-width leaked into nested actual auth input | Selector scoped to editor toolbar and inspector | Development QA only |
+| Create Account tabs/buttons lacked consistent presentation | The alternative React auth state did not inherit approved V180 card CSS | Explicit non-glass, emerald/champagne scoped design for signup/recovery | Development QA only |
+| Blank starter produced huge empty desktop space and overflowed vertically | Mobile-stack coordinates reused unconditionally on desktop | Untouched starter alone uses split responsive presentation; manually edited layouts retain Owner coordinates | Development QA only |
+| Private preview accidentally allowed authentication actions | Actual React auth forms/providers mounted interactively | Capture unsafe submits, provider actions and redirects; permit only safe local mode changes | Development QA only |
+| Native 4K control readability, keyboard contrast | Static 11px controls and low-contrast secondary copy | Scale Owner tools at 2400px+ and raise copy/focus contrast | Development QA only |
+
+**Unchanged release blockers:** Actual Pre-Production 1024px Sign-In vertical overflow, authenticated Owner Library/D1 and session acceptance, production-like provider/weather/Install App integration acceptance, exact approved branding and fully editable per-viewport alternatives, audited activation with tested instant rollback, plus final verified release-candidate visuals and accessibility. None may be marked complete on the basis of this isolated preview.

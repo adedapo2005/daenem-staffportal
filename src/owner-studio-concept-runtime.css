@@ -1,10 +1,137 @@
-.owner-concept-runtime{position:relative;width:1366px;min-height:900px;background:linear-gradient(125deg,#0b2933,#135b50);color:#f7f4ec;overflow:visible}
-.owner-concept-banner{position:absolute;right:20px;top:12px;background:#fff5d9;color:#5a4215;padding:9px 12px;border-radius:8px;font:700 13px Manrope,Inter,sans-serif;z-index:2}
-.owner-concept-block{position:absolute;box-sizing:border-box}
-.owner-concept-block h1{font-size:clamp(24px,3vw,42px);line-height:1.12;margin:0}
-.owner-concept-block p{margin:0;font-size:16px;line-height:1.5}
-.owner-concept-brand strong{font-size:25px;letter-spacing:.07em;color:#f3d999}
-.owner-concept-auth{isolation:isolate;z-index:3;padding:8px;background:#fff;color:#153d47;border-radius:14px;box-shadow:0 10px 28px #001b2244}
-.owner-concept-auth #staffportal-auth-mount{display:block;width:100%;height:auto}
+/* Isolated, solid-surface private concept preview. Approved V180 CSS is untouched. */
+.owner-concept-runtime{position:relative;box-sizing:border-box;background:linear-gradient(130deg,#0c3040 0%,#14594d 65%,#0d3747 100%);color:#fcf8ef;overflow:visible;font-family:Manrope,Inter,system-ui,sans-serif}
+.owner-concept-runtime,.owner-concept-runtime *{box-sizing:border-box}
+.owner-concept-sr{position:absolute;clip-path:inset(50%);width:1px;height:1px;white-space:nowrap;overflow:hidden}
+.owner-concept-block{position:absolute;min-width:0}
+.owner-concept-block h1{font-size:calc(30px * var(--concept-scale));line-height:1.14;letter-spacing:-.035em;font-weight:800;margin:0;text-wrap:balance}
+.owner-concept-block p{margin:0;font-size:calc(15px * var(--concept-scale));line-height:1.5}
+.owner-concept-brand strong{font-size:calc(23px * var(--concept-scale));font-weight:850;letter-spacing:.06em;color:#f6ddac}
+.owner-concept-auth{z-index:3;padding:calc(12px * var(--concept-scale));background:#fffdf8;color:#173d48;border:1px solid #dec797;border-radius:calc(14px * var(--concept-scale));box-shadow:0 16px 38px #041d2855;container-type:inline-size}
+.owner-concept-auth #staffportal-auth-mount{display:block;min-width:0;width:100%;color:#173d48;font-size:calc(13px * var(--concept-scale));line-height:1.42}
 .owner-concept-auth .sp-auth-runtime{display:contents}
+.owner-concept-auth .sp-auth-topline{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-bottom:1px solid #e3e9e8;padding-bottom:calc(9px * var(--concept-scale))}
+.owner-concept-auth .sp-auth-logo-v101{max-width:calc(108px * var(--concept-scale));max-height:calc(38px * var(--concept-scale))}
+.owner-concept-auth .sp-secure-chip{display:inline-flex;align-items:center;gap:5px;color:#0f7162;font-weight:800;font-size:.79em}
+.owner-concept-auth .sp-auth-copy{display:grid;gap:4px;margin:calc(13px * var(--concept-scale)) 0}
+.owner-concept-auth .sp-auth-copy .sp-eyebrow{margin:0;text-transform:uppercase;letter-spacing:.11em;font-weight:850;font-size:.72em;color:#0c7466}
+.owner-concept-auth .sp-auth-copy h2{margin:0;font-weight:850;font-size:1.68em;line-height:1.15;letter-spacing:-.035em;color:#123d47}
+.owner-concept-auth .sp-auth-copy p{margin:0;font-size:.91em;color:#55717b}
+.owner-concept-auth .sp-auth-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:calc(12px * var(--concept-scale));background:#edf4f1;padding:5px;border-radius:11px}
+.owner-concept-auth .sp-auth-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:calc(36px * var(--concept-scale));padding:6px 5px;border:0;border-radius:8px;background:transparent;color:#315e67;font:750 1em Manrope,Inter,sans-serif;cursor:pointer}
+.owner-concept-auth .sp-auth-tabs button.is-active{background:#0c7563;color:#fff}
+.owner-concept-auth button{transition:background-color .15s ease,border-color .15s ease}
+.owner-concept-auth .sp-auth-form,.owner-concept-auth .usp-auth-form{display:grid;gap:calc(10px * var(--concept-scale));width:100%;min-width:0}
+.owner-concept-auth .sp-auth-form>label{display:grid;gap:5px;min-width:0}
+.owner-concept-auth .sp-field-label{color:#214b53;font-weight:800;font-size:.9em}
+.owner-concept-auth .sp-input-shell{display:flex;align-items:center;gap:7px;border:1px solid #b8d0d2;background:#f7faf8;border-radius:9px;min-height:calc(42px * var(--concept-scale));padding:0 9px;min-width:0;color:#257062}
+.owner-concept-auth .sp-input-shell>input{background:transparent;border:0;outline:0;min-width:0;width:100%;flex:1;font:600 1em Manrope,Inter,sans-serif;color:#153e46}
+.owner-concept-auth .sp-input-shell:focus-within{outline:2px solid #d7ac60;outline-offset:1px;border-color:#0d806b}
+.owner-concept-auth .sp-input-shell input::placeholder{color:#718c94;font-size:.86em}
+.owner-concept-auth .sp-show-password{background:transparent;border:0;display:inline-flex;align-items:center;gap:2px;font:800 .82em Manrope,Inter,sans-serif;color:#176a60;white-space:nowrap}
+.owner-concept-auth .sp-auth-options{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin:0}
+.owner-concept-auth .sp-remember{display:inline-flex!important;align-items:center;gap:4px;color:#466a72;font-weight:700;font-size:.85em}
+.owner-concept-auth .sp-remember input{accent-color:#117d6a}
+.owner-concept-auth .sp-forgot{border:0;background:transparent;color:#0d7062;font:800 .86em Manrope,Inter,sans-serif}
+.owner-concept-auth .sp-primary-button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:calc(44px * var(--concept-scale));border:0;border-radius:9px;background:#0c7563;color:#fff;font:850 1.05em Manrope,Inter,sans-serif}
+.owner-concept-auth .sp-auth-divider{display:flex;align-items:center;gap:7px;margin:calc(12px * var(--concept-scale)) 0 6px;color:#577077;font-size:.79em}
+.owner-concept-auth .sp-auth-divider>span{height:1px;background:#d9e6e4;flex:1}
+.owner-concept-auth .sp-social-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%}
+.owner-concept-auth .sp-social-button{display:flex;justify-content:center;align-items:center;gap:6px;min-width:0;min-height:calc(39px * var(--concept-scale));padding:5px;border:1px solid #b6d0cb;border-radius:8px;background:#edf5f0;color:#1b5459;font:800 .89em Manrope,Inter,sans-serif}
+.owner-concept-auth .sp-social-button:last-of-type{grid-column:1/-1}
+.owner-concept-auth .sp-social-button svg{width:1.32em;height:1.32em;flex-shrink:0}
+.owner-concept-auth .sp-auth-provider-status{grid-column:1/-1;display:flex;align-items:start;gap:5px;color:#647e80;font-size:.75em;margin:1px 0 0}
+.owner-concept-auth .sp-install-card{display:flex;align-items:center;gap:9px;width:100%;padding:calc(9px * var(--concept-scale));margin-top:calc(10px * var(--concept-scale));border:1px solid #d4c28d;border-radius:10px;background:#fdf6e6;text-align:left;color:#275159}
+.owner-concept-auth .sp-install-copy{display:grid;gap:2px;flex:1}
+.owner-concept-auth .sp-install-copy b{font-size:.94em}
+.owner-concept-auth .sp-install-copy small,.owner-concept-auth .sp-install-state{font-size:.74em}
+.owner-concept-auth .sp-auth-policy{margin-top:calc(9px * var(--concept-scale));font-size:.78em;line-height:1.5;color:#607d7f}
+.owner-concept-auth .sp-auth-policy p{margin:0 0 4px;font-size:1em}
+.owner-concept-auth .sp-auth-policy a{color:#086e61;text-decoration:underline}
+.owner-concept-auth .sp-auth-notice{padding:9px;border:1px solid #e2c4a4;border-radius:8px;background:#fff7ee;font-size:.9em}
+.owner-concept-auth .sp-auth-notice.is-error{color:#993d24}
+.owner-concept-auth .usp-auth-panel{display:grid;gap:calc(9px * var(--concept-scale))}
+.owner-concept-auth .usp-panel-heading h1{font-size:1.5em;color:#123d47;margin:3px 0}
+.owner-concept-auth .usp-panel-heading p,.owner-concept-auth .usp-social-note,.owner-concept-auth .usp-legal-copy{color:#607e83;font-size:.85em}
+.owner-concept-auth .usp-field{display:grid;gap:6px}
+.owner-concept-auth .usp-field>input,.owner-concept-auth .usp-password-field{min-height:calc(42px * var(--concept-scale));padding:8px;border:1px solid #b6cfcd;border-radius:9px;background:#f7faf8;width:100%;color:#153f44}
+.owner-concept-auth .usp-primary-button,.owner-concept-auth .usp-secondary-button{min-height:calc(43px * var(--concept-scale));border:0;border-radius:9px;background:#0b7865;color:white;font:800 1em Manrope,Inter,sans-serif}
+.owner-concept-auth :is(button,a,input):focus-visible{outline:3px solid #d9a350;outline-offset:2px}
 .owner-concept-invalid{padding:22px;background:#f5f1e2;color:#503c20}
+@container (min-width:500px){.owner-concept-auth .sp-social-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.owner-concept-auth .sp-social-button:last-of-type{grid-column:auto}}
+@media (prefers-reduced-motion:reduce){.owner-concept-auth button{transition:none}}
+
+/* Fluid executive starter and consistent brand hierarchy. */
+.owner-concept-identity{display:grid;align-content:start;gap:calc(3px * var(--concept-scale));width:max-content;max-width:100%;border-left:calc(4px * var(--concept-scale)) solid #d8b875;padding-left:calc(14px * var(--concept-scale))}
+.owner-concept-identity strong{font-size:calc(27px * var(--concept-scale));line-height:1.08;font-weight:850;letter-spacing:.065em;color:#ffedc5}
+.owner-concept-identity small{font-size:calc(11px * var(--concept-scale));font-weight:850;letter-spacing:.18em;color:#bce3d7}
+.owner-concept-auth .sp-brand:empty{display:none}
+@container (min-width:460px){.owner-concept-auth .sp-social-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.owner-concept-auth .sp-social-button:last-of-type{grid-column:auto}}
+
+/* The real Create Account / recovery React states require the same solid luxury treatment. */
+.owner-concept-auth .usp-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.owner-concept-auth .usp-panel-heading>div{display:grid;gap:4px;min-width:0;flex:1}
+.owner-concept-auth .usp-panel-eyebrow{display:inline-flex;align-items:center;gap:5px;color:#0e7265;font-weight:850;font-size:.78em;letter-spacing:.075em;text-transform:uppercase}
+.owner-concept-auth .usp-panel-heading h1{font-size:1.48em!important;line-height:1.17;letter-spacing:-.03em;margin:2px 0}
+.owner-concept-auth .usp-panel-heading p{font-size:.87em;line-height:1.48;margin:0 0 3px}
+.owner-concept-auth .usp-mfa-chip{font-size:.72em;color:#0e7465;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.owner-concept-auth .sp-signup-close{display:inline-flex;align-items:center;justify-content:center;min-width:35px;min-height:35px;border:1px solid #accfca;background:#eef6f2;color:#17554f;border-radius:9px}
+.owner-concept-auth .usp-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:4px;background:#ecf4f1;border-radius:10px}
+.owner-concept-auth .usp-tabs button{border:0;border-radius:8px;background:transparent;color:#315961;min-height:calc(38px * var(--concept-scale));font:800 .96em Manrope,Inter,sans-serif;padding:5px}
+.owner-concept-auth .usp-tabs button.active{background:#0c7563;color:#fff}
+.owner-concept-auth .usp-field-label{font-size:.88em;font-weight:800;color:#214750}
+.owner-concept-auth .usp-field>input{font:600 1em Manrope,Inter,sans-serif;min-width:0}
+.owner-concept-auth .usp-field-help,.owner-concept-auth .usp-identifier-status{font-size:.78em;color:#50747a}
+.owner-concept-auth .sp-signup-progress{display:grid;gap:4px;color:#526e77;font-size:.82em;font-weight:800}
+.owner-concept-auth .sp-signup-progress-track,.owner-concept-auth .usp-password-meter-track{height:5px;border-radius:99px;background:#dbe8e3;overflow:hidden}
+.owner-concept-auth .sp-signup-progress-track i,.owner-concept-auth .usp-password-meter-fill{display:block;height:100%;background:#0a8370}
+.owner-concept-auth .usp-password-field{display:flex;align-items:center;gap:5px}
+.owner-concept-auth .usp-password-field input{background:transparent;border:0;outline:none;flex:1;min-width:0;font:600 1em Manrope,Inter,sans-serif;color:#153c44}
+.owner-concept-auth .usp-password-toggle,.owner-concept-auth .usp-back-link,.owner-concept-auth .usp-forgot-link{border:0;background:transparent;color:#096e60;font-weight:800}
+.owner-concept-auth .usp-step-actions{display:flex;gap:8px}
+.owner-concept-auth .usp-step-actions>*{min-width:0;flex:1}
+.owner-concept-auth .usp-secondary-button{background:#edf4f1;border:1px solid #bad0c9;color:#20555a}
+.owner-concept-auth .usp-or-divider{display:flex;align-items:center;gap:7px;color:#637b83;font-size:.79em}
+.owner-concept-auth .usp-or-divider span{height:1px;background:#dce7e3;flex:1}
+.owner-concept-auth .usp-social-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.owner-concept-auth .usp-social-buttons>button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:calc(39px * var(--concept-scale));border:1px solid #b9d1cb;border-radius:8px;background:#eef6f1;color:#17575c;padding:5px;font:800 .88em Manrope,Inter,sans-serif}
+.owner-concept-auth .usp-social-buttons svg{width:1.25em;height:1.25em}
+.owner-concept-auth .usp-social-buttons>.usp-social-whatsapp{grid-column:1/-1;display:flex;flex-wrap:wrap}
+.owner-concept-auth .usp-social-whatsapp-check{font-size:.78em;color:#367f62}
+.owner-concept-auth .usp-legal-copy{line-height:1.5;margin:4px 0 0;font-size:.8em}
+.owner-concept-auth .usp-legal-copy a{color:#087461;text-decoration:underline}
+.owner-concept-auth .usp-panel-footer{border-top:1px solid #dce8e4;padding-top:9px}
+.owner-concept-auth .usp-operational-pill{font-size:.78em;color:#0d7261}
+.owner-concept-auth .usp-password-requirements{display:grid;gap:5px;padding:8px;border:1px solid #c6dbd3;border-radius:9px;background:#f0f8f3;font-size:.8em}
+.owner-concept-auth .usp-password-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.owner-concept-auth .usp-password-status span{display:flex;align-items:center;gap:4px}
+.owner-concept-auth .usp-password-meter{display:grid;gap:5px}
+.owner-concept-auth .usp-password-meter-meta{display:flex;justify-content:space-between;font-size:.84em}
+
+/* Readability floor for all private-review authentication states. */
+.owner-concept-auth #staffportal-auth-mount{font-size:calc(14px * var(--concept-scale))}
+.owner-concept-auth .sp-secure-chip,.owner-concept-auth .sp-auth-copy p,.owner-concept-auth .sp-field-label{font-size:.94em}
+.owner-concept-auth .sp-auth-provider-status{font-size:.92em}
+.owner-concept-auth .sp-install-copy small,.owner-concept-auth .sp-install-state{font-size:.9em}
+.owner-concept-auth .sp-auth-policy,.owner-concept-auth .usp-legal-copy{font-size:.86em}
+.owner-concept-auth .usp-panel-heading p,.owner-concept-auth .usp-social-note{font-size:.93em}
+.owner-concept-auth .usp-field-label{font-size:.96em}
+
+/* The Install App action must remain legible at true 4K instead of inheriting V180 miniature icon rules. */
+.owner-concept-auth .sp-install-card{min-height:calc(52px * var(--concept-scale));padding:calc(11px * var(--concept-scale));gap:calc(8px * var(--concept-scale))}
+.owner-concept-auth .sp-install-icon{display:inline-flex;align-items:center;justify-content:center;font-size:calc(15px * var(--concept-scale));flex-shrink:0}
+.owner-concept-auth .sp-install-icon svg{width:1.15em;height:1.15em}
+.owner-concept-auth .sp-install-card .sp-install-copy b{font-size:calc(13px * var(--concept-scale));line-height:1.25}
+.owner-concept-auth .sp-install-card .sp-install-copy small{font-size:calc(12px * var(--concept-scale));line-height:1.35}
+.owner-concept-auth .sp-install-card .sp-install-state{font-size:calc(12px * var(--concept-scale));white-space:nowrap}
+
+/* Contrast and keyboard focus verification: small text >=4.5:1 against light surfaces. */
+.owner-concept-auth .sp-auth-policy{color:#48666e}
+.owner-concept-auth .sp-auth-provider-status{color:#45676d}
+.owner-concept-auth .sp-input-shell input::placeholder{color:#4b6871}
+.owner-concept-auth .usp-panel-heading p,.owner-concept-auth .usp-social-note,.owner-concept-auth .usp-legal-copy{color:#48666e}
+.owner-concept-auth .sp-input-shell:focus-within{outline:3px solid #0b7162;outline-offset:2px}
+.owner-concept-auth :is(button,a,input):focus-visible{outline:3px solid #123d47;outline-offset:2px;box-shadow:0 0 0 5px #fff6de}
+
+/* Keep the mobile Create Account tab readable on one line. */
+.owner-concept-auth .sp-auth-tabs button{font-size:.91em;gap:3px;white-space:nowrap}
+.owner-concept-auth .sp-auth-tabs button svg{width:1em;height:1em;flex-shrink:0}

@@ -1,38 +1,62 @@
 import React from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import './owner-studio-concept-runtime.css';
 
-export type ConceptBlock = { id:string; kind:string; label:string; x:number; y:number; width:number; height:number };
-export type ConceptDesign = { name:string; blocks:ConceptBlock[] };
-
-/** Owner-only in-memory preview. Never used by the published Sign-In route. */
-function stopPreviewAction(event:React.SyntheticEvent) {
- // Block every interactive control before its React handler can submit, redirect, or create a session.
- event.preventDefault();
- event.stopPropagation();
+export type ConceptBlock = {id:string;kind:string;label:string;x:number;y:number;width:number;height:number};
+export type ConceptDesign = {name:string;blocks:ConceptBlock[]};
+const heights:Record<number,number>={390:844,430:932,768:1024,1024:768,1280:720,1366:900,1920:1080,2560:1440,3840:2160};
+function stopPreviewAction(event:React.SyntheticEvent){event.preventDefault();event.stopPropagation();}
+function previewSafeAction(target:Element){return Boolean(target.closest(
+  '.sp-auth-tabs [role="tab"], .sp-forgot, .sp-show-password, .sp-signup-close, .usp-back-link, .usp-tabs [role="tab"]'
+));}
+function stopPreviewClick(event:React.MouseEvent<HTMLElement>){
+  const target=event.target as Element;
+  if(target.closest('button,a,input[type="submit"],input[type="button"]')&&!previewSafeAction(target))stopPreviewAction(event);
 }
-function stopPreviewClick(event:React.MouseEvent<HTMLElement>) {
- if ((event.target as Element).closest('button,a,input[type="submit"],input[type="button"]')) stopPreviewAction(event);
+function stopPreviewKey(event:React.KeyboardEvent<HTMLElement>){
+  const target=event.target as Element;
+  if((event.key==='Enter'||event.key===' ')&&target.closest('button,a,input[type="submit"],input[type="button"]')&&!previewSafeAction(target))stopPreviewAction(event);
 }
-function stopPreviewKey(event:React.KeyboardEvent<HTMLElement>) {
- if ((event.key==='Enter'||event.key===' ') &&
-  (event.target as Element).closest('button,a,input[type="submit"],input[type="button"]')) stopPreviewAction(event);
-}
-export function OwnerConceptRuntime({design, authPanel}:{design:ConceptDesign;authPanel:ReactNode}) {
- const auth=design.blocks.filter(b=>b.kind==='auth');
- if(auth.length!==1) return <div className="owner-concept-invalid" role="status">Add exactly one Protected Sign-In component to preview this layout.</div>;
- const safeBlocks=design.blocks.filter(b=>['brand','heading','text','clock','weather','auth'].includes(b.kind) &&
-  [b.x,b.y,b.width,b.height].every(n=>Number.isFinite(n)&&n>=0&&n<=4000));
- return <section className="owner-concept-runtime" aria-label={design.name}
-  onClickCapture={stopPreviewClick} onSubmitCapture={stopPreviewAction} onKeyDownCapture={stopPreviewKey}>
-  <div className="owner-concept-banner" role="status">Private Owner Preview — Not Published</div>
-  {safeBlocks.map(block=><div key={block.id} className={'owner-concept-block owner-concept-'+block.kind}
-   style={{left:block.x,top:block.y,width:block.kind==='auth'?Math.max(block.width,310):block.width,
-    minHeight:block.kind==='auth'?Math.max(block.height,290):block.height}}>
-   {block.kind==='auth'?<div id="staffportal-auth-mount" className="sp-auth-mode-signin" data-auth-gateway="cloudflare-worker">{authPanel}</div>:
-   block.kind==='heading'?<h1>{block.label}</h1>:
-   block.kind==='brand'?<strong>{block.label}</strong>:
-   <p>{block.label}</p>}
-  </div>)}
- </section>;
+/** Preview is never a public entry point. Only the untouched starter preset receives a fluid split layout. */
+export function OwnerConceptRuntime({design,authPanel,viewportWidth=1366}:{
+  design:ConceptDesign;authPanel:ReactNode;viewportWidth?:number;
+}){
+  const width=heights[viewportWidth]?viewportWidth:1366;
+  const height=heights[width];
+  const factor=Math.max(1,width/1366);
+  const auth=design.blocks.filter(b=>b.kind==='auth');
+  if(auth.length!==1)return <div className="owner-concept-invalid" role="status">Add exactly one Protected Sign-In component to preview this layout.</div>;
+  const safeBlocks=design.blocks.filter(b=>['brand','heading','text','clock','weather','auth'].includes(b.kind)&&
+    [b.x,b.y,b.width,b.height].every(n=>Number.isFinite(n)&&n>=0&&n<=4000));
+  const byKind=(kind:string)=>safeBlocks.find(b=>b.kind===kind);
+  const brand=byKind('brand'),heading=byKind('heading'),login=byKind('auth');
+  const untouchedStarter=safeBlocks.length===3&&brand?.x===20&&brand?.y===20&&
+    brand.width===210&&brand.height===60&&
+    heading?.x===20&&heading?.y===100&&heading.width===330&&heading.height===65&&
+    login?.x===20&&login?.y===190&&login.width===310&&login.height===290;
+  const desktopSplit=untouchedStarter&&width>=768;
+  const gutter=Math.round(width*.05);
+  const loginWidth=Math.round(width*(width<=1024?.48:width<=1366?.44:.36));
+  const loginX=width-gutter-loginWidth;
+  const blockStyle=(b:ConceptBlock):CSSProperties=>{
+    if(desktopSplit){
+      if(b.kind==='auth')return {left:loginX,top:Math.round(height*.035),width:loginWidth,minHeight:Math.round(290*factor)};
+      if(b.kind==='brand')return {left:gutter,top:Math.round(height*.18),width:loginX-gutter*1.5,minHeight:Math.round(65*factor)};
+      if(b.kind==='heading')return {left:gutter,top:Math.round(height*.34),width:loginX-gutter*1.5,minHeight:Math.round(120*factor)};
+    }
+    return {left:b.x*factor,top:b.y*factor,width:Math.max(b.kind==='auth'?310:0,b.width)*factor,
+      minHeight:Math.max(b.kind==='auth'?290:0,b.height)*factor};
+  };
+  const runtimeStyle={width,minHeight:height,'--concept-scale':String(factor)} as CSSProperties;
+  return <section className="owner-concept-runtime" style={runtimeStyle}
+    aria-label={design.name+' — Private Owner Preview'}
+    onClickCapture={stopPreviewClick} onSubmitCapture={stopPreviewAction} onKeyDownCapture={stopPreviewKey}>
+    <span className="owner-concept-sr" role="status">Private Owner Preview. Form submissions and provider actions are disabled. Nothing is published.</span>
+    {safeBlocks.map(block=><div key={block.id} className={'owner-concept-block owner-concept-'+block.kind}
+      style={blockStyle(block)}>
+      {block.kind==='auth'?<div id="staffportal-auth-mount" className="sp-auth-mode-signin" data-auth-gateway="preview-only">{authPanel}</div>:
+        block.kind==='heading'?<h1>{block.label}</h1>:
+        block.kind==='brand'?<div className="owner-concept-identity"><strong>DAENEM</strong><small>STAFF PORTAL</small></div>:<p>{block.label}</p>}
+    </div>)}
+  </section>;
 }

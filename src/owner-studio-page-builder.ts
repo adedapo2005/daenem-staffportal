@@ -19,24 +19,55 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  if(studio.querySelector('.owner-builder'))return;
  const host=document.createElement('section');host.className='owner-builder';host.hidden=true;
  host.innerHTML='<header class="owner-builder-head"><div><small>ALTERNATE DESIGN WORKSPACE</small><h4>Create A New Sign-In Design</h4><p>Build a separate design without replacing the approved Sign-In. Drafts remain private until you explicitly save or submit them for review.</p></div><button type="button" data-builder-exit>Return To Approved Design</button></header>'+
- '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="768">Tablet · 768px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-starter>Start From Premium Layout</button><button type="button" data-builder-live-preview>Preview Designed Sign-In</button><button type="button" data-builder-auth-preview aria-expanded="false" aria-controls="owner-builder-protected-auth">Inspect Real Sign-In</button><button type="button" data-builder-save>Save Concept</button><button type="button" data-builder-cloud-save>Save Owner Library</button><button type="button" data-builder-cloud-load>Load Owner Library</button><span data-builder-cloud-status role="status" aria-live="polite"></span><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button><button type="button" data-builder-export>Export Design</button><label class="owner-builder-import">Import Design <input type="file" accept="application/json,.json" data-builder-import></label></div>'+
+ '<div class="owner-builder-toolbar"><label>Design Name <input data-builder-name maxlength="70" value="New DAENEM Sign-In Design"></label><label>Preview Size <select data-builder-device><option value="390">Mobile · 390px</option><option value="430">Mobile · 430px</option><option value="768">Tablet · 768px</option><option value="1024">Compact Desktop · 1024px</option><option value="1280">Desktop · 1280px</option><option value="1366" selected>Laptop · 1366px</option><option value="1920">Desktop · 1920px</option><option value="2560">Wide Desktop · 2560px</option><option value="3840">4K · 3840px</option></select></label><button type="button" data-builder-undo>Undo</button><button type="button" data-builder-redo>Redo</button><button type="button" data-builder-clear>Clear Canvas</button><button type="button" data-builder-starter>Start From Premium Layout</button><button type="button" data-builder-live-preview>Preview Designed Sign-In</button><button type="button" data-builder-auth-preview aria-expanded="false" aria-controls="owner-builder-protected-auth">Inspect Real Sign-In</button><button type="button" data-builder-save>Save Concept</button><button type="button" data-builder-cloud-save>Save Owner Library</button><button type="button" data-builder-cloud-load>Load Owner Library</button><span data-builder-cloud-status role="status" aria-live="polite"></span><select data-builder-library aria-label="Saved Session Designs"><option value="">Saved Concepts</option></select><button type="button" data-builder-load>Load Concept</button><button type="button" data-builder-duplicate>Duplicate</button><button type="button" data-builder-export>Export Design</button><label class="owner-builder-import">Import Design <input type="file" accept="application/json,.json" data-builder-import></label></div>'+
  '<div class="owner-builder-shell"><aside><h5>Add Components</h5>'+catalogue.map(c=>'<button type="button" data-builder-add="'+c.kind+'">+ '+esc(c.label)+'</button>').join('')+'<p>Authentication remains a protected component; visual edits cannot alter login security or providers.</p></aside><div class="owner-builder-stage"><div class="owner-builder-canvas" data-builder-canvas></div></div><aside><h5>Selected Component</h5><p data-builder-selection>No component selected</p><label>Display Text <input data-builder-text maxlength="100"></label><label>Horizontal Position <input data-builder-x type="number" min="0" max="3600"></label><label>Vertical Position <input data-builder-y type="number" min="0" max="2000"></label><label>Width <input data-builder-width type="number" min="80" max="900"></label><label>Height <input data-builder-height type="number" min="40" max="600"></label><button type="button" data-builder-remove>Remove Component</button><div class="owner-builder-inner"><h5>Widget Items</h5><label>Item <select data-builder-item><option value="">Select An Item</option></select></label><label>Label <input data-inner-label maxlength="60"></label><label>Move Item Horizontally <input data-inner-x type="number" min="0" max="800"></label><label>Move Item Vertically <input data-inner-y type="number" min="0" max="500"></label><button type="button" data-inner-add>Add Widget Item</button></div></aside></div>'+
- '<section class="owner-builder-live" data-builder-live-panel hidden><header><strong>Live Alternative Layout — Owner Preview Only</strong><button type="button" data-builder-live-close>Close Preview</button></header><div class="owner-builder-live-stage"><div data-builder-live-root></div></div></section>'+
- '<section id="owner-builder-protected-auth" class="owner-builder-protected-auth" hidden><header><strong>Protected V180 Authentication — Live Component Reference</strong><p>This separate reference contains the real Sign-In, Create Account, recovery and configured provider controls. Canvas authentication blocks are still placeholders, and inspecting this reference never publishes a design.</p></header><iframe title="Protected V180 authentication component reference" data-builder-auth-frame loading="lazy" referrerpolicy="same-origin"></iframe></section>'+
- '<p class="owner-builder-warning">This is a concept canvas, not a deployable Sign-In page. Concepts are private drafts. Owner Library saves and release-review requests are explicit, auditable actions; neither publishes a new Sign-In.</p>';
+ '<section class="owner-builder-live" data-builder-live-panel hidden><header><strong>Live Alternative Layout — Owner Preview Only</strong><div class="owner-builder-live-actions"><button type="button" data-builder-live-fullsize aria-pressed="false">View At Full Size</button><button type="button" data-builder-live-close>Close Preview</button></div></header><div class="owner-builder-live-stage"><div data-builder-live-root></div></div></section>'+
+ '<section id="owner-builder-protected-auth" class="owner-builder-protected-auth" hidden><header><strong>Protected V180 Authentication — Live Component Reference</strong><p>This separate reference contains the real Sign-In, Create Account, recovery and configured provider controls. Canvas authentication blocks are still placeholders, and inspecting this reference never publishes a design.</p></header><iframe title="Protected V180 Sign-In visual reference (read only)" data-builder-auth-frame loading="lazy" tabindex="-1" aria-hidden="true" referrerpolicy="same-origin"></iframe></section>'+
+ '<p class="owner-builder-warning">This is a concept canvas, not a deployable Sign-In page. The untouched Premium Starter adapts into a desktop split layout automatically; your manual size and position edits remain your own and must pass each viewport check. Owner Library saves and release-review requests are explicit, auditable actions; neither publishes a new Sign-In.</p>';
  studio.appendChild(host);
  let liveRoot:import('react-dom/client').Root|null=null;
  const livePanel=host.querySelector<HTMLElement>('[data-builder-live-panel]')!;
- host.querySelector<HTMLButtonElement>('[data-builder-live-preview]')!.addEventListener('click',async()=>{
+ const liveStage=host.querySelector<HTMLElement>('.owner-builder-live-stage')!;
+ const liveMount=host.querySelector<HTMLElement>('[data-builder-live-root]')!;
+ let previewGeneration=0;
+ const closeLive=()=>{
+  previewGeneration++;
+  livePanel.classList.remove('is-fullsize');
+  host.querySelector<HTMLButtonElement>('[data-builder-live-fullsize]')!.setAttribute('aria-pressed','false');
+  host.querySelector<HTMLButtonElement>('[data-builder-live-fullsize]')!.textContent='View At Full Size';
+  livePanel.hidden=true;
+  liveRoot?.unmount();
+  liveRoot=null;
+ };
+ const paintLive=async()=>{
+  const generation=++previewGeneration;
   const [React,{createRoot},{AuthScreen}]=await Promise.all([import('react'),import('react-dom/client'),import('./auth')]);
-  if(!liveRoot)liveRoot=createRoot(host.querySelector<HTMLElement>('[data-builder-live-root]')!);
+  if(generation!==previewGeneration||!host.isConnected)return;
+  if(!liveRoot)liveRoot=createRoot(liveMount);
   livePanel.hidden=false;
-  liveRoot.render(React.createElement(AuthScreen,{onAuthenticated:()=>undefined,ownerConcept:JSON.parse(JSON.stringify(draft)) as Draft}));
+  liveMount.style.zoom=String(Math.min(1,Math.max(.05,(liveStage.clientWidth-(livePanel.classList.contains('is-fullsize')?0:24))/width())));
+  liveRoot.render(React.createElement(AuthScreen,{
+   onAuthenticated:()=>undefined,ownerConcept:JSON.parse(JSON.stringify(draft)) as Draft,ownerViewport:width(),
+  }));
+ };
+ host.querySelector<HTMLButtonElement>('[data-builder-live-preview]')!.addEventListener('click',()=>void paintLive());
+ host.querySelector<HTMLButtonElement>('[data-builder-live-close]')!.addEventListener('click',closeLive);
+ const fullSize=host.querySelector<HTMLButtonElement>('[data-builder-live-fullsize]')!;
+ fullSize.addEventListener('click',()=>{
+  const expanded=!livePanel.classList.contains('is-fullsize');
+  livePanel.classList.toggle('is-fullsize',expanded);
+  fullSize.setAttribute('aria-pressed',String(expanded));
+  fullSize.textContent=expanded?'Return To Studio Size':'View At Full Size';
+  if(!livePanel.hidden)void paintLive();
  });
- host.querySelector<HTMLButtonElement>('[data-builder-live-close]')!.addEventListener('click',()=>{livePanel.hidden=true;liveRoot?.render(null);});
+ livePanel.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&livePanel.classList.contains('is-fullsize')){event.preventDefault();fullSize.click();fullSize.focus();}
+ });
+ document.addEventListener('daenem-auth-changed',closeLive,{once:true});
  const previewButton=host.querySelector<HTMLButtonElement>('[data-builder-auth-preview]')!;
  const previewPanel=host.querySelector<HTMLElement>('#owner-builder-protected-auth')!;
  const previewFrame=host.querySelector<HTMLIFrameElement>('[data-builder-auth-frame]')!;
+ previewFrame.inert=true;
  previewButton.addEventListener('click',()=>{
   const opening=previewPanel.hidden;
   previewPanel.hidden=!opening;
@@ -123,7 +154,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
  const width=()=>Number($<HTMLSelectElement>('[data-builder-device]').value);
  const deviceScale=()=>Math.max(1,width()/1366);
  const draw=()=>{
-  const canvas=$<HTMLElement>('[data-builder-canvas]');canvas.style.width=width()+'px';canvas.style.height=(width()<=430?850:width()<=768?1024:width()>=3840?2160:900)+'px';
+  const canvas=$<HTMLElement>('[data-builder-canvas]');canvas.style.width=width()+'px';canvas.style.height=({390:844,430:932,768:1024,1024:768,1280:720,1366:900,1920:1080,2560:1440,3840:2160} as Record<number,number>)[width()]+'px';
   const stage=$<HTMLElement>('.owner-builder-stage');const zoom=Math.min(1,(stage.clientWidth-32)/width());canvas.style.zoom=String(Math.max(.2,zoom));const sf=deviceScale();
   canvas.innerHTML=draft.blocks.map(b=>'<button type="button" class="owner-builder-block'+(selected===b.id?' is-selected':'')+'" data-block="'+b.id+'" style="left:'+Math.round(b.x*sf)+'px;top:'+Math.round(b.y*sf)+'px;width:'+Math.round(b.width*sf)+'px;height:'+Math.round(b.height*sf)+'px;font-size:'+Math.round(15*sf)+'px">'+
     (b.kind==='auth'?'<strong>Sign In</strong><span>Email Address</span><span>Password</span><em>Continue Securely</em>':b.items?.length?b.items.map(item=>'<span class="owner-builder-inner-item" data-inner-id="'+esc(item.id)+'" style="left:'+Math.round(item.x*sf)+'px;top:'+Math.round(item.y*sf)+'px;font-size:'+Math.round(12*sf)+'px!important">'+esc(item.label)+'</span>').join(''):esc(b.label))+'</button>').join('');
@@ -139,7 +170,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
   $<HTMLInputElement>('[data-inner-y]').value=item?String(item.y):'';
   $<HTMLButtonElement>('[data-builder-undo]').disabled=!undo.length;$<HTMLButtonElement>('[data-builder-redo]').disabled=!redo.length;
  };
- const switchMode=(on:boolean)=>{host.hidden=!on;studio.classList.toggle('owner-builder-active',on);draw();};
+ const switchMode=(on:boolean)=>{if(!on)closeLive();host.hidden=!on;studio.classList.toggle('owner-builder-active',on);draw();};
  const modeButton=document.createElement('button');modeButton.type='button';modeButton.textContent='Create New Sign-In Design';modeButton.dataset.builderEnter='';
  studio.querySelector('.owner-pro-nav')?.appendChild(modeButton);
  modeButton.addEventListener('click',()=>switchMode(true));$<HTMLButtonElement>('[data-builder-exit]').addEventListener('click',()=>switchMode(false));
@@ -327,7 +358,7 @@ export function mountSignInPageBuilder(studio:HTMLElement){
    setReviewStatus('Pending review withdrawn. No public Sign-In change occurred.');
   }catch(error){setReviewStatus(error instanceof Error?error.message:'Could not withdraw review.');}
  });
- $<HTMLSelectElement>('[data-builder-device]').addEventListener('change',draw);
+ $<HTMLSelectElement>('[data-builder-device]').addEventListener('change',()=>{draw();if(!livePanel.hidden)void paintLive();});
  $<HTMLInputElement>('[data-builder-name]').addEventListener('change',e=>{record();draft.name=(e.target as HTMLInputElement).value.slice(0,70);});
  draw();
 }
