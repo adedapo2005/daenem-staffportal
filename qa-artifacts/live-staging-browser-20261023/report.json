@@ -1,0 +1,354 @@
+[
+  {
+    "viewport": "3840x2160",
+    "ok": true,
+    "vw": 3840,
+    "vh": 2160,
+    "scrollWidth": 3840,
+    "scrollHeight": 2160,
+    "auth": {
+      "x": 3077.9375,
+      "y": 922.375,
+      "width": 724.0625,
+      "height": 1181.625,
+      "right": 3802,
+      "bottom": 2104
+    },
+    "email": {
+      "x": 3131.9375,
+      "y": 1181.703125,
+      "width": 641.0625,
+      "height": 20,
+      "right": 3773,
+      "bottom": 1201.703125
+    },
+    "emailFont": "17px",
+    "passwordFont": "17px",
+    "labels": [
+      {
+        "text": "Email Or Username",
+        "font": "15px"
+      },
+      {
+        "text": "Password",
+        "font": "15px"
+      }
+    ],
+    "providers": [
+      {
+        "text": "Microsoft",
+        "rect": {
+          "x": 3096.9375,
+          "y": 1449.953125,
+          "width": 224.6875,
+          "height": 52,
+          "right": 3321.625,
+          "bottom": 1501.953125
+        },
+        "font": "15px"
+      },
+      {
+        "text": "Google",
+        "rect": {
+          "x": 3327.625,
+          "y": 1449.953125,
+          "width": 224.6875,
+          "height": 52,
+          "right": 3552.3125,
+          "bottom": 1501.953125
+        },
+        "font": "15px"
+      },
+      {
+        "text": "WhatsApp",
+        "rect": {
+          "x": 3558.3125,
+          "y": 1449.953125,
+          "width": 224.6875,
+          "height": 52,
+          "right": 3783,
+          "bottom": 1501.953125
+        },
+        "font": "15px"
+      }
+    ],
+    "widgets": 4,
+    "clocks": 6,
+    "focus": {
+      "inputOutlineStyle": "none",
+      "inputOutlineWidth": "0px",
+      "shellOutlineStyle": "none",
+      "shellOutlineWidth": "3px"
+    },
+    "enteredValue": "tester@example.org",
+    "passwordMode": "password",
+    "showType": "text",
+    "create": "Create Account\n\nCreate your secure employee login. Your work access remains subject to administrator approval.\n\nEmployee Sign-In\nCreate Account\nStep 1 of 5\nFirst Name *\nLast Name *\nContinue\nOr\nMicrosoft\nGoogle\nWhatsApp verification\nOptional\n\nMicrosoft and Google use your existing staff identity. WhatsApp verifies a contact during registration; email and approval are still required.\n\nBy continuing to login, you agree to Daenem Group Terms And Conditions. Privacy Policy.\n\nSecure service",
+    "http": 200,
+    "errors": []
+  },
+  {
+    "viewport": "1920x1080",
+    "ok": true,
+    "vw": 1920,
+    "vh": 1080,
+    "scrollWidth": 1920,
+    "scrollHeight": 1080,
+    "auth": {
+      "x": 1536.234375,
+      "y": 457.984375,
+      "width": 351.125,
+      "height": 566.015625,
+      "right": 1887.359375,
+      "bottom": 1024
+    },
+    "email": {
+      "x": 1577.234375,
+      "y": 629.484375,
+      "width": 293.125,
+      "height": 16,
+      "right": 1870.359375,
+      "bottom": 645.484375
+    },
+    "emailFont": "13.5px",
+    "passwordFont": "13.5px",
+    "labels": [
+      {
+        "text": "Email Or Username",
+        "font": "11px"
+      },
+      {
+        "text": "Password",
+        "font": "11px"
+      }
+    ],
+    "providers": [
+      {
+        "text": "Microsoft",
+        "rect": {
+          "x": 1545.234375,
+          "y": 799.484375,
+          "width": 109.03125,
+          "height": 40,
+          "right": 1654.265625,
+          "bottom": 839.484375
+        },
+        "font": "12px"
+      },
+      {
+        "text": "Google",
+        "rect": {
+          "x": 1657.265625,
+          "y": 799.484375,
+          "width": 109.046875,
+          "height": 40,
+          "right": 1766.3125,
+          "bottom": 839.484375
+        },
+        "font": "12px"
+      },
+      {
+        "text": "WhatsApp",
+        "rect": {
+          "x": 1769.3125,
+          "y": 799.484375,
+          "width": 109.03125,
+          "height": 40,
+          "right": 1878.34375,
+          "bottom": 839.484375
+        },
+        "font": "12px"
+      }
+    ],
+    "widgets": 4,
+    "clocks": 6,
+    "focus": {
+      "inputOutlineStyle": "none",
+      "inputOutlineWidth": "0px",
+      "shellOutlineStyle": "none",
+      "shellOutlineWidth": "3px"
+    },
+    "enteredValue": "tester@example.org",
+    "passwordMode": "password",
+    "showType": "text",
+    "create": "Create Account\n\nCreate your secure employee login. Your work access remains subject to administrator approval.\n\nEmployee Sign-In\nCreate Account\nStep 1 of 5\nFirst Name *\nLast Name *\nContinue\nOr\nMicrosoft\nGoogle\nWhatsApp verification\nOptional\n\nMicrosoft and Google use your existing staff identity. WhatsApp verifies a contact during registration; email and approval are still required.\n\nBy continuing to login, you agree to Daenem Group Terms And Conditions. Privacy Policy.\n\nSecure service",
+    "http": 200,
+    "errors": []
+  },
+  {
+    "viewport": "1366x768",
+    "ok": true,
+    "vw": 1366,
+    "vh": 768,
+    "scrollWidth": 1366,
+    "scrollHeight": 768,
+    "auth": {
+      "x": 1121.4375,
+      "y": 272,
+      "width": 227.78125,
+      "height": 440,
+      "right": 1349.21875,
+      "bottom": 712
+    },
+    "email": {
+      "x": 1164.4375,
+      "y": 479.75,
+      "width": 165.78125,
+      "height": 16,
+      "right": 1330.21875,
+      "bottom": 495.75
+    },
+    "emailFont": "13px",
+    "passwordFont": "13px",
+    "labels": [
+      {
+        "text": "Email Or Username",
+        "font": "10.5px"
+      },
+      {
+        "text": "Password",
+        "font": "10.5px"
+      }
+    ],
+    "providers": [
+      {
+        "text": "Microsoft",
+        "rect": {
+          "x": 1131.4375,
+          "y": 640.75,
+          "width": 67.25,
+          "height": 39,
+          "right": 1198.6875,
+          "bottom": 679.75
+        },
+        "font": "10.5px"
+      },
+      {
+        "text": "Google",
+        "rect": {
+          "x": 1201.6875,
+          "y": 640.75,
+          "width": 67.265625,
+          "height": 39,
+          "right": 1268.953125,
+          "bottom": 679.75
+        },
+        "font": "10.5px"
+      },
+      {
+        "text": "WhatsApp",
+        "rect": {
+          "x": 1271.953125,
+          "y": 640.75,
+          "width": 67.25,
+          "height": 39,
+          "right": 1339.203125,
+          "bottom": 679.75
+        },
+        "font": "10.5px"
+      }
+    ],
+    "widgets": 4,
+    "clocks": 6,
+    "focus": {
+      "inputOutlineStyle": "none",
+      "inputOutlineWidth": "0px",
+      "shellOutlineStyle": "none",
+      "shellOutlineWidth": "3px"
+    },
+    "enteredValue": "tester@example.org",
+    "passwordMode": "password",
+    "showType": "text",
+    "create": "Create Account\n\nCreate your secure employee login. Your work access remains subject to administrator approval.\n\nEmployee Sign-In\nCreate Account\nStep 1 of 5\nFirst Name *\nLast Name *\nContinue\nOr\nMicrosoft\nGoogle\nWhatsApp verification\nOptional\n\nBy continuing to login, you agree to Daenem Group Terms And Conditions. Privacy Policy.",
+    "http": 200,
+    "errors": []
+  },
+  {
+    "viewport": "390x844",
+    "ok": true,
+    "vw": 390,
+    "vh": 844,
+    "scrollWidth": 390,
+    "scrollHeight": 3777,
+    "auth": {
+      "x": 9,
+      "y": 448,
+      "width": 372,
+      "height": 680,
+      "right": 381,
+      "bottom": 1128
+    },
+    "email": {
+      "x": 59,
+      "y": 624.546875,
+      "width": 297,
+      "height": 16,
+      "right": 356,
+      "bottom": 640.546875
+    },
+    "emailFont": "13.5px",
+    "passwordFont": "13.5px",
+    "labels": [
+      {
+        "text": "Email Or Username",
+        "font": "11px"
+      },
+      {
+        "text": "Password",
+        "font": "11px"
+      }
+    ],
+    "providers": [
+      {
+        "text": "Microsoft",
+        "rect": {
+          "x": 24,
+          "y": 877.203125,
+          "width": 110,
+          "height": 40,
+          "right": 134,
+          "bottom": 917.203125
+        },
+        "font": "12px"
+      },
+      {
+        "text": "Google",
+        "rect": {
+          "x": 140,
+          "y": 877.203125,
+          "width": 110,
+          "height": 40,
+          "right": 250,
+          "bottom": 917.203125
+        },
+        "font": "12px"
+      },
+      {
+        "text": "WhatsApp",
+        "rect": {
+          "x": 256,
+          "y": 877.203125,
+          "width": 110,
+          "height": 40,
+          "right": 366,
+          "bottom": 917.203125
+        },
+        "font": "12px"
+      }
+    ],
+    "widgets": 4,
+    "clocks": 6,
+    "focus": {
+      "inputOutlineStyle": "none",
+      "inputOutlineWidth": "0px",
+      "shellOutlineStyle": "none",
+      "shellOutlineWidth": "3px"
+    },
+    "enteredValue": "tester@example.org",
+    "passwordMode": "password",
+    "showType": "text",
+    "create": "Create Account\n\nCreate your secure employee login. Your work access remains subject to administrator approval.\n\nEmployee Sign-In\nCreate Account\nStep 1 of 5\nFirst Name *\nLast Name *\nContinue\nOr\nMicrosoft\nGoogle\nWhatsApp verification\nOptional\n\nMicrosoft and Google use your existing staff identity. WhatsApp verifies a contact during registration; email and approval are still required.\n\nBy continuing to login, you agree to Daenem Group Terms And Conditions. Privacy Policy.\n\nSecure service",
+    "http": 200,
+    "errors": []
+  }
+]
