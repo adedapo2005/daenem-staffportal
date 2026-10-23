@@ -92,20 +92,42 @@ function transaction(env: StagingQaEnv) {
     add(`SELECT CASE WHEN (${condition}) THEN 1 ELSE json('QA invariant failed') END`, ...values);
   };
   const where = (fields: Record<string, Value>) => Object.keys(fields).map(key => `${key} IS ?`).join(' AND ');
-  const collision = (row: Row) => {
-    const key = row.key || 'id';
-    check(`NOT EXISTS(SELECT 1 FROM ${row.table} WHERE ${key}=? AND NOT (${where(row.fixed)}))`,
-      [row.fixed[key], ...Object.values(row.fixed)]);
+  const groups = (rows: Row[], reactivate?: boolean) => {
+    const result = new Map<string, Row[]>();
+    for (const row of rows) {
+      const fields = { ...row.fixed, ...row.live };
+      const signature = [row.table, row.key || 'id', ...Object.keys(fields),
+        ...(reactivate && row.live ? Object.keys(row.live) : [])].join('|');
+      result.set(signature, [...(result.get(signature) || []), row]);
+    }
+    return result.values();
   };
-  const ensure = (row: Row, reactivate = true) => {
-    const fields = { ...row.fixed, ...row.live }, columns = Object.keys(fields), key = row.key || 'id';
-    add(`INSERT INTO ${row.table}(${columns.join(',')}) VALUES(${columns.map(() => '?').join(',')})
-      ON CONFLICT(${key}) DO ${reactivate && row.live ? `UPDATE SET ${Object.keys(row.live).map(column => `${column}=excluded.${column}`).join(',')}` : 'NOTHING'}`,
-    ...Object.values(fields));
-    check(`EXISTS(SELECT 1 FROM ${row.table} WHERE ${where(reactivate ? fields : row.fixed)})`,
-      Object.values(reactivate ? fields : row.fixed));
+  const collisionMany = (rows: Row[]) => {
+    for (const group of groups(rows)) {
+      const conditions: string[] = [], values: Value[] = [];
+      for (const row of group) {
+        const key = row.key || 'id';
+        conditions.push(`(${key}=? AND NOT (${where(row.fixed)}))`);
+        values.push(row.fixed[key], ...Object.values(row.fixed));
+      }
+      check(`NOT EXISTS(SELECT 1 FROM ${group[0].table} WHERE ${conditions.join(' OR ')})`, values);
+    }
   };
-  return { statements, add, check, collision, ensure };
+  const ensureMany = (rows: Row[], reactivate = true) => {
+    for (const group of groups(rows, reactivate)) {
+      const sample = group[0], fields = { ...sample.fixed, ...sample.live };
+      const columns = Object.keys(fields), key = sample.key || 'id';
+      const values = group.flatMap(row => Object.values({ ...row.fixed, ...row.live }));
+      add(`INSERT INTO ${sample.table}(${columns.join(',')}) VALUES
+        ${group.map(() => `(${columns.map(() => '?').join(',')})`).join(',')}
+        ON CONFLICT(${key}) DO ${reactivate && sample.live ? `UPDATE SET ${Object.keys(sample.live).map(column => `${column}=excluded.${column}`).join(',')}` : 'NOTHING'}`,
+      ...values);
+      const expected = group.map(row => reactivate ? { ...row.fixed, ...row.live } : row.fixed);
+      check(expected.map(item => `EXISTS(SELECT 1 FROM ${sample.table} WHERE ${where(item)})`).join(' AND '),
+        expected.flatMap(item => Object.values(item)));
+    }
+  };
+  return { statements, add, check, collisionMany, ensureMany };
 }
 
 async function apply(env: StagingQaEnv, action: 'seed' | 'reset') {
@@ -114,55 +136,69 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset') {
   const companies = scopes.map(scope => id(`company-${scope}`));
   const employeeSql = employees.map(() => '?').join(',');
   const companySql = companies.map(() => '?').join(',');
-  for (const row of [...rows, ...financial]) tx.collision(row);
-  for (const persona of personas) tx.collision({ table: 'employee_credentials', key: 'employee_id',
-    fixed: { employee_id: id(persona), username: id(persona) } });
+  tx.collisionMany([...rows, ...financial]);
+  tx.collisionMany(personas.map(persona => ({ table: 'employee_credentials', key: 'employee_id',
+    fixed: { employee_id: id(persona), username: id(persona) } })));
   // Do not take over another principal, assignment, financial child or progressed
   // payment merely because it refers to a deterministic QA ID.
   tx.check(`NOT EXISTS(SELECT 1 FROM employee_company_memberships WHERE company_id IN (${companySql}) AND employee_id NOT IN (${employeeSql}))`, [...companies, ...employees]);
   tx.check(`NOT EXISTS(SELECT 1 FROM employee_roles WHERE role_id IN (?,?,?) AND employee_id NOT IN (${employeeSql}))`, [...personas.map(p => id(`role-${p}`)), ...employees]);
   for (const scope of scopes) {
-    tx.check(`NOT EXISTS(SELECT 1 FROM payroll_runs WHERE id=? AND (status NOT IN ('draft','cancelled') OR approved_at IS NOT NULL OR paid_at IS NOT NULL))`, [id(`payroll-${scope}`)]);
-    tx.check(`NOT EXISTS(SELECT 1 FROM payroll_payment_batches WHERE payroll_run_id=?)`, [id(`payroll-${scope}`)]);
-    tx.check(`NOT EXISTS(SELECT 1 FROM payroll_items WHERE payroll_run_id=? AND id<>?)`, [id(`payroll-${scope}`), id(`payroll-item-${scope}`)]);
-    tx.check(`NOT EXISTS(SELECT 1 FROM payroll_item_breakdown WHERE payroll_item_id=?)`, [id(`payroll-item-${scope}`)]);
-    tx.check(`NOT EXISTS(SELECT 1 FROM payroll_adjustments WHERE payroll_run_id=?)`, [id(`payroll-${scope}`)]);
-    tx.check(`NOT EXISTS(SELECT 1 FROM finance_receivables WHERE id=? AND (status NOT IN ('open','cancelled') OR paid_kobo<>0))`, [id(`receivable-${scope}`)]);
-    tx.check(`NOT EXISTS(SELECT 1 FROM finance_receivable_payments WHERE receivable_id=?)`, [id(`receivable-${scope}`)]);
-    tx.check(`NOT EXISTS(SELECT 1 FROM finance_source_postings WHERE receivable_id=?)`, [id(`receivable-${scope}`)]);
+    tx.check(`NOT EXISTS(SELECT 1 FROM payroll_runs WHERE id=? AND (status NOT IN ('draft','cancelled') OR approved_at IS NOT NULL OR paid_at IS NOT NULL))
+      AND NOT EXISTS(SELECT 1 FROM payroll_payment_batches WHERE payroll_run_id=?)
+      AND NOT EXISTS(SELECT 1 FROM payroll_items WHERE payroll_run_id=? AND id<>?)
+      AND NOT EXISTS(SELECT 1 FROM payroll_item_breakdown WHERE payroll_item_id=?)
+      AND NOT EXISTS(SELECT 1 FROM payroll_adjustments WHERE payroll_run_id=?)
+      AND NOT EXISTS(SELECT 1 FROM finance_receivables WHERE id=? AND (status NOT IN ('open','cancelled') OR paid_kobo<>0))
+      AND NOT EXISTS(SELECT 1 FROM finance_receivable_payments WHERE receivable_id=?)
+      AND NOT EXISTS(SELECT 1 FROM finance_source_postings WHERE receivable_id=?)`,
+    [id(`payroll-${scope}`), id(`payroll-${scope}`), id(`payroll-${scope}`), id(`payroll-item-${scope}`),
+      id(`payroll-item-${scope}`), id(`payroll-${scope}`), id(`receivable-${scope}`), id(`receivable-${scope}`), id(`receivable-${scope}`)]);
   }
   const audit: Row = { table: 'audit_logs', fixed: { id: id(`audit-${action}`), actor_employee_id: id('owner'),
     company_id: id('company-a'), module: namespace, action: `qa_${action}`, entity_type: 'qa_fixture',
     entity_id: namespace, reason: 'QA synthetic fixture lifecycle; no external activity.', source: 'system' } };
-  tx.collision(audit);
   const accessAudit: Row = { table: 'access_control_changes', fixed: { id: id('access-evidence'), actor_employee_id: id('owner'),
     company_id: id('company-a'), target_type: 'role', target_id: id('role-manager'), reason: 'QA synthetic role fixture.' } };
-  tx.collision(accessAudit);
+  tx.collisionMany([audit, accessAudit]);
 
   if (action === 'seed') {
     const passwords = [env.STAFFPORTAL_QA_OWNER_PASSWORD, env.STAFFPORTAL_QA_MANAGER_PASSWORD, env.STAFFPORTAL_QA_EMPLOYEE_PASSWORD];
     if (!env.AUTH_PEPPER || passwords.some(value => typeof value !== 'string' || value.length < 16 || value.length > 128)) throw new Error('Unavailable');
-    for (const row of rows) tx.ensure(row);
+    tx.ensureMany(rows);
+    const credentials: Row[] = [];
+    const grants: Array<{ grantId: string; roleId: string; code: string; level: string }> = [];
     for (let i = 0; i < personas.length; i++) {
       const salt = randomSaltHex();
       const hash = await derivePasswordHash(env, passwords[i]!, salt, WORKER_SAFE_PASSWORD_ITERATIONS);
-      tx.ensure({ table: 'employee_credentials', key: 'employee_id', fixed: { employee_id: employees[i], username: employees[i] },
-        live: { password_hash: hash, password_salt: salt, password_algorithm: 'PBKDF2-SHA256', password_iterations: WORKER_SAFE_PASSWORD_ITERATIONS } }, false);
+      credentials.push({ table: 'employee_credentials', key: 'employee_id',
+        fixed: { employee_id: employees[i], username: employees[i] },
+        live: { password_hash: hash, password_salt: salt, password_algorithm: 'PBKDF2-SHA256',
+          password_iterations: WORKER_SAFE_PASSWORD_ITERATIONS } });
       // Compose existing permission definitions; do not manufacture a second permission catalogue.
-      const codes = personas[i] === 'employee' ? ['profile.access', 'attendance.access'] : ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables'];
-      for (const code of codes) {
-        const permissionId = `SELECT id FROM permissions WHERE code=?`;
-        tx.check(`EXISTS(${permissionId})`, [code]);
-        const grantId = id(`grant-${personas[i]}-${code}`);
-        const level = personas[i] === 'owner' ? 'manage' : personas[i] === 'manager' ? 'edit' : 'view';
-        tx.check(`NOT EXISTS(SELECT 1 FROM role_permissions WHERE id=? AND NOT(role_id=? AND permission_id=(${permissionId}) AND access_level=?))`, [grantId, id(`role-${personas[i]}`), code, level]);
-        tx.add(`INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,(${permissionId}),?) ON CONFLICT(id) DO NOTHING`, grantId, id(`role-${personas[i]}`), code, level);
-        tx.check(`EXISTS(SELECT 1 FROM role_permissions WHERE id=? AND role_id=? AND permission_id=(${permissionId}) AND access_level=?)`, [grantId, id(`role-${personas[i]}`), code, level]);
-      }
+      const codes = personas[i] === 'employee' ? ['profile.access', 'attendance.access']
+        : ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables'];
+      const level = personas[i] === 'owner' ? 'manage' : personas[i] === 'manager' ? 'edit' : 'view';
+      for (const code of codes) grants.push({ grantId: id(`grant-${personas[i]}-${code}`),
+        roleId: id(`role-${personas[i]}`), code, level });
     }
-    for (const row of financial) tx.ensure(row);
-    tx.ensure(accessAudit);
-    tx.ensure(audit);
+    tx.ensureMany(credentials, false);
+    const permissionCodes = ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables'];
+    tx.check(`(SELECT COUNT(DISTINCT code) FROM permissions WHERE code IN (?,?,?,?))=?`,
+      [...permissionCodes, permissionCodes.length]);
+    const permissionId = `SELECT id FROM permissions WHERE code=?`;
+    tx.check(grants.map(() => `NOT EXISTS(SELECT 1 FROM role_permissions
+      WHERE id=? AND NOT(role_id=? AND permission_id=(${permissionId}) AND access_level=?))`).join(' AND '),
+    grants.flatMap(grant => [grant.grantId, grant.roleId, grant.code, grant.level]));
+    tx.add(`INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES
+      ${grants.map(() => `(?,?,(${permissionId}),?)`).join(',')}
+      ON CONFLICT(id) DO NOTHING`,
+    ...grants.flatMap(grant => [grant.grantId, grant.roleId, grant.code, grant.level]));
+    tx.check(grants.map(() => `EXISTS(SELECT 1 FROM role_permissions
+      WHERE id=? AND role_id=? AND permission_id=(${permissionId}) AND access_level=?)`).join(' AND '),
+    grants.flatMap(grant => [grant.grantId, grant.roleId, grant.code, grant.level]));
+    tx.ensureMany(financial);
+    tx.ensureMany([accessAudit, audit]);
   } else {
     // A reset of an absent fixture is a no-op, without manufacturing identities.
     tx.add(`UPDATE auth_sessions SET revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP) WHERE employee_id IN (${employeeSql})`, ...employees);
@@ -190,20 +226,24 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset') {
     tx.add(`INSERT INTO audit_logs(${Object.keys(audit.fixed).join(',')}) SELECT ${Object.keys(audit.fixed).map(() => '?').join(',')}
       WHERE EXISTS(SELECT 1 FROM employees WHERE id=?) AND EXISTS(SELECT 1 FROM companies WHERE id=?) ON CONFLICT(id) DO NOTHING`,
     ...Object.values(audit.fixed), id('owner'), id('company-a'));
-    tx.check(`NOT EXISTS(SELECT 1 FROM employees WHERE id IN (${employeeSql}) AND employment_status<>'inactive')`, employees);
-    tx.check(`NOT EXISTS(SELECT 1 FROM auth_sessions WHERE employee_id IN (${employeeSql}) AND revoked_at IS NULL)`, employees);
-    tx.check(`NOT EXISTS(SELECT 1 FROM employee_credentials WHERE employee_id IN (${employeeSql}))`, employees);
-    tx.check(`NOT EXISTS(SELECT 1 FROM employee_company_memberships WHERE employee_id IN (${employeeSql}) AND active=1)`, employees);
-    tx.check(`NOT EXISTS(SELECT 1 FROM employee_roles WHERE employee_id IN (${employeeSql}))`, employees);
-    tx.check(`NOT EXISTS(SELECT 1 FROM roles WHERE id IN (?,?,?) AND active<>0)`, personas.map(p => id(`role-${p}`)));
-    tx.check(`NOT EXISTS(SELECT 1 FROM companies WHERE id IN (${companySql}) AND active<>0)`, companies);
-    tx.check(`NOT EXISTS(SELECT 1 FROM company_locations WHERE id IN (?,?) AND active<>0)`, scopes.map(scope => id(`site-${scope}`)));
-    for (const scope of scopes) {
-      tx.check(`NOT EXISTS(SELECT 1 FROM payroll_items WHERE id=?)`, [id(`payroll-item-${scope}`)]);
-      tx.check(`NOT EXISTS(SELECT 1 FROM payroll_runs WHERE id=? AND (status<>'cancelled' OR gross_total_kobo<>0 OR net_total_kobo<>0 OR deduction_total_kobo<>0))`, [id(`payroll-${scope}`)]);
-      tx.check(`NOT EXISTS(SELECT 1 FROM finance_receivables WHERE id=? AND (status<>'cancelled' OR balance_kobo<>0))`, [id(`receivable-${scope}`)]);
-    }
-    tx.check(`NOT EXISTS(SELECT 1 FROM employees WHERE id=?) OR EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`, [id('owner'), id('audit-reset')]);
+    const resetFinancial = scopes.flatMap(scope => [id(`payroll-item-${scope}`), id(`payroll-${scope}`), id(`receivable-${scope}`)]);
+    tx.check(`NOT EXISTS(SELECT 1 FROM employees WHERE id IN (${employeeSql}) AND employment_status<>'inactive')
+      AND NOT EXISTS(SELECT 1 FROM auth_sessions WHERE employee_id IN (${employeeSql}) AND revoked_at IS NULL)
+      AND NOT EXISTS(SELECT 1 FROM employee_credentials WHERE employee_id IN (${employeeSql}))
+      AND NOT EXISTS(SELECT 1 FROM employee_company_memberships WHERE employee_id IN (${employeeSql}) AND active=1)
+      AND NOT EXISTS(SELECT 1 FROM employee_roles WHERE employee_id IN (${employeeSql}))
+      AND NOT EXISTS(SELECT 1 FROM roles WHERE id IN (?,?,?) AND active<>0)
+      AND NOT EXISTS(SELECT 1 FROM companies WHERE id IN (${companySql}) AND active<>0)
+      AND NOT EXISTS(SELECT 1 FROM company_locations WHERE id IN (?,?) AND active<>0)
+      AND NOT EXISTS(SELECT 1 FROM payroll_items WHERE id=?)
+      AND NOT EXISTS(SELECT 1 FROM payroll_runs WHERE id=? AND (status<>'cancelled' OR gross_total_kobo<>0 OR net_total_kobo<>0 OR deduction_total_kobo<>0))
+      AND NOT EXISTS(SELECT 1 FROM finance_receivables WHERE id=? AND (status<>'cancelled' OR balance_kobo<>0))
+      AND NOT EXISTS(SELECT 1 FROM payroll_items WHERE id=?)
+      AND NOT EXISTS(SELECT 1 FROM payroll_runs WHERE id=? AND (status<>'cancelled' OR gross_total_kobo<>0 OR net_total_kobo<>0 OR deduction_total_kobo<>0))
+      AND NOT EXISTS(SELECT 1 FROM finance_receivables WHERE id=? AND (status<>'cancelled' OR balance_kobo<>0))
+      AND (NOT EXISTS(SELECT 1 FROM employees WHERE id=?) OR EXISTS(SELECT 1 FROM audit_logs WHERE id=?))`,
+    [...employees, ...employees, ...employees, ...employees, ...employees, ...personas.map(p => id(`role-${p}`)),
+      ...companies, ...scopes.map(scope => id(`site-${scope}`)), ...resetFinancial, id('owner'), id('audit-reset')]);
   }
   await env.DB.batch(tx.statements);
 }
