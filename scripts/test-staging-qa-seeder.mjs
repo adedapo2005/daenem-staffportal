@@ -144,7 +144,9 @@ async function main() {
   await summary(await operation('seed', { body: JSON.stringify({ action: 'seed', extra: true }) }), 400, 'Unknown body properties refused');
   await summary(await operation('seed', { body: ' '.repeat(65) }), 400, 'Streaming body limit');
   const before = snapshot();
-  await summary(await operation('seed', { env: { ...env, AUTH_PEPPER: undefined } }), 503, 'Missing pepper fails closed');
+  const missingPepper = await operation('seed', { env: { ...env, AUTH_PEPPER: undefined } });
+  check(missingPepper.headers.get('x-qa-error-class') === 'configuration', 'Bounded failure classification');
+  await summary(missingPepper, 503, 'Missing pepper fails closed');
   same(snapshot(), before, 'Missing pepper leaves DB intact');
   await summary(await operation('reset'), 200, 'Absent fixture reset');
   const resetBatchLength = lastBatchLength;

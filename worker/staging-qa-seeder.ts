@@ -27,6 +27,21 @@ const reply = (status: number, body: Record<string, unknown> = { error: 'QA oper
     'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store',
     'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
   } });
+const failureClass = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  if (/queries per invocation|too many quer|query limit|subrequest/i.test(message)) return 'query-limit';
+  if (/too many sql variables|bound parameter/i.test(message)) return 'parameter-limit';
+  if (/foreign key/i.test(message)) return 'foreign-key';
+  if (/unique/i.test(message)) return 'unique';
+  if (/check constraint/i.test(message)) return 'check';
+  if (/not null/i.test(message)) return 'not-null';
+  if (/no such table|no such column/i.test(message)) return 'schema';
+  if (/malformed json|qa invariant/i.test(message)) return 'invariant';
+  if (/timeout|timed out|cpu time/i.test(message)) return 'timeout';
+  if (/unavailable/i.test(message)) return 'configuration';
+  if (/d1|sqlite/i.test(message)) return 'd1-other';
+  return 'runtime-other';
+};
 
 async function authorized(supplied: string, expected: string) {
   // Compare fixed-size digests, including for unequal input lengths.
@@ -278,5 +293,9 @@ export async function routeStagingQaSeeder(request: Request, env: StagingQaEnv):
         (body.action !== 'seed' && body.action !== 'reset')) return reply(400);
     await apply(env, body.action);
     return reply(200, { ok: true, fixture: namespace, action: body.action });
-  } catch { return reply(503); }
+  } catch (error) {
+    const response = reply(503);
+    response.headers.set('x-qa-error-class', failureClass(error));
+    return response;
+  }
 }
