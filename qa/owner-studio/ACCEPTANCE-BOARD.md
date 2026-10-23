@@ -85,3 +85,24 @@ The second command records screenshot evidence at 390, 430, 768, 1024, 1280, 136
 | Native 4K control readability, keyboard contrast | Static 11px controls and low-contrast secondary copy | Scale Owner tools at 2400px+ and raise copy/focus contrast | Development QA only |
 
 **Unchanged release blockers:** Actual Pre-Production 1024px Sign-In vertical overflow, authenticated Owner Library/D1 and session acceptance, production-like provider/weather/Install App integration acceptance, exact approved branding and fully editable per-viewport alternatives, audited activation with tested instant rollback, plus final verified release-candidate visuals and accessibility. None may be marked complete on the basis of this isolated preview.
+
+## Actual Cloudflare Pre-Production visual/security evidence — 22 October 2026 ET
+
+Source: `https://daenem-staffportal-api-staging.adedapo2005.workers.dev/`, tested from authorized Daenem_Group machine in a new unauthenticated Chromium context. Only GET/HEAD permitted; no real sign-in, staging writes, or deployment.
+
+Commands:
+
+```sh
+node qa/owner-studio/live-preproduction-visual-evidence.cjs
+node qa/owner-studio/live-preproduction-layout-diagnostics.cjs
+node qa/owner-studio/live-preproduction-anonymous-boundary.cjs
+```
+
+- Actual live public HTTP 200 at 390, 768, 1024, 1280, 1366, 1920, 3840px. Zero detected JavaScript page errors and zero non-GET requests in the initial seven-size visual run.
+- Public 390px and 768px layouts scroll vertically (permitted). 1366px, 1920px and 3840px fit their respective viewports in the observed run.
+- **Fail — 1024×768**: live page height ~2,515–2,528px after load; no horizontal overflow. Root cause matrix: `.sp-layout.sp-reference-layout` rendered at ~2,473px, auth+weather/right rail at y≈426–1117 (691px), Global Operations at y≈1130–1975 (845px), forcing stacked desktop sections below the 768px fold. This is **the approved public page**, not the private Owner Studio renderer. Protected V180 is deliberately unchanged by the Studio PR; responsibility remains with the authorized Sign-In source owner.
+- **Monitor — 1280×720**: one first-load audit showed transient extreme vertical height (~12,194px), whereas a fresh isolated repeat at ~1.6s and ~6.6s measured a stable 720px. Not reproducibly confirmed; do not claim fixed. Recheck with repeated load and stress/error handling before actual public acceptance.
+- Anonymous GET `/api/theme/signin/designs` → HTTP **401**; `/api/theme/signin/designs/review` → HTTP **401**. No protected Owner JSON exposed. This verifies only unauthenticated rejection, **not** Owner read/write authorization, cross-company isolation, D1 atomic persistence in staging, or audit readback.
+- The local alternate-design preview was visually inspected at nine sizes, but its appearance is **not** visual acceptance for the live Cloudflare page. Do not merge PR #99 or activate a design on the strength of this evidence alone.
+
+Screenshots and metrics are stored only in the local `qa/owner-studio/live-evidence/` folder. Do not commit screenshots that may include dynamic headlines or other transient public media. The QA scripts, factual findings, and pass/fail statuses are the reproducible evidence.
