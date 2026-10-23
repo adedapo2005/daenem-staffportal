@@ -220,6 +220,36 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx wrangler deploy --config wrangler.staffportal-staging.jsonc --keep-vars
 
+      - name: Restore OAuth provider bindings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID || secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET || secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID || secrets.MICROSOFT_OAUTH_CLIENT_ID }}
+          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET || secrets.MICROSOFT_OAUTH_CLIENT_SECRET }}
+        shell: bash
+        run: |
+          oauth_secret_file="$(mktemp)"
+          trap 'rm -f "$oauth_secret_file"' EXIT
+          node --input-type=module <<'NODE' > "$oauth_secret_file"
+          const names = [
+            'GOOGLE_CLIENT_ID',
+            'GOOGLE_CLIENT_SECRET',
+            'MICROSOFT_CLIENT_ID',
+            'MICROSOFT_CLIENT_SECRET',
+          ];
+          const values = Object.fromEntries(
+            names.map((name) => [name, (process.env[name] || '').trim()]),
+          );
+          const missing = names.filter((name) => !values[name]);
+          if (missing.length) {
+            console.error('::error::Missing encrypted Pre-Production OAuth secrets: ' + missing.join(', '));
+            process.exit(1);
+          }
+          process.stdout.write(JSON.stringify(values));
+          NODE
+          npx wrangler secret bulk "$oauth_secret_file" --config wrangler.staffportal-staging.jsonc
+
       - name: Verify Pre-Production health
         run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
 
@@ -232,6 +262,18 @@ jobs:
             if node scripts/test-staffportal-staging-runtime.mjs; then exit 0; fi
             if [ "$attempt" -eq 6 ]; then exit 1; fi
             echo "Runtime assets are still propagating; retrying in 5 seconds."
+            sleep 5
+          done
+
+      - name: Verify Pre-Production social authentication redirects
+        env:
+          STAFFPORTAL_STAGING_URL: https://daenem-staffportal-api-staging.adedapo2005.workers.dev
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if node scripts/test-staffportal-staging-social-auth.mjs; then exit 0; fi
+            if [ "$attempt" -eq 6 ]; then exit 1; fi
+            echo "OAuth bindings are still propagating; retrying in 5 seconds."
             sleep 5
           done
 
