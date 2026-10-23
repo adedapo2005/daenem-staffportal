@@ -147,12 +147,16 @@ async function main() {
   await summary(await operation('seed', { env: { ...env, AUTH_PEPPER: undefined } }), 503, 'Missing pepper fails closed');
   same(snapshot(), before, 'Missing pepper leaves DB intact');
   await summary(await operation('reset'), 200, 'Absent fixture reset');
+  const resetBatchLength = lastBatchLength;
+  check(resetBatchLength <= 50, 'Reset stays within the lowest D1 per-invocation query limit');
   same(snapshot(), before, 'Absent reset has no state change');
   failureIndex = 35;
   await summary(await operation('seed'), 503, 'Forced seed failure');
   same(snapshot(), before, 'Seed rollback preserves entire DB');
   failureIndex = -1;
   await summary(await operation('seed'), 200, 'Authorized seed');
+  const seedBatchLength = lastBatchLength;
+  check(seedBatchLength <= 50, 'Seed stays within the lowest D1 per-invocation query limit');
   const seeded = snapshot();
   for (const response of await Promise.all([operation('seed'), operation('seed')])) await summary(response, 200, 'Concurrent idempotent seed');
   same(snapshot(), seeded, 'Concurrent retries preserve exact fixture and evidence');
@@ -192,10 +196,10 @@ async function main() {
   await summary(await operation('seed'), 200, 'Reseed restores deterministic membership');
   // The last statement checks required reset evidence, so inject at early and late boundaries.
   const active = snapshot();
-  failureIndex = 70;
+  failureIndex = Math.floor(resetBatchLength / 2);
   await summary(await operation('reset'), 503, 'Mid-reset failure');
   same(snapshot(), active, 'Reset rollback preserves credentials sessions permissions and finance');
-  failureIndex = lastBatchLength - 1;
+  failureIndex = resetBatchLength - 1;
   await summary(await operation('reset'), 503, 'Late reset failure');
   same(snapshot(), active, 'Late rollback preserves full prior fixture');
   failureIndex = -1;
@@ -237,7 +241,7 @@ async function main() {
   check(externalCalls === 0, 'Zero provider delivery logging or external calls');
   check(rows('PRAGMA foreign_key_check').length === 0, 'Canonical foreign keys intact');
   db.close();
-  console.log(`PASS staging QA composed runtime: ${assertions} checks; 106 migrations; zero external calls.`);
+  console.log(`PASS staging QA composed runtime: ${assertions} checks; seed ${seedBatchLength}/50; reset ${resetBatchLength}/50; 106 migrations; zero external calls.`);
 }
 
 main().catch(() => {
