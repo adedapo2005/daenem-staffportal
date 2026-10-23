@@ -157,3 +157,38 @@ html[data-staffportal-postlogin="true"][data-large-text="true"] .stage1-appearan
     min-width: 0;
   }
 }
+
+/* Tablet post-login shell: give the command search its own row so it cannot
+   collide with the clock, release status, or utility controls at narrow widths. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  html[data-staffportal-postlogin="true"] .p-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: .45rem .7rem;
+  }
+  html[data-staffportal-postlogin="true"] .p-topbar-leading {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"] .p-topbar-utilities {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: .3rem;
+  }
+  html[data-staffportal-postlogin="true"] .p-topbar-command-zone {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+  html[data-staffportal-postlogin="true"] .p-command-button {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
