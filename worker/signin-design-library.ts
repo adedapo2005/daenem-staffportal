@@ -89,6 +89,17 @@ export async function routeSignInDesignLibrary(request: Request, env: Env, conte
   if (!context.roles.some(role => role.code === 'owner') || !hasPermission(context, 'settings.access', 'manage')) {
     return json({ error: 'Owner authorization is required to manage Sign-In designs.' }, 403);
   }
+  // Shared browser-origin guard for Library, Readiness, Review and Rehearsal mutations.
+  // Check BEFORE querying D1; a form with text/plain can otherwise send JSON-shaped
+  // content across origins if the Owner's browser carries ambient session cookies.
+  const origin = request.headers.get('origin');
+  const fetchSite = request.headers.get('sec-fetch-site');
+  if (request.method !== 'GET' && (
+    (origin !== null && origin !== url.origin) ||
+    (fetchSite !== null && fetchSite !== 'same-origin' && fetchSite !== 'none')
+  )) {
+    return json({ error: 'Cross-origin Owner design changes are not permitted.' }, 403);
+  }
   if (url.pathname === REHEARSAL_PATH) return handleSignInDesignRehearsal(request, env, context);
   if (url.pathname === READINESS_PATH || url.pathname === REVIEW_PATH) {
     return handleDesignReleaseReview(request, env, context, url.pathname);
