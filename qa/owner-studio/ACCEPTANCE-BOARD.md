@@ -117,3 +117,17 @@ Screenshots and metrics are stored only in the local `qa/owner-studio/live-evide
 - `qa/owner-studio/test-live-preview-sync.cjs` is the focused repeatable Playwright regression, including a true 390px full-size mobile scroll screenshot, desktop non-overlap checks, nested-item position changes, one-step Undo, and rejection when the protected authentication block is removed.
 - Locally inspected screenshots: `qa/owner-studio/live-undo-diagnostic.png`, `live-nested-item-update.png`, `live-nested-item-mobile.png`, `live-nested-item-mobile-scroll.png`. These screenshot files remain local and are not release artifacts.
 - All other outstanding gates from the acceptance board remain **open**. This development work does not authorize publication, authenticated D1 acceptance, or a change to V180.
+
+## Private alternative preview security and keyboard acceptance — 22 October 2026 (local only)
+
+**New reproduced failure:** before the fix, the real Owner Studio concept preview accepted typed username/password text even though form submission was blocked. A Playwright regression in `qa/owner-studio/test-private-preview-accessibility.cjs` failed on this condition.
+
+**Local fix:** the Owner Studio-only alternative React renderer marks credential fields read-only after initial mount and after mode changes, disables autocomplete in the private preview, provides a clearly visible `Design Preview Only · Credentials Disabled` label, and continues blocking submissions/provider redirects. The public V180 authentication renderer and all public authentication fields are unchanged.
+
+**Keyboard/focus fix:** full-screen private review is a proper `role=dialog` / `aria-modal=true` dialog. Its temporary portal isolates background body content with reversible `inert` state, traps Tab and Shift+Tab, restores focus on Escape, and restores focus to the launch button on direct Close. This work does **not** activate or publish a draft.
+
+**Viewport QA:** mobile/compact-desktop/full-size snapshots are produced locally at 390, 1024, 1366 and 3840px. In full-screen mode the desktop canvas uses a bounded fit-to-height scale below the preview controls; mobile and tablet keep natural vertical scrolling. The original full-screen 1024px capture hid the bottom of the page behind the preview controls and was corrected; the approved public V180 compact-screen issue is separate and remains open.
+
+Focused command: `node qa/owner-studio/test-private-preview-accessibility.cjs`. Existing regression: `node qa/owner-studio/test-owner-studio.cjs`. Geometry: `node qa/owner-studio/visual-acceptance-audit.cjs`.
+
+**Release position:** this is development-candidate evidence. Keep PR #99 draft and public Pre-Production/Production untouched until all authenticated, security, visual, accessibility, rollback and release gates pass.
