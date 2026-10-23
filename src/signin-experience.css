@@ -1876,3 +1876,555 @@
 #root .sp-root .sp-reference-layout > .sp-lower-right-rail-v86 > #staffportal-auth-mount {
   height:100%!important;min-height:0!important;align-self:stretch!important;
 }
+
+
+/* Premium auth controls v1 (2026-10-23)
+   Final scoped pass for readable large-display type, calm credential fields,
+   balanced provider controls, and high-contrast entry states. Outer rail/grid
+   geometry is intentionally untouched so adjacent widgets never reflow. */
+.sp-root .sp-auth-card.sp-auth-v86.sp-auth-gateway {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-field-label,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-show-password,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-social-label,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy {
+  text-rendering: optimizeLegibility;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+  background: #f8fbfd !important;
+  border: 1px solid #c5d4df !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  transform: none !important;
+  padding-inline: 11px !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell::after {
+  display: none !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell > svg:first-child {
+  width: 18px !important;
+  height: 18px !important;
+  color: #5d7890 !important;
+  background: transparent !important;
+  border: 0 !important;
+  filter: none !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+  min-width: 0 !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  color: #173c58 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input::placeholder {
+  color: #647f92 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell:hover {
+  border-color: #9fb7c8 !important;
+  box-shadow: none !important;
+  background: #fbfdfe !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell:focus-within {
+  border-color: #2b83c8 !important;
+  box-shadow: 0 0 0 3px rgba(43,131,200,.16) !important;
+  background: #ffffff !important;
+  transform: none !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell.is-error {
+  border-color: #c75b54 !important;
+  box-shadow: 0 0 0 3px rgba(199,91,84,.15) !important;
+  background: #fff9f8 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-show-password {
+  min-height: 28px !important;
+  padding: 3px 4px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: #285f84 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-show-password:hover {
+  background: #eaf3f9 !important;
+  color: #154f7b !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-social-button,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-forgot,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-remember input {
+  -webkit-tap-highlight-color: transparent;
+}
+.sp-root .sp-auth-card.sp-auth-gateway :is(.sp-auth-tabs button,.sp-social-button,.sp-primary-button,.sp-forgot,.sp-show-password):focus-visible {
+  outline: 3px solid rgba(43,131,200,.52) !important;
+  outline-offset: 2px !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-notice {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  padding: 8px 10px !important;
+  border-radius: 9px !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-field-status {
+  min-height: 0 !important;
+  margin: 2px 1px 0 !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  font-weight: 650 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  padding: 5px 8px !important;
+  border: 1px solid #b9cbd7 !important;
+  border-radius: 9px !important;
+  background: #f8fbfd !important;
+  color: #1e4c68 !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-social-button:hover {
+  border-color: #6e9fbe !important;
+  background: #eef6fb !important;
+  transform: none !important;
+  box-shadow: 0 4px 12px rgba(34,87,120,.10) !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon {
+  width: 19px !important;
+  height: 19px !important;
+  flex: 0 0 19px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon svg {
+  width: 19px !important;
+  height: 19px !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-social-label {
+  min-width: 0 !important;
+  font-size: 12px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status {
+  grid-column: 1 / -1 !important;
+  margin: 1px 0 0 !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-install-card-v101 {
+  min-height: 32px !important;
+  height: 32px !important;
+  margin-top: 2px !important;
+  padding: 4px 7px !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy {
+  padding-top: 3px !important;
+}
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy p,
+.sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy small {
+  font-size: 10px !important;
+  line-height: 1.22 !important;
+}
+
+/* Laptop/desktop rail: readable text while preserving the existing fixed card
+   footprint and the stable weather/auth split. */
+@media (min-width: 721px) {
+  .sp-root .sp-auth-card.sp-auth-v86.sp-auth-gateway {
+    overflow: hidden !important;
+    gap: 4px !important;
+    padding: 9px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-topline {
+    min-height: 29px !important;
+    height: 29px !important;
+    gap: 5px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-logo-v101 {
+    transform: scale(.68) !important;
+    transform-origin: left center !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-secure-chip {
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy {
+    gap: 1px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {
+    margin: 1px 0 1px !important;
+    font-size: 22px !important;
+    line-height: 1.04 !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {
+    font-size: 11px !important;
+    line-height: 1.18 !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs {
+    height: 34px !important;
+    min-height: 34px !important;
+    margin-top: 3px !important;
+    padding: 2px !important;
+    gap: 3px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 3px 5px !important;
+    gap: 5px !important;
+    font-size: 12px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form {
+    gap: 3px !important;
+    margin-top: 3px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form label {
+    gap: 2px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {
+    min-height: 14px !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+    min-height: 35px !important;
+    height: 35px !important;
+    padding-inline: 10px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+    font-size: 13.5px !important;
+    line-height: 1.1 !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-options {
+    min-height: 18px !important;
+    height: 18px !important;
+    font-size: 11px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {
+    min-height: 37px !important;
+    height: 37px !important;
+    padding: 4px 8px !important;
+    font-size: 14px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-divider {
+    min-height: 15px !important;
+    margin: 1px 0 0 !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+}
+
+/* Large displays: the rail is wider/taller, so use true enterprise-scale
+   controls instead of the 1080p compact rules. */
+@media (min-width: 2100px) {
+  .sp-root .sp-auth-card.sp-auth-v86.sp-auth-gateway {
+    overflow: hidden !important;
+    gap: 9px !important;
+    padding: 18px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-topline {
+    min-height: 42px !important;
+    height: 42px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-logo-v101 {
+    transform: scale(.82) !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-secure-chip {
+    font-size: 14px !important;
+    padding: 6px 9px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {
+    font-size: clamp(26px, 1.35vw, 34px) !important;
+    line-height: 1.06 !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs {
+    height: 49px !important;
+    min-height: 49px !important;
+    margin-top: 5px !important;
+    padding: 4px !important;
+    gap: 5px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {
+    min-height: 41px !important;
+    height: 41px !important;
+    font-size: 16px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form {
+    gap: 7px !important;
+    margin-top: 4px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form label {
+    gap: 4px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {
+    font-size: 15px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+    min-height: 52px !important;
+    height: 52px !important;
+    padding-inline: 15px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+    font-size: 17px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-options {
+    min-height: 24px !important;
+    height: 24px !important;
+    font-size: 14px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {
+    min-height: 52px !important;
+    height: 52px !important;
+    font-size: 17px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-divider {
+    min-height: 21px !important;
+    font-size: 14px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+    min-height: 52px !important;
+    height: 52px !important;
+    font-size: 15px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon,
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-label {
+    font-size: 15px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status {
+    font-size: 12px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-install-card-v101 {
+    min-height: 48px !important;
+    height: 48px !important;
+    padding: 7px 10px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy p,
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy small {
+    font-size: 12px !important;
+  }
+}
+
+/* Tablet and phone retain a comfortable touch target without changing rail
+   placement; the auth panel remains a fixed sibling of the weather widget. */
+@media (max-width: 1279px) {
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {
+    font-size: clamp(20px, 3.1vw, 26px) !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {
+    font-size: 12px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {
+    min-height: 38px !important;
+    height: 38px !important;
+    font-size: 13px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {
+    font-size: 12px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+    min-height: 43px !important;
+    height: 43px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+    font-size: 14px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {
+    min-height: 45px !important;
+    height: 45px !important;
+    font-size: 15px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+    min-height: 44px !important;
+    height: 44px !important;
+    font-size: 13px !important;
+  }
+}
+@media (max-width: 720px) {
+  .sp-root .sp-auth-card.sp-auth-v86.sp-auth-gateway {
+    overflow: visible !important;
+    padding: 14px !important;
+    gap: 9px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-topline {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-logo-v101 {
+    transform: scale(.78) !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy h2 {
+    font-size: 24px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-copy p:last-child {
+    font-size: 13px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-tabs button {
+    min-height: 36px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form {
+    gap: 8px !important;
+    margin-top: 4px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-form label {
+    gap: 4px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-field-label {
+    font-size: 13px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell {
+    min-height: 48px !important;
+    height: 48px !important;
+    padding-inline: 12px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input {
+    font-size: 16px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-primary-button {
+    min-height: 50px !important;
+    height: 50px !important;
+    font-size: 16px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-divider {
+    font-size: 12px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-list {
+    gap: 6px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-social-button {
+    min-height: 46px !important;
+    height: 46px !important;
+    font-size: 13px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-provider-status {
+    font-size: 10px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-install-card-v101 {
+    min-height: 42px !important;
+    height: 42px !important;
+  }
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy p,
+  .sp-root .sp-auth-card.sp-auth-gateway .sp-auth-policy small {
+    font-size: 10px !important;
+  }
+}
+
+/* Legacy Create Account panel: keep entry text, placeholders, and validation
+   readable while retaining its existing right-rail geometry. */
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading h1 {
+  font-size: clamp(20px, 1.45vw, 28px) !important;
+  line-height: 1.12 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-panel-heading p {
+  font-size: clamp(12px, .85vw, 15px) !important;
+  line-height: 1.35 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-tabs button {
+  min-height: 38px !important;
+  font-size: 13px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field-label {
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field > input,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field {
+  min-height: 42px !important;
+  height: 42px !important;
+  color: #173d32 !important;
+  background: #f9fdfb !important;
+  border: 1px solid #9db8ad !important;
+  font-size: 14px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field input {
+  color: #173d32 !important;
+  font-size: 14px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field input::placeholder {
+  color: #648176 !important;
+  opacity: 1 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-field > input:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-create .usp-password-field:focus-within {
+  outline: 3px solid rgba(29,154,117,.28) !important;
+  outline-offset: 1px !important;
+  border-color: #1d9a75 !important;
+  box-shadow: 0 0 0 1px #1d9a75 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-auth-message {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  color: #6f1d2a !important;
+  background: #fff4f5 !important;
+  border-color: #ddaab3 !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-primary-button,
+#staffportal-auth-mount.sp-auth-mode-create .usp-secondary-button {
+  min-height: 44px !important;
+  font-size: 14px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons > button {
+  min-height: 42px !important;
+  font-size: 13px !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .sp-social-icon {
+  width: 19px !important;
+  height: 19px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-social-buttons .sp-social-label {
+  font-size: 13px !important;
+  color: inherit !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create :is(.usp-primary-button,.usp-secondary-button,.usp-social-buttons > button,.usp-tabs button):focus-visible {
+  outline: 3px solid rgba(29,154,117,.40) !important;
+  outline-offset: 2px !important;
+}
+#staffportal-auth-mount.sp-auth-mode-create .usp-legal-copy {
+  font-size: 10.5px !important;
+  line-height: 1.35 !important;
+}
