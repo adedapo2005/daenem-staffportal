@@ -48,6 +48,7 @@ const checks = [
   ['Forgot Password raises its isolated rail above overlapping dashboard cards and restores it on exit', auth.includes("closest<HTMLElement>('.sp-lower-right-rail')") && auth.includes("rail.style.zIndex = '1200'") && auth.includes('rail.style.zIndex = previousZIndex')],
   ['Create Account no longer creates an internal vertical scrollbar', !hasUnexpectedVerticalScroll(css)],
   ['bounded scrolling is limited to the Forgot Password dialog', !hasUnexpectedVerticalScroll('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot { overflow-y:auto!important; }') && hasUnexpectedVerticalScroll('#staffportal-auth-mount.sp-auth-mode-create { overflow-y:auto!important; }') && css.includes('.sp-root #staffportal-auth-mount.sp-auth-mode-forgot {')],
+  ['Forgot Password requires an identity and explicit company selection before sending', auth.includes("setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:'');") && auth.includes('disabled={busy||!recoveryIdentity.trim()||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)}')],
   ['password success state is visibly styled', css.includes('.usp-password-status .pass')],
   ['password failure state is visibly styled', css.includes('.usp-password-status .fail')],
   ['Sign-In weather uses the fixed public endpoint', experience.includes("fetch('/api/context/signin/weather'")],

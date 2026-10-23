@@ -552,7 +552,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       if(!active)return;
       const companies=(result.companies||[]).filter(company=>!/farm/i.test(`${company.code} ${company.name}`));
       setRecoveryCompanies(companies);
-      setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:(companies[0]?.code||''));
+      setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:'');
     }).catch(()=>undefined);
     return()=>{active=false};
   },[]);
@@ -1218,7 +1218,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
           {recoveryMethods.includes('whatsapp') && <button type="button" className={recoveryMethod==='whatsapp'?'active':''} aria-pressed={recoveryMethod==='whatsapp'} onClick={()=>setRecoveryMethod('whatsapp')}><WhatsAppMark size={18}/><span><b>WhatsApp</b><small>Send the code to your enrolled verified WhatsApp contact.</small></span></button>}
         </div>}
         <div className="usp-positive-note">{recoveryMethod==='whatsapp'?<WhatsAppMark size={16}/>:<Mail size={16} />}<span>{authLabels.recoveryIdentityNote}</span></div>
-        <button className="usp-primary-button" disabled={busy||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
+        <button className="usp-primary-button" disabled={busy||!recoveryIdentity.trim()||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
       </form>}
 
       {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifyRecovery}>
