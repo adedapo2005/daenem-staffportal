@@ -9,10 +9,11 @@ const checks = [
   ['official branch push auto-deploy is enabled', workflow.includes("push:\n    branches:\n      - 'preproduction/staffportal'") || workflow.includes("push:\r\n    branches:\r\n      - 'preproduction/staffportal'")],
   ['manual exact-SHA recovery remains available', workflow.includes('workflow_dispatch:') && workflow.includes('candidate_sha:')],
   ['automatic run uses github.sha', workflow.includes("github.event_name == 'push' && github.sha || inputs.candidate_sha")],
-  ['stale queued deployment is rejected', workflow.includes('Skipping stale Pre-Production deploy')],
+  ['all deployment candidates must match the official branch head', workflow.includes("branch: 'preproduction/staffportal'") && workflow.includes('if (head !== sha)') && workflow.includes('Skipping unapproved Pre-Production deploy')],
   ['production safety gates remain closed', workflow.includes('productionDeployAuthorized') && workflow.includes('productionMigrationAuthorized')],
   ['post-deploy health verification remains present', workflow.includes('Verify Pre-Production health')],
   ['runtime verification remains present', workflow.includes('Verify Pre-Production runtime and auth route contract')],
+  ['public asset API verification remains present', workflow.includes('Verify deployed public asset contract') && workflow.includes('test-staffportal-staging-public-assets.mjs')],
   ['asset integrity verification remains present', workflow.includes('Verify versioned Pre-Production asset integrity')],
   ['controller CI targets official Pre-Production source', controller.includes('ref: preproduction/staffportal')],
 ];
