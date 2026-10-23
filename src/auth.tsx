@@ -6,6 +6,7 @@ import {
   readThemeId, type ThemeId,
 } from './theme-system';
 import { Brand, SignInExperience } from './signin-experience';
+import { OwnerConceptRuntime, type ConceptDesign } from './owner-studio-concept-runtime';
 import { mountSignInLegacyFonts } from './signin-font-loader';
 import { clearOfflineActiveEmployee, readCachedAuthContext, setOfflineActiveEmployee } from './offline-platform';
 import {
@@ -428,7 +429,7 @@ export function WorldClocks() {
   </div>;
 }
 
-export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: WorkforceContext) => void }) {
+export function AuthScreen({ onAuthenticated, ownerConcept }: { onAuthenticated: (context: WorkforceContext) => void; ownerConcept?: ConceptDesign }) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
   const returnSignupFocusRef = useRef(false);
@@ -1235,5 +1236,6 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   );
 
   const authPanel = mode === 'signin' ? approvedSignInPanel : legacyAuthPanel;
+  if(ownerConcept) return <OwnerConceptRuntime design={ownerConcept} authPanel={authPanel} />;
   return <SignInExperience authPanel={authPanel} authMode={mode} themeId={themeId} onInstall={() => void installApp()} />;
 }

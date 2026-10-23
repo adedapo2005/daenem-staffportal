@@ -241,6 +241,11 @@ await cloudPage.locator('[data-builder-review-withdraw]').click();
 await cloudPage.locator('[data-builder-review-status]').getByText('Pending review withdrawn').waitFor();
 if(reviewCandidate!==null||reviewWrites!==2)throw Error('Review withdrawal failed');
 
+await cloudPage.locator('[data-builder-starter]').click();
+await cloudPage.locator('[data-builder-live-preview]').click();
+await cloudPage.locator('[data-builder-live-root] .sp-auth-form input[autocomplete="username"]').waitFor({timeout:15000});
+if(await cloudPage.locator('[data-builder-live-root] .sp-auth-form').count()!==1)throw Error('Real React authentication not rendered in Owner concept preview');
+await cloudPage.locator('[data-builder-live-close]').click();
 await cloudPage.close();
 await page.locator('[data-owner-pro-preset]').selectOption('6');
 await page.locator('[data-owner-pro-layer]').selectOption('#staff-global-operations');
