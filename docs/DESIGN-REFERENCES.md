@@ -50,6 +50,21 @@ Material Design 3 is a **reference, not a skin**. DAENEM components should remai
 - Maintain scaled 32-inch 4K premium legibility, 1920/1366 desktop, tablet/mobile reflow, contrast, reduced motion, no clipping, and intentional module-specific analytical hierarchy.
 - Require deployed authenticated Cloudflare Pre-Production and independent TinyFish/browser acceptance. Passing source tests or fictional Sites preview alone does not close release acceptance.
 
+## System-wide enterprise component standard (Owner approved, 23 October 2026)
+
+This design direction applies to **every StaffPortal page, feature, module, role-specific workspace, and reusable component**, not just dashboards. Every new or revised surface should actively consult the reference library and implement the appropriate interaction and information-design patterns; a collection of generic cards is not sufficient.
+
+- **Navigation and workspace structure:** Fluent 2-inspired command hierarchy, accessible responsive side navigation, clear groupings, breadcrumbs, context actions, quick search, keyboard navigation, selection and focus treatment. Do not replace the approved Sign-In or post-login foundation solely to mimic Microsoft.
+- **Data-entry and operational workflows:** polished and fully functional form fields, validation, inline help, steppers, filters, date pickers, file uploads, data grids, detail panes, role-gated actions, review and approval states, dialogs, drawers, menus, tabs, modals, toasts and confirmation patterns. Preserve actual backend integration and the established data-entry workflows.
+- **Analytics and reporting:** visually rich, properly sourced KPI/delta cards, real series charts, comparisons, tables, timelines, operational alerts, rankings, progress and maps only where relevant permission-scoped datasets exist. Mini sparklines require dated series; no fabricated charts, trends, model forecasts or percentages against a zero/missing baseline.
+- **StaffPortal module coverage:** Executive/Owner Dashboard, Payroll, Finance, HR/Attendance/Leave, Recruitment, Forms, Properties, Printing, Bakery, Autos, Logistics, Inventory, Communications, Security, Audit, Settings and Owner Studio. The same component quality applies to error, empty, loading, disabled, hover, focus, success, offline and permission-denied states.
+- **Color and visual depth:** the approved DAENEM palette is a foundation, **not a creativity ceiling**. Add tasteful sapphire, indigo, plum, teal, amber, champagne, coral and other complementary supporting tones, semantic accents, restrained gradients, edge highlights, carefully composed shadows and meaningful data-series colors. Preserve legibility and contrast. Green still denotes success/healthy status, not generic navigation or decoration.
+- **Premium composition:** refined typography, meaningful hierarchy, intentional use of open space, high information density without clutter, polished control geometry and iconography, tasteful state transitions, 32-inch 4K scaling, smaller desktop no-clipping behavior and tablet/mobile adaptive layouts. No glass, fake transparent overlays or excessive motion. Support keyboard, screen readers, touch and reduced motion.
+- **Operational truth and integration:** the canonical GitHub StaffPortal frontend and Cloudflare Worker/D1 backend must be connected. Use authenticated, permission-scoped ERP records and show data source, scope, period and freshness. Explicitly distinguish recorded zero, missing data, unauthorized data, offline snapshots and mock/demo previews. Do not treat Sites reference content as authoritative Pre-Production ERP data.
+- **Release requirement:** changes are validated against the current approved baseline; completed work flows through a normal PR and controlled Cloudflare **Pre-Production** deployment, with independent authenticated browser verification before claiming acceptance. Protect Production, other active worktrees and existing ownership leases.
+
+This requirement is StaffPortal-wide in this repository. DAENEM-wide visual principles may inform the separate FarmPortal and WebAdmin projects, but their codebases and release gates remain separately owned.
+
 ## DAENEM-specific precedence
 
 When references conflict with an accepted Staff Portal requirement, the Staff Portal requirement wins. In particular:
