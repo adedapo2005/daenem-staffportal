@@ -28,7 +28,9 @@ const reply = (status: number, body: Record<string, unknown> = { error: 'QA oper
     'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
   } });
 const failureClass = (error: unknown) => {
-  const message = error instanceof Error ? error.message : '';
+  const message = error instanceof Error ? error.message
+    : error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message
+    : typeof error === 'string' ? error : '';
   if (/queries per invocation|too many quer|query limit|subrequest/i.test(message)) return 'query-limit';
   if (/too many sql variables|bound parameter/i.test(message)) return 'parameter-limit';
   if (/foreign key/i.test(message)) return 'foreign-key';
