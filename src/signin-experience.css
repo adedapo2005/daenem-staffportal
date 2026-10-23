@@ -1619,3 +1619,149 @@
    overflow-wrap:normal!important;
  }
 }
+
+/* Password recovery needs a real responsive surface; it must not be squeezed
+   into the narrow weather rail used by the approved Sign-In card. */
+.sp-root #staffportal-auth-mount.sp-auth-mode-forgot {
+  position:fixed!important; inset:50% auto auto 50%!important;
+  transform:translate(-50%,-50%)!important; z-index:1100!important;
+  width:min(480px,calc(100vw - 36px))!important; max-width:calc(100vw - 36px)!important;
+  height:auto!important; min-height:0!important;
+  max-height:calc(100vh - 32px)!important; max-height:calc(100dvh - 32px)!important;
+  box-sizing:border-box!important; margin:0!important; padding:clamp(18px,2vw,26px)!important;
+  border:1px solid rgba(143,194,233,.54)!important;
+  border-top:2px solid rgba(213,177,104,.88)!important; border-radius:22px!important;
+  color:#f2f7fd!important;
+  background:radial-gradient(ellipse at 96% 100%,rgba(39,106,137,.2),transparent 44%),linear-gradient(145deg,#10294a,#07172c 66%,#081326)!important;
+  box-shadow:0 28px 82px rgba(2,18,38,.38),inset 0 1px 0 rgba(222,242,255,.09)!important;
+  overflow-x:hidden!important; overflow-y:auto!important; overscroll-behavior:contain; scrollbar-gutter:stable;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-auth-panel {
+  display:flex!important; flex-direction:column!important; gap:14px!important;
+  width:100%!important; max-width:100%!important; height:auto!important; min-height:0!important;
+  margin:0!important; padding:0!important; box-sizing:border-box!important; color:#f2f7fd!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-heading {
+  display:flex!important; align-items:flex-start!important; justify-content:space-between!important;
+  gap:14px!important; width:100%!important; min-width:0!important; margin:0!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-heading > div { display:grid!important; gap:6px!important; min-width:0!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-eyebrow { color:#a9d9f5!important; font-size:11px!important; font-weight:750!important; letter-spacing:.085em!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-heading h1 {
+  margin:0!important; color:#f6f9ff!important; font-size:clamp(22px,2vw,27px)!important;
+  font-weight:800!important; line-height:1.12!important; letter-spacing:-.025em!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-heading p { margin:0!important; color:#bfd1e3!important; font-size:13px!important; line-height:1.45!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-back-link {
+  flex:none!important; min-width:116px!important; min-height:44px!important; padding:8px 11px!important;
+  border:1px solid rgba(139,190,228,.46)!important; border-radius:11px!important;
+  color:#e2f1fd!important; background:linear-gradient(180deg,#173a5b,#112c47)!important;
+  font-size:12px!important; font-weight:700!important; line-height:1.2!important; white-space:nowrap!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-auth-form {
+  display:grid!important; grid-template-columns:minmax(0,1fr)!important; align-content:start!important;
+  gap:12px!important; width:100%!important; min-width:0!important; margin:0!important; box-sizing:border-box!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-field,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-company {
+  display:grid!important; gap:6px!important; width:100%!important; min-width:0!important;
+  margin:0!important; box-sizing:border-box!important; color:#e9f2fc!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-field-label,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-company > span {
+  color:#d8e7f5!important; font-size:13px!important; font-weight:700!important; line-height:1.3!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-field > input,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-company > select {
+  width:100%!important; min-width:0!important; min-height:46px!important; padding:10px 12px!important;
+  box-sizing:border-box!important; border:1px solid rgba(133,183,220,.54)!important; border-radius:11px!important;
+  color:#f1f7ff!important; background:#10253b!important; font-size:14px!important; line-height:1.25!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-field > input::placeholder { color:#a5bbcf!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-field > input:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-company > select:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-back-link:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-primary-button:focus-visible,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods > button:focus-visible { outline:2px solid #8fd2ff!important; outline-offset:2px!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-company small { color:#b6cbe0!important; font-size:12px!important; line-height:1.4!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods {
+  display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:8px!important; width:100%!important; min-width:0!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods > button {
+  display:flex!important; align-items:flex-start!important; gap:11px!important; width:100%!important; min-width:0!important;
+  min-height:64px!important; padding:12px!important; box-sizing:border-box!important;
+  border:1px solid rgba(132,181,217,.42)!important; border-radius:13px!important;
+  color:#e9f4fe!important; background:linear-gradient(180deg,#143653,#102c47)!important;
+  text-align:left!important; white-space:normal!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods > button[aria-pressed="true"] {
+  border-color:#86c9f1!important; background:linear-gradient(115deg,#19466b,#153854)!important;
+  box-shadow:inset 0 0 0 1px rgba(140,204,239,.14),0 5px 16px rgba(2,20,39,.16)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods > button > span { display:grid!important; gap:3px!important; min-width:0!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods > button b { color:#f4f9ff!important; font-size:13px!important; font-weight:750!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods > button small {
+  display:block!important; color:#bfd2e3!important; font-size:12px!important; line-height:1.4!important;
+  white-space:normal!important; overflow-wrap:anywhere!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-positive-note,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-auth-destination,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-auth-message {
+  display:flex!important; align-items:flex-start!important; gap:9px!important; width:100%!important; min-width:0!important;
+  padding:10px 12px!important; box-sizing:border-box!important; border:1px solid rgba(97,177,225,.35)!important;
+  border-radius:11px!important; color:#c9e7f8!important; background:#102d46!important;
+  font-size:12px!important; line-height:1.45!important; overflow-wrap:anywhere!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-primary-button,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-secondary-button {
+  display:flex!important; align-items:center!important; justify-content:center!important; gap:9px!important;
+  width:100%!important; min-width:0!important; min-height:48px!important; padding:11px 14px!important;
+  box-sizing:border-box!important; border-radius:12px!important; font-size:14px!important;
+  font-weight:800!important; line-height:1.2!important; white-space:normal!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-primary-button {
+  border:1px solid rgba(169,217,250,.34)!important; color:#fff!important;
+  background:linear-gradient(110deg,#186ac2,#237ea6)!important;
+  box-shadow:inset 0 1px 0 rgba(240,251,255,.16),0 5px 15px rgba(4,34,68,.25)!important;
+}
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-primary-button:not(:disabled):hover { background:linear-gradient(110deg,#267cd4,#3294b9)!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-primary-button:disabled { cursor:not-allowed!important; opacity:.72!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-legal-copy { margin:0!important; color:#b9cee1!important; font-size:11px!important; line-height:1.4!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-legal-copy a { color:#9fd7f6!important; text-underline-offset:3px; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-footer { margin:0!important; color:#afc5d9!important; font-size:11px!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-footer > span { display:inline-flex!important; align-items:center!important; gap:7px!important; }
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-heading *,
+#staffportal-auth-mount.sp-auth-mode-forgot .usp-auth-form * { min-width:0; }
+@media (max-width:520px) {
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-panel-heading { flex-direction:column!important; gap:10px!important; }
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-back-link { align-self:flex-start!important; }
+}
+@media (max-width:820px) {
+  .sp-root #staffportal-auth-mount.sp-auth-mode-forgot {
+    inset:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important;
+    transform:none!important; width:auto!important; max-width:none!important;
+    max-height:calc(100vh - 24px)!important;
+    max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+    padding:clamp(15px,4vw,21px)!important; border-radius:18px!important;
+  }
+}
+@media (min-width:2400px) {
+  .sp-root #staffportal-auth-mount.sp-auth-mode-forgot {
+    width:min(560px,calc(100vw - 64px))!important; max-width:calc(100vw - 64px)!important; padding:32px!important;
+  }
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-auth-panel { gap:17px!important; }
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-auth-form { gap:15px!important; }
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-field-label,
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-company > span,
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-methods > button b { font-size:15px!important; }
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-field > input,
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-recovery-company > select { min-height:54px!important;font-size:16px!important; }
+  #staffportal-auth-mount.sp-auth-mode-forgot .usp-primary-button { min-height:54px!important;font-size:16px!important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  #staffportal-auth-mount.sp-auth-mode-forgot *,
+  #staffportal-auth-mount.sp-auth-mode-forgot *::before,
+  #staffportal-auth-mount.sp-auth-mode-forgot *::after {
+    animation:none!important; transition:none!important; scroll-behavior:auto!important;
+  }
+}

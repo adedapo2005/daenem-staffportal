@@ -432,6 +432,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const panelRef = useRef<HTMLElement | null>(null);
   const returnSignupFocusRef = useRef(false);
+  const returnRecoveryFocusRef = useRef(false);
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -622,6 +623,16 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     return () => cancelAnimationFrame(frame);
   }, [mode]);
 
+  useEffect(() => {
+    if (mode !== 'signin' || !returnRecoveryFocusRef.current) return;
+    returnRecoveryFocusRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('#staffportal-auth-mount .sp-forgot')
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode]);
+
   useEffect(() => { document.title = 'DAENEM Staff Portal'; }, [themeId]);
 
   useEffect(() => {
@@ -650,6 +661,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   function switchMode(next: 'signin' | 'signup' | 'forgot') {
     if (mode === 'signup' && next === 'signin') returnSignupFocusRef.current = true;
+    if (mode === 'forgot' && next === 'signin') returnRecoveryFocusRef.current = true;
     compactAuthRef.current = false;
     setMode(next);
     setMessage(null);
@@ -666,10 +678,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
-  // The Create Account surface is a focused registration dialog, not a hidden
-  // scrollable form. Keep focus within the dialog and restore it on exit.
+  // Account creation and password recovery are focused dialogs. Keep keyboard
+  // focus inside the active flow and return it to the launcher when the flow closes.
   useEffect(() => {
-    if (mode !== 'signup') return;
+    if (mode !== 'signup' && mode !== 'forgot') return;
     const panel = panelRef.current;
     if (!panel) return;
     const focusable = () => [...panel.querySelectorAll<HTMLElement>(
@@ -697,7 +709,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     };
     panel.addEventListener('keydown', onKeyDown);
     return () => panel.removeEventListener('keydown', onKeyDown);
-  }, [mode, signupStep]);
+  }, [mode, signupStep, recoveryStep]);
 
   function validateSignupIdentity() {
     const missing = [
@@ -1067,11 +1079,11 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   );
 
   const legacyAuthPanel = (
-    <section ref={panelRef} role={mode === 'signup' ? 'dialog' : undefined} aria-modal={mode === 'signup' ? true : undefined} aria-labelledby={mode === 'signup' ? 'usp-account-dialog-title' : undefined} aria-label={mode !== 'signup' ? 'Employee authentication' : undefined} data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
+    <section ref={panelRef} role={mode === 'signup' || mode === 'forgot' ? 'dialog' : undefined} aria-modal={mode === 'signup' || mode === 'forgot' ? true : undefined} aria-labelledby={mode === 'signup' ? 'usp-account-dialog-title' : mode === 'forgot' ? 'usp-password-recovery-title' : undefined} aria-label={mode !== 'signup' && mode !== 'forgot' ? 'Employee authentication' : undefined} data-auth-mode={mode === 'signup' ? `signup-${signupStep}` : mode === 'forgot' ? `forgot-${recoveryStep}` : mode} className={`usp-auth-panel usp-auth-panel-${mode} ${compactDesktop ? 'usp-auth-density-compact' : 'usp-auth-density-comfortable'}`}>
       <div className="usp-panel-heading sp-signup-heading">
         <div>
           <span className="usp-panel-eyebrow"><LockKeyhole size={14} /> {authLabels.secureErpAccess}</span>
-          <h1 id={mode === 'signup' ? 'usp-account-dialog-title' : undefined}>{heading.title}</h1>
+          <h1 id={mode === 'signup' ? 'usp-account-dialog-title' : mode === 'forgot' ? 'usp-password-recovery-title' : undefined}>{heading.title}</h1>
           <p>{heading.body}</p>
         </div>
         {mode === 'signup' && <button type="button" className="sp-signup-close" aria-label="Close Create Account and return to Sign In" onClick={() => switchMode('signin')}><X size={16} /></button>}
