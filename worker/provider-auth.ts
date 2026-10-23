@@ -21,7 +21,7 @@ export interface ProviderAuthEnv extends AuthEnv {
 }
 
 type Config = {
-  clientId: string; clientSecret: string; authorizationEndpoint: string;
+  clientId: string; clientSecret?: string; authorizationEndpoint: string;
   tokenEndpoint: string; userInfoEndpoint: string; scope: string;
   issuer: string; jwksEndpoint: string; organizations: boolean;
 };
@@ -100,9 +100,10 @@ function config(env: ProviderAuthEnv, provider: Provider): Config | null {
   }
   const clientId = env.MICROSOFT_CLIENT_ID || env.MICROSOFT_OAUTH_CLIENT_ID;
   const clientSecret = env.MICROSOFT_CLIENT_SECRET || env.MICROSOFT_OAUTH_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
-  // Explicit staging-only switch. Production keeps the existing tenant guard.
+  // Organizations staging uses authorization code + PKCE as a public client when
+  // no confidential-client secret is configured. Production remains fail-closed.
   const organizations = isOrganizationsStaging(env);
+  if (!clientId || (!clientSecret && !organizations)) return null;
   const tenant = organizations
     ? 'organizations' : (env.MICROSOFT_TENANT_ID || env.MICROSOFT_OAUTH_TENANT_ID);
   if (!tenant || (!organizations && !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(tenant))) return null;
@@ -278,9 +279,16 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
     return failure(request, provider, 'invalid_oauth_state');
   }
   try {
-    const tokenResponse = await fetch(current.tokenEndpoint, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: current.clientId, client_secret: current.clientSecret, code,
-        grant_type: 'authorization_code', redirect_uri: callbackUrl(request, provider, env), code_verifier: state.verifier }) });
+    const tokenRequest = new URLSearchParams({
+      client_id: current.clientId, code, grant_type: 'authorization_code',
+      redirect_uri: callbackUrl(request, provider, env), code_verifier: state.verifier,
+    });
+    if (current.clientSecret) tokenRequest.set('client_secret', current.clientSecret);
+    const tokenResponse = await fetch(current.tokenEndpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: tokenRequest,
+    });
     const tokens = await providerJson(tokenResponse);
     const accessToken = typeof tokens.access_token === 'string' ? tokens.access_token : '';
     const identityToken = typeof tokens.id_token === 'string' ? tokens.id_token : '';
