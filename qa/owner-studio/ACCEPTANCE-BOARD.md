@@ -146,3 +146,25 @@ Focused command: `node qa/owner-studio/test-private-preview-accessibility.cjs`. 
 - Visual QA screenshots captured locally by the Owner Studio browser regression: `rehearsal-390.png`, `rehearsal-1366.png`, `rehearsal-3840.png`. Screenshots are evidence only and are **not committed**. Mobile padding and 4K typography were refined after inspection.
 
 **Strict status:** development candidate only. Even a fully passing rehearsal does not prove real login, provider integrations, authorized production rollout or immediate live rollback. Do **not** merge PR #99, activate the public Sign-In, deploy to Pre-Production/Production, or mark full Owner Studio COMPLETE until authenticated browser acceptance, release control integration, security/accessibility audit and final responsive visual verification pass.
+
+## Cloudflare Owner acceptance: verified boundaries and unverified gates — 22 October 2026
+
+### Read-only Pre-Production results (authorized Daenem_Group device)
+- The staging configuration targets the `daenem-staffportal-api-staging` Worker and a **different D1 database ID** from Production. The approved public V180 Sign-In and Production configuration were not changed.
+- Anonymous GET for Owner Design Library, Review, and Rehearsal endpoints returned **401** in actual Cloudflare Pre-Production. This only confirms the anonymous boundary; authorization occurs before handler routing, so 401 does **not** prove the new rehearsal endpoint is deployed.
+- Both preconfigured bootstrap API credentials returned Cloudflare **7403** on read-only D1 queries against the isolated staging database. Stop retrying without corrected account-scoped D1 access. No D1 records were read or changed.
+- No authenticated Owner, independently authenticated second Owner session, or authenticated non-Owner session was available through approved test inputs on the device. Thus Owner/D1 persistence, role isolation, cross-device consistency and live audit readback remain **UNVERIFIED**.
+- `qa/owner-studio/live-preproduction-authenticated-acceptance.cjs` performs read-only GET requests to the exact approved HTTPS staging hostname. It can use securely provisioned ephemeral QA session credentials from the process environment; credentials are **never printed, uploaded or committed**. Without an Owner session it records anonymous 401 evidence and exits **2 = BLOCKED**, not PASS. With two Owner sessions and an authenticated non-Owner session it verifies response schemas, Owner-only access, readback revision agreement, non-public fallback and cache prevention. It deliberately performs **zero POST/DELETE/PUT requests**.
+- `qa/owner-studio/test-live-preprod-acceptance-contract.cjs` mocks both positive and negative scenarios without touching Cloudflare. It tests strict host pinning, read-only requests, secret redaction, revision drift, forbidden non-Owner access, invalid sessions and missing-session reporting. Mock success is **not** live authenticated acceptance.
+
+### Security defect found and corrected in development only
+- A new reproduction `qa/owner-studio/test-owner-origin-guard.cjs` failed before the patch: a browser request from a foreign origin could reach D1 in the legacy Owner Design Library mutation path. The Rehearsal route had its own protection, but Library and Review/Readiness did not share it.
+- The shared Owner-only route now rejects foreign `Origin` values and browser `Sec-Fetch-Site` values that are not same-origin before database queries for Library, Readiness, Review and Rehearsal mutations.
+- Eighteen cross-origin POST/DELETE cases are rejected before D1 queries; same-origin Owner requests retain normal routing, and non-Owner requests remain forbidden before querying D1.
+- This hardening is in the isolated development branch only, until its own CI and merge verification. It is **not** evidence that the live Cloudflare Worker has been updated.
+
+### Remaining hard release gates
+- Obtain **correct staging-only, authorized** Cloudflare D1 read access (no Production D1 escalation), plus appropriately authenticated Owner and non-Owner QA sessions, through the approved secure access channel. Do not paste authentication secrets into issues or chat.
+- Confirm the exact Pre-Production Worker version and authenticated availability of new Owner Studio API routes, then test permissions and real D1 read/write/audit behavior safely using an isolated test record and verified rollback.
+- Complete authenticated browser accessibility/visual checks and the separate public V180 compact-desktop overflow correction in the designated Stage One Sign-In workstream.
+- Do not mark PR #99 or Owner Studio production-ready; do not activate a design or deploy a release candidate until the above evidence and release gates pass.
