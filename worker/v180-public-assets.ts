@@ -42,19 +42,42 @@ async function readBounded(response: Response): Promise<Uint8Array | null> {
   return result;
 }
 
+function publicImageUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > 2048 || /[\s\u0000-\u001f\u007f-\u009f\\]/u.test(value)) return null;
+  try {
+    // URL parsing repairs some malformed inputs; reject them before parsing.
+    const decoded = decodeURIComponent(value);
+    if (/[\u0000-\u001f\u007f-\u009f\\]/u.test(decoded)) return null;
+    const relative = value.startsWith('/assets/');
+    if (relative) {
+      const path = value.split(/[?#]/, 1)[0];
+      if (/%(?:2f|5c|25)/i.test(path) || decodeURIComponent(path).split('/').some(part => part === '.' || part === '..')) return null;
+    } else if (!/^https:\/\/[^/?#@]+(?:[/?#]|$)/i.test(value)) {
+      return null;
+    }
+    const url = relative ? new URL(value, UPSTREAM) : new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password) return null;
+    if (relative && (url.origin !== UPSTREAM || !url.pathname.startsWith('/assets/'))) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 function safeAsset(value: unknown): PublicAsset | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const source = value as Record<string, unknown>;
+  // Publication authority is independent of presentation settings. Filter first.
+  if (source.qa_status !== 'approved' && source.qa_status !== 'approved_v179') return null;
+  if (source.display_enabled === false || (source.display_enabled !== undefined && typeof source.display_enabled !== 'boolean')) return null;
   const asset: PublicAsset = {};
   for (const field of PUBLIC_FIELDS) {
     const entry = source[field];
     if (entry === undefined || entry === null || entry === '') continue;
     if (field === 'image_url' || field === 'default_image_url') {
-      if (typeof entry !== 'string' || entry.length > 2048) return null;
-      let imageUrl: URL;
-      try { imageUrl = new URL(entry); } catch { return null; }
-      if (imageUrl.protocol !== 'https:' || imageUrl.username || imageUrl.password) return null;
-      asset[field] = imageUrl.toString();
+      const imageUrl = publicImageUrl(entry);
+      if (!imageUrl) return null;
+      asset[field] = imageUrl;
       continue;
     }
     if (field === 'zoom' || field === 'focal_x' || field === 'focal_y' || field === 'master_width' || field === 'master_height') {
@@ -91,6 +114,7 @@ export async function routeV180PublicAssets(request: Request): Promise<Response 
     const upstream = await fetch(`${UPSTREAM}/api/assets`, {
       method: 'GET',
       headers: { accept: 'application/json' },
+      credentials: 'omit',
       redirect: 'manual',
       signal: AbortSignal.timeout(15_000),
       cache: 'no-store',
@@ -102,8 +126,7 @@ export async function routeV180PublicAssets(request: Request): Promise<Response 
     if (!bytes) return unavailable();
     const payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as { assets?: unknown };
     if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !Array.isArray(payload.assets) || payload.assets.length > 500) return unavailable();
-    const assets = payload.assets.map(safeAsset);
-    if (assets.some((asset) => asset === null)) return unavailable();
+    const assets = payload.assets.map(safeAsset).filter((asset): asset is PublicAsset => asset !== null);
     return new Response(JSON.stringify({ assets }), {
       status: 200,
       headers: {
