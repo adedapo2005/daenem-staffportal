@@ -172,3 +172,17 @@
     transform: none;
   }
 }
+
+
+/* Stage One P0: purpose-built ultra-wide post-login canvas.
+   The retained V115 stylesheet caps .p-content at 2320px even on 4K.
+   Expand and center the canvas only at 3200px+, without touching Sign-In
+   or changing tablet/desktop/mobile layout rules. */
+@media (min-width: 3200px) {
+  [data-approved-postlogin="qa-review-v115"] .p-app:not(.v3-auth) .p-content {
+    width: calc(100% - clamp(48px, 4vw, 120px)) !important;
+    max-width: 3400px !important;
+    margin-inline: auto !important;
+    padding-inline: clamp(32px, 2.4vw, 88px) !important;
+  }
+}

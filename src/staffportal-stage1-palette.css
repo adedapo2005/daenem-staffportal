@@ -26,6 +26,16 @@
   --stage1-success: #126b4d;
   --stage1-danger: #b83b4b;
   --stage1-warning-ink: #80510f;
+
+  /* Luxury supporting tones are derived from the active approved palette.
+     They add depth without replacing the brand foundation or inventing
+     page-specific colours. */
+  --stage1-support-cyan: color-mix(in srgb, var(--stage1-accent) 88%, #67e8f9 12%);
+  --stage1-support-violet: color-mix(in srgb, var(--stage1-extra) 82%, #a78bfa 18%);
+  --stage1-support-coral: color-mix(in srgb, #ef6f7c 76%, var(--stage1-highlight) 24%);
+  --stage1-support-gold: color-mix(in srgb, var(--stage1-highlight) 88%, #ffd166 12%);
+  --stage1-gradient-brand: linear-gradient(135deg, var(--stage1-anchor) 0%, var(--stage1-primary) 54%, var(--stage1-extra) 100%);
+  --stage1-gradient-spectrum: linear-gradient(90deg, var(--stage1-primary), var(--stage1-support-cyan), var(--stage1-support-violet), var(--stage1-support-coral), var(--stage1-support-gold));
 }
 
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app {
@@ -43,6 +53,26 @@
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app :is(a,button,input,textarea,[tabindex]):focus-visible,
 [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] :is(.p-modal,.p-side-sheet) :focus-visible {
   outline-color: var(--stage1-focus);
+}
+
+/* The canonical post-login presentation inherits the approved palette while
+   retaining a richer data-visualisation spectrum for premium hierarchy. */
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .csp-root {
+  --csp-canvas: var(--stage1-canvas);
+  --csp-surface: var(--stage1-surface);
+  --csp-surface-soft: color-mix(in srgb, var(--stage1-tint) 48%, var(--stage1-surface));
+  --csp-ink: var(--stage1-ink);
+  --csp-muted: var(--stage1-muted);
+  --csp-faint: color-mix(in srgb, var(--stage1-muted) 70%, var(--stage1-surface));
+  --csp-line: var(--stage1-line);
+  --csp-cobalt: var(--stage1-primary);
+  --csp-sapphire: color-mix(in srgb, var(--stage1-primary) 76%, var(--stage1-anchor));
+  --csp-indigo: var(--stage1-extra);
+  --csp-violet: var(--stage1-support-violet);
+  --csp-cyan: var(--stage1-support-cyan);
+  --csp-coral: var(--stage1-support-coral);
+  --csp-gold: var(--stage1-support-gold);
+  --csp-success: var(--stage1-success);
 }
 
 /* One continuous premium command surface: dark anchor, restrained active blue. */

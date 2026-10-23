@@ -111,7 +111,7 @@ function PalettePreview({ paletteId }: { paletteId: PostLoginPaletteId }) {
     '--preview-on-anchor': palette.onAnchor,
   } as CSSProperties;
   return (
-    <div className="stage1-palette-preview" style={style} aria-label={`${palette.name} interface preview`}>
+    <div className="stage1-palette-preview" style={style} role="img" aria-label={`${palette.name} illustrative interface preview. Example numbers are not live records.`}>
       <aside>
         <strong>DAENEM</strong><small>STAFFPORTAL</small>
         <span className="is-active">Overview</span><span>People</span><span>Finance</span><span>Forms</span>
@@ -119,7 +119,7 @@ function PalettePreview({ paletteId }: { paletteId: PostLoginPaletteId }) {
       <div className="stage1-palette-preview-main">
         <header><span>Ask DAENEM</span><i>DA</i></header>
         <section>
-          <div className="stage1-palette-preview-title"><div><small>WORKSPACE</small><strong>Your group, in focus.</strong></div><button>New request</button></div>
+          <div className="stage1-palette-preview-title"><div><small>WORKSPACE</small><strong>Your group, in focus.</strong></div><span className="stage1-palette-preview-action" aria-hidden="true">New request</span></div>
           <div className="stage1-palette-preview-kpis"><span><small>People</small><b>248</b></span><span><small>To review</small><b>12</b></span><span><small>Projects</small><b>36</b></span></div>
           <div className="stage1-palette-preview-chart"><b>Illustrative activity</b><div>{[28,42,35,54,49,68,61,82].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div></div>
         </section>
