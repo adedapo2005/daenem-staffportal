@@ -1,0 +1,10 @@
+.owner-concept-runtime{position:relative;width:1366px;min-height:900px;background:linear-gradient(125deg,#0b2933,#135b50);color:#f7f4ec;overflow:visible}
+.owner-concept-banner{position:absolute;right:20px;top:12px;background:#fff5d9;color:#5a4215;padding:9px 12px;border-radius:8px;font:700 13px Manrope,Inter,sans-serif;z-index:2}
+.owner-concept-block{position:absolute;box-sizing:border-box}
+.owner-concept-block h1{font-size:clamp(24px,3vw,42px);line-height:1.12;margin:0}
+.owner-concept-block p{margin:0;font-size:16px;line-height:1.5}
+.owner-concept-brand strong{font-size:25px;letter-spacing:.07em;color:#f3d999}
+.owner-concept-auth{isolation:isolate;z-index:3;padding:8px;background:#fff;color:#153d47;border-radius:14px;box-shadow:0 10px 28px #001b2244}
+.owner-concept-auth #staffportal-auth-mount{display:block;width:100%;height:auto}
+.owner-concept-auth .sp-auth-runtime{display:contents}
+.owner-concept-invalid{padding:22px;background:#f5f1e2;color:#503c20}
