@@ -215,12 +215,7 @@ jobs:
           fi
           printf 'CLOUDFLARE_ACCOUNT_ID=%s\n' "$account_id" >> "$GITHUB_ENV"
 
-      - name: Deploy Pre-Production Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npx wrangler deploy --config wrangler.staffportal-staging.jsonc --keep-vars
-
-      - name: Restore OAuth provider bindings
+      - name: Prepare OAuth provider bindings
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID || secrets.GOOGLE_OAUTH_CLIENT_ID }}
@@ -229,26 +224,20 @@ jobs:
           MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET || secrets.MICROSOFT_OAUTH_CLIENT_SECRET }}
         shell: bash
         run: |
-          oauth_secret_file="$(mktemp)"
-          trap 'rm -f "$oauth_secret_file"' EXIT
-          node --input-type=module <<'NODE' > "$oauth_secret_file"
-          const names = [
-            'GOOGLE_CLIENT_ID',
-            'GOOGLE_CLIENT_SECRET',
-            'MICROSOFT_CLIENT_ID',
-            'MICROSOFT_CLIENT_SECRET',
-          ];
-          const values = Object.fromEntries(
-            names.map((name) => [name, (process.env[name] || '').trim()]),
-          );
-          const missing = names.filter((name) => !values[name]);
-          if (missing.length) {
-            console.error('::error::Missing encrypted Pre-Production OAuth secrets: ' + missing.join(', '));
-            process.exit(1);
-          }
-          process.stdout.write(JSON.stringify(values));
-          NODE
-          npx wrangler secret bulk "$oauth_secret_file" --config wrangler.staffportal-staging.jsonc
+          oauth_secret_file="$RUNNER_TEMP/staffportal-oauth-secrets.json"
+          node scripts/prepare-staffportal-staging-oauth.mjs "$oauth_secret_file"
+          printf 'STAFFPORTAL_OAUTH_SECRETS_FILE=%s\n' "$oauth_secret_file" >> "$GITHUB_ENV"
+
+      - name: Deploy Pre-Production Worker with OAuth bindings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          trap 'rm -f "$STAFFPORTAL_OAUTH_SECRETS_FILE"' EXIT
+          npx wrangler deploy \
+            --config wrangler.staffportal-staging.jsonc \
+            --keep-vars \
+            --secrets-file "$STAFFPORTAL_OAUTH_SECRETS_FILE"
 
       - name: Verify Pre-Production health
         run: curl --fail --silent --show-error --retry 5 --retry-delay 5 https://daenem-staffportal-api-staging.adedapo2005.workers.dev/health
