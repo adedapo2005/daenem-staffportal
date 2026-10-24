@@ -206,6 +206,56 @@ async function main() {
     headers:{cookie:cookies.manager,'content-type':'application/json'},
     body:JSON.stringify({companyId:qa('company-b'),name:'QA foreign facility'})}));
   check(foreignCreate.status === 403, 'Manager cannot write into foreign Facilities company');
+  const positive = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
+  check(positive.status === 200 && (await positive.json()).receivables.some(row => row.id === qa('receivable-a')), 'Authorized Finance fixture');
+  const negative = await get(`/api/finance/receivables?companyId=${qa('company-b')}`, 'manager');
+  check(negative.status === 403 && !(await negative.text()).includes(qa('receivable-b')), 'Cross-company Finance denial');
+  const site = await get(`/api/attendance/today?companyId=${qa('company-a')}`, 'manager');
+  check(site.status === 200 && (await site.json()).policy.locationId === qa('site-a'), 'Assigned site access');
+  const deniedSite = await get(`/api/attendance/today?companyId=${qa('company-b')}`, 'manager');
+  check(deniedSite.status === 400 && !(await deniedSite.text()).includes(qa('site-b')), 'Cross-company site denial');
+  db.prepare('UPDATE employee_company_memberships SET active=0 WHERE id=?').run(qa('membership-manager-a'));
+  const revoked = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
+  check(revoked.status === 403 && !(await revoked.text()).includes(qa('receivable-a')), 'Membership revocation reauthorizes existing session');
+  await summary(await operation('seed'), 200, 'Reseed restores deterministic membership');
+  // The last statement checks required reset evidence, so inject at early and late boundaries.
+  const active = snapshot();
+  failureIndex = Math.floor(resetBatchLength / 2);
+  await summary(await operation('reset'), 503, 'Mid-reset failure');
+  same(snapshot(), active, 'Reset rollback preserves credentials sessions permissions and finance');
+  failureIndex = resetBatchLength - 1;
+  await summary(await operation('reset'), 503, 'Late reset failure');
+  same(snapshot(), active, 'Late rollback preserves full prior fixture');
+  failureIndex = -1;
+  db.exec(`CREATE TRIGGER qa_ignore_reset_audit BEFORE INSERT ON audit_logs WHEN NEW.id='${qa('audit-reset')}' BEGIN SELECT RAISE(IGNORE); END;`);
+  await summary(await operation('reset'), 503, 'Ignored required audit fails closed');
+  same(snapshot(), active, 'Ignored audit rolls back reset');
+  db.exec('DROP TRIGGER qa_ignore_reset_audit');
+  await summary(await operation('reset'), 200, 'Atomic logical reset');
+  const reset = snapshot();
+  await summary(await operation('reset'), 200, 'Idempotent reset');
+  same(snapshot(), reset, 'Reset replay has no duplicate evidence');
+  same(rows(`SELECT * FROM access_control_changes WHERE id='${qa('access-evidence')}'`), immutable, 'Immutable access evidence retained');
+  same(rows(`SELECT * FROM audit_logs WHERE id='${qa('audit-seed')}'`), seedAudit, 'Immutable seed evidence retained');
+  for (const persona of ['owner', 'manager', 'employee']) {
+    check((await login(persona)).status === 401, 'Reset principal cannot authenticate');
+    const context = await auth.getSessionContext(new Request('https://qa.invalid/api/auth/me', { headers: { cookie: cookies[persona] } }), env);
+    check(context === null, 'Reset session has no effective authority');
+  }
+  check(scalar(`SELECT count(*) FROM payroll_runs WHERE id LIKE 'qa-staging-v1-%' AND status<>'cancelled'`) === 0, 'No actionable QA Payroll');
+  check(scalar(`SELECT count(*) FROM finance_receivables WHERE id LIKE 'qa-staging-v1-%' AND (status<>'cancelled' OR balance_kobo<>0)`) === 0, 'No actionable QA Finance');
+  check(scalar(`SELECT count(*) FROM employee_roles WHERE employee_id LIKE 'qa-staging-v1-%'`) === 0, 'No QA role assignments after reset');
+  await summary(await operation('seed'), 200, 'Reseed after reset');
+  check((await login('manager')).status === 200, 'Reseed restores canonical login');
+  check(scalar(`SELECT count(*) FROM audit_logs WHERE module='qa-staging-v1'`) === 2, 'Lifecycle evidence is deterministic');
+  // Reset intentionally revokes all previous sessions. Re-authenticate newly
+  // seeded synthetic personas before exercising Facilities transactions.
+  for (const persona of ['owner','manager','employee']) {
+    const response = await login(persona);
+    check(response.status===200,'Post-reset QA persona can authenticate');
+    cookies[persona] = response.headers.get('set-cookie')?.split(';')[0];
+    check(Boolean(cookies[persona]),'Post-reset authenticated session issued');
+  }
   // Exercise canonical Worker -> SQLite transactions with real auth cookies.
   // All rows live only in this in-memory QA database; no remote D1 or providers.
   const companyA = qa('company-a'), companyB = qa('company-b');
@@ -322,18 +372,6 @@ async function main() {
   const qaNonStaging = await fetchWorker(new Request('https://qa.invalid/api/facilities/qa-readiness',
     {headers:{cookie:cookies.owner}}),{...env,APP_STAGE:'production'});
   check(qaNonStaging.status===404,'QA readiness is unavailable outside staging');
-  const positive = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
-  check(positive.status === 200 && (await positive.json()).receivables.some(row => row.id === qa('receivable-a')), 'Authorized Finance fixture');
-  const negative = await get(`/api/finance/receivables?companyId=${qa('company-b')}`, 'manager');
-  check(negative.status === 403 && !(await negative.text()).includes(qa('receivable-b')), 'Cross-company Finance denial');
-  const site = await get(`/api/attendance/today?companyId=${qa('company-a')}`, 'manager');
-  check(site.status === 200 && (await site.json()).policy.locationId === qa('site-a'), 'Assigned site access');
-  const deniedSite = await get(`/api/attendance/today?companyId=${qa('company-b')}`, 'manager');
-  check(deniedSite.status === 400 && !(await deniedSite.text()).includes(qa('site-b')), 'Cross-company site denial');
-  db.prepare('UPDATE employee_company_memberships SET active=0 WHERE id=?').run(qa('membership-manager-a'));
-  const revoked = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
-  check(revoked.status === 403 && !(await revoked.text()).includes(qa('receivable-a')), 'Membership revocation reauthorizes existing session');
-  await summary(await operation('seed'), 200, 'Reseed restores deterministic membership');
   // A reset must never strand Facilities data or erase transaction history.
   const withFacilityEvidence=snapshot();
   await summary(await operation('reset'),503,'Facilities evidence blocks QA reset');
@@ -347,47 +385,7 @@ async function main() {
     console.error('QA reset preservation changed table names: ' + changedNames.join(','));
   }
   same(afterBlockedReset,withFacilityEvidence,'Refused reset preserves all Facilities transactions and identity');
-  // This cleanup is in-memory ONLY; it never touches a remote Cloudflare database.
-  check(true,'Cleanup: delete synthetic reading');
-  db.prepare("DELETE FROM asset_readings WHERE id=?").run(readingId);
-  check(true,'Cleanup: delete synthetic equipment');
-  db.prepare("DELETE FROM assets WHERE id=?").run(asset.id);
-  check(true,'Cleanup: delete synthetic facility');
-  db.prepare("DELETE FROM facilities WHERE id=?").run(facility.id);
-  check(true,'Cleanup: delete synthetic audit evidence');
-  db.prepare("DELETE FROM audit_logs WHERE module='facilities' AND company_id=?").run(companyA);
-  check(scalar("SELECT COUNT(*) FROM facilities WHERE company_id='"+companyA+"'")===0,
-    'Synthetic Facilities cleanup remains local and complete');
-  // The last statement checks required reset evidence, so inject at early and late boundaries.
-  const active = snapshot();
-  failureIndex = Math.floor(resetBatchLength / 2);
-  await summary(await operation('reset'), 503, 'Mid-reset failure');
-  same(snapshot(), active, 'Reset rollback preserves credentials sessions permissions and finance');
-  failureIndex = resetBatchLength - 1;
-  await summary(await operation('reset'), 503, 'Late reset failure');
-  same(snapshot(), active, 'Late rollback preserves full prior fixture');
-  failureIndex = -1;
-  db.exec(`CREATE TRIGGER qa_ignore_reset_audit BEFORE INSERT ON audit_logs WHEN NEW.id='${qa('audit-reset')}' BEGIN SELECT RAISE(IGNORE); END;`);
-  await summary(await operation('reset'), 503, 'Ignored required audit fails closed');
-  same(snapshot(), active, 'Ignored audit rolls back reset');
-  db.exec('DROP TRIGGER qa_ignore_reset_audit');
-  await summary(await operation('reset'), 200, 'Atomic logical reset');
-  const reset = snapshot();
-  await summary(await operation('reset'), 200, 'Idempotent reset');
-  same(snapshot(), reset, 'Reset replay has no duplicate evidence');
-  same(rows(`SELECT * FROM access_control_changes WHERE id='${qa('access-evidence')}'`), immutable, 'Immutable access evidence retained');
-  same(rows(`SELECT * FROM audit_logs WHERE id='${qa('audit-seed')}'`), seedAudit, 'Immutable seed evidence retained');
-  for (const persona of ['owner', 'manager', 'employee']) {
-    check((await login(persona)).status === 401, 'Reset principal cannot authenticate');
-    const context = await auth.getSessionContext(new Request('https://qa.invalid/api/auth/me', { headers: { cookie: cookies[persona] } }), env);
-    check(context === null, 'Reset session has no effective authority');
-  }
-  check(scalar(`SELECT count(*) FROM payroll_runs WHERE id LIKE 'qa-staging-v1-%' AND status<>'cancelled'`) === 0, 'No actionable QA Payroll');
-  check(scalar(`SELECT count(*) FROM finance_receivables WHERE id LIKE 'qa-staging-v1-%' AND (status<>'cancelled' OR balance_kobo<>0)`) === 0, 'No actionable QA Finance');
-  check(scalar(`SELECT count(*) FROM employee_roles WHERE employee_id LIKE 'qa-staging-v1-%'`) === 0, 'No QA role assignments after reset');
-  await summary(await operation('seed'), 200, 'Reseed after reset');
-  check((await login('manager')).status === 200, 'Reseed restores canonical login');
-  check(scalar(`SELECT count(*) FROM audit_logs WHERE module='qa-staging-v1'`) === 2, 'Lifecycle evidence is deterministic');
+
   // Collision on an anchor must leave even the conflicting row unchanged.
   db.prepare('UPDATE employees SET department=? WHERE id=?').run('Non-QA ownership', qa('manager'));
   const collision = snapshot();
