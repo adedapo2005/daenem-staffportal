@@ -266,7 +266,9 @@ async function main() {
   same(snapshot(), beforeMeter, 'Meter write, audit and running-hours update roll back atomically');
 
   const meterResponse = await postFacility('/api/facilities/readings', 'manager', meterInput);
-  check(meterResponse.status === 201, 'Authenticated meter reading persists');
+  // The established Worker API returns HTTP 200 with the canonical readingId.
+  // Do not change its response contract solely to satisfy a new test.
+  check(meterResponse.status === 200, 'Authenticated meter reading persists');
   const readingId = (await meterResponse.json()).readingId;
   check(typeof readingId === 'string' && readingId.startsWith('asset-reading-'),
     'Canonical persisted reading ID returned');
