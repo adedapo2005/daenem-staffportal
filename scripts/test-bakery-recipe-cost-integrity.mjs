@@ -7,16 +7,23 @@ import {DatabaseSync} from 'node:sqlite';
 import {webcrypto} from 'node:crypto';
 
 const source=fs.readFileSync(new URL('../worker/bakery.ts',import.meta.url),'utf8');
+const unitsSource=fs.readFileSync(new URL('../worker/bakery-material-units.ts',import.meta.url),'utf8');
+const unitsOut=ts.transpileModule(unitsSource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+const unitsModule={exports:{}};
+new vm.Script('(function(require,module,exports){'+unitsOut+'\n})').runInNewContext({Request,Response,URL,crypto:webcrypto,Intl})(
+ name=>{assert.equal(name,'./auth');return {hasPermission:()=>true}},unitsModule,unitsModule.exports
+);
 const transpiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
 const m={exports:{}};
 new vm.Script('(function(require,module,exports){'+transpiled+'\n})').runInNewContext({Request,Response,URL,crypto:webcrypto,TextDecoder,TextEncoder,Intl})(
- name=>{assert.equal(name,'./auth');return {hasPermission:()=>true}},m,m.exports
+ name=>name==='./auth'?{hasPermission:()=>true}:name==='./bakery-material-units'?unitsModule.exports:null,m,m.exports
 );
 const route=m.exports.routeBakery,ctx={companies:[{id:'company-bakery'}],employee:{id:'employee-test'}};
-let batches=0;
+let batches=0,lastStatements=[];
 function makeEnv(units={inventory:'kg',recipe:'kg'},missing=0){
  return {DB:{prepare(sql){
-  return {bind(){return this},async first(){
+  return {sql,bind(...params){this.params=params;return this},async first(){
+   if(sql.includes('FROM bakery_material_unit_rules'))return units.approved?{id:'approved-rule-v1',factor:50,versionNo:1}:null;
    if(sql.includes('FROM bakery_products'))return {id:'bread'};
    if(sql.includes('MAX(version_no)'))return {version:2};
    if(sql.includes('FROM inventory_items'))return {id:'flour',unit:units.inventory,unitCostKobo:400,availableQty:100};
@@ -28,7 +35,7 @@ function makeEnv(units={inventory:'kg',recipe:'kg'},missing=0){
    if(sql.includes('FROM app_settings'))return null;
    throw Error('Unexpected SQL: '+sql.slice(0,130));
   }};
- },async batch(statements){batches++;return statements;}}};
+ },async batch(statements){batches++;lastStatements=statements;return statements;}}};
 }
 async function post(path,body,env){
  const res=await route(new Request('https://test.invalid'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),env,ctx);
@@ -54,6 +61,17 @@ for(const [payload,status] of [
 const good=await post(routeRecipe,valid,makeEnv());
 assert.equal(good.status,201,'Valid base-unit recipe must still work');
 assert.equal(batches,1,'Valid recipe should be recorded in one D1 batch');
+const converted=await post(routeRecipe,{...valid,ingredients:[{inventoryItemId:'flour',quantity:2,unit:'bag'}]},makeEnv({inventory:'kg',recipe:'kg',approved:true}));
+assert.equal(converted.status,201,'Independently approved bag conversion should create a new recipe');
+const line=lastStatements.find(x=>x.sql.includes('INSERT INTO bakery_recipe_ingredients'));
+assert(line,'The recipe must save the original unit provenance');
+assert.equal(line.params[3],100,'Two 50kg bags normalise to 100kg');
+assert.equal(line.params[4],'kg');
+assert.equal(line.params[8],2,'Original two bags must be preserved');
+assert.equal(line.params[9],'bag');
+assert.equal(line.params[10],50,'Approved factor snapshotted');
+assert.equal(line.params[11],'approved-rule-v1');
+assert.equal(line.params[12],400,'Historical ingredient base-unit cost snapshotted');
 const issue=await post('/api/bakery/batches/ingredient',
  {batchId:'batch-1',inventoryItemId:'flour',actualQuantity:2,wasteQuantity:0},
  makeEnv({inventory:'kg',recipe:'bag'}));
@@ -64,7 +82,7 @@ assert.equal(wrongUnit.status,409);
 const noRecipeIngredients=await post('/api/bakery/batches/status',complete,makeEnv({inventory:'kg',recipe:'kg',empty:true}));assert.equal(noRecipeIngredients.status,409,'Legacy empty recipe must never complete');
 const missingCritical=await post('/api/bakery/batches/status',complete,makeEnv({inventory:'kg',recipe:'kg'},1));
 assert.equal(missingCritical.status,409,'Unissued critical ingredient must block completion');
-assert.equal(batches,1,'Blocked batch completion must not post finished stock');
+assert.equal(batches,2,'Blocked batch completion must not post finished stock');
 
 function extractSql(marker){
  const i=source.indexOf(marker),tick=String.fromCharCode(96);

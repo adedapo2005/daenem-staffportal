@@ -77,6 +77,9 @@ jobs:
           node --disable-warning=ExperimentalWarning scripts/test-bakery-http-stock-guards.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-recipe-cost-integrity.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-flour-unit-truth.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-material-unit-governance.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-material-receipt-cost.mjs
+          node scripts/check-bakery-changed-syntax.mjs
           node scripts/check-bakery-accountability.mjs
           node scripts/test-bakery-kpi-comparisons.mjs
           python3 scripts/test-bakery-integrity.py

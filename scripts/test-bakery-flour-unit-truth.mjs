@@ -6,7 +6,7 @@ import ts from 'typescript';
 import {webcrypto} from 'node:crypto';
 const worker=fs.readFileSync(new URL('../worker/bakery-accountability.ts',import.meta.url),'utf8');
 const ui=fs.readFileSync(new URL('../src/bakery-v2.tsx',import.meta.url),'utf8');
-assert(worker.includes('f.bag_weight_kg AS bagWeightKg'),'Flour query must not invent a 50 kg bag');
+assert(worker.includes('f.base_quantity_per_input AS bagWeightKg')&&worker.includes("x.status='approved'"),'Flour reports must use only independently approved, versioned conversions');
 assert(!worker.includes('COALESCE(f.bag_weight_kg,50)'),'Unconfigured bag weight must remain unknown');
 const start=worker.indexOf('const flourUsage=(flour.results||[]).map(row=>');
 const end=worker.indexOf(';\n const breadRows=',start);
@@ -34,10 +34,16 @@ assert.equal(mapped[3].usedBags,null);
 assert.equal(mapped[3].conversionStatus,'unverified');
 assert(ui.includes('Bag equivalent unavailable')&&ui.includes('current setting'),'UI must reveal unverified and current conversions');
 
+const unitWorker=fs.readFileSync(new URL('../worker/bakery-material-units.ts',import.meta.url),'utf8');
+const unitJs=ts.transpileModule(unitWorker,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+const unitOut={exports:{}};
+new vm.Script('(function(require,module,exports){'+unitJs+'\n})').runInNewContext({Request,Response,URL,crypto:webcrypto,Intl,TextEncoder,TextDecoder,console})(
+ name=>{assert.equal(name,'./auth');return {hasPermission:()=>true}},unitOut,unitOut.exports
+);
 const js=ts.transpileModule(worker,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
 const out={exports:{}};
 new vm.Script('(function(require,module,exports){'+js+'\n})').runInNewContext({Request,Response,URL,crypto:webcrypto,Intl,TextEncoder,TextDecoder,console})(
- name=>{assert.equal(name,'./auth');return {hasPermission:()=>true}},out,out.exports
+ name=>name==='./auth'?{hasPermission:()=>true}:name==='./bakery-material-units'?unitOut.exports:null,out,out.exports
 );
 const route=out.exports.routeBakeryAccountability;
 assert.equal(typeof route,'function');
@@ -45,16 +51,18 @@ const context={companies:[{id:'company-bakery'}],employee:{id:'manager-test'}};
 let writes=0,reads=0;
 function env(unit){
  return {DB:{prepare(sql){
-  return{bind(){return this},async first(){
+  return{sql,bind(){return this},async first(){
    reads++;
-   assert(sql.includes('FROM inventory_items')&&sql.includes('unit'),'Flour item unit must be read before saving conversion');
-   return{id:'flour',name:'Flour',unit};
+   if(sql.includes('FROM inventory_items'))return{id:'flour',name:'Flour',unit};
+   if(sql.includes('FROM bakery_material_unit_rules')&&sql.includes('status=\'proposed\''))return null;
+   if(sql.includes('MAX(version_no)'))return {versionNo:1};
+   throw Error('Unexpected conversion SQL '+sql.slice(0,110));
   }};
- },async batch(statements){writes++;assert.equal(statements.length,2);return statements;}}};
+ },async batch(statements){writes++;assert.equal(statements.length,2);assert(statements[0].sql.includes('INSERT INTO bakery_material_unit_rules'),'The legacy flour endpoint must create a governed proposal, not another setting');return statements;}}};
 }
 async function send(value,unit){
  const res=await route(new Request('https://test.invalid/api/bakery/accountability/flour-bag',{method:'POST',
-  headers:{'content-type':'application/json'},body:JSON.stringify({inventoryItemId:'flour',bagWeightKg:value})}),env(unit),context);
+  headers:{'content-type':'application/json'},body:JSON.stringify({inventoryItemId:'flour',bagWeightKg:value,reason:'Verified flour bag label from the supplier'})}),env(unit),context);
  return{code:res.status,body:await res.json()};
 }
 assert.equal((await send('50','kg')).code,400,'String conversion not accepted as certified number');
@@ -65,7 +73,7 @@ assert.equal(reads,0);
 assert.equal((await send(50,'bag')).code,409,'Cannot attach kg-per-bag conversion to inventory tracked in bags');
 assert.equal((await send(50,'g')).code,409,'Cannot attach kg-per-bag conversion to gram inventory');
 assert.equal(writes,0);
-assert.equal((await send(50,'kg')).code,200);
+assert.equal((await send(50,'kg')).code,201,'Legacy flour changes now propose pending independent approval');
 assert.equal(writes,1);
 console.log('PASS Flour report: configured kg, native bags and unverified grams/weights never invent bag counts');
 console.log('PASS Flour conversion endpoint: only kg-based inventory and finite approved bag weights, otherwise no writes');

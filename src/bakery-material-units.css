@@ -1,0 +1,20 @@
+.bakery-unit-panel{display:grid;gap:16px;margin-top:18px;padding:clamp(14px,2vw,24px);border:1px solid var(--bakery-border,#d6e1e2);border-radius:20px;background:var(--panel,#fff)}
+.bakery-unit-panel .bakery-panel-head p{max-width:68ch;line-height:1.6}
+.bakery-unit-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end}
+.bakery-unit-form label,.bakery-unit-review label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:700}
+.bakery-unit-form input,.bakery-unit-form select,.bakery-unit-review input{min-width:0;width:100%;padding:11px 10px;border:1px solid #bfcdd0;border-radius:10px;color:inherit;background:var(--panel,#fff);font-size:14px}
+.bakery-unit-form .bakery-unit-reason{grid-column:1/-1}
+.bakery-unit-form>.bakery-primary{grid-column:1/-1;justify-self:start}
+.bakery-unit-lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.bakery-unit-lists h4{font-size:14px;margin:0 0 10px}
+.bakery-unit-lists p,.bakery-unit-footnote{font-size:13px;line-height:1.6;opacity:.78}
+.bakery-unit-rows{display:grid;gap:8px}
+.bakery-unit-row{border:1px solid #dfe8e8;border-radius:12px;padding:12px;display:grid;gap:5px;min-width:0}
+.bakery-unit-row strong{font-size:14px}.bakery-unit-row span{font-size:13px;font-variant-numeric:tabular-nums}.bakery-unit-row small{font-size:12px;opacity:.72}
+.bakery-unit-review{display:grid;gap:9px;padding-top:7px}.bakery-unit-review>div{display:flex;gap:8px;flex-wrap:wrap}
+.bakery-unit-review button{border:1px solid #9db6b6;padding:8px 12px;border-radius:9px;background:transparent;color:inherit;font-weight:700;cursor:pointer}
+.bakery-unit-message{padding:10px;border-radius:10px;background:#f1f8f6;color:#075b4d;font-size:13px}
+.bakery-unit-footnote{margin:0}
+@media(max-width:950px){.bakery-unit-form{grid-template-columns:repeat(2,minmax(0,1fr))}.bakery-unit-lists{grid-template-columns:1fr}}
+@media(max-width:560px){.bakery-unit-form{grid-template-columns:1fr}.bakery-unit-form>.bakery-primary{justify-self:stretch}.bakery-unit-panel{padding:14px}}
+@media(prefers-reduced-motion:reduce){.bakery-unit-panel *{transition:none!important}}

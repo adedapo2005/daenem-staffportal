@@ -1,4 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { approvedMaterialRule,normalizeMaterialUnit,normalizeBaseQuantity,validMaterialUnit } from './bakery-material-units';
 
 interface InventoryEnv extends AuthEnv {}
 
@@ -95,7 +96,7 @@ async function createItem(request: Request, env: InventoryEnv, context: SessionC
 }
 
 async function receiveStock(request: Request, env: InventoryEnv, context: SessionContext) {
-  let body: { companyId?: string; locationId?: string; itemId?: string; quantity?: number; unitCostNaira?: number; supplierId?: string; supplierReference?: string; lotNo?: string; expiryDate?: string; note?: string };
+  let body: { companyId?: string; locationId?: string; itemId?: string; quantity?: number; unitCostNaira?: number; receivedUnit?: string; purchaseUnitCostNaira?: number; supplierId?: string; supplierReference?: string; lotNo?: string; expiryDate?: string; note?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid goods receipt request.' }, 400); }
   const companyId = String(body.companyId || '');
   if (!allowed(context, companyId, 'create')) return json({ error: 'Create Inventory permission is required.' }, 403);
@@ -103,27 +104,70 @@ async function receiveStock(request: Request, env: InventoryEnv, context: Sessio
   if (!body.locationId || !body.itemId || !Number.isFinite(quantity) || quantity <= 0) return json({ error: 'Location, item and positive received quantity are required.' }, 400);
   const [location, item] = await Promise.all([
     env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(body.locationId, companyId).first(),
-    env.DB.prepare(`SELECT id, unit_cost_kobo AS unitCostKobo FROM inventory_items WHERE id = ? AND company_id = ? AND active = 1`).bind(body.itemId, companyId).first<{ id: string; unitCostKobo: number }>(),
+    env.DB.prepare(`SELECT id, unit, unit_cost_kobo AS unitCostKobo FROM inventory_items WHERE id = ? AND company_id = ? AND active = 1`).bind(body.itemId, companyId).first<{ id: string; unit: string; unitCostKobo: number }>(),
   ]);
   if (!location || !item) return json({ error: 'Selected company location or inventory item was not found.' }, 404);
-  const unitCost = body.unitCostNaira == null ? Number(item.unitCostKobo || 0) : koboFromNaira(body.unitCostNaira);
+  const isBakery = companyId === 'company-bakery';
+  const baseUnit = normalizeMaterialUnit(item.unit);
+  const enteredUnit = normalizeMaterialUnit(body.receivedUnit || item.unit);
+  if (isBakery && (!validMaterialUnit(baseUnit) || !validMaterialUnit(enteredUnit)))
+    return json({ error: 'Choose a valid material unit for the Bakery stock receipt.' }, 400);
+  if (!isBakery && body.receivedUnit && enteredUnit !== baseUnit)
+    return json({ error: 'Converted receipts are currently available only for governed Bakery material units.' }, 400);
+  let baseQuantity = quantity;
+  let unitCost = body.unitCostNaira == null ? Number(item.unitCostKobo || 0) : koboFromNaira(body.unitCostNaira);
+  let conversion: { ruleId:string;factor:number;versionNo:number;inputUnit:string;inputQuantity:number;totalCostKobo:number } | null = null;
+  if (isBakery && body.receivedUnit && enteredUnit !== baseUnit) {
+    if (typeof body.quantity !== 'number' || body.unitCostNaira !== undefined)
+      return json({ error: 'Converted Bakery receipts require a numeric purchase quantity and explicit purchase-unit cost, not a base-unit cost.' }, 400);
+    const rule = await approvedMaterialRule(env, body.itemId, enteredUnit, baseUnit);
+    if (!rule) return json({ error: 'This material purchase unit has no independently approved conversion to the Inventory base unit.' }, 409);
+    const normalized = normalizeBaseQuantity(quantity, Number(rule.factor));
+    if (normalized === null) return json({ error: 'Converted stock quantity is too large or too precise for the Inventory ledger.' }, 400);
+    const price = body.purchaseUnitCostNaira;
+    if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0
+      || !Number.isSafeInteger(Math.round(price * 100)) || Math.abs(price * 100 - Math.round(price * 100)) > 0.000001)
+      return json({ error: 'A positive purchase-unit price with at most two decimal places is required for converted receipts.' }, 400);
+    const perInputKobo = Math.round(price * 100);
+    const totalCost = quantity * perInputKobo;
+    if (!Number.isSafeInteger(Math.round(totalCost)) || Math.abs(totalCost - Math.round(totalCost)) > 0.000001)
+      return json({ error: 'This purchase cost cannot be represented exactly to the kobo. Review quantity and supplier price.' }, 409);
+    const exactCostPerBaseUnit = totalCost / normalized;
+    if (!Number.isSafeInteger(Math.round(exactCostPerBaseUnit))
+      || Math.abs(exactCostPerBaseUnit - Math.round(exactCostPerBaseUnit)) > 0.000001)
+      return json({ error: 'Receipt rejected: Inventory cannot yet represent a fractional-kobo cost per base unit. Use an appropriate base unit or implement audited fractional-cost valuation before receiving this material.' }, 409);
+    baseQuantity = normalized;
+    unitCost = Math.round(exactCostPerBaseUnit);
+    conversion = { ruleId:rule.id,factor:Number(rule.factor),versionNo:Number(rule.versionNo),
+      inputUnit:enteredUnit,inputQuantity:quantity,totalCostKobo:Math.round(totalCost) };
+  } else if (isBakery) {
+    if (body.purchaseUnitCostNaira !== undefined)
+      return json({ error: 'Use the existing Inventory base-unit cost field when no conversion is required.' }, 400);
+    if (normalizeBaseQuantity(quantity, 1) === null)
+      return json({ error: 'Bakery receipt quantity exceeds safe Inventory precision or quantity limits.' }, 400);
+    if (body.unitCostNaira != null && (typeof body.unitCostNaira !== 'number'
+      || !Number.isFinite(body.unitCostNaira) || body.unitCostNaira < 0
+      || !Number.isSafeInteger(Math.round(body.unitCostNaira * 100))
+      || Math.abs(body.unitCostNaira * 100 - Math.round(body.unitCostNaira * 100)) > 0.000001))
+      return json({ error: 'Bakery material unit cost must be a non-negative naira amount with at most two decimals.' }, 400);
+  }
   const movementId = uid('stock-movement');
   await env.DB.batch([
     env.DB.prepare(`
       INSERT INTO stock_balances (id, company_id, location_id, item_id, quantity)
       VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(location_id, item_id) DO UPDATE SET quantity = stock_balances.quantity + excluded.quantity, updated_at = CURRENT_TIMESTAMP
-    `).bind(uid('stock-balance'), companyId, body.locationId, body.itemId, quantity),
+    `).bind(uid('stock-balance'), companyId, body.locationId, body.itemId, baseQuantity),
     env.DB.prepare(`UPDATE inventory_items SET unit_cost_kobo = CASE WHEN ? > 0 THEN ? ELSE unit_cost_kobo END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(unitCost, unitCost, body.itemId),
     env.DB.prepare(`
       INSERT INTO stock_movements (
         id, company_id, item_id, movement_type, quantity, unit_cost_kobo, to_location_id,
         reference_type, reference_id, reason, lot_no, expiry_date, created_by, metadata_json
       ) VALUES (?, ?, ?, 'receipt', ?, ?, ?, 'goods_receipt', ?, ?, ?, ?, ?, ?)
-    `).bind(movementId, companyId, body.itemId, quantity, unitCost, body.locationId, body.supplierReference || movementId, body.note || 'Goods received', body.lotNo || null, body.expiryDate || null, context.employee.id, JSON.stringify({ supplierId: body.supplierId || null })),
-    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'inventory', 'receive_stock', 'stock_movement', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, movementId, JSON.stringify({ itemId: body.itemId, locationId: body.locationId, quantity, unitCost })),
+    `).bind(movementId, companyId, body.itemId, baseQuantity, unitCost, body.locationId, body.supplierReference || movementId, body.note || 'Goods received', body.lotNo || null, body.expiryDate || null, context.employee.id, JSON.stringify({ supplierId: body.supplierId || null, conversion, baseQuantity, baseUnit:item.unit })),
+    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'inventory', 'receive_stock', 'stock_movement', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, movementId, JSON.stringify({ itemId: body.itemId, locationId: body.locationId, enteredQuantity:quantity, baseQuantity, baseUnit:item.unit, unitCost, conversion })),
   ]);
-  return json({ ok: true, movementId, message: 'Goods received and stock balance updated.' });
+  return json({ ok: true, movementId, baseQuantity, baseUnit:item.unit, conversion, message: 'Goods received and stock balance updated.' });
 }
 
 async function transferStock(request: Request, env: InventoryEnv, context: SessionContext) {

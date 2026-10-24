@@ -6,13 +6,18 @@ import {webcrypto} from 'node:crypto';
 import ts from 'typescript';
 
 const source=fs.readFileSync(new URL('../worker/bakery.ts',import.meta.url),'utf8');
+const unitsSource=fs.readFileSync(new URL('../worker/bakery-material-units.ts',import.meta.url),'utf8');
+const unitsOut=ts.transpileModule(unitsSource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+const unitsModule={exports:{}};
+const unitsFn=new vm.Script('(function(require,module,exports){'+unitsOut+'\n})').runInNewContext({Request,Response,URL,crypto:webcrypto,TextEncoder,TextDecoder,Intl});
+unitsFn(name=>{assert.equal(name,'./auth');return{hasPermission:()=>true}},unitsModule,unitsModule.exports);
 const output=ts.transpileModule(source,{compilerOptions:{
  target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS
 }}).outputText;
 const mod={exports:{}};
 const sandbox=vm.createContext({Request,Response,URL,crypto:webcrypto,TextEncoder,TextDecoder,console,Intl});
 const fn=new vm.Script('(function(require,module,exports){'+output+'\n})',{filename:'real-worker-bakery.ts'}).runInContext(sandbox);
-fn((name)=>{assert.equal(name,'./auth');return {hasPermission:()=>true}},mod,mod.exports);
+fn(name=>name==='./auth'?{hasPermission:()=>true}:name==='./bakery-material-units'?unitsModule.exports:null,mod,mod.exports);
 const route=mod.exports.routeBakery;
 assert.equal(typeof route,'function');
 const context={companies:[{id:'company-bakery'}],employee:{id:'worker-test'},roles:[],permissions:{}};
