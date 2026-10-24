@@ -6,6 +6,7 @@ import { useOfflinePlatform } from './offline-sync';
 import { FORM_PRESETS, FORM_OPTION_SETS, prepareFormSchema } from './guided-form-fields';
 import { SmartMasterSelect } from './smart-master-select';
 import { assetsForSelectedFacility, recommendedWorkPriority, suggestedWorkTitle, validFacilitySelection } from './facility-guided-entry';
+import './facility-guided-entry.css';
 
 const rank:Record<AccessLevel,number>={none:0,view:1,create:2,edit:3,approve:4,manage:5};
 const can=(c:WorkforceContext,p:string,m:AccessLevel='view')=>rank[c.permissions[p]||'none']>=rank[m];
