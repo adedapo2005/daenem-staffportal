@@ -147,12 +147,15 @@ el('repair').addEventListener('click',async()=>{
     if(!before.ok||!safe(await before.json()))throw new Error('Preconditions changed; no write attempted.');
     const response=await fetch(base+'qa-grants/reconcile',{
       method:'POST',credentials:'same-origin',mode:'same-origin',redirect:'error',
-      headers:{'Accept':'application/json'},cache:'no-store'
+      headers:{'Accept':'application/json','X-DAENEM-QA-REPAIR':'qa-staging-v1'},cache:'no-store'
     });
     const result=await response.json();
     if(response.status!==200||result.ok!==true||
       result.scope!=='qa-staging-v1'||result.facilitiesGrants!==3){
-      throw new Error('Reconciliation refused by the Worker (HTTP '+response.status+').');
+      const safeCode=typeof result.code==='string'&&
+        /^QA_REPAIR_(ORIGIN_MISMATCH|FETCH_SITE|SAME_ORIGIN_REQUIRED|PAYLOAD)$/.test(result.code)
+        ?' ['+result.code+']':'';
+      throw new Error('Reconciliation refused by the Worker (HTTP '+response.status+')'+safeCode+'.');
     }
     el('result').textContent='Reconciliation accepted. Confirming the persisted grant counts…';
   }catch(err){
