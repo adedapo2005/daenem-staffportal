@@ -6,19 +6,13 @@ import { hasWorkforcePermission } from './auth';
 import { usePathname, useRouter } from './next-navigation-shim';
 import './stage1-live-erp-route-bridge.css';
 
-type LiveRoute = 'forms' | 'facilities' | 'spend';
+import { liveRouteForPath, type LiveErpRoute as LiveRoute } from './stage1-live-erp-route-contract';
 
 const Forms = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
 const Facilities = lazy(() => import('./centers').then((module) => ({ default: module.FacilitiesCenter })));
 // The existing SpendCenter is a genuine authenticated ERP workflow.
 // Its standalone-launcher entrypoint is not mounted inside V115.
 const Spend = lazy(() => import('./spend-entry').then((module) => ({ default: module.SpendCenter })));
-
-export function liveRouteForPath(path: string): LiveRoute | null {
-  const pathRoot = path.split('?')[0].split('/').filter(Boolean)[0];
-  return pathRoot === 'forms' || pathRoot === 'facilities' || pathRoot === 'spend'
-    ? pathRoot : null;
-}
 
 function canViewLiveCompany(context: WorkforceContext, route: LiveRoute, companyId: string) {
   if (!context.companies.some((company) => company.id === companyId)) return false;
