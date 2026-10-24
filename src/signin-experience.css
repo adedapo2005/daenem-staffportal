@@ -3408,3 +3408,67 @@
     white-space: normal !important;
   }
 }
+
+/* Ibadan weather clock precision (2026-10-24).
+   Baseline 4K made the four digital labels independent stretching grid rows:
+   its 124px dial sat between a time 45px above and a date 44px below.
+   Keep the existing approved markup and geometry, but bind the date/time as
+   one centered column immediately beside its live analog dial. Only Ibadan. */
+#root .sp-root #staff-local-weather
+  .sp-live-weather-city .gw-city-instrument {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: center !important;
+  align-content: center !important;
+  justify-items: stretch !important;
+  gap: clamp(7px, .65vw, 16px) !important;
+}
+#root .sp-root #staff-local-weather
+  .sp-live-weather-city .gw-city-clock {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  justify-self: start !important;
+}
+#root .sp-root #staff-local-weather
+  .sp-live-weather-city .gw-city-digital {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  align-self: center !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  gap: clamp(4px, .17vw, 6px) !important;
+}
+#root .sp-root #staff-local-weather
+  .sp-live-weather-city .gw-city-digital > p {
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  line-height: 1.16 !important;
+  text-shadow: 0 1px 3px rgba(0, 8, 18, .92), 0 3px 10px rgba(0, 8, 18, .64) !important;
+  white-space: normal !important;
+}
+#root .sp-root #staff-local-weather
+  .sp-live-weather-city .gw-city-digital > p:nth-child(4) {
+  grid-column: auto !important;
+  grid-row: auto !important;
+  margin-top: clamp(1px, .12vw, 3px) !important;
+  text-align: left !important;
+}
+@media (min-width: 721px) and (max-width: 1439px) {
+  #root .sp-root #staff-local-weather
+    .sp-compact-ibadan-date .gw-city-digital > p:nth-child(4) {
+    font-size: 12px !important;
+    letter-spacing: -.015em !important;
+    line-height: 1.13 !important;
+  }
+}
