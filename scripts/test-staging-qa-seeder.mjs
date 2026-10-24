@@ -61,7 +61,8 @@ async function main() {
   const worker = load('worker/staffportal-staging.ts').default;
   const auth = load('worker/auth.ts');
   const migrations = Object.keys(baseline.files).filter(name => name.startsWith('migrations/') && name.endsWith('.sql')).sort();
-  check(migrations.length === 106, 'All 106 committed migrations');
+  const bakeryMigrations = ['migrations/0102_bakery_financial_integrity.sql','migrations/0103_bakery_agent_sale_price_integrity.sql','migrations/0104_bakery_verified_return_custody.sql'];
+  check(migrations.length === 109 && bakeryMigrations.every(name => migrations.includes(name)), 'All 109 committed migrations, including three audited Bakery controls');
   const db = new DatabaseSync(':memory:');
   for (const migration of migrations) { lastCheck = `Schema: ${migration}`; db.exec(baseline.files[migration]); }
   const rows = sql => db.prepare(sql).all();
@@ -403,7 +404,7 @@ async function main() {
   check(externalCalls === 0, 'Zero provider delivery logging or external calls');
   check(rows('PRAGMA foreign_key_check').length === 0, 'Canonical foreign keys intact');
   db.close();
-  console.log(`PASS staging QA composed runtime: ${assertions} checks; seed ${seedBatchLength}/50; reset ${resetBatchLength}/50; 106 migrations; zero external calls.`);
+  console.log(`PASS staging QA composed runtime: ${assertions} checks; seed ${seedBatchLength}/50; reset ${resetBatchLength}/50; ${migrations.length} migrations; zero external calls.`);
 }
 
 main().catch(() => {
