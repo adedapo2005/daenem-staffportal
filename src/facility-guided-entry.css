@@ -7,3 +7,34 @@
 .guided-maintenance-form .form-row select,.guided-maintenance-form .form-row input{min-width:0;width:100%;box-sizing:border-box}
 @media(max-width:640px){.guided-maintenance-form .form-row{grid-template-columns:1fr}}
 @media(min-width:2600px){.guided-maintenance-form .guided-title-action{font-size:clamp(14px,.48vw,18px)}}
+
+/* Real Facilities setup: strong non-glass hierarchy across 4K and mobile. */
+.facilities-guided-create-grid .facility-register-card {
+  border-color: rgba(32, 126, 106, .34);
+  box-shadow: 0 12px 34px rgba(19, 59, 69, .07);
+}
+.facilities-guided-create-grid .facility-register-card .card-heading h3 {
+  font-size: clamp(17px, .68vw, 25px);
+  letter-spacing: -.015em;
+}
+.facilities-guided-create-grid .facility-register-card .card-heading svg {
+  color: #20816b;
+}
+.facilities-guided-create-grid .facility-register-card .primary-action {
+  min-height: 44px;
+}
+.facility-duplicate-notice {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid #d8bf88;
+  background: #fff9e9;
+  border-radius: 10px;
+  color: #705521;
+  font-size: clamp(12px, .46vw, 15px);
+  line-height: 1.45;
+}
+@media (min-width: 2600px) {
+  .facilities-guided-create-grid .facility-register-card .smart-master-field > label {
+    font-size: clamp(14px, .46vw, 17px);
+  }
+}
