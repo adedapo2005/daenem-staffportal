@@ -633,14 +633,16 @@ export function Brand({ compact = false, className = '' }: { compact?: boolean; 
   return <div ref={target} className={`sp-brand sp-brand-v172 ${compact ? 'sp-brand-compact' : ''} sp-brand-depth ${className}`} aria-label="DAENEM Staff Portal" />;
 }
 
-export function SignInExperience({ authPanel, authMode, onInstall }: {
+export function SignInExperience({ authPanel, authMode, onInstall, onSwitchAuth }: {
   authPanel: ReactNode;
   authMode: 'signin' | 'signup' | 'forgot';
   themeId: ThemeId;
   onInstall: () => void;
+  onSwitchAuth: (mode: 'signin' | 'signup') => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [authMount, setAuthMount] = useState<HTMLElement | null>(null);
+  const [showMobileAuthDock, setShowMobileAuthDock] = useState(false);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -758,10 +760,43 @@ export function SignInExperience({ authPanel, authMode, onInstall }: {
     authMount.dataset.sourceCommit = APPROVED_SIGNIN.commit;
   }, [authMode]);
 
+  useEffect(() => {
+    if (!authMount) return;
+    const update = () => {
+      // Keep the primary form uncluttered. Provide quick access only after it
+      // leaves the mobile viewport; never overlay the active form or keyboard.
+      const rect = authMount.getBoundingClientRect();
+      const mobile = window.matchMedia('(max-width: 720px)').matches;
+      const visible = mobile && (rect.bottom < 16 || rect.top > window.innerHeight);
+      setShowMobileAuthDock((previous) => previous === visible ? previous : visible);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [authMount]);
+
+  const navigateToAuth = (next: 'signin' | 'signup') => {
+    onSwitchAuth(next);
+    window.requestAnimationFrame(() => {
+      authMount?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
   return <>
     <link rel="stylesheet" href="/approved-signin-v180.css" />
     <ApprovedSignInSource ref={rootRef} />
     {authMount ? createPortal(authPanel, authMount) : null}
+    {showMobileAuthDock && <nav className="sp-mobile-auth-dock" aria-label="Quick Staff Access" data-mobile-auth-dock="true">
+      <button type="button" className={authMode === 'signin' ? 'is-active' : ''} aria-current={authMode === 'signin' ? 'page' : undefined} onClick={() => navigateToAuth('signin')}>Sign In</button>
+      <button type="button" className={authMode === 'signup' ? 'is-active' : ''} aria-current={authMode === 'signup' ? 'page' : undefined} onClick={() => navigateToAuth('signup')}>Create Account</button>
+    </nav>}
   </>;
 }
 

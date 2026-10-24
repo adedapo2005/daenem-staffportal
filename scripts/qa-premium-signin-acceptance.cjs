@@ -5,7 +5,7 @@ const { createServer } = require('vite');
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-const SCREENS = (process.env.QA_SINGLE === '4k' ? [[3840,2160]] : process.env.QA_SINGLE === '1' ? [[1920,1080]] : null) || [[3840,2160],[1920,1080],[1366,768],[1280,720],[1024,768],[820,1180],[390,844]];
+const SCREENS = ({'4k':[[3840,2160]],'1':[[1920,1080]],'compact':[[1366,768]],'short':[[1280,720]],'mobile':[[390,844]]}[process.env.QA_SINGLE]) || [[3840,2160],[1920,1080],[1366,768],[1280,720],[1024,768],[820,1180],[390,844]];
 const OUT = path.resolve('qa-artifacts/premium-signin-acceptance-20261023');
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const results = [];
@@ -28,6 +28,9 @@ const box = (el) => {
       await page.route('**/api/**', route => {
         const pathname=new URL(route.request().url()).pathname;
         let body = {};
+        if(pathname==='/api/auth/login' && route.request().method()==='POST') {
+          return route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({error:'The username/email or password is incorrect.'})});
+        }
         if(pathname==='/api/auth/me') body={authenticated:false};
         if(pathname==='/api/auth/password-policy') body={minimumLength:6,maximumLength:128,requiresUppercase:true,requiresLowercase:true,requiresNumber:true,requiresSymbol:true};
         return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
@@ -53,7 +56,7 @@ const box = (el) => {
           const places={};for(const key of ['#staff-primary-information','#staff-global-operations','#staff-local-weather','.sp-hero','#staffportal-auth-mount']){
             const el=document.querySelector(key); places[key]=el?rect(el):null;
           }
-          const providers=[...root.querySelectorAll('.sp-auth-provider-list .sp-social-button')].map(el=>({text:(el.textContent||'').trim(),rect:rect(el),font:getComputedStyle(el).fontSize}));
+          const providers=[...root.querySelectorAll('.sp-auth-provider-list .sp-social-button')].map(el=>({text:(el.textContent||'').trim(),rect:rect(el),font:getComputedStyle(el.querySelector('.sp-social-label')||el).fontSize}));
           const mainInputStyle=el=>{const st=getComputedStyle(el);return{font:st.fontSize,color:st.color,placeholder:el.placeholder}};
           return {
             viewport:{w:innerWidth,h:innerHeight},body:{scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight},
@@ -87,10 +90,47 @@ const box = (el) => {
         assert.equal(metrics.focus.inputBoxShadow,'none','input has no shadow');
         assert.equal(metrics.focus.shellOutlineWidth,'2px','single outer focus ring');
         assert.equal(metrics.providers.length,3,'Microsoft Google WhatsApp remain');
+        if(width>=1280 && width<1680) {
+          const providerFit=await page.locator('#staffportal-auth-mount .sp-social-button').evaluateAll(elements=>elements.map(el=>{
+            const label=el.querySelector('.sp-social-label'),icon=el.querySelector('.sp-social-icon');
+            const b=el.getBoundingClientRect(),l=label.getBoundingClientRect(),i=icon.getBoundingClientRect(),st=getComputedStyle(el);
+            const range=document.createRange();range.selectNodeContents(label);
+            return {name:label.textContent,display:st.display,flexDirection:st.flexDirection,grid:st.gridTemplateColumns,
+              buttonWidth:+b.width.toFixed(1),labelWidth:+l.width.toFixed(1),realTextWidth:+range.getBoundingClientRect().width.toFixed(1),
+              labelRight:+l.right.toFixed(1),buttonRight:+b.right.toFixed(1),iconRight:+i.right.toFixed(1),iconBottom:+i.bottom.toFixed(1),labelTop:+l.top.toFixed(1)};
+          }));
+          console.log('PROVIDER_FIT '+width+' '+JSON.stringify(providerFit));
+          for(const provider of providerFit) {
+            assert.ok(provider.labelRight<=provider.buttonRight-1,'provider label fully fits inside '+provider.name);
+            assert.ok(provider.iconBottom<=provider.labelTop+1,'provider mark stacks cleanly above '+provider.name);
+          }
+        }
         if (width>=2100) {
           assert.ok(parseFloat(metrics.email.font)>=18,'4K email field is comfortably readable');
           assert.ok(parseFloat(metrics.panelLayout.labelFont)>=16,'4K field label is comfortably readable');
           assert.ok(parseFloat(metrics.providers[0].font)>=16,'4K social buttons are comfortably readable');
+        } else if (width>=1680) {
+          assert.ok(parseFloat(metrics.email.font)>=14,'full desktop email text must reach 14px');
+          assert.ok(parseFloat(metrics.panelLayout.labelFont)>=13,'full desktop label must reach 13px');
+          assert.ok(parseFloat(metrics.providers[0].font)>=12,'full desktop provider text must reach 12px');
+        } else if (width>=1280) {
+          assert.ok(parseFloat(metrics.email.font)>=12.5,'compact desktop email text must reach 12.5px');
+          assert.ok(parseFloat(metrics.panelLayout.labelFont)>=12,'compact desktop label must reach 12px');
+          assert.ok(parseFloat(metrics.providers[0].font)>=10.5,'compact desktop provider text must reach 10.5px');
+        } else {
+          assert.ok(parseFloat(metrics.email.font)>=13.5,'tablet/mobile email text must reach 13.5px');
+          assert.ok(parseFloat(metrics.panelLayout.labelFont)>=12.5,'tablet/mobile label must reach 12.5px');
+          assert.ok(parseFloat(metrics.providers[0].font)>=13,'tablet/mobile social labels must reach 13px');
+        }
+        if(width>=1280 && width<1680) {
+          const geometry=await page.locator('#staffportal-auth-mount').evaluate(el=>({
+            scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,
+            children:[...el.querySelectorAll('.sp-auth-topline,.sp-auth-copy,.sp-auth-tabs,.sp-auth-form,.sp-auth-divider,.sp-auth-provider-list,.sp-install-card-v101,.sp-auth-policy')].map(c=>{
+              const r=c.getBoundingClientRect(), s=getComputedStyle(c);
+              return {name:c.className,top:Math.round(r.top),bottom:Math.round(r.bottom),height:Math.round(r.height),display:s.display};
+            })
+          }));
+          console.log('COMPACT_GEOMETRY '+width+' '+JSON.stringify(geometry));
         }
         assert.ok(metrics.rootScrollHeight<=metrics.rootClientHeight+3,'auth has no internal scroll or clipping');
         assert.ok(metrics.body.scrollWidth<=width+2,'no page horizontal overflow');
@@ -108,6 +148,19 @@ const box = (el) => {
         assert.equal(await password.getAttribute('type'),'password','hide password toggle');
         await page.locator('#staffportal-auth-mount .sp-remember input').check();
         assert.ok(await page.locator('#staffportal-auth-mount .sp-remember input').isChecked(),'remember toggled');
+        assert.equal(await page.locator('#staffportal-auth-mount .sp-forgot').count(),1,'direct Forgot Password remains');
+        await page.locator('#staffportal-auth-mount .sp-primary-button').click();
+        const inlineError=page.locator('#staffportal-auth-mount .sp-inline-auth-error[role="alert"]');
+        await inlineError.waitFor({timeout:10000});
+        if(width===1366) await page.screenshot({path:path.join(OUT,'inline-login-error-1366x768.jpg'),type:'jpeg',quality:68,fullPage:true});
+        assert.match(await inlineError.innerText(),/sign-in failed.*recover below/i,'generic inline recovery alert is announced');
+        assert.equal(await password.inputValue(),'','failed login clears password, avoiding accidental repeated submit');
+        assert.equal(await page.locator('#staffportal-auth-mount .sp-auth-notice.is-error').count(),0,'failed login does not insert a large overlay');
+        const errorLayout=await page.locator('#staffportal-auth-mount').evaluate(el=>({
+          clientHeight:el.clientHeight,scrollHeight:el.scrollHeight
+        }));
+        console.log('ERROR_LAYOUT '+width+' '+JSON.stringify(errorLayout));
+        if(width>=1280) assert.ok(errorLayout.scrollHeight<=errorLayout.clientHeight+3,'inline error must fit without desktop internal scrolling');
         await page.locator('#staffportal-auth-mount .sp-forgot').click();
         await page.locator('#staffportal-auth-mount.sp-auth-mode-forgot').waitFor({timeout:10000});
         const forgotText=await page.locator('#staffportal-auth-mount').innerText();
@@ -160,6 +213,26 @@ const box = (el) => {
           await page.locator('#staffportal-auth-mount .usp-auth-panel[data-auth-mode="signup-work"]').waitFor();
           await page.screenshot({path:path.join(OUT,'create-work-'+width+'x'+height+'.jpg'),type:'jpeg',quality:62,fullPage:true});
           console.log('PASS create-wizard '+width+'x'+height+' staged password fields accessible');
+        }
+        if(width===390) {
+          await page.evaluate(()=>window.scrollTo(0,1650));
+          const dock=page.locator('[data-mobile-auth-dock="true"]');
+          await dock.waitFor({timeout:10000});
+          await page.screenshot({path:path.join(OUT,'mobile-sticky-dock-390x844.jpg'),type:'jpeg',quality:68,fullPage:false});
+          assert.equal(await dock.locator('button').count(),2,'mobile offers both auth modes');
+          await dock.getByRole('button',{name:'Sign In'}).click();
+          await page.locator('#staffportal-auth-mount.sp-auth-mode-signin').waitFor({timeout:10000});
+          await page.waitForTimeout(250);
+          assert.equal(await dock.count(),0,'mobile dock hides when auth panel is visible');
+          await page.evaluate(()=>window.scrollTo(0,1650));
+          await dock.waitFor({timeout:10000});
+          await dock.getByRole('button',{name:'Create Account'}).click();
+          await page.locator('#staffportal-auth-mount.sp-auth-mode-create').waitFor({timeout:10000});
+          await page.waitForTimeout(250);
+          assert.equal(await dock.count(),0,'Create Account returns to visible auth panel');
+          console.log('PASS mobile sticky Sign In and Create Account navigation');
+        } else {
+          assert.equal(await page.locator('[data-mobile-auth-dock="true"]').count(),0,'dock never covers desktop/tablet');
         }
         results.push({viewport:width+'x'+height,ok:true,metrics,createFirstName:firstStyles,exceptions});
         assert.equal(exceptions.length,0,'javascript exceptions');

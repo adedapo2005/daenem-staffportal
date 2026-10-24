@@ -220,12 +220,12 @@
           }
         },
         "email": {
-          "font": "11px",
+          "font": "14px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Email or username"
         },
         "password": {
-          "font": "11px",
+          "font": "14px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Enter password"
         },
@@ -243,37 +243,37 @@
             "text": "Microsoft",
             "rect": {
               "x": 1545.2,
-              "y": 790.7,
+              "y": 814.3,
               "w": 109,
               "h": 38,
               "right": 1654.3,
-              "bottom": 828.7
+              "bottom": 852.3
             },
-            "font": "7.68px"
+            "font": "12px"
           },
           {
             "text": "Google",
             "rect": {
               "x": 1657.3,
-              "y": 790.7,
+              "y": 814.3,
               "w": 109,
               "h": 38,
               "right": 1766.3,
-              "bottom": 828.7
+              "bottom": 852.3
             },
-            "font": "7.68px"
+            "font": "12px"
           },
           {
             "text": "WhatsApp",
             "rect": {
               "x": 1769.3,
-              "y": 790.7,
+              "y": 814.3,
               "w": 109,
               "h": 38,
               "right": 1878.3,
-              "bottom": 828.7
+              "bottom": 852.3
             },
-            "font": "7.68px"
+            "font": "12px"
           }
         ],
         "newsWidgets": 4,
@@ -285,9 +285,9 @@
           "gridTemplateRows": "none",
           "padding": "8px",
           "headingFont": "17px",
-          "tabFont": "11px",
-          "labelFont": "11px",
-          "buttonFont": "12px",
+          "tabFont": "13px",
+          "labelFont": "13px",
+          "buttonFont": "14px",
           "children": [
             {
               "className": "sp-auth-runtime",
@@ -375,12 +375,12 @@
           }
         },
         "email": {
-          "font": "9.28px",
+          "font": "12.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Email or username"
         },
         "password": {
-          "font": "9.28px",
+          "font": "12.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Enter password"
         },
@@ -398,37 +398,37 @@
             "text": "Microsoft",
             "rect": {
               "x": 1130.4,
-              "y": 623.3,
+              "y": 604,
               "w": 67.9,
-              "h": 38,
+              "h": 39,
               "right": 1198.4,
-              "bottom": 661.3
+              "bottom": 643
             },
-            "font": "7.68px"
+            "font": "10.5px"
           },
           {
             "text": "Google",
             "rect": {
               "x": 1201.4,
-              "y": 623.3,
+              "y": 604,
               "w": 67.9,
-              "h": 38,
+              "h": 39,
               "right": 1269.3,
-              "bottom": 661.3
+              "bottom": 643
             },
-            "font": "7.68px"
+            "font": "10.5px"
           },
           {
             "text": "WhatsApp",
             "rect": {
               "x": 1272.3,
-              "y": 623.3,
+              "y": 604,
               "w": 67.9,
-              "h": 38,
+              "h": 39,
               "right": 1340.2,
-              "bottom": 661.3
+              "bottom": 643
             },
-            "font": "7.68px"
+            "font": "10.5px"
           }
         ],
         "newsWidgets": 4,
@@ -438,11 +438,11 @@
           "alignContent": "normal",
           "justifyContent": "flex-start",
           "gridTemplateRows": "none",
-          "padding": "8px",
+          "padding": "6px 8px",
           "headingFont": "16px",
-          "tabFont": "8.32px",
-          "labelFont": "7.84px",
-          "buttonFont": "10.4px",
+          "tabFont": "10.5px",
+          "labelFont": "12px",
+          "buttonFont": "13px",
           "children": [
             {
               "className": "sp-auth-runtime",
@@ -530,12 +530,12 @@
           }
         },
         "email": {
-          "font": "9.28px",
+          "font": "12.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Email or username"
         },
         "password": {
-          "font": "9.28px",
+          "font": "12.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Enter password"
         },
@@ -553,37 +553,37 @@
             "text": "Microsoft",
             "rect": {
               "x": 1051.7,
-              "y": 575.3,
+              "y": 556,
               "w": 63.8,
-              "h": 38,
+              "h": 39,
               "right": 1115.5,
-              "bottom": 613.3
+              "bottom": 595
             },
-            "font": "7.68px"
+            "font": "10.5px"
           },
           {
             "text": "Google",
             "rect": {
               "x": 1118.5,
-              "y": 575.3,
+              "y": 556,
               "w": 63.9,
-              "h": 38,
+              "h": 39,
               "right": 1182.4,
-              "bottom": 613.3
+              "bottom": 595
             },
-            "font": "7.68px"
+            "font": "10.5px"
           },
           {
             "text": "WhatsApp",
             "rect": {
               "x": 1185.4,
-              "y": 575.3,
+              "y": 556,
               "w": 63.9,
-              "h": 38,
+              "h": 39,
               "right": 1249.3,
-              "bottom": 613.3
+              "bottom": 595
             },
-            "font": "7.68px"
+            "font": "10.5px"
           }
         ],
         "newsWidgets": 4,
@@ -593,11 +593,11 @@
           "alignContent": "normal",
           "justifyContent": "flex-start",
           "gridTemplateRows": "none",
-          "padding": "8px",
+          "padding": "6px 8px",
           "headingFont": "16px",
-          "tabFont": "8.32px",
-          "labelFont": "7.84px",
-          "buttonFont": "10.4px",
+          "tabFont": "10.5px",
+          "labelFont": "12px",
+          "buttonFont": "13px",
           "children": [
             {
               "className": "sp-auth-runtime",
@@ -630,42 +630,42 @@
         },
         "body": {
           "scrollWidth": 1024,
-          "scrollHeight": 2515
+          "scrollHeight": 2522
         },
         "root": {
           "x": 462.2,
           "y": 426.4,
           "w": 547.8,
-          "h": 691,
+          "h": 697.4,
           "right": 1010,
-          "bottom": 1117.4
+          "bottom": 1123.7
         },
-        "rootClientHeight": 689,
-        "rootScrollHeight": 689,
+        "rootClientHeight": 695,
+        "rootScrollHeight": 695,
         "places": {
           "#staff-primary-information": {
             "x": 14,
-            "y": 1988.4,
+            "y": 1994.7,
             "w": 996,
             "h": 471,
             "right": 1010,
-            "bottom": 2459.4
+            "bottom": 2465.7
           },
           "#staff-global-operations": {
             "x": 14,
-            "y": 1130.4,
+            "y": 1136.7,
             "w": 996,
             "h": 845,
             "right": 1010,
-            "bottom": 1975.4
+            "bottom": 1981.7
           },
           "#staff-local-weather": {
             "x": 14,
             "y": 426.4,
             "w": 438.2,
-            "h": 691,
+            "h": 697.4,
             "right": 452.2,
-            "bottom": 1117.4
+            "bottom": 1123.7
           },
           ".sp-hero": {
             "x": 14,
@@ -679,18 +679,18 @@
             "x": 462.2,
             "y": 426.4,
             "w": 547.8,
-            "h": 691,
+            "h": 697.4,
             "right": 1010,
-            "bottom": 1117.4
+            "bottom": 1123.7
           }
         },
         "email": {
-          "font": "11.2px",
+          "font": "13.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Email or username"
         },
         "password": {
-          "font": "11.2px",
+          "font": "13.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Enter password"
         },
@@ -708,37 +708,37 @@
             "text": "Microsoft",
             "rect": {
               "x": 474.2,
-              "y": 936.3,
+              "y": 935.8,
               "w": 170.6,
               "h": 46,
               "right": 644.8,
-              "bottom": 982.3
+              "bottom": 981.8
             },
-            "font": "16px"
+            "font": "13px"
           },
           {
             "text": "Google",
             "rect": {
               "x": 650.8,
-              "y": 936.3,
+              "y": 935.8,
               "w": 170.6,
               "h": 46,
               "right": 821.4,
-              "bottom": 982.3
+              "bottom": 981.8
             },
-            "font": "16px"
+            "font": "13px"
           },
           {
             "text": "WhatsApp",
             "rect": {
               "x": 827.4,
-              "y": 936.3,
+              "y": 935.8,
               "w": 170.6,
               "h": 46,
               "right": 998,
-              "bottom": 982.3
+              "bottom": 981.8
             },
-            "font": "16px"
+            "font": "13px"
           }
         ],
         "newsWidgets": 4,
@@ -750,9 +750,9 @@
           "gridTemplateRows": "none",
           "padding": "11px",
           "headingFont": "18.88px",
-          "tabFont": "11.52px",
-          "labelFont": "10.88px",
-          "buttonFont": "10.88px",
+          "tabFont": "13px",
+          "labelFont": "12.5px",
+          "buttonFont": "14px",
           "children": [
             {
               "className": "sp-auth-runtime",
@@ -785,42 +785,42 @@
         },
         "body": {
           "scrollWidth": 820,
-          "scrollHeight": 2695
+          "scrollHeight": 2702
         },
         "root": {
           "x": 371.5,
           "y": 587,
           "w": 434.4,
-          "h": 697,
+          "h": 703.3,
           "right": 806,
-          "bottom": 1284
+          "bottom": 1290.3
         },
-        "rootClientHeight": 695,
-        "rootScrollHeight": 695,
+        "rootClientHeight": 701,
+        "rootScrollHeight": 701,
         "places": {
           "#staff-primary-information": {
             "x": 14,
-            "y": 2155.3,
+            "y": 2161.6,
             "w": 792,
             "h": 471,
             "right": 806,
-            "bottom": 2626.3
+            "bottom": 2632.6
           },
           "#staff-global-operations": {
             "x": 14,
-            "y": 1297,
+            "y": 1303.3,
             "w": 792,
             "h": 845.3,
             "right": 806,
-            "bottom": 2142.3
+            "bottom": 2148.6
           },
           "#staff-local-weather": {
             "x": 14,
             "y": 587,
             "w": 347.5,
-            "h": 697,
+            "h": 703.3,
             "right": 361.5,
-            "bottom": 1284
+            "bottom": 1290.3
           },
           ".sp-hero": {
             "x": 14,
@@ -834,18 +834,18 @@
             "x": 371.5,
             "y": 587,
             "w": 434.4,
-            "h": 697,
+            "h": 703.3,
             "right": 806,
-            "bottom": 1284
+            "bottom": 1290.3
           }
         },
         "email": {
-          "font": "11.2px",
+          "font": "13.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Email or username"
         },
         "password": {
-          "font": "11.2px",
+          "font": "13.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Enter password"
         },
@@ -863,37 +863,37 @@
             "text": "Microsoft",
             "rect": {
               "x": 383.5,
-              "y": 1101.1,
+              "y": 1100.7,
               "w": 132.8,
               "h": 46,
               "right": 516.4,
-              "bottom": 1147.1
+              "bottom": 1146.7
             },
-            "font": "16px"
+            "font": "13px"
           },
           {
             "text": "Google",
             "rect": {
               "x": 522.4,
-              "y": 1101.1,
+              "y": 1100.7,
               "w": 132.8,
               "h": 46,
               "right": 655.2,
-              "bottom": 1147.1
+              "bottom": 1146.7
             },
-            "font": "16px"
+            "font": "13px"
           },
           {
             "text": "WhatsApp",
             "rect": {
               "x": 661.2,
-              "y": 1101.1,
+              "y": 1100.7,
               "w": 132.8,
               "h": 46,
               "right": 794,
-              "bottom": 1147.1
+              "bottom": 1146.7
             },
-            "font": "16px"
+            "font": "13px"
           }
         ],
         "newsWidgets": 4,
@@ -905,9 +905,9 @@
           "gridTemplateRows": "none",
           "padding": "11px",
           "headingFont": "18.88px",
-          "tabFont": "11.52px",
-          "labelFont": "10.88px",
-          "buttonFont": "10.88px",
+          "tabFont": "13px",
+          "labelFont": "12.5px",
+          "buttonFont": "14px",
           "children": [
             {
               "className": "sp-auth-runtime",
@@ -995,12 +995,12 @@
           }
         },
         "email": {
-          "font": "11.2px",
+          "font": "13.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Email or username"
         },
         "password": {
-          "font": "11.2px",
+          "font": "13.5px",
           "color": "rgb(23, 55, 77)",
           "placeholder": "Enter password"
         },
@@ -1018,37 +1018,37 @@
             "text": "Microsoft",
             "rect": {
               "x": 21,
-              "y": 899.9,
+              "y": 899.5,
               "w": 112,
               "h": 46,
               "right": 133,
-              "bottom": 945.9
+              "bottom": 945.5
             },
-            "font": "16px"
+            "font": "13px"
           },
           {
             "text": "Google",
             "rect": {
               "x": 139,
-              "y": 899.9,
+              "y": 899.5,
               "w": 112,
               "h": 46,
               "right": 251,
-              "bottom": 945.9
+              "bottom": 945.5
             },
-            "font": "16px"
+            "font": "13px"
           },
           {
             "text": "WhatsApp",
             "rect": {
               "x": 257,
-              "y": 899.9,
+              "y": 899.5,
               "w": 112,
               "h": 46,
               "right": 369,
-              "bottom": 945.9
+              "bottom": 945.5
             },
-            "font": "16px"
+            "font": "13px"
           }
         ],
         "newsWidgets": 4,
@@ -1060,9 +1060,9 @@
           "gridTemplateRows": "none",
           "padding": "11px",
           "headingFont": "18.88px",
-          "tabFont": "12.16px",
-          "labelFont": "10.88px",
-          "buttonFont": "10.88px",
+          "tabFont": "13px",
+          "labelFont": "12.5px",
+          "buttonFont": "14px",
           "children": [
             {
               "className": "sp-auth-runtime",

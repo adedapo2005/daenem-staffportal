@@ -781,6 +781,15 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         });
       } else if (authError.code === 'LOCATION_REQUIRED' || authError.code === 'OUTSIDE_LOGIN_GEOFENCE') {
         setMessage({ type: 'error', text: 'Your sign-in could not be completed. Please contact your administrator if this continues.' });
+      } else if (authError.status === 401 && (
+        authError.code === 'INVALID_CREDENTIALS' ||
+        authError.message === 'The username/email or password is incorrect.'
+      )) {
+        // A generic message protects account existence; offer secure recovery
+        // instead of encouraging repeated guesses that may lock the account.
+        setPassword('');
+        setShowPassword(false);
+        setMessage({ type: 'error', text: 'The username/email or password is incorrect.' });
       } else {
         setMessage({ type: 'error', text: authError.message });
       }
@@ -1016,12 +1025,23 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
               : authLabels.forgotPasswordDescription,
         };
 
+  const inlineSignInError = message?.type === 'error' && (
+    message.text === 'The username/email or password is incorrect.' ||
+    message.text === authLabels.lockoutTitle ||
+    message.text === 'Owner Access Requires Secure Password Recovery.'
+  );
+  const inlineSignInErrorText = message?.text === authLabels.lockoutTitle
+    ? 'Access temporarily locked. Use Forgot Password.'
+    : message?.text === 'Owner Access Requires Secure Password Recovery.'
+      ? 'Recovery required. Use Forgot Password.'
+      : 'Sign-in failed. Recover below.';
+
   const approvedSignInPanel = (
     <div ref={(node) => { panelRef.current = node; }} className="sp-auth-runtime" data-approved-auth-placement="sites-v180">
       <div className="sp-auth-topline"><Brand compact className="sp-auth-logo-v101" /><span className="sp-secure-chip"><ShieldCheck size={14} /> Private Staff Access</span></div>
-      <div className="sp-auth-copy"><p className="sp-eyebrow">DAENEM Staff Portal</p><h2 id="sp-auth-heading">Welcome Back</h2><p>Sign in to continue to your assigned workspace.</p></div>
+      <div className="sp-auth-copy"><p className="sp-eyebrow">DAENEM Staff Portal</p><h2 id="sp-auth-heading">Welcome Back</h2><p role={inlineSignInError ? 'alert' : undefined} className={inlineSignInError ? 'sp-inline-auth-error' : undefined}>{inlineSignInError ? inlineSignInErrorText : 'Sign in to your staff workspace.'}</p></div>
       <div className="sp-auth-tabs" role="tablist" aria-label="Staff access mode"><button type="button" className="is-active" role="tab" aria-selected="true"><UserRound size={16} /> Sign In</button><button type="button" role="tab" aria-selected="false" onClick={() => switchMode('signup')}><UserPlus size={16} /> Create Account</button></div>
-      {message && <div className={`sp-auth-notice ${message.type === 'error' ? 'is-error' : message.type === 'success' ? 'is-success' : ''}`} role="alert"><span>{message.text}</span>{message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}{message.action && <button type="button" className="sp-text-button" onClick={message.action.onClick}>{message.action.label}</button>}</div>}
+      {message && !inlineSignInError && <div className={`sp-auth-notice ${message.type === 'error' ? 'is-error' : message.type === 'success' ? 'is-success' : ''}`} role="alert"><span>{message.text}</span>{message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}{message.action && <button type="button" className="sp-text-button" onClick={message.action.onClick}>{message.action.label}</button>}</div>}
       <form className="sp-auth-form" autoComplete="off" onSubmit={signIn} noValidate>
         <label><span className="sp-field-label">Email Or Username</span><span className={`sp-input-shell sp-credential-shell is-${identityStatus === 'invalid' && showIdentityStatus ? 'error' : identity ? 'success' : 'idle'}`} data-credential-state={identityStatus}><UserRound size={16} /><input type="text" autoComplete="username" value={identity} onChange={(event) => setIdentity(event.target.value)} onBlur={() => setIdentityTouched(true)} placeholder="Email or username" aria-invalid={identityStatus === 'invalid' && showIdentityStatus} /></span>{showIdentityStatus && identityStatus !== 'empty' ? <span className={`sp-field-status sp-credential-status is-${identityStatus === 'invalid' ? 'error' : 'success'}`}>{identityStatus === 'invalid' ? authLabels.identifierInvalid : identityStatus === 'email' ? authLabels.identifierEmailValid : authLabels.identifierUsernameValid}</span> : null}</label>
         <label><span className="sp-field-label">Password</span><span className="sp-input-shell sp-credential-shell"><KeyRound size={16} /><input type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" /><button type="button" className="sp-show-password" aria-label={showPassword ? authLabels.hidePassword : authLabels.showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}<span className="sp-show-password-label">{showPassword ? 'Hide' : 'Show'}</span></button></span></label>
@@ -1034,10 +1054,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button type="button" className="sp-social-button" onClick={() => startOAuth('microsoft')}><span className="sp-social-icon"><MicrosoftMark /></span><span className="sp-social-label">Microsoft</span></button>
         <button type="button" className="sp-social-button" onClick={() => startOAuth('google')}><span className="sp-social-icon"><GoogleMark /></span><span className="sp-social-label">Google</span></button>
         <button type="button" className="sp-social-button" onClick={() => void startWhatsAppSignIn()}><span className="sp-social-icon"><WhatsAppMark size={19} /></span><span className="sp-social-label">WhatsApp</span></button>
-        <p className="sp-auth-provider-status"><LockKeyhole size={12} /> Secure provider connections use the configured Cloudflare staging environment.</p>
+        <p className="sp-auth-provider-status"><LockKeyhole size={12} /> Secure sign-in with your chosen provider.</p>
       </div>
       <button type="button" className="sp-install-card sp-install-card-v101" onClick={() => void installApp()}><span className="sp-install-icon"><Download size={16} /></span><span className="sp-install-copy"><b>Install StaffPortal App</b><small>Fast Access From Your Home Screen</small></span><span className="sp-install-state">Shortcut</span></button>
-      <div className="sp-auth-policy"><p>By Continuing, You Agree To The DAENEM Staff Portal <a href="/terms-and-conditions.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a> And <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p><small>{secureServiceLabel}</small></div>
+      <div className="sp-auth-policy"><p>By continuing, you agree to our <a href="/terms-and-conditions.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a> and <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p><small>{secureServiceLabel}</small></div>
     </div>
   );
 
@@ -1306,5 +1326,5 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     : mode === 'forgot'
       ? approvedForgotPanel
       : legacyAuthPanel;
-  return <SignInExperience authPanel={authPanel} authMode={mode} themeId={themeId} onInstall={() => void installApp()} />;
+  return <SignInExperience authPanel={authPanel} authMode={mode} themeId={themeId} onInstall={() => void installApp()} onSwitchAuth={switchMode} />;
 }
