@@ -81,7 +81,12 @@ export async function routeV180PublicStaffContent(request: Request): Promise<Res
     // Approved upstream spotlight items do not always carry a category.
     // Preserve their authored title/body and use the neutral section label.
     if (spotlight) spotlight.category = boundedText((payload.spotlight as Record<string, unknown>).category, 120) ? (payload.spotlight as Record<string, string>).category : 'Daily Spotlight';
-    const inspiration = safeItem(payload.inspiration, ['id', 'message', 'attribution', 'category'], [128, 4_000, 300, 120]);
+    // Approved Owner-authored inspiration items may omit the presentation-only
+    // category while still providing a valid id, message and attribution.
+    // Preserve the authored message and use a neutral display section label.
+    const inspiration = safeItem(payload.inspiration, ['id', 'message', 'attribution'], [128, 4_000, 300]);
+    if (inspiration) inspiration.category = boundedText((payload.inspiration as Record<string, unknown>).category, 120)
+      ? (payload.inspiration as Record<string, string>).category : 'Employee Inspiration';
     if (!spotlight || !inspiration || !boundedText(payload.provider, 120) || typeof payload.providerConnected !== 'boolean' ||
         !validTimestamp(payload.intervalStartedAt) || !validTimestamp(payload.expiresAt)) return unavailable();
 
