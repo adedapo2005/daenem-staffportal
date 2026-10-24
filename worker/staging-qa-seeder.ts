@@ -224,12 +224,11 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset', setPhase: (pha
   } else {
     // Refuse a logical reset while any synthetic Facilities transaction is present.
     // Preserve audit evidence and avoid deactivating companies that still own records.
-    const qaIds = [...companies];
-    for(const table of ['facilities','assets','asset_readings','maintenance_work_orders',
-      'preventive_maintenance_schedules','facility_inspections']){
-      tx.check(`NOT EXISTS(SELECT 1 FROM ${table} WHERE company_id IN (${companySql}))`,qaIds);
-    }
-    tx.check(`NOT EXISTS(SELECT 1 FROM audit_logs WHERE module='facilities' AND company_id IN (${companySql}))`,qaIds);
+    const qaTables = ['facilities','assets','asset_readings','maintenance_work_orders',
+      'preventive_maintenance_schedules','facility_inspections'];
+    tx.check(qaTables.map(table=>`NOT EXISTS(SELECT 1 FROM ${table} WHERE company_id IN (${companySql}))`)
+      .concat(`NOT EXISTS(SELECT 1 FROM audit_logs WHERE module='facilities' AND company_id IN (${companySql}))`)
+      .join(' AND '), [...qaTables.flatMap(()=>companies), ...companies]);
     // A reset of an absent fixture is a no-op, without manufacturing identities.
     tx.add(`UPDATE auth_sessions SET revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP) WHERE employee_id IN (${employeeSql})`, ...employees);
     tx.add(`DELETE FROM employee_credentials WHERE employee_id IN (${employeeSql})`, ...employees);
