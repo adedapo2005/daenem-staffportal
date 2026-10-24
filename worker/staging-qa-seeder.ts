@@ -197,15 +197,16 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset', setPhase: (pha
         live: { password_hash: hash, password_salt: salt, password_algorithm: 'PBKDF2-SHA256',
           password_iterations: WORKER_SAFE_PASSWORD_ITERATIONS } });
       // Compose existing permission definitions; do not manufacture a second permission catalogue.
-      const codes = personas[i] === 'employee' ? ['profile.access', 'attendance.access']
-        : ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables'];
+      const codes = personas[i] === 'employee' ? ['profile.access', 'attendance.access', 'facilities.access']
+        : ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables', 'facilities.access'];
       const level = personas[i] === 'owner' ? 'manage' : personas[i] === 'manager' ? 'edit' : 'view';
       for (const code of codes) grants.push({ grantId: id(`grant-${personas[i]}-${code}`),
         roleId: id(`role-${personas[i]}`), code, level });
     }
     tx.ensureMany(credentials, false);
-    const permissionCodes = ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables'];
-    tx.check(`(SELECT COUNT(DISTINCT code) FROM permissions WHERE code IN (?,?,?,?))=?`,
+    const permissionCodes = ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables', 'facilities.access'];
+    const permissionSlots = permissionCodes.map(() => '?').join(',');
+    tx.check(`(SELECT COUNT(DISTINCT code) FROM permissions WHERE code IN (${permissionSlots}))=?`,
       [...permissionCodes, permissionCodes.length]);
     const permissionId = `SELECT id FROM permissions WHERE code=?`;
     tx.check(grants.map(() => `NOT EXISTS(SELECT 1 FROM role_permissions
@@ -221,6 +222,13 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset', setPhase: (pha
     tx.ensureMany(financial);
     tx.ensureMany([accessAudit, audit]);
   } else {
+    // Refuse a logical reset while any synthetic Facilities transaction is present.
+    // Preserve audit evidence and avoid deactivating companies that still own records.
+    const qaTables = ['facilities','assets','asset_readings','maintenance_work_orders',
+      'preventive_maintenance_schedules','facility_inspections'];
+    tx.check(qaTables.map(table=>`NOT EXISTS(SELECT 1 FROM ${table} WHERE company_id IN (${companySql}))`)
+      .concat(`NOT EXISTS(SELECT 1 FROM audit_logs WHERE module='facilities' AND company_id IN (${companySql}))`)
+      .join(' AND '), [...qaTables.flatMap(()=>companies), ...companies]);
     // A reset of an absent fixture is a no-op, without manufacturing identities.
     tx.add(`UPDATE auth_sessions SET revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP) WHERE employee_id IN (${employeeSql})`, ...employees);
     tx.add(`DELETE FROM employee_credentials WHERE employee_id IN (${employeeSql})`, ...employees);

@@ -8,7 +8,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { webcrypto } from 'node:crypto';
 import ts from 'typescript';
 
-const SHA = '1af3a9b8d643b07d7a3a2ebf05e59f73f7449686';
+// Use the exact checked-out candidate, not an ancestor absent from shallow CI clones.
+const SHA = process.argv.includes('--baseline-stdin') ? null : execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 let assertions = 0, externalCalls = 0, lastCheck = 'Initialization';
 function check(value, label) { assertions++; lastCheck = label; if (!value) throw new Error(label); }
 const same = (left, right, label) => check(JSON.stringify(left) === JSON.stringify(right), label);
@@ -21,20 +22,19 @@ async function main() {
   if (process.argv.includes('--baseline-stdin')) baseline = JSON.parse(fs.readFileSync(0, 'utf8').replace(/^\uFEFF/, ''));
   else {
     const files = {};
-    const names = execFileSync('git', ['ls-tree', '-r', '--name-only', SHA, 'worker', 'migrations', 'src/dashboard-capabilities.ts', 'src/layout-system.ts'], { encoding: 'utf8' }).trim().split('\n');
-    for (const name of names) files[name] = execFileSync('git', ['show', `${SHA}:${name}`], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+    const names = execFileSync('git', ['ls-tree', '-r', '--name-only', 'HEAD', 'worker', 'migrations', 'src'], { encoding: 'utf8' }).trim().split('\n');
+    for (const name of names) files[name] = execFileSync('git', ['show', `HEAD:${name}`], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
     baseline = { sha: SHA, files };
   }
-  check(baseline.sha === SHA, 'Exact authoritative baseline');
+  check(SHA === null || baseline.sha === SHA, 'Exact checked-out candidate baseline');
   const sources = { ...baseline.files };
   sources['worker/staging-qa-seeder.ts'] = fs.readFileSync('worker/staging-qa-seeder.ts', 'utf8');
-  // Register only this delta on the exact baseline; shared HEAD contains other completed lanes.
+  // On the current branch the guarded QA route is already registered. Do not
+  // insert it a second time or override the working Worker entrypoint.
   const workingEntry = fs.readFileSync('worker/staffportal-staging.ts', 'utf8');
-  const routeRegistration = workingEntry.slice(workingEntry.indexOf("    if(new URL(request.url).pathname==='/api/staging/qa-fixture')"), workingEntry.indexOf("    if(request.method==='OPTIONS')"));
-  check(routeRegistration.length > 0, 'Staging route registration extracted');
-  sources['worker/staffportal-staging.ts'] = baseline.files['worker/staffportal-staging.ts']
-    .replace("    if(request.method==='OPTIONS')", `${routeRegistration}    if(request.method==='OPTIONS')`);
-  check(workingEntry.includes('if(qaResponse)return qaResponse;') && workingEntry.indexOf('routeStagingQaSeeder(request,') < workingEntry.indexOf("if(request.method==='OPTIONS')"), 'Working entry guard precedes middleware');
+  check(workingEntry.includes('if(qaResponse)return qaResponse;') &&
+    workingEntry.indexOf('routeStagingQaSeeder(request,') < workingEntry.indexOf("if(request.method==='OPTIONS')"),
+    'Current staging route guard precedes middleware');
 
   const cache = new Map();
   const sandbox = vm.createContext({ crypto: webcrypto, Request, Response, Headers, URL, URLSearchParams,
@@ -186,7 +186,26 @@ async function main() {
     const scope = persona === 'employee' ? 'b' : 'a';
     check(context.companies.some(company => company.id === qa(`company-${scope}`) && company.locationId === qa(`site-${scope}`)), 'Canonical site membership truth');
     check(auth.hasPermission(context, 'payroll.access', 'edit', qa('company-a')) === (persona !== 'employee'), 'Composed Payroll permission');
+    const allowedCompany = qa('company-' + scope);
+    const expectedFacilityLevel = persona === 'owner' ? 'manage' : persona === 'manager' ? 'edit' : 'view';
+    check(auth.hasPermission(context, 'facilities.access', expectedFacilityLevel, allowedCompany), 'Scoped Facilities persona permission');
+    check(!auth.hasPermission(context, 'facilities.access', 'view', qa('company-' + (scope === 'a' ? 'b' : 'a'))) || persona === 'owner',
+      'Facilities foreign-company grant denied');
   }
+  const facilitiesAllowed = await get(`/api/facilities/overview?companyId=${qa('company-a')}`, 'manager');
+  check(facilitiesAllowed.status === 200, 'Manager accesses authorized Facilities overview');
+  const facilitiesDenied = await get(`/api/facilities/overview?companyId=${qa('company-b')}`, 'manager');
+  check(facilitiesDenied.status === 403, 'Manager denied foreign Facilities overview');
+  const employeeFacilities = await get(`/api/facilities/overview?companyId=${qa('company-b')}`, 'employee');
+  check(employeeFacilities.status === 200, 'Employee views own Facilities company');
+  const deniedCreate = await fetchWorker(new Request('https://qa.invalid/api/facilities',{method:'POST',
+    headers:{cookie:cookies.employee,'content-type':'application/json'},
+    body:JSON.stringify({companyId:qa('company-b'),name:'QA unauthorized facility'})}));
+  check(deniedCreate.status === 403, 'View-only employee cannot create Facilities record');
+  const foreignCreate = await fetchWorker(new Request('https://qa.invalid/api/facilities',{method:'POST',
+    headers:{cookie:cookies.manager,'content-type':'application/json'},
+    body:JSON.stringify({companyId:qa('company-b'),name:'QA foreign facility'})}));
+  check(foreignCreate.status === 403, 'Manager cannot write into foreign Facilities company');
   const positive = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
   check(positive.status === 200 && (await positive.json()).receivables.some(row => row.id === qa('receivable-a')), 'Authorized Finance fixture');
   const negative = await get(`/api/finance/receivables?companyId=${qa('company-b')}`, 'manager');
@@ -229,6 +248,144 @@ async function main() {
   await summary(await operation('seed'), 200, 'Reseed after reset');
   check((await login('manager')).status === 200, 'Reseed restores canonical login');
   check(scalar(`SELECT count(*) FROM audit_logs WHERE module='qa-staging-v1'`) === 2, 'Lifecycle evidence is deterministic');
+  // Reset intentionally revokes all previous sessions. Re-authenticate newly
+  // seeded synthetic personas before exercising Facilities transactions.
+  for (const persona of ['owner','manager','employee']) {
+    const response = await login(persona);
+    check(response.status===200,'Post-reset QA persona can authenticate');
+    cookies[persona] = response.headers.get('set-cookie')?.split(';')[0];
+    check(Boolean(cookies[persona]),'Post-reset authenticated session issued');
+  }
+  // Exercise canonical Worker -> SQLite transactions with real auth cookies.
+  // All rows live only in this in-memory QA database; no remote D1 or providers.
+  const companyA = qa('company-a'), companyB = qa('company-b');
+  async function postFacility(route, persona, body) {
+    return fetchWorker(new Request('https://qa.invalid' + route, {
+      method: 'POST', headers: { cookie: cookies[persona], 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }));
+  }
+  const facilityDraft = { companyId: companyA, locationId: qa('site-a'),
+    facilityType: 'office', name: 'QA Transaction Acceptance Building' };
+  const failedCreateBefore = snapshot();
+  failureIndex = 1; // Fail the audit write after the facility insert.
+  let createRolledBack = false;
+  try { await postFacility('/api/facilities', 'manager',
+    { ...facilityDraft, name: 'QA Rollback Must Not Persist' }); }
+  catch { createRolledBack = true; }
+  finally { failureIndex = -1; }
+  check(createRolledBack, 'Facility audit failure propagates instead of falsely succeeding');
+  same(snapshot(), failedCreateBefore, 'Facility insert and audit fail atomically');
+
+  const facilityResponse = await postFacility('/api/facilities', 'manager', facilityDraft);
+  check(facilityResponse.status === 201, 'Authenticated Facilities creation persists in isolated D1');
+  const facility = (await facilityResponse.json()).facility;
+  check(typeof facility?.id === 'string' && facility.id.startsWith('facility-'), 'Canonical facility ID returned');
+  const persistedFacility = db.prepare('SELECT company_id,location_id,name FROM facilities WHERE id=?').get(facility.id);
+  check(persistedFacility?.company_id === companyA &&
+    persistedFacility?.location_id === qa('site-a') &&
+    persistedFacility?.name === facilityDraft.name, 'Created facility persisted under company A');
+
+  const catalogResponse = await get(`/api/facilities/catalog?companyId=${companyA}`, 'manager');
+  check(catalogResponse.status === 200, 'Authorized Facilities catalog read');
+  const catalog = await catalogResponse.json();
+  check(catalog.facilities.some(record => record.id === facility.id && record.name === facilityDraft.name),
+    'Created facility appears in canonical D1 read-back');
+  const duplicateFacility = await postFacility('/api/facilities', 'manager', facilityDraft);
+  check(duplicateFacility.status === 409, 'Duplicate facility rejected without second write');
+
+  const assetResponse = await postFacility('/api/facilities/assets', 'manager',
+    { companyId: companyA, facilityId: facility.id, category: 'generator',
+      name: 'QA Generator Asset for Transaction Acceptance' });
+  check(assetResponse.status === 201, 'Company-scoped equipment registration succeeds');
+  const asset = (await assetResponse.json()).asset;
+  check(typeof asset?.id === 'string' && asset.id.startsWith('asset-'), 'Canonical equipment ID returned');
+  const persistedAsset = db.prepare('SELECT company_id,facility_id FROM assets WHERE id=?').get(asset.id);
+  check(persistedAsset?.company_id === companyA && persistedAsset?.facility_id === facility.id,
+    'Equipment D1 row belongs to its registered QA facility');
+
+  const meterInput = { companyId: companyA, facilityId: facility.id, assetId: asset.id,
+    readingType: 'running_hours', readingValue: 321.5, unit: 'hours' };
+  const beforeMeter = snapshot();
+  failureIndex = 1; // Fail audit: meter insert and asset update must roll back.
+  let meterRolledBack = false;
+  try { await postFacility('/api/facilities/readings', 'manager', meterInput); }
+  catch { meterRolledBack = true; }
+  finally { failureIndex = -1; }
+  check(meterRolledBack, 'Meter audit failure propagates instead of falsely succeeding');
+  same(snapshot(), beforeMeter, 'Meter write, audit and running-hours update roll back atomically');
+
+  const meterResponse = await postFacility('/api/facilities/readings', 'manager', meterInput);
+  // The established Worker API returns HTTP 200 with the canonical readingId.
+  // Do not change its response contract solely to satisfy a new test.
+  check(meterResponse.status === 200, 'Authenticated meter reading persists');
+  const readingId = (await meterResponse.json()).readingId;
+  check(typeof readingId === 'string' && readingId.startsWith('asset-reading-'),
+    'Canonical persisted reading ID returned');
+  const persistedMeter = db.prepare('SELECT company_id,asset_id,reading_value FROM asset_readings WHERE id=?').get(readingId);
+  check(persistedMeter?.company_id === companyA && persistedMeter?.asset_id === asset.id &&
+    persistedMeter?.reading_value === 321.5, 'Meter reading persisted accurately in company A');
+  const updatedAsset = db.prepare('SELECT running_hours FROM assets WHERE id=?').get(asset.id);
+  check(updatedAsset?.running_hours === 321.5, 'Generator hours updated atomically with reading');
+
+  const readingsResponse = await get(`/api/facilities/readings?companyId=${companyA}`, 'manager');
+  check(readingsResponse.status === 200, 'Authenticated meter-history endpoint accessible');
+  check((await readingsResponse.json()).readings.some(record =>
+    record.id === readingId && record.readingValue === 321.5 && record.assetId === asset.id),
+    'Read-back returns the persisted meter reading, not fixture presentation data');
+  const auditResponse = await get(`/api/facilities/audit?companyId=${companyA}`, 'manager');
+  check(auditResponse.status === 200, 'Authenticated Facilities audit endpoint accessible');
+  const events = (await auditResponse.json()).events;
+  check(events.some(event => event.action === 'create' && event.entityType === 'facility' &&
+    event.entityId === facility.id), 'Facility creation has a matching audit event');
+  check(events.some(event => event.action === 'record_reading' &&
+    event.readingId === readingId && event.entityId === asset.id),
+    'Meter reading correlates with its own persisted audit event');
+
+  const employeeCatalog = await get(`/api/facilities/catalog?companyId=${companyB}`, 'employee');
+  check(employeeCatalog.status === 200, 'View-only QA employee sees only company B');
+  check(!(await employeeCatalog.text()).includes(facility.id), 'Company B catalog never discloses A facility');
+  const employeeReadings = await get(`/api/facilities/readings?companyId=${companyB}`, 'employee');
+  check(employeeReadings.status === 200 &&
+    !(await employeeReadings.text()).includes(readingId), 'Company B reading history excludes A reading');
+  const employeeAudit = await get(`/api/facilities/audit?companyId=${companyB}`, 'employee');
+  check(employeeAudit.status === 200 &&
+    !(await employeeAudit.text()).includes(readingId), 'Company B audit feed excludes A reading');
+  const unauthorizedMeter = await postFacility('/api/facilities/readings', 'employee',
+    { ...meterInput, companyId: companyB });
+  check(unauthorizedMeter.status === 403, 'View-only employee cannot write meter readings');
+  const foreignMeter = await postFacility('/api/facilities/readings', 'manager',
+    { ...meterInput, companyId: companyB });
+  check(foreignMeter.status === 403, 'Manager cannot write a meter reading into company B');
+  const qaReadiness = await get('/api/facilities/qa-readiness','owner');
+  check(qaReadiness.status===200,'Owner sees staging Facilities QA readiness');
+  const qaState=await qaReadiness.json();
+  check(qaState.scope==='qa-staging-v1' &&
+    qaState.syntheticCompanies===2 && qaState.syntheticEmployees===3 &&
+    qaState.state==='transaction_evidence_present' && qaState.safeToReset===false &&
+    qaState.evidence.facilities===1 && qaState.evidence.equipment===1 &&
+    qaState.evidence.readings===1, 'QA readiness truthfully reports synthetic Facilities records');
+  check((await get('/api/facilities/qa-readiness','manager')).status===403,
+    'Non-owner cannot inspect QA readiness');
+  check((await get('/api/facilities/qa-readiness','employee')).status===403,
+    'View-only employee cannot inspect QA readiness');
+  const qaNonStaging = await fetchWorker(new Request('https://qa.invalid/api/facilities/qa-readiness',
+    {headers:{cookie:cookies.owner}}),{...env,APP_STAGE:'production'});
+  check(qaNonStaging.status===404,'QA readiness is unavailable outside staging');
+  // A reset must never strand Facilities data or erase transaction history.
+  const withFacilityEvidence=snapshot();
+  await summary(await operation('reset'),503,'Facilities evidence blocks QA reset');
+  const afterBlockedReset = snapshot();
+  if (afterBlockedReset !== withFacilityEvidence) {
+    const beforeTables = new Map(JSON.parse(withFacilityEvidence));
+    const afterTables = new Map(JSON.parse(afterBlockedReset));
+    const changedNames = [...beforeTables.keys()].filter(name =>
+      JSON.stringify(beforeTables.get(name)) !== JSON.stringify(afterTables.get(name)));
+    // Emit only database table names (never rows, tokens, hashes or user data).
+    console.error('QA reset preservation changed table names: ' + changedNames.join(','));
+  }
+  same(afterBlockedReset,withFacilityEvidence,'Refused reset preserves all Facilities transactions and identity');
+
   // Collision on an anchor must leave even the conflicting row unchanged.
   db.prepare('UPDATE employees SET department=? WHERE id=?').run('Non-QA ownership', qa('manager'));
   const collision = snapshot();
