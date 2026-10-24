@@ -1,4 +1,5 @@
-import { clearSessionCookie, getSessionContext, hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { clearSessionCookie, getSessionContext, hasPermission, type SessionContext } from './auth';
+import type { PasswordAuthEnv } from './password-auth';
 import {
   WORKER_SAFE_PASSWORD_ITERATIONS,
   derivePasswordHash,
@@ -7,20 +8,7 @@ import {
   randomSaltHex,
 } from './credential-security';
 
-interface EmailBinding {
-  send(message: {
-    from: { email: string; name?: string };
-    to: string[];
-    subject: string;
-    text: string;
-    html: string;
-  }): Promise<{ messageId?: string; message_id?: string }>;
-}
-
-interface Env extends AuthEnv {
-  EMAIL?: EmailBinding;
-  WORKFORCE_EMAIL_FROM?: string;
-}
+interface Env extends PasswordAuthEnv {}
 
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 
@@ -159,8 +147,8 @@ async function sendTemporaryPasswordEmail(env: Env, employee: { email?: string; 
   const from = env.WORKFORCE_EMAIL_FROM || 'portal@daenem.com';
   const expiry = new Date(expiresAt).toLocaleString('en-NG', { timeZone: 'Africa/Lagos', dateStyle: 'medium', timeStyle: 'short' });
   await env.EMAIL.send({
-    from: { email: from, name: 'Daenem Employee Access' },
-    to: [employee.email],
+    from,
+    to: employee.email,
     subject: 'Your temporary Daenem Staff Portal password',
     text: `Hello ${employee.displayName},\n\nManagement issued a temporary password for your Daenem Staff Portal account.\n\nUsername: ${username}\nTemporary password: ${password}\nExpires: ${expiry} WAT\n\nSign in at staffportal.daenem.com. You will be required to create a private password immediately. The temporary password stops working after you replace it.\n\nIf you did not request help accessing your account, contact your manager or system administrator.`,
     html: `<p>Hello ${employee.displayName},</p><p>Management issued a temporary password for your Daenem Staff Portal account.</p><p><strong>Username:</strong> ${username}<br><strong>Temporary password:</strong> ${password}<br><strong>Expires:</strong> ${expiry} WAT</p><p>Sign in at <strong>staffportal.daenem.com</strong>. You will be required to create a private password immediately. The temporary password stops working after you replace it.</p><p>If you did not request help accessing your account, contact your manager or system administrator.</p>`,
