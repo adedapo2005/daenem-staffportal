@@ -214,6 +214,53 @@ async function main() {
     permissions:{'facilities.access':'manage'},
     companyPermissions:{'company-printing':{'facilities.access':'manage'}},
   };
+
+  // The guarded Pre-Production-only operator page is a separately protected
+  // Worker endpoint, not a Sign-In or product UI modification.
+  const controlBase='https://qa.invalid/api/facilities/qa-grants/control';
+  const control=async(url=controlBase,asContext=groupOwner,asEnv=env)=>
+    facilitiesRoutes.routeFacilities(new Request(url),asEnv,asContext);
+  const snapshotBeforeControl=snapshot();
+  const pageResponse=await control();
+  check(pageResponse.status===200,'Owner receives isolated QA operator page');
+  check(pageResponse.headers.get('cache-control')==='no-store'&&
+    pageResponse.headers.get('content-security-policy')?.includes("script-src 'self'")&&
+    pageResponse.headers.get('x-frame-options')==='DENY',
+    'Operator page has strong no-store, CSP and framing protections');
+  const markup=await pageResponse.text();
+  check(markup.includes('Repair Synthetic QA Permissions')&&
+    markup.includes('id="ack" disabled')&&markup.includes('id="repair"')&&
+    markup.includes('type="button"')&&
+    markup.includes('/api/facilities/qa-grants/control.js')&&
+    !markup.includes('<script>')&&!markup.includes('sessionId'),
+    'Operator page loads no inline executable code or session material');
+  const jsResponse=await control(controlBase+'.js');
+  check(jsResponse.status===200&&
+    jsResponse.headers.get('content-type')?.startsWith('application/javascript'),
+    'Authenticated owner can load guarded operator script');
+  const scriptText=await jsResponse.text();
+  new vm.Script(scriptText,{filename:'qa-grant-control.js'});
+  check(scriptText.includes("method:'POST'")&&scriptText.includes("qa-grants/reconcile")&&
+    scriptText.includes("credentials:'same-origin'")&&
+    scriptText.includes("state.eligible")&&
+    scriptText.includes("preconditions changed".replace('p','P'))===false,
+    'Operator script compiles, gates mutation and uses credentialled same-origin POST');
+  const cssResponse=await control(controlBase+'.css');
+  check(cssResponse.status===200&&
+    cssResponse.headers.get('content-type')?.startsWith('text/css')&&
+    (await cssResponse.text()).includes('prefers-reduced-motion'),
+    'Authenticated owner can load accessible operator styles');
+  for(const url of [controlBase,controlBase+'.js',controlBase+'.css']){
+    check((await control(url,{...groupOwner,employee:{id:qa('owner')}})).status===403,
+      'Synthetic user denied QA operator resources');
+    check((await control(url,{...groupOwner,roles:[{code:'manager',companyId:'company-printing'}]})).status===403,
+      'Manager denied QA operator resources');
+    check((await control(url,groupOwner,{...env,APP_STAGE:'production'})).status===404,
+      'Operator resources absent from production stage');
+    check((await control(url,groupOwner,{...env,STAFFPORTAL_DATABASE_NAME:'other-db'})).status===404,
+      'Operator resources absent without exact staging binding');
+  }
+  same(snapshot(),snapshotBeforeControl,'All operator GET requests are read-only');
   const reconcilePath='https://qa.invalid/api/facilities/qa-grants/reconcile';
   const repairRequest=()=>new Request(reconcilePath,{method:'POST',headers:{origin:'https://qa.invalid'}});
   async function reconcile(asContext=groupOwner,asEnv=env,request=repairRequest()){
