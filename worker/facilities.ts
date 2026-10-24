@@ -285,9 +285,12 @@ async function facilitiesQaTransactionRun(request:Request,env:FacilitiesEnv,cont
       return json({error:'Request body not allowed.',code:'QA_TRANSACTION_PAYLOAD'},403);
     }
   }
+  const phase=new URL(request.url).searchParams.get('phase');
+  if(phase!=='prepare'&&phase!=='write')
+    return json({error:'Unknown QA transaction phase.',code:'QA_TRANSACTION_PHASE'},400);
   try{
     return json(await runQaFacilitiesTransaction(env as unknown as QaPersonaEnv,origin,
-      (nextRequest,liveEnv,persona)=>routeFacilities(nextRequest,liveEnv as FacilitiesEnv,persona)));
+      (nextRequest,liveEnv,persona)=>routeFacilities(nextRequest,liveEnv as FacilitiesEnv,persona),phase));
   }catch(error){
     return json({error:'Isolated Facilities transaction acceptance unavailable.',
       code:error instanceof QaTransactionFailure?error.code:'QA_TRANSACTION_RUNTIME'},409);
