@@ -192,6 +192,75 @@ async function main() {
     check(!auth.hasPermission(context, 'facilities.access', 'view', qa('company-' + (scope === 'a' ? 'b' : 'a'))) || persona === 'owner',
       'Facilities foreign-company grant denied');
   }
+
+  // Simulate the observed legacy staged QA state: identities seeded before
+  // the Facilities grant was added. Only this in-memory database is modified.
+  const grantIds=['owner','manager','employee'].map(name=>qa('grant-'+name+'-facilities.access'));
+  const roleAuditBefore=rows("SELECT * FROM role_permissions WHERE role_id NOT LIKE 'qa-staging-v1-%' ORDER BY id");
+  const credentialsBefore=rows("SELECT * FROM employee_credentials ORDER BY employee_id");
+  for(const grantId of grantIds)db.prepare('DELETE FROM role_permissions WHERE id=?').run(grantId);
+  check(scalar("SELECT COUNT(*) FROM role_permissions WHERE id IN ('"+grantIds.join("','")+"')")===0,
+    'Old staged fixture is missing exactly three QA Facilities grants');
+  const readiness=load('worker/facilities-qa-readiness.ts');
+  const stale=await readiness.inspectFacilitiesQaReadiness(env.DB);
+  check(stale.state==='incomplete'&&stale.facilitiesGrants===0&&stale.credentials===3,
+    'Readiness detects missing Facilities grants while QA identities remain intact');
+
+  const facilitiesRoutes=load('worker/facilities.ts');
+  const groupOwner={
+    employee:{id:'employee-owner-bootstrap'},
+    roles:[{code:'owner',companyId:'company-printing'}],
+    companies:[{id:'company-printing'}],
+    permissions:{'facilities.access':'manage'},
+    companyPermissions:{'company-printing':{'facilities.access':'manage'}},
+  };
+  const reconcilePath='https://qa.invalid/api/facilities/qa-grants/reconcile';
+  const repairRequest=()=>new Request(reconcilePath,{method:'POST',headers:{origin:'https://qa.invalid'}});
+  async function reconcile(asContext=groupOwner,asEnv=env,request=repairRequest()){
+    return facilitiesRoutes.routeFacilities(request,asEnv,asContext);
+  }
+  check((await reconcile(groupOwner,env,new Request(reconcilePath,{method:'POST'}))).status===403,
+    'QA repair requires same-origin browser invocation');
+  check((await reconcile({...groupOwner,employee:{id:qa('owner')}})).status===403,
+    'Synthetic QA owner cannot elevate its own grants');
+  check((await reconcile({...groupOwner,roles:[{code:'manager',companyId:'company-printing'}]})).status===403,
+    'Non-owner operator cannot repair QA grants');
+  check((await reconcile(groupOwner,{...env,APP_STAGE:'production'})).status===404,
+    'QA grant repair never available in production');
+  check((await reconcile(groupOwner,{...env,STAFFPORTAL_DATABASE_NAME:'daenem-staffportal-production-db'})).status===404,
+    'QA grant repair never available with a nonstaging D1 binding');
+  const beforeMalformed=snapshot();
+  db.prepare('UPDATE roles SET code=? WHERE id=?').run('unexpected',qa('role-employee'));
+  const malformed=snapshot();
+  check((await reconcile()).status===409,'QA grant repair refuses modified synthetic identity anchors');
+  same(snapshot(),malformed,'Rejected repair does not modify the database');
+  db.prepare('UPDATE roles SET code=? WHERE id=?').run('employee',qa('role-employee'));
+  same(snapshot(),beforeMalformed,'QA identity restored after isolated negative test');
+
+  const repaired=await reconcile();
+  check(repaired.status===200,'Authenticated canonical owner repairs missing synthetic grants');
+  const repairResult=await repaired.json();
+  check(repairResult.ok===true&&repairResult.scope==='qa-staging-v1'&&repairResult.facilitiesGrants===3,
+    'Reconciliation response bounded to the QA namespace and grant count');
+  const ready=await readiness.inspectFacilitiesQaReadiness(env.DB);
+  check(ready.state==='ready'&&ready.facilitiesGrants===3&&ready.credentials===3,
+    'Reconciled QA roles become ready without changing existing credentials');
+  check(scalar("SELECT COUNT(*) FROM audit_logs WHERE module='qa-fixture-access' AND action='qa_facilities_grants_reconciled'")===1,
+    'QA grant change has a single durable immutable audit record');
+  same(rows("SELECT * FROM role_permissions WHERE role_id NOT LIKE 'qa-staging-v1-%' ORDER BY id"),
+    roleAuditBefore,'No real-company role permission is changed by QA reconciliation');
+  same(rows("SELECT * FROM employee_credentials ORDER BY employee_id"),credentialsBefore,
+    'Existing synthetic and business credentials remain untouched');
+  const repairedState=snapshot();
+  check((await reconcile()).status===200,'QA grant repair supports safe idempotent retry');
+  same(snapshot(),repairedState,'Replaying QA grant repair creates no new mutations');
+  const managerAfterRepair=await auth.getSessionContext(new Request('https://qa.invalid/api/auth/me',
+    {headers:{cookie:cookies.manager}}),env);
+  check(auth.hasPermission(managerAfterRepair,'facilities.access','edit',qa('company-a')),
+    'Existing manager session receives correct company A Facilities permission');
+  check(!auth.hasPermission(managerAfterRepair,'facilities.access','view',qa('company-b')),
+    'Existing manager session remains denied in foreign company B');
+
   const facilitiesAllowed = await get(`/api/facilities/overview?companyId=${qa('company-a')}`, 'manager');
   check(facilitiesAllowed.status === 200, 'Manager accesses authorized Facilities overview');
   const facilitiesDenied = await get(`/api/facilities/overview?companyId=${qa('company-b')}`, 'manager');
