@@ -16,7 +16,7 @@ export function labelForAuthenticatedWorkspace(original: string, kind: 'session'
     : original;
 }
 
-export function correctLiveErpShellLabels(root: ParentNode): () => void {
+export function correctLiveErpShellLabels(root: { querySelector: (selector: string) => Element | null }): () => void {
   const changes: { element: Element; original: string; replacement: string }[] = [];
   for (const { selector, kind } of [
     { selector: '.p-user-card small', kind: 'session' },
