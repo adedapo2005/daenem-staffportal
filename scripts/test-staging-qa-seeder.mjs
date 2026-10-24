@@ -319,6 +319,17 @@ async function main() {
   const revoked = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
   check(revoked.status === 403 && !(await revoked.text()).includes(qa('receivable-a')), 'Membership revocation reauthorizes existing session');
   await summary(await operation('seed'), 200, 'Reseed restores deterministic membership');
+  // A reset must never strand Facilities data or erase transaction history.
+  const withFacilityEvidence=snapshot();
+  await summary(await operation('reset'),503,'Facilities evidence blocks QA reset');
+  same(snapshot(),withFacilityEvidence,'Refused reset preserves all Facilities transactions and identity');
+  // This cleanup is in-memory ONLY; it never touches a remote Cloudflare database.
+  db.prepare("DELETE FROM asset_readings WHERE id=?").run(readingId);
+  db.prepare("DELETE FROM assets WHERE id=?").run(asset.id);
+  db.prepare("DELETE FROM facilities WHERE id=?").run(facility.id);
+  db.prepare("DELETE FROM audit_logs WHERE module='facilities' AND company_id=?").run(companyA);
+  check(scalar("SELECT COUNT(*) FROM facilities WHERE company_id='"+companyA+"'")===0,
+    'Synthetic Facilities cleanup remains local and complete');
   // The last statement checks required reset evidence, so inject at early and late boundaries.
   const active = snapshot();
   failureIndex = Math.floor(resetBatchLength / 2);
