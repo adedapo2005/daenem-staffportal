@@ -3,11 +3,21 @@ import { readFileSync } from 'node:fs';
 import { resolveWorkOrderParties } from '../worker/facility-work-order-guard.ts';
 let checks=0;
 function db({employeeCompany='A',vendorCompany='A',employeeActive=true,vendorApproved=true}={}) {
-  return {prepare(sql){return {bind(...args){return {async first(){
-    if(sql.includes('FROM employees'))return args[0]==='e1'&&args[1]===employeeCompany&&employeeActive?{id:'e1'}:null;
-    if(sql.includes('FROM maintenance_vendors'))return args[0]==='v1'&&args[1]===vendorCompany&&vendorApproved?{id:'v1'}:null;
-    throw Error('Unexpected D1 statement');
-  }}}}}};
+  return {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              if (sql.includes('FROM employees')) return args[0]==='e1' && args[1]===employeeCompany && employeeActive ? {id:'e1'} : null;
+              if (sql.includes('FROM maintenance_vendors')) return args[0]==='v1' && args[1]===vendorCompany && vendorApproved ? {id:'v1'} : null;
+              throw Error('Unexpected D1 statement');
+            },
+          };
+        },
+      };
+    },
+  };
 }
 async function verify(input,ok,opts){const result=await resolveWorkOrderParties(db(opts),'A',input);assert.equal(result.ok,ok);checks++;}
 await verify({},true);
