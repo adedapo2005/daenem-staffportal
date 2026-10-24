@@ -19,11 +19,13 @@ async function nextDispatchNo(env:Env){const day=businessDate().replaceAll('-','
 async function overview(env:Env,context:SessionContext){
  if(!allowed(context,'bakery.reconciliation'))return json({error:'Bakery Reconciliation View permission is required.'},403);
  const date=businessDate();
- const [custodians,dispatches,exceptions,dayBread,dayMoney,investigators]=await Promise.all([
+ const [custodians,dispatches,exceptions,dayBread,dayMoney,investigators,returnReview]=await Promise.all([
   env.DB.prepare(`SELECT id,custodian_type AS custodianType,name,phone,active FROM bakery_custodians WHERE company_id=? ORDER BY active DESC,name LIMIT 300`).bind(COMPANY).all<Record<string,unknown>>(),
   env.DB.prepare(`SELECT d.id,d.dispatch_no AS dispatchNo,d.status,d.dispatched_at AS dispatchedAt,d.received_at AS receivedAt,d.closed_at AS closedAt,d.note,c.id AS custodianId,c.name AS custodianName,c.custodian_type AS custodianType,
    COALESCE(SUM(di.quantity),0) AS dispatchedQty,
    COALESCE((SELECT SUM(CASE WHEN bl.status IN ('sold','returned','damaged','promotional','staff_consumption','in_store') THEN bl.quantity ELSE 0 END) FROM bakery_bread_ledger bl WHERE bl.dispatch_id=d.id),0) AS accountedQty,
+   COALESCE((SELECT SUM(bl.quantity) FROM bakery_bread_ledger bl WHERE bl.dispatch_id=d.id AND bl.status='returned'),0) AS returnedQty,
+   COALESCE((SELECT SUM(rr.quantity) FROM bakery_dispatch_return_receipts rr WHERE rr.dispatch_id=d.id),0) AS physicallyReceivedQty,
    COALESCE((SELECT SUM(CASE WHEN bl.status='sold' THEN bl.quantity*COALESCE(bl.unit_price_kobo,di2.unit_price_kobo) ELSE 0 END) FROM bakery_bread_ledger bl JOIN bakery_dispatch_items di2 ON di2.dispatch_id=d.id AND di2.product_id=bl.product_id WHERE bl.dispatch_id=d.id),0) AS expectedMoneyKobo,
    COALESCE((SELECT SUM(CASE WHEN ml.status IN ('cash_received','pos_received','transfer_received') AND ml.direction='in' THEN ml.amount_kobo WHEN ml.status='refunded' THEN -ml.amount_kobo ELSE 0 END) FROM bakery_money_ledger ml WHERE ml.dispatch_id=d.id),0) AS accountedMoneyKobo
    FROM bakery_dispatches d JOIN bakery_custodians c ON c.id=d.custodian_id LEFT JOIN bakery_dispatch_items di ON di.dispatch_id=d.id WHERE d.company_id=? GROUP BY d.id ORDER BY d.created_at DESC LIMIT 200`).bind(COMPANY).all<Record<string,unknown>>(),
@@ -31,9 +33,21 @@ async function overview(env:Env,context:SessionContext){
   env.DB.prepare(`SELECT status,COALESCE(SUM(quantity),0) AS quantity FROM bakery_bread_ledger WHERE company_id=? AND business_date=? GROUP BY status`).bind(COMPANY,date).all<{status:string;quantity:number}>(),
   env.DB.prepare(`SELECT status,COALESCE(SUM(amount_kobo),0) AS amountKobo FROM bakery_money_ledger WHERE company_id=? AND business_date=? GROUP BY status`).bind(COMPANY,date).all<{status:string;amountKobo:number}>(),
   env.DB.prepare(`SELECT e.id,e.display_name AS displayName,e.job_title AS jobTitle FROM employees e JOIN employee_company_assignments a ON a.employee_id=e.id WHERE a.company_id=? AND a.status='active' AND e.status='active' ORDER BY e.display_name LIMIT 300`).bind(COMPANY).all<Record<string,unknown>>(),
+  env.DB.prepare(`SELECT bl.dispatch_id AS dispatchId,d.dispatch_no AS dispatchNo,c.name AS custodianName,
+    bl.product_id AS productId,bp.name AS productName,SUM(bl.quantity) AS declaredQty,
+    COALESCE((SELECT SUM(rr.quantity) FROM bakery_dispatch_return_receipts rr WHERE rr.dispatch_id=bl.dispatch_id AND rr.product_id=bl.product_id),0) AS verifiedQty
+    FROM bakery_bread_ledger bl
+    JOIN bakery_dispatches d ON d.id=bl.dispatch_id AND d.company_id=bl.company_id
+    JOIN bakery_custodians c ON c.id=d.custodian_id
+    JOIN bakery_products bp ON bp.id=bl.product_id
+    WHERE bl.company_id=? AND bl.status='returned' AND d.status NOT IN ('closed','cancelled')
+    GROUP BY bl.dispatch_id,bl.product_id
+    HAVING SUM(bl.quantity)>COALESCE((SELECT SUM(rr.quantity) FROM bakery_dispatch_return_receipts rr WHERE rr.dispatch_id=bl.dispatch_id AND rr.product_id=bl.product_id),0)
+    ORDER BY d.dispatched_at DESC LIMIT 300`).bind(COMPANY).all<Record<string,unknown>>(),
  ]);
- const rows=(dispatches.results||[]).map(row=>{const breadVariance=Number(row.dispatchedQty||0)-Number(row.accountedQty||0),moneyVarianceKobo=Number(row.expectedMoneyKobo||0)-Number(row.accountedMoneyKobo||0);return{...row,breadVariance,moneyVarianceKobo,balanced:Math.abs(breadVariance)<.0001&&moneyVarianceKobo===0}});
- return json({date,capabilities:{createCustodian:allowed(context,'bakery.dispatch','create'),createDispatch:allowed(context,'bakery.dispatch','create'),recordBread:allowed(context,'bakery.reconciliation','edit'),recordMoney:allowed(context,'bakery.remittance','edit'),close:allowed(context,'bakery.reconciliation','approve'),flourView:allowed(context,'bakery.flour_control','view'),flourEdit:allowed(context,'bakery.flour_control','edit'),investigate:allowed(context,'bakery.investigation','edit'),approveInvestigation:allowed(context,'bakery.investigation','approve')},custodians:custodians.results||[],investigators:investigators.results||[],dispatches:rows,exceptions:exceptions.results||[],breadStatuses:Object.fromEntries((dayBread.results||[]).map(row=>[row.status,Number(row.quantity)])),moneyStatuses:Object.fromEntries((dayMoney.results||[]).map(row=>[row.status,Number(row.amountKobo)]))});
+ const rows=(dispatches.results||[]).map(row=>{const pendingReturnQty=Math.max(0,Number(row.returnedQty||0)-Number(row.physicallyReceivedQty||0));const breadVariance=Number(row.dispatchedQty||0)-Number(row.accountedQty||0),moneyVarianceKobo=Number(row.expectedMoneyKobo||0)-Number(row.accountedMoneyKobo||0);return{...row,pendingReturnQty,breadVariance,moneyVarianceKobo,balanced:Math.abs(breadVariance)<.0001&&moneyVarianceKobo===0&&pendingReturnQty===0}});
+ const pendingReturns=(returnReview.results||[]).map(row=>({...row,pendingQty:Math.max(0,Number(row.declaredQty||0)-Number(row.verifiedQty||0))}));
+ return json({date,capabilities:{createCustodian:allowed(context,'bakery.dispatch','create'),createDispatch:allowed(context,'bakery.dispatch','create'),recordBread:allowed(context,'bakery.reconciliation','edit'),verifyReturns:allowed(context,'bakery.reconciliation','approve'),recordMoney:allowed(context,'bakery.remittance','edit'),close:allowed(context,'bakery.reconciliation','approve'),flourView:allowed(context,'bakery.flour_control','view'),flourEdit:allowed(context,'bakery.flour_control','edit'),investigate:allowed(context,'bakery.investigation','edit'),approveInvestigation:allowed(context,'bakery.investigation','approve')},custodians:custodians.results||[],investigators:investigators.results||[],dispatches:rows,pendingReturns,exceptions:exceptions.results||[],breadStatuses:Object.fromEntries((dayBread.results||[]).map(row=>[row.status,Number(row.quantity)])),moneyStatuses:Object.fromEntries((dayMoney.results||[]).map(row=>[row.status,Number(row.amountKobo)]))});
 }
 
 async function createCustodian(request:Request,env:Env,context:SessionContext){
