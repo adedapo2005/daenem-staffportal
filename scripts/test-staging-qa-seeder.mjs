@@ -242,6 +242,7 @@ async function main() {
   new vm.Script(scriptText,{filename:'qa-grant-control.js'});
   check(scriptText.includes("method:'POST'")&&scriptText.includes("qa-grants/reconcile")&&
     scriptText.includes("credentials:'same-origin'")&&
+    scriptText.includes("'X-DAENEM-QA-REPAIR':'qa-staging-v1'")&&
     scriptText.includes("state.eligible")&&
     scriptText.includes('Preconditions changed; no write attempted.'),
     'Operator script compiles, gates mutation and uses credentialled same-origin POST');
@@ -262,12 +263,39 @@ async function main() {
   }
   same(snapshot(),snapshotBeforeControl,'All operator GET requests are read-only');
   const reconcilePath='https://qa.invalid/api/facilities/qa-grants/reconcile';
-  const repairRequest=()=>new Request(reconcilePath,{method:'POST',headers:{origin:'https://qa.invalid'}});
+  const repairHeaders={origin:'https://qa.invalid','sec-fetch-site':'same-origin','x-daenem-qa-repair':'qa-staging-v1'};
+  const repairRequest=()=>new Request(reconcilePath,{method:'POST',headers:repairHeaders});
   async function reconcile(asContext=groupOwner,asEnv=env,request=repairRequest()){
     return facilitiesRoutes.routeFacilities(request,asEnv,asContext);
   }
   check((await reconcile(groupOwner,env,new Request(reconcilePath,{method:'POST'}))).status===403,
     'QA repair requires same-origin browser invocation');
+  const beforeRequestGate=snapshot();
+  const crossOrigin=await reconcile(groupOwner,env,new Request(reconcilePath,{
+    method:'POST',headers:{...repairHeaders,origin:'https://evil.example'}}));
+  check(crossOrigin.status===403&&
+    (await crossOrigin.json()).code==='QA_REPAIR_ORIGIN_MISMATCH',
+    'QA repair refuses mismatched Origin even with a valid custom header');
+  const crossSite=await reconcile(groupOwner,env,new Request(reconcilePath,{
+    method:'POST',headers:{...repairHeaders,'sec-fetch-site':'cross-site'}}));
+  check(crossSite.status===403&&
+    (await crossSite.json()).code==='QA_REPAIR_FETCH_SITE',
+    'QA repair rejects cross-site fetch metadata');
+  const missingGuard=await reconcile(groupOwner,env,new Request(reconcilePath,{
+    method:'POST',headers:{origin:'https://qa.invalid','sec-fetch-site':'same-origin'}}));
+  check(missingGuard.status===403&&
+    (await missingGuard.json()).code==='QA_REPAIR_SAME_ORIGIN_REQUIRED',
+    'QA repair always requires explicit CSRF-protective header');
+  const noOriginOrFetchSite=await reconcile(groupOwner,env,new Request(reconcilePath,{
+    method:'POST',headers:{'x-daenem-qa-repair':'qa-staging-v1'}}));
+  check(noOriginOrFetchSite.status===403,
+    'QA repair refuses missing Origin and missing fetch metadata');
+  const nonEmptyPayload=await reconcile(groupOwner,env,new Request(reconcilePath,{
+    method:'POST',headers:repairHeaders,body:'unexpected'}));
+  check(nonEmptyPayload.status===403&&
+    (await nonEmptyPayload.json()).code==='QA_REPAIR_PAYLOAD',
+    'QA repair rejects requests containing any submitted bytes');
+  same(snapshot(),beforeRequestGate,'All invalid origin, CSRF and payload attempts are read-only');
   check((await reconcile({...groupOwner,employee:{id:qa('owner')}})).status===403,
     'Synthetic QA owner cannot elevate its own grants');
   check((await reconcile({...groupOwner,roles:[{code:'manager',companyId:'company-printing'}]})).status===403,
@@ -301,6 +329,18 @@ async function main() {
   const repairedState=snapshot();
   check((await reconcile()).status===200,'QA grant repair supports safe idempotent retry');
   same(snapshot(),repairedState,'Replaying QA grant repair creates no new mutations');
+  const originOmittedRequest=new Request(reconcilePath,{
+    method:'POST',headers:{'sec-fetch-site':'same-origin','x-daenem-qa-repair':'qa-staging-v1'}});
+  check((await reconcile(groupOwner,env,originOmittedRequest)).status===200,
+    'Browser Fetch Metadata plus custom header safely supports absent Origin');
+  const emptyBodyStream=new ReadableStream({start(controller){controller.close();}});
+  const streamRequest=new Request(reconcilePath,{
+    method:'POST',headers:repairHeaders,body:emptyBodyStream,duplex:'half'});
+  check((await reconcile(groupOwner,env,streamRequest)).status===200,
+    'An actually empty POST stream is permitted without accepting payloads');
+  same(snapshot(),repairedState,
+    'Origin fallback and empty POST stream create no additional grants or audit writes');
+
   const managerAfterRepair=await auth.getSessionContext(new Request('https://qa.invalid/api/auth/me',
     {headers:{cookie:cookies.manager}}),env);
   check(auth.hasPermission(managerAfterRepair,'facilities.access','edit',qa('company-a')),
