@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState}from'react';
-import{AlertTriangle,BellRing,Bot,Building2,CheckCircle2,ClipboardCheck,FilePlus2,Gauge,Megaphone,Plus,Radio,RefreshCw,Send,ShieldCheck,Sparkles,Users,Wrench,Zap}from'lucide-react';
+import{AlertTriangle,BellRing,Bot,Building2,CheckCircle2,ClipboardCheck,Database,FilePlus2,Gauge,Megaphone,Plus,Radio,RefreshCw,Send,ShieldCheck,Sparkles,Users,Wrench,Zap}from'lucide-react';
 import{api,hasWorkforcePermission,type AccessLevel,type WorkforceContext}from'./auth';
 import'./centers.css';
 import { useOfflinePlatform } from './offline-sync';
