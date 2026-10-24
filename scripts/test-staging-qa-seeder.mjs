@@ -488,6 +488,104 @@ async function main() {
       body: JSON.stringify(body),
     }));
   }
+
+  // Validate the entire one-shot acceptance against the same composed Worker,
+  // canonical QA login, 106-migration schema and transaction-capable in-memory D1.
+  const txEvidenceUrl='https://qa.invalid/api/facilities/qa-transaction/evidence';
+  const txRunUrl='https://qa.invalid/api/facilities/qa-transaction/run';
+  const txHeaders={origin:'https://qa.invalid','sec-fetch-site':'same-origin',
+    'x-daenem-qa-transaction':'qa-staging-v1'};
+  const txGet=(asContext=groupOwner,asEnv=env)=>
+    facilitiesRoutes.routeFacilities(new Request(txEvidenceUrl),asEnv,asContext);
+  const txPost=(asContext=groupOwner,asEnv=env,request=new Request(txRunUrl,{
+    method:'POST',headers:txHeaders
+  }))=>facilitiesRoutes.routeFacilities(request,asEnv,asContext);
+  const noTransactionYet=await txGet();
+  check(noTransactionYet.status===200,'Owner can inspect fixed-namespace transaction evidence');
+  const initialTx=await noTransactionYet.json();
+  check(initialTx.scope==='qa-staging-v1'&&initialTx.state==='not_started'&&
+    initialTx.reserved===false&&initialTx.rollbackProbeAbsent===true&&
+    initialTx.companyBIsolated===true&&initialTx.evidence.facilities===0,
+    'Pre-run D1 evidence proves no synthetic Facilities transaction occurred');
+  check((await txGet({...groupOwner,employee:{id:qa('manager')}})).status===403,
+    'Synthetic persona cannot inspect Owner-only transaction evidence');
+  check((await txGet(groupOwner,{...env,APP_STAGE:'production'})).status===404,
+    'Transaction evidence route does not exist in Production');
+  check((await txGet(groupOwner,{...env,STAFFPORTAL_DATABASE_NAME:'not-staging'})).status===404,
+    'Transaction evidence requires exact QA D1 binding');
+
+  const beforeTxGuards=snapshot();
+  check((await txPost({...groupOwner,employee:{id:qa('manager')}})).status===403,
+    'Only actual Group Owner can invoke canonical QA transactions');
+  check((await txPost(groupOwner,{...env,APP_STAGE:'production'})).status===404,
+    'Canonical live QA transactions never execute in Production');
+  check((await txPost(groupOwner,{...env,STAFFPORTAL_DATABASE_NAME:'not-staging'})).status===404,
+    'Canonical QA transactions reject non-staging D1');
+  check((await txPost(groupOwner,env,new Request(txRunUrl,{
+    method:'POST',headers:{origin:'https://qa.invalid'}
+  }))).status===403,'One-shot transaction requires a non-safelisted CSRF header');
+  check((await txPost(groupOwner,env,new Request(txRunUrl,{
+    method:'POST',headers:{...txHeaders,origin:'https://cross-origin.invalid'}
+  }))).status===403,'One-shot transaction denies mismatched Origin');
+  check((await txPost(groupOwner,env,new Request(txRunUrl,{
+    method:'POST',headers:{...txHeaders,'sec-fetch-site':'cross-site'}
+  }))).status===403,'One-shot transaction denies cross-site Fetch Metadata');
+  check((await txPost(groupOwner,env,new Request(txRunUrl,{
+    method:'POST',headers:txHeaders,body:'unexpected bytes'
+  }))).status===403,'One-shot transaction refuses submitted body bytes');
+  same(snapshot(),beforeTxGuards,
+    'Bad-stage, foreign-origin, non-owner and malformed acceptance requests create no data');
+
+  const txSecretMismatch=await txPost(groupOwner,{
+    ...env,STAFFPORTAL_QA_MANAGER_PASSWORD:'another-unmatched-test-secret-1234567'
+  });
+  check(txSecretMismatch.status===409&&
+    (await txSecretMismatch.json()).code==='QA_TRANSACTION_SECRET_MISMATCH',
+    'QA transaction preflight detects mismatched sealed password without login');
+  same(snapshot(),beforeTxGuards,'Missing sealed credential blocks all D1 changes');
+
+  const beforeTxSessions=db.prepare(
+    "SELECT id FROM auth_sessions WHERE employee_id='qa-staging-v1-manager'"
+  ).all().map(row=>row.id);
+  const beforeTxCred=rows("SELECT employee_id,password_hash,password_salt FROM employee_credentials ORDER BY employee_id");
+  const txCompleted=await txPost();
+  check(txCompleted.status===200,'Canonical live Facilities QA transaction succeeds');
+  const txResult=await txCompleted.json();
+  check(txResult.ok===true&&txResult.scope==='qa-staging-v1'&&txResult.state==='verified'&&
+    txResult.facility===1&&txResult.equipment===1&&txResult.readings===1&&
+    txResult.facilitiesAudits===3&&txResult.rollbackVerified===true&&
+    txResult.companyIsolationVerified===true&&txResult.syntheticSessionRevoked===true&&
+    txResult.realCompanyMutated===false,'One-shot acceptance reports bounded real results');
+  const checkTx=await txGet();
+  check(checkTx.status===200,'After-write independent transaction evidence endpoint responds');
+  const persistedTx=await checkTx.json();
+  check(persistedTx.state==='verified'&&persistedTx.reserved===true&&
+    persistedTx.facilityPersisted===true&&persistedTx.equipmentPersisted===true&&
+    persistedTx.readingPersisted===true&&persistedTx.runningHoursUpdated===true&&
+    persistedTx.auditCorrelated===true&&persistedTx.rollbackProbeAbsent===true&&
+    persistedTx.companyBIsolated===true&&persistedTx.safeToReset===false&&
+    persistedTx.evidence.facilities===1&&persistedTx.evidence.equipment===1&&
+    persistedTx.evidence.readings===1&&persistedTx.evidence.auditEvents===3,
+    'Independent D1 proof correlates all three Facilities writes with immutable audits');
+  const actualTxSessions=db.prepare(
+    "SELECT id,revoked_at FROM auth_sessions WHERE employee_id='qa-staging-v1-manager'"
+  ).all().filter(row=>!beforeTxSessions.includes(row.id));
+  check(actualTxSessions.length===1&&actualTxSessions[0].revoked_at!==null,
+    'One synthetic Manager session created and explicitly revoked');
+  same(rows("SELECT employee_id,password_hash,password_salt FROM employee_credentials ORDER BY employee_id"),
+    beforeTxCred,'One-shot QA transactions never rotate passwords');
+  check(scalar(
+    "SELECT COUNT(*) FROM audit_logs WHERE id='qa-staging-v1-facilities-transaction-start'"
+  )===1,'Immutable reservation created once and never overwritten');
+  check(scalar(
+    "SELECT COUNT(*) FROM facilities WHERE name='QA Staging Rollback Probe Must Not Persist'"
+  )===0,'Injected canonical audit-stage failure leaves no facility row');
+  const afterTx=snapshot();
+  const secondTx=await txPost();
+  check(secondTx.status===409,'One-shot transaction refuses replay after persistent evidence');
+  same(snapshot(),afterTx,'Repeat acceptance request cannot duplicate synthetic records');
+  await summary(await operation('reset'),503,'Immutable transaction reservation blocks fixture reset');
+  same(snapshot(),afterTx,'Fixture reset refusal preserves transaction reservation and evidence');
   const facilityDraft = { companyId: companyA, locationId: qa('site-a'),
     facilityType: 'office', name: 'QA Transaction Acceptance Building' };
   const failedCreateBefore = snapshot();
@@ -586,8 +684,9 @@ async function main() {
   check(qaState.scope==='qa-staging-v1' &&
     qaState.syntheticCompanies===2 && qaState.syntheticEmployees===3 &&
     qaState.state==='transaction_evidence_present' && qaState.safeToReset===false &&
-    qaState.evidence.facilities===1 && qaState.evidence.equipment===1 &&
-    qaState.evidence.readings===1, 'QA readiness truthfully reports synthetic Facilities records');
+    qaState.evidence.facilities===2 && qaState.evidence.equipment===2 &&
+    qaState.evidence.readings===2 && qaState.evidence.auditEvents===6,
+    'QA readiness truthfully counts both the canonical acceptance and legacy regression records');
   check((await get('/api/facilities/qa-readiness','manager')).status===403,
     'Non-owner cannot inspect QA readiness');
   check((await get('/api/facilities/qa-readiness','employee')).status===403,
