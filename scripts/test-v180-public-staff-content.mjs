@@ -4,11 +4,17 @@ import ts from 'typescript';
 
 const source = await readFile(new URL('../worker/v180-public-staff-content.ts', import.meta.url), 'utf8');
 const entry = await readFile(new URL('../worker/entry.ts', import.meta.url), 'utf8');
-const compiled = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText;
+const helperSource = await readFile(new URL('../worker/v180-curated-content-schedule.ts', import.meta.url), 'utf8');
+const options = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 };
+const compiled = ts.transpileModule(source, { compilerOptions: options }).outputText;
+const helperCompiled = ts.transpileModule(helperSource, { compilerOptions: options }).outputText;
+const helper = { exports: {} };
+new Function('module', 'exports', helperCompiled)(helper, helper.exports);
 const loaded = { exports: {} };
-new Function('module', 'exports', compiled)(loaded, loaded.exports);
+new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (name) => {
+  assert.equal(name, './v180-curated-content-schedule');
+  return helper.exports;
+});
 const { routeV180PublicStaffContent } = loaded.exports;
 const checks = [];
 const check = async (name, action) => { await action(); checks.push(name); console.log(`PASS: ${name}`); };
@@ -49,6 +55,46 @@ try {
     });
     assert.match(response.headers.get('cache-control'), /max-age=15, s-maxage=30/);
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  });
+
+  await check('default editorial items rotate on the approved schedule without claiming an AI connection', async () => {
+    const rotation = helper.exports.rotateDefaultCuratedContent;
+    const first = rotation({
+      spotlight: { id: 'staff-portal-welcome-spotlight', title: 'Default', body: 'Default body', category: 'Daily Spotlight' },
+      inspiration: { id: 'inspiration-growth', message: 'Default quote', attribution: 'DAENEM Staff Team', category: 'Professional Growth' },
+      provider: 'curated', providerConnected: false,
+    }, Date.UTC(2026, 9, 24, 3));
+    const later = rotation({
+      spotlight: { id: 'staff-portal-welcome-spotlight', title: 'Default', body: 'Default body', category: 'Daily Spotlight' },
+      inspiration: { id: 'inspiration-growth', message: 'Default quote', attribution: 'DAENEM Staff Team', category: 'Professional Growth' },
+      provider: 'curated', providerConnected: false,
+    }, Date.UTC(2026, 9, 25, 12));
+    assert.equal(first.contentMode, 'scheduled_curated');
+    assert.notEqual(first.spotlight.id, later.spotlight.id);
+    assert.notEqual(first.inspiration.id, later.inspiration.id);
+    assert.ok(Date.parse(first.expiresAt) > Date.parse(first.intervalStartedAt));
+    assert.equal(rotation({
+      spotlight: { id: 'owner-override', title: 'Owner message', body: 'Approved body', category: 'Daily Spotlight' },
+      inspiration: { id: 'inspiration-growth', message: 'Owner quote', attribution: 'Team', category: 'Growth' },
+      provider: 'curated', providerConnected: false,
+    }), null, 'Owner Studio overrides always remain authoritative');
+  });
+
+  await check('default curated live adapter responds with a changing content ID and truthful provider status', async () => {
+    const basic = { ...payload,
+      spotlight: { ...payload.spotlight, id: 'staff-portal-welcome-spotlight' },
+      inspiration: { ...payload.inspiration, id: 'inspiration-growth' },
+      provider: 'curated', providerConnected: false };
+    globalThis.fetch = async () => respond(JSON.stringify(basic));
+    const result = await routeV180PublicStaffContent(request());
+    assert.equal(result.status, 200);
+    const response = await result.json();
+    assert.equal(response.contentMode, 'scheduled_curated');
+    assert.match(response.spotlight.id, /^daenem-editorial-day-/);
+    assert.match(response.inspiration.id, /^daenem-editorial-block-/);
+    assert.equal(response.provider, 'curated');
+    assert.equal(response.providerConnected, false);
+    assert.equal(JSON.stringify(response).includes('private_note'), false);
   });
 
   await check('unsupported methods and query variants never reach the upstream', async () => {

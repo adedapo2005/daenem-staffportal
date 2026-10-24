@@ -568,7 +568,9 @@ function updateReferenceClocks(root: HTMLElement, now: Date) {
     }).format(now);
     const compactDate = window.innerWidth < 2560;
     const compactGlobal = compactDate && card.dataset.cityId !== 'ibadan';
+    const compactIbadan = compactDate && card.dataset.cityId === 'ibadan';
     card.classList.toggle('sp-compact-clock-date', compactGlobal);
+    card.classList.toggle('sp-compact-ibadan-date', compactIbadan);
     const date = new Intl.DateTimeFormat('en-US', {
       timeZone: zone,
       weekday: compactDate ? 'short' : 'long',
@@ -582,8 +584,14 @@ function updateReferenceClocks(root: HTMLElement, now: Date) {
     if (timeNode) timeNode.textContent = time;
     const zoneName = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' })
       .formatToParts(now).find((part) => part.type === 'timeZoneName')?.value || '';
-    if (dateNodes[1]) dateNodes[1].textContent = compactGlobal ? `${date} · ${zoneName}` : date.slice(0, comma + 1);
-    if (dateNodes[2]) dateNodes[2].textContent = compactGlobal ? '' : date.slice(comma + 2);
+    // The narrow Ibadan rail previously isolated "Sat," beside the clock,
+    // with the remainder of the date below. Keep weekday+day together.
+    const ibadanParts = compactIbadan ? date.split(',') : [];
+    if (dateNodes[1]) dateNodes[1].textContent = compactGlobal
+      ? `${date} · ${zoneName}`
+      : compactIbadan ? `${ibadanParts[0]},${ibadanParts[1] || ''}`.trim() : date.slice(0, comma + 1);
+    if (dateNodes[2]) dateNodes[2].textContent = compactGlobal ? '' : compactIbadan
+      ? (ibadanParts[2] || '').trim() : date.slice(comma + 2);
     if (dateNodes[3]) dateNodes[3].textContent = compactGlobal ? '' : `${zone} · ${zoneName}`;
     const digital = card.querySelector<HTMLElement>('.gw-city-digital');
     if (digital) { digital.title = `${time} · ${date} · ${zone} (${zoneName})`; digital.setAttribute('aria-label', digital.title); }

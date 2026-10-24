@@ -3340,3 +3340,71 @@
     transform-origin: left center !important;
   }
 }
+
+/* Oct 24: screenshot-targeted refinements ONLY. Preserve V180 reference markup,
+   authentication logic, Owner Studio geometry and all other widgets.
+   Create Account actions: keep text and arrow as one centered control. */
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create
+  .usp-auth-form .usp-primary-button {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+#root .sp-root #staffportal-auth-mount.sp-auth-mode-create
+  .usp-auth-form .usp-primary-button > svg {
+  position: static !important;
+  transform: none !important;
+  flex: 0 0 auto !important;
+  width: 17px !important;
+  height: 17px !important;
+  margin: 0 !important;
+  order: 1 !important;
+}
+
+/* Ibadan clock: prevent the weekday from floating alone beside the clock.
+   Both the analog dial and digital date remain in their approved weather card. */
+@media (max-width: 2559px) {
+  #root .sp-root #staff-local-weather
+    .sp-live-weather-city .gw-city-instrument {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    align-items: center !important;
+    align-content: center !important;
+    column-gap: clamp(8px, .85vw, 16px) !important;
+  }
+  #root .sp-root #staff-local-weather
+    .sp-live-weather-city .gw-city-clock {
+    align-self: center !important;
+    max-width: 100% !important;
+  }
+  #root .sp-root #staff-local-weather
+    .sp-compact-ibadan-date .gw-city-digital > p:nth-child(1) {
+    font-weight: 800 !important;
+    letter-spacing: -.015em !important;
+    white-space: nowrap !important;
+  }
+  #root .sp-root #staff-local-weather
+    .sp-compact-ibadan-date .gw-city-digital > p:nth-child(2) {
+    font-size: clamp(12px, .72vw, 16px) !important;
+    font-weight: 700 !important;
+    line-height: 1.16 !important;
+    white-space: normal !important;
+    overflow-wrap: normal !important;
+  }
+  #root .sp-root #staff-local-weather
+    .sp-compact-ibadan-date .gw-city-digital > p:nth-child(3) {
+    font-size: clamp(11px, .66vw, 15px) !important;
+    font-weight: 600 !important;
+    line-height: 1.15 !important;
+  }
+  #root .sp-root #staff-local-weather
+    .sp-compact-ibadan-date .gw-city-digital > p:nth-child(4) {
+    font-size: clamp(10px, .6vw, 14px) !important;
+    margin-top: 3px !important;
+    white-space: normal !important;
+  }
+}

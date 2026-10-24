@@ -245,8 +245,20 @@ export function connectSignInWidgets(root: HTMLElement) {
       for (const key of ['spotlight', 'inspiration']) {
         const item = key === 'spotlight' ? spotlight : inspiration;
         write(key, '.gw-primary-footer > span', text(item.category));
-        badge(key, raw.providerConnected === true ? 'Updated' : 'Curated');
-        if (cards[key]) { cards[key]!.dataset.contentId = text(item.id); cards[key]!.dataset.contentProvider = text(raw.provider); cards[key]!.dataset.contentExpires = text(raw.expiresAt); }
+        const connectedCurated = raw.contentMode === 'scheduled_curated';
+        badge(key, raw.providerConnected === true ? 'Updated' : connectedCurated ? 'Connected' : 'Curated');
+        if (cards[key]) {
+          cards[key]!.dataset.contentId = text(item.id);
+          cards[key]!.dataset.contentProvider = text(raw.provider);
+          cards[key]!.dataset.contentExpires = text(raw.expiresAt);
+          cards[key]!.dataset.contentMode = connectedCurated ? 'scheduled_curated' : 'owner_curated';
+          cards[key]!.dataset.contentConnection = 'online';
+          // The content service is connected; external AI is deliberately NOT
+          // claimed when the approved Owner Studio provider is curated.
+          cards[key]!.title = connectedCurated
+            ? `Connected to the DAENEM editorial schedule · Curated, next change ${text(raw.expiresAt)}`
+            : `Connected to the approved content service · ${text(raw.provider)}`;
+        }
       }
       const expiry = Date.parse(text(raw.expiresAt));
       if (Number.isFinite(expiry)) nextContent = Math.min(nextContent, Date.now() + Math.max(60_000, expiry - Date.now() + 1000));

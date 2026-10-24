@@ -117,6 +117,10 @@ async function fixedCityWeatherFallback(latitude: number, longitude: number, loc
     };
     const current = payload.current || {};
     const number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null;
+    // Never label an empty provider response as successful weather data.
+    if (number(current.temperature_2m) === null ||
+        typeof current.time !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(current.time)) return null;
     const code = number(current.weather_code);
     return json({
       available: true,
@@ -157,7 +161,11 @@ async function signInWeather(env: Env, cityName: string | null = null) {
   // Prefer the configured Google Weather provider, then use the bounded
   // fixed-city public fallback when provider coverage is unavailable.
   const primary = await weatherResponse(env, lat, lon, 'METRIC', label);
-  if (primary.status < 500) return primary;
+  // The configured provider returns HTTP 200 with available:false when an
+  // approved city has no Google Weather coverage or no provider binding.
+  // Status-only checks incorrectly prevented the fixed-city fallback entirely.
+  const primaryBody = await primary.clone().json().catch(() => null) as { available?: unknown } | null;
+  if (primary.ok && primaryBody?.available === true) return primary;
   return await fixedCityWeatherFallback(lat, lon, label) || primary;
 }
 
