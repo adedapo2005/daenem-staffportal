@@ -68,6 +68,9 @@ jobs:
       - name: Facilities work order lifecycle
         run: node scripts/test-facilities-work-order-lifecycle.mjs
 
+      - name: Isolated staging QA persona acceptance
+        run: node --disable-warning=ExperimentalWarning scripts/test-staging-qa-seeder.mjs
+
       - name: Enterprise Command Center preservation and navigation
         run: |
           node scripts/test-navigation-overlay.mjs
