@@ -7,10 +7,18 @@ import { recentFacilitiesAudit } from './facility-audit-feed';
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
 const uid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
-const can=(context:SessionContext,level:'view'|'create'|'edit'|'approve'|'manage'='view')=>hasPermission(context,'facilities.access',level);
+const can=(context:SessionContext,level:'view'|'create'|'edit'|'approve'|'manage'='view',companyId?:string)=>hasPermission(context,'facilities.access',level,companyId);
 
-function companyAllowed(context:SessionContext,companyId:string){return context.companies.some(company=>company.id===companyId)||can(context,'manage')}
-function requireCompany(context:SessionContext,companyId?:string){if(!companyId)return 'Company is required.';if(!companyAllowed(context,companyId))return 'You do not have access to this company.';return ''}
+// A group-wide permission summary must never grant access to an unassigned company.
+// Company-specific overrides, including explicit "none", remain authoritative.
+function companyAllowed(context:SessionContext,companyId:string,level:'view'|'create'|'edit'|'approve'|'manage'='view'){
+  return context.companies.some(company=>company.id===companyId)&&can(context,level,companyId);
+}
+function requireCompany(context:SessionContext,companyId?:string,level:'view'|'create'|'edit'|'approve'|'manage'='view'){
+  if(!companyId)return 'Company is required.';
+  if(!companyAllowed(context,companyId,level))return 'You do not have access to this company.';
+  return '';
+}
 
 async function overview(request:Request,env:FacilitiesEnv,context:SessionContext){
   if(!can(context))return json({error:'Facilities access is not assigned.'},403);
@@ -66,7 +74,7 @@ async function createFacility(request:Request,env:FacilitiesEnv,context:SessionC
   let body:{companyId?:string;locationId?:string;name?:string;facilityType?:string;description?:string};
   try{body=await request.json()}catch{return json({error:'Invalid facility request.'},400)}
   const companyId=String(body.companyId||'').trim();
-  const accessError=requireCompany(context,companyId);
+  const accessError=requireCompany(context,companyId,'create');
   if(accessError)return json({error:accessError},403);
   const checked=await validateFacilityRegistration(env.DB,companyId,body);
   if(!checked.ok)return json({error:checked.error,code:checked.code},checked.code==='FACILITY_DUPLICATE'?409:400);
@@ -82,7 +90,7 @@ async function createAsset(request:Request,env:FacilitiesEnv,context:SessionCont
   if(!can(context,'create'))return json({error:'Create Facilities permission is required.'},403);
   let body:{companyId?:string;facilityId?:string;assetTag?:string;category?:string;name?:string;make?:string;model?:string;serialNo?:string;purchaseDate?:string;purchaseCostKobo?:number;warrantyExpiresAt?:string;serviceIntervalHours?:number;serviceIntervalDays?:number;runningHours?:number};try{body=await request.json()}catch{return json({error:'Invalid asset request.'},400)}
   const companyId=String(body.companyId||'').trim();
-  const accessError=requireCompany(context,companyId);if(accessError)return json({error:accessError},403);
+  const accessError=requireCompany(context,companyId,'create');if(accessError)return json({error:accessError},403);
   const name=String(body.name||'').trim(),category=String(body.category||'').trim();
   if(!name)return json({error:'Asset name is required.'},400);
   const approved=await resolveMaintenanceReferences(env.DB,companyId,{issueCategory:category,facilityId:body.facilityId});
@@ -97,7 +105,7 @@ async function createAsset(request:Request,env:FacilitiesEnv,context:SessionCont
 async function createWorkOrder(request:Request,env:FacilitiesEnv,context:SessionContext){
   if(!can(context,'create'))return json({error:'Create Facilities permission is required.'},403);
   let body:{companyId?:string;facilityId?:string;assetId?:string;issueCategory?:string;title?:string;description?:string;priority?:string;assignedToEmployeeId?:string;vendorId?:string;vendorName?:string;estimateKobo?:number;requestedCompletionAt?:string};try{body=await request.json()}catch{return json({error:'Invalid maintenance request.'},400)}
-  const companyId=String(body.companyId||''),accessError=requireCompany(context,companyId);if(accessError)return json({error:accessError},403);
+  const companyId=String(body.companyId||''),accessError=requireCompany(context,companyId,'create');if(accessError)return json({error:accessError},403);
   const title=String(body.title||'').trim();if(!title)return json({error:'Work order title is required.'},400);
   const references=await resolveMaintenanceReferences(env.DB,companyId,body);
   if(!references.ok){const reasons={category:'Select an approved maintenance category.',facility:'Facility not found for this company.',asset:'Equipment not found for this company.',asset_facility_mismatch:'Equipment does not belong to the selected facility.'};return json({error:reasons[references.reason],code:'MAINTENANCE_REFERENCE_INVALID'},400)}
@@ -105,7 +113,7 @@ async function createWorkOrder(request:Request,env:FacilitiesEnv,context:Session
   const priorities=['low','normal','high','critical'];
   if(requestedPriority&&!priorities.includes(requestedPriority))return json({error:'Select a valid maintenance priority.'},400);
   const priority=requestedPriority||((priorities.includes(references.defaultPriority)?references.defaultPriority:'normal'));const id=uid('work-order');
-  const thresholdRow=await env.DB.prepare(`SELECT setting_value FROM app_settings WHERE setting_key='facilities.manager_approval_threshold_kobo'`).first<{setting_value:string}>();const threshold=Number(thresholdRow?.setting_value||10000000);if(body.estimateKobo!==undefined&&(!Number.isSafeInteger(body.estimateKobo)||body.estimateKobo<0))return json({error:'Estimated cost must be a valid non-negative amount in kobo.'},400);const estimate=body.estimateKobo||0;const needsApproval=estimate>=threshold&&!can(context,'approve');const status=needsApproval?'awaiting_approval':'reported';
+  const thresholdRow=await env.DB.prepare(`SELECT setting_value FROM app_settings WHERE setting_key='facilities.manager_approval_threshold_kobo'`).first<{setting_value:string}>();const threshold=Number(thresholdRow?.setting_value||10000000);if(body.estimateKobo!==undefined&&(!Number.isSafeInteger(body.estimateKobo)||body.estimateKobo<0))return json({error:'Estimated cost must be a valid non-negative amount in kobo.'},400);const estimate=body.estimateKobo||0;const needsApproval=estimate>=threshold&&!can(context,'approve',companyId);const status=needsApproval?'awaiting_approval':'reported';
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO maintenance_work_orders(id,company_id,facility_id,asset_id,reported_by,assigned_to_employee_id,vendor_id,vendor_name,title,description,issue_category,priority,status,estimate_kobo,requested_completion_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,references.facilityId,references.assetId,context.employee.id,body.assignedToEmployeeId||null,body.vendorId||null,body.vendorName||null,title,body.description||null,references.categoryCode,priority,status,estimate||null,body.requestedCompletionAt||null),
     env.DB.prepare(`INSERT INTO maintenance_work_order_events(id,work_order_id,company_id,actor_employee_id,event_type,after_status,note,amount_kobo) VALUES(?,?,?,?,?,?,?,?)`).bind(uid('work-event'),id,companyId,context.employee.id,'reported',status,body.description||null,estimate||null),
@@ -116,8 +124,17 @@ async function createWorkOrder(request:Request,env:FacilitiesEnv,context:Session
 async function updateWorkOrder(request:Request,env:FacilitiesEnv,context:SessionContext){
   if(!can(context,'edit'))return json({error:'Edit Facilities permission is required.'},403);
   let body:{workOrderId?:string;status?:string;assignedToEmployeeId?:string;vendorId?:string;estimateKobo?:number;actualCostKobo?:number;resolutionNote?:string;downtimeMinutes?:number;note?:string};try{body=await request.json()}catch{return json({error:'Invalid work order update.'},400)}
-  if(!body.workOrderId)return json({error:'Work order is required.'},400);const current=await env.DB.prepare(`SELECT id,company_id AS companyId,status,estimate_kobo AS estimateKobo,actual_cost_kobo AS actualCostKobo FROM maintenance_work_orders WHERE id=?`).bind(body.workOrderId).first<Record<string,unknown>>();if(!current)return json({error:'Work order not found.'},404);const companyId=String(current.companyId);if(!companyAllowed(context,companyId))return json({error:'You do not have access to this work order.'},403);
-  const requestedStatus=body.status?String(body.status):String(current.status);const allowed=['reported','triaged','awaiting_approval','approved','in_progress','blocked','completed','verified','cancelled'];if(!allowed.includes(requestedStatus))return json({error:'Invalid maintenance status.'},400);if(['approved','verified','cancelled'].includes(requestedStatus)&&requestedStatus!==current.status&&!can(context,'approve'))return json({error:'Approve Facilities permission is required for this status.'},403);
+  if(!body.workOrderId)return json({error:'Work order is required.'},400);
+  // Resolve by ID only inside companies where this session has Facilities edit.
+  // Foreign work-order IDs must not reveal whether another company's record exists.
+  const editableCompanies=context.companies.filter(company=>can(context,'edit',company.id)).map(company=>company.id);
+  if(!editableCompanies.length)return json({error:'Edit Facilities permission is required.'},403);
+  const placeholders=editableCompanies.map(()=>'?').join(',');
+  const current=await env.DB.prepare(`SELECT id,company_id AS companyId,status,estimate_kobo AS estimateKobo,actual_cost_kobo AS actualCostKobo FROM maintenance_work_orders WHERE id=? AND company_id IN (${placeholders})`).bind(body.workOrderId,...editableCompanies).first<Record<string,unknown>>();
+  if(!current)return json({error:'Work order not found.'},404);
+  const companyId=String(current.companyId);
+  if(!companyAllowed(context,companyId,'edit'))return json({error:'You do not have access to this work order.'},403);
+  const requestedStatus=body.status?String(body.status):String(current.status);const allowed=['reported','triaged','awaiting_approval','approved','in_progress','blocked','completed','verified','cancelled'];if(!allowed.includes(requestedStatus))return json({error:'Invalid maintenance status.'},400);if(['approved','verified','cancelled'].includes(requestedStatus)&&requestedStatus!==current.status&&!can(context,'approve',companyId))return json({error:'Approve Facilities permission is required for this status.'},403);
   const approved=requestedStatus==='approved'&&current.status!=='approved';await env.DB.batch([
     env.DB.prepare(`UPDATE maintenance_work_orders SET status=?,assigned_to_employee_id=COALESCE(?,assigned_to_employee_id),vendor_id=COALESCE(?,vendor_id),estimate_kobo=COALESCE(?,estimate_kobo),actual_cost_kobo=COALESCE(?,actual_cost_kobo),resolution_note=COALESCE(?,resolution_note),downtime_minutes=COALESCE(?,downtime_minutes),approved_by=CASE WHEN ? THEN ? ELSE approved_by END,approved_at=CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE approved_at END,completed_at=CASE WHEN ?='completed' THEN COALESCE(completed_at,CURRENT_TIMESTAMP) ELSE completed_at END,verified_by=CASE WHEN ?='verified' THEN ? ELSE verified_by END,verified_at=CASE WHEN ?='verified' THEN CURRENT_TIMESTAMP ELSE verified_at END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(requestedStatus,body.assignedToEmployeeId||null,body.vendorId||null,body.estimateKobo??null,body.actualCostKobo??null,body.resolutionNote||null,body.downtimeMinutes??null,approved?1:0,context.employee.id,approved?1:0,requestedStatus,requestedStatus,context.employee.id,requestedStatus,body.workOrderId),
     env.DB.prepare(`INSERT INTO maintenance_work_order_events(id,work_order_id,company_id,actor_employee_id,event_type,before_status,after_status,note,amount_kobo) VALUES(?,?,?,?,?,?,?,?,?)`).bind(uid('work-event'),body.workOrderId,companyId,context.employee.id,requestedStatus==='verified'?'verified':requestedStatus==='completed'?'completed':'status',String(current.status),requestedStatus,body.note||body.resolutionNote||null,body.actualCostKobo??body.estimateKobo??null),
@@ -129,7 +146,7 @@ async function recordReading(request:Request,env:FacilitiesEnv,context:SessionCo
   if(!can(context,'create'))return json({error:'Create Facilities permission is required.'},403);
   let body:{companyId?:string;facilityId?:string;assetId?:string;readingType?:string;readingValue?:number|string;unit?:string;note?:string;latitude?:number;longitude?:number};
   try{body=await request.json()}catch{return json({error:'Invalid meter reading.'},400)}
-  const companyId=String(body.companyId||'').trim(),accessError=requireCompany(context,companyId);
+  const companyId=String(body.companyId||'').trim(),accessError=requireCompany(context,companyId,'create');
   if(accessError)return json({error:accessError},403);
   const types=['running_hours','diesel_litres','fuel_added_litres','energy_kwh','battery_voltage','water_level','temperature','pressure','other'];
   const raw=body.readingValue;
@@ -159,7 +176,7 @@ async function recordReading(request:Request,env:FacilitiesEnv,context:SessionCo
 
 async function createSchedule(request:Request,env:FacilitiesEnv,context:SessionContext){
   if(!can(context,'edit'))return json({error:'Edit Facilities permission is required.'},403);let body:{companyId?:string;facilityId?:string;assetId?:string;categoryCode?:string;title?:string;description?:string;intervalType?:string;intervalValue?:number;nextDueAt?:string;nextMeterValue?:number;estimatedCostKobo?:number;defaultAssigneeEmployeeId?:string;defaultVendorId?:string;checklist?:unknown};try{body=await request.json()}catch{return json({error:'Invalid maintenance schedule.'},400)}
-  const companyId=String(body.companyId||''),accessError=requireCompany(context,companyId);if(accessError)return json({error:accessError},403);const title=String(body.title||'').trim(),intervalType=String(body.intervalType||'months'),intervalValue=Math.max(1,Number(body.intervalValue||1));if(!title||!['days','weeks','months','running_hours','calendar'].includes(intervalType))return json({error:'Title and valid interval are required.'},400);const id=uid('pm-schedule');await env.DB.batch([
+  const companyId=String(body.companyId||''),accessError=requireCompany(context,companyId,'edit');if(accessError)return json({error:accessError},403);const title=String(body.title||'').trim(),intervalType=String(body.intervalType||'months'),intervalValue=Math.max(1,Number(body.intervalValue||1));if(!title||!['days','weeks','months','running_hours','calendar'].includes(intervalType))return json({error:'Title and valid interval are required.'},400);const id=uid('pm-schedule');await env.DB.batch([
     env.DB.prepare(`INSERT INTO preventive_maintenance_schedules(id,company_id,facility_id,asset_id,category_code,title,description,interval_type,interval_value,next_due_at,next_meter_value,default_assignee_employee_id,default_vendor_id,checklist_json,estimated_cost_kobo,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,body.facilityId||null,body.assetId||null,body.categoryCode||null,title,body.description||null,intervalType,intervalValue,body.nextDueAt||null,body.nextMeterValue??null,body.defaultAssigneeEmployeeId||null,body.defaultVendorId||null,body.checklist?JSON.stringify(body.checklist):null,body.estimatedCostKobo??null,context.employee.id),
     env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','preventive_schedule',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({title,intervalType,intervalValue,nextDueAt:body.nextDueAt||null}))
   ]);return json({ok:true,schedule:{id,title}},201);
