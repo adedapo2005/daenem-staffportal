@@ -7,6 +7,7 @@ import { usePathname, useRouter } from './next-navigation-shim';
 import './stage1-live-erp-route-bridge.css';
 
 import { liveRouteForPath, type LiveErpRoute as LiveRoute } from './stage1-live-erp-route-contract';
+import { correctLiveErpShellLabels } from './stage1-live-erp-shell-labels';
 
 const Forms = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
 const Facilities = lazy(() => import('./centers').then((module) => ({ default: module.FacilitiesCenter })));
@@ -78,6 +79,15 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
       delete document.documentElement.dataset.daenemLiveRoute;
     };
   }, [mount, route]);
+
+  useEffect(() => {
+    if (!route || !mount) return;
+    // The legacy approved visual reference uses demo labels in the persistent
+    // nav/footer. Fix their presentation only for these actual ERP routes.
+    const root = document.querySelector<HTMLElement>('[data-approved-postlogin="qa-review-v115"]');
+    if (!root) return;
+    return correctLiveErpShellLabels(root);
+  }, [route, mount]);
 
   const companyChoices = useMemo(() => {
     if (!route) return [];
