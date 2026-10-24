@@ -1,4 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { resolveMaintenanceReferences } from './facility-reference-guard';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -64,12 +65,17 @@ async function createWorkOrder(request:Request,env:FacilitiesEnv,context:Session
   let body:{companyId?:string;facilityId?:string;assetId?:string;issueCategory?:string;title?:string;description?:string;priority?:string;assignedToEmployeeId?:string;vendorId?:string;vendorName?:string;estimateKobo?:number;requestedCompletionAt?:string};try{body=await request.json()}catch{return json({error:'Invalid maintenance request.'},400)}
   const companyId=String(body.companyId||''),accessError=requireCompany(context,companyId);if(accessError)return json({error:accessError},403);
   const title=String(body.title||'').trim();if(!title)return json({error:'Work order title is required.'},400);
-  const priority=['low','normal','high','critical'].includes(String(body.priority))?String(body.priority):'normal';const id=uid('work-order');
-  const thresholdRow=await env.DB.prepare(`SELECT setting_value FROM app_settings WHERE setting_key='facilities.manager_approval_threshold_kobo'`).first<{setting_value:string}>();const threshold=Number(thresholdRow?.setting_value||10000000);const estimate=Math.max(0,Number(body.estimateKobo||0));const needsApproval=estimate>=threshold&&!can(context,'approve');const status=needsApproval?'awaiting_approval':'reported';
+  const references=await resolveMaintenanceReferences(env.DB,companyId,body);
+  if(!references.ok){const reasons={category:'Select an approved maintenance category.',facility:'Facility not found for this company.',asset:'Equipment not found for this company.',asset_facility_mismatch:'Equipment does not belong to the selected facility.'};return json({error:reasons[references.reason],code:'MAINTENANCE_REFERENCE_INVALID'},400)}
+  const requestedPriority=String(body.priority||'').trim().toLowerCase();
+  const priorities=['low','normal','high','critical'];
+  if(requestedPriority&&!priorities.includes(requestedPriority))return json({error:'Select a valid maintenance priority.'},400);
+  const priority=requestedPriority||((priorities.includes(references.defaultPriority)?references.defaultPriority:'normal'));const id=uid('work-order');
+  const thresholdRow=await env.DB.prepare(`SELECT setting_value FROM app_settings WHERE setting_key='facilities.manager_approval_threshold_kobo'`).first<{setting_value:string}>();const threshold=Number(thresholdRow?.setting_value||10000000);if(body.estimateKobo!==undefined&&(!Number.isSafeInteger(body.estimateKobo)||body.estimateKobo<0))return json({error:'Estimated cost must be a valid non-negative amount in kobo.'},400);const estimate=body.estimateKobo||0;const needsApproval=estimate>=threshold&&!can(context,'approve');const status=needsApproval?'awaiting_approval':'reported';
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO maintenance_work_orders(id,company_id,facility_id,asset_id,reported_by,assigned_to_employee_id,vendor_id,vendor_name,title,description,issue_category,priority,status,estimate_kobo,requested_completion_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,body.facilityId||null,body.assetId||null,context.employee.id,body.assignedToEmployeeId||null,body.vendorId||null,body.vendorName||null,title,body.description||null,body.issueCategory||'other',priority,status,estimate||null,body.requestedCompletionAt||null),
+    env.DB.prepare(`INSERT INTO maintenance_work_orders(id,company_id,facility_id,asset_id,reported_by,assigned_to_employee_id,vendor_id,vendor_name,title,description,issue_category,priority,status,estimate_kobo,requested_completion_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,references.facilityId,references.assetId,context.employee.id,body.assignedToEmployeeId||null,body.vendorId||null,body.vendorName||null,title,body.description||null,references.categoryCode,priority,status,estimate||null,body.requestedCompletionAt||null),
     env.DB.prepare(`INSERT INTO maintenance_work_order_events(id,work_order_id,company_id,actor_employee_id,event_type,after_status,note,amount_kobo) VALUES(?,?,?,?,?,?,?,?)`).bind(uid('work-event'),id,companyId,context.employee.id,'reported',status,body.description||null,estimate||null),
-    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','maintenance_work_order',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({title,priority,status,estimateKobo:estimate,issueCategory:body.issueCategory||'other'}))
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','maintenance_work_order',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({title,priority,status,estimateKobo:estimate,issueCategory:references.categoryCode,facilityId:references.facilityId,assetId:references.assetId}))
   ]);return json({ok:true,workOrder:{id,title,status,approvalRequired:needsApproval}},201);
 }
 
