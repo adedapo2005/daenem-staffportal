@@ -197,15 +197,16 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset', setPhase: (pha
         live: { password_hash: hash, password_salt: salt, password_algorithm: 'PBKDF2-SHA256',
           password_iterations: WORKER_SAFE_PASSWORD_ITERATIONS } });
       // Compose existing permission definitions; do not manufacture a second permission catalogue.
-      const codes = personas[i] === 'employee' ? ['profile.access', 'attendance.access']
-        : ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables'];
+      const codes = personas[i] === 'employee' ? ['profile.access', 'attendance.access', 'facilities.access']
+        : ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables', 'facilities.access'];
       const level = personas[i] === 'owner' ? 'manage' : personas[i] === 'manager' ? 'edit' : 'view';
       for (const code of codes) grants.push({ grantId: id(`grant-${personas[i]}-${code}`),
         roleId: id(`role-${personas[i]}`), code, level });
     }
     tx.ensureMany(credentials, false);
-    const permissionCodes = ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables'];
-    tx.check(`(SELECT COUNT(DISTINCT code) FROM permissions WHERE code IN (?,?,?,?))=?`,
+    const permissionCodes = ['profile.access', 'attendance.access', 'payroll.access', 'finance.receivables', 'facilities.access'];
+    const permissionSlots = permissionCodes.map(() => '?').join(',');
+    tx.check(`(SELECT COUNT(DISTINCT code) FROM permissions WHERE code IN (${permissionSlots}))=?`,
       [...permissionCodes, permissionCodes.length]);
     const permissionId = `SELECT id FROM permissions WHERE code=?`;
     tx.check(grants.map(() => `NOT EXISTS(SELECT 1 FROM role_permissions
