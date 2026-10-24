@@ -38,7 +38,7 @@ for(const section of [create,update]){
   assert.ok(section.indexOf('resolveWorkOrderParties(')<section.indexOf('env.DB.batch('));checks++;
   assert.ok(section.includes('parties.assignedToEmployeeId,parties.vendorId'));checks++;
 }
-assert.ok(update.includes("String(current.status)==='awaiting_approval'"));checks++;
+assert.ok(update.includes("validateWorkOrderTransition(String(current.status),requestedStatus,can(context,'approve',companyId))"));checks++;
 assert.ok(update.includes('proposedEstimate>=threshold'));checks++;
 assert.ok(update.includes('Number.isSafeInteger(value)'));checks++;
 console.log('Facilities work-order assignment and approval checks: '+checks+' passed');

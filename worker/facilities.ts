@@ -5,6 +5,7 @@ import { recentFacilityReadings } from './facility-reading-history';
 import { recentFacilitiesAudit } from './facility-audit-feed';
 import { validateScheduleReferences } from './facility-schedule-guard';
 import { resolveWorkOrderParties } from './facility-work-order-guard';
+import { validateWorkOrderTransition } from './facility-work-order-lifecycle';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -143,7 +144,9 @@ async function updateWorkOrder(request:Request,env:FacilitiesEnv,context:Session
   for(const [value,label] of [[body.estimateKobo,'Estimated cost'],[body.actualCostKobo,'Actual cost'],[body.downtimeMinutes,'Downtime'] ] as const){
     if(value!==undefined&&(!Number.isSafeInteger(value)||value<0))return json({error:label+' must be a non-negative whole number.'},400);
   }
-  const requestedStatus=body.status?String(body.status):String(current.status);const allowed=['reported','triaged','awaiting_approval','approved','in_progress','blocked','completed','verified','cancelled'];if(!allowed.includes(requestedStatus))return json({error:'Invalid maintenance status.'},400);if((['approved','verified','cancelled'].includes(requestedStatus)||String(current.status)==='awaiting_approval'&&requestedStatus!=='awaiting_approval')&&requestedStatus!==current.status&&!can(context,'approve',companyId))return json({error:'Approve Facilities permission is required for this status.'},403);
+  const requestedStatus=body.status?String(body.status):String(current.status);
+  const transition=validateWorkOrderTransition(String(current.status),requestedStatus,can(context,'approve',companyId));
+  if(!transition.ok)return json({error:transition.error,code:'MAINTENANCE_STATUS_TRANSITION_INVALID'},transition.statusCode);
   const thresholdRow=await env.DB.prepare("SELECT setting_value FROM app_settings WHERE setting_key='facilities.manager_approval_threshold_kobo'").first<{setting_value:string}>();
   const parsedThreshold=Number(thresholdRow?.setting_value);
   const threshold=Number.isFinite(parsedThreshold)&&parsedThreshold>0?parsedThreshold:10000000;
@@ -152,7 +155,7 @@ async function updateWorkOrder(request:Request,env:FacilitiesEnv,context:Session
     return json({error:'An authorized Facilities approver is required for this estimate.'},403);
   const approved=requestedStatus==='approved'&&current.status!=='approved';await env.DB.batch([
     env.DB.prepare(`UPDATE maintenance_work_orders SET status=?,assigned_to_employee_id=COALESCE(?,assigned_to_employee_id),vendor_id=COALESCE(?,vendor_id),estimate_kobo=COALESCE(?,estimate_kobo),actual_cost_kobo=COALESCE(?,actual_cost_kobo),resolution_note=COALESCE(?,resolution_note),downtime_minutes=COALESCE(?,downtime_minutes),approved_by=CASE WHEN ? THEN ? ELSE approved_by END,approved_at=CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE approved_at END,completed_at=CASE WHEN ?='completed' THEN COALESCE(completed_at,CURRENT_TIMESTAMP) ELSE completed_at END,verified_by=CASE WHEN ?='verified' THEN ? ELSE verified_by END,verified_at=CASE WHEN ?='verified' THEN CURRENT_TIMESTAMP ELSE verified_at END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(requestedStatus,parties.assignedToEmployeeId,parties.vendorId,body.estimateKobo??null,body.actualCostKobo??null,body.resolutionNote||null,body.downtimeMinutes??null,approved?1:0,context.employee.id,approved?1:0,requestedStatus,requestedStatus,context.employee.id,requestedStatus,body.workOrderId),
-    env.DB.prepare(`INSERT INTO maintenance_work_order_events(id,work_order_id,company_id,actor_employee_id,event_type,before_status,after_status,note,amount_kobo) VALUES(?,?,?,?,?,?,?,?,?)`).bind(uid('work-event'),body.workOrderId,companyId,context.employee.id,requestedStatus==='verified'?'verified':requestedStatus==='completed'?'completed':'status',String(current.status),requestedStatus,body.note||body.resolutionNote||null,body.actualCostKobo??body.estimateKobo??null),
+    env.DB.prepare(`INSERT INTO maintenance_work_order_events(id,work_order_id,company_id,actor_employee_id,event_type,before_status,after_status,note,amount_kobo) VALUES(?,?,?,?,?,?,?,?,?)`).bind(uid('work-event'),body.workOrderId,companyId,context.employee.id,transition.eventType,String(current.status),requestedStatus,body.note||body.resolutionNote||null,body.actualCostKobo??body.estimateKobo??null),
     env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source) VALUES(?,?,?,'facilities','update','maintenance_work_order',?,?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,body.workOrderId,JSON.stringify({status:current.status,estimateKobo:current.estimateKobo,actualCostKobo:current.actualCostKobo}),JSON.stringify({status:requestedStatus,estimateKobo:body.estimateKobo??current.estimateKobo,actualCostKobo:body.actualCostKobo??current.actualCostKobo}))
   ]);return json({ok:true,status:requestedStatus});
 }

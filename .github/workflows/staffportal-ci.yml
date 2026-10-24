@@ -65,6 +65,9 @@ jobs:
       - name: Facilities work order authority
         run: node scripts/test-facilities-work-order-authority.mjs
 
+      - name: Facilities work order lifecycle
+        run: node scripts/test-facilities-work-order-lifecycle.mjs
+
       - name: Enterprise Command Center preservation and navigation
         run: |
           node scripts/test-navigation-overlay.mjs

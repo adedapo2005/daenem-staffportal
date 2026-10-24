@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {validateWorkOrderTransition} from '../worker/facility-work-order-lifecycle.ts';
+let checks=0;
+function check(current,requested,approver,expected,event){
+ const result=validateWorkOrderTransition(current,requested,approver);
+ assert.equal(result.ok,expected,[current,requested,approver].join(' -> '));checks++;
+ if(event){assert.equal(result.ok&&result.eventType,event);checks++;}
+}
+check('reported','triaged',false,true,'status');
+check('triaged','in_progress',false,true,'status');
+check('in_progress','completed',false,true,'completed');
+check('completed','verified',true,true,'verified');
+check('completed','verified',false,false);
+check('completed','in_progress',true,true,'status');
+check('completed','in_progress',false,false);
+check('completed','reported',true,false);
+check('completed','cancelled',true,false);
+check('verified','reported',true,false);
+check('verified','verified',true,false);
+check('cancelled','reported',true,false);
+check('cancelled','cancelled',true,false);
+check('awaiting_approval','in_progress',true,false);
+check('awaiting_approval','in_progress',false,false);
+check('awaiting_approval','approved',true,true,'approval');
+check('awaiting_approval','approved',false,false);
+check('awaiting_approval','cancelled',true,true,'cancelled');
+check('awaiting_approval','cancelled',false,false);
+check('reported','approved',true,false);
+check('reported','verified',true,false);
+check('reported','cancelled',true,true,'cancelled');
+check('reported','cancelled',false,false);
+check('reported','unrecognized',true,false);
+const worker=readFileSync(new URL('../worker/facilities.ts',import.meta.url),'utf8');
+const update=worker.slice(worker.indexOf('async function updateWorkOrder('),worker.indexOf('async function recordReading('));
+assert.ok(update.includes('validateWorkOrderTransition('));checks++;
+assert.ok(update.includes('transition.eventType'));checks++;
+assert.ok(update.includes('MAINTENANCE_STATUS_TRANSITION_INVALID'));checks++;
+assert.ok(update.indexOf('validateWorkOrderTransition(')<update.indexOf('env.DB.batch('));checks++;
+console.log('Facilities work-order lifecycle: '+checks+' checks passed.');
