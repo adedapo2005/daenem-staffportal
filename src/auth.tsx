@@ -747,6 +747,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   async function signIn(event: React.FormEvent) {
     event.preventDefault();
+    if (!identity.trim() || !password) {
+      setMessage({ type: 'error', text: 'Enter your email or username and password to continue.' });
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
@@ -799,6 +803,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   }
 
   async function startWhatsAppSignIn() {
+    if (!identity.trim() || !password) {
+      setMessage({ type: 'error', text: 'Enter your email or username and password before requesting WhatsApp verification.' });
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
@@ -1027,6 +1035,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const inlineSignInError = message?.type === 'error' && (
     message.text === 'The username/email or password is incorrect.' ||
+    message.text === 'Enter your email or username and password to continue.' ||
+    message.text === 'Enter your email or username and password before requesting WhatsApp verification.' ||
     message.text === authLabels.lockoutTitle ||
     message.text === 'Owner Access Requires Secure Password Recovery.'
   );
@@ -1034,7 +1044,11 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     ? 'Access temporarily locked. Use Forgot Password.'
     : message?.text === 'Owner Access Requires Secure Password Recovery.'
       ? 'Recovery required. Use Forgot Password.'
-      : 'Sign-in failed. Recover below.';
+      : message?.text === 'Enter your email or username and password to continue.'
+        ? 'Enter email and password.'
+        : message?.text === 'Enter your email or username and password before requesting WhatsApp verification.'
+          ? 'Enter credentials for WhatsApp.'
+          : 'Sign-in failed. Recover below.';
 
   const approvedSignInPanel = (
     <div ref={(node) => { panelRef.current = node; }} className="sp-auth-runtime" data-approved-auth-placement="sites-v180">
@@ -1043,8 +1057,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
       <div className="sp-auth-tabs" role="tablist" aria-label="Staff access mode"><button type="button" className="is-active" role="tab" aria-selected="true"><UserRound size={16} /> Sign In</button><button type="button" role="tab" aria-selected="false" onClick={() => switchMode('signup')}><UserPlus size={16} /> Create Account</button></div>
       {message && !inlineSignInError && <div className={`sp-auth-notice ${message.type === 'error' ? 'is-error' : message.type === 'success' ? 'is-success' : ''}`} role="alert"><span>{message.text}</span>{message.details?.length ? <ul>{message.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}{message.action && <button type="button" className="sp-text-button" onClick={message.action.onClick}>{message.action.label}</button>}</div>}
       <form className="sp-auth-form" autoComplete="off" onSubmit={signIn} noValidate>
-        <label><span className="sp-field-label">Email Or Username</span><span className={`sp-input-shell sp-credential-shell is-${identityStatus === 'invalid' && showIdentityStatus ? 'error' : identity ? 'success' : 'idle'}`} data-credential-state={identityStatus}><UserRound size={16} /><input type="text" autoComplete="username" value={identity} onChange={(event) => setIdentity(event.target.value)} onBlur={() => setIdentityTouched(true)} placeholder="Email or username" aria-invalid={identityStatus === 'invalid' && showIdentityStatus} /></span>{showIdentityStatus && identityStatus !== 'empty' ? <span className={`sp-field-status sp-credential-status is-${identityStatus === 'invalid' ? 'error' : 'success'}`}>{identityStatus === 'invalid' ? authLabels.identifierInvalid : identityStatus === 'email' ? authLabels.identifierEmailValid : authLabels.identifierUsernameValid}</span> : null}</label>
-        <label><span className="sp-field-label">Password</span><span className="sp-input-shell sp-credential-shell"><KeyRound size={16} /><input type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" /><button type="button" className="sp-show-password" aria-label={showPassword ? authLabels.hidePassword : authLabels.showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}<span className="sp-show-password-label">{showPassword ? 'Hide' : 'Show'}</span></button></span></label>
+        <label><span className="sp-field-label">Email Or Username</span><span className={`sp-input-shell sp-credential-shell is-${identityStatus === 'invalid' && showIdentityStatus ? 'error' : identity ? 'success' : 'idle'}`} data-credential-state={identityStatus}><UserRound size={16} /><input type="text" autoComplete="username" required value={identity} onChange={(event) => setIdentity(event.target.value)} onBlur={() => setIdentityTouched(true)} placeholder="Email or username" aria-invalid={identityStatus === 'invalid' && showIdentityStatus} /></span>{showIdentityStatus && identityStatus !== 'empty' ? <span className={`sp-field-status sp-credential-status is-${identityStatus === 'invalid' ? 'error' : 'success'}`}>{identityStatus === 'invalid' ? authLabels.identifierInvalid : identityStatus === 'email' ? authLabels.identifierEmailValid : authLabels.identifierUsernameValid}</span> : null}</label>
+        <label><span className="sp-field-label">Password</span><span className="sp-input-shell sp-credential-shell"><KeyRound size={16} /><input type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" /><button type="button" className="sp-show-password" aria-label={showPassword ? authLabels.hidePassword : authLabels.showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}<span className="sp-show-password-label">{showPassword ? 'Hide' : 'Show'}</span></button></span></label>
         <div className="sp-auth-options"><label className="sp-remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Remember Me</span></label><button type="button" className="sp-forgot" onClick={() => switchMode('forgot')}><KeyRound size={14} /> Forgot Password?</button></div>
         <button type="submit" className={`sp-primary-button ${busy ? 'is-loading' : 'is-idle'}`} disabled={busy}><span>{busy ? 'Connecting…' : 'Sign In'}</span><ArrowRight size={16} /></button>
       </form>

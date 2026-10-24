@@ -5,7 +5,7 @@ const { createServer } = require('vite');
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-const SCREENS = ({'4k':[[3840,2160]],'1':[[1920,1080]],'compact':[[1366,768]],'short':[[1280,720]],'mobile':[[390,844]]}[process.env.QA_SINGLE]) || [[3840,2160],[1920,1080],[1366,768],[1280,720],[1024,768],[820,1180],[390,844]];
+const SCREENS = ({'4k':[[3840,2160]],'1':[[1920,1080]],'compact':[[1366,768]],'short':[[1280,720]],'mobile':[[390,844]],'tablet':[[1024,768],[820,1180]]}[process.env.QA_SINGLE]) || [[3840,2160],[1920,1080],[1366,768],[1280,720],[1024,768],[820,1180],[390,844]];
 const OUT = path.resolve('qa-artifacts/premium-signin-acceptance-20261023');
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const results = [];
@@ -68,6 +68,34 @@ const box = (el) => {
             panelLayout:{display:getComputedStyle(root).display,alignContent:getComputedStyle(root).alignContent,justifyContent:getComputedStyle(root).justifyContent,gridTemplateRows:getComputedStyle(root).gridTemplateRows,padding:getComputedStyle(root).padding,headingFont:getComputedStyle(root.querySelector('.sp-auth-copy h2')).fontSize,tabFont:getComputedStyle(root.querySelector('.sp-auth-tabs button')).fontSize,labelFont:getComputedStyle(root.querySelector('.sp-field-label')).fontSize,buttonFont:getComputedStyle(root.querySelector('.sp-primary-button')).fontSize,children:[...root.children].map(el=>({className:el.className,box:rect(el)}))}
           };
         });
+        const brandClearance=await page.evaluate(()=>{
+          const root=document.querySelector('#staffportal-auth-mount');
+          const top=el=>el.getBoundingClientRect().top;
+          const bottom=el=>el.getBoundingClientRect().bottom;
+          const chip=root.querySelector('.sp-secure-chip');
+          const logo=root.querySelector('.sp-auth-logo-v101');
+          const eyebrow=root.querySelector('.sp-auth-copy .sp-eyebrow');
+          const mark=root.querySelector('.sp-auth-logo-v101 .sp-brand-mark-wrap');
+          return {chipGap:+(top(eyebrow)-bottom(chip)).toFixed(1),logoGap:+(top(eyebrow)-bottom(logo)).toFixed(1),markInside:+(top(mark)-top(root)).toFixed(1),chipX:+chip.getBoundingClientRect().x.toFixed(1),logoX:+logo.getBoundingClientRect().x.toFixed(1)};
+        });
+        console.log('BRAND_CLEARANCE '+width+' '+JSON.stringify(brandClearance));
+        if(width>=2100) {
+          assert.ok(brandClearance.chipGap>=8,'4K secure badge must not overlap portal heading');
+          assert.ok(brandClearance.logoGap>=4,'4K brand must not overlap portal heading');
+          assert.ok(brandClearance.chipX>brandClearance.logoX+40,'4K badge must align beside logo');
+        } else if(width>=1680) {
+          assert.ok(brandClearance.chipGap>=8,'standard desktop secure badge must clear portal heading');
+          assert.ok(brandClearance.logoGap>=6,'standard desktop logo must clear portal heading');
+          assert.ok(brandClearance.markInside>=2,'standard desktop logo mark must not clip past top of auth card');
+          assert.ok(brandClearance.chipX>brandClearance.logoX+75,'standard desktop badge must sit beside logo');
+        } else if(width>=1280) {
+          assert.ok(brandClearance.markInside>=0,'compact desktop logo mark must not clip at card edge');
+          assert.ok(brandClearance.chipGap>=0,'compact desktop badge must clear heading');
+        } else {
+          assert.ok(brandClearance.chipGap>=4,'tablet/mobile secure badge must clear portal heading');
+          assert.ok(brandClearance.logoGap>=4,'tablet/mobile logo must clear portal heading');
+          assert.ok(brandClearance.chipX>brandClearance.logoX+45,'tablet/mobile badge must sit beside logo');
+        }
         const diag=await page.evaluate(()=>({rootClasses:document.querySelector('.sp-root')?.className,cardClasses:document.querySelector('#staffportal-auth-mount')?.className,authCard:document.querySelector('.sp-auth-card')?.className,matched:!!document.querySelector('#root .sp-root .sp-auth-card.sp-auth-gateway .sp-credential-shell input:focus-visible')}));
         console.log('FOCUS_DEBUG '+width+' '+JSON.stringify({focus:metrics.focus,diag}));
         if(process.env.QA_SINGLE === '1') {
@@ -140,6 +168,17 @@ const box = (el) => {
         }
         if(metrics.rootScrollHeight>metrics.rootClientHeight+3) warnings.push(width+'x'+height+' auth internal overflow: '+metrics.rootScrollHeight+'/'+metrics.rootClientHeight);
         await page.screenshot({path:path.join(OUT,'signin-'+width+'x'+height+'.jpg'),type:'jpeg',quality:62,fullPage:true});
+        // Retain the newer Pre-Production empty-input guards without letting
+        // their message create an overflowing overlay in narrow desktop rails.
+        await page.locator('#staffportal-auth-mount .sp-primary-button').click();
+        const emptyAlert=page.locator('#staffportal-auth-mount .sp-inline-auth-error[role="alert"]');
+        await emptyAlert.waitFor({timeout:10000});
+        assert.match(await emptyAlert.innerText(),/enter email and password/i,'empty-password validation displayed clearly');
+        if(width>=1280) assert.ok(await page.locator('#staffportal-auth-mount').evaluate(el=>el.scrollHeight<=el.clientHeight+3),'empty submission must not clip auth');
+        assert.equal(await page.locator('#staffportal-auth-mount .sp-auth-notice').count(),0,'empty submission uses compact accessible status');
+        await page.locator('#staffportal-auth-mount .sp-social-button').filter({hasText:'WhatsApp'}).click();
+        assert.match(await emptyAlert.innerText(),/enter credentials for whatsapp/i,'new WhatsApp prerequisite is accessible without overflow');
+        if(width>=1280) assert.ok(await page.locator('#staffportal-auth-mount').evaluate(el=>el.scrollHeight<=el.clientHeight+3),'WhatsApp prerequisite must not clip auth');
         await email.fill('tester@example.org');
         await password.fill('TestPassword123!');
         await page.locator('.sp-show-password').click();
