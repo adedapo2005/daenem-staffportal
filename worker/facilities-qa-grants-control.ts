@@ -147,7 +147,7 @@ el('repair').addEventListener('click',async()=>{
     if(!before.ok||!safe(await before.json()))throw new Error('Preconditions changed; no write attempted.');
     const response=await fetch(base+'qa-grants/reconcile',{
       method:'POST',credentials:'same-origin',mode:'same-origin',redirect:'error',
-      headers:{'Accept':'application/json'},cache:'no-store'
+      headers:{'Accept':'application/json','X-DAENEM-QA-REPAIR':'qa-staging-v1'},cache:'no-store'
     });
     const result=await response.json();
     if(response.status!==200||result.ok!==true||
