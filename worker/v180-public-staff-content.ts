@@ -1,3 +1,5 @@
+import { rotateDefaultCuratedContent } from './v180-curated-content-schedule';
+
 const UPSTREAM = 'https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site';
 const MAX_BYTES = 256_000;
 const CACHE_CONTROL = 'public, max-age=15, s-maxage=30, stale-while-revalidate=15';
@@ -83,9 +85,21 @@ export async function routeV180PublicStaffContent(request: Request): Promise<Res
     if (!spotlight || !inspiration || !boundedText(payload.provider, 120) || typeof payload.providerConnected !== 'boolean' ||
         !validTimestamp(payload.intervalStartedAt) || !validTimestamp(payload.expiresAt)) return unavailable();
 
+    // The original default items never changed even when the Owner Studio
+    // returned a new refresh window. Rotate curated supplemental copy only for
+    // those exact default IDs. Any Owner-authored or provider-connected content
+    // remains authoritative and passes through without modification.
+    const editorial = rotateDefaultCuratedContent({
+      spotlight: spotlight as ContentItem, inspiration: inspiration as InspirationItem,
+      provider: payload.provider as string, providerConnected: payload.providerConnected,
+    });
     return new Response(JSON.stringify({
-      spotlight, inspiration, provider: payload.provider, providerConnected: payload.providerConnected,
-      intervalStartedAt: payload.intervalStartedAt, expiresAt: payload.expiresAt,
+      spotlight: editorial?.spotlight || spotlight,
+      inspiration: editorial?.inspiration || inspiration,
+      provider: payload.provider, providerConnected: payload.providerConnected,
+      intervalStartedAt: editorial?.intervalStartedAt || payload.intervalStartedAt,
+      expiresAt: editorial?.expiresAt || payload.expiresAt,
+      ...(editorial ? { contentMode: editorial.contentMode } : {}),
     }), {
       status: 200,
       headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': CACHE_CONTROL, 'x-content-type-options': 'nosniff' },

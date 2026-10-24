@@ -15,7 +15,7 @@ async function run() {
   const server=await createServer({configFile:'vite.signin-browser-qa.config.ts',server:{host:'127.0.0.1',port:0,strictPort:false},logLevel:'error'});
   await server.listen();
   const url='http://127.0.0.1:'+server.httpServer.address().port+'/qa/signin/index.html';
-  const browser=await chromium.launch({headless:true});
+  const browser=await chromium.launch({headless:true,...(process.platform==='win32'?{executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{})});
   let checks=0;
   const check=(value,message)=>{assert.ok(value,message);checks++;};
   try {
