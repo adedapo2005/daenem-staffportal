@@ -5,8 +5,8 @@ import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type Recov
 
 interface EmailBinding {
   send(message: {
-    from: { email: string; name?: string };
-    to: string[];
+    from: string;
+    to: string;
     subject: string;
     text: string;
     html: string;
@@ -259,8 +259,8 @@ async function sendCode(
     : 'Use this one-time code to verify your identity before the password reset page is unlocked.';
   const safeName = escapeHtml(options.name);
   const sent = await env.EMAIL.send({
-    from: { email: from, name: 'Daenem Workforce Hub' },
-    to: [options.to],
+    from,
+    to: options.to,
     subject,
     text: `Hello ${options.name}, ${intro} Code: ${options.code}. It expires in 10 minutes. Do not share this code.`,
     html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#17233b"><h2>Daenem Workforce Hub</h2><p>Hello ${safeName},</p><p>${intro}</p><p style="font-size:30px;font-weight:800;letter-spacing:7px">${options.code}</p><p>This code expires in 10 minutes. Do not share it with anyone.</p><hr style="border:0;border-top:1px solid #e4e8ef"><p style="font-size:12px;color:#667085">Daenem Group · Secure Employee Access</p></div>`,
