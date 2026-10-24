@@ -5,7 +5,7 @@ import './analytics-command-widgets.css';
 
 type ComparisonRow={key:string;name:string;current:number;previous:number};
 export type Signal={label:string;value:string;detail:string;state?:'neutral'|'attention'|'critical'|'healthy'};
-const percent=(current:number,previous:number)=>previous<=0?(current>0?100:0):(current-previous)/previous*100;
+const percent=(current:number,previous:number):number|null=>previous>0?(current-previous)/previous*100:null;
 
 export function PerformanceComparison({rows,title='Current Vs Previous Period',subtitle='Recorded performance by company',valueFormatter}:{rows:ComparisonRow[];title?:string;subtitle?:string;valueFormatter:(value:number)=>string}){
  const data=rows.map(row=>({...row,change:percent(row.current,row.previous)}));
@@ -21,7 +21,7 @@ export function PerformanceComparison({rows,title='Current Vs Previous Period',s
     <Bar dataKey="current" name="Current" fill="#315aa7" radius={[6,6,0,0]} maxBarSize={30}/>
    </BarChart></ResponsiveContainer>
   </div>
-  <div className="acw-change-grid">{data.map(row=>{const up=row.change>0,down=row.change<0;const Icon=up?ArrowUpRight:down?ArrowDownRight:Minus;return <div className="acw-change" key={row.key}><span>{row.name}</span><b className={down?'down':up?'up':'flat'}><Icon size={13}/>{row.change>=0?'+':''}{row.change.toFixed(1)}%</b></div>})}</div>
+  <div className="acw-change-grid">{data.map(row=>{const up=row.change!==null&&row.change>0,down=row.change!==null&&row.change<0;const Icon=up?ArrowUpRight:down?ArrowDownRight:Minus;return <div className="acw-change" key={row.key}><span>{row.name}</span><b className={down?'down':up?'up':'flat'}><Icon size={13}/>{row.change===null?'No comparable baseline':`${row.change>=0?'+':''}${row.change.toFixed(1)}%`}</b></div>})}</div>
  </article>
 }
 
