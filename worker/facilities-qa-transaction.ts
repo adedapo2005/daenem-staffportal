@@ -21,9 +21,6 @@ const evidenceKeys = ['facilities','equipment','readings','workOrders',
 export class QaTransactionFailure extends Error {
   constructor(public readonly code:string) { super('Synthetic Facilities transaction acceptance unavailable'); }
 }
-const ensure = (condition:unknown,code:string):asserts condition => {
-  if(!condition) throw new QaTransactionFailure(code);
-};
 function fixedTimeEqual(left:string,right:string) {
   if(left.length!==right.length)return false;
   let diff=0;
