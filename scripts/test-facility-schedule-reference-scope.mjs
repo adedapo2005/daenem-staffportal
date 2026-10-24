@@ -2,17 +2,28 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { validateScheduleReferences } from '../worker/facility-schedule-guard.ts';
 
-function fakeDb({facilityCompany='A',assetCompany='A',assetFacility='f1',employeeCompany='A',vendorCompany='A',categoryActive=true}={}){
+function fakeDb({facilityCompany='A',assetCompany='A',assetFacility='f1',employeeCompany='A',vendorCompany='A',categoryActive=true}={}) {
   const calls=[];
-  return {calls,prepare(sql){return{bind(...args){calls.push({sql,args});return{async first(){
-    if(sql.includes('FROM facilities'))return args[0]==='f1'&&args[1]===facilityCompany?{id:'f1'}:null;
-    if(sql.includes('FROM assets'))return args[0]==='a1'&&args[1]===assetCompany?{id:'a1',facilityId:assetFacility}:null;
-    if(sql.includes('FROM maintenance_categories'))return args[0]==='generator'&&categoryActive?{code:'generator'}:null;
-    if(sql.includes('FROM employees'))return args[0]==='e1'&&args[1]===employeeCompany?{id:'e1'}:null;
-    if(sql.includes('FROM maintenance_vendors'))return args[0]==='v1'&&args[1]===vendorCompany?{id:'v1'}:null;
-    throw Error('Unexpected SQL '+sql);
-  }}}}};
-}
+  return {
+    calls,
+    prepare(sql) {
+      return {
+        bind(...args) {
+          calls.push({sql,args});
+          return {
+            async first() {
+              if (sql.includes('FROM facilities')) return args[0]==='f1' && args[1]===facilityCompany ? {id:'f1'} : null;
+              if (sql.includes('FROM assets')) return args[0]==='a1' && args[1]===assetCompany ? {id:'a1',facilityId:assetFacility} : null;
+              if (sql.includes('FROM maintenance_categories')) return args[0]==='generator' && categoryActive ? {code:'generator'} : null;
+              if (sql.includes('FROM employees')) return args[0]==='e1' && args[1]===employeeCompany ? {id:'e1'} : null;
+              if (sql.includes('FROM maintenance_vendors')) return args[0]==='v1' && args[1]===vendorCompany ? {id:'v1'} : null;
+              throw Error('Unexpected SQL '+sql);
+            },
+          };
+        },
+      };
+    },
+  };
 }
 let checks=0;async function pass(input,expected,options={}){let result=await validateScheduleReferences(fakeDb(options),'A',input);assert.equal(result.ok,expected);checks++;return result;}
 const good={facilityId:'f1',assetId:'a1',categoryCode:'generator',defaultAssigneeEmployeeId:'e1',defaultVendorId:'v1'};
