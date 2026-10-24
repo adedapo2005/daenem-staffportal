@@ -348,9 +348,13 @@ async function main() {
   }
   same(afterBlockedReset,withFacilityEvidence,'Refused reset preserves all Facilities transactions and identity');
   // This cleanup is in-memory ONLY; it never touches a remote Cloudflare database.
+  check(true,'Cleanup: delete synthetic reading');
   db.prepare("DELETE FROM asset_readings WHERE id=?").run(readingId);
+  check(true,'Cleanup: delete synthetic equipment');
   db.prepare("DELETE FROM assets WHERE id=?").run(asset.id);
+  check(true,'Cleanup: delete synthetic facility');
   db.prepare("DELETE FROM facilities WHERE id=?").run(facility.id);
+  check(true,'Cleanup: delete synthetic audit evidence');
   db.prepare("DELETE FROM audit_logs WHERE module='facilities' AND company_id=?").run(companyA);
   check(scalar("SELECT COUNT(*) FROM facilities WHERE company_id='"+companyA+"'")===0,
     'Synthetic Facilities cleanup remains local and complete');
