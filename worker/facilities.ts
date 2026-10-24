@@ -221,8 +221,13 @@ async function facilitiesQaReadiness(request:Request,env:FacilitiesEnv,context:S
   // Never expose this route outside the exact staging D1 binding, including production.
   const stage=env as FacilitiesEnv & {APP_STAGE?:string;STAFFPORTAL_DATABASE_NAME?:string};
   if(stage.APP_STAGE!=='staging'||stage.STAFFPORTAL_DATABASE_NAME!=='daenem-staffportal-staging-db')return json({error:'Not found.'},404);
-  if(!context.roles.some(role=>role.code==='owner')||!context.companies.some(company=>company.id==='company-printing')||
-     !hasPermission(context,'facilities.access','manage','company-printing'))return json({error:'Not authorized.'},403);
+  const groupOwner=context.companies.some(company=>company.id==='company-printing')&&
+    hasPermission(context,'facilities.access','manage','company-printing');
+  const syntheticOwner=context.employee.id==='qa-staging-v1-owner'&&
+    context.companies.some(company=>company.id==='qa-staging-v1-company-a')&&
+    hasPermission(context,'facilities.access','manage','qa-staging-v1-company-a');
+  if(!context.roles.some(role=>role.code==='owner')||!(groupOwner||syntheticOwner))
+    return json({error:'Not authorized.'},403);
   return json(await inspectFacilitiesQaReadiness(env.DB));
 }
 
