@@ -1,0 +1,126 @@
+/* Authenticated ERP bridge over the Owner-approved V115 post-login shell.
+ * The source snapshot remains byte-for-byte unchanged; only the selected
+ * demo-module content is replaced, never the navigation, top bar or palette. */
+#main-content[data-daenem-live-route] > :not(.daenem-live-erp-root) {
+  display: none !important;
+}
+html[data-daenem-live-route] .p-demo-strip {
+  display: none !important;
+}
+html[data-daenem-live-route] .p-footer > span:last-child {
+  display: none !important;
+}
+.daenem-live-erp-root {
+  box-sizing: border-box;
+  display: grid;
+  gap: clamp(14px, 1.1vw, 25px);
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: clamp(10px, 1vw, 26px) 0 clamp(24px, 2vw, 46px);
+  color: var(--text, #18334c);
+}
+.daenem-live-erp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 13px 25px;
+  padding: clamp(16px, 1.05vw, 28px);
+  border: 1px solid rgba(35, 91, 119, .17);
+  border-radius: 19px;
+  background: linear-gradient(115deg, #f8fcf9 0%, #fffdf7 52%, #f5f7ff 100%);
+  box-shadow: 0 11px 32px rgba(19, 43, 73, .06);
+}
+.daenem-live-erp-heading { min-width: 0; flex: 1 1 360px; }
+.daenem-live-erp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #216e64;
+  font-size: clamp(12px, .42vw, 15px);
+  font-weight: 820;
+  letter-spacing: .045em;
+}
+.daenem-live-erp-header h2 {
+  margin: 9px 0 6px;
+  color: #193a48;
+  font-size: clamp(22px, 1.15vw, 42px);
+  font-weight: 850;
+  line-height: 1.18;
+  letter-spacing: -.025em;
+}
+.daenem-live-erp-header p {
+  margin: 0;
+  color: #51677b;
+  font-size: clamp(13px, .5vw, 17px);
+  line-height: 1.5;
+}
+.daenem-live-erp-authority {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid #bad9ce;
+  border-radius: 12px;
+  background: #ebf7f2;
+  color: #176a53;
+  font-size: clamp(12px, .42vw, 15px);
+  font-weight: 750;
+  white-space: nowrap;
+}
+.daenem-live-erp-company-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 11px;
+  padding: 12px 16px;
+  border: 1px solid var(--border, #dbe4ee);
+  border-radius: 14px;
+  background: var(--panel, #fff);
+  color: var(--text, #24364c);
+}
+.daenem-live-erp-company-row > svg { color: #278775; flex: none; }
+.daenem-live-erp-company-row label { font-weight: 760; font-size: clamp(13px, .5vw, 17px); }
+.daenem-live-erp-company-row select {
+  border: 1px solid #afc3d7;
+  border-radius: 10px;
+  background: #fff;
+  color: #1e3345;
+  padding: 9px 12px;
+  min-height: 42px;
+  max-width: 100%;
+  min-width: min(240px, 100%);
+  font: inherit;
+}
+.daenem-live-erp-company-row > span:last-child { color: #64758a; font-size: 12px; }
+.daenem-live-erp-denied,
+.daenem-live-erp-loading {
+  display: grid;
+  justify-items: start;
+  gap: 11px;
+  border: 1px solid var(--border, #dbe4ee);
+  border-radius: 17px;
+  background: var(--panel, #fff);
+  padding: clamp(18px, 1.2vw, 28px);
+  color: #4d6077;
+  line-height: 1.55;
+}
+.daenem-live-erp-denied strong { font-size: 18px; color: #1c314a; }
+.daenem-live-erp-denied p { margin: 0; }
+.daenem-live-erp-root :is(button, input, select, textarea, a):focus-visible {
+  outline: 3px solid #2a79be;
+  outline-offset: 3px;
+}
+@media (max-width: 720px) {
+  .daenem-live-erp-header { padding: 17px; }
+  .daenem-live-erp-company-row { align-items: flex-start; }
+  .daenem-live-erp-company-row select { flex: 1 1 100%; }
+  .daenem-live-erp-authority { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .daenem-live-erp-root *, .daenem-live-erp-root *::before, .daenem-live-erp-root *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
