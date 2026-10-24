@@ -39,4 +39,13 @@ for token in [
     "quantity-reserved_quantity>=?"
 ]:
     assert token in source, token
-print("PASS Bakery integrity: unique batch receipts, reserved-stock trigger, and source guards")
+assert "async function bakeryCustomers" in source
+assert "async function bakeryCreateCustomer" in source
+assert "Wholesale pricing requires an approved reseller" in source
+assert "Approving reseller pricing requires Sales approval permission" in source
+assert ",'damaged',?,'out','bakery_batch'" not in source, "unsaleable loaves must not be deducted from finished inventory"
+ui = (root / "src" / "bakery-v2.tsx").read_text(encoding="utf-8")
+assert "customerId:customerId||undefined" in ui
+assert "Choose an approved reseller" in ui
+assert "Save Customer" in ui
+print("PASS Bakery integrity: batch receipts, stock trigger, reseller checkout, and sale/payment guards")
