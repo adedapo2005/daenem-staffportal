@@ -206,6 +206,105 @@ async function main() {
     headers:{cookie:cookies.manager,'content-type':'application/json'},
     body:JSON.stringify({companyId:qa('company-b'),name:'QA foreign facility'})}));
   check(foreignCreate.status === 403, 'Manager cannot write into foreign Facilities company');
+  // Exercise canonical Worker -> SQLite transactions with real auth cookies.
+  // All rows live only in this in-memory QA database; no remote D1 or providers.
+  const companyA = qa('company-a'), companyB = qa('company-b');
+  async function postFacility(route, persona, body) {
+    return fetchWorker(new Request('https://qa.invalid' + route, {
+      method: 'POST', headers: { cookie: cookies[persona], 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }));
+  }
+  const facilityDraft = { companyId: companyA, locationId: qa('site-a'),
+    facilityType: 'office', name: 'QA Transaction Acceptance Building' };
+  const failedCreateBefore = snapshot();
+  failureIndex = 1; // Fail the audit write after the facility insert.
+  let createRolledBack = false;
+  try { await postFacility('/api/facilities', 'manager',
+    { ...facilityDraft, name: 'QA Rollback Must Not Persist' }); }
+  catch { createRolledBack = true; }
+  finally { failureIndex = -1; }
+  check(createRolledBack, 'Facility audit failure propagates instead of falsely succeeding');
+  same(snapshot(), failedCreateBefore, 'Facility insert and audit fail atomically');
+
+  const facilityResponse = await postFacility('/api/facilities', 'manager', facilityDraft);
+  check(facilityResponse.status === 201, 'Authenticated Facilities creation persists in isolated D1');
+  const facility = (await facilityResponse.json()).facility;
+  check(typeof facility?.id === 'string' && facility.id.startsWith('facility-'), 'Canonical facility ID returned');
+  const persistedFacility = db.prepare('SELECT company_id,location_id,name FROM facilities WHERE id=?').get(facility.id);
+  check(persistedFacility?.company_id === companyA &&
+    persistedFacility?.location_id === qa('site-a') &&
+    persistedFacility?.name === facilityDraft.name, 'Created facility persisted under company A');
+
+  const catalogResponse = await get(`/api/facilities/catalog?companyId=${companyA}`, 'manager');
+  check(catalogResponse.status === 200, 'Authorized Facilities catalog read');
+  const catalog = await catalogResponse.json();
+  check(catalog.facilities.some(record => record.id === facility.id && record.name === facilityDraft.name),
+    'Created facility appears in canonical D1 read-back');
+  const duplicateFacility = await postFacility('/api/facilities', 'manager', facilityDraft);
+  check(duplicateFacility.status === 409, 'Duplicate facility rejected without second write');
+
+  const assetResponse = await postFacility('/api/facilities/assets', 'manager',
+    { companyId: companyA, facilityId: facility.id, category: 'generator',
+      name: 'QA Generator Asset for Transaction Acceptance' });
+  check(assetResponse.status === 201, 'Company-scoped equipment registration succeeds');
+  const asset = (await assetResponse.json()).asset;
+  check(typeof asset?.id === 'string' && asset.id.startsWith('asset-'), 'Canonical equipment ID returned');
+  const persistedAsset = db.prepare('SELECT company_id,facility_id FROM assets WHERE id=?').get(asset.id);
+  check(persistedAsset?.company_id === companyA && persistedAsset?.facility_id === facility.id,
+    'Equipment D1 row belongs to its registered QA facility');
+
+  const meterInput = { companyId: companyA, facilityId: facility.id, assetId: asset.id,
+    readingType: 'running_hours', readingValue: 321.5, unit: 'hours' };
+  const beforeMeter = snapshot();
+  failureIndex = 1; // Fail audit: meter insert and asset update must roll back.
+  let meterRolledBack = false;
+  try { await postFacility('/api/facilities/readings', 'manager', meterInput); }
+  catch { meterRolledBack = true; }
+  finally { failureIndex = -1; }
+  check(meterRolledBack, 'Meter audit failure propagates instead of falsely succeeding');
+  same(snapshot(), beforeMeter, 'Meter write, audit and running-hours update roll back atomically');
+
+  const meterResponse = await postFacility('/api/facilities/readings', 'manager', meterInput);
+  check(meterResponse.status === 201, 'Authenticated meter reading persists');
+  const readingId = (await meterResponse.json()).readingId;
+  check(typeof readingId === 'string' && readingId.startsWith('asset-reading-'),
+    'Canonical persisted reading ID returned');
+  const persistedMeter = db.prepare('SELECT company_id,asset_id,reading_value FROM asset_readings WHERE id=?').get(readingId);
+  check(persistedMeter?.company_id === companyA && persistedMeter?.asset_id === asset.id &&
+    persistedMeter?.reading_value === 321.5, 'Meter reading persisted accurately in company A');
+  const updatedAsset = db.prepare('SELECT running_hours FROM assets WHERE id=?').get(asset.id);
+  check(updatedAsset?.running_hours === 321.5, 'Generator hours updated atomically with reading');
+
+  const readingsResponse = await get(`/api/facilities/readings?companyId=${companyA}`, 'manager');
+  check(readingsResponse.status === 200, 'Authenticated meter-history endpoint accessible');
+  check((await readingsResponse.json()).readings.some(record =>
+    record.id === readingId && record.readingValue === 321.5 && record.assetId === asset.id),
+    'Read-back returns the persisted meter reading, not fixture presentation data');
+  const auditResponse = await get(`/api/facilities/audit?companyId=${companyA}`, 'manager');
+  check(auditResponse.status === 200, 'Authenticated Facilities audit endpoint accessible');
+  const events = (await auditResponse.json()).events;
+  check(events.some(event => event.action === 'create' && event.entityType === 'facility' &&
+    event.entityId === facility.id), 'Facility creation has a matching audit event');
+  check(events.some(event => event.action === 'record_reading' &&
+    event.readingId === readingId && event.entityId === asset.id),
+    'Meter reading correlates with its own persisted audit event');
+
+  const employeeCatalog = await get(`/api/facilities/catalog?companyId=${companyB}`, 'employee');
+  check(employeeCatalog.status === 200, 'View-only QA employee sees only company B');
+  check(!(await employeeCatalog.text()).includes(facility.id), 'Company B catalog never discloses A facility');
+  const employeeReadings = await get(`/api/facilities/readings?companyId=${companyB}`, 'employee');
+  check(employeeReadings.status === 200 &&
+    !(await employeeReadings.text()).includes(readingId), 'Company B reading history excludes A reading');
+  const employeeAudit = await get(`/api/facilities/audit?companyId=${companyB}`, 'employee');
+  check(employeeAudit.status === 200 &&
+    !(await employeeAudit.text()).includes(readingId), 'Company B audit feed excludes A reading');
+  const unauthorizedMeter = await postFacility('/api/facilities/readings', 'employee',
+    { ...meterInput, companyId: companyB });
+  check(unauthorizedMeter.status === 403, 'View-only employee cannot write meter readings');
+  const foreignMeter = await postFacility('/api/facilities/readings', 'manager',
+    { ...meterInput, companyId: companyB });
+  check(foreignMeter.status === 403, 'Manager cannot write a meter reading into company B');
   const positive = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
   check(positive.status === 200 && (await positive.json()).receivables.some(row => row.id === qa('receivable-a')), 'Authorized Finance fixture');
   const negative = await get(`/api/finance/receivables?companyId=${qa('company-b')}`, 'manager');
