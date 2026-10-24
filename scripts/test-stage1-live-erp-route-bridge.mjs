@@ -1,0 +1,39 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { liveRouteForPath } from '../src/stage1-live-erp-route-contract.ts';
+
+assert.equal(liveRouteForPath('/forms'), 'forms');
+assert.equal(liveRouteForPath('/forms/'), 'forms');
+assert.equal(liveRouteForPath('/facilities'), 'facilities');
+assert.equal(liveRouteForPath('/spend'), 'spend');
+assert.equal(liveRouteForPath('/spend?tab=create'), 'spend');
+for (const path of ['/home','/signin','/admin','/owner-studio','/payroll','/attendance','/','/workspace','/form', '/facility']) {
+  assert.equal(liveRouteForPath(path),null, `Must preserve approved reference for ${path}`);
+}
+const base = (path) => readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const entry=base('src/main.tsx');
+const shell=base('src/qa-review-v115-runtime.tsx');
+const bridge=base('src/stage1-live-erp-route-bridge.tsx');
+const css=base('src/stage1-live-erp-route-bridge.css');
+const spend=base('src/spend-entry.tsx');
+const sourcePortal=base('source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx');
+assert.match(entry,/ApprovedPostLoginV115/);
+assert.match(shell,/Stage1LiveErpRouteBridge context=\{context\}/);
+assert.match(shell,/<Portal \/>/);
+assert.match(bridge,/hasWorkforcePermission\(context, 'forms\.access', 'view', companyId\)/);
+assert.match(bridge,/hasWorkforcePermission\(context, 'facilities\.access', 'view', companyId\)/);
+assert.match(bridge,/\['expense\.requests', 'expense\.own', 'expense\.approve', 'expense\.master'\]/);
+assert.match(bridge,/\.\.\.context,[\s\S]{0,260}companies: companyChoices/);
+assert.match(bridge,/data-live-erp-source="authenticated-cloudflare-d1"/);
+assert.match(bridge,/import\('\.\/centers'\)/);
+assert.match(bridge,/import\('\.\/spend-entry'\)/);
+assert.match(bridge,/createPortal\(/);
+assert.match(bridge,/MutationObserver\(/);
+assert.match(css,/#main-content\[data-daenem-live-route\] > :not\(\.daenem-live-erp-root\)/);
+assert.match(css,/html\[data-daenem-live-route\] \.p-demo-strip/);
+assert.match(spend,/export function SpendCenter/);
+assert.match(spend,/if \(!document\.querySelector\('\[data-approved-postlogin="qa-review-v115"\]'\)\)/);
+assert.match(sourcePortal,/Fictional Records · Local Simulations/);
+assert.match(sourcePortal,/className="p-topbar"/);
+assert.doesNotMatch(shell,/sessionForProfile\(profile\)[\s\S]*hasWorkforcePermission/, 'Do not use preview permissions as real auth');
+console.log('V115 preserved-shell authenticated ERP bridge regression checks passed (37 cases).');
