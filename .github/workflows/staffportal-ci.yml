@@ -35,6 +35,13 @@ jobs:
           node-version: 22
           cache: npm
 
+      # The Owner has frozen the approved Stage One Sign-In (2026-10-24).
+      # Keep backend/post-login lanes moving, but fail any Pre-Production PR
+      # that modifies the 128 frozen Sign-In code/media/widget files.
+      - name: Enforce Owner-Locked Sign-In Baseline
+        if: github.event_name == 'pull_request' && github.base_ref == 'preproduction/staffportal'
+        run: node scripts/check-owner-signin-lock.mjs
+
       - name: Install dependencies
         run: npm ci
       - name: Validate delivery controller

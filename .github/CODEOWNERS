@@ -1,0 +1,17 @@
+# DAENEM StaffPortal Sign-In — Owner-Frozen 2026-10-24
+# The following code and media require explicit Owner instruction before changes.
+# The CI and Cloudflare Pre-Production gates enforce matching frozen SHA-256 content.
+# Do not assign Sign-In work to autonomous frontend lanes.
+/src/approved-signin-v180/ @adedapo2005
+/src/signin-* @adedapo2005
+/src/auth.tsx @adedapo2005
+/public/approved-signin-v180.css @adedapo2005
+/public/signin-credits.html @adedapo2005
+/public/reference-images/signin/ @adedapo2005
+/public/assets/ @adedapo2005
+/worker/v180-public-* @adedapo2005
+/worker/v180-curated-* @adedapo2005
+/delivery/owner-lock/ @adedapo2005
+/scripts/check-owner-signin-lock.mjs @adedapo2005
+/.github/workflows/staffportal-ci.yml @adedapo2005
+/.github/workflows/deploy-staffportal-staging.yml @adedapo2005

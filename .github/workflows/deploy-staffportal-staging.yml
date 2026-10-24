@@ -94,6 +94,11 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Owner-locked Sign-In is a hard Pre-Production release gate.
+      # This must run before npm/build/publish on the exact candidate SHA.
+      - name: Reject Unapproved Sign-In Changes
+        run: node scripts/check-owner-signin-lock.mjs
+
       - name: Install dependencies
         run: npm ci
 
