@@ -17,9 +17,10 @@ const db={
         {id:'audit-2',occurredAt:'2026-10-23 14:00:00',action:'create',entityType:'facility',entityId:'facility-1',actorName:null,afterJson:JSON.stringify({secret:'never disclose'})},
         {id:'audit-3',occurredAt:'2026-10-23 13:00:00',action:'record_reading',entityType:'asset',entityId:'asset-2',actorName:'',afterJson:'invalid JSON'},
         {id:'audit-4',occurredAt:'2026-10-23 12:00:00',action:'record_reading',entityType:'asset',entityId:'asset-3',actorName:'Sample',afterJson:JSON.stringify({readingId:'untrusted-id'})}
-      ]}};
-      }};
-    }};
+      ]}; }
+      };
+    }
+    };
   }
 };
 const result=await recentFacilitiesAudit(db,'company-printing');
