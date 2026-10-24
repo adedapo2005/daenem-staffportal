@@ -243,7 +243,7 @@ async function main() {
   check(scriptText.includes("method:'POST'")&&scriptText.includes("qa-grants/reconcile")&&
     scriptText.includes("credentials:'same-origin'")&&
     scriptText.includes("state.eligible")&&
-    scriptText.includes("preconditions changed".replace('p','P'))===false,
+    scriptText.includes('Preconditions changed; no write attempted.'),
     'Operator script compiles, gates mutation and uses credentialled same-origin POST');
   const cssResponse=await control(controlBase+'.css');
   check(cssResponse.status===200&&
