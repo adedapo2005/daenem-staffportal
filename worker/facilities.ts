@@ -2,6 +2,7 @@ import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 import { resolveMaintenanceReferences, resolveReadingAssetReference } from './facility-reference-guard';
 import { validateFacilityRegistration } from './facility-registration-guard';
 import { recentFacilityReadings } from './facility-reading-history';
+import { recentFacilitiesAudit } from './facility-audit-feed';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -48,6 +49,16 @@ async function readingsHistory(request:Request,env:FacilitiesEnv,context:Session
   if(accessError)return json({error:accessError},403);
   const readings=await recentFacilityReadings(env.DB,companyId);
   return json({companyId,readings});
+}
+
+async function facilitiesAudit(request:Request,env:FacilitiesEnv,context:SessionContext){
+  if(!can(context,'view'))return json({error:'Facilities access is not assigned.'},403);
+  const url=new URL(request.url);
+  const companyId=url.searchParams.get('companyId')||context.companies[0]?.id||'';
+  const accessError=requireCompany(context,companyId);
+  if(accessError)return json({error:accessError},403);
+  const events=await recentFacilitiesAudit(env.DB,companyId);
+  return json({companyId,events});
 }
 
 async function createFacility(request:Request,env:FacilitiesEnv,context:SessionContext){
@@ -139,7 +150,7 @@ async function recordReading(request:Request,env:FacilitiesEnv,context:SessionCo
   const id=uid('asset-reading');
   const statements=[
     env.DB.prepare(`INSERT INTO asset_readings(id,company_id,facility_id,asset_id,reading_type,reading_value,unit,note,latitude,longitude,recorded_by) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,selection.facilityId,selection.assetId,body.readingType,value,unit||null,body.note||null,body.latitude??null,body.longitude??null,context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','record_reading','asset',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,selection.assetId,JSON.stringify({readingType:body.readingType,readingValue:value,unit:unit||null,facilityId:selection.facilityId})),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','record_reading','asset',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,selection.assetId,JSON.stringify({readingId:id,readingType:body.readingType,readingValue:value,unit:unit||null,facilityId:selection.facilityId})),
   ];
   if(body.readingType==='running_hours')statements.push(env.DB.prepare(`UPDATE assets SET running_hours=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(value,selection.assetId,companyId));
   await env.DB.batch(statements);
@@ -154,4 +165,4 @@ async function createSchedule(request:Request,env:FacilitiesEnv,context:SessionC
   ]);return json({ok:true,schedule:{id,title}},201);
 }
 
-export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
+export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
