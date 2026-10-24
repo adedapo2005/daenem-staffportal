@@ -58,3 +58,38 @@ export async function resolveMaintenanceReferences(
     defaultPriority: category.defaultPriority || 'normal',
   };
 }
+
+
+/**
+ * Asset readings may omit a facility, but may never reference an equipment
+ * record belonging to another company, a retired asset, or a conflicting
+ * facility. Resolve to the asset's registered facility where available.
+ */
+export async function resolveReadingAssetReference(
+  db: D1Database,
+  companyId: string,
+  assetId: string,
+  requestedFacilityId?: string,
+): Promise<
+  { ok: true; assetId: string; facilityId: string | null }
+  | { ok: false; reason: 'asset' | 'facility' | 'asset_facility_mismatch' }
+> {
+  if (!companyId || !assetId) return { ok: false, reason: 'asset' };
+  const asset = await db.prepare(
+    "SELECT id, facility_id AS facilityId FROM assets WHERE id=? AND company_id=? AND status!='retired'",
+  ).bind(assetId, companyId).first<{ id: string; facilityId: string | null }>();
+  if (!asset) return { ok: false, reason: 'asset' };
+  const registeredFacilityId = asset.facilityId || '';
+  const suppliedFacilityId = String(requestedFacilityId || '').trim();
+  if (registeredFacilityId && suppliedFacilityId && registeredFacilityId !== suppliedFacilityId) {
+    return { ok: false, reason: 'asset_facility_mismatch' };
+  }
+  const facilityId = registeredFacilityId || suppliedFacilityId;
+  if (facilityId) {
+    const exists = await db.prepare(
+      'SELECT id FROM facilities WHERE id=? AND company_id=? AND active=1',
+    ).bind(facilityId, companyId).first<{ id: string }>();
+    if (!exists) return { ok: false, reason: 'facility' };
+  }
+  return { ok: true, assetId: asset.id, facilityId: facilityId || null };
+}

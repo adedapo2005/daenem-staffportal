@@ -1,5 +1,5 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
-import { resolveMaintenanceReferences } from './facility-reference-guard';
+import { resolveMaintenanceReferences, resolveReadingAssetReference } from './facility-reference-guard';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -51,12 +51,16 @@ async function createFacility(request:Request,env:FacilitiesEnv,context:SessionC
 async function createAsset(request:Request,env:FacilitiesEnv,context:SessionContext){
   if(!can(context,'create'))return json({error:'Create Facilities permission is required.'},403);
   let body:{companyId?:string;facilityId?:string;assetTag?:string;category?:string;name?:string;make?:string;model?:string;serialNo?:string;purchaseDate?:string;purchaseCostKobo?:number;warrantyExpiresAt?:string;serviceIntervalHours?:number;serviceIntervalDays?:number;runningHours?:number};try{body=await request.json()}catch{return json({error:'Invalid asset request.'},400)}
-  const accessError=requireCompany(context,String(body.companyId||''));if(accessError)return json({error:accessError},403);
-  const name=String(body.name||'').trim(),category=String(body.category||'other').trim();if(!name)return json({error:'Asset name is required.'},400);
+  const companyId=String(body.companyId||'').trim();
+  const accessError=requireCompany(context,companyId);if(accessError)return json({error:accessError},403);
+  const name=String(body.name||'').trim(),category=String(body.category||'').trim();
+  if(!name)return json({error:'Asset name is required.'},400);
+  const approved=await resolveMaintenanceReferences(env.DB,companyId,{issueCategory:category,facilityId:body.facilityId});
+  if(!approved.ok)return json({error:approved.reason==='category'?'Select an approved active asset category.':'Facility not found for this company.',code:'ASSET_REFERENCE_INVALID'},400);
   const id=uid('asset'),tag=String(body.assetTag||`DG-${crypto.randomUUID().slice(0,8).toUpperCase()}`);
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO assets(id,company_id,facility_id,asset_tag,category,name,make,model,serial_no,purchase_date,purchase_cost_kobo,warranty_expires_at,service_interval_hours,service_interval_days,running_hours,qr_value) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,body.companyId,body.facilityId||null,tag,category,name,body.make||null,body.model||null,body.serialNo||null,body.purchaseDate||null,body.purchaseCostKobo??null,body.warrantyExpiresAt||null,body.serviceIntervalHours??null,body.serviceIntervalDays??null,body.runningHours??null,`daenem://asset/${id}`),
-    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','asset',?,?,'web')`).bind(uid('audit'),context.employee.id,body.companyId,id,JSON.stringify({name,category,assetTag:tag}))
+    env.DB.prepare(`INSERT INTO assets(id,company_id,facility_id,asset_tag,category,name,make,model,serial_no,purchase_date,purchase_cost_kobo,warranty_expires_at,service_interval_hours,service_interval_days,running_hours,qr_value) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,approved.facilityId,tag,approved.categoryCode,name,body.make||null,body.model||null,body.serialNo||null,body.purchaseDate||null,body.purchaseCostKobo??null,body.warrantyExpiresAt||null,body.serviceIntervalHours??null,body.serviceIntervalDays??null,body.runningHours??null,`daenem://asset/${id}`),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','asset',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({name,category:approved.categoryCode,facilityId:approved.facilityId,assetTag:tag}))
   ]);return json({ok:true,asset:{id,name,assetTag:tag}},201);
 }
 
@@ -92,9 +96,35 @@ async function updateWorkOrder(request:Request,env:FacilitiesEnv,context:Session
 }
 
 async function recordReading(request:Request,env:FacilitiesEnv,context:SessionContext){
-  if(!can(context,'create'))return json({error:'Create Facilities permission is required.'},403);let body:{companyId?:string;facilityId?:string;assetId?:string;readingType?:string;readingValue?:number;unit?:string;note?:string;latitude?:number;longitude?:number};try{body=await request.json()}catch{return json({error:'Invalid meter reading.'},400)}
-  const companyId=String(body.companyId||''),accessError=requireCompany(context,companyId);if(accessError)return json({error:accessError},403);const types=['running_hours','diesel_litres','fuel_added_litres','energy_kwh','battery_voltage','water_level','temperature','pressure','other'];if(!body.assetId||!types.includes(String(body.readingType))||!Number.isFinite(Number(body.readingValue)))return json({error:'Asset, reading type and numeric reading are required.'},400);const id=uid('asset-reading');const value=Number(body.readingValue);
-  const statements=[env.DB.prepare(`INSERT INTO asset_readings(id,company_id,facility_id,asset_id,reading_type,reading_value,unit,note,latitude,longitude,recorded_by) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,body.facilityId||null,body.assetId,body.readingType,value,body.unit||null,body.note||null,body.latitude??null,body.longitude??null,context.employee.id),env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','record_reading','asset',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,body.assetId,JSON.stringify({readingType:body.readingType,readingValue:value,unit:body.unit||null}))];if(body.readingType==='running_hours')statements.push(env.DB.prepare(`UPDATE assets SET running_hours=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(value,body.assetId,companyId));await env.DB.batch(statements);return json({ok:true,readingId:id});
+  if(!can(context,'create'))return json({error:'Create Facilities permission is required.'},403);
+  let body:{companyId?:string;facilityId?:string;assetId?:string;readingType?:string;readingValue?:number|string;unit?:string;note?:string;latitude?:number;longitude?:number};
+  try{body=await request.json()}catch{return json({error:'Invalid meter reading.'},400)}
+  const companyId=String(body.companyId||'').trim(),accessError=requireCompany(context,companyId);
+  if(accessError)return json({error:accessError},403);
+  const types=['running_hours','diesel_litres','fuel_added_litres','energy_kwh','battery_voltage','water_level','temperature','pressure','other'];
+  const raw=body.readingValue;
+  if(!body.assetId||!types.includes(String(body.readingType))||
+    (typeof raw!=='number'&&typeof raw!=='string')||
+    String(raw).trim()===''||!Number.isFinite(Number(raw)))return json({error:'Asset, reading type and numeric reading are required.'},400);
+  const value=Number(raw);
+  if(['running_hours','diesel_litres','fuel_added_litres','energy_kwh','battery_voltage'].includes(String(body.readingType))&&value<0)
+    return json({error:'This meter reading cannot be negative.'},400);
+  const selection=await resolveReadingAssetReference(env.DB,companyId,String(body.assetId),body.facilityId);
+  if(!selection.ok){
+    const reason=selection.reason==='asset'?'Equipment not found for this company.'
+      :selection.reason==='facility'?'Facility not found for this company.':'Equipment does not belong to the selected facility.';
+    return json({error:reason,code:'ASSET_READING_REFERENCE_INVALID'},400);
+  }
+  const unit=String(body.unit||'').trim();
+  if(unit.length>40)return json({error:'Reading unit is too long.'},400);
+  const id=uid('asset-reading');
+  const statements=[
+    env.DB.prepare(`INSERT INTO asset_readings(id,company_id,facility_id,asset_id,reading_type,reading_value,unit,note,latitude,longitude,recorded_by) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,selection.facilityId,selection.assetId,body.readingType,value,unit||null,body.note||null,body.latitude??null,body.longitude??null,context.employee.id),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','record_reading','asset',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,selection.assetId,JSON.stringify({readingType:body.readingType,readingValue:value,unit:unit||null,facilityId:selection.facilityId})),
+  ];
+  if(body.readingType==='running_hours')statements.push(env.DB.prepare(`UPDATE assets SET running_hours=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(value,selection.assetId,companyId));
+  await env.DB.batch(statements);
+  return json({ok:true,readingId:id});
 }
 
 async function createSchedule(request:Request,env:FacilitiesEnv,context:SessionContext){

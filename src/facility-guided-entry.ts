@@ -57,3 +57,38 @@ export function validFacilitySelection(
   if (!asset) return false;
   return !facilityId || !asset.facilityId || asset.facilityId === facilityId;
 }
+
+
+/**
+ * Use a category from the authenticated company catalogue and only details
+ * typed by the current operator. Never invent an asset identity or tag.
+ */
+export function suggestedAssetName(
+  category?: MaintenanceCategoryLookup,
+  make?: string,
+  model?: string,
+): string {
+  if (!category?.name?.trim()) return '';
+  const descriptor = [make, model].map(value => String(value || '').trim()).filter(Boolean).join(' ');
+  return (descriptor ? `${category.name.trim()} — ${descriptor}` : category.name.trim()).slice(0, 180);
+}
+
+export const ASSET_READING_TYPES = [
+  { value: 'running_hours', label: 'Running Hours', defaultUnit: 'hours' },
+  { value: 'fuel_added_litres', label: 'Fuel Added', defaultUnit: 'litres' },
+  { value: 'diesel_litres', label: 'Diesel Tank Level', defaultUnit: 'litres' },
+  { value: 'energy_kwh', label: 'Energy', defaultUnit: 'kWh' },
+  { value: 'battery_voltage', label: 'Battery Voltage', defaultUnit: 'V' },
+  { value: 'water_level', label: 'Water Level', defaultUnit: '' },
+  { value: 'temperature', label: 'Temperature', defaultUnit: '°C' },
+  { value: 'pressure', label: 'Pressure', defaultUnit: '' },
+  { value: 'other', label: 'Other', defaultUnit: '' },
+] as const;
+
+export const STANDARD_READING_UNITS = [
+  'hours', 'litres', 'kWh', 'V', '°C', '%', 'm', 'cm', 'mm', 'bar', 'kPa',
+] as const;
+
+export function recommendedReadingUnit(readingType: string): string {
+  return ASSET_READING_TYPES.find(item => item.value === readingType)?.defaultUnit || '';
+}
