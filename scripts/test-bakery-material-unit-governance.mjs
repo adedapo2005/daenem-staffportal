@@ -23,6 +23,7 @@ db.exec(`
  INSERT INTO employees VALUES('viewer');
  INSERT INTO inventory_items VALUES('flour','company-bakery','kg',1,'Flour');
  INSERT INTO inventory_items VALUES('yeast','company-bakery','g',1,'Yeast');
+ INSERT INTO inventory_items VALUES('sugar','company-bakery','Kg',1,'Sugar');
  INSERT INTO inventory_items VALUES('other-item','company-printing','kg',1,'Other');
 `);
 db.exec(sql);
@@ -100,6 +101,10 @@ assert.equal((await api('/propose','POST',{inventoryItemId:'flour',fromUnit:'kg'
 assert.equal((await api('/propose','POST',{inventoryItemId:'yeast',fromUnit:'carton',factor:12000,reason:'Manufacturer specifies 12,000 grams per carton'},proposer)).status,201);
 assert.equal(normalizeBaseQuantity(0.00000001,1),null,'Unrepresentable quantity rejected');
 assert.equal(normalizeBaseQuantity(1,0.001),0.001);
-assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE action='approve_unit_conversion'").get().n,2);
+const sugarProposal=await api('/propose','POST',{inventoryItemId:'sugar',fromUnit:'bag',factor:25,reason:'Verified sugar supplier offers 25 kg bags'},proposer);
+assert.equal(sugarProposal.status,201);
+assert.equal((await api('/review','POST',{ruleId:sugarProposal.json.ruleId,decision:'approved',reviewNote:'Independently checked sugar bag label'},reviewer)).status,200,'Case-insensitive inventory base units must approve correctly');
+assert.equal(Number((await approvedMaterialRule(env,'sugar','bag','kg')).factor),25);
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE action='approve_unit_conversion'").get().n,3);
 db.close();
 console.log('PASS governed material conversions: independent review, immutable versions, pending isolation, company/permission guard and exact quantities');

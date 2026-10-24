@@ -120,7 +120,7 @@ async function reviewRule(request: Request, env: UnitEnv, context: SessionContex
     await env.DB.batch([
       env.DB.prepare(`UPDATE bakery_material_unit_rules SET status=?,reviewed_by=?,reviewed_at=CURRENT_TIMESTAMP,review_note=?
         WHERE id=? AND company_id=? AND status='proposed' AND proposed_by<>?
-          AND inventory_unit=(SELECT unit FROM inventory_items WHERE id=bakery_material_unit_rules.inventory_item_id
+          AND lower(inventory_unit)=(SELECT lower(unit) FROM inventory_items WHERE id=bakery_material_unit_rules.inventory_item_id
              AND company_id=? AND active=1)`)
         .bind(decision,context.employee.id,reviewNote,ruleId,COMPANY,context.employee.id,COMPANY),
       env.DB.prepare(`INSERT INTO audit_logs
