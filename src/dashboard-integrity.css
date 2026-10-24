@@ -1,0 +1,135 @@
+/* StaffPortal Stage One: truthful, permission-scoped dashboard components.
+ * Independent of the Sign-In and canonical post-auth layout styles. */
+.zip-attendance-snapshot {
+  display: grid;
+  gap: clamp(14px, 0.8vw, 22px);
+  margin: 15px 0;
+  padding: clamp(17px, 1.1vw, 26px);
+  border: 1px solid var(--border, #dce3ed);
+  border-radius: 18px;
+  background: linear-gradient(125deg, rgba(44, 105, 172, .075), rgba(129, 77, 181, .05)), var(--panel, #fff);
+}
+.zip-attendance-snapshot-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.zip-attendance-snapshot-total strong {
+  color: var(--text, #14263d);
+  font-size: clamp(26px, 1.4vw, 44px);
+  line-height: 1.05;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.035em;
+}
+.zip-attendance-snapshot-total span {
+  color: var(--muted, #53657a);
+  font-weight: 680;
+  font-size: clamp(12px, .52vw, 17px);
+}
+.zip-attendance-snapshot-track {
+  width: 100%;
+  display: flex;
+  height: 17px;
+  overflow: hidden;
+  background: #ced4df;
+  border-radius: 999px;
+}
+.zip-attendance-snapshot-track span { height: 100%; flex-shrink: 0; }
+.zip-attendance-present { background: #167f72; }
+.zip-attendance-incomplete { background: #d28b26; }
+.zip-attendance-other { background: #919cb2; }
+.zip-attendance-snapshot-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 21px;
+  align-items: center;
+}
+.zip-attendance-snapshot-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 650;
+  color: var(--text, #14263d);
+  font-size: clamp(12px, .5vw, 16px);
+}
+.zip-attendance-snapshot-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.zip-attendance-snapshot-legend b { font-weight: 850; font-variant-numeric: tabular-nums; }
+.zip-analytics-unavailable {
+  min-height: 140px;
+  padding: 24px;
+  border: 1px dashed var(--border, #dce3ed);
+  background: var(--panel, #fff);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted, #53657a);
+}
+.zip-analytics-unavailable strong { color: var(--text, #14263d); font-size: clamp(14px, .57vw, 18px); }
+.zip-analytics-unavailable span { font-size: clamp(12px, .5vw, 16px); }
+.zip-exception-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(9px, .6vw, 16px);
+  margin: 14px 0;
+}
+.zip-exception-metric {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: clamp(13px, .7vw, 20px);
+  border: 1px solid var(--border, #dce3ed);
+  border-top: 3px solid var(--metric-accent, #4e73af);
+  border-radius: 15px;
+  background: var(--panel, #fff);
+  box-shadow: 0 8px 26px rgba(32, 56, 87, .05);
+}
+.zip-exception-metric.tone-amber { --metric-accent: #bf831b; }
+.zip-exception-metric.tone-violet { --metric-accent: #8163bf; }
+.zip-exception-metric.tone-red { --metric-accent: #bd4751; }
+.zip-exception-metric span {
+  font-size: clamp(12px, .5vw, 16px);
+  font-weight: 730;
+  color: var(--muted, #53657a);
+}
+.zip-exception-metric strong {
+  font-size: clamp(25px, 1.2vw, 40px);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #14263d);
+  line-height: 1.1;
+}
+.zip-exception-metric small { font-size: clamp(11px, .48vw, 15px); color: var(--muted, #53657a); }
+.zip-followup-list { display: grid; gap: 8px; margin: 16px 0; }
+.zip-followup-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--border, #dce3ed);
+  background: var(--panel, #fff);
+  border-radius: 11px;
+  padding: 10px 12px;
+}
+.zip-followup-list span { font-size: clamp(12px, .5vw, 16px); font-weight: 680; }
+.zip-followup-list strong { font-size: clamp(15px, .67vw, 22px); font-weight: 820; font-variant-numeric: tabular-nums; }
+.forecast-card .zip-followup-list + .insight-foot { align-items: flex-start; }
+@media (max-width: 700px) {
+  .zip-exception-grid { grid-template-columns: 1fr; }
+  .zip-attendance-snapshot-total { align-items: flex-start; flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zip-attendance-snapshot-track span,
+  .zip-exception-metric { transition: none !important; animation: none !important; }
+}
