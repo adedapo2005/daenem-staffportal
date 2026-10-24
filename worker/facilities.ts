@@ -6,6 +6,7 @@ import { recentFacilitiesAudit } from './facility-audit-feed';
 import { validateScheduleReferences } from './facility-schedule-guard';
 import { resolveWorkOrderParties } from './facility-work-order-guard';
 import { validateWorkOrderTransition } from './facility-work-order-lifecycle';
+import { inspectFacilitiesQaReadiness } from './facilities-qa-readiness';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -216,4 +217,18 @@ async function createSchedule(request:Request,env:FacilitiesEnv,context:SessionC
   return json({ok:true,schedule:{id,title}},201);
 }
 
-export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
+async function facilitiesQaReadiness(request:Request,env:FacilitiesEnv,context:SessionContext){
+  // Never expose this route outside the exact staging D1 binding, including production.
+  const stage=env as FacilitiesEnv & {APP_STAGE?:string;STAFFPORTAL_DATABASE_NAME?:string};
+  if(stage.APP_STAGE!=='staging'||stage.STAFFPORTAL_DATABASE_NAME!=='daenem-staffportal-staging-db')return json({error:'Not found.'},404);
+  const groupOwner=context.companies.some(company=>company.id==='company-printing')&&
+    hasPermission(context,'facilities.access','manage','company-printing');
+  const syntheticOwner=context.employee.id==='qa-staging-v1-owner'&&
+    context.companies.some(company=>company.id==='qa-staging-v1-company-a')&&
+    hasPermission(context,'facilities.access','manage','qa-staging-v1-company-a');
+  if(!context.roles.some(role=>role.code==='owner')||!(groupOwner||syntheticOwner))
+    return json({error:'Not authorized.'},403);
+  return json(await inspectFacilitiesQaReadiness(env.DB));
+}
+
+export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/qa-readiness'&&request.method==='GET')return facilitiesQaReadiness(request,env,context);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
