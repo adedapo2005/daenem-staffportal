@@ -337,7 +337,16 @@ async function main() {
   // A reset must never strand Facilities data or erase transaction history.
   const withFacilityEvidence=snapshot();
   await summary(await operation('reset'),503,'Facilities evidence blocks QA reset');
-  same(snapshot(),withFacilityEvidence,'Refused reset preserves all Facilities transactions and identity');
+  const afterBlockedReset = snapshot();
+  if (afterBlockedReset !== withFacilityEvidence) {
+    const beforeTables = new Map(JSON.parse(withFacilityEvidence));
+    const afterTables = new Map(JSON.parse(afterBlockedReset));
+    const changedNames = [...beforeTables.keys()].filter(name =>
+      JSON.stringify(beforeTables.get(name)) !== JSON.stringify(afterTables.get(name)));
+    // Emit only database table names (never rows, tokens, hashes or user data).
+    console.error('QA reset preservation changed table names: ' + changedNames.join(','));
+  }
+  same(afterBlockedReset,withFacilityEvidence,'Refused reset preserves all Facilities transactions and identity');
   // This cleanup is in-memory ONLY; it never touches a remote Cloudflare database.
   db.prepare("DELETE FROM asset_readings WHERE id=?").run(readingId);
   db.prepare("DELETE FROM assets WHERE id=?").run(asset.id);
