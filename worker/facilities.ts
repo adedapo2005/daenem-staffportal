@@ -8,6 +8,7 @@ import { resolveWorkOrderParties } from './facility-work-order-guard';
 import { validateWorkOrderTransition } from './facility-work-order-lifecycle';
 import { inspectFacilitiesQaReadiness } from './facilities-qa-readiness';
 import { reconcileExistingQaFacilitiesGrants } from './qa-facilities-grants-repair';
+import { facilitiesQaControlResponse } from './facilities-qa-grants-control';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -232,8 +233,8 @@ async function facilitiesQaReadiness(request:Request,env:FacilitiesEnv,context:S
   return json(await inspectFacilitiesQaReadiness(env.DB));
 }
 
-async function facilitiesQaGrantRepair(request:Request,env:FacilitiesEnv,context:SessionContext){
-  // No production or fallback D1 paths. All three constraints must hold.
+function qaGrantRepairAccess(env:FacilitiesEnv,context:SessionContext):Response|null{
+  // Never expose the control or mutation outside the exact Staging D1 binding.
   const stage=env as FacilitiesEnv & {APP_STAGE?:string;STAFFPORTAL_DATABASE_NAME?:string};
   if(stage.APP_STAGE!=='staging'||stage.STAFFPORTAL_DATABASE_NAME!=='daenem-staffportal-staging-db')
     return json({error:'Not found.'},404);
@@ -241,7 +242,20 @@ async function facilitiesQaGrantRepair(request:Request,env:FacilitiesEnv,context
     context.roles.some(role=>role.code==='owner'&&role.companyId==='company-printing')&&
     context.companies.some(company=>company.id==='company-printing')&&
     hasPermission(context,'facilities.access','manage','company-printing');
-  if(!owner)return json({error:'Not authorized.'},403);
+  return owner?null:json({error:'Not authorized.'},403);
+}
+
+async function facilitiesQaGrantControl(request:Request,env:FacilitiesEnv,context:SessionContext){
+  const denied=qaGrantRepairAccess(env,context);
+  if(denied)return denied;
+  const pathname=new URL(request.url).pathname;
+  return facilitiesQaControlResponse(pathname.endsWith('/control.js')?'script':
+    pathname.endsWith('/control.css')?'style':'page');
+}
+
+async function facilitiesQaGrantRepair(request:Request,env:FacilitiesEnv,context:SessionContext){
+  const denied=qaGrantRepairAccess(env,context);
+  if(denied)return denied;
   // Forbid browser cross-origin form posts and all request bodies. A same-origin
   // credentialled fetch with no body is the only supported invocation.
   const origin=new URL(request.url).origin;
@@ -255,4 +269,4 @@ async function facilitiesQaGrantRepair(request:Request,env:FacilitiesEnv,context
   }
 }
 
-export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/qa-grants/reconcile'&&request.method==='POST')return facilitiesQaGrantRepair(request,env,context);if(url.pathname==='/api/facilities/qa-readiness'&&request.method==='GET')return facilitiesQaReadiness(request,env,context);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
+export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if((url.pathname==='/api/facilities/qa-grants/control'||url.pathname==='/api/facilities/qa-grants/control.js'||url.pathname==='/api/facilities/qa-grants/control.css')&&request.method==='GET')return facilitiesQaGrantControl(request,env,context);if(url.pathname==='/api/facilities/qa-grants/reconcile'&&request.method==='POST')return facilitiesQaGrantRepair(request,env,context);if(url.pathname==='/api/facilities/qa-readiness'&&request.method==='GET')return facilitiesQaReadiness(request,env,context);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
