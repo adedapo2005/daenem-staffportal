@@ -497,9 +497,12 @@ async function main() {
     'x-daenem-qa-transaction':'qa-staging-v1'};
   const txGet=(asContext=groupOwner,asEnv=env)=>
     facilitiesRoutes.routeFacilities(new Request(txEvidenceUrl),asEnv,asContext);
-  const txPost=(asContext=groupOwner,asEnv=env,request=new Request(txRunUrl,{
+  const txPost=(asContext=groupOwner,asEnv=env,request=new Request(txRunUrl+'?phase=prepare',{
     method:'POST',headers:txHeaders
   }))=>facilitiesRoutes.routeFacilities(request,asEnv,asContext);
+  const txWrite=()=>txPost(groupOwner,env,new Request(txRunUrl+'?phase=write',{
+    method:'POST',headers:txHeaders
+  }));
   const noTransactionYet=await txGet();
   check(noTransactionYet.status===200,'Owner can inspect fixed-namespace transaction evidence');
   const initialTx=await noTransactionYet.json();
@@ -548,14 +551,29 @@ async function main() {
     "SELECT id FROM auth_sessions WHERE employee_id='qa-staging-v1-manager'"
   ).all().map(row=>row.id);
   const beforeTxCred=rows("SELECT employee_id,password_hash,password_salt FROM employee_credentials ORDER BY employee_id");
-  const txCompleted=await txPost();
-  check(txCompleted.status===200,'Canonical live Facilities QA transaction succeeds');
+  const prepared=await txPost();
+  check(prepared.status===200,'Canonical QA acceptance reserves its synthetic slot and proves rollback');
+  const preparedResult=await prepared.json();
+  check(preparedResult.ok===true&&preparedResult.state==='prepared'&&
+    preparedResult.rollbackVerified===true&&preparedResult.syntheticSessionRevoked===true,
+    'Prepare phase reports bounded rollback confirmation');
+  const reservedEvidence=await txGet();
+  check(reservedEvidence.status===200,'Reserved transaction is independently inspectable');
+  const reservedState=await reservedEvidence.json();
+  check(reservedState.state==='in_progress'&&reservedState.reserved===true&&
+    reservedState.rollbackProbeAbsent===true&&reservedState.evidence.facilities===0&&
+    reservedState.safeToReset===false,'Preparation persists only its immutable reservation');
+  const beforeReservedReset=snapshot();
+  await summary(await operation('reset'),503,'Reservation alone blocks staging QA fixture reset');
+  same(snapshot(),beforeReservedReset,'Denied reset leaves immutable acceptance reservation intact');
+  const txCompleted=await txWrite();
+  check(txCompleted.status===200,'Canonical QA Facilities write phase succeeds');
   const txResult=await txCompleted.json();
-  check(txResult.ok===true&&txResult.scope==='qa-staging-v1'&&txResult.state==='verified'&&
+  check(txResult.ok===true&&txResult.scope==='qa-staging-v1'&&txResult.state==='written'&&
     txResult.facility===1&&txResult.equipment===1&&txResult.readings===1&&
     txResult.facilitiesAudits===3&&txResult.rollbackVerified===true&&
     txResult.companyIsolationVerified===true&&txResult.syntheticSessionRevoked===true&&
-    txResult.realCompanyMutated===false,'One-shot acceptance reports bounded real results');
+    txResult.realCompanyMutated===false,'Write phase reports bounded canonical operations');
   const checkTx=await txGet();
   check(checkTx.status===200,'After-write independent transaction evidence endpoint responds');
   const persistedTx=await checkTx.json();
@@ -570,8 +588,8 @@ async function main() {
   const actualTxSessions=db.prepare(
     "SELECT id,revoked_at FROM auth_sessions WHERE employee_id='qa-staging-v1-manager'"
   ).all().filter(row=>!beforeTxSessions.includes(row.id));
-  check(actualTxSessions.length===1&&actualTxSessions[0].revoked_at!==null,
-    'One synthetic Manager session created and explicitly revoked');
+  check(actualTxSessions.length===2&&actualTxSessions.every(session=>session.revoked_at!==null),
+    'Both synthetic phase sessions revoked without affecting prior sessions');
   same(rows("SELECT employee_id,password_hash,password_salt FROM employee_credentials ORDER BY employee_id"),
     beforeTxCred,'One-shot QA transactions never rotate passwords');
   check(scalar(
@@ -582,8 +600,9 @@ async function main() {
   )===0,'Injected canonical audit-stage failure leaves no facility row');
   const afterTx=snapshot();
   const secondTx=await txPost();
-  check(secondTx.status===409,'One-shot transaction refuses replay after persistent evidence');
-  same(snapshot(),afterTx,'Repeat acceptance request cannot duplicate synthetic records');
+  check(secondTx.status===409,'Preparation cannot repeat after persistent evidence');
+  check((await txWrite()).status===409,'Write phase cannot repeat after committed Facilities evidence');
+  same(snapshot(),afterTx,'Repeat acceptance requests cannot duplicate synthetic records');
   await summary(await operation('reset'),503,'Immutable transaction reservation blocks fixture reset');
   same(snapshot(),afterTx,'Fixture reset refusal preserves transaction reservation and evidence');
   const facilityDraft = { companyId: companyA, locationId: qa('site-a'),
