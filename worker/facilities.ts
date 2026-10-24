@@ -256,11 +256,33 @@ async function facilitiesQaGrantControl(request:Request,env:FacilitiesEnv,contex
 async function facilitiesQaGrantRepair(request:Request,env:FacilitiesEnv,context:SessionContext){
   const denied=qaGrantRepairAccess(env,context);
   if(denied)return denied;
-  // Forbid browser cross-origin form posts and all request bodies. A same-origin
-  // credentialled fetch with no body is the only supported invocation.
+  // Require a header only our same-origin console JS can set: a cross-site
+  // caller would need a successful CORS preflight, which staging explicitly
+  // does not authorize for this custom header. Do NOT rely solely on cookies.
   const origin=new URL(request.url).origin;
-  if(request.headers.get('origin')!==origin||request.body!==null)
-    return json({error:'Request not allowed.'},403);
+  const suppliedOrigin=request.headers.get('origin');
+  const fetchSite=request.headers.get('sec-fetch-site');
+  const repairHeader=request.headers.get('x-daenem-qa-repair');
+  if(suppliedOrigin!==null&&suppliedOrigin!==origin)
+    return json({error:'Request not allowed.',code:'QA_REPAIR_ORIGIN_MISMATCH'},403);
+  if(fetchSite!==null&&fetchSite!=='same-origin')
+    return json({error:'Request not allowed.',code:'QA_REPAIR_FETCH_SITE'},403);
+  if(repairHeader!=='qa-staging-v1'||(suppliedOrigin===null&&fetchSite!=='same-origin'))
+    return json({error:'Request not allowed.',code:'QA_REPAIR_SAME_ORIGIN_REQUIRED'},403);
+  // Workerd may expose an empty POST as a readable stream rather than null.
+  // Inspect at most the first chunk, fail closed on any supplied bytes, and
+  // never parse, log or accept arbitrary JSON/form payloads.
+  const declaredLength=request.headers.get('content-length');
+  if(declaredLength!==null&&declaredLength!=='0')
+    return json({error:'Request body not allowed.',code:'QA_REPAIR_PAYLOAD'},403);
+  if(request.body!==null){
+    const reader=request.body.getReader();
+    const first=await reader.read();
+    if(!first.done){
+      void reader.cancel().catch(()=>{});
+      return json({error:'Request body not allowed.',code:'QA_REPAIR_PAYLOAD'},403);
+    }
+  }
   try {
     return json(await reconcileExistingQaFacilitiesGrants(env.DB,context.employee.id));
   }catch{
