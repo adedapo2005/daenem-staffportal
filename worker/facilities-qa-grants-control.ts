@@ -217,19 +217,29 @@ el('tx-run').addEventListener('click',async()=>{
     if(priorData.state!=='not_started'||priorData.reserved!==false||
        priorData.rollbackProbeAbsent!==true||priorData.companyBIsolated!==true)
       throw new Error('Transaction was already attempted; duplicate write blocked.');
-    const response=await fetch(base+'qa-transaction/run',{
-      method:'POST',credentials:'same-origin',mode:'same-origin',redirect:'error',
-      headers:{'Accept':'application/json','X-DAENEM-QA-TRANSACTION':'qa-staging-v1'},
-      cache:'no-store'
-    });
-    const result=await response.json();
-    if(response.status!==200||result.ok!==true||result.state!=='verified'||
-       result.rollbackVerified!==true||result.companyIsolationVerified!==true||
-       result.realCompanyMutated!==false||result.syntheticSessionRevoked!==true){
-      const code=typeof result.code==='string'&&/^QA_TRANSACTION_[A-Z_]+$/.test(result.code)?
-        ' ['+result.code+']':'';
-      throw new Error('Canonical transaction acceptance refused (HTTP '+response.status+')'+code+'.');
-    }
+    // Two explicit, bounded D1 invocations avoid Cloudflare's per-request
+    // query cap while retaining a single Owner confirmation. The first
+    // irreversibly reserves the QA acceptance slot and proves rollback.
+    const runPhase=async phase=>{
+      const response=await fetch(base+'qa-transaction/run?phase='+phase,{
+        method:'POST',credentials:'same-origin',mode:'same-origin',redirect:'error',
+        headers:{'Accept':'application/json','X-DAENEM-QA-TRANSACTION':'qa-staging-v1'},
+        cache:'no-store'
+      });
+      const result=await response.json();
+      if(response.status!==200||result.ok!==true||
+         result.scope!=='qa-staging-v1'||result.state!==(phase==='prepare'?'prepared':'written')||
+         result.rollbackVerified!==true||result.companyIsolationVerified!==true||
+         result.realCompanyMutated!==false||result.syntheticSessionRevoked!==true){
+        const code=typeof result.code==='string'&&/^QA_TRANSACTION_[A-Z_]+$/.test(result.code)?
+          ' ['+result.code+']':'';
+        throw new Error('Facilities '+phase+' phase refused (HTTP '+response.status+')'+code+'.');
+      }
+      return result;
+    };
+    await runPhase('prepare');
+    el('tx-result').textContent='Rollback verified and one-time reservation saved. Creating synthetic Facilities records…';
+    await runPhase('write');
     // Independently re-read the actual persisted D1 result, not just POST success.
     const evidenceResponse=await fetch(base+'qa-transaction/evidence',{
       credentials:'same-origin',cache:'no-store'
