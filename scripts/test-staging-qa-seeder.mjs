@@ -565,6 +565,10 @@ async function main() {
   check(reservedState.state==='in_progress'&&reservedState.reserved===true&&
     reservedState.rollbackProbeAbsent===true&&reservedState.evidence.facilities===0&&
     reservedState.safeToReset===false,'Preparation persists only its immutable reservation');
+  const reservedReadiness=await readiness.inspectFacilitiesQaReadiness(env.DB);
+  check(reservedReadiness.state==='transaction_reserved'&&reservedReadiness.safeToReset===false&&
+    Object.values(reservedReadiness.evidence).every(value=>value===0),
+    'Canonical staging readiness blocks reset once transaction is reserved');
   const beforeReservedReset=snapshot();
   await summary(await operation('reset'),503,'Reservation alone blocks staging QA fixture reset');
   same(snapshot(),beforeReservedReset,'Denied reset leaves immutable acceptance reservation intact');
