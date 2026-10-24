@@ -72,6 +72,22 @@ const page = String.raw`<!doctype html>
       </button>
       <p id="persona-result" role="status" aria-live="polite" class="detail"></p>
     </section>
+    <section class="panel" aria-labelledby="tx-title">
+      <h2 id="tx-title">Live Facilities Transaction Acceptance</h2>
+      <p>This is a <strong>one-time</strong> Pre-Production test using the synthetic QA Manager and company A.
+        It exercises real Facilities, equipment, meter readings, audit events, read-back and an intentionally
+        failed atomic batch. The successful synthetic records and append-only audit evidence remain in D1
+        and cannot be reset automatically.</p>
+      <p id="tx-status" role="status" aria-live="polite" class="detail">Checking transaction evidence…</p>
+      <label class="confirm">
+        <input type="checkbox" id="tx-ack" disabled>
+        <span>I confirm this creates permanent synthetic QA Facilities evidence, never real DAENEM business records.</span>
+      </label>
+      <button type="button" id="tx-run" class="button primary" disabled>
+        Run One-Time Facilities D1 Acceptance
+      </button>
+      <p id="tx-result" role="status" aria-live="polite" class="detail"></p>
+    </section>
     <p class="footnote">Any mismatch stops the operation. Reconciliation cannot run on Production.
       Do not use this page to create operational or financial records.</p>
   </section>
@@ -111,7 +127,7 @@ const script = String.raw`(()=>{
 'use strict';
 const base='/api/facilities/';
 const el=(id)=>document.getElementById(id);
-const state={eligible:false,pending:false,personaEligible:false,personaPending:false};
+const state={eligible:false,pending:false,personaEligible:false,personaPending:false,txEligible:false,txPending:false};
 const fields=['facilities','equipment','readings','workOrders','schedules','inspections','auditEvents'];
 const expected={syntheticCompanies:2,syntheticSites:2,syntheticEmployees:3,activeMemberships:4,credentials:3,facilitiesGrants:0};
 const safe=(data)=>{
@@ -124,16 +140,21 @@ const personaReady=data=>!!data&&data.scope==='qa-staging-v1'&&
   data.syntheticCompanies===2&&data.syntheticSites===2&&
   data.syntheticEmployees===3&&data.activeMemberships===4&&data.credentials===3&&
   !!data.evidence&&fields.every(key=>data.evidence[key]===0);
+const txReady=data=>personaReady(data);
 function updateButtons(){
   el('ack').disabled=!state.eligible||state.pending;
   el('repair').disabled=!state.eligible||!el('ack').checked||state.pending;
-  el('refresh').disabled=state.pending||state.personaPending;
+  el('refresh').disabled=state.pending||state.personaPending||state.txPending;
+  el('tx-ack').disabled=!state.txEligible||state.txPending;
+  el('tx-run').disabled=!state.txEligible||!el('tx-ack').checked||state.txPending;
   el('persona-ack').disabled=!state.personaEligible||state.personaPending;
   el('persona-verify').disabled=!state.personaEligible||!el('persona-ack').checked||state.personaPending;
 }
 async function load(){
   state.eligible=false;
   state.personaEligible=false;
+  state.txEligible=false;
+  el('tx-ack').checked=false;
   el('ack').checked=false;
   el('persona-ack').checked=false;
   updateButtons();
@@ -149,6 +170,17 @@ async function load(){
     el('evidence').textContent=String(evidence);
     state.eligible=safe(data);
     state.personaEligible=personaReady(data);
+    const evidenceResponse=await fetch(base+'qa-transaction/evidence',
+      {credentials:'same-origin',cache:'no-store'});
+    if(!evidenceResponse.ok)throw new Error('QA transaction evidence unavailable.');
+    const evidence=await evidenceResponse.json();
+    state.txEligible=txReady(data)&&evidence.state==='not_started'&&
+      evidence.reserved===false&&evidence.rollbackProbeAbsent===true&&
+      evidence.companyBIsolated===true;
+    el('tx-status').textContent=evidence.state==='verified'?
+      'Verified — synthetic facility, equipment, meter and audit evidence persisted.':
+      state.txEligible?'Eligible — no synthetic Facilities evidence or reservation exists.':
+      'Unavailable — prerequisites failed or transaction has already been attempted.';
     el('persona-status').textContent=state.personaEligible?
       'Ready to verify isolated Manager and Employee access.':
       'Persona verification requires three grants and zero Facilities transaction evidence.';
@@ -161,6 +193,7 @@ async function load(){
   }catch(err){
     el('status').textContent='Readiness unavailable; repair is blocked.';
     el('persona-status').textContent='QA identity readiness unavailable; verification blocked.';
+    el('tx-status').textContent='Live QA transaction readiness unavailable; no write permitted.';
     el('details').textContent=err instanceof Error?err.message:'Unable to verify the QA namespace.';
   }
   updateButtons();
@@ -168,6 +201,57 @@ async function load(){
 el('refresh').addEventListener('click',()=>{el('result').textContent='';void load();});
 el('ack').addEventListener('change',updateButtons);
 el('persona-ack').addEventListener('change',updateButtons);
+el('tx-ack').addEventListener('change',updateButtons);
+el('tx-run').addEventListener('click',async()=>{
+  if(!state.txEligible||!el('tx-ack').checked||state.txPending)return;
+  state.txPending=true;
+  updateButtons();
+  el('tx-result').textContent='Checking isolated QA D1 prerequisites before a single transaction run…';
+  try{
+    const before=await fetch(base+'qa-readiness',{credentials:'same-origin',cache:'no-store'});
+    if(!before.ok||!txReady(await before.json()))
+      throw new Error('D1 prerequisites changed; no transaction requested.');
+    const prior=await fetch(base+'qa-transaction/evidence',{credentials:'same-origin',cache:'no-store'});
+    if(!prior.ok)throw new Error('Transaction reservation check unavailable.');
+    const priorData=await prior.json();
+    if(priorData.state!=='not_started'||priorData.reserved!==false||
+       priorData.rollbackProbeAbsent!==true||priorData.companyBIsolated!==true)
+      throw new Error('Transaction was already attempted; duplicate write blocked.');
+    const response=await fetch(base+'qa-transaction/run',{
+      method:'POST',credentials:'same-origin',mode:'same-origin',redirect:'error',
+      headers:{'Accept':'application/json','X-DAENEM-QA-TRANSACTION':'qa-staging-v1'},
+      cache:'no-store'
+    });
+    const result=await response.json();
+    if(response.status!==200||result.ok!==true||result.state!=='verified'||
+       result.rollbackVerified!==true||result.companyIsolationVerified!==true||
+       result.realCompanyMutated!==false||result.syntheticSessionRevoked!==true){
+      const code=typeof result.code==='string'&&/^QA_TRANSACTION_[A-Z_]+$/.test(result.code)?
+        ' ['+result.code+']':'';
+      throw new Error('Canonical transaction acceptance refused (HTTP '+response.status+')'+code+'.');
+    }
+    // Independently re-read the actual persisted D1 result, not just POST success.
+    const evidenceResponse=await fetch(base+'qa-transaction/evidence',{
+      credentials:'same-origin',cache:'no-store'
+    });
+    if(!evidenceResponse.ok)throw new Error('Persisted evidence read-back unavailable.');
+    const finalEvidence=await evidenceResponse.json();
+    if(finalEvidence.state!=='verified'||finalEvidence.facilityPersisted!==true||
+       finalEvidence.equipmentPersisted!==true||finalEvidence.readingPersisted!==true||
+       finalEvidence.runningHoursUpdated!==true||finalEvidence.auditCorrelated!==true||
+       finalEvidence.rollbackProbeAbsent!==true||finalEvidence.companyBIsolated!==true||
+       finalEvidence.safeToReset!==false||finalEvidence.evidence?.facilities!==1||
+       finalEvidence.evidence?.equipment!==1||finalEvidence.evidence?.readings!==1||
+       finalEvidence.evidence?.auditEvents!==3)
+      throw new Error('The stored D1 evidence does not match acceptance requirements.');
+    el('tx-result').textContent='Verified: 1 facility, 1 equipment item, 1 running-hours reading, 3 correlated audits, batch rollback and company B isolation. Evidence retained.';
+  }catch(err){
+    el('tx-result').textContent=err instanceof Error?err.message:'Canonical D1 acceptance unavailable.';
+  }finally{
+    state.txPending=false;
+    await load();
+  }
+});
 el('persona-verify').addEventListener('click',async()=>{
   if(!state.personaEligible||!el('persona-ack').checked||state.personaPending)return;
   state.personaPending=true;
