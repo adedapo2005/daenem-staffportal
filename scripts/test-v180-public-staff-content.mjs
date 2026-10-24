@@ -57,6 +57,46 @@ try {
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   });
 
+  await check('Owner-curated inspiration without category is accepted with a neutral label', async () => {
+    const owner = { ...payload,
+      spotlight: { id: 'spotlight-clarity', title: 'Make The Next Handoff Clear', body: 'Keep the next action visible.', category: 'Communication' },
+      inspiration: { id: 'staff-portal-welcome-inspiration', message: 'Build a workplace where communication helps.', attribution: 'DAENEM Staff Team', active: true },
+      provider: 'curated', providerConnected: false };
+    globalThis.fetch = async () => respond(JSON.stringify(owner));
+    const result = await routeV180PublicStaffContent(request());
+    assert.equal(result.status, 200);
+    const body = await result.json();
+    assert.deepEqual(body.inspiration, {
+      id: 'staff-portal-welcome-inspiration', message: 'Build a workplace where communication helps.',
+      attribution: 'DAENEM Staff Team', category: 'Employee Inspiration',
+    });
+    assert.equal(body.spotlight.title, owner.spotlight.title);
+    assert.equal(body.provider, 'curated');
+    assert.equal(body.providerConnected, false);
+    assert.equal(body.contentMode, undefined, 'Owner-authored content is never replaced with default rotation');
+    assert.ok(!JSON.stringify(body).includes('active'));
+  });
+
+  await check('invalid optional category does not block otherwise valid curated content', async () => {
+    for (const category of [42, 'x'.repeat(121), '', null]) {
+      globalThis.fetch = async () => respond(JSON.stringify({
+        ...payload, inspiration: { ...payload.inspiration, category },
+      }));
+      const result = await routeV180PublicStaffContent(request());
+      assert.equal(result.status, 200);
+      assert.equal((await result.json()).inspiration.category, 'Employee Inspiration');
+    }
+  });
+
+  await check('missing required inspiration attribution still fails closed', async () => {
+    globalThis.fetch = async () => respond(JSON.stringify({
+      ...payload, inspiration: { id: 'unattributed', message: 'Needs a real attribution', category: 'Staff' },
+    }));
+    const result = await routeV180PublicStaffContent(request());
+    assert.equal(result.status, 503);
+    assert.equal(result.headers.get('cache-control'), 'no-store');
+  });
+
   await check('default editorial items rotate on the approved schedule without claiming an AI connection', async () => {
     const rotation = helper.exports.rotateDefaultCuratedContent;
     const first = rotation({
