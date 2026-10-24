@@ -237,7 +237,7 @@ async function main() {
   const jsResponse=await control(controlBase+'.js');
   check(jsResponse.status===200&&
     jsResponse.headers.get('content-type')?.startsWith('application/javascript'),
-    'Authenticated owner can load guarded operator script');
+    `Authenticated owner can load guarded operator script [HTTP ${jsResponse.status}; content-type ${jsResponse.headers.get('content-type')||'none'}]`);
   const scriptText=await jsResponse.text();
   new vm.Script(scriptText,{filename:'qa-grant-control.js'});
   check(scriptText.includes("method:'POST'")&&scriptText.includes("qa-grants/reconcile")&&
