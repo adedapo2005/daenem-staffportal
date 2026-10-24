@@ -22,7 +22,7 @@ async function main() {
   if (process.argv.includes('--baseline-stdin')) baseline = JSON.parse(fs.readFileSync(0, 'utf8').replace(/^\uFEFF/, ''));
   else {
     const files = {};
-    const names = execFileSync('git', ['ls-tree', '-r', '--name-only', 'HEAD', 'worker', 'migrations', 'src/dashboard-capabilities.ts', 'src/layout-system.ts'], { encoding: 'utf8' }).trim().split('\n');
+    const names = execFileSync('git', ['ls-tree', '-r', '--name-only', 'HEAD', 'worker', 'migrations', 'src'], { encoding: 'utf8' }).trim().split('\n');
     for (const name of names) files[name] = execFileSync('git', ['show', `HEAD:${name}`], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
     baseline = { sha: SHA, files };
   }
