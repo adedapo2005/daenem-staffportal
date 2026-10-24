@@ -1,5 +1,9 @@
-import { execFileSync } from 'node:child_process';
 import { chmodSync, writeFileSync } from 'node:fs';
+import {
+  REQUIRED_OAUTH_BINDINGS,
+  explicitOAuthOverrides,
+  assertSafeOAuthInheritance,
+} from './staffportal-oauth-inheritance-contract.mjs';
 
 const outputPath = process.argv[2];
 if (!outputPath) {
@@ -9,175 +13,59 @@ if (!outputPath) {
 const accountId = (process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
 const apiToken = (process.env.CLOUDFLARE_API_TOKEN || '').trim();
 const workerName = 'daenem-staffportal-api-staging';
-const configPath = 'wrangler.staffportal-staging.jsonc';
 
 if (!accountId || !apiToken) {
-  throw new Error('Cloudflare deployment credentials are required.');
+  throw new Error('Cloudflare Pre-Production deployment credentials are required.');
 }
 
-const aliases = {
-  GOOGLE_CLIENT_ID: ['GOOGLE_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_ID'],
-  GOOGLE_CLIENT_SECRET: ['GOOGLE_CLIENT_SECRET', 'GOOGLE_OAUTH_CLIENT_SECRET'],
-  MICROSOFT_CLIENT_ID: ['MICROSOFT_CLIENT_ID', 'MICROSOFT_OAUTH_CLIENT_ID'],
-  MICROSOFT_CLIENT_SECRET: ['MICROSOFT_CLIENT_SECRET', 'MICROSOFT_OAUTH_CLIENT_SECRET'],
-};
+const overrides = explicitOAuthOverrides(process.env);
+const inheritedNames = REQUIRED_OAUTH_BINDINGS.filter((name) => !overrides[name]);
 
-const values = Object.fromEntries(
-  Object.entries(aliases).map(([canonical, names]) => [
-    canonical,
-    names.map((name) => (process.env[name] || '').trim()).find(Boolean) || '',
-  ]),
-);
-const sources = Object.fromEntries(
-  Object.entries(values)
-    .filter(([, value]) => value)
-    .map(([name]) => [name, 'GitHub environment']),
-);
-const requiredNames = [
-  'GOOGLE_CLIENT_ID',
-  'GOOGLE_CLIENT_SECRET',
-  'MICROSOFT_CLIENT_ID',
-];
-const hasRequired = () => requiredNames.every((name) => Boolean(values[name]));
+if (inheritedNames.length) {
+  // Use *metadata only*: secret values are not recoverable from Cloudflare,
+  // and the deployment must never attempt to extract or log them.
+  const endpoint = 'https://api.cloudflare.com/client/v4/accounts/'
+    + encodeURIComponent(accountId)
+    + '/workers/scripts/' + encodeURIComponent(workerName) + '/settings';
 
-function isUsable(value) {
-  return typeof value === 'string'
-    && value.trim().length > 0
-    && !/^(?:\*+|redacted|hidden|null|undefined)$/i.test(value.trim());
-}
-
-function inspectBindings(node, sourceLabel) {
-  if (!node || typeof node !== 'object') return;
-
-  if (!Array.isArray(node) && typeof node.name === 'string') {
-    for (const [canonical, names] of Object.entries(aliases)) {
-      if (values[canonical] || !names.includes(node.name)) continue;
-      const candidates = [node.text, node.value, node.json];
-      const recovered = candidates.find(isUsable);
-      if (recovered) {
-        values[canonical] = recovered.trim();
-        sources[canonical] = sourceLabel;
-      }
-    }
-  }
-
-  for (const value of Object.values(node)) {
-    if (value && typeof value === 'object') inspectBindings(value, sourceLabel);
-  }
-}
-
-function collectVersionIds(node, ids = []) {
-  if (!node || typeof node !== 'object') return ids;
-  if (!Array.isArray(node)) {
-    for (const key of ['id', 'version_id', 'versionId']) {
-      const value = node[key];
-      if (typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value)) {
-        if (!ids.includes(value)) ids.push(value);
-      }
-    }
-  }
-  for (const value of Object.values(node)) {
-    if (value && typeof value === 'object') collectVersionIds(value, ids);
-  }
-  return ids;
-}
-
-async function cloudflare(path) {
-  const response = await fetch('https://api.cloudflare.com/client/v4' + path, {
-    headers: {
-      authorization: 'Bearer ' + apiToken,
-      'content-type': 'application/json',
-    },
-  });
-  if (!response.ok) throw new Error('Cloudflare API returned HTTP ' + response.status);
-  const body = await response.json();
-  if (body.success === false) throw new Error('Cloudflare API request was unsuccessful.');
-  return body;
-}
-
-async function recoverThroughApi() {
-  const versions = [];
-  for (let page = 1; page <= 10; page += 1) {
-    const body = await cloudflare(
-      '/accounts/' + encodeURIComponent(accountId)
-      + '/workers/scripts/' + encodeURIComponent(workerName)
-      + '/versions?page=' + page + '&per_page=100',
-    );
-    const pageVersions = Array.isArray(body.result) ? body.result : [];
-    versions.push(...pageVersions);
-    inspectBindings(pageVersions, 'Cloudflare version list');
-    if (hasRequired()) return;
-    const totalPages = Number(body.result_info?.total_pages || 1);
-    if (page >= totalPages || pageVersions.length === 0) break;
-  }
-
-  const ids = collectVersionIds(versions);
-  for (const id of ids) {
-    const body = await cloudflare(
-      '/accounts/' + encodeURIComponent(accountId)
-      + '/workers/scripts/' + encodeURIComponent(workerName)
-      + '/versions/' + encodeURIComponent(id),
-    );
-    inspectBindings(body.result, 'Cloudflare version ' + id);
-    if (hasRequired()) return;
-  }
-}
-
-function recoverThroughWrangler() {
-  const run = (args) => JSON.parse(execFileSync(
-    'npx',
-    ['wrangler', ...args, '--config', configPath],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-  ));
-
-  const list = run(['versions', 'list', '--json']);
-  inspectBindings(list, 'Wrangler version list');
-  for (const id of collectVersionIds(list)) {
-    const details = run(['versions', 'view', id, '--json']);
-    inspectBindings(details, 'Wrangler version ' + id);
-    if (hasRequired()) return;
-  }
-}
-
-if (!hasRequired()) {
+  let metadata;
   try {
-    await recoverThroughApi();
-  } catch {
-    // Wrangler below uses the same authenticated Cloudflare connection.
+    const response = await fetch(endpoint, {
+      headers: { authorization: 'Bearer ' + apiToken, accept: 'application/json' },
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!response.ok) {
+      throw new Error('Cloudflare binding metadata request returned HTTP ' + response.status);
+    }
+    const payload = await response.json();
+    if (payload?.success === false) {
+      throw new Error('Cloudflare binding metadata was rejected.');
+    }
+    metadata = payload?.result?.bindings;
+  } catch (error) {
+    console.error('::error::Could not verify existing Pre-Production OAuth binding names. '
+      + (error instanceof Error ? error.message : 'Metadata unavailable.'));
+    process.exit(1);
   }
-}
 
-if (!hasRequired()) {
   try {
-    recoverThroughWrangler();
-  } catch {
-    // The final validation reports exactly which binding names remain unavailable.
+    const inherited = assertSafeOAuthInheritance(metadata, overrides);
+    console.log('Validated existing Pre-Production OAuth binding types for inheritance: '
+      + inherited.join(', '));
+  } catch (error) {
+    console.error('::error::' + (error instanceof Error ? error.message : 'OAuth binding check failed.'));
+    process.exit(1);
   }
 }
 
-const missing = requiredNames.filter((name) => !values[name]);
-
-if (missing.length) {
-  console.error('::error::Unable to recover required Pre-Production OAuth bindings: ' + missing.join(', '));
-  process.exit(1);
-}
-
-for (const value of Object.values(values).filter(Boolean)) {
-  console.log('::add-mask::' + value);
-}
-
-const deployValues = Object.fromEntries(
-  Object.entries(values).filter(([, value]) => Boolean(value)),
-);
-writeFileSync(outputPath, JSON.stringify(deployValues), { mode: 0o600 });
+// Cloudflare Wrangler deploy --keep-vars preserves previously deployed secrets,
+// including keys omitted from --secrets-file. Only *new explicit GitHub values*
+// are uploaded. An empty JSON object is intentional when all values are safely
+// inherited; no secret is copied back into GitHub or CI.
+for (const value of Object.values(overrides)) console.log('::add-mask::' + value);
+writeFileSync(outputPath, JSON.stringify(overrides), { mode: 0o600 });
 chmodSync(outputPath, 0o600);
-
-const recovered = Object.entries(sources)
-  .filter(([, source]) => source.startsWith('Cloudflare'))
-  .map(([name]) => name);
-console.log(
-  recovered.length
-    ? 'Recovered existing Pre-Production OAuth bindings from Cloudflare version history: ' + recovered.join(', ')
-    : 'Using encrypted GitHub environment OAuth bindings.',
-);
-console.log('Prepared required OAuth provider bindings without exposing values.');
+console.log(Object.keys(overrides).length
+  ? 'Prepared encrypted GitHub OAuth overrides; unchanged bindings remain inherited.'
+  : 'Preserving verified existing Cloudflare OAuth secrets (no secret re-upload).');
+console.log('Pre-Production OAuth binding preflight passed without exposing secret values.');
