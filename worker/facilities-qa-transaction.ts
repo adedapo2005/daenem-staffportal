@@ -27,11 +27,13 @@ function fixedTimeEqual(left:string,right:string) {
   for(let i=0;i<left.length;i++)diff|=left.charCodeAt(i)^right.charCodeAt(i);
   return diff===0;
 }
-const pristine = (r:Awaited<ReturnType<typeof inspectFacilitiesQaReadiness>>) =>
-  r.scope===ns&&r.state==='ready'&&r.syntheticCompanies===2&&
-  r.syntheticSites===2&&r.syntheticEmployees===3&&
+const pristine = (r:Awaited<ReturnType<typeof inspectFacilitiesQaReadiness>>,phase:'prepare'|'write') =>
+  r.scope===ns&&
+  (phase==='prepare'?(r.state==='ready'&&r.safeToReset===true):
+    (r.state==='transaction_reserved'&&r.safeToReset===false))&&
+  r.syntheticCompanies===2&&r.syntheticSites===2&&r.syntheticEmployees===3&&
   r.activeMemberships===4&&r.credentials===3&&r.facilitiesGrants===3&&
-  r.safeToReset===true&&evidenceKeys.every(k=>r.evidence[k]===0);
+  evidenceKeys.every(k=>r.evidence[k]===0);
 
 type Evidence = {
   scope:'qa-staging-v1';
@@ -109,7 +111,7 @@ export async function runQaFacilitiesTransaction(
   if(env.APP_STAGE!=='staging'||env.STAFFPORTAL_DATABASE_NAME!=='daenem-staffportal-staging-db')
     throw new QaTransactionFailure('QA_TRANSACTION_STAGE');
   const prior=await inspectFacilitiesQaReadiness(env.DB);
-  if(!pristine(prior))throw new QaTransactionFailure('QA_TRANSACTION_FIXTURE_NOT_READY');
+  if(!pristine(prior,phase))throw new QaTransactionFailure('QA_TRANSACTION_FIXTURE_NOT_READY');
   if(phase==='prepare'){
     const initial=await inspectQaFacilitiesTransaction(env.DB);
     if(initial.state!=='not_started'||!initial.rollbackProbeAbsent||!initial.companyBIsolated)
@@ -196,7 +198,7 @@ export async function runQaFacilitiesTransaction(
     ).bind(companyA,rollbackName).first();
     if(noRollbackRow)throw new QaTransactionFailure('QA_TRANSACTION_ROLLBACK_BROKEN');
     const afterFailure=await inspectFacilitiesQaReadiness(env.DB);
-    if(!pristine(afterFailure))throw new QaTransactionFailure('QA_TRANSACTION_ROLLBACK_CHANGED_RECORDS');
+    if(!pristine(afterFailure,'write'))throw new QaTransactionFailure('QA_TRANSACTION_ROLLBACK_CHANGED_RECORDS');
 
       const saved=await env.DB.prepare(
         'SELECT password_hash AS hash FROM employee_credentials WHERE employee_id=?'
