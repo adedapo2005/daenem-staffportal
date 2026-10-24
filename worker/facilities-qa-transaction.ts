@@ -104,15 +104,22 @@ export async function inspectQaFacilitiesTransaction(db:D1Database):Promise<Evid
  * invocation before calling this. Only synthetic QA company A may be written.
  */
 export async function runQaFacilitiesTransaction(
-  env:QaPersonaEnv,origin:string,route:Route
+  env:QaPersonaEnv,origin:string,route:Route,phase:'prepare'|'write'
 ){
   if(env.APP_STAGE!=='staging'||env.STAFFPORTAL_DATABASE_NAME!=='daenem-staffportal-staging-db')
     throw new QaTransactionFailure('QA_TRANSACTION_STAGE');
   const prior=await inspectFacilitiesQaReadiness(env.DB);
   if(!pristine(prior))throw new QaTransactionFailure('QA_TRANSACTION_FIXTURE_NOT_READY');
-  const initial=await inspectQaFacilitiesTransaction(env.DB);
-  if(initial.state!=='not_started'||!initial.rollbackProbeAbsent||!initial.companyBIsolated)
-    throw new QaTransactionFailure('QA_TRANSACTION_ALREADY_ATTEMPTED');
+  if(phase==='prepare'){
+    const initial=await inspectQaFacilitiesTransaction(env.DB);
+    if(initial.state!=='not_started'||!initial.rollbackProbeAbsent||!initial.companyBIsolated)
+      throw new QaTransactionFailure('QA_TRANSACTION_ALREADY_ATTEMPTED');
+  }else{
+    const reservation=await env.DB.prepare(
+      "SELECT 1 AS found FROM audit_logs WHERE id=? AND company_id=? AND module='qa-fixture-access' AND action='qa_facilities_transaction_started'"
+    ).bind(markerId,companyA).first();
+    if(!reservation)throw new QaTransactionFailure('QA_TRANSACTION_NOT_PREPARED');
+  }
   const password=env.STAFFPORTAL_QA_MANAGER_PASSWORD;
   if(!env.AUTH_PEPPER||typeof password!=='string'||password.length<16||password.length>128)
     throw new QaTransactionFailure('QA_TRANSACTION_SECRET_UNAVAILABLE');
@@ -154,6 +161,7 @@ export async function runQaFacilitiesTransaction(
       if(!response)throw new QaTransactionFailure('QA_TRANSACTION_ROUTE_MISSING');
       return response;
     };
+    if(phase==='prepare'){
     // A denied cross-company write must occur before any test records exist.
     if((await call('POST','/api/facilities',{
       companyId:companyB,locationId:ns+'-site-b',facilityType:'office',
@@ -190,6 +198,12 @@ export async function runQaFacilitiesTransaction(
     const afterFailure=await inspectFacilitiesQaReadiness(env.DB);
     if(!pristine(afterFailure))throw new QaTransactionFailure('QA_TRANSACTION_ROLLBACK_CHANGED_RECORDS');
 
+      const saved=await env.DB.prepare(
+        'SELECT password_hash AS hash FROM employee_credentials WHERE employee_id=?'
+      ).bind(managerId).first<{hash:string}>();
+      if(!saved||!fixedTimeEqual(credential.hash,saved.hash))
+        throw new QaTransactionFailure('QA_TRANSACTION_CREDENTIAL_CHANGED');
+    } else {
     const created=await call('POST','/api/facilities',{
       companyId:companyA,locationId:siteA,name:facilityName,facilityType:'office'
     });
@@ -241,13 +255,15 @@ export async function runQaFacilitiesTransaction(
     if((await call('GET','/api/facilities/catalog?companyId='+companyB)).status!==403)
       throw new QaTransactionFailure('QA_TRANSACTION_FOREIGN_CATALOG_EXPOSED');
 
-    const verified=await inspectQaFacilitiesTransaction(env.DB);
-    if(verified.state!=='verified')throw new QaTransactionFailure('QA_TRANSACTION_D1_EVIDENCE_INCOMPLETE');
+    // Independent persisted D1 acceptance occurs through the Owner-only GET
+    // evidence endpoint in a separate Worker invocation (keeps D1 query limits).
+
     const fingerprint=await env.DB.prepare(
       'SELECT password_hash AS hash FROM employee_credentials WHERE employee_id=?'
     ).bind(managerId).first<{hash:string}>();
     if(!fingerprint||!fixedTimeEqual(credential.hash,fingerprint.hash))
       throw new QaTransactionFailure('QA_TRANSACTION_CREDENTIAL_CHANGED');
+    }
   }finally{
     if(newSessionId){
       await env.DB.prepare(
@@ -255,7 +271,10 @@ export async function runQaFacilitiesTransaction(
       ).bind(newSessionId,managerId).run();
     }
   }
-  return {ok:true,scope:ns,state:'verified',facility:1,equipment:1,readings:1,
-    facilitiesAudits:3,rollbackVerified:true,companyIsolationVerified:true,
-    syntheticSessionRevoked:true,realCompanyMutated:false};
+  return phase==='prepare'
+    ?{ok:true,scope:ns,state:'prepared',rollbackVerified:true,
+      companyIsolationVerified:true,syntheticSessionRevoked:true,realCompanyMutated:false}
+    :{ok:true,scope:ns,state:'written',facility:1,equipment:1,readings:1,
+      facilitiesAudits:3,rollbackVerified:true,companyIsolationVerified:true,
+      syntheticSessionRevoked:true,realCompanyMutated:false};
 }
