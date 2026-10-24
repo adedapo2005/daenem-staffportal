@@ -71,6 +71,21 @@ jobs:
       - name: Isolated staging QA persona acceptance
         run: node --disable-warning=ExperimentalWarning scripts/test-staging-qa-seeder.mjs
 
+      - name: Bakery stock, recipe, financial and unit-integrity regression
+        run: |
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-real-stock-atomicity.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-http-stock-guards.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-recipe-cost-integrity.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-flour-unit-truth.mjs
+          node scripts/check-bakery-accountability.mjs
+          node scripts/test-bakery-kpi-comparisons.mjs
+          python3 scripts/test-bakery-integrity.py
+          python3 scripts/test-bakery-agent-integrity.py
+          python3 scripts/test-bakery-return-receipts.py
+          python3 scripts/test-bakery-return-ui.py
+          python3 scripts/test-bakery-dashboard-history.py
+          python3 scripts/test-bakery-dashboard-permissions.py
+
       - name: Enterprise Command Center preservation and navigation
         run: |
           node scripts/test-navigation-overlay.mjs

@@ -41,7 +41,7 @@ check('resolution requires independent approval',worker.includes('cannot approve
 check('flour bag setting validates Bakery flour inventory',worker.includes('active Bakery flour inventory item'));
 check('report CSV export is permission scoped',worker.includes("'/api/bakery/accountability/reports/export'")&&worker.includes("allowed(context,'bakery.reconciliation')"));
 check('multiple products can be dispatched together',client.includes('dispatchRows.map')&&client.includes('+ Add another product'));
-check('flour controls are usable in client',client.includes('Set bag size')&&client.includes("'/api/bakery/accountability/flour-bag'"));
+check('flour controls are usable in client',client.includes('Set verified bag size')&&client.includes('Bag equivalent unavailable')&&client.includes("'/api/bakery/accountability/flour-bag'"));
 check('investigation controls are usable in client',client.includes('Add evidence')&&client.includes('Submit resolution')&&client.includes("'/api/bakery/accountability/investigations'"));
 check('reports support CSV and print',client.includes('Export CSV')&&client.includes('window.print()'));
 check('new controls are responsive and printable',css.includes('.dispatch-line')&&css.includes('@media print'));
