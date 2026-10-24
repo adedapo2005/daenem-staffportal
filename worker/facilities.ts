@@ -1,5 +1,6 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 import { resolveMaintenanceReferences, resolveReadingAssetReference } from './facility-reference-guard';
+import { validateFacilityRegistration } from './facility-registration-guard';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -27,25 +28,32 @@ async function catalog(request:Request,env:FacilitiesEnv,context:SessionContext)
   if(!can(context))return json({error:'Facilities access is not assigned.'},403);
   const url=new URL(request.url),companyId=url.searchParams.get('companyId')||context.companies[0]?.id||'';
   const accessError=requireCompany(context,companyId);if(accessError)return json({error:accessError},403);
-  const [facilityRows,assetRows,scheduleRows,vendorRows,categories]=await Promise.all([
+  const [facilityRows,assetRows,scheduleRows,vendorRows,categories,locationRows]=await Promise.all([
     env.DB.prepare(`SELECT f.id,f.name,f.facility_type AS facilityType,f.description,f.location_id AS locationId,cl.name AS locationName FROM facilities f LEFT JOIN company_locations cl ON cl.id=f.location_id WHERE f.company_id=? AND f.active=1 ORDER BY f.name`).bind(companyId).all<Record<string,unknown>>(),
     env.DB.prepare(`SELECT a.id,a.facility_id AS facilityId,f.name AS facilityName,a.asset_tag AS assetTag,a.category,a.name,a.make,a.model,a.serial_no AS serialNo,a.purchase_date AS purchaseDate,a.warranty_expires_at AS warrantyExpiresAt,a.service_interval_hours AS serviceIntervalHours,a.service_interval_days AS serviceIntervalDays,a.last_service_at AS lastServiceAt,a.running_hours AS runningHours,a.status FROM assets a LEFT JOIN facilities f ON f.id=a.facility_id WHERE a.company_id=? AND a.status!='retired' ORDER BY a.category,a.name`).bind(companyId).all<Record<string,unknown>>(),
     env.DB.prepare(`SELECT s.id,s.facility_id AS facilityId,s.asset_id AS assetId,s.category_code AS categoryCode,s.title,s.interval_type AS intervalType,s.interval_value AS intervalValue,s.last_completed_at AS lastCompletedAt,s.next_due_at AS nextDueAt,s.next_meter_value AS nextMeterValue,s.estimated_cost_kobo AS estimatedCostKobo,s.active,a.name AS assetName,f.name AS facilityName FROM preventive_maintenance_schedules s LEFT JOIN assets a ON a.id=s.asset_id LEFT JOIN facilities f ON f.id=s.facility_id WHERE s.company_id=? AND s.active=1 ORDER BY COALESCE(s.next_due_at,'9999-12-31'),s.title`).bind(companyId).all<Record<string,unknown>>(),
     env.DB.prepare(`SELECT id,name,service_category AS serviceCategory,contact_person AS contactPerson,phone,email,address,approved FROM maintenance_vendors WHERE (company_id=? OR company_id IS NULL) AND active=1 ORDER BY approved DESC,name`).bind(companyId).all<Record<string,unknown>>(),
-    env.DB.prepare(`SELECT code,name,description,default_priority AS defaultPriority FROM maintenance_categories WHERE active=1 ORDER BY name`).all<Record<string,unknown>>()
+    env.DB.prepare(`SELECT code,name,description,default_priority AS defaultPriority FROM maintenance_categories WHERE active=1 ORDER BY name`).all<Record<string,unknown>>(),
+    env.DB.prepare(`SELECT id,name,city,state FROM company_locations WHERE company_id=? AND active=1 ORDER BY name`).bind(companyId).all<Record<string,unknown>>()
   ]);
-  return json({companyId,facilities:facilityRows.results||[],assets:assetRows.results||[],schedules:scheduleRows.results||[],vendors:vendorRows.results||[],categories:categories.results||[]});
+  return json({companyId,facilities:facilityRows.results||[],assets:assetRows.results||[],schedules:scheduleRows.results||[],vendors:vendorRows.results||[],categories:categories.results||[],locations:locationRows.results||[]});
 }
 
 async function createFacility(request:Request,env:FacilitiesEnv,context:SessionContext){
   if(!can(context,'create'))return json({error:'Create Facilities permission is required.'},403);
-  let body:{companyId?:string;locationId?:string;name?:string;facilityType?:string;description?:string};try{body=await request.json()}catch{return json({error:'Invalid facility request.'},400)}
-  const accessError=requireCompany(context,String(body.companyId||''));if(accessError)return json({error:accessError},403);
-  const name=String(body.name||'').trim();if(!name)return json({error:'Facility name is required.'},400);
-  const id=uid('facility');await env.DB.batch([
-    env.DB.prepare(`INSERT INTO facilities(id,company_id,location_id,name,facility_type,description) VALUES(?,?,?,?,?,?)`).bind(id,body.companyId,body.locationId||null,name,String(body.facilityType||'office'),body.description||null),
-    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','facility',?,?,'web')`).bind(uid('audit'),context.employee.id,body.companyId,id,JSON.stringify({name,facilityType:body.facilityType||'office'}))
-  ]);return json({ok:true,facility:{id,name}},201);
+  let body:{companyId?:string;locationId?:string;name?:string;facilityType?:string;description?:string};
+  try{body=await request.json()}catch{return json({error:'Invalid facility request.'},400)}
+  const companyId=String(body.companyId||'').trim();
+  const accessError=requireCompany(context,companyId);
+  if(accessError)return json({error:accessError},403);
+  const checked=await validateFacilityRegistration(env.DB,companyId,body);
+  if(!checked.ok)return json({error:checked.error,code:checked.code},checked.code==='FACILITY_DUPLICATE'?409:400);
+  const id=uid('facility');
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO facilities(id,company_id,location_id,name,facility_type,description) VALUES(?,?,?,?,?,?)`).bind(id,companyId,checked.locationId,checked.name,checked.facilityType,checked.description),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','facility',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({name:checked.name,facilityType:checked.facilityType,locationId:checked.locationId}))
+  ]);
+  return json({ok:true,facility:{id,name:checked.name,facilityType:checked.facilityType,locationId:checked.locationId}},201);
 }
 
 async function createAsset(request:Request,env:FacilitiesEnv,context:SessionContext){
