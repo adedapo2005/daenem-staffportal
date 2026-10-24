@@ -284,6 +284,48 @@ assert.equal(contested.code,409,'Concurrently changed destination must reject an
 assert.equal(count("SELECT COUNT(*) AS n FROM bakery_material_valuation_events WHERE inventory_item_id='flour'"),beforeFlourEvents);
 assert.equal(flourAt('HQ').v+flourAt('HQ2').v,openingValue.v);
 db.prepare("UPDATE stock_balances SET quantity=quantity-1 WHERE location_id='HQ2' AND item_id='flour'").run();
+// A legacy Bakery receipt / transfer must never race into an independently
+// approved precision balance. Simulate a reviewer landing the valuation after
+// the handler has read its initial state but before the batch starts.
+db.exec("INSERT INTO inventory_items VALUES('race-item','company-bakery','kg',100,1,NULL,'RACE','Race material')");
+db.exec("INSERT INTO stock_balances(id,company_id,location_id,item_id,quantity) VALUES('race-source','company-bakery','HQ','race-item',8)");
+const noRaceEvents=()=>count("SELECT COUNT(*) FROM stock_movements WHERE item_id='race-item'");
+const noRaceStock=()=>db.prepare("SELECT quantity FROM stock_balances WHERE location_id='HQ' AND item_id='race-item'").get().quantity;
+const addRaceValuation=locationId=>db.prepare(
+ "INSERT INTO bakery_material_valuation_balances(id,company_id,location_id,inventory_item_id,remaining_quantity_micro,remaining_value_microkobo) VALUES(?,?,?,?,?,?)"
+).run('race-valuation-'+locationId,'company-bakery',locationId,'race-item',locationId==='HQ'?8000000:0,locationId==='HQ'?800000000:0);
+const raceReceive={companyId:'company-bakery',locationId:'HQ',itemId:'race-item',quantity:2,unitCostNaira:1};
+beforeBatch=()=>addRaceValuation('HQ');
+const raceReceipt=await post(routeInventory,'/api/inventory/receive',raceReceive);
+assert.equal(raceReceipt.code,409,'Legacy receipt must reject newly approved valuation');
+assert.equal(noRaceStock(),8,'Racing legacy receipt leaves the physical count intact');
+assert.equal(noRaceEvents(),0,'Racing legacy receipt must not write stock movements');
+assert.equal(db.prepare("SELECT remaining_quantity_micro AS q FROM bakery_material_valuation_balances WHERE inventory_item_id='race-item' AND location_id='HQ'").get().q,8000000);
+db.prepare("DELETE FROM bakery_material_valuation_balances WHERE inventory_item_id='race-item'").run();
+beforeBatch=()=>addRaceValuation('HQ');
+const raceTransfer=await post(routeInventory,'/api/inventory/transfer',
+ {companyId:'company-bakery',fromLocationId:'HQ',toLocationId:'HQ2',itemId:'race-item',quantity:2});
+assert.equal(raceTransfer.code,409,'Legacy transfer must reject newly approved source valuation');
+assert.equal(noRaceStock(),8,'Racing legacy transfer must roll back the source debit');
+assert.equal(noRaceEvents(),0,'Racing legacy transfer must not create movement records');
+assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE location_id='HQ2' AND item_id='race-item'").get(),undefined);
+db.prepare("DELETE FROM bakery_material_valuation_balances WHERE inventory_item_id='race-item'").run();
+beforeBatch=()=>addRaceValuation('HQ2');
+const destRace=await post(routeInventory,'/api/inventory/transfer',
+ {companyId:'company-bakery',fromLocationId:'HQ',toLocationId:'HQ2',itemId:'race-item',quantity:2});
+assert.equal(destRace.code,409,'Legacy transfer must reject newly approved destination valuation');
+assert.equal(noRaceStock(),8,'Destination approval race rolls back source debit');
+assert.equal(noRaceEvents(),0,'Destination approval race leaves no movements');
+db.prepare("DELETE FROM bakery_material_valuation_balances WHERE inventory_item_id='race-item'").run();
+const legacyTransfer=await post(routeInventory,'/api/inventory/transfer',
+ {companyId:'company-bakery',fromLocationId:'HQ',toLocationId:'HQ2',itemId:'race-item',quantity:2});
+assert.equal(legacyTransfer.code,200,JSON.stringify(legacyTransfer.data));
+assert.equal(noRaceStock(),6);
+assert.equal(noRaceEvents(),2);
+const legacyReceipt=await post(routeInventory,'/api/inventory/receive',raceReceive);
+assert.equal(legacyReceipt.code,200,JSON.stringify(legacyReceipt.data));
+assert.equal(noRaceStock(),8);
+assert.equal(noRaceEvents(),3);
 db.close();
 console.log('PASS real opening approval SQL: independently verified 50kg, ₦25,000; stale counts blocked; physical stock never duplicated');
 console.log('PASS real exact-value transfer: approved flour opening value conserved across Bakery locations and disputed stock rolls back');
