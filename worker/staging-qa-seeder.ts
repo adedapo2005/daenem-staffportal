@@ -228,6 +228,7 @@ async function apply(env: StagingQaEnv, action: 'seed' | 'reset', setPhase: (pha
       'preventive_maintenance_schedules','facility_inspections'];
     tx.check(qaTables.map(table=>`NOT EXISTS(SELECT 1 FROM ${table} WHERE company_id IN (${companySql}))`)
       .concat(`NOT EXISTS(SELECT 1 FROM audit_logs WHERE module='facilities' AND company_id IN (${companySql}))`)
+      .concat("NOT EXISTS(SELECT 1 FROM audit_logs WHERE id='qa-staging-v1-facilities-transaction-start')")
       .join(' AND '), [...qaTables.flatMap(()=>companies), ...companies]);
     // A reset of an absent fixture is a no-op, without manufacturing identities.
     tx.add(`UPDATE auth_sessions SET revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP) WHERE employee_id IN (${employeeSql})`, ...employees);
