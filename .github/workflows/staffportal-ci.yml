@@ -62,6 +62,9 @@ jobs:
       - name: Facilities schedule reference integrity
         run: node scripts/test-facility-schedule-reference-scope.mjs
 
+      - name: Facilities work order authority
+        run: node scripts/test-facilities-work-order-authority.mjs
+
       - name: Enterprise Command Center preservation and navigation
         run: |
           node scripts/test-navigation-overlay.mjs
