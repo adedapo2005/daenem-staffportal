@@ -17,7 +17,7 @@ const runModule=(source,resolver)=>{
 const fakeAuth={hasPermission:()=>true};
 const unitService=runModule(units,name=>{assert.equal(name,'./auth');return fakeAuth});
 const valuationService=runModule(valuation,()=>{throw Error('Valuation helper has no imports')});
-const {routeInventory}=runModule(inventory,name=>name==='./auth'?fakeAuth:name==='./bakery-material-units'?unitService:name==='./bakery-material-valuation'?valuationService:null);
+const {routeInventory}=runModule(inventory,name=>name==='./auth'?fakeAuth:name==='./bakery-material-units'?unitService:name==='./bakery-material-valuation'?valuationService:name==='./bakery-material-openings'?{routeBakeryMaterialOpenings:async()=>null}:name==='./bakery-material-transfers'?{transferPreciseBakeryMaterial:async()=>null}:null);
 assert.equal(typeof routeInventory,'function');
 const context={companies:[{id:'company-bakery'},{id:'company-printing'}],employee:{id:'employee-stock'}};
 let posted=[];

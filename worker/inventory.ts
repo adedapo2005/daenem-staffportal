@@ -1,6 +1,8 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 import { approvedMaterialRule,normalizeMaterialUnit,normalizeBaseQuantity,validMaterialUnit } from './bakery-material-units';
-import { readMaterialValueBalance,materialQuantityMicro,materialCostMicroKobo,sumMaterialValue,MATERIAL_VALUE_SCALE } from './bakery-material-valuation';
+import { readMaterialValueBalance,materialQuantityMicro,materialCostMicroKobo,sumMaterialValue,allocateMaterialValue,MATERIAL_VALUE_SCALE } from './bakery-material-valuation';
+import {routeBakeryMaterialOpenings} from './bakery-material-openings';
+import {transferPreciseBakeryMaterial} from './bakery-material-transfers';
 
 interface InventoryEnv extends AuthEnv {}
 
@@ -40,7 +42,7 @@ async function catalog(request: Request, env: InventoryEnv, context: SessionCont
         (SELECT CASE WHEN SUM(v.remaining_quantity_micro)>0 THEN SUM(CAST(v.remaining_value_microkobo AS REAL))/SUM(v.remaining_quantity_micro) ELSE NULL END FROM bakery_material_valuation_balances v WHERE v.company_id=i.company_id AND v.inventory_item_id=i.id) AS weightedCostKobo,
              i.selling_price_kobo AS sellingPriceKobo, i.reorder_level AS reorderLevel,
              i.track_lot AS trackLot, i.track_expiry AS trackExpiry,
-             c.id AS categoryId, c.name AS categoryName,
+             c.id AS categoryId, c.name AS categoryName, c.category_type AS categoryType,
              COALESCE(SUM(CASE WHEN (? = '' OR sb.location_id = ?) THEN sb.quantity ELSE 0 END),0) AS quantity,
              COALESCE(SUM(CASE WHEN (? = '' OR sb.location_id = ?) THEN sb.reserved_quantity ELSE 0 END),0) AS reservedQuantity
       FROM inventory_items i
@@ -254,13 +256,12 @@ async function transferStock(request: Request, env: InventoryEnv, context: Sessi
   if (!balance || available < quantity) return json({ error: `Insufficient available stock. Available: ${Math.max(0, available)}.` }, 409);
   const destination = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(body.toLocationId, companyId).first();
   if (!destination) return json({ error: 'Destination location was not found.' }, 404);
-  if(companyId==='company-bakery'){
-    const [sourceValue,destinationValue]=await Promise.all([
-      readMaterialValueBalance(env.DB,companyId,body.fromLocationId,body.itemId),
-      readMaterialValueBalance(env.DB,companyId,body.toLocationId,body.itemId)
-    ]);
-    if(sourceValue||destinationValue)return json({error:'This material has an exact-value stock ledger. Cross-location valuation transfer and acceptance must be verified before moving it; no stock was changed.'},409);
-  }
+  const preciseTransfer=await transferPreciseBakeryMaterial(env,context,{
+    companyId,itemId:body.itemId,fromLocationId:body.fromLocationId,toLocationId:body.toLocationId,
+    quantity,sourceBalanceId:balance.id,sourceQuantity:Number(balance.quantity),
+    sourceReserved:Number(balance.reservedQuantity||0),reason:body.reason
+  });
+  if(preciseTransfer)return preciseTransfer;
   const transferRef = uid('transfer');
   await env.DB.batch([
     env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(quantity, balance.id),
@@ -328,6 +329,7 @@ async function createRequest(request: Request, env: InventoryEnv, context: Sessi
 
 export async function routeInventory(request: Request, env: InventoryEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
+  if(url.pathname.startsWith('/api/inventory/bakery/openings'))return routeBakeryMaterialOpenings(request,env,context);
   if (url.pathname === '/api/inventory/catalog' && request.method === 'GET') return catalog(request, env, context);
   if (url.pathname === '/api/inventory/categories' && request.method === 'POST') return createCategory(request, env, context);
   if (url.pathname === '/api/inventory/items' && request.method === 'POST') return createItem(request, env, context);
