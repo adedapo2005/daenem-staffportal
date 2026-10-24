@@ -46,6 +46,24 @@ const box = (el) => {
         assert.equal(await password.count(),1,'Password field present');
         assert.equal(await email.getAttribute('placeholder'),'Email or username');
         assert.equal(await password.getAttribute('placeholder'),'Enter password');
+        // A nonempty placeholder can be semantically correct yet visibly cut off
+        // in the compact desktop card. Measure the actual font and input width.
+        const placeholderFit=await page.locator('#staffportal-auth-mount').evaluate(root=>{
+          const fields=[root.querySelector('input[autocomplete="username"]'),root.querySelector('input[autocomplete="current-password"]')];
+          const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
+          return fields.map(el=>{
+            const st=getComputedStyle(el);
+            context.font=st.font;
+            const spacing=parseFloat(st.letterSpacing)||0;
+            const measured=context.measureText(el.placeholder).width+spacing*Math.max(0,el.placeholder.length-1);
+            const usable=el.getBoundingClientRect().width-(parseFloat(st.paddingLeft)||0)-(parseFloat(st.paddingRight)||0);
+            return {name:el.autocomplete,text:el.placeholder,measured:+measured.toFixed(1),usable:+usable.toFixed(1),font:st.font};
+          });
+        });
+        for(const item of placeholderFit) {
+          assert.ok(item.measured+4<=item.usable,'visible placeholder must fit: '+item.name+' ('+item.measured+'px in '+item.usable+'px)');
+        }
+        console.log('PLACEHOLDER_FIT '+width+' '+JSON.stringify(placeholderFit));
         await email.focus();
         const metrics=await page.evaluate(() => {
           const rect=el=>{let b=el.getBoundingClientRect();return{x:+b.x.toFixed(1),y:+b.y.toFixed(1),w:+b.width.toFixed(1),h:+b.height.toFixed(1),right:+b.right.toFixed(1),bottom:+b.bottom.toFixed(1)}};

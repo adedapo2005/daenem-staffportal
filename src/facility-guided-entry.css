@@ -1,0 +1,9 @@
+/* Scoped premium, non-glass maintenance form refinements */
+.guided-maintenance-form .smart-master-field{margin:0;min-width:0}
+.guided-maintenance-form .smart-master-field>label{font-weight:760}
+.guided-maintenance-form .guided-title-action{display:inline-flex;justify-content:flex-start;text-align:left;min-height:38px;height:auto;white-space:normal;line-height:1.45}
+.guided-maintenance-form .form-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.guided-maintenance-form .form-row>label{display:flex;flex-direction:column;gap:7px;min-width:0}
+.guided-maintenance-form .form-row select,.guided-maintenance-form .form-row input{min-width:0;width:100%;box-sizing:border-box}
+@media(max-width:640px){.guided-maintenance-form .form-row{grid-template-columns:1fr}}
+@media(min-width:2600px){.guided-maintenance-form .guided-title-action{font-size:clamp(14px,.48vw,18px)}}

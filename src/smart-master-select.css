@@ -1,0 +1,19 @@
+/* Enterprise smart master-data selection: solid, responsive, accessible. */
+.smart-master-field{display:flex;flex-direction:column;gap:8px;min-width:0}
+.smart-master-field>label{display:block;font-size:inherit;font-weight:750;color:var(--text, #17273d)}
+.smart-master-field>label span{color:var(--danger,#b43c48)}
+.smart-master-field>select,
+.smart-master-find{width:100%;box-sizing:border-box;min-height:44px;border:1px solid var(--border,#cbd5e1);border-radius:11px;background:var(--surface,var(--panel,#fff));color:var(--text,#17273d)}
+.smart-master-field>select{padding:9px 12px;font:inherit;cursor:pointer;text-overflow:ellipsis}
+.smart-master-field>select:disabled{cursor:not-allowed;opacity:.72}
+.smart-master-find{display:flex;align-items:center;gap:8px;padding:0 11px}
+.smart-master-find svg{flex:none;color:var(--muted,#5b677c)}
+.smart-master-find input{min-width:0;width:100%;border:0;outline:0;background:transparent;color:inherit;padding:10px 0;font:inherit}
+.smart-master-field :is(select,input,button):focus-visible{outline:3px solid var(--focus,#4877bb);outline-offset:2px}
+.smart-master-suggestions{display:grid;gap:3px;padding:5px;border:1px solid var(--border,#cbd5e1);border-radius:12px;background:var(--panel,#fff);box-shadow:0 8px 24px rgba(22,40,68,.07)}
+.smart-master-suggestions button{min-height:38px;width:100%;padding:8px 12px;border:0;border-radius:8px;background:transparent;color:var(--text,#17273d);text-align:left;font:inherit;cursor:pointer}
+.smart-master-suggestions button:hover{background:var(--surface,#f1f5fb)}
+.smart-master-suggestions>span{padding:8px 12px;color:var(--muted,#5b677c);font-size:13px}
+.smart-master-field>small{display:block;font-size:12px;line-height:1.45;color:var(--muted,#5b677c)}
+@media(min-width:2600px){.smart-master-field{gap:11px}.smart-master-field>select,.smart-master-find{min-height:52px;font-size:clamp(16px,.54vw,21px)}.smart-master-suggestions button{min-height:46px}.smart-master-field>small{font-size:clamp(13px,.42vw,16px)}}
+@media(prefers-reduced-motion:reduce){.smart-master-field *{transition:none!important;animation:none!important}}
