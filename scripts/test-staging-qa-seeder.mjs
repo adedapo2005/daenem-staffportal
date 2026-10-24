@@ -61,8 +61,8 @@ async function main() {
   const worker = load('worker/staffportal-staging.ts').default;
   const auth = load('worker/auth.ts');
   const migrations = Object.keys(baseline.files).filter(name => name.startsWith('migrations/') && name.endsWith('.sql')).sort();
-  const bakeryMigrations = ['migrations/0102_bakery_financial_integrity.sql','migrations/0103_bakery_agent_sale_price_integrity.sql','migrations/0104_bakery_verified_return_custody.sql','migrations/0106_bakery_material_unit_rules.sql'];
-  check(migrations.length === 110 && bakeryMigrations.every(name => migrations.includes(name)), 'All 110 committed migrations, including governed Bakery material-unit versions');
+  const bakeryMigrations = ['migrations/0102_bakery_financial_integrity.sql','migrations/0103_bakery_agent_sale_price_integrity.sql','migrations/0104_bakery_verified_return_custody.sql','migrations/0106_bakery_material_unit_rules.sql','migrations/0107_bakery_precise_material_valuation.sql'];
+  check(migrations.length === 111 && bakeryMigrations.every(name => migrations.includes(name)), 'All 111 committed migrations, including governed Bakery material-unit versions');
   const db = new DatabaseSync(':memory:');
   for (const migration of migrations) { lastCheck = `Schema: ${migration}`; db.exec(baseline.files[migration]); }
   const rows = sql => db.prepare(sql).all();

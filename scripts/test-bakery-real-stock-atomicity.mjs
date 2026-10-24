@@ -21,9 +21,12 @@ function table(name){
  assert(a>=0&&b>a,'Missing original inventory table');
  return migration.slice(a,b+3)+';';
 }
+const posSource=bakery.slice(bakery.indexOf('async function posSale('));
+const issueSource=bakery.slice(bakery.indexOf('async function issueIngredient('),bakery.indexOf('async function batchStatus('));
+function sqlLast(source,marker){const index=source.lastIndexOf(marker);assert(index>=0);const tick=String.fromCharCode(96),a=source.lastIndexOf(tick,index),b=source.indexOf(tick,index);assert(a>=0&&b>a);return source.slice(a+1,b)}
 const statements={
- pos:[sql(bakery,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(bakery,"'sale',CASE WHEN changes()=1 THEN ? ELSE NULL END")],
- issue:[sql(bakery,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(bakery,"'issue',CASE WHEN changes()=1 THEN ? ELSE NULL END")],
+ pos:[sql(posSource,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(posSource,"'sale',CASE WHEN changes()=1 THEN ? ELSE NULL END")],
+ issue:[sqlLast(issueSource,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(issueSource,"'issue',CASE WHEN changes()=1 THEN ? ELSE NULL END")],
  dispatch:[sql(accountability,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(accountability,"'transfer_out',CASE WHEN changes()=1 THEN ? ELSE NULL END")]
 };
 const db=new DatabaseSync(':memory:');

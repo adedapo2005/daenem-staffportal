@@ -1,5 +1,6 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 import { approvedMaterialRule,normalizeMaterialUnit,normalizeBaseQuantity,validMaterialUnit } from './bakery-material-units';
+import { readMaterialValueBalance,materialQuantityMicro,materialCostMicroKobo,sumMaterialValue,MATERIAL_VALUE_SCALE } from './bakery-material-valuation';
 
 interface InventoryEnv extends AuthEnv {}
 
@@ -35,6 +36,8 @@ async function catalog(request: Request, env: InventoryEnv, context: SessionCont
     env.DB.prepare(`SELECT id, name, category_type AS categoryType, parent_id AS parentId FROM inventory_categories WHERE company_id = ? AND active = 1 ORDER BY name`).bind(companyId).all<Record<string, unknown>>(),
     env.DB.prepare(`
       SELECT i.id, i.sku, i.name, i.description, i.brand, i.unit, i.unit_cost_kobo AS unitCostKobo,
+        CASE WHEN EXISTS(SELECT 1 FROM bakery_material_valuation_balances v WHERE v.company_id=i.company_id AND v.inventory_item_id=i.id) THEN 'exact_microkobo' ELSE 'legacy_kobo' END AS valuationMode,
+        (SELECT CASE WHEN SUM(v.remaining_quantity_micro)>0 THEN SUM(CAST(v.remaining_value_microkobo AS REAL))/SUM(v.remaining_quantity_micro) ELSE NULL END FROM bakery_material_valuation_balances v WHERE v.company_id=i.company_id AND v.inventory_item_id=i.id) AS weightedCostKobo,
              i.selling_price_kobo AS sellingPriceKobo, i.reorder_level AS reorderLevel,
              i.track_lot AS trackLot, i.track_expiry AS trackExpiry,
              c.id AS categoryId, c.name AS categoryName,
@@ -133,9 +136,8 @@ async function receiveStock(request: Request, env: InventoryEnv, context: Sessio
     if (!Number.isSafeInteger(Math.round(totalCost)) || Math.abs(totalCost - Math.round(totalCost)) > 0.000001)
       return json({ error: 'This purchase cost cannot be represented exactly to the kobo. Review quantity and supplier price.' }, 409);
     const exactCostPerBaseUnit = totalCost / normalized;
-    if (!Number.isSafeInteger(Math.round(exactCostPerBaseUnit))
-      || Math.abs(exactCostPerBaseUnit - Math.round(exactCostPerBaseUnit)) > 0.000001)
-      return json({ error: 'Receipt rejected: Inventory cannot yet represent a fractional-kobo cost per base unit. Use an appropriate base unit or implement audited fractional-cost valuation before receiving this material.' }, 409);
+    if (!Number.isFinite(exactCostPerBaseUnit) || exactCostPerBaseUnit < 0)
+      return json({ error: 'The converted unit price cannot be represented safely.' }, 409);
     baseQuantity = normalized;
     unitCost = Math.round(exactCostPerBaseUnit);
     conversion = { ruleId:rule.id,factor:Number(rule.factor),versionNo:Number(rule.versionNo),
@@ -150,6 +152,76 @@ async function receiveStock(request: Request, env: InventoryEnv, context: Sessio
       || !Number.isSafeInteger(Math.round(body.unitCostNaira * 100))
       || Math.abs(body.unitCostNaira * 100 - Math.round(body.unitCostNaira * 100)) > 0.000001))
       return json({ error: 'Bakery material unit cost must be a non-negative naira amount with at most two decimals.' }, 400);
+  }
+  // Only activate exact-value accounting on a verified empty Bakery location/item.
+  // Pre-existing, unvalued stock must never be silently merged into a fictional balance.
+  const existingValue=isBakery?await readMaterialValueBalance(env.DB,companyId,body.locationId,body.itemId):null;
+  const unitCostExact=conversion?conversion.totalCostKobo/baseQuantity:unitCost;
+  const needsPrecision=isBakery&&(existingValue!==null
+    || (conversion!==null && Math.abs(unitCostExact-Math.round(unitCostExact))>0.000001));
+  if(needsPrecision){
+    const before=await env.DB.prepare(`SELECT quantity FROM stock_balances
+      WHERE company_id=? AND location_id=? AND item_id=?`).bind(companyId,body.locationId,body.itemId)
+      .first<{quantity:number}>();
+    const beforeQty=Number(before?.quantity||0);
+    const beforeMicro=beforeQty===0?0:materialQuantityMicro(beforeQty);
+    const receiptMicro=materialQuantityMicro(baseQuantity);
+    if(beforeMicro===null||receiptMicro===null)
+      return json({error:'Inventory quantity cannot be represented safely for precise Bakery valuation.'},409);
+    if((existingValue?.quantityMicro||0)!==beforeMicro)
+      return json({error:'Unvalued legacy stock or an inventory/value mismatch exists. Perform an independently verified opening valuation before precision receipts.'},409);
+    const incomingKobo=conversion?conversion.totalCostKobo:baseQuantity*unitCost;
+    if(!Number.isSafeInteger(incomingKobo)||incomingKobo<=0)
+      return json({error:'Exact Bakery valuation requires a positive whole-kobo receipt total.'},409);
+    const incomingValue=materialCostMicroKobo(incomingKobo);
+    const next=incomingValue===null?null:sumMaterialValue(existingValue||{quantityMicro:0,valueMicroKobo:0},
+      {quantityMicro:receiptMicro,valueMicroKobo:incomingValue});
+    if(!next)return json({error:'Receipt would exceed safe Bakery money or quantity limits.'},409);
+    const id=uid('stock-movement'),oldValue=existingValue?.valueMicroKobo||0,
+      displayedUnitCost=Math.round(incomingValue!/receiptMicro);
+    const proofs={supplierId:body.supplierId||null,conversion,baseQuantity,baseUnit:item.unit,
+      valuationMode:'exact_microkobo',receiptValueMicroKobo:incomingValue,
+      costPerBaseUnitKoboApproximate:displayedUnitCost,sourceReceiptTotalKobo:incomingKobo};
+    const statements:D1PreparedStatement[]=[
+      env.DB.prepare(`INSERT INTO stock_balances(id,company_id,location_id,item_id,quantity)
+        VALUES(?,?,?,?,?) ON CONFLICT(location_id,item_id) DO UPDATE SET
+        quantity=stock_balances.quantity+excluded.quantity,updated_at=CURRENT_TIMESTAMP
+        WHERE stock_balances.company_id=? AND CAST(ROUND(stock_balances.quantity*1000000,0) AS INTEGER)=?`)
+        .bind(uid('stock-balance'),companyId,body.locationId,body.itemId,baseQuantity,companyId,beforeMicro),
+      env.DB.prepare(`INSERT INTO stock_movements(id,company_id,item_id,movement_type,quantity,unit_cost_kobo,to_location_id,
+        reference_type,reference_id,reason,lot_no,expiry_date,created_by,metadata_json)
+        VALUES(?,?,?,'receipt',CASE WHEN changes()=1 THEN ? ELSE NULL END,?,?,'goods_receipt',?,?,?,?,?,?)`)
+        .bind(id,companyId,body.itemId,baseQuantity,displayedUnitCost,body.locationId,body.supplierReference||id,
+          body.note||'Bakery material receipt with exact valuation',body.lotNo||null,body.expiryDate||null,
+          context.employee.id,JSON.stringify(proofs)),
+      env.DB.prepare(`INSERT INTO bakery_material_valuation_balances
+        (id,company_id,location_id,inventory_item_id,remaining_quantity_micro,remaining_value_microkobo)
+        VALUES(?,?,?,?,?,?) ON CONFLICT(company_id,location_id,inventory_item_id) DO UPDATE SET
+        remaining_quantity_micro=excluded.remaining_quantity_micro,
+        remaining_value_microkobo=excluded.remaining_value_microkobo,updated_at=CURRENT_TIMESTAMP
+        WHERE remaining_quantity_micro=? AND remaining_value_microkobo=?`)
+        .bind(uid('material-valuation'),companyId,body.locationId,body.itemId,
+          next.quantityMicro,next.valueMicroKobo,beforeMicro,oldValue),
+      env.DB.prepare(`INSERT INTO bakery_material_valuation_events
+        (id,company_id,location_id,inventory_item_id,stock_movement_id,movement_type,quantity_micro,
+        value_microkobo,before_quantity_micro,before_value_microkobo,after_quantity_micro,
+        after_value_microkobo,conversion_rule_id,reference_id,recorded_by)
+        VALUES(?,?,?,?,?,'receipt',CASE WHEN changes()=1 THEN ? ELSE NULL END,?,?,?,?,?,?,?,?)`)
+        .bind(uid('material-value-event'),companyId,body.locationId,body.itemId,id,
+          receiptMicro,incomingValue,beforeMicro,oldValue,next.quantityMicro,next.valueMicroKobo,
+          conversion?.ruleId||null,body.supplierReference||id,context.employee.id),
+      env.DB.prepare(`UPDATE inventory_items SET unit_cost_kobo=?,updated_at=CURRENT_TIMESTAMP
+        WHERE id=? AND company_id=?`).bind(displayedUnitCost,body.itemId,companyId),
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,
+        entity_type,entity_id,after_json,source) VALUES(?,?,?,'inventory','receive_stock',
+        'stock_movement',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,
+          JSON.stringify({itemId:body.itemId,locationId:body.locationId,baseQuantity,conversion,
+            exactReceiptValueMicroKobo:incomingValue,remainingValueMicroKobo:next.valueMicroKobo}))
+    ];
+    await env.DB.batch(statements);
+    return json({ok:true,movementId:id,baseQuantity,baseUnit:item.unit,conversion,
+      valuation:{mode:'exact_microkobo',receiptCostKobo:incomingKobo,unitCostApproximateKobo:displayedUnitCost},
+      message:'Exact-value Bakery receipt posted with auditable source cost.'});
   }
   const movementId = uid('stock-movement');
   await env.DB.batch([
@@ -182,6 +254,13 @@ async function transferStock(request: Request, env: InventoryEnv, context: Sessi
   if (!balance || available < quantity) return json({ error: `Insufficient available stock. Available: ${Math.max(0, available)}.` }, 409);
   const destination = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(body.toLocationId, companyId).first();
   if (!destination) return json({ error: 'Destination location was not found.' }, 404);
+  if(companyId==='company-bakery'){
+    const [sourceValue,destinationValue]=await Promise.all([
+      readMaterialValueBalance(env.DB,companyId,body.fromLocationId,body.itemId),
+      readMaterialValueBalance(env.DB,companyId,body.toLocationId,body.itemId)
+    ]);
+    if(sourceValue||destinationValue)return json({error:'This material has an exact-value stock ledger. Cross-location valuation transfer and acceptance must be verified before moving it; no stock was changed.'},409);
+  }
   const transferRef = uid('transfer');
   await env.DB.batch([
     env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(quantity, balance.id),

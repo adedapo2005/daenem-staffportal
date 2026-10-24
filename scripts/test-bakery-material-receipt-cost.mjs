@@ -7,6 +7,7 @@ import {webcrypto} from 'node:crypto';
 
 const units=fs.readFileSync(new URL('../worker/bakery-material-units.ts',import.meta.url),'utf8');
 const inventory=fs.readFileSync(new URL('../worker/inventory.ts',import.meta.url),'utf8');
+const valuation=fs.readFileSync(new URL('../worker/bakery-material-valuation.ts',import.meta.url),'utf8');
 const runModule=(source,resolver)=>{
  const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  const obj={exports:{}};
@@ -15,7 +16,8 @@ const runModule=(source,resolver)=>{
 };
 const fakeAuth={hasPermission:()=>true};
 const unitService=runModule(units,name=>{assert.equal(name,'./auth');return fakeAuth});
-const {routeInventory}=runModule(inventory,name=>name==='./auth'?fakeAuth:name==='./bakery-material-units'?unitService:null);
+const valuationService=runModule(valuation,()=>{throw Error('Valuation helper has no imports')});
+const {routeInventory}=runModule(inventory,name=>name==='./auth'?fakeAuth:name==='./bakery-material-units'?unitService:name==='./bakery-material-valuation'?valuationService:null);
 assert.equal(typeof routeInventory,'function');
 const context={companies:[{id:'company-bakery'},{id:'company-printing'}],employee:{id:'employee-stock'}};
 let posted=[];
@@ -27,6 +29,8 @@ function envFor(factor,baseUnit='kg',company='company-bakery'){
      if(query.includes('FROM company_locations'))return {id:'bakery-hq'};
      if(query.includes('FROM inventory_items'))return {id:'flour',unit:baseUnit,unitCostKobo:85000};
      if(query.includes('FROM bakery_material_unit_rules'))return factor===null?null:{id:'rule-v1',fromUnit:'bag',inventoryUnit:baseUnit,factor,versionNo:1};
+     if(query.includes('FROM bakery_material_valuation_balances'))return null;
+     if(query.includes('FROM stock_balances'))return {quantity:1};
      throw Error('Unexpected D1 read: '+query.slice(0,100));
     }};
    }};
@@ -66,7 +70,7 @@ assert.equal((await receipt({...request,purchaseUnitCostNaira:-1},envFor(50))).s
 assert.equal((await receipt({...request,purchaseUnitCostNaira:45.001},envFor(50))).status,400,'Sub-kobo purchase unit cost blocked');
 assert.equal((await receipt({...request,quantity:0.000000001},envFor(50))).status,400,'Unrepresentable quantity blocked');
 const carton={...request,quantity:1,receivedUnit:'carton',purchaseUnitCostNaira:1};
-assert.equal((await receipt(carton,envFor(1000,'g'))).status,409,'Fractional kobo per gram MUST NOT be rounded to zero');
+assert.equal((await receipt(carton,envFor(1000,'g'))).status,409,'An unvalued opening balance cannot be combined with a fractional-cost receipt');
 assert.equal((await receipt({...request,receivedUnit:'kg',purchaseUnitCostNaira:45000},envFor(50))).status,400,'No separate price field in base units');
 const plain={...request,quantity:20,receivedUnit:'kg',purchaseUnitCostNaira:undefined,unitCostNaira:900};
 r=await receipt(plain,envFor(50));
