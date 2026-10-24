@@ -348,6 +348,73 @@ async function main() {
   check(!auth.hasPermission(managerAfterRepair,'facilities.access','view',qa('company-b')),
     'Existing manager session remains denied in foreign company B');
 
+
+  // Real synthetic-password acceptance, without any Facilities record writes.
+  const personaUrl='https://qa.invalid/api/facilities/qa-persona/verify';
+  const personaHeaders={origin:'https://qa.invalid','sec-fetch-site':'same-origin',
+    'x-daenem-qa-persona':'qa-staging-v1'};
+  const personaRequest=(headers=personaHeaders,body)=>new Request(personaUrl,{
+    method:'POST',headers,body
+  });
+  const verifyPersona=(asContext=groupOwner,asEnv=env,request=personaRequest())=>
+    facilitiesRoutes.routeFacilities(request,asEnv,asContext);
+  const personaSnapshot=snapshot();
+  check((await verifyPersona(groupOwner,env,personaRequest({origin:'https://qa.invalid'}))).status===403,
+    'Synthetic persona verification requires a custom CSRF header');
+  check((await verifyPersona(groupOwner,env,
+    personaRequest({...personaHeaders,origin:'https://other.invalid'}))).status===403,
+    'Synthetic persona verification refuses cross-origin requests');
+  check((await verifyPersona(groupOwner,env,
+    personaRequest({...personaHeaders,'sec-fetch-site':'cross-site'}))).status===403,
+    'Synthetic persona verification rejects cross-site fetch metadata');
+  check((await verifyPersona(groupOwner,env,personaRequest(personaHeaders,'unexpected'))).status===403,
+    'Synthetic persona verification rejects payloads');
+  check((await verifyPersona({...groupOwner,employee:{id:qa('manager')}})).status===403,
+    'Synthetic manager cannot invoke Owner-only QA verification');
+  check((await verifyPersona({...groupOwner,roles:[{code:'manager',companyId:'company-printing'}]})).status===403,
+    'Non-owner denied synthetic QA verification');
+  check((await verifyPersona(groupOwner,{...env,APP_STAGE:'production'})).status===404,
+    'Synthetic QA verification never operates in Production');
+  check((await verifyPersona(groupOwner,{...env,STAFFPORTAL_DATABASE_NAME:'wrong-db'})).status===404,
+    'Synthetic QA verification cannot use non-staging D1');
+  same(snapshot(),personaSnapshot,
+    'Unauthorized synthetic persona verification attempts have no D1 writes');
+  const missingSecret=await verifyPersona(groupOwner,
+    {...env,STAFFPORTAL_QA_MANAGER_PASSWORD:'a-different-synthetic-secret-123'});
+  check(missingSecret.status===409&&
+    (await missingSecret.json()).code==='QA_PERSONA_SECRET_MISMATCH',
+    'Synthetic credential mismatch fails before canonical login or account lockout');
+  same(snapshot(),personaSnapshot,
+    'Synthetic credential preflight rejection leaves all database records unchanged');
+  const priorSessionIds=new Set(db.prepare(
+    "SELECT id FROM auth_sessions WHERE employee_id IN ('qa-staging-v1-manager','qa-staging-v1-employee')"
+  ).all().map(row=>row.id));
+  const priorCredentialHashes=rows("SELECT employee_id,password_hash,password_salt FROM employee_credentials ORDER BY employee_id");
+  const priorFacilitiesCounts=rows("SELECT company_id,COUNT(*) AS count FROM facilities GROUP BY company_id ORDER BY company_id");
+  const attested=await verifyPersona();
+  check(attested.status===200,'Real QA password auth and scoped Facilities checks succeed');
+  const attestedJson=await attested.json();
+  check(attestedJson.ok===true&&attestedJson.scope==='qa-staging-v1'&&
+    attestedJson.companyIsolation===true&&attestedJson.managerCompanyA===true&&
+    attestedJson.managerDeniedCompanyB===true&&attestedJson.employeeCompanyB===true&&
+    attestedJson.employeeDeniedCompanyA===true&&attestedJson.employeeWriteDenied===true&&
+    attestedJson.credentialsUnchanged===true&&attestedJson.facilitiesEvidence===0&&
+    attestedJson.temporarySessionsRevoked===true,
+    'Bounded attestation truthfully reports manager and employee company isolation');
+  const addedSessions=db.prepare(
+    "SELECT id,employee_id,revoked_at FROM auth_sessions WHERE employee_id IN ('qa-staging-v1-manager','qa-staging-v1-employee')"
+  ).all().filter(row=>!priorSessionIds.has(row.id));
+  check(addedSessions.length===2&&addedSessions.every(row=>row.revoked_at!==null),
+    'Both new synthetic test sessions are revoked, preserving pre-existing sessions');
+  same(rows("SELECT employee_id,password_hash,password_salt FROM employee_credentials ORDER BY employee_id"),
+    priorCredentialHashes,'Synthetic QA verification does not rotate any credentials');
+  same(rows("SELECT company_id,COUNT(*) AS count FROM facilities GROUP BY company_id ORDER BY company_id"),
+    priorFacilitiesCounts,'Canonical QA authentication does not manufacture Facilities rows');
+  const afterAuth=await readiness.inspectFacilitiesQaReadiness(env.DB);
+  check(afterAuth.state==='ready'&&afterAuth.facilitiesGrants===3&&
+    Object.values(afterAuth.evidence).every(value=>value===0),
+    'Live-persona acceptance does not consume Facilities transaction readiness');
+
   const facilitiesAllowed = await get(`/api/facilities/overview?companyId=${qa('company-a')}`, 'manager');
   check(facilitiesAllowed.status === 200, 'Manager accesses authorized Facilities overview');
   const facilitiesDenied = await get(`/api/facilities/overview?companyId=${qa('company-b')}`, 'manager');

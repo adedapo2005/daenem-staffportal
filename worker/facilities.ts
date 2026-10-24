@@ -9,6 +9,7 @@ import { validateWorkOrderTransition } from './facility-work-order-lifecycle';
 import { inspectFacilitiesQaReadiness } from './facilities-qa-readiness';
 import { reconcileExistingQaFacilitiesGrants } from './qa-facilities-grants-repair';
 import { facilitiesQaControlResponse } from './facilities-qa-grants-control';
+import { verifyQaPersonaAuthentication, QaPersonaFailure, type QaPersonaEnv } from './facilities-qa-persona-verify';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -253,6 +254,39 @@ async function facilitiesQaGrantControl(request:Request,env:FacilitiesEnv,contex
     pathname.endsWith('/control.css')?'style':'page');
 }
 
+async function facilitiesQaPersonaVerify(request:Request,env:FacilitiesEnv,context:SessionContext){
+  // The authenticated Group Owner and exact staging D1 guards are shared with
+  // the successful, independently verified synthetic-grants repair route.
+  const denied=qaGrantRepairAccess(env,context);
+  if(denied)return denied;
+  const origin=new URL(request.url).origin;
+  const suppliedOrigin=request.headers.get('origin');
+  const fetchSite=request.headers.get('sec-fetch-site');
+  if((suppliedOrigin!==null&&suppliedOrigin!==origin)||
+     (fetchSite!==null&&fetchSite!=='same-origin')||
+     request.headers.get('x-daenem-qa-persona')!=='qa-staging-v1'||
+     (suppliedOrigin===null&&fetchSite!=='same-origin'))
+    return json({error:'Request not allowed.',code:'QA_PERSONA_ORIGIN_DENIED'},403);
+  const length=request.headers.get('content-length');
+  if(length!==null&&length!=='0')
+    return json({error:'Request body not allowed.',code:'QA_PERSONA_PAYLOAD'},403);
+  if(request.body!==null){
+    const reader=request.body.getReader();
+    const first=await reader.read();
+    if(!first.done){
+      void reader.cancel().catch(()=>{});
+      return json({error:'Request body not allowed.',code:'QA_PERSONA_PAYLOAD'},403);
+    }
+  }
+  try {
+    return json(await verifyQaPersonaAuthentication(env as unknown as QaPersonaEnv,origin,
+      (nextRequest,liveEnv,persona)=>routeFacilities(nextRequest,liveEnv as FacilitiesEnv,persona)));
+  }catch(error){
+    return json({error:'Synthetic QA persona acceptance unavailable.',
+      code:error instanceof QaPersonaFailure?error.code:'QA_PERSONA_RUNTIME'},409);
+  }
+}
+
 async function facilitiesQaGrantRepair(request:Request,env:FacilitiesEnv,context:SessionContext){
   const denied=qaGrantRepairAccess(env,context);
   if(denied)return denied;
@@ -291,4 +325,4 @@ async function facilitiesQaGrantRepair(request:Request,env:FacilitiesEnv,context
   }
 }
 
-export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if((url.pathname==='/api/facilities/qa-grants/control'||url.pathname==='/api/facilities/qa-grants/control.js'||url.pathname==='/api/facilities/qa-grants/control.css')&&request.method==='GET')return facilitiesQaGrantControl(request,env,context);if(url.pathname==='/api/facilities/qa-grants/reconcile'&&request.method==='POST')return facilitiesQaGrantRepair(request,env,context);if(url.pathname==='/api/facilities/qa-readiness'&&request.method==='GET')return facilitiesQaReadiness(request,env,context);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
+export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/qa-persona/verify'&&request.method==='POST')return facilitiesQaPersonaVerify(request,env,context);if((url.pathname==='/api/facilities/qa-grants/control'||url.pathname==='/api/facilities/qa-grants/control.js'||url.pathname==='/api/facilities/qa-grants/control.css')&&request.method==='GET')return facilitiesQaGrantControl(request,env,context);if(url.pathname==='/api/facilities/qa-grants/reconcile'&&request.method==='POST')return facilitiesQaGrantRepair(request,env,context);if(url.pathname==='/api/facilities/qa-readiness'&&request.method==='GET')return facilitiesQaReadiness(request,env,context);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
