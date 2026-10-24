@@ -307,6 +307,21 @@ async function main() {
   const foreignMeter = await postFacility('/api/facilities/readings', 'manager',
     { ...meterInput, companyId: companyB });
   check(foreignMeter.status === 403, 'Manager cannot write a meter reading into company B');
+  const qaReadiness = await get('/api/facilities/qa-readiness','owner');
+  check(qaReadiness.status===200,'Owner sees staging Facilities QA readiness');
+  const qaState=await qaReadiness.json();
+  check(qaState.scope==='qa-staging-v1' &&
+    qaState.syntheticCompanies===2 && qaState.syntheticEmployees===3 &&
+    qaState.state==='transaction_evidence_present' && qaState.safeToReset===false &&
+    qaState.evidence.facilities===1 && qaState.evidence.equipment===1 &&
+    qaState.evidence.readings===1, 'QA readiness truthfully reports synthetic Facilities records');
+  check((await get('/api/facilities/qa-readiness','manager')).status===403,
+    'Non-owner cannot inspect QA readiness');
+  check((await get('/api/facilities/qa-readiness','employee')).status===403,
+    'View-only employee cannot inspect QA readiness');
+  const qaNonStaging = await fetchWorker(new Request('https://qa.invalid/api/facilities/qa-readiness',
+    {headers:{cookie:cookies.owner}}),{...env,APP_STAGE:'production'});
+  check(qaNonStaging.status===404,'QA readiness is unavailable outside staging');
   const positive = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
   check(positive.status === 200 && (await positive.json()).receivables.some(row => row.id === qa('receivable-a')), 'Authorized Finance fixture');
   const negative = await get(`/api/finance/receivables?companyId=${qa('company-b')}`, 'manager');
