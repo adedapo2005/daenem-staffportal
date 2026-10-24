@@ -7,7 +7,7 @@
  */
 export type FacilitiesQaReadiness = {
   scope: 'qa-staging-v1';
-  state: 'not_seeded' | 'ready' | 'transaction_evidence_present' | 'incomplete';
+  state: 'not_seeded' | 'ready' | 'transaction_reserved' | 'transaction_evidence_present' | 'incomplete';
   syntheticCompanies: number;
   syntheticSites: number;
   syntheticEmployees: number;
@@ -33,6 +33,7 @@ type Inventory = {
   memberships: number;
   credentials: number;
   grants: number;
+  reservation: number;
   facilities: number;
   equipment: number;
   readings: number;
@@ -57,6 +58,7 @@ export async function inspectFacilitiesQaReadiness(db: D1Database): Promise<Faci
       (SELECT COUNT(*) FROM role_permissions WHERE role_id IN
         ('qa-staging-v1-role-owner','qa-staging-v1-role-manager','qa-staging-v1-role-employee')
         AND permission_id=(SELECT id FROM permissions WHERE code='facilities.access')) AS grants,
+      (SELECT COUNT(*) FROM audit_logs WHERE id='qa-staging-v1-facilities-transaction-start' AND company_id='qa-staging-v1-company-a' AND module='qa-fixture-access') AS reservation,
       (SELECT COUNT(*) FROM facilities WHERE company_id IN ('qa-staging-v1-company-a','qa-staging-v1-company-b')) AS facilities,
       (SELECT COUNT(*) FROM assets WHERE company_id IN ('qa-staging-v1-company-a','qa-staging-v1-company-b')) AS equipment,
       (SELECT COUNT(*) FROM asset_readings WHERE company_id IN ('qa-staging-v1-company-a','qa-staging-v1-company-b')) AS readings,
@@ -77,12 +79,13 @@ export async function inspectFacilitiesQaReadiness(db: D1Database): Promise<Faci
     auditEvents: count(row.audits),
   };
   const evidencePresent = Object.values(evidence).some(value => value > 0);
+  const reserved = count(row.reservation) > 0;
   const hasAnyIdentity = [row.companies,row.sites,row.employees,row.memberships,row.credentials,row.grants]
     .some(value => Number(value) > 0);
   const complete = row.companies === 2 && row.sites === 2 && row.employees === 3 &&
     row.memberships === 4 && row.credentials === 3 && row.grants === 3;
   const state = complete
-    ? (evidencePresent ? 'transaction_evidence_present' : 'ready')
+    ? (evidencePresent ? 'transaction_evidence_present' : reserved ? 'transaction_reserved' : 'ready')
     : (!hasAnyIdentity && !evidencePresent ? 'not_seeded' : 'incomplete');
   return {
     scope: 'qa-staging-v1',
@@ -94,6 +97,6 @@ export async function inspectFacilitiesQaReadiness(db: D1Database): Promise<Faci
     credentials: count(row.credentials),
     facilitiesGrants: count(row.grants),
     evidence,
-    safeToReset: !evidencePresent,
+    safeToReset: !evidencePresent && !reserved,
   };
 }
