@@ -13,13 +13,40 @@ async function setting(env:BakeryEnv,key:string,fallback:string){const r=await e
 function businessDate(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
 async function nextNo(env:BakeryEnv,prefix:string,table:string,column:string){const date=businessDate().replaceAll('-','');const pattern=`${prefix}-${date}-%`;const row=await env.DB.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE ${column} LIKE ?`).bind(pattern).first<{count:number}>();return `${prefix}-${date}-${String(Number(row?.count||0)+1).padStart(4,'0')}`}
 
+type BakeryProductionTrendDay={day:string;completedBatches:number;goodLoaves:number;productionLossLoaves:number};
+type BakeryOrderTrendDay={day:string;orders:number;orderValueKobo:number;recordedOrderPaymentsKobo:number};
+async function bakeryDashboardHistory(env:BakeryEnv,includeCommercial:boolean){
+ const end=businessDate(),anchor=Date.parse(end+'T00:00:00Z');
+ const days=Array.from({length:14},(_,index)=>new Date(anchor-(13-index)*86400000).toISOString().slice(0,10));
+ const start=days[0];
+ const [production,orders]=await Promise.all([
+  env.DB.prepare(`SELECT date(completed_at,'+1 hour') AS day,COUNT(*) AS completedBatches,
+    COALESCE(SUM(actual_yield_qty),0) AS goodLoaves,
+    COALESCE(SUM(waste_qty+rejected_qty),0) AS productionLossLoaves
+    FROM bakery_batches WHERE company_id=? AND status='completed'
+      AND date(completed_at,'+1 hour') BETWEEN ? AND ?
+    GROUP BY date(completed_at,'+1 hour') ORDER BY day`).bind(bakeryCompany,start,end).all<BakeryProductionTrendDay>(),
+  includeCommercial?env.DB.prepare(`SELECT order_date AS day,COUNT(*) AS orders,
+    COALESCE(SUM(total_kobo),0) AS orderValueKobo,
+    COALESCE(SUM(amount_paid_kobo),0) AS recordedOrderPaymentsKobo
+    FROM sales_orders WHERE company_id=? AND order_date BETWEEN ? AND ? AND status!='cancelled'
+    GROUP BY order_date ORDER BY day`).bind(bakeryCompany,start,end).all<BakeryOrderTrendDay>():Promise.resolve({results:[] as BakeryOrderTrendDay[]})
+ ]);
+ const productionByDay=new Map((production.results||[]).map(row=>[row.day,row]));
+ const ordersByDay=new Map((orders.results||[]).map(row=>[row.day,row]));
+ return {periodStart:start,periodEnd:end,timeZone:'Africa/Lagos',
+  production:days.map(day=>{const row=productionByDay.get(day);return {day,completedBatches:Number(row?.completedBatches||0),goodLoaves:Number(row?.goodLoaves||0),productionLossLoaves:Number(row?.productionLossLoaves||0)}}),
+  orders:includeCommercial?days.map(day=>{const row=ordersByDay.get(day);return {day,orders:Number(row?.orders||0),orderValueKobo:Number(row?.orderValueKobo||0),recordedOrderPaymentsKobo:Number(row?.recordedOrderPaymentsKobo||0)}}):null,
+  source:'Recorded Bakery batches and non-cancelled orders; recorded payments do not prove bank or POS settlement.'};
+}
+
 async function dashboard(env:BakeryEnv,context:SessionContext){if(!can(context))return json({error:'Daenem Bakery access is not assigned.'},403);const date=businessDate();const[orders,batches,waste,low,best]=await Promise.all([
  env.DB.prepare(`SELECT COUNT(*) AS orderCount,COALESCE(SUM(total_kobo),0) AS revenueKobo,COALESCE(SUM(amount_paid_kobo),0) AS paidKobo FROM sales_orders WHERE company_id=? AND order_date=? AND status!='cancelled'`).bind(bakeryCompany,date).first<Record<string,number>>(),
  env.DB.prepare(`SELECT COALESCE(SUM(CASE WHEN status NOT IN ('completed','cancelled') THEN 1 ELSE 0 END),0) AS activeBatches,COALESCE(SUM(CASE WHEN status='completed' AND date(completed_at,'+1 hour')=? THEN actual_yield_qty ELSE 0 END),0) AS unitsProduced,COALESCE(SUM(CASE WHEN status='completed' AND date(completed_at,'+1 hour')=? THEN waste_qty+rejected_qty ELSE 0 END),0) AS batchWaste FROM bakery_batches WHERE company_id=?`).bind(date,date,bakeryCompany).first<Record<string,number>>(),
  env.DB.prepare(`SELECT COALESCE(SUM(estimated_cost_kobo),0) AS wasteCostKobo,COALESCE(SUM(quantity),0) AS wasteQty FROM bakery_waste_records WHERE company_id=? AND date(recorded_at,'+1 hour')=?`).bind(bakeryCompany,date).first<Record<string,number>>(),
  env.DB.prepare(`SELECT COUNT(*) AS count FROM inventory_items i LEFT JOIN stock_balances sb ON sb.item_id=i.id WHERE i.company_id=? AND i.active=1 GROUP BY i.id HAVING COALESCE(SUM(sb.quantity-sb.reserved_quantity),0)<=i.reorder_level`).bind(bakeryCompany).all<Record<string,unknown>>(),
  env.DB.prepare(`SELECT bp.id,bp.name,COALESCE(SUM(soi.quantity),0) AS quantity,COALESCE(SUM(soi.line_total_kobo),0) AS revenueKobo FROM sales_order_items soi JOIN sales_orders so ON so.id=soi.sales_order_id JOIN bakery_products bp ON bp.inventory_item_id=soi.inventory_item_id WHERE so.company_id=? AND so.order_date=? AND so.status!='cancelled' GROUP BY bp.id,bp.name ORDER BY quantity DESC LIMIT 8`).bind(bakeryCompany,date).all<Record<string,unknown>>()
- ]);return json({date,metrics:{orders:Number(orders?.orderCount||0),revenueKobo:Number(orders?.revenueKobo||0),paidKobo:Number(orders?.paidKobo||0),activeBatches:Number(batches?.activeBatches||0),unitsProduced:Number(batches?.unitsProduced||0),batchWaste:Number(batches?.batchWaste||0),wasteCostKobo:Number(waste?.wasteCostKobo||0),lowStockItems:(low.results||[]).length},bestSellers:best.results||[]})}
+ ]);const history=await bakeryDashboardHistory(env,salesCan(context));return json({date,metrics:{orders:Number(orders?.orderCount||0),revenueKobo:Number(orders?.revenueKobo||0),paidKobo:Number(orders?.paidKobo||0),activeBatches:Number(batches?.activeBatches||0),unitsProduced:Number(batches?.unitsProduced||0),batchWaste:Number(batches?.batchWaste||0),wasteCostKobo:Number(waste?.wasteCostKobo||0),lowStockItems:(low.results||[]).length},bestSellers:best.results||[],history})}
 
 async function catalog(env:BakeryEnv,context:SessionContext){if(!can(context))return json({error:'Daenem Bakery access is not assigned.'},403);const products=await env.DB.prepare(`SELECT bp.id,bp.inventory_item_id AS inventoryItemId,bp.code,bp.barcode,bp.name,bp.category,bp.description,bp.sales_unit AS salesUnit,bp.selling_price_kobo AS sellingPriceKobo,bp.wholesale_price_kobo AS wholesalePriceKobo,bp.shelf_life_hours AS shelfLifeHours,bp.reorder_level AS reorderLevel,COALESCE(SUM(sb.quantity-sb.reserved_quantity),0) AS availableQty FROM bakery_products bp LEFT JOIN stock_balances sb ON sb.item_id=bp.inventory_item_id WHERE bp.company_id=? AND bp.active=1 GROUP BY bp.id ORDER BY bp.category,bp.name`).bind(bakeryCompany).all<Record<string,unknown>>();const recipes=await env.DB.prepare(`SELECT br.id,br.product_id AS productId,bp.name AS productName,br.name,br.version_no AS versionNo,br.batch_yield_qty AS batchYieldQty,br.yield_unit AS yieldUnit,br.labour_cost_kobo AS labourCostKobo,br.energy_cost_kobo AS energyCostKobo,br.packaging_cost_kobo AS packagingCostKobo,br.other_overhead_kobo AS otherOverheadKobo,COALESCE(SUM(bri.quantity*i.unit_cost_kobo),0) AS ingredientCostKobo,COALESCE(SUM(bri.quantity*i.unit_cost_kobo),0)+br.labour_cost_kobo+br.energy_cost_kobo+br.packaging_cost_kobo+br.other_overhead_kobo AS estimatedBatchCostKobo FROM bakery_recipes br JOIN bakery_products bp ON bp.id=br.product_id LEFT JOIN bakery_recipe_ingredients bri ON bri.recipe_id=br.id LEFT JOIN inventory_items i ON i.id=bri.inventory_item_id WHERE br.company_id=? AND br.active=1 GROUP BY br.id ORDER BY bp.name,br.version_no DESC`).bind(bakeryCompany).all<Record<string,unknown>>();return json({products:products.results||[],recipes:recipes.results||[]})}
 
