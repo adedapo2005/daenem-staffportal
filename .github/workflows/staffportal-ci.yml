@@ -59,6 +59,9 @@ jobs:
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
 
+      - name: Facilities schedule reference integrity
+        run: node scripts/test-facility-schedule-reference-scope.mjs
+
       - name: Enterprise Command Center preservation and navigation
         run: |
           node scripts/test-navigation-overlay.mjs

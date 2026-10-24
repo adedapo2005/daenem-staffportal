@@ -3,6 +3,7 @@ import { resolveMaintenanceReferences, resolveReadingAssetReference } from './fa
 import { validateFacilityRegistration } from './facility-registration-guard';
 import { recentFacilityReadings } from './facility-reading-history';
 import { recentFacilitiesAudit } from './facility-audit-feed';
+import { validateScheduleReferences } from './facility-schedule-guard';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -175,11 +176,27 @@ async function recordReading(request:Request,env:FacilitiesEnv,context:SessionCo
 }
 
 async function createSchedule(request:Request,env:FacilitiesEnv,context:SessionContext){
-  if(!can(context,'edit'))return json({error:'Edit Facilities permission is required.'},403);let body:{companyId?:string;facilityId?:string;assetId?:string;categoryCode?:string;title?:string;description?:string;intervalType?:string;intervalValue?:number;nextDueAt?:string;nextMeterValue?:number;estimatedCostKobo?:number;defaultAssigneeEmployeeId?:string;defaultVendorId?:string;checklist?:unknown};try{body=await request.json()}catch{return json({error:'Invalid maintenance schedule.'},400)}
-  const companyId=String(body.companyId||''),accessError=requireCompany(context,companyId,'edit');if(accessError)return json({error:accessError},403);const title=String(body.title||'').trim(),intervalType=String(body.intervalType||'months'),intervalValue=Math.max(1,Number(body.intervalValue||1));if(!title||!['days','weeks','months','running_hours','calendar'].includes(intervalType))return json({error:'Title and valid interval are required.'},400);const id=uid('pm-schedule');await env.DB.batch([
-    env.DB.prepare(`INSERT INTO preventive_maintenance_schedules(id,company_id,facility_id,asset_id,category_code,title,description,interval_type,interval_value,next_due_at,next_meter_value,default_assignee_employee_id,default_vendor_id,checklist_json,estimated_cost_kobo,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,body.facilityId||null,body.assetId||null,body.categoryCode||null,title,body.description||null,intervalType,intervalValue,body.nextDueAt||null,body.nextMeterValue??null,body.defaultAssigneeEmployeeId||null,body.defaultVendorId||null,body.checklist?JSON.stringify(body.checklist):null,body.estimatedCostKobo??null,context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','preventive_schedule',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({title,intervalType,intervalValue,nextDueAt:body.nextDueAt||null}))
-  ]);return json({ok:true,schedule:{id,title}},201);
+  if(!can(context,'edit'))return json({error:'Edit Facilities permission is required.'},403);
+  let body:{companyId?:string;facilityId?:string;assetId?:string;categoryCode?:string;title?:string;description?:string;intervalType?:string;intervalValue?:number;nextDueAt?:string;nextMeterValue?:number;estimatedCostKobo?:number;defaultAssigneeEmployeeId?:string;defaultVendorId?:string;checklist?:unknown};
+  try{body=await request.json()}catch{return json({error:'Invalid maintenance schedule.'},400)}
+  const companyId=String(body.companyId||'').trim();
+  const accessError=requireCompany(context,companyId,'edit');
+  if(accessError)return json({error:accessError},403);
+  const title=String(body.title||'').trim();
+  const intervalType=String(body.intervalType||'months').trim();
+  const intervalValue=body.intervalValue===undefined?1:body.intervalValue;
+  if(!title||title.length>180||!['days','weeks','months','running_hours','calendar'].includes(intervalType)||
+    !Number.isSafeInteger(intervalValue)||intervalValue<=0)return json({error:'Title and a valid positive whole-number interval are required.'},400);
+  const cost=body.estimatedCostKobo;
+  if(cost!==undefined&&(!Number.isSafeInteger(cost)||cost<0))return json({error:'Estimated cost must be a non-negative amount in kobo.'},400);
+  const refs=await validateScheduleReferences(env.DB,companyId,body);
+  if(!refs.ok)return json({error:refs.error,code:'MAINTENANCE_SCHEDULE_REFERENCE_INVALID'},400);
+  const id=uid('pm-schedule');
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO preventive_maintenance_schedules(id,company_id,facility_id,asset_id,category_code,title,description,interval_type,interval_value,next_due_at,next_meter_value,default_assignee_employee_id,default_vendor_id,checklist_json,estimated_cost_kobo,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,companyId,refs.facilityId,refs.assetId,refs.categoryCode,title,body.description||null,intervalType,intervalValue,body.nextDueAt||null,body.nextMeterValue??null,refs.defaultAssigneeEmployeeId,refs.defaultVendorId,body.checklist?JSON.stringify(body.checklist):null,cost??null,context.employee.id),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'facilities','create','preventive_schedule',?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,id,JSON.stringify({title,intervalType,intervalValue,facilityId:refs.facilityId,assetId:refs.assetId,nextDueAt:body.nextDueAt||null}))
+  ]);
+  return json({ok:true,schedule:{id,title}},201);
 }
 
 export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/audit'&&request.method==='GET')return facilitiesAudit(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
