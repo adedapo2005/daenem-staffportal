@@ -38,3 +38,25 @@
     font-size: clamp(14px, .46vw, 17px);
   }
 }
+
+/* Genuine D1-backed Facilities read surfaces. No glass or mock charts. */
+.facility-history-grid .facility-history-panel,.facility-history-grid .facility-source-panel{min-width:0}
+.facility-history-grid .facility-history-panel{border-color:rgba(31,126,113,.28)}
+.facility-history-grid .facility-history-panel .card-heading svg{color:#198674}
+.facility-record-empty{display:grid;justify-items:start;gap:8px;padding:clamp(14px,.7vw,22px);border:1px dashed rgba(46,118,106,.28);border-radius:13px;background:#f7fbf8;color:#345660;line-height:1.45}
+.facility-record-empty strong{font-size:clamp(14px,.53vw,19px);color:#1e4652}
+.facility-record-empty span{font-size:clamp(13px,.45vw,16px)}
+.facility-reading-history{display:grid;gap:9px}
+.facility-reading-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid rgba(38,104,125,.14);background:linear-gradient(110deg,#f7fbfb,#fff);border-radius:13px;min-width:0}
+.facility-reading-row>div{min-width:0}
+.facility-reading-row strong,.facility-reading-row span,.facility-reading-row small{display:block}
+.facility-reading-row strong{font-weight:790;color:#234354}
+.facility-reading-row span{color:#64778a;font-size:clamp(12px,.46vw,15px);overflow-wrap:anywhere;margin-top:3px}
+.facility-reading-row small{color:#6a7e8c;font-size:12px;margin-top:3px}
+.facility-reading-row b{color:#117568;font-size:clamp(15px,.64vw,21px);font-variant-numeric:tabular-nums;white-space:nowrap}
+.facility-history-state{padding:16px;border-radius:12px;border:1px solid #bacfda;color:#34566a;background:#f4f8fb}
+.facility-source-panel{background:linear-gradient(150deg,#f5faf8,#fbfdf9 55%,#fffaf1)}
+.facility-source-panel .card-heading svg{color:#327c6f}
+.facility-source-panel p{color:#526d74;font-size:clamp(13px,.49vw,17px);line-height:1.6;margin:0 0 11px}
+@media(max-width:760px){.facility-reading-row{align-items:flex-start;flex-direction:column}.facility-reading-row b{white-space:normal}}
+@media(prefers-reduced-motion:reduce){.facility-history-grid *{animation:none!important;transition:none!important}}
