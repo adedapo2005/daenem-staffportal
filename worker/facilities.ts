@@ -1,6 +1,7 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 import { resolveMaintenanceReferences, resolveReadingAssetReference } from './facility-reference-guard';
 import { validateFacilityRegistration } from './facility-registration-guard';
+import { recentFacilityReadings } from './facility-reading-history';
 
 interface FacilitiesEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
@@ -37,6 +38,16 @@ async function catalog(request:Request,env:FacilitiesEnv,context:SessionContext)
     env.DB.prepare(`SELECT id,name,city,state FROM company_locations WHERE company_id=? AND active=1 ORDER BY name`).bind(companyId).all<Record<string,unknown>>()
   ]);
   return json({companyId,facilities:facilityRows.results||[],assets:assetRows.results||[],schedules:scheduleRows.results||[],vendors:vendorRows.results||[],categories:categories.results||[],locations:locationRows.results||[]});
+}
+
+async function readingsHistory(request:Request,env:FacilitiesEnv,context:SessionContext){
+  if(!can(context,'view'))return json({error:'Facilities access is not assigned.'},403);
+  const url=new URL(request.url);
+  const companyId=url.searchParams.get('companyId')||context.companies[0]?.id||'';
+  const accessError=requireCompany(context,companyId);
+  if(accessError)return json({error:accessError},403);
+  const readings=await recentFacilityReadings(env.DB,companyId);
+  return json({companyId,readings});
 }
 
 async function createFacility(request:Request,env:FacilitiesEnv,context:SessionContext){
@@ -143,4 +154,4 @@ async function createSchedule(request:Request,env:FacilitiesEnv,context:SessionC
   ]);return json({ok:true,schedule:{id,title}},201);
 }
 
-export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}
+export async function routeFacilities(request:Request,env:FacilitiesEnv,context:SessionContext):Promise<Response|null>{const url=new URL(request.url);if(url.pathname==='/api/facilities/overview'&&request.method==='GET')return overview(request,env,context);if(url.pathname==='/api/facilities/catalog'&&request.method==='GET')return catalog(request,env,context);if(url.pathname==='/api/facilities'&&request.method==='POST')return createFacility(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='GET')return readingsHistory(request,env,context);if(url.pathname==='/api/facilities/assets'&&request.method==='POST')return createAsset(request,env,context);if(url.pathname==='/api/facilities/work-orders'&&request.method==='POST')return createWorkOrder(request,env,context);if(url.pathname==='/api/facilities/work-orders/update'&&request.method==='POST')return updateWorkOrder(request,env,context);if(url.pathname==='/api/facilities/readings'&&request.method==='POST')return recordReading(request,env,context);if(url.pathname==='/api/facilities/schedules'&&request.method==='POST')return createSchedule(request,env,context);return null;}

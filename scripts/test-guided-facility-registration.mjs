@@ -89,5 +89,6 @@ ok(view.includes('suggestFacilityName('));
 ok(view.includes("await api('/api/facilities',{method:'POST'"));
 ok(view.includes('facilities-guided-create-grid'));
 ok(view.includes('duplicateFacility'));
-ok(view.includes('setLocations([]);setFacilityDraft('));
+ok(view.includes('setLocations([]);'),'Location options must clear on company switch');
+ok(view.includes('setFacilityDraft({facilityType:'),'Facility draft must clear on company switch');
 console.log('StaffPortal guided facility registration tests passed ('+cases+' focused checks).');
