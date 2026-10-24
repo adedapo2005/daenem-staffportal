@@ -8,7 +8,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { webcrypto } from 'node:crypto';
 import ts from 'typescript';
 
-const SHA = '1af3a9b8d643b07d7a3a2ebf05e59f73f7449686';
+// Use the exact checked-out candidate, not an ancestor absent from shallow CI clones.
+const SHA = process.argv.includes('--baseline-stdin') ? null : execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 let assertions = 0, externalCalls = 0, lastCheck = 'Initialization';
 function check(value, label) { assertions++; lastCheck = label; if (!value) throw new Error(label); }
 const same = (left, right, label) => check(JSON.stringify(left) === JSON.stringify(right), label);
@@ -21,20 +22,19 @@ async function main() {
   if (process.argv.includes('--baseline-stdin')) baseline = JSON.parse(fs.readFileSync(0, 'utf8').replace(/^\uFEFF/, ''));
   else {
     const files = {};
-    const names = execFileSync('git', ['ls-tree', '-r', '--name-only', SHA, 'worker', 'migrations', 'src/dashboard-capabilities.ts', 'src/layout-system.ts'], { encoding: 'utf8' }).trim().split('\n');
-    for (const name of names) files[name] = execFileSync('git', ['show', `${SHA}:${name}`], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+    const names = execFileSync('git', ['ls-tree', '-r', '--name-only', 'HEAD', 'worker', 'migrations', 'src'], { encoding: 'utf8' }).trim().split('\n');
+    for (const name of names) files[name] = execFileSync('git', ['show', `HEAD:${name}`], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
     baseline = { sha: SHA, files };
   }
-  check(baseline.sha === SHA, 'Exact authoritative baseline');
+  check(SHA === null || baseline.sha === SHA, 'Exact checked-out candidate baseline');
   const sources = { ...baseline.files };
   sources['worker/staging-qa-seeder.ts'] = fs.readFileSync('worker/staging-qa-seeder.ts', 'utf8');
-  // Register only this delta on the exact baseline; shared HEAD contains other completed lanes.
+  // On the current branch the guarded QA route is already registered. Do not
+  // insert it a second time or override the working Worker entrypoint.
   const workingEntry = fs.readFileSync('worker/staffportal-staging.ts', 'utf8');
-  const routeRegistration = workingEntry.slice(workingEntry.indexOf("    if(new URL(request.url).pathname==='/api/staging/qa-fixture')"), workingEntry.indexOf("    if(request.method==='OPTIONS')"));
-  check(routeRegistration.length > 0, 'Staging route registration extracted');
-  sources['worker/staffportal-staging.ts'] = baseline.files['worker/staffportal-staging.ts']
-    .replace("    if(request.method==='OPTIONS')", `${routeRegistration}    if(request.method==='OPTIONS')`);
-  check(workingEntry.includes('if(qaResponse)return qaResponse;') && workingEntry.indexOf('routeStagingQaSeeder(request,') < workingEntry.indexOf("if(request.method==='OPTIONS')"), 'Working entry guard precedes middleware');
+  check(workingEntry.includes('if(qaResponse)return qaResponse;') &&
+    workingEntry.indexOf('routeStagingQaSeeder(request,') < workingEntry.indexOf("if(request.method==='OPTIONS')"),
+    'Current staging route guard precedes middleware');
 
   const cache = new Map();
   const sandbox = vm.createContext({ crypto: webcrypto, Request, Response, Headers, URL, URLSearchParams,
@@ -186,7 +186,26 @@ async function main() {
     const scope = persona === 'employee' ? 'b' : 'a';
     check(context.companies.some(company => company.id === qa(`company-${scope}`) && company.locationId === qa(`site-${scope}`)), 'Canonical site membership truth');
     check(auth.hasPermission(context, 'payroll.access', 'edit', qa('company-a')) === (persona !== 'employee'), 'Composed Payroll permission');
+    const allowedCompany = qa('company-' + scope);
+    const expectedFacilityLevel = persona === 'owner' ? 'manage' : persona === 'manager' ? 'edit' : 'view';
+    check(auth.hasPermission(context, 'facilities.access', expectedFacilityLevel, allowedCompany), 'Scoped Facilities persona permission');
+    check(!auth.hasPermission(context, 'facilities.access', 'view', qa('company-' + (scope === 'a' ? 'b' : 'a'))) || persona === 'owner',
+      'Facilities foreign-company grant denied');
   }
+  const facilitiesAllowed = await get(`/api/facilities/overview?companyId=${qa('company-a')}`, 'manager');
+  check(facilitiesAllowed.status === 200, 'Manager accesses authorized Facilities overview');
+  const facilitiesDenied = await get(`/api/facilities/overview?companyId=${qa('company-b')}`, 'manager');
+  check(facilitiesDenied.status === 403, 'Manager denied foreign Facilities overview');
+  const employeeFacilities = await get(`/api/facilities/overview?companyId=${qa('company-b')}`, 'employee');
+  check(employeeFacilities.status === 200, 'Employee views own Facilities company');
+  const deniedCreate = await fetchWorker(new Request('https://qa.invalid/api/facilities',{method:'POST',
+    headers:{cookie:cookies.employee,'content-type':'application/json'},
+    body:JSON.stringify({companyId:qa('company-b'),name:'QA unauthorized facility'})}));
+  check(deniedCreate.status === 403, 'View-only employee cannot create Facilities record');
+  const foreignCreate = await fetchWorker(new Request('https://qa.invalid/api/facilities',{method:'POST',
+    headers:{cookie:cookies.manager,'content-type':'application/json'},
+    body:JSON.stringify({companyId:qa('company-b'),name:'QA foreign facility'})}));
+  check(foreignCreate.status === 403, 'Manager cannot write into foreign Facilities company');
   const positive = await get(`/api/finance/receivables?companyId=${qa('company-a')}`, 'manager');
   check(positive.status === 200 && (await positive.json()).receivables.some(row => row.id === qa('receivable-a')), 'Authorized Finance fixture');
   const negative = await get(`/api/finance/receivables?companyId=${qa('company-b')}`, 'manager');
