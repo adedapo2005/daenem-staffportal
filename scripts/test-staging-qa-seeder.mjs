@@ -551,7 +551,9 @@ async function main() {
     "SELECT id FROM auth_sessions WHERE employee_id='qa-staging-v1-manager'"
   ).all().map(row=>row.id);
   const beforeTxCred=rows("SELECT employee_id,password_hash,password_salt FROM employee_credentials ORDER BY employee_id");
+  const prepareQueryStart=calls;
   const prepared=await txPost();
+  check(calls-prepareQueryStart<=50,'Live prepare phase stays below staging D1 50-query limit');
   check(prepared.status===200,'Canonical QA acceptance reserves its synthetic slot and proves rollback');
   const preparedResult=await prepared.json();
   check(preparedResult.ok===true&&preparedResult.state==='prepared'&&
@@ -566,7 +568,9 @@ async function main() {
   const beforeReservedReset=snapshot();
   await summary(await operation('reset'),503,'Reservation alone blocks staging QA fixture reset');
   same(snapshot(),beforeReservedReset,'Denied reset leaves immutable acceptance reservation intact');
+  const writeQueryStart=calls;
   const txCompleted=await txWrite();
+  check(calls-writeQueryStart<=50,'Live write phase stays below staging D1 50-query limit');
   check(txCompleted.status===200,'Canonical QA Facilities write phase succeeds');
   const txResult=await txCompleted.json();
   check(txResult.ok===true&&txResult.scope==='qa-staging-v1'&&txResult.state==='written'&&
