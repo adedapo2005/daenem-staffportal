@@ -152,7 +152,10 @@ el('repair').addEventListener('click',async()=>{
     const result=await response.json();
     if(response.status!==200||result.ok!==true||
       result.scope!=='qa-staging-v1'||result.facilitiesGrants!==3){
-      throw new Error('Reconciliation refused by the Worker (HTTP '+response.status+').');
+      const safeCode=typeof result.code==='string'&&
+        /^QA_REPAIR_(ORIGIN_MISMATCH|FETCH_SITE|SAME_ORIGIN_REQUIRED|PAYLOAD)$/.test(result.code)
+        ?' ['+result.code+']':'';
+      throw new Error('Reconciliation refused by the Worker (HTTP '+response.status+')'+safeCode+'.');
     }
     el('result').textContent='Reconciliation accepted. Confirming the persisted grant counts…';
   }catch(err){
