@@ -173,11 +173,11 @@ async function load(){
     const evidenceResponse=await fetch(base+'qa-transaction/evidence',
       {credentials:'same-origin',cache:'no-store'});
     if(!evidenceResponse.ok)throw new Error('QA transaction evidence unavailable.');
-    const evidence=await evidenceResponse.json();
-    state.txEligible=txReady(data)&&evidence.state==='not_started'&&
-      evidence.reserved===false&&evidence.rollbackProbeAbsent===true&&
-      evidence.companyBIsolated===true;
-    el('tx-status').textContent=evidence.state==='verified'?
+    const transactionEvidence=await evidenceResponse.json();
+    state.txEligible=txReady(data)&&transactionEvidence.state==='not_started'&&
+      transactionEvidence.reserved===false&&transactionEvidence.rollbackProbeAbsent===true&&
+      transactionEvidence.companyBIsolated===true;
+    el('tx-status').textContent=transactionEvidence.state==='verified'?
       'Verified — synthetic facility, equipment, meter and audit evidence persisted.':
       state.txEligible?'Eligible — no synthetic Facilities evidence or reservation exists.':
       'Unavailable — prerequisites failed or transaction has already been attempted.';
