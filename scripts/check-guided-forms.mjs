@@ -1,0 +1,16 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const ui=get('src/centers.tsx'),helpers=get('src/guided-form-fields.ts'),server=get('worker/forms.ts');
+assert.match(ui,/prepareFormSchema\(fields,optionDrafts\)/);
+assert.match(ui,/f\.type==='select'\?<select/);
+assert.match(ui,/optionDrafts\[f\.key\]/);
+assert.match(ui,/FORM_OPTION_SETS\.map/);
+assert.match(ui,/selected\.has\(e\.id\)/);
+assert.match(helpers,/normaliseFormChoices/);
+assert.match(helpers,/2–30 distinct dropdown choices/);
+assert.match(server,/f\.type==='select'/);
+assert.match(server,/validNewSelectOptions\(f\.options\)/);
+assert.match(server,/validSubmittedSelectAnswer\(body\.responses\[field\.key\]/);
+assert.match(server,/FORM_OPTION_INVALID/);
+console.log('Forms guided-entry source contract passed (11 checks)');
