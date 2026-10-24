@@ -225,22 +225,49 @@ async function receiveStock(request: Request, env: InventoryEnv, context: Sessio
       valuation:{mode:'exact_microkobo',receiptCostKobo:incomingKobo,unitCostApproximateKobo:displayedUnitCost},
       message:'Exact-value Bakery receipt posted with auditable source cost.'});
   }
+  // Recheck the precision-ledger transition INSIDE this batch. Another authorised
+  // reviewer may have approved an opening between the initial lookup and this write.
+  // The stock movement quantity is NOT NULL, so a failed guard aborts the entire batch.
+  const legacyReceiptQtySql = isBakery
+    ? `CASE WHEN changes()=1 AND NOT EXISTS(
+         SELECT 1 FROM bakery_material_valuation_balances v
+         WHERE v.company_id=? AND v.location_id=? AND v.inventory_item_id=?
+       ) THEN ? ELSE NULL END`
+    : '?';
+  const legacyReceiptQtyParams = isBakery
+    ? [companyId, body.locationId, body.itemId, baseQuantity]
+    : [baseQuantity];
   const movementId = uid('stock-movement');
-  await env.DB.batch([
-    env.DB.prepare(`
-      INSERT INTO stock_balances (id, company_id, location_id, item_id, quantity)
-      VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(location_id, item_id) DO UPDATE SET quantity = stock_balances.quantity + excluded.quantity, updated_at = CURRENT_TIMESTAMP
-    `).bind(uid('stock-balance'), companyId, body.locationId, body.itemId, baseQuantity),
-    env.DB.prepare(`UPDATE inventory_items SET unit_cost_kobo = CASE WHEN ? > 0 THEN ? ELSE unit_cost_kobo END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(unitCost, unitCost, body.itemId),
-    env.DB.prepare(`
-      INSERT INTO stock_movements (
-        id, company_id, item_id, movement_type, quantity, unit_cost_kobo, to_location_id,
-        reference_type, reference_id, reason, lot_no, expiry_date, created_by, metadata_json
-      ) VALUES (?, ?, ?, 'receipt', ?, ?, ?, 'goods_receipt', ?, ?, ?, ?, ?, ?)
-    `).bind(movementId, companyId, body.itemId, baseQuantity, unitCost, body.locationId, body.supplierReference || movementId, body.note || 'Goods received', body.lotNo || null, body.expiryDate || null, context.employee.id, JSON.stringify({ supplierId: body.supplierId || null, conversion, baseQuantity, baseUnit:item.unit })),
-    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'inventory', 'receive_stock', 'stock_movement', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, movementId, JSON.stringify({ itemId: body.itemId, locationId: body.locationId, enteredQuantity:quantity, baseQuantity, baseUnit:item.unit, unitCost, conversion })),
-  ]);
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO stock_balances (id, company_id, location_id, item_id, quantity)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(location_id, item_id) DO UPDATE SET
+        quantity = stock_balances.quantity + excluded.quantity, updated_at = CURRENT_TIMESTAMP
+      `).bind(uid('stock-balance'), companyId, body.locationId, body.itemId, baseQuantity),
+      env.DB.prepare(`
+        INSERT INTO stock_movements (
+          id, company_id, item_id, movement_type, quantity, unit_cost_kobo, to_location_id,
+          reference_type, reference_id, reason, lot_no, expiry_date, created_by, metadata_json
+        ) VALUES (?, ?, ?, 'receipt', ${legacyReceiptQtySql}, ?, ?, 'goods_receipt', ?, ?, ?, ?, ?, ?)
+      `).bind(movementId, companyId, body.itemId, ...legacyReceiptQtyParams, unitCost,
+        body.locationId, body.supplierReference || movementId, body.note || 'Goods received',
+        body.lotNo || null, body.expiryDate || null, context.employee.id,
+        JSON.stringify({ supplierId: body.supplierId || null, conversion, baseQuantity, baseUnit: item.unit })),
+      env.DB.prepare(`UPDATE inventory_items SET unit_cost_kobo = CASE WHEN ? > 0 THEN ? ELSE unit_cost_kobo END,
+        updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(unitCost, unitCost, body.itemId),
+      env.DB.prepare(`INSERT INTO audit_logs
+        (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source)
+        VALUES (?, ?, ?, 'inventory', 'receive_stock', 'stock_movement', ?, ?, 'web')`)
+        .bind(uid('audit'), context.employee.id, companyId, movementId,
+          JSON.stringify({ itemId: body.itemId, locationId: body.locationId, enteredQuantity: quantity,
+            baseQuantity, baseUnit: item.unit, unitCost, conversion })),
+    ]);
+  } catch (error) {
+    if (isBakery) return json({ error: 'Bakery stock or its valuation changed before the receipt committed. Refresh and retry.' }, 409);
+    throw error;
+  }
   return json({ ok: true, movementId, baseQuantity, baseUnit:item.unit, conversion, message: 'Goods received and stock balance updated.' });
 }
 
@@ -262,14 +289,63 @@ async function transferStock(request: Request, env: InventoryEnv, context: Sessi
     sourceReserved:Number(balance.reservedQuantity||0),reason:body.reason
   });
   if(preciseTransfer)return preciseTransfer;
+  // A legacy transfer can race with independent approval of exact-value opening
+  // stock. Guard the source debit and the first immutable movement in one batch,
+  // checking BOTH locations. A failed NOT NULL quantity aborts every stock change.
+  const bakeryLegacyTransfer = companyId === 'company-bakery';
+  const legacyDebitSql = bakeryLegacyTransfer
+    ? `UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP
+       WHERE id=? AND company_id=? AND location_id=? AND item_id=?
+         AND quantity-reserved_quantity>=?`
+    : 'UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+  const legacyDebitParams = bakeryLegacyTransfer
+    ? [quantity, balance.id, companyId, body.fromLocationId, body.itemId, quantity]
+    : [quantity, balance.id];
+  const legacyTransferQtySql = bakeryLegacyTransfer
+    ? `CASE WHEN changes()=1
+       AND NOT EXISTS(SELECT 1 FROM bakery_material_valuation_balances v
+         WHERE v.company_id=? AND v.location_id=? AND v.inventory_item_id=?)
+       AND NOT EXISTS(SELECT 1 FROM bakery_material_valuation_balances v
+         WHERE v.company_id=? AND v.location_id=? AND v.inventory_item_id=?)
+       THEN ? ELSE NULL END`
+    : '?';
+  const legacyTransferQtyParams = bakeryLegacyTransfer
+    ? [companyId, body.fromLocationId, body.itemId, companyId, body.toLocationId, body.itemId, quantity]
+    : [quantity];
   const transferRef = uid('transfer');
-  await env.DB.batch([
-    env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(quantity, balance.id),
-    env.DB.prepare(`INSERT INTO stock_balances (id, company_id, location_id, item_id, quantity) VALUES (?, ?, ?, ?, ?) ON CONFLICT(location_id,item_id) DO UPDATE SET quantity = stock_balances.quantity + excluded.quantity, updated_at = CURRENT_TIMESTAMP`).bind(uid('stock-balance'), companyId, body.toLocationId, body.itemId, quantity),
-    env.DB.prepare(`INSERT INTO stock_movements (id, company_id, item_id, movement_type, quantity, from_location_id, to_location_id, reference_type, reference_id, reason, created_by) VALUES (?, ?, ?, 'transfer_out', ?, ?, ?, 'stock_transfer', ?, ?, ?)`).bind(uid('stock-movement'), companyId, body.itemId, quantity, body.fromLocationId, body.toLocationId, transferRef, body.reason || 'Internal stock transfer', context.employee.id),
-    env.DB.prepare(`INSERT INTO stock_movements (id, company_id, item_id, movement_type, quantity, from_location_id, to_location_id, reference_type, reference_id, reason, created_by) VALUES (?, ?, ?, 'transfer_in', ?, ?, ?, 'stock_transfer', ?, ?, ?)`).bind(uid('stock-movement'), companyId, body.itemId, quantity, body.fromLocationId, body.toLocationId, transferRef, body.reason || 'Internal stock transfer', context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'inventory', 'stock_transfer', 'stock_transfer', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, transferRef, JSON.stringify({ itemId: body.itemId, quantity, from: body.fromLocationId, to: body.toLocationId })),
-  ]);
+  try {
+    await env.DB.batch([
+      env.DB.prepare(legacyDebitSql).bind(...legacyDebitParams),
+      env.DB.prepare(`INSERT INTO stock_movements
+        (id, company_id, item_id, movement_type, quantity, from_location_id, to_location_id,
+         reference_type, reference_id, reason, created_by)
+        VALUES (?, ?, ?, 'transfer_out', ${legacyTransferQtySql}, ?, ?, 'stock_transfer', ?, ?, ?)`)
+        .bind(uid('stock-movement'), companyId, body.itemId, ...legacyTransferQtyParams,
+          body.fromLocationId, body.toLocationId, transferRef,
+          body.reason || 'Internal stock transfer', context.employee.id),
+      env.DB.prepare(`INSERT INTO stock_balances
+        (id, company_id, location_id, item_id, quantity) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(location_id,item_id) DO UPDATE SET
+        quantity=stock_balances.quantity+excluded.quantity,updated_at=CURRENT_TIMESTAMP`)
+        .bind(uid('stock-balance'), companyId, body.toLocationId, body.itemId, quantity),
+      env.DB.prepare(`INSERT INTO stock_movements
+        (id, company_id, item_id, movement_type, quantity, from_location_id, to_location_id,
+         reference_type, reference_id, reason, created_by)
+        VALUES (?, ?, ?, 'transfer_in', ?, ?, ?, 'stock_transfer', ?, ?, ?)`)
+        .bind(uid('stock-movement'), companyId, body.itemId, quantity,
+          body.fromLocationId, body.toLocationId, transferRef,
+          body.reason || 'Internal stock transfer', context.employee.id),
+      env.DB.prepare(`INSERT INTO audit_logs
+        (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source)
+        VALUES (?, ?, ?, 'inventory', 'stock_transfer', 'stock_transfer', ?, ?, 'web')`)
+        .bind(uid('audit'), context.employee.id, companyId, transferRef,
+          JSON.stringify({ itemId: body.itemId, quantity,
+            from: body.fromLocationId, to: body.toLocationId })),
+    ]);
+  } catch (error) {
+    if (bakeryLegacyTransfer) return json({ error: 'Bakery stock or its exact valuation changed before the transfer committed. Refresh and retry.' }, 409);
+    throw error;
+  }
   return json({ ok: true, transferRef, message: 'Stock transferred successfully.' });
 }
 
