@@ -46,7 +46,7 @@ export async function recentFacilitiesAudit(
         l.entity_type AS entityType, l.entity_id AS entityId,
         e.display_name AS actorName, l.after_json AS afterJson
        FROM audit_logs l
-       LEFT JOIN employees e ON e.id=l.actor_employee_id AND e.company_id=l.company_id
+       LEFT JOIN employees e ON e.id=l.actor_employee_id AND EXISTS (SELECT 1 FROM employee_company_memberships m WHERE m.employee_id=e.id AND m.company_id=l.company_id AND m.active=1)
        WHERE l.company_id=? AND l.module='facilities'
        ORDER BY l.occurred_at DESC, l.id DESC LIMIT 25`,
   ).bind(companyId).all<FacilityAuditRow>();
