@@ -13,6 +13,7 @@ const base=fs.readFileSync(new URL('../migrations/0111_bakery_dispatch_atomic_cl
 const audit=fs.readFileSync(new URL('../migrations/0112_bakery_dispatch_closure_audit.sql',import.meta.url),'utf8');
 const custody=fs.readFileSync(new URL('../migrations/0113_bakery_dispatch_issued_custody_lock.sql',import.meta.url),'utf8');
 const stockGuard=fs.readFileSync(new URL('../migrations/0114_bakery_dispatch_stock_movement_integrity.sql',import.meta.url),'utf8');
+const atomicDebit=fs.readFileSync(new URL('../migrations/0115_bakery_dispatch_atomic_stock_debit.sql',import.meta.url),'utf8');
 const load=name=>{
  if(name==='./auth')return {hasPermission:(ctx,code,level,company)=>
   ctx.companies.some(c=>c.id===company)&&ctx.grants.includes(code+':'+level)};
@@ -44,7 +45,7 @@ db.exec(`
   quantity INTEGER,reserved_quantity INTEGER,updated_at TEXT);
  CREATE TABLE stock_movements(
   id TEXT PRIMARY KEY,company_id TEXT,item_id TEXT,movement_type TEXT,
-  quantity INTEGER NOT NULL,from_location_id TEXT,reference_type TEXT,
+  quantity INTEGER NOT NULL,from_location_id TEXT,to_location_id TEXT,reference_type TEXT,
   reference_id TEXT,reason TEXT,created_by TEXT);
  CREATE TABLE bakery_dispatches(
   id TEXT PRIMARY KEY,company_id TEXT,dispatch_no TEXT,
@@ -78,7 +79,7 @@ db.exec(`
  VALUES('bakery-hq','inv-1','company-bakery',20,0),
        ('bakery-hq','inv-2','company-bakery',15,0);
 `);
-db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);
+db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);db.exec(atomicDebit);
 
 let beforeBatch=null;
 const env={DB:{
@@ -156,12 +157,40 @@ db.prepare(`INSERT INTO bakery_bread_ledger
   quantity,direction,reference_type,reference_id,recorded_by)
  VALUES('raw-ledger','company-bakery','2026-10-25','bread-1','raw-draft',
         'agent-1','in_transit',2,'out','bakery_dispatch','raw-draft','manager-1')`).run();
+const beforeRawDebit=db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity;
 db.prepare(`INSERT INTO stock_movements(id,company_id,item_id,movement_type,quantity,from_location_id,reference_type,reference_id) VALUES('raw-stock','company-bakery','inv-1','transfer_out',2,'bakery-hq','bakery_dispatch','raw-draft')`).run();
+assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,
+ beforeRawDebit-2,'Direct stock transfer must debit inventory in the SAME insert');
+assert.throws(()=>db.prepare("UPDATE stock_movements SET quantity=1 WHERE id='raw-stock'").run(),
+ /Bakery stock transfer evidence is immutable/,
+ 'Even a draft cannot rewrite a stock movement that has already debited inventory');
+assert.throws(()=>db.prepare("DELETE FROM stock_movements WHERE id='raw-stock'").run(),
+ /Bakery stock transfer evidence cannot be deleted/);
+assert.throws(()=>db.prepare(`INSERT INTO stock_movements(id,company_id,item_id,movement_type,quantity,from_location_id,reference_type,reference_id)
+ VALUES('raw-stock-extra','company-bakery','inv-1','transfer_out',2,'bakery-hq','bakery_dispatch','raw-draft')`).run(),
+ /Bakery transfer would exceed approved dispatch quantity/,
+ 'A repeated direct transfer cannot debit inventory again');
+assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,beforeRawDebit-2);
 db.prepare(`UPDATE bakery_dispatches SET status='in_transit'
  WHERE id='raw-draft'`).run();
 assert.equal(db.prepare("SELECT status FROM bakery_dispatches WHERE id='raw-draft'").get().status,'in_transit');
 assert.throws(()=>db.prepare("DELETE FROM stock_movements WHERE id='raw-stock'").run(),/stock transfer evidence cannot be deleted/);
 assert.throws(()=>db.prepare("UPDATE stock_movements SET quantity=500 WHERE id='raw-stock'").run(),/stock transfer evidence is immutable/);
+
+// Invalid or unfunded direct movement must fail before it can become
+// a phantom inventory record; neither failure is permitted to debit stock.
+db.prepare(`INSERT INTO bakery_dispatches(id,company_id,dispatch_no,location_id,custodian_id,status,created_by)
+ VALUES('raw-unfunded','company-bakery','RAW-UNFUNDED','bakery-hq','agent-1','draft','manager-1')`).run();
+db.prepare(`INSERT INTO bakery_dispatch_items VALUES('raw-unfunded-item','raw-unfunded','bread-1',50,1000)`).run();
+const rawBalance=db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity;
+assert.throws(()=>db.prepare(`INSERT INTO stock_movements
+ (id,company_id,item_id,movement_type,quantity,from_location_id,reference_type,reference_id)
+ VALUES('unfunded-transfer','company-bakery','inv-1','transfer_out',50,'bakery-hq','bakery_dispatch','raw-unfunded')`).run(),
+ /insufficient unreserved stock/);
+assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,rawBalance);
+assert.equal(counts().movements,3,'Unfunded transfer must leave no stock movement');
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='in_transit' WHERE id='raw-unfunded'").run(),
+ /matching inventory stock movements|bread custody evidence is incomplete/);
 
 // Simulate a stock shortage between validation and transactional posting.
 // The mandatory stock movement must fail, rolling back the entire dispatch.
@@ -170,7 +199,7 @@ beforeBatch=()=>db.prepare("UPDATE stock_balances SET quantity=0 WHERE item_id='
 await assert.rejects(()=>route(request(),env,manager));
 assert.deepEqual({...counts()},{...before},
  'A stale stock validation cannot leave a phantom dispatch or custody trail');
-assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,15);
+assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,13);
 assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-2'").get().quantity,0);
 
 // A fully accounted issued dispatch can still reach a one-audit final close.
@@ -201,5 +230,6 @@ assert.throws(()=>db.prepare('UPDATE bakery_dispatch_items SET unit_price_kobo=1
  /Issued Bakery dispatch items and prices are immutable/);
 db.close();
 console.log('PASS Bakery staged dispatch: 2 products, canonical stock issue, immutable issued prices/quantities');
-console.log('PASS raw issue rejects missing custody; race rolls back draft, stock, ledger and audit');
+console.log('PASS direct SQL stock transfers debit exactly once, fail without stock and are immutable even in draft');
+console.log('PASS raw issue rejects missing custody; shortage rolls back draft, stock, ledger and audit');
 console.log('PASS final dispatch metadata, prices, identity and delete locked; valid closure keeps 1 audit');
