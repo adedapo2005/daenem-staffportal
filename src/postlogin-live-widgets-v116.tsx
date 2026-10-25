@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   BriefcaseBusiness,
@@ -17,21 +17,7 @@ import {
 } from 'lucide-react';
 import './postlogin-live-widgets-v116.css';
 import { normalizePostLoginContext, type Headline, type PostLoginContext } from './postlogin-context-normalization';
-
-type WeatherContext = {
-  available: boolean;
-  provider?: string;
-  providerStatus?: string;
-  fetchedAt?: string;
-  location?: string;
-  temperature?: number | null;
-  apparentTemperature?: number | null;
-  humidity?: number | null;
-  description?: string;
-  windSpeed?: number | null;
-  precipitationProbability?: number | null;
-  isDay?: boolean | null;
-};
+import { normalizePostLoginWeather, type WeatherContext } from './postlogin-weather-normalization';
 
 type MountTargets = {
   dashboard: HTMLElement | null;
@@ -245,6 +231,7 @@ export default function LivePostLoginEnhancementsV116() {
   const [weather, setWeather] = useState<WeatherContext | null>(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [loadingWeather, setLoadingWeather] = useState(false);
+  const weatherAbortRef = useRef<AbortController | null>(null);
   const [constructionSimple, setConstructionSimple] = useState(true);
 
   const loadContext = useCallback(async () => {
@@ -259,12 +246,28 @@ export default function LivePostLoginEnhancementsV116() {
   }, []);
 
   const loadWeather = useCallback(async () => {
+    // A manual refresh must win over an older slow provider response.
+    weatherAbortRef.current?.abort();
+    const controller = new AbortController();
+    weatherAbortRef.current = controller;
     setLoadingWeather(true);
     try {
-      const response = await fetch(`/api/context/weather?${IBADAN_WEATHER_QUERY}`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
-      setWeather(await response.json() as WeatherContext);
-    } catch { setWeather({ available: false, providerStatus: 'provider_unavailable' }); }
-    finally { setLoadingWeather(false); }
+      const response = await fetch(`/api/context/weather?${IBADAN_WEATHER_QUERY}`, {
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error('Weather request failed');
+      const payload: unknown = await response.json();
+      if (!controller.signal.aborted) setWeather(normalizePostLoginWeather(payload));
+    } catch {
+      if (!controller.signal.aborted) setWeather({ available: false, providerStatus: 'provider_unavailable' });
+    } finally {
+      if (weatherAbortRef.current === controller) {
+        weatherAbortRef.current = null;
+        setLoadingWeather(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -272,7 +275,12 @@ export default function LivePostLoginEnhancementsV116() {
     void loadWeather();
     const contextTimer = window.setInterval(() => { if (!document.hidden) void loadContext(); }, 10 * 60_000);
     const weatherTimer = window.setInterval(() => { if (!document.hidden) void loadWeather(); }, 5 * 60_000);
-    return () => { window.clearInterval(contextTimer); window.clearInterval(weatherTimer); };
+    return () => {
+      window.clearInterval(contextTimer);
+      window.clearInterval(weatherTimer);
+      weatherAbortRef.current?.abort();
+      weatherAbortRef.current = null;
+    };
   }, [loadContext, loadWeather]);
 
   useEffect(() => {
@@ -284,14 +292,29 @@ export default function LivePostLoginEnhancementsV116() {
 
   useEffect(() => {
     const button = document.querySelector<HTMLButtonElement>('button.p-weather-chip[aria-label^="Open Weather status"]');
-    if (!button || weather?.available !== true || weather.temperature == null) return;
+    if (!button || weather?.available !== true || weather.temperature == null || !Number.isFinite(weather.temperature)) return;
+    const previousLabel = button.getAttribute('aria-label');
+    const previousProviderState = button.dataset.providerState;
+    const previousUnit = button.dataset.weatherUnit;
+    const reading = button.querySelector<HTMLSpanElement>('span');
+    const previousReading = reading?.textContent;
     const temperature = Math.round(weather.temperature);
     const description = weather.description || 'Current conditions';
     button.setAttribute('aria-label', `Open Weather status, ${description}, ${temperature} degrees Celsius`);
     button.dataset.providerState = 'connected';
     button.dataset.weatherUnit = 'C';
-    const reading = button.querySelector<HTMLSpanElement>('span');
     if (reading) reading.textContent = `${temperature}°C`;
+    // The chip belongs to the protected V115 UI. Restore its original state
+    // when a provider fails, a newer result arrives, or Stage One unmounts.
+    return () => {
+      if (previousLabel === null) button.removeAttribute('aria-label');
+      else button.setAttribute('aria-label', previousLabel);
+      if (previousProviderState === undefined) delete button.dataset.providerState;
+      else button.dataset.providerState = previousProviderState;
+      if (previousUnit === undefined) delete button.dataset.weatherUnit;
+      else button.dataset.weatherUnit = previousUnit;
+      if (reading?.isConnected) reading.textContent = previousReading ?? '';
+    };
   }, [weather]);
 
   const dashboardWidgets = useMemo(() => (
