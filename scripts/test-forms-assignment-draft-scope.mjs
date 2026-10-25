@@ -26,9 +26,9 @@ test('global forms never silently reuse the first permitted company', () => {
 test('Forms Center reads and saves drafts by assignment company, not parent route or first company', () => {
   const source = readFileSync(new URL('../src/centers.tsx', import.meta.url), 'utf8');
   assert.match(source, /assignedFormDraftCompany\(item\)/);
-  assert.match(source, /offline\.readFormsDraft\(item\.assignmentId,assignedFormDraftCompany\(item\)!\)/);
-  assert.match(source, /offline\.queueFormsDraft\(\{assignmentId:item\.assignmentId,companyId:assignmentCompanyId/);
-  assert.match(source, /offline\.queueFormsSubmission\(\{assignmentId:item\.assignmentId,companyId:assignmentCompanyId/);
+  assert.match(source, /offlineRef\.current\.readFormsDraft\(item\.assignmentId,assignedFormDraftCompany\(item\)!\)/);
+  assert.match(source, /offlineRef\.current\.queueFormsDraft\(\{assignmentId:item\.assignmentId,companyId:assignmentCompanyId/);
+  assert.match(source, /offlineRef\.current\.queueFormsSubmission\(\{assignmentId:item\.assignmentId,companyId:assignmentCompanyId/);
   assert.doesNotMatch(source, /companyId\|\|context\.companies\[0\]\?\.id\|\|'group'/);
   assert.match(source, /Group-wide forms need a live connection/);
   assert.match(source, /Answers are not saved offline/);
@@ -44,10 +44,25 @@ test('offline authority enforces the exact company identity when using an assign
 test('incomplete or invalid entries are drafted before any offline submit is queued', () => {
   const source = readFileSync(new URL('../src/centers.tsx', import.meta.url), 'utf8');
   const preflight = source.indexOf('const completeness=guidedCompletion(schema,payload),invalid=guidedInvalidAnswers(schema,payload);');
-  const submitQueue = source.indexOf('if(!navigator.onLine){await offline.queueFormsSubmission(');
+  const submitQueue = source.indexOf('await offlineRef.current.queueFormsSubmission(');
   assert.ok(preflight > 0 && submitQueue > preflight, 'completeness must run before queueing a submission');
   assert.match(source, /if\(completeness\.missingLabels\.length\|\|invalid\.length\)/);
   assert.match(source, /saved as a local draft, not submitted/);
   assert.match(source, /was not submitted\. Draft could not be saved securely/);
   assert.match(source, /Group-wide forms require a live connection/);
+});
+
+test('autosave is suspended before submission and queued answers are read-only', () => {
+  const source = readFileSync(new URL('../src/centers.tsx', import.meta.url), 'utf8');
+  const suspend = source.indexOf('await draftWriter.suspend(item.assignmentId)');
+  const flush = source.indexOf('await draftWriter.flushAll()');
+  const submitQueue = source.indexOf('await offlineRef.current.queueFormsSubmission(');
+  assert.ok(suspend > 0 && flush > suspend && submitQueue > flush,
+    'all local autosaves must settle before the offline submission queue changes state');
+  assert.match(source, /if\(!heldForSubmission\)\{\s*draftWriter\.resume\(item\.assignmentId\)/);
+  assert.match(source, /disabled=\{busy\|\|queuedAssignments\.has\(item\.assignmentId\)\}/);
+  assert.match(source, /onBlurCapture=\{\(\)=>\{void draftWriter\.flush\(item\.assignmentId\)/);
+  assert.match(source, /Submission is queued for sync/);
+  assert.match(source, /if\(generation!==loadGeneration\.current\)return/);
+  assert.match(source, /editRevision\.current\[id\]/);
 });
