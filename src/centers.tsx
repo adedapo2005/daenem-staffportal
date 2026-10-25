@@ -37,6 +37,7 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
  const[queuedAssignments,setQueuedAssignments]=useState<Set<string>>(()=>new Set());
  const responsesRef=useRef<Record<string,Record<string,unknown>>>({});
  const editRevision=useRef<Record<string,number>>({});
+ const loadGeneration=useRef(0);
  const offlineRef=useRef(offline);offlineRef.current=offline;
  // A grant/session change immediately abandons pending writes from the previous scope.
  const autosaveScope=JSON.stringify([context.sessionId,context.employee.id,context.companies.map(c=>c.id),context.roles,context.permissions,context.companyPermissions]);
@@ -70,18 +71,50 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
   if(input)draftWriter.schedule(item.assignmentId,input);
  }
  async function load(preserveMessage=false){
+  const generation=++loadGeneration.current;
+  const revisionsAtStart={...editRevision.current};
   setBusy(true);if(!preserveMessage)setMessage('');
   try{
    const suffix=companyId?'?companyId='+encodeURIComponent(companyId):'';
    const[formResult,mineResult]=await Promise.all([api<{forms:WorkflowForm[]}>('/api/forms'+suffix),api<{assignments:FormAssignment[]}>('/api/forms/mine')]);
+   if(generation!==loadGeneration.current)return;
    const assignments=mineResult.assignments||[];
    setForms(formResult.forms||[]);setMine(assignments);
-   const drafts=await Promise.all(assignments.map(async(item)=>[item.assignmentId,assignedFormDraftCompany(item)?await offline.readFormsDraft(item.assignmentId,assignedFormDraftCompany(item)!):null]as const));
-   setResponses((current)=>({...current,...Object.fromEntries(drafts.filter((entry)=>entry[1]).map(([id,draft])=>[id,draft?.responses||{}]))}));
-   if(canForms('edit')){const[employeeResult,roleResult]=await Promise.all([api<{employees:DirectoryEmployee[]}>('/api/directory/employees'+suffix),api<{roles:DirectoryRole[]}>('/api/directory/roles'+suffix)]);setEmployees(employeeResult.employees||[]);setRoles(roleResult.roles||[])}else{setEmployees([]);setRoles([])}
-  }catch(e){setMessage((e as Error).message)}finally{setBusy(false)}
+   const drafts=await Promise.all(assignments.map(async item=>[
+    item.assignmentId,assignedFormDraftCompany(item)
+     ?await offlineRef.current.readFormsDraft(item.assignmentId,assignedFormDraftCompany(item)!):null
+   ]as const));
+   if(generation!==loadGeneration.current)return;
+   const restored=Object.fromEntries(drafts.filter(([id,draft])=>draft&&
+    (editRevision.current[id]||0)===(revisionsAtStart[id]||0))
+    .map(([id,draft])=>[id,draft!.responses||{}]));
+   responsesRef.current={...responsesRef.current,...restored};
+   setResponses(current=>({...current,...restored}));
+   const queued=new Set(drafts.filter(([,draft])=>draft&&
+    ['waiting-to-sync','syncing'].includes(draft.state)).map(([id])=>id));
+   setQueuedAssignments(queued);
+   for(const item of assignments){
+    if(queued.has(item.assignmentId))void draftWriter.suspend(item.assignmentId);
+    else if(!['submitted','reviewed','approved'].includes(item.status))draftWriter.resume(item.assignmentId);
+   }
+   if(canForms('edit')){
+    const[employeeResult,roleResult]=await Promise.all([
+     api<{employees:DirectoryEmployee[]}>('/api/directory/employees'+suffix),
+     api<{roles:DirectoryRole[]}>('/api/directory/roles'+suffix)
+    ]);
+    if(generation!==loadGeneration.current)return;
+    setEmployees(employeeResult.employees||[]);setRoles(roleResult.roles||[]);
+   }else{setEmployees([]);setRoles([])}
+  }catch(e){if(generation===loadGeneration.current)setMessage((e as Error).message)}
+  finally{if(generation===loadGeneration.current)setBusy(false)}
  }
- useEffect(()=>{void load()},[companyId]);
+ useEffect(()=>{
+  loadGeneration.current+=1;
+  editRevision.current={};
+  responsesRef.current={};
+  setResponses({});setQueuedAssignments(new Set());setForms([]);setMine([]);
+  void load();
+ },[companyId,autosaveScope]);
  async function createForm(e:React.FormEvent){e.preventDefault();setBusy(true);try{const schema=prepareFormSchema(fields,optionDrafts);await api('/api/forms',{method:'POST',body:JSON.stringify({companyId:companyId||undefined,...newForm,schema})});setNewForm({title:'',description:'',formType:'custom',requireLocation:false});setFields([{key:'activity',label:'Activity / response',type:'textarea',required:true}]);setOptionDrafts({});setTitleEdited(false);setDescriptionEdited(false);setMessage('Form created successfully.');await load(true)}catch(err){setMessage((err as Error).message)}finally{setBusy(false)}}
  async function assignForm(e:React.FormEvent){e.preventDefault();if(!selectedForm){setMessage('Select a form first.');return}setBusy(true);try{await api('/api/forms/assign',{method:'POST',body:JSON.stringify({formId:selectedForm,companyId:companyId||undefined,...assign})});setMessage('Form assigned successfully.');await load(true)}catch(err){setMessage((err as Error).message)}finally{setBusy(false)}}
  async function submit(item:FormAssignment){
