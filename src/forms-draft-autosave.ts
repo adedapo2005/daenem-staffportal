@@ -99,3 +99,35 @@ export function createLatestFormsDraftWriter<T>(
 
   return { schedule, flush, flushAll, suspend, resume, isSuspended, hasUnsaved, dispose };
 }
+
+
+/**
+ * React Strict Mode invokes effect setup -> cleanup -> setup in development.
+ * A cleanup cannot immediately dispose the draft writer: that would disable
+ * autosaving on the second setup. Defer ordinary-unmount disposal to a microtask
+ * and cancel it when the effect is re-established in the same commit.
+ *
+ * Permission/session revocation is different: abort the old scoped writer
+ * synchronously instead of flushing potentially unauthorised draft content.
+ */
+export function createFormsDraftWriterLifecycle(
+  writer: { flushAll: () => Promise<void>; dispose: () => void },
+) {
+  let setupGeneration = 0;
+  function setup() {
+    return ++setupGeneration;
+  }
+  function cleanup(generation: number, scopeRevoked: boolean) {
+    if (scopeRevoked) {
+      writer.dispose();
+      return;
+    }
+    queueMicrotask(() => {
+      if (generation !== setupGeneration) return; // Strict Mode replay.
+      void writer.flushAll().catch(() => undefined).finally(() => {
+        if (generation === setupGeneration) writer.dispose();
+      });
+    });
+  }
+  return { setup, cleanup };
+}
