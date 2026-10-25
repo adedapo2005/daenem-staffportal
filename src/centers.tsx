@@ -46,7 +46,13 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
   (_id,error)=>setMessage('Draft not saved securely. Keep this page open and retry: '+(error instanceof Error?error.message:'Storage unavailable.')),
   350
  ),[autosaveScope]);
- useEffect(()=>()=>draftWriter.dispose(),[draftWriter]);
+ const currentAutosaveScope=useRef(autosaveScope);currentAutosaveScope.current=autosaveScope;
+ useEffect(()=>()=>{
+  if(currentAutosaveScope.current!==autosaveScope){draftWriter.dispose();return}
+  // On ordinary navigation, flush the last typed answer before releasing the
+  // coordinator. Revoked identity/permission scopes must instead be discarded.
+  void draftWriter.flushAll().catch(()=>undefined).finally(()=>draftWriter.dispose());
+ },[draftWriter,autosaveScope]);
  useEffect(()=>{
   const guard=(event:BeforeUnloadEvent)=>{if(!draftWriter.hasUnsaved())return;event.preventDefault();event.returnValue=''};
   window.addEventListener('beforeunload',guard);
