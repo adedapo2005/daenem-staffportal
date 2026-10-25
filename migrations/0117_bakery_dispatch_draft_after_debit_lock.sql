@@ -12,6 +12,7 @@ WHEN EXISTS(
  JOIN stock_movements sm ON sm.company_id=d.company_id
    AND sm.reference_type='bakery_dispatch' AND sm.reference_id=d.id
  WHERE d.id=NEW.dispatch_id AND d.company_id='company-bakery'
+  AND d.status='draft'
 )
 BEGIN
  SELECT RAISE(ABORT,'Bakery draft with debited stock cannot add dispatch items');
@@ -24,7 +25,7 @@ WHEN EXISTS(
  JOIN stock_movements sm ON sm.company_id=d.company_id
    AND sm.reference_type='bakery_dispatch' AND sm.reference_id=d.id
  WHERE d.id IN (OLD.dispatch_id,NEW.dispatch_id)
-   AND d.company_id='company-bakery'
+   AND d.company_id='company-bakery' AND d.status='draft'
 )
 BEGIN
  SELECT RAISE(ABORT,'Bakery draft with debited stock cannot alter issued quantities or prices');
@@ -37,6 +38,7 @@ WHEN EXISTS(
  JOIN stock_movements sm ON sm.company_id=d.company_id
    AND sm.reference_type='bakery_dispatch' AND sm.reference_id=d.id
  WHERE d.id=OLD.dispatch_id AND d.company_id='company-bakery'
+  AND d.status='draft'
 )
 BEGIN
  SELECT RAISE(ABORT,'Bakery draft with debited stock cannot delete dispatch items');
