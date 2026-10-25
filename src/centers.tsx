@@ -6,7 +6,7 @@ import { useOfflinePlatform } from './offline-sync';
 import { FORM_PRESETS, FORM_OPTION_SETS, prepareFormSchema } from './guided-form-fields';
 import { guidedVisibleFields, guidedCompletion, guidedInvalidAnswers, pruneHiddenGuidedAnswers } from './guided-form-dependencies';
 import { assignedFormDraftCompany } from './forms-assignment-draft-scope';
-import { createLatestFormsDraftWriter } from './forms-draft-autosave';
+import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle } from './forms-draft-autosave';
 import type { FormsDraftInput } from './offline-platform';
 import { SmartMasterSelect } from './smart-master-select';
 import { assetsForSelectedFacility, recommendedWorkPriority, suggestedWorkTitle, suggestedAssetName, ASSET_READING_TYPES, STANDARD_READING_UNITS, recommendedReadingUnit, validFacilitySelection } from './facility-guided-entry';
@@ -47,12 +47,11 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
   350
  ),[autosaveScope]);
  const currentAutosaveScope=useRef(autosaveScope);currentAutosaveScope.current=autosaveScope;
- useEffect(()=>()=>{
-  if(currentAutosaveScope.current!==autosaveScope){draftWriter.dispose();return}
-  // On ordinary navigation, flush the last typed answer before releasing the
-  // coordinator. Revoked identity/permission scopes must instead be discarded.
-  void draftWriter.flushAll().catch(()=>undefined).finally(()=>draftWriter.dispose());
- },[draftWriter,autosaveScope]);
+ const writerLifecycle=useMemo(()=>createFormsDraftWriterLifecycle(draftWriter),[draftWriter]);
+ useEffect(()=>{
+  const setupId=writerLifecycle.setup();
+  return()=>writerLifecycle.cleanup(setupId,currentAutosaveScope.current!==autosaveScope);
+ },[writerLifecycle,autosaveScope]);
  useEffect(()=>{
   const guard=(event:BeforeUnloadEvent)=>{if(!draftWriter.hasUnsaved())return;event.preventDefault();event.returnValue=''};
   window.addEventListener('beforeunload',guard);
