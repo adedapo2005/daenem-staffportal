@@ -1,0 +1,133 @@
+import {hasPermission,type AuthEnv,type SessionContext} from './auth';
+
+// Read-only Bakery-to-Finance evidence bridge. It never posts, clears or reverses
+// a payment or journal. A cashier-confirmed receipt is NOT bank settlement.
+interface Env extends AuthEnv {}
+const COMPANY='company-bakery';
+const json=(body:Record<string,unknown>,status=200)=>new Response(JSON.stringify(body),{
+ status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}
+});
+type EvidenceRow={
+ salesOrderId:string;orderNo:string;orderDate:string;totalKobo:number;
+ paymentStatus:string;orderPaidKobo:number;
+ confirmedPaymentsKobo:number;confirmedCashKobo:number;
+ cashLedgerKobo:number;noncashLedgerKobo:number;refundLedgerKobo:number;
+ financeSourceStatus:string|null;financePostedKobo:number|null;
+ sourceJournalId:string|null;journalId:string|null;journalStatus:string|null;
+ journalDebitKobo:number|null;journalCreditKobo:number|null;
+ sourceReceivableId:string|null;receivableId:string|null;
+ receivableBalanceKobo:number|null
+};
+const validMoney=(value:unknown):number|null=>{
+ const number=Number(value);
+ return Number.isSafeInteger(number)&&number>=0?number:null;
+};
+
+export async function routeBakeryFinanceBridge(
+ request:Request,env:Env,context:SessionContext
+):Promise<Response|null>{
+ const url=new URL(request.url);
+ if(url.pathname!=='/api/bakery/accountability/finance-bridge'||request.method!=='GET')return null;
+ if(!context.companies.some(x=>x.id===COMPANY)
+   ||!hasPermission(context,'bakery.reconciliation','view',COMPANY)
+   ||!hasPermission(context,'finance.ledger','view',COMPANY))
+  return json({error:'Bakery reconciliation and Finance ledger view permissions are both required.'},403);
+ const afterOrderId=(url.searchParams.get('afterOrderId')||'').trim();
+ if(afterOrderId.length>128||url.searchParams.getAll('afterOrderId').length>1)
+  return json({error:'Invalid sales-order page cursor.'},400);
+ const records=await env.DB.prepare(`SELECT
+     so.id AS salesOrderId,so.order_no AS orderNo,so.order_date AS orderDate,
+     so.total_kobo AS totalKobo,so.payment_status AS paymentStatus,
+     so.amount_paid_kobo AS orderPaidKobo,
+     COALESCE((SELECT SUM(pm.amount_kobo) FROM payments pm WHERE pm.company_id=so.company_id
+       AND pm.sales_order_id=so.id AND pm.status='confirmed'),0) AS confirmedPaymentsKobo,
+     COALESCE((SELECT SUM(pm.amount_kobo) FROM payments pm WHERE pm.company_id=so.company_id
+       AND pm.sales_order_id=so.id AND pm.status='confirmed' AND pm.method='cash'),0) AS confirmedCashKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml WHERE ml.company_id=so.company_id
+       AND ml.sales_order_id=so.id AND ml.status='cash_received' AND ml.direction='in'),0) AS cashLedgerKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml WHERE ml.company_id=so.company_id
+       AND ml.sales_order_id=so.id AND ml.status IN ('pos_received','transfer_received')
+       AND ml.direction='in'),0) AS noncashLedgerKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml WHERE ml.company_id=so.company_id
+       AND ml.sales_order_id=so.id AND ml.status='refunded' AND ml.direction='out'),0) AS refundLedgerKobo,
+     fp.status AS financeSourceStatus,fp.posted_amount_kobo AS financePostedKobo,
+     fp.journal_entry_id AS sourceJournalId,je.id AS journalId,je.status AS journalStatus,
+     (SELECT COALESCE(SUM(jl.debit_kobo),0) FROM journal_lines jl
+       WHERE jl.journal_entry_id=je.id) AS journalDebitKobo,
+     (SELECT COALESCE(SUM(jl.credit_kobo),0) FROM journal_lines jl
+       WHERE jl.journal_entry_id=je.id) AS journalCreditKobo,
+     fp.receivable_id AS sourceReceivableId,fr.id AS receivableId,
+     fr.balance_kobo AS receivableBalanceKobo
+   FROM sales_orders so
+   JOIN bakery_order_details bd ON bd.sales_order_id=so.id
+   LEFT JOIN finance_source_postings fp ON fp.company_id=so.company_id
+     AND fp.source_module='sales' AND fp.source_type='sales_order' AND fp.source_id=so.id
+   LEFT JOIN journal_entries je ON je.id=fp.journal_entry_id AND je.company_id=so.company_id
+     AND je.source_module='sales' AND je.source_type='sales_order' AND je.source_id=so.id
+   LEFT JOIN finance_receivables fr ON fr.id=fp.receivable_id AND fr.company_id=so.company_id
+     AND fr.source_module='sales' AND fr.source_id=so.id
+   WHERE so.company_id=? AND so.status='completed' AND so.id>?
+   ORDER BY so.id LIMIT 101`).bind(COMPANY,afterOrderId).all<EvidenceRow>();
+ const result=records.results||[],page=result.slice(0,100),hasMore=result.length>100;
+ const items=page.map(row=>{
+  const amounts={
+   saleKobo:validMoney(row.totalKobo),
+   orderReportedPaidKobo:validMoney(row.orderPaidKobo),
+   confirmedPaymentRecordsKobo:validMoney(row.confirmedPaymentsKobo),
+   confirmedCashRecordsKobo:validMoney(row.confirmedCashKobo),
+   bakeryCashLedgerKobo:validMoney(row.cashLedgerKobo),
+   bakeryNoncashLedgerKobo:validMoney(row.noncashLedgerKobo),
+   bakeryRefundLedgerKobo:validMoney(row.refundLedgerKobo),
+   financePostedKobo:row.financePostedKobo===null?null:validMoney(row.financePostedKobo),
+   journalDebitsKobo:row.journalId===null?null:validMoney(row.journalDebitKobo),
+   journalCreditsKobo:row.journalId===null?null:validMoney(row.journalCreditKobo),
+   receivableOutstandingKobo:row.receivableId===null?null:validMoney(row.receivableBalanceKobo)
+  };
+  const issues:string[]=[];
+  const review:string[]=[];
+  if(Object.entries(amounts).some(([key,value])=>value===null&&![
+   'financePostedKobo','journalDebitsKobo','journalCreditsKobo','receivableOutstandingKobo'
+  ].includes(key)))issues.push('invalid_operational_money');
+  if(amounts.saleKobo!==null&&amounts.orderReportedPaidKobo!==null
+    &&amounts.confirmedPaymentRecordsKobo!==null
+    &&amounts.orderReportedPaidKobo!==amounts.confirmedPaymentRecordsKobo)
+   issues.push('payment_records_disagree_with_order');
+  if(amounts.confirmedCashRecordsKobo!==null&&amounts.bakeryCashLedgerKobo!==null
+    &&amounts.confirmedCashRecordsKobo!==amounts.bakeryCashLedgerKobo)
+   issues.push('cash_records_disagree_with_bakery_ledger');
+  if(row.financeSourceStatus===null)review.push('finance_source_posting_not_recorded');
+  else if(row.financeSourceStatus==='failed')issues.push('finance_source_posting_failed');
+  else if(row.financeSourceStatus==='reversed')review.push('finance_source_posting_reversed');
+  else if(row.financeSourceStatus==='posted'){
+   if(!row.journalId||row.journalStatus!=='posted')issues.push('posted_journal_link_invalid');
+   else if(amounts.journalDebitsKobo===null||amounts.journalCreditsKobo===null
+     ||amounts.journalDebitsKobo!==amounts.journalCreditsKobo
+     ||amounts.journalDebitsKobo===0)issues.push('journal_lines_not_balanced');
+   if(amounts.saleKobo!==null&&amounts.financePostedKobo!==amounts.saleKobo)
+    issues.push('finance_posted_amount_disagrees_with_sale');
+   if(!row.sourceReceivableId||!row.receivableId)issues.push('finance_receivable_link_invalid');
+  }else issues.push('unrecognised_finance_source_status');
+  if(amounts.confirmedCashRecordsKobo!==null&&amounts.confirmedCashRecordsKobo>0
+    &&row.financeSourceStatus==='posted'&&amounts.receivableOutstandingKobo!==null
+    &&amounts.receivableOutstandingKobo>0)
+   review.push('cash_evidence_against_open_finance_receivable');
+  if(amounts.bakeryNoncashLedgerKobo!==null&&amounts.bakeryNoncashLedgerKobo>0)
+   review.push('external_settlement_evidence_not_assessed');
+  if(amounts.bakeryRefundLedgerKobo!==null&&amounts.bakeryRefundLedgerKobo>0
+    ||row.paymentStatus==='refunded')review.push('refund_or_reversal_needs_separate_accounting_review');
+  return{
+   salesOrderId:row.salesOrderId,orderNo:row.orderNo,orderDate:row.orderDate,
+   paymentStatus:row.paymentStatus,amounts,financeSourceStatus:row.financeSourceStatus,
+   journalId:row.journalId,receivableId:row.receivableId,
+   issues,reviewRequired:review,
+   state:issues.length?'exception':review.length?'review_required':'no_flag_on_page'
+  };
+ });
+ const last=page.at(-1);
+ return json({companyId:COMPANY,readOnly:true,scope:'completed_bakery_sales_page_only',
+  items,returned:items.length,exceptionsOnPage:items.filter(x=>x.issues.length>0).length,
+  reviewsOnPage:items.filter(x=>x.reviewRequired.length>0).length,
+  hasMore,nextCursor:hasMore&&last?{afterOrderId:last.salesOrderId}:null,
+  bankSettlementAssessed:false,otherJournalSourcesAssessed:false,dispatchRemittancesAssessed:false,
+  explanation:'Operational cash evidence, Finance receivables and linked sales journals are separate records. This report never certifies settlement or clears a receivable.'});
+}
