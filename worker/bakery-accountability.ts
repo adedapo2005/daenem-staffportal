@@ -158,12 +158,16 @@ async function recordMoney(request:Request,env:Env,context:SessionContext){
   &&String(row.reason||'')===String(reason||'')
   &&row.direction===moneyDirection;
  const priorRequest=async()=>requestKey?env.DB.prepare(`SELECT claim.payload_fingerprint AS fingerprint,
-  claim.money_ledger_id AS moneyLedgerId,ml.id AS linkedLedgerId
+  claim.money_ledger_id AS moneyLedgerId,ml.id AS linkedLedgerId,
+  (SELECT a.id FROM audit_logs a WHERE a.company_id=claim.company_id
+   AND a.module='bakery' AND a.action='record_remittance'
+   AND a.entity_type='bakery_dispatch' AND a.entity_id=claim.dispatch_id
+   AND json_extract(a.after_json,'$.moneyLedgerId')=claim.money_ledger_id LIMIT 1) AS auditId
   FROM bakery_remittance_requests claim
   LEFT JOIN bakery_money_ledger ml ON ml.id=claim.money_ledger_id
    AND ml.company_id=claim.company_id AND ml.dispatch_id=claim.dispatch_id
   WHERE claim.company_id=? AND claim.dispatch_id=? AND claim.request_key=?`)
-  .bind(COMPANY,dispatchId,requestKey).first<{fingerprint:string;moneyLedgerId:string;linkedLedgerId:string|null}>():null;
+  .bind(COMPANY,dispatchId,requestKey).first<{fingerprint:string;moneyLedgerId:string;linkedLedgerId:string|null;auditId:string|null}>():null;
  const priorReference=async()=>reference.length>=4?env.DB.prepare(`SELECT id,amount_kobo AS amountKobo,
    reference,reason,direction FROM bakery_money_ledger
    WHERE company_id=? AND dispatch_id=? AND status=?
@@ -174,14 +178,14 @@ async function recordMoney(request:Request,env:Env,context:SessionContext){
   if(keyed){
    if(keyed.fingerprint!==fingerprint)
     return json({error:'This idempotency key was already used for a different remittance.'},409);
-   if(!keyed.linkedLedgerId)
-    return json({error:'Remittance claim exists without its required money entry. Reconciliation review is required.'},503);
+   if(!keyed.linkedLedgerId||!keyed.auditId)
+    return json({error:'Remittance claim is missing its required money or audit evidence. Reconciliation review is required.'},503);
    return json({ok:true,duplicate:true,moneyLedgerId:keyed.moneyLedgerId,idempotencyProtected:true});
   }
   const referenceMatch=await priorReference(),old=referenceMatch?.results||[];
   if(old.length>1)return json({error:'Multiple existing entries use this receipt reference. Independent reconciliation is required.'},409);
   if(old.length===1){
-   if(matching(old[0]))return json({ok:true,duplicate:true,moneyLedgerId:old[0].id,idempotencyProtected:true});
+   if(matching(old[0]))return json({error:'This receipt reference is already recorded. Review existing evidence or retry with its original idempotency key.'},409);
    return json({error:'This receipt reference has already been recorded with different amount or evidence.'},409);
   }
   return null;
