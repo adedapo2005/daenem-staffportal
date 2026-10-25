@@ -20,7 +20,11 @@ type EvidenceRow={
  receivableOriginalKobo:number|null;receivablePaidKobo:number|null;
  receivableStatus:string|null;receivableRecordedPaymentsKobo:number|null;
  receivablePaymentCount:number|null;duplicateReceivablePaymentReferences:number|null;
- postedSourceJournalCount:number
+ postedSourceJournalCount:number;
+ financeCostKobo:number|null;journalLineCount:number|null;
+ journalArDebitKobo:number|null;journalRevenueCreditKobo:number|null;
+ journalCashDebitKobo:number|null;journalCogsDebitKobo:number|null;
+ journalInventoryCreditKobo:number|null
 };
 const validMoney=(value:unknown):number|null=>{
  const number=Number(value);
@@ -55,11 +59,33 @@ export async function routeBakeryFinanceBridge(
      COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml WHERE ml.company_id=so.company_id
        AND ml.sales_order_id=so.id AND ml.status='refunded' AND ml.direction='out'),0) AS refundLedgerKobo,
      fp.status AS financeSourceStatus,fp.posted_amount_kobo AS financePostedKobo,
+     fp.cost_amount_kobo AS financeCostKobo,
      fp.journal_entry_id AS sourceJournalId,je.id AS journalId,je.status AS journalStatus,
      (SELECT COALESCE(SUM(jl.debit_kobo),0) FROM journal_lines jl
        WHERE jl.journal_entry_id=je.id) AS journalDebitKobo,
      (SELECT COALESCE(SUM(jl.credit_kobo),0) FROM journal_lines jl
        WHERE jl.journal_entry_id=je.id) AS journalCreditKobo,
+     (SELECT COUNT(*) FROM journal_lines jl WHERE jl.journal_entry_id=je.id) AS journalLineCount,
+     (SELECT COALESCE(SUM(CASE WHEN fa.code='1100' AND fa.company_id=so.company_id
+       THEN jl.debit_kobo ELSE 0 END),0)
+      FROM journal_lines jl LEFT JOIN finance_accounts fa ON fa.id=jl.account_id
+      WHERE jl.journal_entry_id=je.id) AS journalArDebitKobo,
+     (SELECT COALESCE(SUM(CASE WHEN fa.code='4000' AND fa.company_id=so.company_id
+       THEN jl.credit_kobo ELSE 0 END),0)
+      FROM journal_lines jl LEFT JOIN finance_accounts fa ON fa.id=jl.account_id
+      WHERE jl.journal_entry_id=je.id) AS journalRevenueCreditKobo,
+     (SELECT COALESCE(SUM(CASE WHEN fa.code='1000' AND fa.company_id=so.company_id
+       THEN jl.debit_kobo ELSE 0 END),0)
+      FROM journal_lines jl LEFT JOIN finance_accounts fa ON fa.id=jl.account_id
+      WHERE jl.journal_entry_id=je.id) AS journalCashDebitKobo,
+     (SELECT COALESCE(SUM(CASE WHEN fa.code='5000' AND fa.company_id=so.company_id
+       THEN jl.debit_kobo ELSE 0 END),0)
+      FROM journal_lines jl LEFT JOIN finance_accounts fa ON fa.id=jl.account_id
+      WHERE jl.journal_entry_id=je.id) AS journalCogsDebitKobo,
+     (SELECT COALESCE(SUM(CASE WHEN fa.code='1200' AND fa.company_id=so.company_id
+       THEN jl.credit_kobo ELSE 0 END),0)
+      FROM journal_lines jl LEFT JOIN finance_accounts fa ON fa.id=jl.account_id
+      WHERE jl.journal_entry_id=je.id) AS journalInventoryCreditKobo,
      fp.receivable_id AS sourceReceivableId,fr.id AS receivableId,
      fr.balance_kobo AS receivableBalanceKobo,
      fr.amount_kobo AS receivableOriginalKobo,fr.paid_kobo AS receivablePaidKobo,
@@ -102,6 +128,12 @@ export async function routeBakeryFinanceBridge(
    bakeryNoncashLedgerKobo:validMoney(row.noncashLedgerKobo),
    bakeryRefundLedgerKobo:validMoney(row.refundLedgerKobo),
    financePostedKobo:row.financePostedKobo===null?null:validMoney(row.financePostedKobo),
+    financeCostKobo:row.financeCostKobo===null?null:validMoney(row.financeCostKobo),
+    journalArDebitKobo:row.journalId===null?null:validMoney(row.journalArDebitKobo),
+    journalRevenueCreditKobo:row.journalId===null?null:validMoney(row.journalRevenueCreditKobo),
+    journalCashDebitKobo:row.journalId===null?null:validMoney(row.journalCashDebitKobo),
+    journalCogsDebitKobo:row.journalId===null?null:validMoney(row.journalCogsDebitKobo),
+    journalInventoryCreditKobo:row.journalId===null?null:validMoney(row.journalInventoryCreditKobo),
    journalDebitsKobo:row.journalId===null?null:validMoney(row.journalDebitKobo),
    journalCreditsKobo:row.journalId===null?null:validMoney(row.journalCreditKobo),
    receivableOutstandingKobo:row.receivableId===null?null:validMoney(row.receivableBalanceKobo),
@@ -131,6 +163,25 @@ export async function routeBakeryFinanceBridge(
      ||amounts.journalDebitsKobo===0)issues.push('journal_lines_not_balanced');
    if(amounts.saleKobo!==null&&amounts.financePostedKobo!==amounts.saleKobo)
     issues.push('finance_posted_amount_disagrees_with_sale');
+   // Accounts must match the receivable-first auto-posting contract even if
+   // aggregate journal debits equal credits. Unverified POS cash is NOT settled.
+   if(row.journalId!==null&&row.journalStatus==='posted'){
+    const cost=amounts.financeCostKobo,sale=amounts.saleKobo;
+    if(cost===null)issues.push('invalid_finance_cost_amount');
+    if(sale!==null&&amounts.journalArDebitKobo!==sale)
+     issues.push('sales_journal_receivable_debit_mismatch');
+    if(sale!==null&&amounts.journalRevenueCreditKobo!==sale)
+     issues.push('sales_journal_revenue_credit_mismatch');
+    if(amounts.journalCashDebitKobo!==0)
+     issues.push('unverified_cash_recognized_in_sales_journal');
+    if(cost!==null&&amounts.journalCogsDebitKobo!==cost)
+     issues.push('sales_journal_cost_of_sales_mismatch');
+    if(cost!==null&&amounts.journalInventoryCreditKobo!==cost)
+     issues.push('sales_journal_inventory_credit_mismatch');
+    if(!Number.isSafeInteger(Number(row.journalLineCount))
+     ||Number(row.journalLineCount)!==(cost!==null&&cost>0?4:2))
+     issues.push('unexpected_sales_journal_line_count');
+   }
    if(!row.sourceReceivableId||!row.receivableId)issues.push('finance_receivable_link_invalid');
     if(!Number.isSafeInteger(Number(row.postedSourceJournalCount))
      ||Number(row.postedSourceJournalCount)!==1)issues.push('unexpected_posted_sales_journal_count');
@@ -170,6 +221,7 @@ export async function routeBakeryFinanceBridge(
    paymentStatus:row.paymentStatus,amounts,financeSourceStatus:row.financeSourceStatus,
    journalId:row.journalId,receivableId:row.receivableId,
     receivableStatus:row.receivableStatus,postedSourceJournalCount:Number(row.postedSourceJournalCount),
+    journalLineCount:row.journalId===null?null:Number(row.journalLineCount),
     financePaymentRecordCount:row.receivableId===null?null:Number(row.receivablePaymentCount),
     duplicateFinancePaymentReferences:row.receivableId===null?null:Number(row.duplicateReceivablePaymentReferences),
     issues,reviewRequired:review,
@@ -183,7 +235,7 @@ export async function routeBakeryFinanceBridge(
   hasMore,nextCursor:hasMore&&last?{afterOrderId:last.salesOrderId}:null,
   bankSettlementAssessed:false,financePaymentSettlementAssessed:false,
    otherJournalSourcesAssessed:false,dispatchRemittancesAssessed:false,
-  explanation:'Operational cash evidence, Finance receivables and linked sales journals are separate records. This report never certifies settlement or clears a receivable.'});
+  explanation:'Read-only evidence compares sales journals to chart-of-accounts amounts and receivable balances. This report never certifies bank settlement or clears a receivable.'});
 }
 
 
