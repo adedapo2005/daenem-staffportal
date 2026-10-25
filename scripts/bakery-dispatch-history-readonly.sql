@@ -25,6 +25,7 @@ item_check AS (
  FROM expected e
 ),
 issues AS (
+ SELECT * FROM (
  SELECT 'DISPATCH_STOCK_QUANTITY_MISMATCH' AS issue_code,
     i.dispatch_id,i.status,i.inventory_item_id,
     i.expected_quantity,i.moved_quantity AS recorded_quantity,
@@ -58,7 +59,9 @@ issues AS (
  WHERE d.company_id='company-bakery' AND d.status='draft'
  GROUP BY d.id,d.status
 
+ )
  UNION ALL
+ SELECT * FROM (
  SELECT 'ISSUED_WITHOUT_DATABASE_AUDIT_REVIEW',d.id,d.status,NULL,
    CAST(1 AS REAL),CAST(0 AS REAL),
    'May predate 0116; verify historical signed issuance evidence, never fabricate an audit' AS review_note
@@ -93,6 +96,7 @@ issues AS (
       AND a.module='bakery' AND a.action='close_reconciliation'
       AND a.entity_type='bakery_dispatch' AND a.source='database'
    )
+ )
 )
 SELECT issue_code,dispatch_id,status,inventory_item_id,
        expected_quantity,recorded_quantity,review_note
