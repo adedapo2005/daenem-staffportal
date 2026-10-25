@@ -7,4 +7,5 @@
 [data-forms-center="true"] .form-completeness{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--border,#dce2ea);background:var(--panel,#fff);border-radius:12px}
 [data-forms-center="true"] .form-completeness strong{font-size:13px}
 [data-forms-center="true"] .form-completeness progress{width:100%;height:10px;accent-color:var(--accent,#2648d8)}
-[data-forms-center="true"] .form-completeness small{font-size:12px;line-height:1.5}
+[data-forms-center="true"] .form-completeness small{font-size:13px;line-height:1.5}
+[data-forms-center="true"] .form-completeness-warning{font-weight:700;color:var(--danger,#9c2c25)}
