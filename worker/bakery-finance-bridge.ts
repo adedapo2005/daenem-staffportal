@@ -16,7 +16,11 @@ type EvidenceRow={
  sourceJournalId:string|null;journalId:string|null;journalStatus:string|null;
  journalDebitKobo:number|null;journalCreditKobo:number|null;
  sourceReceivableId:string|null;receivableId:string|null;
- receivableBalanceKobo:number|null
+ receivableBalanceKobo:number|null;
+ receivableOriginalKobo:number|null;receivablePaidKobo:number|null;
+ receivableStatus:string|null;receivableRecordedPaymentsKobo:number|null;
+ receivablePaymentCount:number|null;duplicateReceivablePaymentReferences:number|null;
+ postedSourceJournalCount:number
 };
 const validMoney=(value:unknown):number|null=>{
  const number=Number(value);
@@ -57,7 +61,26 @@ export async function routeBakeryFinanceBridge(
      (SELECT COALESCE(SUM(jl.credit_kobo),0) FROM journal_lines jl
        WHERE jl.journal_entry_id=je.id) AS journalCreditKobo,
      fp.receivable_id AS sourceReceivableId,fr.id AS receivableId,
-     fr.balance_kobo AS receivableBalanceKobo
+     fr.balance_kobo AS receivableBalanceKobo,
+     fr.amount_kobo AS receivableOriginalKobo,fr.paid_kobo AS receivablePaidKobo,
+     fr.status AS receivableStatus,
+     CASE WHEN fr.id IS NULL THEN NULL ELSE
+      COALESCE((SELECT SUM(rp.amount_kobo) FROM finance_receivable_payments rp
+       WHERE rp.receivable_id=fr.id),0) END AS receivableRecordedPaymentsKobo,
+     CASE WHEN fr.id IS NULL THEN NULL ELSE
+      (SELECT COUNT(*) FROM finance_receivable_payments rp
+       WHERE rp.receivable_id=fr.id) END AS receivablePaymentCount,
+     CASE WHEN fr.id IS NULL THEN NULL ELSE
+      (SELECT COUNT(*) FROM (
+       SELECT lower(trim(rp.reference)) AS normalizedRef
+       FROM finance_receivable_payments rp
+       WHERE rp.receivable_id=fr.id AND length(trim(COALESCE(rp.reference,'')))>0
+       GROUP BY lower(trim(rp.reference)) HAVING COUNT(*)>1
+      )) END AS duplicateReceivablePaymentReferences,
+     (SELECT COUNT(*) FROM journal_entries linked
+      WHERE linked.company_id=so.company_id
+        AND linked.source_module='sales' AND linked.source_type='sales_order'
+        AND linked.source_id=so.id AND linked.status='posted') AS postedSourceJournalCount
    FROM sales_orders so
    JOIN bakery_order_details bd ON bd.sales_order_id=so.id
    LEFT JOIN finance_source_postings fp ON fp.company_id=so.company_id
@@ -81,8 +104,11 @@ export async function routeBakeryFinanceBridge(
    financePostedKobo:row.financePostedKobo===null?null:validMoney(row.financePostedKobo),
    journalDebitsKobo:row.journalId===null?null:validMoney(row.journalDebitKobo),
    journalCreditsKobo:row.journalId===null?null:validMoney(row.journalCreditKobo),
-   receivableOutstandingKobo:row.receivableId===null?null:validMoney(row.receivableBalanceKobo)
-  };
+   receivableOutstandingKobo:row.receivableId===null?null:validMoney(row.receivableBalanceKobo),
+    receivableOriginalKobo:row.receivableId===null?null:validMoney(row.receivableOriginalKobo),
+    receivablePaidKobo:row.receivableId===null?null:validMoney(row.receivablePaidKobo),
+    financePaymentRecordsKobo:row.receivableId===null?null:validMoney(row.receivableRecordedPaymentsKobo)
+   };
   const issues:string[]=[];
   const review:string[]=[];
   if(Object.entries(amounts).some(([key,value])=>value===null&&![
@@ -106,7 +132,31 @@ export async function routeBakeryFinanceBridge(
    if(amounts.saleKobo!==null&&amounts.financePostedKobo!==amounts.saleKobo)
     issues.push('finance_posted_amount_disagrees_with_sale');
    if(!row.sourceReceivableId||!row.receivableId)issues.push('finance_receivable_link_invalid');
-  }else issues.push('unrecognised_finance_source_status');
+    if(!Number.isSafeInteger(Number(row.postedSourceJournalCount))
+     ||Number(row.postedSourceJournalCount)!==1)issues.push('unexpected_posted_sales_journal_count');
+    if(row.receivableId!==null){
+     const original=amounts.receivableOriginalKobo,paid=amounts.receivablePaidKobo;
+     const remaining=amounts.receivableOutstandingKobo,recorded=amounts.financePaymentRecordsKobo;
+     if(original===null||paid===null||remaining===null||recorded===null)
+      issues.push('invalid_finance_receivable_amount');
+     else{
+      if(original!==amounts.saleKobo)issues.push('finance_receivable_original_disagrees_with_sale');
+      if(!Number.isSafeInteger(paid+remaining)||paid+remaining!==original)
+       issues.push('finance_receivable_balance_inconsistent');
+      if(recorded!==paid)issues.push('finance_payment_records_disagree_with_receivable');
+     }
+     if((row.receivableStatus==='paid'&&remaining!==0)
+       ||(row.receivableStatus==='open'&&paid!==0)
+       ||(row.receivableStatus==='part_paid'&&!(paid!==null&&remaining!==null&&paid>0&&remaining>0))
+       ||(remaining===0&&row.receivableStatus!=='paid'))
+      issues.push('finance_receivable_status_inconsistent');
+     if(!Number.isSafeInteger(Number(row.duplicateReceivablePaymentReferences))
+       ||Number(row.duplicateReceivablePaymentReferences)>0)
+      issues.push('duplicate_finance_payment_references');
+     if(Number(row.receivablePaymentCount)>0)
+      review.push('finance_payment_evidence_not_bank_verified');
+    }
+   }else issues.push('unrecognised_finance_source_status');
   if(amounts.confirmedCashRecordsKobo!==null&&amounts.confirmedCashRecordsKobo>0
     &&row.financeSourceStatus==='posted'&&amounts.receivableOutstandingKobo!==null
     &&amounts.receivableOutstandingKobo>0)
@@ -119,7 +169,10 @@ export async function routeBakeryFinanceBridge(
    salesOrderId:row.salesOrderId,orderNo:row.orderNo,orderDate:row.orderDate,
    paymentStatus:row.paymentStatus,amounts,financeSourceStatus:row.financeSourceStatus,
    journalId:row.journalId,receivableId:row.receivableId,
-   issues,reviewRequired:review,
+    receivableStatus:row.receivableStatus,postedSourceJournalCount:Number(row.postedSourceJournalCount),
+    financePaymentRecordCount:row.receivableId===null?null:Number(row.receivablePaymentCount),
+    duplicateFinancePaymentReferences:row.receivableId===null?null:Number(row.duplicateReceivablePaymentReferences),
+    issues,reviewRequired:review,
    state:issues.length?'exception':review.length?'review_required':'no_flag_on_page'
   };
  });
@@ -128,7 +181,8 @@ export async function routeBakeryFinanceBridge(
   items,returned:items.length,exceptionsOnPage:items.filter(x=>x.issues.length>0).length,
   reviewsOnPage:items.filter(x=>x.reviewRequired.length>0).length,
   hasMore,nextCursor:hasMore&&last?{afterOrderId:last.salesOrderId}:null,
-  bankSettlementAssessed:false,otherJournalSourcesAssessed:false,dispatchRemittancesAssessed:false,
+  bankSettlementAssessed:false,financePaymentSettlementAssessed:false,
+   otherJournalSourcesAssessed:false,dispatchRemittancesAssessed:false,
   explanation:'Operational cash evidence, Finance receivables and linked sales journals are separate records. This report never certifies settlement or clears a receivable.'});
 }
 
