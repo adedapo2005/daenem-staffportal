@@ -155,7 +155,7 @@ const unkeyed=await post({...outstanding,amountNaira:15});
 assert.equal(unkeyed.code,201,'Existing legacy outstanding form must continue working');
 assert.equal(unkeyed.body.idempotencyProtected,false,
  'Do not falsely claim replay protection where neither request key nor reference exists');
-assert.equal((await post(outstanding,{key:'too-short'})).code,400,
+assert.equal((await post(outstanding,{key:'short'})).code,400,
  'Malformed explicit idempotency keys must be rejected');
 
 const refund={dispatchId:'dispatch-1',status:'refunded',amountNaira:5,
