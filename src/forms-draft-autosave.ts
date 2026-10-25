@@ -17,6 +17,7 @@ export function createLatestFormsDraftWriter<T>(
   const suspended = new Set<string>();
   let tail: Promise<void> = Promise.resolve();
   let writing = 0;
+  let enqueued = 0;
   let disposed = false;
 
   function clearTimer(key: string) {
@@ -30,6 +31,7 @@ export function createLatestFormsDraftWriter<T>(
     if (disposed || suspended.has(key) || !pending.has(key)) return tail;
     const draft = pending.get(key)!;
     pending.delete(key);
+    enqueued += 1;
     const write = tail.then(async () => {
       if (disposed || suspended.has(key)) return;
       writing += 1;
@@ -43,7 +45,7 @@ export function createLatestFormsDraftWriter<T>(
       } finally {
         writing -= 1;
       }
-    });
+    }).finally(() => { enqueued -= 1; });
     // Keep the shared queue usable even when an individual write fails.
     tail = write.then(() => undefined, () => undefined);
     return write;
@@ -85,7 +87,7 @@ export function createLatestFormsDraftWriter<T>(
   }
 
   function hasUnsaved() {
-    return pending.size > 0 || writing > 0;
+    return pending.size > 0 || writing > 0 || enqueued > 0;
   }
 
   function dispose() {
