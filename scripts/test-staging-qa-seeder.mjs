@@ -61,8 +61,8 @@ async function main() {
   const worker = load('worker/staffportal-staging.ts').default;
   const auth = load('worker/auth.ts');
   const migrations = Object.keys(baseline.files).filter(name => name.startsWith('migrations/') && name.endsWith('.sql')).sort();
-  const bakeryMigrations = ['migrations/0102_bakery_financial_integrity.sql','migrations/0103_bakery_agent_sale_price_integrity.sql','migrations/0104_bakery_verified_return_custody.sql','migrations/0106_bakery_material_unit_rules.sql','migrations/0107_bakery_precise_material_valuation.sql','migrations/0108_bakery_verified_opening_valuations.sql','migrations/0109_bakery_valued_material_identity_lock.sql','migrations/0110_bakery_remittance_idempotency.sql','migrations/0111_bakery_dispatch_atomic_close.sql','migrations/0112_bakery_dispatch_closure_audit.sql','migrations/0113_bakery_dispatch_issued_custody_lock.sql'];
-  check(migrations.length === 117 && bakeryMigrations.every(name => migrations.includes(name)), 'All 117 committed migrations, including immutable issued Bakery dispatch custody');
+  const bakeryMigrations = ['migrations/0102_bakery_financial_integrity.sql','migrations/0103_bakery_agent_sale_price_integrity.sql','migrations/0104_bakery_verified_return_custody.sql','migrations/0106_bakery_material_unit_rules.sql','migrations/0107_bakery_precise_material_valuation.sql','migrations/0108_bakery_verified_opening_valuations.sql','migrations/0109_bakery_valued_material_identity_lock.sql','migrations/0110_bakery_remittance_idempotency.sql','migrations/0111_bakery_dispatch_atomic_close.sql','migrations/0112_bakery_dispatch_closure_audit.sql','migrations/0113_bakery_dispatch_issued_custody_lock.sql','migrations/0114_bakery_dispatch_stock_movement_integrity.sql'];
+  check(migrations.length === 118 && bakeryMigrations.every(name => migrations.includes(name)), 'All 118 committed migrations, including Bakery stock transfer integrity');
   const db = new DatabaseSync(':memory:');
   for (const migration of migrations) { lastCheck = `Schema: ${migration}`; db.exec(baseline.files[migration]); }
   const rows = sql => db.prepare(sql).all();
