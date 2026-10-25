@@ -6,7 +6,7 @@ import { useOfflinePlatform } from './offline-sync';
 import { FORM_PRESETS, FORM_OPTION_SETS, prepareFormSchema } from './guided-form-fields';
 import { guidedVisibleFields, guidedCompletion, guidedInvalidAnswers, pruneHiddenGuidedAnswers } from './guided-form-dependencies';
 import { assignedFormDraftCompany } from './forms-assignment-draft-scope';
-import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle } from './forms-draft-autosave';
+import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle, createScopedFormsDraftCallbacks } from './forms-draft-autosave';
 import type { FormsDraftInput } from './offline-platform';
 import { SmartMasterSelect } from './smart-master-select';
 import { assetsForSelectedFacility, recommendedWorkPriority, suggestedWorkTitle, suggestedAssetName, ASSET_READING_TYPES, STANDARD_READING_UNITS, recommendedReadingUnit, validFacilitySelection } from './facility-guided-entry';
@@ -41,12 +41,15 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
  const offlineRef=useRef(offline);offlineRef.current=offline;
  // A grant/session change immediately abandons pending writes from the previous scope.
  const autosaveScope=JSON.stringify([context.sessionId,context.employee.id,context.companies.map(c=>c.id),context.roles,context.permissions,context.companyPermissions]);
- const draftWriter=useMemo(()=>createLatestFormsDraftWriter<FormsDraftInput>(
-  async (_id,input)=>{await offlineRef.current.queueFormsDraft(input,input.companyId)},
-  (_id,error)=>setMessage('Draft not saved securely. Keep this page open and retry: '+(error instanceof Error?error.message:'Storage unavailable.')),
-  350
- ),[autosaveScope]);
  const currentAutosaveScope=useRef(autosaveScope);currentAutosaveScope.current=autosaveScope;
+ const draftWriter=useMemo(()=>{
+  const scoped=createScopedFormsDraftCallbacks<FormsDraftInput>(
+   autosaveScope,()=>currentAutosaveScope.current,
+   async (_id,input)=>{await offlineRef.current.queueFormsDraft(input,input.companyId)},
+   (_id,error)=>setMessage('Draft not saved securely. Keep this page open and retry: '+(error instanceof Error?error.message:'Storage unavailable.'))
+  );
+  return createLatestFormsDraftWriter<FormsDraftInput>(scoped.persist,scoped.reportFailure,350);
+ },[autosaveScope]);
  const writerLifecycle=useMemo(()=>createFormsDraftWriterLifecycle(draftWriter),[draftWriter]);
  useEffect(()=>{
   const setupId=writerLifecycle.setup();
