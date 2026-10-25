@@ -131,3 +131,26 @@ export function createFormsDraftWriterLifecycle(
   }
   return { setup, cleanup };
 }
+
+
+/**
+ * Pin each autosave writer to the authenticated session/grants that created it.
+ * A stale queued callback must never borrow a new user's offline context, even
+ * if the replacement session happens to grant access to the same company.
+ */
+export function createScopedFormsDraftCallbacks<T>(
+  expectedScope: string,
+  currentScope: () => string,
+  persist: (assignmentId: string, draft: T) => Promise<unknown>,
+  reportFailure: (assignmentId: string, error: unknown) => void,
+) {
+  return {
+    persist: async (assignmentId: string, draft: T): Promise<void> => {
+      if (currentScope() !== expectedScope) return;
+      await persist(assignmentId, draft);
+    },
+    reportFailure: (assignmentId: string, error: unknown) => {
+      if (currentScope() === expectedScope) reportFailure(assignmentId, error);
+    },
+  };
+}
