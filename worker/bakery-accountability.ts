@@ -122,14 +122,115 @@ async function verifyPhysicalReturns(request:Request,env:Env,context:SessionCont
 
 async function recordMoney(request:Request,env:Env,context:SessionContext){
  if(!allowed(context,'bakery.remittance','edit'))return json({error:'Bakery Remittance Edit permission is required.'},403);
- let body:Record<string,unknown>;try{body=await request.json()}catch{return json({error:'Invalid remittance entry.'},400)}
- const dispatchId=text(body.dispatchId,120),status=text(body.status,30),amount=kobo(body.amountNaira),reference=text(body.reference,160),rawAmount=Number(body.amountNaira);
- if(!dispatchId||!['cash_received','pos_received','transfer_received','outstanding','refunded','pos_charges'].includes(status)||!Number.isFinite(rawAmount)||rawAmount<=0||!Number.isSafeInteger(amount)||Math.abs(rawAmount*100-amount)>0.00001)return json({error:'Dispatch, valid money status and positive naira amount with at most two decimals are required.'},400);
- if(status==='pos_received'||status==='transfer_received')return json({error:'POS and bank transfers must be verified by a payment-provider or authorised reconciliation before posting as received.'},409);
- if(status==='cash_received'&&(reference.length<4||body.cashReceivedConfirmed!==true))return json({error:'Cash receipt reference and physical cash-confirmation checkbox are required.'},400);
- if(['refunded','pos_charges'].includes(status)&&(!allowed(context,'bakery.remittance','approve')||reference.length<4))return json({error:'Refunds and POS charges require approval and a traceable reference.'},403);
- const dispatch=await env.DB.prepare(`SELECT id,custodian_id AS custodianId FROM bakery_dispatches WHERE id=? AND company_id=? AND status NOT IN ('closed','cancelled')`).bind(dispatchId,COMPANY).first<{id:string;custodianId:string}>();if(!dispatch)return json({error:'Open Bakery dispatch not found.'},404);
- await env.DB.batch([env.DB.prepare(`INSERT INTO bakery_money_ledger(id,company_id,business_date,dispatch_id,custodian_id,status,amount_kobo,direction,reference,reason,recorded_by) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(uid('money-ledger'),COMPANY,businessDate(),dispatchId,dispatch.custodianId,status,amount,status==='refunded'||status==='pos_charges'?'out':'in',reference||null,text(body.reason,500)||null,context.employee.id),env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'bakery','record_remittance','bakery_dispatch',?,?,'web')`).bind(uid('audit'),context.employee.id,COMPANY,dispatchId,JSON.stringify({status,amountKobo:amount,reference,cashReceivedConfirmed:status==='cash_received'?true:null}))]);return json({ok:true},201);
+ let body:Record<string,unknown>;
+ try{body=await request.json()}catch{return json({error:'Invalid remittance entry.'},400)}
+ const dispatchId=text(body.dispatchId,120),status=text(body.status,30),
+  amount=kobo(body.amountNaira),reference=text(body.reference,160),
+  rawAmount=Number(body.amountNaira),reason=text(body.reason,500)||null;
+ if(!dispatchId||!['cash_received','pos_received','transfer_received','outstanding','refunded','pos_charges'].includes(status)
+   ||!Number.isFinite(rawAmount)||rawAmount<=0||!Number.isSafeInteger(amount)
+   ||Math.abs(rawAmount*100-amount)>0.00001)
+  return json({error:'Dispatch, valid money status and positive naira amount with at most two decimals are required.'},400);
+ if(status==='pos_received'||status==='transfer_received')
+  return json({error:'POS and bank transfers must be verified by a payment-provider or authorised reconciliation before posting as received.'},409);
+ if(status==='cash_received'&&(reference.length<4||body.cashReceivedConfirmed!==true))
+  return json({error:'Cash receipt reference and physical cash-confirmation checkbox are required.'},400);
+ if(['refunded','pos_charges'].includes(status)&&(!allowed(context,'bakery.remittance','approve')||reference.length<4))
+  return json({error:'Refunds and POS charges require approval and a traceable reference.'},403);
+
+ // A supplied key covers retryable requests without a receipt reference.
+ // Reference-bearing events also have automatic, normalized event identity,
+ // so the existing UI remains compatible without editing its form.
+ const clientKey=(request.headers.get('idempotency-key')
+  ||request.headers.get('x-daenem-idempotency-key')||'').trim();
+ if(clientKey&&!/^[a-zA-Z0-9._:-]{8,128}$/.test(clientKey))
+  return json({error:'Idempotency Key must contain 8–128 letters, numbers, dots, underscores, colons or hyphens.'},400);
+ const normalizedReference=reference.toLowerCase();
+ const requestKey=clientKey?`client:${clientKey}`:
+   reference.length>=4?`reference:${status}:${normalizedReference}`:null;
+ const moneyDirection=status==='refunded'||status==='pos_charges'?'out':'in';
+ const normalizedPayload=JSON.stringify({dispatchId,status,amountKobo:amount,
+  reference:normalizedReference,reason,direction:moneyDirection});
+ const fingerprint=requestKey?await sha256Hex(new TextEncoder().encode(normalizedPayload).buffer as ArrayBuffer):null;
+ type Prior={id:string;amountKobo:number;reference:string|null;reason:string|null;direction:string};
+ const matching=(row:Prior)=>Number(row.amountKobo)===amount
+  &&String(row.reference||'').trim().toLowerCase()===normalizedReference
+  &&String(row.reason||'')===String(reason||'')
+  &&row.direction===moneyDirection;
+ const priorRequest=async()=>requestKey?env.DB.prepare(`SELECT claim.payload_fingerprint AS fingerprint,
+  claim.money_ledger_id AS moneyLedgerId,ml.id AS linkedLedgerId
+  FROM bakery_remittance_requests claim
+  LEFT JOIN bakery_money_ledger ml ON ml.id=claim.money_ledger_id
+   AND ml.company_id=claim.company_id AND ml.dispatch_id=claim.dispatch_id
+  WHERE claim.company_id=? AND claim.dispatch_id=? AND claim.request_key=?`)
+  .bind(COMPANY,dispatchId,requestKey).first<{fingerprint:string;moneyLedgerId:string;linkedLedgerId:string|null}>():null;
+ const priorReference=async()=>reference.length>=4?env.DB.prepare(`SELECT id,amount_kobo AS amountKobo,
+   reference,reason,direction FROM bakery_money_ledger
+   WHERE company_id=? AND dispatch_id=? AND status=?
+     AND lower(trim(COALESCE(reference,'')))=? LIMIT 2`)
+  .bind(COMPANY,dispatchId,status,normalizedReference).all<Prior>():null;
+ const duplicateResponse=async():Promise<Response|null>=>{
+  const keyed=await priorRequest();
+  if(keyed){
+   if(keyed.fingerprint!==fingerprint)
+    return json({error:'This idempotency key was already used for a different remittance.'},409);
+   if(!keyed.linkedLedgerId)
+    return json({error:'Remittance claim exists without its required money entry. Reconciliation review is required.'},503);
+   return json({ok:true,duplicate:true,moneyLedgerId:keyed.moneyLedgerId,idempotencyProtected:true});
+  }
+  const referenceMatch=await priorReference(),old=referenceMatch?.results||[];
+  if(old.length>1)return json({error:'Multiple existing entries use this receipt reference. Independent reconciliation is required.'},409);
+  if(old.length===1){
+   if(matching(old[0]))return json({ok:true,duplicate:true,moneyLedgerId:old[0].id,idempotencyProtected:true});
+   return json({error:'This receipt reference has already been recorded with different amount or evidence.'},409);
+  }
+  return null;
+ };
+ const duplicate=await duplicateResponse();
+ if(duplicate)return duplicate;
+ const dispatch=await env.DB.prepare(`SELECT id,custodian_id AS custodianId FROM bakery_dispatches
+  WHERE id=? AND company_id=? AND status NOT IN ('closed','cancelled')`)
+  .bind(dispatchId,COMPANY).first<{id:string;custodianId:string}>();
+ if(!dispatch)return json({error:'Open Bakery dispatch not found.'},404);
+
+ const ledgerId=uid('money-ledger'),statements:D1PreparedStatement[]=[];
+ if(requestKey){
+  // D1 batch is transactional. A repeated key or a newly closed dispatch
+  // aborts BEFORE money and audit can be inserted.
+  statements.push(env.DB.prepare(`INSERT INTO bakery_remittance_requests
+   (id,company_id,dispatch_id,request_key,payload_fingerprint,money_ledger_id,recorded_by)
+   VALUES (?,?,?,CASE WHEN EXISTS(SELECT 1 FROM bakery_dispatches d
+     WHERE d.id=? AND d.company_id=? AND d.status NOT IN ('closed','cancelled'))
+     THEN ? ELSE NULL END,?,?,?)`)
+   .bind(uid('remittance-request'),COMPANY,dispatchId,dispatchId,COMPANY,
+    requestKey,fingerprint,ledgerId,context.employee.id));
+ }
+ // Also guard unkeyed legacy outstanding requests against concurrent closure.
+ statements.push(env.DB.prepare(`INSERT INTO bakery_money_ledger
+  (id,company_id,business_date,dispatch_id,custodian_id,status,
+   amount_kobo,direction,reference,reason,recorded_by)
+  VALUES (?,?,?,?,?,?,CASE WHEN EXISTS(SELECT 1 FROM bakery_dispatches d
+    WHERE d.id=? AND d.company_id=? AND d.status NOT IN ('closed','cancelled'))
+    THEN ? ELSE NULL END,?,?,?,?)`)
+  .bind(ledgerId,COMPANY,businessDate(),dispatchId,dispatch.custodianId,status,
+   dispatchId,COMPANY,amount,moneyDirection,reference||null,reason,context.employee.id));
+ statements.push(env.DB.prepare(`INSERT INTO audit_logs
+  (id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
+  VALUES (?,?,?,'bakery','record_remittance','bakery_dispatch',?,?,'web')`)
+  .bind(uid('audit'),context.employee.id,COMPANY,dispatchId,
+   JSON.stringify({moneyLedgerId:ledgerId,status,amountKobo:amount,reference,
+    cashReceivedConfirmed:status==='cash_received'?true:null,
+    idempotencyProtected:Boolean(requestKey)})));
+ try{await env.DB.batch(statements)}
+ catch{
+  const racedDuplicate=await duplicateResponse();
+  if(racedDuplicate)return racedDuplicate;
+  const stillOpen=await env.DB.prepare(`SELECT id FROM bakery_dispatches
+    WHERE id=? AND company_id=? AND status NOT IN ('closed','cancelled')`).bind(dispatchId,COMPANY).first();
+  if(!stillOpen)return json({error:'The dispatch closed before the remittance could be recorded. Refresh and review.'},409);
+  return json({error:'Money and its audit could not be committed atomically. No receipt was confirmed; review before retrying.'},503);
+ }
+ return json({ok:true,duplicate:false,moneyLedgerId:ledgerId,idempotencyProtected:Boolean(requestKey)},201);
 }
 
 async function closeDispatch(request:Request,env:Env,context:SessionContext){
