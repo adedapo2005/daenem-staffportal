@@ -405,7 +405,7 @@ async function createRequest(request: Request, env: InventoryEnv, context: Sessi
 
 export async function routeInventory(request: Request, env: InventoryEnv, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
-  if(url.pathname.startsWith('/api/inventory/bakery/openings'))return routeBakeryMaterialOpenings(request,env,context);
+  if(url.pathname.startsWith('/api/inventory/bakery/openings') || url.pathname==='/api/inventory/bakery/reconciliation')return routeBakeryMaterialOpenings(request,env,context);
   if (url.pathname === '/api/inventory/catalog' && request.method === 'GET') return catalog(request, env, context);
   if (url.pathname === '/api/inventory/categories' && request.method === 'POST') return createCategory(request, env, context);
   if (url.pathname === '/api/inventory/items' && request.method === 'POST') return createItem(request, env, context);
