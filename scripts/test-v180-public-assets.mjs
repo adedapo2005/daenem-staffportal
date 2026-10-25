@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 
@@ -9,7 +10,13 @@ const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const loaded = { exports: {} };
-const projectAsset = new Function('module', 'exports', 'require', `${compiled}\nreturn safeAsset;`)(loaded, loaded.exports, () => ({ default: {} }));
+const upstreamOrigin = 'https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site';
+const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jXioAAAAASUVORK5CYII=', 'base64');
+const imageUrl = `${upstreamOrigin}/assets/test.png`;
+const imageManifest = { [imageUrl]: {
+  sha256: createHash('sha256').update(imageBytes).digest('hex'), mime: 'image/png', bytes: imageBytes.length,
+} };
+const projectAsset = new Function('module', 'exports', 'require', `${compiled}\nreturn safeAsset;`)(loaded, loaded.exports, () => ({ default: imageManifest }));
 const { routeV180PublicAssets } = loaded.exports;
 const stagingCompiled = ts.transpileModule(staging, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -31,7 +38,6 @@ const check = async (name, action) => { await action(); checks.push(name); conso
 const request = (path = '/api/assets', init = {}) => new Request(`https://staffportal.example.test${path}`, init);
 const originalFetch = globalThis.fetch;
 const respond = (body, status = 200, headers = { 'content-type': 'application/json' }) => new Response(body, { status, headers });
-const upstreamOrigin = 'https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site';
 const privateFields = {
   created_by_id: 'private-actor', created_by: { email: 'private@example.test' },
   created_date: 'private-date', audit_reason: 'private-reason', audit: { actor: 'private-actor' },
@@ -94,6 +100,16 @@ const assertAssets = async (assets) => {
   const response = await routeV180PublicAssets(request());
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { assets });
+};
+const serveImageRoute = (assets, imageResponse) => {
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (String(url) === `${upstreamOrigin}/api/assets`) return respond(JSON.stringify({ assets }));
+    if (String(url) === imageUrl && imageResponse) return imageResponse.clone();
+    throw new Error(`Unexpected image source request: ${String(url)}`);
+  };
+  return calls;
 };
 
 try {
@@ -194,6 +210,72 @@ try {
       { asset_key: 'legacy', image_url: '/api/assets/images/legacy/image', display_enabled: true },
       { asset_key: 'absolute', image_url: '/api/assets/images/absolute/image', display_enabled: true },
     ]);
+  });
+
+  await check('approved pinned image returns exact verified PNG bytes with privacy-safe response headers', async () => {
+    const calls = serveImageRoute([approved({ image_url: imageUrl })], new Response(imageBytes, {
+      headers: { 'content-type': 'image/png', 'content-length': String(imageBytes.length) },
+    }));
+    const response = await routeV180PublicAssets(request('/api/assets/images/safe/image', { headers: {
+      cookie: 'session-secret', authorization: 'Bearer private', 'x-api-key': 'private-key',
+    } }));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), 'image/png');
+    assert.equal(response.headers.get('content-length'), String(imageBytes.length));
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('cross-origin-resource-policy'), 'same-origin');
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), imageBytes);
+    assert.equal(calls.length, 2);
+    assert.deepEqual(calls[1].init.headers, { accept: 'image/png' });
+    assert.equal(calls[1].init.credentials, 'omit');
+    assert.equal(calls[1].init.redirect, 'manual');
+    assert.equal(calls[1].init.cache, 'no-store');
+    assert.equal(calls[1].init.body, undefined);
+  });
+
+  await check('HTTP 200 HTML and bytes that do not match the pinned image fail closed', async () => {
+    for (const invalidResponse of [
+      new Response('<html>SPA fallback</html>', { headers: { 'content-type': 'text/html' } }),
+      new Response(Buffer.from('tampered'), { headers: { 'content-type': 'image/png' } }),
+    ]) {
+      serveImageRoute([approved({ image_url: imageUrl })], invalidResponse);
+      const response = await routeV180PublicAssets(request('/api/assets/images/safe/image'));
+      assert.equal(response.status, 502);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal((await response.json()).error, 'Not found.');
+    }
+  });
+
+  await check('missing and redirected image objects fail closed without following redirects', async () => {
+    for (const [imageResponse, status] of [
+      [new Response('missing', { status: 404, headers: { 'content-type': 'text/plain' } }), 404],
+      [new Response('', { status: 302, headers: { location: 'https://attacker.test/image.png' } }), 502],
+    ]) {
+      const calls = serveImageRoute([approved({ image_url: imageUrl })], imageResponse);
+      const response = await routeV180PublicAssets(request('/api/assets/images/safe/image'));
+      assert.equal(response.status, status);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal(calls.length, 2);
+      assert.equal(calls[1].init.redirect, 'manual');
+    }
+  });
+
+  await check('pending, draft, disabled, malicious URL and traversal image requests never fetch an image', async () => {
+    for (const record of [
+      approved({ qa_status: 'pending_review', image_url: imageUrl }),
+      approved({ qa_status: 'draft_review', image_url: imageUrl }),
+      approved({ display_enabled: false, image_url: imageUrl }),
+      approved({ image_url: 'https://attacker.test/image.png' }),
+    ]) {
+      const calls = serveImageRoute([record], null);
+      const response = await routeV180PublicAssets(request('/api/assets/images/safe/image'));
+      assert.equal(response.status, 404);
+      assert.equal(calls.length, 1, 'unpublished or untrusted source must not be fetched');
+    }
+    globalThis.fetch = async () => { throw new Error('traversal must not reach any origin'); };
+    const traversal = await routeV180PublicAssets(request('/api/assets/images/%252e%252e/image'));
+    assert.equal(traversal.status, 404);
   });
 
   await check('all-unpublishable and empty feeds return 200 with no record or private field leakage', async () => {
