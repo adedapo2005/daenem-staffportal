@@ -3,11 +3,15 @@
  * independent of React and D1 so direct requests and offline replay share it.
  * Authoritative record/company/permission checks remain in worker/forms.ts.
  */
+import { guidedFieldVisible } from '../src/guided-form-dependencies';
+
 export type CompletenessField = {
   key: string;
   label: string;
   type: string;
   required?: boolean;
+  options?: string[];
+  showWhen?: { fieldKey: string; equals: string | boolean };
 };
 
 export type CompletenessPolicy = {
@@ -87,6 +91,10 @@ export function checkFormAnswerCompleteness(
 
   for (const field of schema) {
     const value = Object.prototype.hasOwnProperty.call(answers, field.key) ? answers[field.key] : undefined;
+    if (!guidedFieldVisible(schema, answers, field)) {
+      if (!empty(value)) return issue('FORM_ANSWER_INVALID', field.label + ' is no longer applicable. Review the form.', field.key);
+      continue;
+    }
     if (['file', 'photo', 'signature', 'location'].includes(field.type) && (field.required || !empty(value)))
       return issue('FORM_EVIDENCE_UNSUPPORTED',
         field.label + ' requires verified evidence that this form cannot currently accept. Save a draft.', field.key);
