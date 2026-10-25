@@ -92,6 +92,11 @@ async function post(route,path,body,who=context){
  assert(response instanceof Response);
  return{code:response.status,data:await response.json()};
 }
+async function get(route,path,who=context){
+ const response=await route(new Request('https://test.invalid'+path),env,who);
+ assert(response instanceof Response);
+ return{code:response.status,data:await response.json()};
+}
 const count=sql=>Number(Object.values(db.prepare(sql).get())[0]);
 const stock=()=>db.prepare("SELECT quantity FROM stock_balances WHERE item_id='yeast'").get()?.quantity||0;
 const state=()=>{const row=db.prepare("SELECT remaining_quantity_micro AS q,remaining_value_microkobo AS v FROM bakery_material_valuation_balances WHERE inventory_item_id='yeast'").get();return row?{q:row.q,v:row.v}:undefined};
@@ -298,7 +303,7 @@ db.prepare("UPDATE stock_balances SET quantity=quantity-1 WHERE location_id='HQ2
 // A legacy Bakery receipt / transfer must never race into an independently
 // approved precision balance. Simulate a reviewer landing the valuation after
 // the handler has read its initial state but before the batch starts.
-db.exec("INSERT INTO inventory_items VALUES('race-item','company-bakery','kg',100,1,NULL,'RACE','Race material')");
+db.exec("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name) VALUES('race-item','company-bakery','kg',100,1,NULL,'RACE','Race material')");
 db.exec("INSERT INTO stock_balances(id,company_id,location_id,item_id,quantity) VALUES('race-source','company-bakery','HQ','race-item',8)");
 const noRaceEvents=()=>count("SELECT COUNT(*) FROM stock_movements WHERE item_id='race-item'");
 const noRaceStock=()=>db.prepare("SELECT quantity FROM stock_balances WHERE location_id='HQ' AND item_id='race-item'").get().quantity;
@@ -352,6 +357,71 @@ assert.equal(count("SELECT COUNT(*) FROM bakery_batch_ingredients WHERE batch_id
  'Racing legacy issue must not create an ingredient cost line');
 assert.equal(noRaceEvents(),3,'Racing legacy issue must not create an unvalued stock movement');
 assert.equal(db.prepare("SELECT remaining_quantity_micro AS q FROM bakery_material_valuation_balances WHERE inventory_item_id='race-item' AND location_id='HQ'").get().q,8000000);
+
+// Validate the real, read-only reconciliation API against SQLite, not mock
+// fixture JSON. No accounting entries or physical stock may be changed.
+db.exec("ALTER TABLE company_locations ADD COLUMN name TEXT");
+db.exec("UPDATE company_locations SET name=id");
+const deniedReconciliation=await get(routeInventory,'/api/inventory/bakery/reconciliation',
+ {companies:[{id:'company-printing'}],employee:{id:'reviewer'}});
+assert.equal(deniedReconciliation.code,403,'Other companies cannot view Bakery stock valuations');
+assert.equal((await get(routeInventory,'/api/inventory/bakery/reconciliation?afterLocationId=HQ')).code,400,
+ 'Reconciliation pagination refuses incomplete cursor pairs');
+const readReconciliation=()=>get(routeInventory,'/api/inventory/bakery/reconciliation');
+const base=await readReconciliation();
+assert.equal(base.code,200,JSON.stringify(base.data));
+assert.equal(base.data.readOnly,true);
+assert.equal(base.data.scope,'page_only','A limited response must not claim company-wide reconciliation');
+const entry=(res,loc,item)=>res.data.entries.find(x=>x.locationId===loc&&x.itemId===item);
+assert.equal(entry(base,'HQ','flour').status,'reconciled','Opened flour matches valued stock exactly');
+assert.equal(entry(base,'HQ2','flour').status,'reconciled','Transferred flour matches precise carried value');
+assert.equal(entry(base,'HQ3','flour').status,'unvalued_stock','Unvalued legacy flour is flagged without inventing cost');
+assert.equal(entry(base,'HQ','sugar').status,'unvalued_stock','Unvalued sugar is visible for reconciliation');
+assert(!base.data.entries.some(x=>x.itemId==='bread-item'),'Finished Bakery products do not appear in raw-material valuation');
+db.prepare("UPDATE stock_balances SET quantity=quantity+1 WHERE location_id='HQ' AND item_id='flour'").run();
+const countMismatch=await readReconciliation();
+assert.equal(entry(countMismatch,'HQ','flour').status,'quantity_mismatch');
+assert.equal(entry(countMismatch,'HQ','flour').quantityVarianceMicro,1000000,'Exactly one kg variance is retained');
+db.prepare("UPDATE stock_balances SET quantity=quantity-1 WHERE location_id='HQ' AND item_id='flour'").run();
+db.prepare("UPDATE stock_balances SET reserved_quantity=99 WHERE location_id='HQ' AND item_id='flour'").run();
+assert.equal(entry(await readReconciliation(),'HQ','flour').status,'invalid_reservation');
+db.prepare("UPDATE stock_balances SET reserved_quantity=0 WHERE location_id='HQ' AND item_id='flour'").run();
+db.exec("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name,category_id) VALUES('orphan-material','company-bakery','kg',0,1,NULL,'ORPHAN','Orphan value','raw-ingredient')");
+db.prepare("INSERT INTO bakery_material_valuation_balances(id,company_id,location_id,inventory_item_id,remaining_quantity_micro,remaining_value_microkobo) VALUES(?,?,?,?,?,?)")
+ .run('orphan-balance','company-bakery','HQ','orphan-material',0,1234567);
+assert.equal(entry(await readReconciliation(),'HQ','orphan-material').status,'orphan_value',
+ 'A remaining monetary value with no physical material must never be called reconciled');
+db.exec("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name,category_id) VALUES('finished-category-only','company-bakery','kg',0,1,NULL,'FINISHED','Finished category','finished-ingredient')");
+db.exec("INSERT INTO stock_balances(id,company_id,location_id,item_id,quantity) VALUES('finished-only-balance','company-bakery','HQ','finished-category-only',3)");
+db.exec("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name) VALUES('printing-material','company-printing','kg',0,1,NULL,'PRINTING','Printing material')");
+db.exec("INSERT INTO stock_balances(id,company_id,location_id,item_id,quantity) VALUES('printing-material-balance','company-printing','OTHER','printing-material',2)");
+const insertItem=db.prepare("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name,category_id) VALUES(?,'company-bakery','kg',0,1,NULL,?,?, 'raw-ingredient')");
+const insertStock=db.prepare("INSERT INTO stock_balances(id,company_id,location_id,item_id,quantity) VALUES(?,'company-bakery','HQ',?,1)");
+for(let j=0;j<105;j++){const item='page-material-'+String(j).padStart(3,'0');insertItem.run(item,item,item);insertStock.run('stock-'+item,item)}
+const beforeReadStock=JSON.stringify(db.prepare("SELECT * FROM stock_balances ORDER BY location_id,item_id").all());
+const beforeReadValue=JSON.stringify(db.prepare("SELECT * FROM bakery_material_valuation_balances ORDER BY location_id,inventory_item_id").all());
+const beforeReadMovements=count("SELECT COUNT(*) AS n FROM stock_movements");
+const beforeReadAudits=count("SELECT COUNT(*) AS n FROM audit_logs");
+const firstPage=await readReconciliation();
+assert.equal(firstPage.code,200,JSON.stringify(firstPage.data));
+assert.equal(firstPage.data.returned,100,'Pagination limits each response to 100 material locations/items');
+assert.equal(firstPage.data.hasMore,true);
+assert(firstPage.data.nextCursor?.afterLocationId&&firstPage.data.nextCursor?.afterItemId);
+const nextPage=await get(routeInventory,'/api/inventory/bakery/reconciliation?'+new URLSearchParams(firstPage.data.nextCursor));
+assert.equal(nextPage.code,200,JSON.stringify(nextPage.data));
+assert.equal(nextPage.data.hasMore,false);
+const allEntries=[...firstPage.data.entries,...nextPage.data.entries];
+const uniqueKeys=new Set(allEntries.map(x=>x.locationId+'/'+x.itemId));
+assert.equal(uniqueKeys.size,allEntries.length,'Every paginated material location appears once');
+assert(allEntries.some(x=>x.itemId==='page-material-104'),'Pagination reaches the final material');
+assert(!allEntries.some(x=>x.itemId==='printing-material'),'Other company financial stock is never disclosed');
+assert(!allEntries.some(x=>x.itemId==='finished-category-only'),'Categorized finished goods are never treated as raw material');
+assert(!allEntries.some(x=>x.itemId==='bread-item'),'Bakery finished products are excluded');
+assert.equal(JSON.stringify(db.prepare("SELECT * FROM stock_balances ORDER BY location_id,item_id").all()),beforeReadStock);
+assert.equal(JSON.stringify(db.prepare("SELECT * FROM bakery_material_valuation_balances ORDER BY location_id,inventory_item_id").all()),beforeReadValue);
+assert.equal(count("SELECT COUNT(*) AS n FROM stock_movements"),beforeReadMovements);
+assert.equal(count("SELECT COUNT(*) AS n FROM audit_logs"),beforeReadAudits);
+console.log('PASS real read-only material reconciliation: quantities, orphan value, reservations, permissions, finished goods and 100-row pagination');
 db.close();
 console.log('PASS real opening approval SQL: independently verified 50kg, ₦25,000; stale counts blocked; physical stock never duplicated');
 console.log('PASS real exact-value transfer: approved flour opening value conserved across Bakery locations and disputed stock rolls back');
