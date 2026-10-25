@@ -56,6 +56,42 @@ BEGIN
  SELECT RAISE(ABORT,'Bakery valued material category cannot become finished goods');
 END;
 
+-- Cross-company categories would make an already valued Bakery ingredient
+-- appear uncategorized in company-scoped reads. Refuse those re-links.
+CREATE TRIGGER IF NOT EXISTS bakery_valued_material_foreign_category_lock
+BEFORE UPDATE OF category_id ON inventory_items
+WHEN OLD.company_id='company-bakery'
+ AND NEW.category_id IS NOT NULL
+ AND NEW.category_id IS NOT OLD.category_id
+ AND NOT EXISTS(SELECT 1 FROM inventory_categories c
+   WHERE c.id=NEW.category_id AND c.company_id=OLD.company_id)
+ AND (
+   EXISTS(SELECT 1 FROM bakery_material_valuation_balances v
+     WHERE v.company_id=OLD.company_id AND v.inventory_item_id=OLD.id)
+   OR EXISTS(SELECT 1 FROM bakery_material_opening_valuations o
+     WHERE o.company_id=OLD.company_id AND o.inventory_item_id=OLD.id
+       AND o.status IN ('proposed','approved'))
+ )
+BEGIN
+ SELECT RAISE(ABORT,'Bakery valued material category must remain company scoped');
+END;
+
+-- Editing a category's company can bypass checks on the inventory item alone.
+CREATE TRIGGER IF NOT EXISTS bakery_valued_category_company_lock
+BEFORE UPDATE OF company_id ON inventory_categories
+WHEN OLD.company_id='company-bakery' AND NEW.company_id<>OLD.company_id
+ AND EXISTS(SELECT 1 FROM inventory_items i WHERE i.company_id=OLD.company_id
+   AND i.category_id=OLD.id AND (
+     EXISTS(SELECT 1 FROM bakery_material_valuation_balances v
+       WHERE v.company_id=i.company_id AND v.inventory_item_id=i.id)
+     OR EXISTS(SELECT 1 FROM bakery_material_opening_valuations o
+       WHERE o.company_id=i.company_id AND o.inventory_item_id=i.id
+         AND o.status IN ('proposed','approved'))
+   ))
+BEGIN
+ SELECT RAISE(ABORT,'Bakery valued material category company is locked');
+END;
+
 CREATE TRIGGER IF NOT EXISTS bakery_valued_material_product_insert_lock
 BEFORE INSERT ON bakery_products
 WHEN NEW.company_id='company-bakery' AND NEW.inventory_item_id IS NOT NULL
