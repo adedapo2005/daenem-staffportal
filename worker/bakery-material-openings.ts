@@ -43,11 +43,13 @@ async function propose(request:Request,env:OpeningEnv,context:SessionContext){
   ||evidence.length<8||evidence.length>250)
   return json({error:'Provide an existing Bakery raw-material location, counted base-unit quantity, positive total naira valuation, reason and independent evidence reference.'},400);
  const item=await env.DB.prepare(`SELECT i.id,i.unit,i.active,l.id AS locationId,
-   EXISTS(SELECT 1 FROM bakery_products p WHERE p.inventory_item_id=i.id AND p.company_id=i.company_id) AS finishedProduct
+   EXISTS(SELECT 1 FROM bakery_products p WHERE p.inventory_item_id=i.id AND p.company_id=i.company_id) AS finishedProduct,
+   EXISTS(SELECT 1 FROM inventory_categories c WHERE c.id=i.category_id
+     AND c.company_id=i.company_id AND c.category_type='finished_good') AS finishedCategory
   FROM inventory_items i JOIN company_locations l ON l.id=? AND l.company_id=i.company_id AND l.active=1
   WHERE i.id=? AND i.company_id=? AND i.active=1`)
-  .bind(locationId,itemId,COMPANY).first<{id:string;unit:string;locationId:string;finishedProduct:number}>();
- if(!item||Number(item.finishedProduct)>0)return json({error:'Only active Bakery raw materials at valid Bakery locations can receive opening valuations.'},404);
+  .bind(locationId,itemId,COMPANY).first<{id:string;unit:string;locationId:string;finishedProduct:number;finishedCategory:number}>();
+ if(!item||Number(item.finishedProduct)>0||Number(item.finishedCategory)>0)return json({error:'Only active Bakery raw materials at valid Bakery locations can receive opening valuations.'},404);
  const stock=await env.DB.prepare(`SELECT sb.quantity,sb.reserved_quantity AS reservedQuantity,
     (SELECT COALESCE(MAX(sm.rowid),0) FROM stock_movements sm
       WHERE sm.company_id=sb.company_id AND sm.item_id=sb.item_id
@@ -124,6 +126,9 @@ async function review(request:Request,env:OpeningEnv,context:SessionContext){
         JOIN company_locations l ON l.id=sb.location_id AND l.company_id=sb.company_id AND l.active=1
         WHERE sb.company_id=? AND sb.location_id=? AND sb.item_id=?
           AND lower(trim(i.unit))=lower(trim(?)) AND sb.reserved_quantity=0
+          AND NOT EXISTS(SELECT 1 FROM bakery_products p WHERE p.inventory_item_id=i.id AND p.company_id=i.company_id)
+          AND NOT EXISTS(SELECT 1 FROM inventory_categories c WHERE c.id=i.category_id
+            AND c.company_id=i.company_id AND c.category_type='finished_good')
           AND CAST(ROUND(sb.quantity*1000000,0) AS INTEGER)=?)
        AND (SELECT COALESCE(MAX(sm.rowid),0) FROM stock_movements sm
         WHERE sm.company_id=? AND sm.item_id=?
@@ -144,9 +149,79 @@ async function review(request:Request,env:OpeningEnv,context:SessionContext){
  return json({ok:true,id:openingId,status:decision,stockAdded:0,
   valuationEstablished:decision==='approved'});
 }
+
+type ReconciliationRow={
+ locationId:string;itemId:string;itemName:string;baseUnit:string;locationName:string;
+ itemActive:number;locationActive:number;physicalQuantity:number|null;reservedQuantity:number|null;
+ valuedQuantityMicro:number|null;valuedMicroKobo:number|null
+};
+// A page is one read-only snapshot, not a claim of company-wide acceptance.
+async function reconciliation(request:Request,env:OpeningEnv,context:SessionContext){
+ if(!has(context,'view'))return json({error:'Bakery Inventory access is required.'},403);
+ const url=new URL(request.url);
+ const afterLocationId=(url.searchParams.get('afterLocationId')||'').trim();
+ const afterItemId=(url.searchParams.get('afterItemId')||'').trim();
+ if(Boolean(afterLocationId)!==Boolean(afterItemId)||afterLocationId.length>128||afterItemId.length>128)
+  return json({error:'Use a valid pair of location and item page cursors.'},400);
+ const records=await env.DB.prepare(`WITH material_keys AS (
+    SELECT location_id,item_id FROM stock_balances WHERE company_id=?
+    UNION
+    SELECT location_id,inventory_item_id AS item_id FROM bakery_material_valuation_balances WHERE company_id=?
+   )
+   SELECT k.location_id AS locationId,k.item_id AS itemId,
+     i.name AS itemName,i.unit AS baseUnit,i.active AS itemActive,
+     l.name AS locationName,l.active AS locationActive,
+     sb.quantity AS physicalQuantity,sb.reserved_quantity AS reservedQuantity,
+     v.remaining_quantity_micro AS valuedQuantityMicro,v.remaining_value_microkobo AS valuedMicroKobo
+   FROM material_keys k
+   JOIN inventory_items i ON i.id=k.item_id AND i.company_id=?
+   JOIN company_locations l ON l.id=k.location_id AND l.company_id=i.company_id
+   LEFT JOIN stock_balances sb ON sb.company_id=i.company_id AND sb.location_id=k.location_id AND sb.item_id=k.item_id
+   LEFT JOIN bakery_material_valuation_balances v
+     ON v.company_id=i.company_id AND v.location_id=k.location_id AND v.inventory_item_id=k.item_id
+   LEFT JOIN inventory_categories c ON c.id=i.category_id AND c.company_id=i.company_id
+   WHERE NOT EXISTS(SELECT 1 FROM bakery_products bp WHERE bp.company_id=i.company_id AND bp.inventory_item_id=i.id)
+     AND COALESCE(c.category_type,'')<>'finished_good'
+     AND (COALESCE(sb.quantity,0)<>0 OR COALESCE(sb.reserved_quantity,0)<>0 OR v.id IS NOT NULL)
+     AND (k.location_id>? OR (k.location_id=? AND k.item_id>?))
+   ORDER BY k.location_id,k.item_id LIMIT 101`)
+   .bind(COMPANY,COMPANY,COMPANY,afterLocationId,afterLocationId,afterItemId).all<ReconciliationRow>();
+ const all=records.results||[],hasMore=all.length>100,source=all.slice(0,100);
+ const entries=source.map(row=>{
+  const physical=row.physicalQuantity===null?0:Number(row.physicalQuantity);
+  const reserved=row.reservedQuantity===null?0:Number(row.reservedQuantity);
+  const countedMicro=physical===0?0:materialQuantityMicro(physical);
+  const reservedMicro=reserved===0?0:materialQuantityMicro(reserved);
+  const valuedQty=row.valuedQuantityMicro===null?null:Number(row.valuedQuantityMicro);
+  const valuedMoney=row.valuedMicroKobo===null?null:Number(row.valuedMicroKobo);
+  let status='reconciled';
+  if(physical<0||reserved<0||countedMicro===null||reservedMicro===null)status='invalid_stock_quantity';
+  else if(reserved>physical)status='invalid_reservation';
+  else if(valuedQty===null)status='unvalued_stock';
+  else if(!Number.isSafeInteger(valuedQty)||!Number.isSafeInteger(valuedMoney)
+    ||valuedQty<0||Number(valuedMoney)<0)status='invalid_valuation';
+  else if(valuedQty===0&&Number(valuedMoney)>0)status='orphan_value';
+  else if(countedMicro!==valuedQty)status='quantity_mismatch';
+  else if(Number(row.itemActive)!==1||Number(row.locationActive)!==1)status='inactive_inventory';
+  const varianceMicro=countedMicro!==null&&valuedQty!==null&&Number.isSafeInteger(valuedQty)
+   &&Number.isSafeInteger(countedMicro-valuedQty)?countedMicro-valuedQty:null;
+  return{locationId:row.locationId,itemId:row.itemId,itemName:row.itemName,
+   locationName:row.locationName,baseUnit:row.baseUnit,
+   physicalQuantity:physical,reservedQuantity:reserved,
+   physicalQuantityMicro:countedMicro,valuedQuantityMicro:valuedQty,
+   valuedMicroKobo:valuedMoney,quantityVarianceMicro:varianceMicro,status};
+ });
+ const last=source.at(-1);
+ return json({companyId:COMPANY,readOnly:true,scope:'page_only',
+  unitScale:1000000,valueScaleMicroKobo:1000000,
+  entries,returned:entries.length,exceptionsOnPage:entries.filter(x=>x.status!=='reconciled').length,
+  hasMore,nextCursor:hasMore&&last?{afterLocationId:last.locationId,afterItemId:last.itemId}:null,
+  explanation:'Each page compares physical stock and exact financial value; unvalued stock is flagged, never assigned an invented cost.'});
+}
 export async function routeBakeryMaterialOpenings(request:Request,env:OpeningEnv,context:SessionContext){
  const path=new URL(request.url).pathname;
  if(path==='/api/inventory/bakery/openings'&&request.method==='GET')return list(context,env);
+  if(path==='/api/inventory/bakery/reconciliation'&&request.method==='GET')return reconciliation(request,env,context);
  if(path==='/api/inventory/bakery/openings/propose'&&request.method==='POST')return propose(request,env,context);
  if(path==='/api/inventory/bakery/openings/review'&&request.method==='POST')return review(request,env,context);
  return null;
