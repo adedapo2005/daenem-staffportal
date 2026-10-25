@@ -6,6 +6,8 @@ import { useOfflinePlatform } from './offline-sync';
 import { FORM_PRESETS, FORM_OPTION_SETS, prepareFormSchema } from './guided-form-fields';
 import { guidedVisibleFields, guidedCompletion, guidedInvalidAnswers, pruneHiddenGuidedAnswers } from './guided-form-dependencies';
 import { assignedFormDraftCompany } from './forms-assignment-draft-scope';
+import { createLatestFormsDraftWriter } from './forms-draft-autosave';
+import type { FormsDraftInput } from './offline-platform';
 import { SmartMasterSelect } from './smart-master-select';
 import { assetsForSelectedFacility, recommendedWorkPriority, suggestedWorkTitle, suggestedAssetName, ASSET_READING_TYPES, STANDARD_READING_UNITS, recommendedReadingUnit, validFacilitySelection } from './facility-guided-entry';
 import './facility-guided-entry.css';
@@ -32,20 +34,40 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
  const[descriptionEdited,setDescriptionEdited]=useState(false);
  const[assign,setAssign]=useState({audienceType:'employee',employeeIds:[]as string[],roleId:'',dueAt:'',blocking:false,required:true});
  const[responses,setResponses]=useState<Record<string,Record<string,unknown>>>({});
+ const[queuedAssignments,setQueuedAssignments]=useState<Set<string>>(()=>new Set());
+ const responsesRef=useRef<Record<string,Record<string,unknown>>>({});
+ const editRevision=useRef<Record<string,number>>({});
+ const offlineRef=useRef(offline);offlineRef.current=offline;
+ // A grant/session change immediately abandons pending writes from the previous scope.
+ const autosaveScope=JSON.stringify([context.sessionId,context.employee.id,context.companies.map(c=>c.id),context.roles,context.permissions,context.companyPermissions]);
+ const draftWriter=useMemo(()=>createLatestFormsDraftWriter<FormsDraftInput>(
+  async (_id,input)=>{await offlineRef.current.queueFormsDraft(input,input.companyId)},
+  (_id,error)=>setMessage('Draft not saved securely. Keep this page open and retry: '+(error instanceof Error?error.message:'Storage unavailable.')),
+  350
+ ),[autosaveScope]);
+ useEffect(()=>()=>draftWriter.dispose(),[draftWriter]);
+ useEffect(()=>{
+  const guard=(event:BeforeUnloadEvent)=>{if(!draftWriter.hasUnsaved())return;event.preventDefault();event.returnValue=''};
+  window.addEventListener('beforeunload',guard);
+  return()=>window.removeEventListener('beforeunload',guard);
+ },[draftWriter]);
  const canForms=(minimum:AccessLevel='view')=>hasWorkforcePermission(context,'forms.access',minimum,companyId);
  function schemaFor(item:FormAssignment){try{return JSON.parse(item.schemaJson)as FormField[]}catch{return[]}}
  function offlineSafe(item:FormAssignment,schema=formSchema(item)){return Boolean(assignedFormDraftCompany(item))&&item.requireLocation!==1&&item.requirePhoto!==1&&item.requireSignature!==1&&!schema.some((field)=>['file','photo','signature','location'].includes(field.type))}
  function formSchema(item:FormAssignment){return schemaFor(item)}
- async function saveDraft(item:FormAssignment,next:Record<string,unknown>){
-  const assignmentCompanyId=assignedFormDraftCompany(item);
-  if(!assignmentCompanyId)return; // Global assignments are not safe for company-local offline storage.
-  try{await offline.queueFormsDraft({assignmentId:item.assignmentId,companyId:assignmentCompanyId,responses:next,supportedForOfflineSubmit:offlineSafe(item),formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId)}
-  catch(error){setMessage(error instanceof Error?'Draft could not be saved securely: '+error.message:'This draft could not be saved securely on this device.')}
+ function draftInput(item:FormAssignment,next:Record<string,unknown>):FormsDraftInput|null{
+  const company=assignedFormDraftCompany(item);
+  return company?{assignmentId:item.assignmentId,companyId:company,responses:next,
+   supportedForOfflineSubmit:offlineSafe(item),formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt}:null
  }
  function updateResponse(item:FormAssignment,key:string,value:unknown){
-  const next=pruneHiddenGuidedAnswers(formSchema(item),{...(responses[item.assignmentId]||{}),[key]:value});
-  setResponses((current)=>({...current,[item.assignmentId]:next}));
-  void saveDraft(item,next);
+  if(queuedAssignments.has(item.assignmentId)||busy||draftWriter.isSuspended(item.assignmentId))return;
+  const next=pruneHiddenGuidedAnswers(formSchema(item),{...(responsesRef.current[item.assignmentId]||{}),[key]:value});
+  responsesRef.current={...responsesRef.current,[item.assignmentId]:next};
+  editRevision.current[item.assignmentId]=(editRevision.current[item.assignmentId]||0)+1;
+  setResponses(current=>({...current,[item.assignmentId]:next}));
+  const input=draftInput(item,next);
+  if(input)draftWriter.schedule(item.assignmentId,input);
  }
  async function load(preserveMessage=false){
   setBusy(true);if(!preserveMessage)setMessage('');
