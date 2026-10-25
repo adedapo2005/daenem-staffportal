@@ -15,6 +15,7 @@ const load=name=>{
    ctx.companies?.some(x=>x.id===company)===true
    &&ctx.grants?.includes(code+':'+level)===true};
  if(name==='./bakery-material-units')return {routeBakeryMaterialUnits:async()=>null};
+ if(name==='./bakery-dispatch-history-integrity')return {routeBakeryDispatchHistoryIntegrity:async()=>null};
  if(name==='./bakery-finance-bridge')return {
   routeBakeryFinanceBridge:async()=>null,routeBakeryDispatchFinanceBridge:async()=>null
  };
