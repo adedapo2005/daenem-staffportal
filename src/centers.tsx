@@ -66,6 +66,17 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
   const schema=formSchema(item),assignmentCompanyId=assignedFormDraftCompany(item),supported=offlineSafe(item,schema),payload=pruneHiddenGuidedAnswers(schema,responses[item.assignmentId]||{});
   setBusy(true);
   try{
+   // Do not queue incomplete work as a submission: save an honest local draft instead.
+   const completeness=guidedCompletion(schema,payload),invalid=guidedInvalidAnswers(schema,payload);
+   if(completeness.missingLabels.length||invalid.length){
+    const details=[...new Set([...completeness.missingLabels,...invalid])].join(', ');
+    if(!assignmentCompanyId){setMessage(item.title+' is incomplete and has not been saved offline. Group-wide forms require a live connection. Review: '+details);return}
+    try{
+     await offline.queueFormsDraft({assignmentId:item.assignmentId,companyId:assignmentCompanyId,responses:payload,supportedForOfflineSubmit:supported,formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId);
+     setMessage(item.title+' saved as a local draft, not submitted. Review: '+details);
+    }catch(error){setMessage(item.title+' is incomplete and was not submitted. Draft could not be saved securely: '+(error instanceof Error?error.message:'Please try again.'))}
+    return
+   }
    if(!navigator.onLine&&!assignmentCompanyId){setMessage(item.title+' is not saved offline. Group-wide forms need a live connection. Keep this page open until you can submit.');return}
    if(!navigator.onLine&&!supported){await offline.queueFormsDraft({assignmentId:item.assignmentId,companyId:assignmentCompanyId!,responses:payload,supportedForOfflineSubmit:false,formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId!);setMessage(item.title+' saved as a local draft. A live connection is required for this form.');return}
    if(!navigator.onLine){await offline.queueFormsSubmission({assignmentId:item.assignmentId,companyId:assignmentCompanyId!,responses:payload,supportedForOfflineSubmit:true,formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId!);setMessage(item.title+' saved offline · Waiting to sync.');return}
