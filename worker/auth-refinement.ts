@@ -3,8 +3,7 @@ import { startPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 import { recoveryMethods } from './scoped-settings';
 import { WORKER_SAFE_PASSWORD_ITERATIONS } from './credential-security';
 
-type EmailBinding = { send(message:{from:{email:string;name?:string};to:string[];subject:string;text:string;html:string}):Promise<{messageId?:string;message_id?:string}> };
-interface Env extends PasswordAuthEnv { EMAIL?: EmailBinding; WORKFORCE_EMAIL_FROM?: string }
+interface Env extends PasswordAuthEnv {}
 
 const enc=new TextEncoder();
 const uid=(p:string)=>`${p}-${crypto.randomUUID()}`;
@@ -29,7 +28,7 @@ async function passwordErrors(password:string,env:Env){const min=Number(await se
 async function sendCode(env:Env,to:string,name:string,value:string,purpose:'signup'|'reset'){
  if(!env.EMAIL||typeof env.EMAIL.send!=='function'){if(env.APP_STAGE==='bootstrap')return{delivered:false,bootstrapCode:value};throw new Error('Secure email delivery is not configured.')}
  const signup=purpose==='signup',intro=signup?'Use this one-time code to verify your email and finish creating your employee access.':'Use this one-time code to verify your identity before creating a new password.';
- const sent=await env.EMAIL.send({from:{email:env.WORKFORCE_EMAIL_FROM||'portal@daenem.com',name:'Daenem Workforce Hub'},to:[to],subject:signup?'Verify your Daenem employee access':'Verify your Daenem password reset',text:`Hello ${name}, ${intro} Code: ${value}. It expires in 10 minutes. Do not share this code.`,html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#17233b"><h2>Daenem Employee Access Portal</h2><p>Hello ${escapeHtml(name)},</p><p>${intro}</p><p style="font-size:30px;font-weight:800;letter-spacing:7px">${value}</p><p>This code expires in 10 minutes. Do not share it with anyone.</p></div>`});
+ const sent=await env.EMAIL.send({from:env.WORKFORCE_EMAIL_FROM||'portal@daenem.com',to,subject:signup?'Verify your Daenem employee access':'Verify your Daenem password reset',text:`Hello ${name}, ${intro} Code: ${value}. It expires in 10 minutes. Do not share this code.`,html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#17233b"><h2>Daenem Employee Access Portal</h2><p>Hello ${escapeHtml(name)},</p><p>${intro}</p><p style="font-size:30px;font-weight:800;letter-spacing:7px">${value}</p><p>This code expires in 10 minutes. Do not share it with anyone.</p></div>`});
  return{delivered:true,messageId:sent?.messageId||sent?.message_id}
 }
 function securityStatement(env:Env,request:Request,eventType:string,employeeId?:string,details?:Record<string,unknown>){return env.DB.prepare(`INSERT INTO security_logs(id,employee_id,event_type,severity,result,ip_address,user_agent,details_json) VALUES(?,?,?,'info','recorded',?,?,?)`).bind(uid('security'),employeeId||null,eventType,ip(request),request.headers.get('user-agent'),details?JSON.stringify(details):null)}

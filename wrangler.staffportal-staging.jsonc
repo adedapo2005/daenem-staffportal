@@ -42,6 +42,14 @@
       }
     ]
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": [
+        "portal@daenem.com"
+      ]
+    }
+  ],
   "ai": {
     "binding": "AI"
   },
