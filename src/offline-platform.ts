@@ -392,6 +392,14 @@ async function upsertOperationUnlocked(
   const namespace = namespaceFor(identity);
   const current = input.operationId ? await readRecord<StoredOperation>(OPERATION_STORE, input.operationId) : await existingForEntity(identity, input.entityId);
   if (current && current.namespace !== namespace) throw new Error('Offline operation scope mismatch.');
+  // A separate tab must not rewrite a queued Forms submission as a local draft
+  // or replace its payload under an existing idempotency key. The server may
+  // already have accepted the original submission before this device knows.
+  if (current?.kind === 'forms.submit' && input.kind === 'forms.submit'
+    && ['waiting-to-sync', 'syncing'].includes(current.state)
+    && ['local-draft', 'waiting-to-sync'].includes(input.state)) {
+    throw new Error('This form has already been queued for sync. Refresh its status before editing.');
+  }
   const timestamp = nowIso();
   const stored: StoredOperation = {
     id: current?.id || input.operationId || strongId('offline-op'),
