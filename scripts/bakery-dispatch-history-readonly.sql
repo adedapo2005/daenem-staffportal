@@ -71,6 +71,28 @@ issues AS (
       AND a.module='bakery' AND a.action='issue_dispatch'
       AND a.entity_type='bakery_dispatch' AND a.source='database'
    )
+
+ UNION ALL
+ SELECT 'ISSUED_WITHOUT_BREAD_ITEMS',d.id,d.status,NULL,
+   CAST(1 AS REAL),CAST(0 AS REAL),
+   'Issued or final dispatch has no product lines; investigate possible legacy insertion' AS review_note
+ FROM bakery_dispatches d
+ WHERE d.company_id='company-bakery'
+   AND d.status IN ('in_transit','received','reconciling','closed')
+   AND NOT EXISTS(SELECT 1 FROM bakery_dispatch_items di WHERE di.dispatch_id=d.id)
+
+ UNION ALL
+ SELECT 'CLOSED_WITHOUT_DATABASE_AUDIT_REVIEW',d.id,d.status,NULL,
+   CAST(1 AS REAL),CAST(0 AS REAL),
+   'May predate 0112; verify the original authorized closure evidence, never fabricate an audit' AS review_note
+ FROM bakery_dispatches d
+ WHERE d.company_id='company-bakery' AND d.status='closed'
+   AND NOT EXISTS(
+    SELECT 1 FROM audit_logs a
+    WHERE a.company_id=d.company_id AND a.entity_id=d.id
+      AND a.module='bakery' AND a.action='close_reconciliation'
+      AND a.entity_type='bakery_dispatch' AND a.source='database'
+   )
 )
 SELECT issue_code,dispatch_id,status,inventory_item_id,
        expected_quantity,recorded_quantity,review_note
