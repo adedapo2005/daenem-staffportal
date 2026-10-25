@@ -183,12 +183,16 @@ export async function routeBakeryDispatchFinanceBridge(
        WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id AND ml.status='outstanding'),0) AS outstandingKobo,
      COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml
        WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id AND ml.status='pos_charges'),0) AS posChargesKobo,
-     (SELECT COUNT(*) FROM (SELECT lower(trim(ml.reference)) AS cashRef
+     (SELECT COUNT(DISTINCT lower(trim(ml.reference)))
        FROM bakery_money_ledger ml
        WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id
          AND ml.status='cash_received' AND ml.direction='in'
          AND ml.reference IS NOT NULL AND length(trim(ml.reference))>0
-       GROUP BY lower(trim(ml.reference)) HAVING COUNT(*)>1)) AS duplicateCashRefGroups,
+         AND EXISTS(SELECT 1 FROM bakery_money_ledger dup
+           WHERE dup.company_id=ml.company_id AND dup.dispatch_id=ml.dispatch_id
+             AND dup.status='cash_received' AND dup.direction='in'
+             AND dup.id<>ml.id
+             AND lower(trim(dup.reference))=lower(trim(ml.reference)))) AS duplicateCashRefGroups,
      (SELECT COUNT(*) FROM bakery_money_ledger ml
        WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id
        AND ml.status='cash_received' AND ml.direction='in'
