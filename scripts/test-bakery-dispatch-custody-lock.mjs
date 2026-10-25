@@ -114,8 +114,8 @@ const counts=()=>db.prepare(`SELECT
 assert.equal((await route(request(),env,denied)).status,403);
 assert.equal(counts().dispatches,0);
 const response=await route(request(),env,manager);
-assert.equal(response.status,201,await response.text());
-const data=await response.clone().json();
+const data=await response.json();
+assert.equal(response.status,201,JSON.stringify(data));
 const dispatchId=data.dispatch.id;
 assert.equal(data.dispatch.status,'in_transit');
 assert.deepEqual({...counts()},{dispatches:1,items:2,bread:2,movements:2,audits:1});
