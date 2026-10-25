@@ -9,7 +9,7 @@ const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const loaded = { exports: {} };
-const projectAsset = new Function('module', 'exports', `${compiled}\nreturn safeAsset;`)(loaded, loaded.exports);
+const projectAsset = new Function('module', 'exports', 'require', `${compiled}\nreturn safeAsset;`)(loaded, loaded.exports, () => ({ default: {} }));
 const { routeV180PublicAssets } = loaded.exports;
 const stagingCompiled = ts.transpileModule(staging, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -42,7 +42,7 @@ const approved = (overrides = {}) => ({
   asset_key: 'safe', qa_status: 'approved', display_enabled: true,
   image_url: '/assets/safe.webp', ...privateFields, ...overrides,
 });
-const safePublicAsset = { asset_key: 'safe', image_url: `${upstreamOrigin}/assets/safe.webp`, display_enabled: true };
+const safePublicAsset = { asset_key: 'safe', image_url: '/api/assets/images/safe/image', display_enabled: true };
 const unsafeUrls = [
   ['protocol-relative', '//attacker.test/image.webp'],
   ['credentialed', 'https://user:password@cdn.example.test/image.webp'],
@@ -88,7 +88,7 @@ const rejectedRecords = [
   approved({ asset_key: undefined }), approved({ asset_key: { private: true } }),
   approved({ zoom: '1' }), approved({ focal_x: 2 }), approved({ master_width: 0 }),
   null, [], 'malformed-record', 7,
-];
+].map((row, index) => row && typeof row === 'object' && !Array.isArray(row) && typeof row.asset_key === 'string' ? { ...row, asset_key: `rejected-${index}` } : row);
 const serveAssets = (assets) => { globalThis.fetch = async () => respond(JSON.stringify({ assets, ...privateFields })); };
 const assertAssets = async (assets) => {
   const response = await routeV180PublicAssets(request());
@@ -126,7 +126,7 @@ try {
       observed = { url, init };
       return respond(JSON.stringify({ assets: [{
         id: 'asset-1', asset_key: 'hero', category: 'hero', purpose: 'sign-in',
-        image_url: 'https://cdn.example.test/hero.webp', default_image_url: 'https://cdn.example.test/default.webp',
+        image_url: `${upstreamOrigin}/assets/hero.webp`, default_image_url: '/assets/default.webp',
         display_enabled: true, zoom: 1.25, focal_x: 0.5, focal_y: 0.4,
         qa_status: 'approved', ...privateFields,
       }] }));
@@ -148,7 +148,7 @@ try {
     const body = await response.json();
     assert.deepEqual(body.assets[0], {
       id: 'asset-1', asset_key: 'hero', category: 'hero', purpose: 'sign-in',
-      image_url: 'https://cdn.example.test/hero.webp', default_image_url: 'https://cdn.example.test/default.webp',
+      image_url: '/api/assets/images/hero/image', default_image_url: '/api/assets/images/hero/default',
       display_enabled: true, zoom: 1.25, focal_x: 0.5, focal_y: 0.4,
     });
     assert.match(response.headers.get('cache-control'), /max-age=60, s-maxage=300/);
@@ -156,18 +156,20 @@ try {
   });
 
   await check('approved relative image and default image resolve only against the pinned origin', async () => {
-    serveAssets([approved({ default_image_url: '/assets/default%20image.webp' })]);
-    await assertAssets([{ ...safePublicAsset, default_image_url: `${upstreamOrigin}/assets/default%20image.webp` }]);
+    serveAssets([approved({ default_image_url: '/assets/default-image.webp' })]);
+    await assertAssets([{ ...safePublicAsset, default_image_url: '/api/assets/images/safe/default' }]);
   });
 
-  await check('approved_v179 is canonical approval even without a display flag', async () => {
+  await check('publication requires an explicit enabled flag, including approved_v179', async () => {
     serveAssets([approved({ qa_status: 'approved_v179', display_enabled: undefined })]);
-    await assertAssets([{ asset_key: 'safe', image_url: `${upstreamOrigin}/assets/safe.webp` }]);
+    await assertAssets([]);
+    serveAssets([approved({ qa_status: 'approved_v179' })]);
+    await assertAssets([safePublicAsset]);
   });
 
-  await check('valid absolute HTTPS images retain the existing external-image contract', async () => {
+  await check('untrusted absolute HTTPS hosts are never published or fetched', async () => {
     serveAssets([approved({ image_url: 'https://cdn.example.test/image.webp?v=2', default_image_url: 'https://images.example.test/default.webp' })]);
-    await assertAssets([{ ...safePublicAsset, image_url: 'https://cdn.example.test/image.webp?v=2', default_image_url: 'https://images.example.test/default.webp' }]);
+    await assertAssets([]);
   });
 
   for (const [name, image_url] of unsafeUrls) {
@@ -185,12 +187,12 @@ try {
     serveAssets([
       ...rejectedRecords.slice(0, 10), approved(), ...rejectedRecords.slice(10),
       approved({ asset_key: 'legacy', qa_status: 'approved_v179', image_url: '/assets/legacy.webp' }),
-      approved({ asset_key: 'absolute', image_url: 'https://cdn.example.test/image.webp' }),
+      approved({ asset_key: 'absolute', image_url: `${upstreamOrigin}/assets/image.webp` }),
     ]);
     await assertAssets([
       safePublicAsset,
-      { asset_key: 'legacy', image_url: `${upstreamOrigin}/assets/legacy.webp`, display_enabled: true },
-      { asset_key: 'absolute', image_url: 'https://cdn.example.test/image.webp', display_enabled: true },
+      { asset_key: 'legacy', image_url: '/api/assets/images/legacy/image', display_enabled: true },
+      { asset_key: 'absolute', image_url: '/api/assets/images/absolute/image', display_enabled: true },
     ]);
   });
 
@@ -204,14 +206,14 @@ try {
   await check('staging serves the sanitized public asset feed before the authenticated runtime fallback', async () => {
     stagingRuntimeCalls = 0;
     globalThis.fetch = async () => respond(JSON.stringify({ assets: [{
-      id: 'asset-staging', asset_key: 'hero', image_url: 'https://cdn.example.test/hero.webp',
-      qa_status: 'approved',
+      id: 'asset-staging', asset_key: 'hero', image_url: '/assets/hero.webp',
+      qa_status: 'approved', display_enabled: true,
       created_by_id: 'private-actor', audit_reason: 'private-reason',
     }] }));
     const response = await stagingHandler.fetch(request('/api/assets'), {}, {});
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { assets: [{
-      id: 'asset-staging', asset_key: 'hero', image_url: 'https://cdn.example.test/hero.webp',
+      id: 'asset-staging', asset_key: 'hero', image_url: '/api/assets/images/hero/image', display_enabled: true,
     }] });
     assert.match(response.headers.get('cache-control'), /max-age=60, s-maxage=300/);
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
