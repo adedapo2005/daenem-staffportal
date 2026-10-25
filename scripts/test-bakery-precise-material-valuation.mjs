@@ -386,6 +386,24 @@ db.prepare("UPDATE stock_balances SET quantity=quantity-1 WHERE location_id='HQ'
 db.prepare("UPDATE stock_balances SET reserved_quantity=99 WHERE location_id='HQ' AND item_id='flour'").run();
 assert.equal(entry(await readReconciliation(),'HQ','flour').status,'invalid_reservation');
 db.prepare("UPDATE stock_balances SET reserved_quantity=0 WHERE location_id='HQ' AND item_id='flour'").run();
+
+const currentFlourValue=flourAt('HQ').v;
+db.prepare("UPDATE bakery_material_valuation_balances SET remaining_value_microkobo=remaining_value_microkobo+100 WHERE location_id='HQ' AND inventory_item_id='flour'").run();
+const valueDrift=await readReconciliation();
+assert.equal(entry(valueDrift,'HQ','flour').status,'valuation_event_mismatch',
+ 'Stock count parity cannot conceal altered monetary value');
+assert.equal(entry(valueDrift,'HQ','flour').valueVarianceMicroKobo,100);
+db.prepare("UPDATE bakery_material_valuation_balances SET remaining_value_microkobo=? WHERE location_id='HQ' AND inventory_item_id='flour'").run(currentFlourValue);
+db.prepare("UPDATE inventory_items SET unit='g' WHERE id='flour'").run();
+assert.equal(entry(await readReconciliation(),'HQ','flour').status,'opening_unit_changed',
+ 'Changing the Inventory base unit after opening must surface an exception');
+db.prepare("UPDATE inventory_items SET unit='kg' WHERE id='flour'").run();
+db.prepare("UPDATE inventory_items SET category_id='finished-ingredient' WHERE id='flour'").run();
+assert.equal(entry(await readReconciliation(),'HQ','flour').status,'category_conflict',
+ 'Reclassifying valued raw material as finished goods cannot hide its financial balance');
+db.prepare("UPDATE inventory_items SET category_id='raw-ingredient' WHERE id='flour'").run();
+assert.equal(entry(await readReconciliation(),'HQ','flour').status,'reconciled');
+
 db.exec("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name,category_id) VALUES('orphan-material','company-bakery','kg',0,1,NULL,'ORPHAN','Orphan value','raw-ingredient')");
 db.prepare("INSERT INTO bakery_material_valuation_balances(id,company_id,location_id,inventory_item_id,remaining_quantity_micro,remaining_value_microkobo) VALUES(?,?,?,?,?,?)")
  .run('orphan-balance','company-bakery','HQ','orphan-material',0,1234567);
