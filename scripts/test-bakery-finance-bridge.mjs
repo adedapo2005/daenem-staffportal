@@ -43,21 +43,24 @@ db.exec(`
  CREATE TABLE bakery_money_ledger(id TEXT PRIMARY KEY,company_id TEXT,sales_order_id TEXT,
   status TEXT,direction TEXT,amount_kobo INTEGER);
  CREATE TABLE finance_source_postings(company_id TEXT,source_module TEXT,source_type TEXT,
-  source_id TEXT,status TEXT,posted_amount_kobo INTEGER,journal_entry_id TEXT,receivable_id TEXT);
+  source_id TEXT,status TEXT,posted_amount_kobo INTEGER,cost_amount_kobo INTEGER,
+  journal_entry_id TEXT,receivable_id TEXT);
  CREATE TABLE journal_entries(id TEXT PRIMARY KEY,company_id TEXT,source_module TEXT,
   source_type TEXT,source_id TEXT,status TEXT);
- CREATE TABLE journal_lines(journal_entry_id TEXT,debit_kobo INTEGER,credit_kobo INTEGER);
+ CREATE TABLE finance_accounts(id TEXT PRIMARY KEY,company_id TEXT,code TEXT);
+ CREATE TABLE journal_lines(journal_entry_id TEXT,account_id TEXT,debit_kobo INTEGER,credit_kobo INTEGER);
  CREATE TABLE finance_receivables(id TEXT PRIMARY KEY,company_id TEXT,source_module TEXT,
   source_id TEXT,amount_kobo INTEGER,paid_kobo INTEGER,balance_kobo INTEGER,status TEXT);
  CREATE TABLE finance_receivable_payments(id TEXT PRIMARY KEY,receivable_id TEXT,amount_kobo INTEGER,reference TEXT);
 `);
+db.exec("INSERT INTO finance_accounts VALUES('coa-cash','company-bakery','1000'),('coa-ar','company-bakery','1100'),('coa-inventory','company-bakery','1200'),('coa-revenue','company-bakery','4000'),('coa-cogs','company-bakery','5000'),('coa-expense','company-bakery','6000')");
 const sale=db.prepare("INSERT INTO sales_orders VALUES(?,? ,?,'2026-10-24',?,?,?,?)");
 const detail=db.prepare("INSERT INTO bakery_order_details VALUES(?)");
 const payment=db.prepare("INSERT INTO payments VALUES(?,?,?,'confirmed','cash',?)");
 const money=db.prepare("INSERT INTO bakery_money_ledger VALUES(?,?,?,'cash_received','in',?)");
-const source=db.prepare("INSERT INTO finance_source_postings VALUES(?,'sales','sales_order',?,?,?, ?,?)");
+const source=db.prepare("INSERT INTO finance_source_postings VALUES(?,'sales','sales_order',?,?,?,?,?,?)");
 const journal=db.prepare("INSERT INTO journal_entries VALUES(?,?,'sales','sales_order',?,'posted')");
-const line=db.prepare("INSERT INTO journal_lines VALUES(?,?,?)");
+const line=db.prepare("INSERT INTO journal_lines VALUES(?,?,?,?)");
 const receivable=db.prepare("INSERT INTO finance_receivables VALUES(?,?,'sales',?,?,?,?,?)");
 const arPayment=db.prepare("INSERT INTO finance_receivable_payments VALUES(?,?,?,?)");
 function addSale(id,{company='company-bakery',status='completed',total=10000,paid=0,paymentStatus='unpaid'}={}){
@@ -65,12 +68,23 @@ function addSale(id,{company='company-bakery',status='completed',total=10000,pai
  detail.run(id);
 }
 function addPosting(id,{company='company-bakery',status='posted',total=10000,balanced=true,
- journalId='j-'+id,receivableId='r-'+id,open=10000,arAmount=10000,arPaid=0,arStatus='open'}={}){
- source.run(company,id,status,total,journalId,receivableId);
+ journalId='j-'+id,receivableId='r-'+id,open=10000,arAmount=10000,arPaid=0,
+ arStatus='open',cost=0,arJournalDebit=total,revenueJournalCredit=null,
+ cashJournalDebit=0,cogsDebit=cost,inventoryCredit=cost,extraLines=false}={}){
+ source.run(company,id,status,total,cost,journalId,receivableId);
  if(status==='posted'&&journalId){
   journal.run(journalId,company,id);
-  line.run(journalId,total,0);
-  line.run(journalId,0,balanced?total:total-100);
+  line.run(journalId,'coa-ar',arJournalDebit,0);
+  line.run(journalId,'coa-revenue',0,revenueJournalCredit??(balanced?total:total-100));
+  if(cashJournalDebit>0)line.run(journalId,'coa-cash',cashJournalDebit,0);
+  if(cost>0){
+   line.run(journalId,'coa-cogs',cogsDebit,0);
+   line.run(journalId,'coa-inventory',0,inventoryCredit);
+  }
+  if(extraLines){
+   line.run(journalId,'coa-expense',250,0);
+   line.run(journalId,'coa-expense',0,250);
+  }
  }
  if(receivableId)receivable.run(receivableId,company,id,arAmount,arPaid,open,arStatus);
 }
@@ -87,7 +101,7 @@ addPosting('sale-d',{balanced:false});
 addSale('sale-e',{paid:5000,paymentStatus:'part_paid'});
 payment.run('p-e','company-bakery','sale-e',10000);
 money.run('m-e','company-bakery','sale-e',10000);
-source.run('company-bakery','sale-e','posted',10000,'missing-journal','missing-receivable');
+source.run('company-bakery','sale-e','posted',10000,0,'missing-journal','missing-receivable');
 
 // Finance A/R balances and receivable-payment evidence have an independent
 // accounting lifecycle. Inject stale, inconsistent and duplicate scenarios.
@@ -111,6 +125,19 @@ addPosting('sale-k',{arAmount:11000,open:11000});
 addSale('sale-l');
 addPosting('sale-l',{arPaid:10000,open:0,arStatus:'paid'});
 arPayment.run('ar-l','r-sale-l',10000,'PAY-L');
+
+ // Sales auto-posting must use A/R debit and revenue credit, NOT unverified
+ // cash. A mathematically balanced journal can still be financially wrong.
+ addSale('sale-m');
+ addPosting('sale-m',{arJournalDebit:9000,revenueJournalCredit:9000});
+ addSale('sale-n');
+ addPosting('sale-n',{arJournalDebit:0,cashJournalDebit:10000});
+ addSale('sale-o');
+ addPosting('sale-o',{cost:2000,cogsDebit:1500,inventoryCredit:1500});
+ addSale('sale-p');
+ addPosting('sale-p',{cost:2500});
+ addSale('sale-q');
+ addPosting('sale-q',{extraLines:true});
 addSale('sale-foreign',{company:'company-printing'});
 addSale('sale-draft',{status:'draft'});
 // More than one page without claiming that one page is the whole company.
@@ -141,7 +168,8 @@ assert.equal((await request(uri+'?afterOrderId=a&afterOrderId=b')).status,400);
 assert.equal((await request(uri+'?afterOrderId='+('x'.repeat(129)))).status,400);
 assert.equal((await request(uri,allowed,'POST')).status,null,'The evidence endpoint is read-only');
 const tables=['sales_orders','bakery_order_details','payments','bakery_money_ledger',
- 'finance_source_postings','journal_entries','journal_lines','finance_receivables','finance_receivable_payments'];
+ 'finance_source_postings','journal_entries','journal_lines','finance_accounts',
+ 'finance_receivables','finance_receivable_payments'];
 const snapshot=()=>JSON.stringify(tables.map(t=>db.prepare('SELECT * FROM '+t+' ORDER BY rowid').all()));
 const before=snapshot();
 const first=await request(uri);
@@ -192,6 +220,22 @@ assert(row('sale-k').issues.includes('finance_receivable_original_disagrees_with
 assert.deepEqual(Array.from(row('sale-l').issues),[]);
 assert(row('sale-l').reviewRequired.includes('finance_payment_evidence_not_bank_verified'));
 assert.equal(row('sale-l').amounts.financePaymentRecordsKobo,10000);
+assert(row('sale-m').issues.includes('sales_journal_receivable_debit_mismatch'),
+ 'Balanced but understated AR debit cannot be accepted');
+assert(row('sale-m').issues.includes('sales_journal_revenue_credit_mismatch'),
+ 'Balanced but understated revenue cannot be accepted');
+assert(row('sale-n').issues.includes('unverified_cash_recognized_in_sales_journal'),
+ 'Cash posted from unverified Bakery POS evidence must be flagged');
+assert(row('sale-n').issues.includes('sales_journal_receivable_debit_mismatch'));
+assert(row('sale-o').issues.includes('sales_journal_cost_of_sales_mismatch'));
+assert(row('sale-o').issues.includes('sales_journal_inventory_credit_mismatch'));
+assert.equal(row('sale-o').amounts.financeCostKobo,2000);
+assert.deepEqual(Array.from(row('sale-p').issues),[],
+ 'Correct A/R, revenue and cost journal lines must pass');
+assert.equal(row('sale-p').journalLineCount,4);
+assert(row('sale-q').issues.includes('unexpected_sales_journal_line_count'),
+ 'Additional debit/credit pairs must not escape even if totals are balanced');
+assert.equal(row('sale-q').journalLineCount,4);
 assert.equal(snapshot(),before,'Financial evidence queries must never change money, sales, journal or AR rows');
 
 // Agent dispatch money is NOT equivalent to verified bank settlement or a
