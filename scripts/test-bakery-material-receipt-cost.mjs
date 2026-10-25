@@ -53,10 +53,21 @@ assert.equal(r.json.baseQuantity,100);
 assert.equal(r.json.conversion.ruleId,'rule-v1');
 assert.equal(r.json.conversion.totalCostKobo,9000000);
 assert.equal(r.posted.length,4);
-const upsert=r.posted[0],price=r.posted[1],movement=r.posted[2],audit=r.posted[3];
+const uniqueStatement=sql=>{const candidates=r.posted.filter(x=>x.query.includes(sql));
+ assert.equal(candidates.length,1,'Exactly one expected transaction statement: '+sql);
+ return candidates[0]};
+const upsert=uniqueStatement('INSERT INTO stock_balances');
+const price=uniqueStatement('UPDATE inventory_items SET unit_cost_kobo');
+const movement=uniqueStatement('INSERT INTO stock_movements');
+const audit=uniqueStatement('INSERT INTO audit_logs');
 assert.equal(upsert.params.at(-1),100,'Shared Inventory receives 100kg, not two inventory units');
 assert.equal(price.params[0],90000,'45000 naira/bag divided by 50kg is 90000 kobo/kg');
-assert.equal(movement.params[3],100);
+assert(movement.query.includes('CASE WHEN changes()=1') && movement.query.includes('NOT EXISTS('),
+ 'The legacy stock receipt must guard against a concurrent independently approved valuation');
+assert.deepEqual(movement.params.slice(3,7),['company-bakery','bakery-hq','flour',100],
+ 'The guarded physical quantity must be 100 kg at the correct company and location');
+assert(r.posted.indexOf(movement)<r.posted.indexOf(price),
+ 'Price update must follow successful guarded stock movement insertion');
 const movementProof=JSON.parse(movement.params.at(-1));
 assert.equal(movementProof.conversion.factor,50);
 assert.equal(movementProof.conversion.inputQuantity,2);
