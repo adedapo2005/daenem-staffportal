@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createLatestFormsDraftWriter } from '../src/forms-draft-autosave.ts';
+import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle } from '../src/forms-draft-autosave.ts';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function deferred() {
@@ -118,8 +118,55 @@ test('a queued promise still counts as unsaved before the write starts', async (
   writer.dispose();
 });
 
-test('Forms Center preserves drafts on ordinary navigation but cancels revoked scopes', () => {
+test('Forms Center uses replay-safe cleanup and still binds session scope revocation', () => {
   const source = readFileSync(new URL('../src/centers.tsx', import.meta.url), 'utf8');
-  assert.match(source, /currentAutosaveScope\.current!==autosaveScope\)\{draftWriter\.dispose\(\);return\}/);
-  assert.match(source, /draftWriter\.flushAll\(\)\.catch\(\(\)=>undefined\)\.finally\(\(\)=>draftWriter\.dispose\(\)\)/);
+  assert.match(source, /createFormsDraftWriterLifecycle\(draftWriter\)/);
+  assert.match(source, /writerLifecycle\.setup\(\)/);
+  assert.match(source, /writerLifecycle\.cleanup\(setupId,currentAutosaveScope\.current!==autosaveScope\)/);
+});
+
+
+test('React Strict Mode effect replay does not disable the surviving draft writer', async () => {
+  const saved = [];
+  const writer = createLatestFormsDraftWriter(async (_id, draft) => { saved.push(draft.value); }, () => {}, 40);
+  const lifecycle = createFormsDraftWriterLifecycle(writer);
+  const first = lifecycle.setup();
+  lifecycle.cleanup(first, false);  // React dev replay unmount
+  const second = lifecycle.setup(); // React dev replay remount, same writer
+  await sleep(5);
+  assert.equal(writer.schedule('form-1', { value: 'latest' }), true);
+  await writer.flush('form-1');
+  assert.deepEqual(saved, ['latest']);
+  lifecycle.cleanup(second, false);
+  await sleep(10);
+  assert.equal(writer.schedule('form-1', { value: 'should-not-save' }), false);
+});
+
+test('real Forms Center navigation flushes pending encrypted drafts and closes writer', async () => {
+  const saved = [];
+  const writer = createLatestFormsDraftWriter(async (_id, draft) => {
+    await sleep(5);
+    saved.push(draft.value);
+  }, () => {}, 700);
+  const lifecycle = createFormsDraftWriterLifecycle(writer);
+  const setup = lifecycle.setup();
+  writer.schedule('form-a', { value: 'last typed answer' });
+  lifecycle.cleanup(setup, false);
+  await sleep(35);
+  assert.deepEqual(saved, ['last typed answer']);
+  assert.equal(writer.schedule('form-a', { value: 'late edit' }), false);
+});
+
+test('permission or session revocation discards pending drafts immediately', async () => {
+  const saved = [];
+  const writer = createLatestFormsDraftWriter(async (_id, draft) => {
+    saved.push(draft.value);
+  }, () => {}, 50);
+  const lifecycle = createFormsDraftWriterLifecycle(writer);
+  const setup = lifecycle.setup();
+  writer.schedule('form-a', { value: 'old company scope' });
+  lifecycle.cleanup(setup, true);
+  await sleep(65);
+  assert.deepEqual(saved, []);
+  assert.equal(writer.schedule('form-a', { value: 'revoked' }), false);
 });
