@@ -1,9 +1,12 @@
+import { validGuidedDependencies } from './guided-form-dependencies';
+
 export type GuidedFormField = {
   key: string;
   label: string;
   type: string;
   required?: boolean;
   options?: string[];
+  showWhen?: { fieldKey: string; equals: string | boolean };
 };
 
 type FormPreset = {
@@ -96,7 +99,7 @@ export function normaliseFormChoices(input: string): string[] {
 export function prepareFormSchema(fields: GuidedFormField[], optionDrafts: Record<string, string>): GuidedFormField[] {
   if (fields.length === 0 || fields.length > 60) throw new Error('Add at least one field (maximum 60).');
   const keys = new Set<string>();
-  return fields.map((field) => {
+  const prepared = fields.map((field) => {
     const key = field.key;
     const label = field.label.normalize('NFKC').trim().replace(/\s+/g, ' ');
     if (!/^[a-zA-Z][a-zA-Z0-9_]{1,50}$/.test(key) || keys.has(key)) throw new Error('A field key is invalid or duplicated.');
@@ -110,4 +113,6 @@ export function prepareFormSchema(fields: GuidedFormField[], optionDrafts: Recor
     }
     return { ...field, label, options: choices };
   });
+  if (!validGuidedDependencies(prepared)) throw new Error('A conditional rule is invalid. Conditions must reference an earlier approved dropdown or Yes/No field with a valid answer.');
+  return prepared;
 }
