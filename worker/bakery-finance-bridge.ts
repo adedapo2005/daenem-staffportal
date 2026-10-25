@@ -131,3 +131,138 @@ export async function routeBakeryFinanceBridge(
   bankSettlementAssessed:false,otherJournalSourcesAssessed:false,dispatchRemittancesAssessed:false,
   explanation:'Operational cash evidence, Finance receivables and linked sales journals are separate records. This report never certifies settlement or clears a receivable.'});
 }
+
+
+type DispatchEvidenceRow={
+ dispatchId:string;dispatchNo:string;dispatchStatus:string;
+ dispatchedQty:number;accountedQty:number;declaredReturnsQty:number;verifiedReturnsQty:number;
+ soldValueKobo:number;cashReceivedKobo:number;externalReceivedKobo:number;
+ refundedKobo:number;outstandingKobo:number;posChargesKobo:number;
+ duplicateCashRefGroups:number;missingCashReferences:number
+};
+
+// Agent dispatch cash evidence must not be conflated with Finance GL posting
+// or provider/bank settlement. This page checks existing immutable evidence.
+export async function routeBakeryDispatchFinanceBridge(
+ request:Request,env:Env,context:SessionContext
+):Promise<Response|null>{
+ const url=new URL(request.url);
+ if(url.pathname!=='/api/bakery/accountability/dispatch-finance-bridge'||request.method!=='GET')return null;
+ if(!context.companies.some(x=>x.id===COMPANY)
+   ||!hasPermission(context,'bakery.reconciliation','view',COMPANY)
+   ||!hasPermission(context,'finance.ledger','view',COMPANY))
+  return json({error:'Bakery reconciliation and Finance ledger view permissions are both required.'},403);
+ const afterDispatchId=(url.searchParams.get('afterDispatchId')||'').trim();
+ if(afterDispatchId.length>128||url.searchParams.getAll('afterDispatchId').length>1)
+  return json({error:'Invalid dispatch page cursor.'},400);
+ const rows=await env.DB.prepare(`SELECT d.id AS dispatchId,d.dispatch_no AS dispatchNo,
+     d.status AS dispatchStatus,
+     COALESCE((SELECT SUM(di.quantity) FROM bakery_dispatch_items di
+       WHERE di.dispatch_id=d.id),0) AS dispatchedQty,
+     COALESCE((SELECT SUM(bl.quantity) FROM bakery_bread_ledger bl
+       WHERE bl.dispatch_id=d.id AND bl.company_id=d.company_id
+       AND bl.status IN ('sold','returned','damaged','promotional','staff_consumption','in_store')),0) AS accountedQty,
+     COALESCE((SELECT SUM(bl.quantity) FROM bakery_bread_ledger bl
+       WHERE bl.dispatch_id=d.id AND bl.company_id=d.company_id AND bl.status='returned'),0) AS declaredReturnsQty,
+     COALESCE((SELECT SUM(rr.quantity) FROM bakery_dispatch_return_receipts rr
+       WHERE rr.dispatch_id=d.id AND rr.company_id=d.company_id),0) AS verifiedReturnsQty,
+     COALESCE((SELECT SUM(bl.quantity*COALESCE(bl.unit_price_kobo,di.unit_price_kobo))
+       FROM bakery_bread_ledger bl
+       JOIN bakery_dispatch_items di ON di.dispatch_id=bl.dispatch_id AND di.product_id=bl.product_id
+       WHERE bl.dispatch_id=d.id AND bl.company_id=d.company_id AND bl.status='sold'),0) AS soldValueKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml
+       WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id
+       AND ml.status='cash_received' AND ml.direction='in'),0) AS cashReceivedKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml
+       WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id
+       AND ml.status IN ('pos_received','transfer_received') AND ml.direction='in'),0) AS externalReceivedKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml
+       WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id
+       AND ml.status='refunded' AND ml.direction='out'),0) AS refundedKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml
+       WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id AND ml.status='outstanding'),0) AS outstandingKobo,
+     COALESCE((SELECT SUM(ml.amount_kobo) FROM bakery_money_ledger ml
+       WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id AND ml.status='pos_charges'),0) AS posChargesKobo,
+     (SELECT COUNT(*) FROM (SELECT lower(trim(ml.reference)) AS cashRef
+       FROM bakery_money_ledger ml
+       WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id
+         AND ml.status='cash_received' AND ml.direction='in'
+         AND ml.reference IS NOT NULL AND length(trim(ml.reference))>0
+       GROUP BY lower(trim(ml.reference)) HAVING COUNT(*)>1)) AS duplicateCashRefGroups,
+     (SELECT COUNT(*) FROM bakery_money_ledger ml
+       WHERE ml.dispatch_id=d.id AND ml.company_id=d.company_id
+       AND ml.status='cash_received' AND ml.direction='in'
+       AND length(trim(COALESCE(ml.reference,'')))<4) AS missingCashReferences
+   FROM bakery_dispatches d
+   WHERE d.company_id=? AND d.id>?
+   ORDER BY d.id LIMIT 101`).bind(COMPANY,afterDispatchId).all<DispatchEvidenceRow>();
+ const all=rows.results||[],page=all.slice(0,100),hasMore=all.length>100;
+ const items=page.map(row=>{
+  const money={
+   soldKobo:validMoney(row.soldValueKobo),
+   cashReceivedKobo:validMoney(row.cashReceivedKobo),
+   externalReceivedKobo:validMoney(row.externalReceivedKobo),
+   refundedKobo:validMoney(row.refundedKobo),
+   outstandingKobo:validMoney(row.outstandingKobo),
+   posChargesKobo:validMoney(row.posChargesKobo)
+  };
+  const quantities={
+   dispatched:Number(row.dispatchedQty),accounted:Number(row.accountedQty),
+   returnsDeclared:Number(row.declaredReturnsQty),returnsVerified:Number(row.verifiedReturnsQty)
+  };
+  const issues:string[]=[],review:string[]=[];
+  if(Object.values(money).some(x=>x===null))issues.push('invalid_money_evidence');
+  if(Object.values(quantities).some(x=>!Number.isSafeInteger(x)||x<0))
+   issues.push('invalid_bread_quantity');
+  const moneySafe=Object.values(money).every(x=>x!==null);
+  const receivedKobo=moneySafe?money.cashReceivedKobo!+money.externalReceivedKobo!-money.refundedKobo!:null;
+  const cashVarianceKobo=receivedKobo!==null&&money.soldKobo!==null
+   &&Number.isSafeInteger(receivedKobo)&&Number.isSafeInteger(money.soldKobo-receivedKobo)
+   ?money.soldKobo-receivedKobo:null;
+  const breadVariance=Number.isSafeInteger(quantities.dispatched-quantities.accounted)
+   ?quantities.dispatched-quantities.accounted:null;
+  const returnVariance=Number.isSafeInteger(quantities.returnsDeclared-quantities.returnsVerified)
+   ?quantities.returnsDeclared-quantities.returnsVerified:null;
+  if(cashVarianceKobo===null||breadVariance===null||returnVariance===null)
+   issues.push('unsafe_reconciliation_arithmetic');
+  if(Number(row.duplicateCashRefGroups)>0)issues.push('duplicate_cash_receipt_references');
+  if(Number(row.missingCashReferences)>0)issues.push('cash_receipt_reference_missing');
+  if(returnVariance!==null&&returnVariance<0)issues.push('verified_returns_exceed_declarations');
+  else if(returnVariance!==null&&returnVariance>0)review.push('declared_returns_await_physical_verification');
+  if(row.dispatchStatus==='closed'){
+   if(breadVariance!==0)issues.push('closed_dispatch_bread_variance');
+   if(cashVarianceKobo!==0)issues.push('closed_dispatch_money_variance');
+   if(returnVariance!==0)issues.push('closed_dispatch_return_verification_variance');
+  }else{
+   if(breadVariance!==0)review.push('dispatch_bread_not_fully_accounted');
+   if(cashVarianceKobo!==0)review.push('dispatch_money_not_fully_remitted');
+  }
+  if(money.externalReceivedKobo!==null&&money.externalReceivedKobo>0)
+   review.push('external_payment_settlement_not_verified');
+  if(money.refundedKobo!==null&&money.refundedKobo>0)
+   review.push('refund_finance_posting_not_assessed');
+  if(money.posChargesKobo!==null&&money.posChargesKobo>0)
+   review.push('pos_charges_finance_posting_not_assessed');
+  if(money.outstandingKobo!==null&&money.outstandingKobo>0)
+   review.push('outstanding_is_not_received_cash');
+  if(receivedKobo!==null&&receivedKobo>0)
+   review.push('dispatch_cash_not_reconciled_to_finance_gl_or_bank');
+  return{
+   dispatchId:row.dispatchId,dispatchNo:row.dispatchNo,dispatchStatus:row.dispatchStatus,
+   quantities,breadVariance,returnVariance,money,receivedKobo,cashVarianceKobo,
+   duplicateCashReferenceGroups:Number(row.duplicateCashRefGroups),
+   missingCashReferences:Number(row.missingCashReferences),
+   issues,reviewRequired:review,
+   state:issues.length?'exception':review.length?'review_required':'no_flag_on_page'
+  };
+ });
+ const last=page.at(-1);
+ return json({
+  companyId:COMPANY,readOnly:true,scope:'bakery_dispatch_page_only',
+  items,returned:items.length,exceptionsOnPage:items.filter(x=>x.issues.length>0).length,
+  reviewsOnPage:items.filter(x=>x.reviewRequired.length>0).length,
+  hasMore,nextCursor:hasMore&&last?{afterDispatchId:last.dispatchId}:null,
+  bankSettlementAssessed:false,financeGlLinkAssessed:false,sourceAccountingEntriesCreated:false,
+  explanation:'Dispatch remittance and custody evidence only. Receipt references, matching totals and ledger entries do not establish external settlement or a Finance journal.'
+ });
+}
