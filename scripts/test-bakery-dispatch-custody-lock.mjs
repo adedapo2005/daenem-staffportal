@@ -122,9 +122,9 @@ assert.deepEqual({...counts()},{dispatches:1,items:2,bread:2,movements:2,audits:
 const issued=db.prepare('SELECT status,dispatched_at AS at FROM bakery_dispatches WHERE id=?').get(dispatchId);
 assert.equal(issued.status,'in_transit');assert(issued.at,'Issue time must be set');
 assert.deepEqual(db.prepare(`SELECT product_id AS product,quantity,unit_price_kobo AS price
- FROM bakery_dispatch_items WHERE dispatch_id=? ORDER BY product_id`).all(dispatchId),
+ FROM bakery_dispatch_items WHERE dispatch_id=? ORDER BY product_id`).all(dispatchId).map(x=>({...x})),
  [{product:'bread-1',quantity:5,price:1000},{product:'bread-2',quantity:3,price:1500}]);
-assert.deepEqual(db.prepare(`SELECT item_id,quantity FROM stock_balances ORDER BY item_id`).all(),
+assert.deepEqual(db.prepare(`SELECT item_id,quantity FROM stock_balances ORDER BY item_id`).all().map(x=>({...x})),
  [{item_id:'inv-1',quantity:15},{item_id:'inv-2',quantity:12}]);
 const oneItem=db.prepare('SELECT id FROM bakery_dispatch_items WHERE dispatch_id=? LIMIT 1').get(dispatchId).id;
 const rejects=[
