@@ -13,6 +13,8 @@ const modules={
 };
 assert(modules['./bakery-accountability'].includes("return routeBakeryFinanceBridge(request,env,context)"),
  'The Finance evidence endpoint must be registered in the canonical Bakery router.');
+assert(modules['./bakery-accountability'].includes("return routeBakeryDispatchFinanceBridge(request,env,context)"),
+ 'Dispatch remittance evidence must be registered in the canonical Bakery router.');
 const cache=new Map();
 function load(name){
  if(name==='./auth')return {hasPermission:(ctx,code,_level,companyId)=>
@@ -146,6 +148,117 @@ assert(row('sale-e').issues.includes('payment_records_disagree_with_order'));
 assert(row('sale-e').issues.includes('posted_journal_link_invalid'));
 assert(row('sale-e').issues.includes('finance_receivable_link_invalid'));
 assert.equal(snapshot(),before,'Financial evidence queries must never change money, sales, journal or AR rows');
+
+// Agent dispatch money is NOT equivalent to verified bank settlement or a
+// Finance journal. Exercise the actual dispatch SQL separately from POS.
+db.exec(`
+ ALTER TABLE bakery_money_ledger ADD COLUMN dispatch_id TEXT;
+ ALTER TABLE bakery_money_ledger ADD COLUMN reference TEXT;
+ CREATE TABLE bakery_dispatches(id TEXT PRIMARY KEY,company_id TEXT,dispatch_no TEXT,status TEXT);
+ CREATE TABLE bakery_dispatch_items(dispatch_id TEXT,product_id TEXT,quantity REAL,unit_price_kobo INTEGER);
+ CREATE TABLE bakery_bread_ledger(id TEXT PRIMARY KEY,company_id TEXT,dispatch_id TEXT,
+  product_id TEXT,status TEXT,quantity REAL,unit_price_kobo INTEGER);
+ CREATE TABLE bakery_dispatch_return_receipts(id TEXT PRIMARY KEY,company_id TEXT,
+  dispatch_id TEXT,product_id TEXT,quantity REAL);
+`);
+const dispatch=db.prepare("INSERT INTO bakery_dispatches VALUES(?,?,?,?)");
+const dispatched=db.prepare("INSERT INTO bakery_dispatch_items VALUES(?,?,?,?)");
+const bread=db.prepare("INSERT INTO bakery_bread_ledger VALUES(?,?,?,?,?,?,?)");
+const returnReceipt=db.prepare("INSERT INTO bakery_dispatch_return_receipts VALUES(?,?,?,?,?)");
+const remittance=db.prepare("INSERT INTO bakery_money_ledger(id,company_id,dispatch_id,status,direction,amount_kobo,reference) VALUES(?, 'company-bakery',?,?,?,?,?)");
+const addDispatch=(id,status='reconciling',company='company-bakery')=>dispatch.run(id,company,id,status);
+const sell=(id,qty,price=1000)=>bread.run('bread-'+id,'company-bakery',id,'bread','sold',qty,price);
+addDispatch('dispatch-balanced','closed');
+dispatched.run('dispatch-balanced','bread',10,500);
+bread.run('bread-return-balanced','company-bakery','dispatch-balanced','bread','returned',2,null);
+sell('dispatch-balanced',8,500);
+returnReceipt.run('return-balanced','company-bakery','dispatch-balanced','bread',2);
+remittance.run('cash-balanced','dispatch-balanced','cash_received','in',4000,'CASH-001');
+addDispatch('dispatch-duplicate','closed');
+dispatched.run('dispatch-duplicate','bread',4,1000);
+sell('dispatch-duplicate',4);
+remittance.run('cash-dup1','dispatch-duplicate','cash_received','in',2000,'Cash-Dup');
+remittance.run('cash-dup2','dispatch-duplicate','cash_received','in',2000,'cash-dup');
+addDispatch('dispatch-short','closed');
+dispatched.run('dispatch-short','bread',5,1000);
+sell('dispatch-short',5);
+remittance.run('cash-short','dispatch-short','cash_received','in',2000,'CASH-SHORT');
+addDispatch('dispatch-open');
+dispatched.run('dispatch-open','bread',5,1000);
+sell('dispatch-open',2);
+bread.run('bread-return-open','company-bakery','dispatch-open','bread','returned',2,null);
+remittance.run('transfer-open','dispatch-open','transfer_received','in',1000,'BANK-PENDING');
+remittance.run('fee-open','dispatch-open','pos_charges','out',100,'POS-FEE');
+remittance.run('outstanding-open','dispatch-open','outstanding','in',1000,'DEBT');
+addDispatch('dispatch-overreturns');
+dispatched.run('dispatch-overreturns','bread',1,1000);
+bread.run('bread-return-excess','company-bakery','dispatch-overreturns','bread','returned',1,null);
+returnReceipt.run('return-excess','company-bakery','dispatch-overreturns','bread',2);
+addDispatch('dispatch-refund');
+dispatched.run('dispatch-refund','bread',2,1000);
+sell('dispatch-refund',2);
+remittance.run('cash-refund','dispatch-refund','cash_received','in',2000,'CASH-REFUND');
+remittance.run('refund-refund','dispatch-refund','refunded','out',500,'REFUND-001');
+addDispatch('dispatch-missing-ref');
+dispatched.run('dispatch-missing-ref','bread',1,1000);
+sell('dispatch-missing-ref',1);
+remittance.run('cash-missing','dispatch-missing-ref','cash_received','in',1000,'');
+addDispatch('dispatch-other','closed','company-printing');
+dispatched.run('dispatch-other','bread',99,1000);
+for(let n=0;n<103;n++)addDispatch('dispatch-page-'+String(n).padStart(3,'0'));
+
+const dispatchUri='/api/bakery/accountability/dispatch-finance-bridge';
+const beforeDispatchDenials=queries;
+for(const who of [foreign,deniedFinance,deniedBakery])
+ assert.equal((await request(dispatchUri,who)).status,403);
+assert.equal(queries,beforeDispatchDenials,'Dispatch money queries require both permission scopes and company membership');
+assert.equal((await request(dispatchUri+'?afterDispatchId=A&afterDispatchId=B')).status,400);
+assert.equal((await request(dispatchUri+'?afterDispatchId='+('x'.repeat(129)))).status,400);
+assert.equal((await request(dispatchUri,allowed,'POST')).status,null,'Dispatch evidence cannot create a payment');
+const dispatchTables=['bakery_dispatches','bakery_dispatch_items','bakery_bread_ledger',
+ 'bakery_dispatch_return_receipts',...tables];
+const dispatchSnapshot=()=>JSON.stringify(dispatchTables.map(t=>
+ db.prepare('SELECT * FROM '+t+' ORDER BY rowid').all()));
+const dispatchBefore=dispatchSnapshot();
+const dispatchFirst=await request(dispatchUri);
+assert.equal(dispatchFirst.status,200,JSON.stringify(dispatchFirst.data));
+assert.equal(dispatchFirst.data.readOnly,true);
+assert.equal(dispatchFirst.data.bankSettlementAssessed,false);
+assert.equal(dispatchFirst.data.financeGlLinkAssessed,false);
+assert.equal(dispatchFirst.data.sourceAccountingEntriesCreated,false);
+assert.equal(dispatchFirst.data.scope,'bakery_dispatch_page_only');
+assert.equal(dispatchFirst.data.returned,100);
+assert.equal(dispatchFirst.data.hasMore,true);
+const dispatchSecond=await request(dispatchUri+'?'+new URLSearchParams(dispatchFirst.data.nextCursor));
+assert.equal(dispatchSecond.status,200,JSON.stringify(dispatchSecond.data));
+assert.equal(dispatchSecond.data.hasMore,false);
+const dispatchAll=[...dispatchFirst.data.items,...dispatchSecond.data.items];
+assert.equal(new Set(dispatchAll.map(r=>r.dispatchId)).size,dispatchAll.length);
+assert(dispatchAll.some(r=>r.dispatchId==='dispatch-page-102'));
+assert(!dispatchAll.some(r=>r.dispatchId==='dispatch-other'),'Foreign-company dispatch money must never leak');
+const getDispatch=id=>{const row=dispatchAll.find(x=>x.dispatchId===id);assert(row,id);return row};
+assert.deepEqual(Array.from(getDispatch('dispatch-balanced').issues),[]);
+assert.equal(getDispatch('dispatch-balanced').money.soldKobo,4000);
+assert.equal(getDispatch('dispatch-balanced').cashVarianceKobo,0);
+assert.equal(getDispatch('dispatch-balanced').returnVariance,0);
+assert(getDispatch('dispatch-balanced').reviewRequired.includes('dispatch_cash_not_reconciled_to_finance_gl_or_bank'));
+assert(getDispatch('dispatch-duplicate').issues.includes('duplicate_cash_receipt_references'));
+assert.equal(getDispatch('dispatch-duplicate').duplicateCashReferenceGroups,1);
+assert(getDispatch('dispatch-short').issues.includes('closed_dispatch_money_variance'));
+assert.equal(getDispatch('dispatch-short').cashVarianceKobo,3000);
+assert(getDispatch('dispatch-open').reviewRequired.includes('declared_returns_await_physical_verification'));
+assert(getDispatch('dispatch-open').reviewRequired.includes('external_payment_settlement_not_verified'));
+assert(getDispatch('dispatch-open').reviewRequired.includes('outstanding_is_not_received_cash'));
+assert(getDispatch('dispatch-open').reviewRequired.includes('pos_charges_finance_posting_not_assessed'));
+assert(getDispatch('dispatch-open').reviewRequired.includes('dispatch_bread_not_fully_accounted'));
+assert(getDispatch('dispatch-overreturns').issues.includes('verified_returns_exceed_declarations'));
+assert(getDispatch('dispatch-refund').reviewRequired.includes('refund_finance_posting_not_assessed'));
+assert.equal(getDispatch('dispatch-refund').cashVarianceKobo,500);
+assert(getDispatch('dispatch-missing-ref').issues.includes('cash_receipt_reference_missing'));
+assert.equal(dispatchSnapshot(),dispatchBefore,'The dispatch bridge must not write to any money, stock, returns or Finance table');
+console.log('PASS Bakery dispatch-to-Finance evidence: 100-row pagination, cash duplicates, remittance gaps, returns and refund controls');
+console.log('PASS dual-permission isolation, external settlement not asserted, and zero dispatch/Finance writes');
+
 db.close();
 console.log('PASS Bakery-to-Finance read-only bridge: actual SQLite sales/payments/cash evidence, source posting, journal balance and AR links');
 console.log('PASS company and dual-permission isolation, >100-row pagination, unverified settlement caution and zero database writes');
