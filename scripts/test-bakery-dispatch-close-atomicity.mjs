@@ -9,6 +9,7 @@ import {DatabaseSync} from 'node:sqlite';
 
 const source=fs.readFileSync(new URL('../worker/bakery-accountability.ts',import.meta.url),'utf8');
 const migration=fs.readFileSync(new URL('../migrations/0111_bakery_dispatch_atomic_close.sql',import.meta.url),'utf8');
+const closeAuditMigration=fs.readFileSync(new URL('../migrations/0112_bakery_dispatch_closure_audit.sql',import.meta.url),'utf8');
 const load=name=>{
  if(name==='./auth')return {hasPermission:(ctx,code,level,company)=>
    ctx.companies?.some(x=>x.id===company)===true
@@ -30,6 +31,7 @@ const route=module.exports.routeBakeryAccountability;
 assert.equal(typeof route,'function');
 const db=new DatabaseSync(':memory:');
 db.exec(`
+ CREATE TABLE employees(id TEXT PRIMARY KEY);
  CREATE TABLE bakery_dispatches(
   id TEXT PRIMARY KEY,company_id TEXT NOT NULL,custodian_id TEXT NOT NULL,
   status TEXT NOT NULL,closed_at TEXT,closed_by TEXT,updated_at TEXT);
@@ -45,9 +47,12 @@ db.exec(`
   id TEXT PRIMARY KEY,company_id TEXT NOT NULL,dispatch_id TEXT,product_id TEXT,quantity REAL NOT NULL);
  CREATE TABLE audit_logs(
   id TEXT PRIMARY KEY,actor_employee_id TEXT,company_id TEXT,
-  module TEXT,action TEXT,entity_type TEXT,entity_id TEXT,after_json TEXT,source TEXT);
+  module TEXT,action TEXT,entity_type TEXT,entity_id TEXT,
+  before_json TEXT,after_json TEXT,source TEXT);
 `);
+db.exec("INSERT INTO employees VALUES('manager-1')");
 db.exec(migration);
+db.exec(closeAuditMigration);
 const owner={companies:[{id:'company-bakery'}],employee:{id:'manager-1'},
  grants:['bakery.reconciliation:approve']};
 const denied={...owner,grants:[]};
@@ -101,6 +106,18 @@ const good=await close('normal');
 assert.equal(good.code,200,JSON.stringify(good.data));
 assert.equal(state('normal'),'closed');
 assert.equal(closeAudit('normal'),1);
+const audited=db.prepare("SELECT id,actor_employee_id AS actor,company_id AS company,source,before_json AS beforeJson,after_json AS afterJson FROM audit_logs WHERE action='close_reconciliation' AND entity_id=?").get('normal');
+assert.equal(audited.id,'bakery-dispatch-closure-normal');
+assert.equal(audited.actor,'manager-1');
+assert.equal(audited.company,'company-bakery');
+assert.equal(audited.source,'database','Every close has exactly one D1-owned audit');
+assert.equal(JSON.parse(audited.beforeJson).status,'reconciling');
+assert.equal(JSON.parse(audited.afterJson).auditOrigin,'database_trigger');
+assert.throws(()=>db.prepare("UPDATE audit_logs SET after_json='{}' WHERE id=?").run(audited.id),
+ /Bakery database closure audit is immutable/);
+assert.throws(()=>db.prepare("DELETE FROM audit_logs WHERE id=?").run(audited.id),
+ /Bakery database closure audit cannot be deleted/);
+assert.equal(closeAudit('normal'),1,'Tamper attempts must not affect audit evidence');
 assert.equal((await close('normal')).code,404,'A closed dispatch cannot be closed again');
 assert.equal(closeAudit('normal'),1,'An existing close must not post another audit');
 assert.throws(()=>moneySql.run('after-close-cash','normal',1000,'AFTER-CLOSE'),
@@ -128,35 +145,59 @@ assert.equal(state('bread-race'),'reconciling');
 assert.equal(closeAudit('bread-race'),0);
 
 seed('already-closed-race');
-beforeBatch=()=>db.prepare("UPDATE bakery_dispatches SET status='closed' WHERE id='already-closed-race'").run();
+beforeBatch=()=>db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='already-closed-race'").run();
 assert.equal((await close('already-closed-race')).code,409,
  'A concurrent completed close cannot be reported as a second success');
 assert.equal(state('already-closed-race'),'closed');
-assert.equal(closeAudit('already-closed-race'),0,
- 'A concurrent no-op update cannot fabricate a closure audit');
+assert.equal(closeAudit('already-closed-race'),1,
+ 'A real competing closure creates one mandatory D1 audit; the no-op creates none');
+
+// A direct SQL writer also receives the same immutable closure audit.
+seed('direct-sql');
+db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='direct-sql'").run();
+assert.equal(state('direct-sql'),'closed');
+assert.equal(closeAudit('direct-sql'),1,'Direct SQL cannot bypass the database audit');
+assert.equal(db.prepare("SELECT source FROM audit_logs WHERE entity_id='direct-sql' AND action='close_reconciliation'").get().source,'database');
+
+// An attempted closure with missing human attribution must never succeed.
+seed('anonymous-close');
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed' WHERE id='anonymous-close'").run(),
+ /Bakery closure requires a named actor and closure timestamp/);
+assert.equal(state('anonymous-close'),'reconciling');
+assert.equal(closeAudit('anonymous-close'),0);
+
+// Simulate an audit insertion failure. Its collision must roll the whole
+// status update back, not leave a financially closed dispatch without proof.
+seed('audit-collision');
+db.prepare("INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,source) VALUES('bakery-dispatch-closure-audit-collision','manager-1','company-bakery','bakery','synthetic_collision','bakery_dispatch','audit-collision','web')").run();
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='audit-collision'").run(),
+ /UNIQUE constraint failed: audit_logs.id/);
+assert.equal(state('audit-collision'),'reconciling');
+assert.equal(closeAudit('audit-collision'),0);
 
 seed('pending-returns',{verified:0});
-assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed' WHERE id='pending-returns'").run(),
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='pending-returns'").run(),
  /physical returns are not reconciled/,'Direct database writers cannot bypass physical verification');
 assert.equal(state('pending-returns'),'reconciling');
 assert.equal((await close('pending-returns')).code,409);
 
 seed('unclassified-sale',{buyer:null});
-assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed' WHERE id='unclassified-sale'").run(),
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='unclassified-sale'").run(),
  /Unclassified Bakery agent sales cannot close/);
 assert.equal(state('unclassified-sale'),'reconciling');
 
 seed('money-short',{cash:[7000]});
-assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed' WHERE id='money-short'").run(),
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='money-short'").run(),
  /money changed before closure/);
 assert.equal(state('money-short'),'reconciling');
 seed('duplicate-ref',{cash:[4000,4000],refs:['RECEIPT-X',' receipt-x ']});
-assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed' WHERE id='duplicate-ref'").run(),
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='duplicate-ref'").run(),
  /Duplicate Bakery dispatch cash references require investigation/);
 
 seed('no-items',{items:false,sold:0,returned:0,verified:0,cash:[]});
-assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed' WHERE id='no-items'").run(),
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='closed',closed_by='manager-1',closed_at=CURRENT_TIMESTAMP WHERE id='no-items'").run(),
  /without issued bread/);
 db.close();
-console.log('PASS atomic Bakery dispatch closure: genuine handler, zero false audits, immutable closed state');
-console.log('PASS direct D1 triggers: money/bread write races, physical returns, price classification and duplicate receipt safeguards');
+console.log('PASS atomic Bakery dispatch closure: genuine handler and direct SQL create one immutable D1 audit');
+console.log('PASS D1 audit collision rolls back closure, anonymous actor rejected, failed closes create zero audit');
+console.log('PASS direct D1 triggers: money/bread races, physical returns, sale classification and duplicate receipts');
