@@ -326,6 +326,21 @@ const legacyReceipt=await post(routeInventory,'/api/inventory/receive',raceRecei
 assert.equal(legacyReceipt.code,200,JSON.stringify(legacyReceipt.data));
 assert.equal(noRaceStock(),8);
 assert.equal(noRaceEvents(),3);
+// Production issues must not bypass a valuation approved while an older
+// unvalued issue request is awaiting its atomic Inventory stock transaction.
+db.exec("INSERT INTO bakery_recipe_ingredients(id,recipe_id,inventory_item_id,quantity,unit) VALUES('ri-race','recipe1','race-item',1,'kg')");
+db.exec("INSERT INTO bakery_batches(id,company_id,location_id,recipe_id,product_id,status) VALUES('batch-race','company-bakery','HQ','recipe1','bread','mixing')");
+const issueBefore=count("SELECT COUNT(*) FROM bakery_batch_ingredients WHERE batch_id='batch-race'");
+const stockBeforeIssueRace=noRaceStock();
+beforeBatch=()=>addRaceValuation('HQ');
+const racedIngredient=await post(routeBakery,'/api/bakery/batches/ingredient',
+ {batchId:'batch-race',inventoryItemId:'race-item',actualQuantity:1,wasteQuantity:0});
+assert.equal(racedIngredient.code,409,'Legacy production issue cannot race an approved opening valuation');
+assert.equal(noRaceStock(),stockBeforeIssueRace,'Racing legacy issue must roll back stock deduction');
+assert.equal(count("SELECT COUNT(*) FROM bakery_batch_ingredients WHERE batch_id='batch-race'"),issueBefore,
+ 'Racing legacy issue must not create an ingredient cost line');
+assert.equal(noRaceEvents(),3,'Racing legacy issue must not create an unvalued stock movement');
+assert.equal(db.prepare("SELECT remaining_quantity_micro AS q FROM bakery_material_valuation_balances WHERE inventory_item_id='race-item' AND location_id='HQ'").get().q,8000000);
 db.close();
 console.log('PASS real opening approval SQL: independently verified 50kg, ₦25,000; stale counts blocked; physical stock never duplicated');
 console.log('PASS real exact-value transfer: approved flour opening value conserved across Bakery locations and disputed stock rolls back');
