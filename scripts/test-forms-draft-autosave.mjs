@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createLatestFormsDraftWriter } from '../src/forms-draft-autosave.ts';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -103,4 +104,22 @@ test('permission or session scope disposal cancels unsaved timers and prohibits 
   await sleep(30);
   assert.deepEqual(saved, []);
   assert.equal(writer.schedule('assignment-a', { value: 'unauthorised' }), false);
+});
+
+test('a queued promise still counts as unsaved before the write starts', async () => {
+  const saved = [];
+  const writer = createLatestFormsDraftWriter(async (_id, draft) => { saved.push(draft.value); }, () => {}, 500);
+  writer.schedule('a', { value: 'latest' });
+  const completion = writer.flush('a');
+  assert.equal(writer.hasUnsaved(), true, 'beforeunload must detect the queued promise');
+  await completion;
+  assert.deepEqual(saved, ['latest']);
+  assert.equal(writer.hasUnsaved(), false);
+  writer.dispose();
+});
+
+test('Forms Center preserves drafts on ordinary navigation but cancels revoked scopes', () => {
+  const source = readFileSync(new URL('../src/centers.tsx', import.meta.url), 'utf8');
+  assert.match(source, /currentAutosaveScope\.current!==autosaveScope\)\{draftWriter\.dispose\(\);return\}/);
+  assert.match(source, /draftWriter\.flushAll\(\)\.catch\(\(\)=>undefined\)\.finally\(\(\)=>draftWriter\.dispose\(\)\)/);
 });
