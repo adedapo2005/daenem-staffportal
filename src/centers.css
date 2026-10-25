@@ -9,3 +9,8 @@
 [data-forms-center="true"] .form-completeness progress{width:100%;height:10px;accent-color:var(--accent,#2648d8)}
 [data-forms-center="true"] .form-completeness small{font-size:13px;line-height:1.5}
 [data-forms-center="true"] .form-completeness-warning{font-weight:700;color:var(--danger,#9c2c25)}
+
+/* Compact and accessible Form answers fieldset (keeps native disabled semantics). */
+[data-forms-center="true"] fieldset.dynamic-form{border:0;padding:0;margin:12px 0 0;min-width:0}
+[data-forms-center="true"] fieldset.dynamic-form:disabled{opacity:.87}
+[data-forms-center="true"] .form-answers-legend{font-size:13px;font-weight:800;line-height:1.5;margin-bottom:8px}
