@@ -48,7 +48,8 @@ db.exec(`
   source_type TEXT,source_id TEXT,status TEXT);
  CREATE TABLE journal_lines(journal_entry_id TEXT,debit_kobo INTEGER,credit_kobo INTEGER);
  CREATE TABLE finance_receivables(id TEXT PRIMARY KEY,company_id TEXT,source_module TEXT,
-  source_id TEXT,balance_kobo INTEGER);
+  source_id TEXT,amount_kobo INTEGER,paid_kobo INTEGER,balance_kobo INTEGER,status TEXT);
+ CREATE TABLE finance_receivable_payments(id TEXT PRIMARY KEY,receivable_id TEXT,amount_kobo INTEGER,reference TEXT);
 `);
 const sale=db.prepare("INSERT INTO sales_orders VALUES(?,? ,?,'2026-10-24',?,?,?,?)");
 const detail=db.prepare("INSERT INTO bakery_order_details VALUES(?)");
@@ -57,19 +58,21 @@ const money=db.prepare("INSERT INTO bakery_money_ledger VALUES(?,?,?,'cash_recei
 const source=db.prepare("INSERT INTO finance_source_postings VALUES(?,'sales','sales_order',?,?,?, ?,?)");
 const journal=db.prepare("INSERT INTO journal_entries VALUES(?,?,'sales','sales_order',?,'posted')");
 const line=db.prepare("INSERT INTO journal_lines VALUES(?,?,?)");
-const receivable=db.prepare("INSERT INTO finance_receivables VALUES(?,?,'sales',?,?)");
+const receivable=db.prepare("INSERT INTO finance_receivables VALUES(?,?,'sales',?,?,?,?,?)");
+const arPayment=db.prepare("INSERT INTO finance_receivable_payments VALUES(?,?,?,?)");
 function addSale(id,{company='company-bakery',status='completed',total=10000,paid=0,paymentStatus='unpaid'}={}){
  sale.run(id,company,id,status,paymentStatus,total,paid);
  detail.run(id);
 }
-function addPosting(id,{company='company-bakery',status='posted',total=10000,balanced=true,journalId='j-'+id,receivableId='r-'+id,open=10000}={}){
+function addPosting(id,{company='company-bakery',status='posted',total=10000,balanced=true,
+ journalId='j-'+id,receivableId='r-'+id,open=10000,arAmount=10000,arPaid=0,arStatus='open'}={}){
  source.run(company,id,status,total,journalId,receivableId);
  if(status==='posted'&&journalId){
   journal.run(journalId,company,id);
   line.run(journalId,total,0);
   line.run(journalId,0,balanced?total:total-100);
  }
- if(receivableId)receivable.run(receivableId,company,id,open);
+ if(receivableId)receivable.run(receivableId,company,id,arAmount,arPaid,open,arStatus);
 }
 addSale('sale-a',{paid:10000,paymentStatus:'paid'});
 payment.run('p-a','company-bakery','sale-a',10000);
@@ -85,6 +88,29 @@ addSale('sale-e',{paid:5000,paymentStatus:'part_paid'});
 payment.run('p-e','company-bakery','sale-e',10000);
 money.run('m-e','company-bakery','sale-e',10000);
 source.run('company-bakery','sale-e','posted',10000,'missing-journal','missing-receivable');
+
+// Finance A/R balances and receivable-payment evidence have an independent
+// accounting lifecycle. Inject stale, inconsistent and duplicate scenarios.
+addSale('sale-f');
+addPosting('sale-f',{arPaid:2000,open:9000,arStatus:'part_paid'});
+arPayment.run('ar-f','r-sale-f',2000,'PAY-F');
+addSale('sale-g');
+addPosting('sale-g',{arPaid:1000,open:9000,arStatus:'part_paid'});
+addSale('sale-h');
+addPosting('sale-h',{arPaid:5000,open:5000,arStatus:'part_paid'});
+arPayment.run('ar-h1','r-sale-h',2500,' Bank-PAY-H ');
+arPayment.run('ar-h2','r-sale-h',2500,'bank-pay-h');
+addSale('sale-i');
+addPosting('sale-i',{arPaid:5000,open:5000,arStatus:'paid'});
+arPayment.run('ar-i','r-sale-i',5000,'PAY-I');
+addSale('sale-j');
+addPosting('sale-j');
+journal.run('j-extra','company-bakery','sale-j');
+addSale('sale-k');
+addPosting('sale-k',{arAmount:11000,open:11000});
+addSale('sale-l');
+addPosting('sale-l',{arPaid:10000,open:0,arStatus:'paid'});
+arPayment.run('ar-l','r-sale-l',10000,'PAY-L');
 addSale('sale-foreign',{company:'company-printing'});
 addSale('sale-draft',{status:'draft'});
 // More than one page without claiming that one page is the whole company.
@@ -115,7 +141,7 @@ assert.equal((await request(uri+'?afterOrderId=a&afterOrderId=b')).status,400);
 assert.equal((await request(uri+'?afterOrderId='+('x'.repeat(129)))).status,400);
 assert.equal((await request(uri,allowed,'POST')).status,null,'The evidence endpoint is read-only');
 const tables=['sales_orders','bakery_order_details','payments','bakery_money_ledger',
- 'finance_source_postings','journal_entries','journal_lines','finance_receivables'];
+ 'finance_source_postings','journal_entries','journal_lines','finance_receivables','finance_receivable_payments'];
 const snapshot=()=>JSON.stringify(tables.map(t=>db.prepare('SELECT * FROM '+t+' ORDER BY rowid').all()));
 const before=snapshot();
 const first=await request(uri);
@@ -123,6 +149,7 @@ assert.equal(first.status,200,JSON.stringify(first.data));
 assert.equal(first.data.readOnly,true);
 assert.equal(first.data.scope,'completed_bakery_sales_page_only');
 assert.equal(first.data.bankSettlementAssessed,false);
+assert.equal(first.data.financePaymentSettlementAssessed,false);
 assert.equal(first.data.returned,100);
 assert.equal(first.data.hasMore,true);
 assert(first.data.nextCursor?.afterOrderId);
@@ -147,6 +174,24 @@ assert(row('sale-d').issues.includes('journal_lines_not_balanced'));
 assert(row('sale-e').issues.includes('payment_records_disagree_with_order'));
 assert(row('sale-e').issues.includes('posted_journal_link_invalid'));
 assert(row('sale-e').issues.includes('finance_receivable_link_invalid'));
+assert(row('sale-f').issues.includes('finance_receivable_balance_inconsistent'),
+ 'The sum of Finance recorded paid + outstanding must match original AR');
+assert(!row('sale-f').issues.includes('finance_payment_records_disagree_with_receivable'));
+assert(row('sale-g').issues.includes('finance_payment_records_disagree_with_receivable'),
+ 'A changed AR paid field without matching Finance payment records is an exception');
+assert(row('sale-h').issues.includes('duplicate_finance_payment_references'),
+ 'Duplicate normalized Finance payment references require an investigation');
+assert.equal(row('sale-h').duplicateFinancePaymentReferences,1);
+assert(row('sale-h').reviewRequired.includes('finance_payment_evidence_not_bank_verified'),
+ 'Finance payment rows are not independent bank/provider settlement proof');
+assert(row('sale-i').issues.includes('finance_receivable_status_inconsistent'));
+assert(row('sale-j').issues.includes('unexpected_posted_sales_journal_count'),
+ 'Two posted sales journals for the same order must never look reconciled');
+assert.equal(row('sale-j').postedSourceJournalCount,2);
+assert(row('sale-k').issues.includes('finance_receivable_original_disagrees_with_sale'));
+assert.deepEqual(Array.from(row('sale-l').issues),[]);
+assert(row('sale-l').reviewRequired.includes('finance_payment_evidence_not_bank_verified'));
+assert.equal(row('sale-l').amounts.financePaymentRecordsKobo,10000);
 assert.equal(snapshot(),before,'Financial evidence queries must never change money, sales, journal or AR rows');
 
 // Agent dispatch money is NOT equivalent to verified bank settlement or a
