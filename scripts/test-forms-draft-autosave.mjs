@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle } from '../src/forms-draft-autosave.ts';
+import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle, createScopedFormsDraftCallbacks } from '../src/forms-draft-autosave.ts';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function deferred() {
@@ -169,4 +169,52 @@ test('permission or session revocation discards pending drafts immediately', asy
   await sleep(65);
   assert.deepEqual(saved, []);
   assert.equal(writer.schedule('form-a', { value: 'revoked' }), false);
+});
+
+
+test('stale pending edits cannot borrow a different signed-in employee offline writer', async () => {
+  const writes = [], messages = [];
+  let scope = 'session-a:employee-a:company-a';
+  const callbacks = createScopedFormsDraftCallbacks(
+    scope, () => scope,
+    async (id, draft) => writes.push([id, draft.value]),
+    (id, error) => messages.push([id, error.message]),
+  );
+  const writer = createLatestFormsDraftWriter(callbacks.persist, callbacks.reportFailure, 100);
+  writer.schedule('form-1', {value:'staff-a-private-draft'});
+  scope = 'session-b:employee-b:company-a';
+  await writer.flush('form-1');
+  assert.deepEqual(writes, []);
+  assert.deepEqual(messages, []);
+  writer.dispose();
+});
+
+test('old-session storage failures never display in new-session Forms Center', async () => {
+  const unblock = deferred(), entered = deferred(), messages = [];
+  let scope = 'session-a:employee-a';
+  const callbacks = createScopedFormsDraftCallbacks(
+    scope, () => scope,
+    async () => {
+      entered.resolve();
+      await unblock.promise;
+      throw new Error('Private old-account storage error');
+    },
+    (_id, error) => messages.push(error.message),
+  );
+  const writer = createLatestFormsDraftWriter(callbacks.persist, callbacks.reportFailure, 100);
+  writer.schedule('form-a', {value:'private'});
+  const pending = writer.flush('form-a');
+  await entered.promise;
+  scope = 'session-b:employee-b';
+  unblock.resolve();
+  await assert.rejects(pending, /Private old-account storage error/);
+  assert.deepEqual(messages, [], 'old employee storage failure must not enter the replacement session UI');
+  writer.dispose();
+});
+
+test('Forms Center always pins its draft callback to current login and company permission scope', () => {
+  const source = readFileSync(new URL('../src/centers.tsx', import.meta.url), 'utf8');
+  assert.match(source, /createScopedFormsDraftCallbacks<FormsDraftInput>\(/);
+  assert.match(source, /autosaveScope,\(\)=>currentAutosaveScope\.current/);
+  assert.match(source, /createLatestFormsDraftWriter<FormsDraftInput>\(scoped\.persist,scoped\.reportFailure,350\)/);
 });
