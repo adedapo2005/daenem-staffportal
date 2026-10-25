@@ -248,6 +248,14 @@ assert.throws(()=>db.prepare("DELETE FROM bakery_material_opening_valuations WHE
 const sugarOpening=await post(routeBakeryMaterialOpenings,'/api/inventory/bakery/openings/propose',
  {...openingBody,inventoryItemId:'sugar',countedQuantity:10,reason:'Counted the existing sugar stock'},context);
 assert.equal(sugarOpening.code,201);
+
+assert.throws(()=>db.prepare("UPDATE inventory_items SET unit='g' WHERE id='sugar'").run(),
+ /identity is locked/i,
+ 'A pending independently reviewed opening also freezes the physical-count unit');
+assert.throws(()=>db.prepare("UPDATE inventory_items SET category_id='finished-ingredient' WHERE id='sugar'").run(),
+ /cannot become finished goods/i,
+ 'Unapproved physical-count opening cannot be recategorized during review');
+
 // The same physical quantity with new receipt/issue activity is NOT the same historical stock snapshot.
 db.prepare("INSERT INTO stock_movements(id,company_id,item_id,movement_type,quantity,to_location_id,created_by) VALUES('sugar-new-receipt','company-bakery','sugar','receipt',1,'HQ','reviewer')").run();
 db.prepare("INSERT INTO stock_movements(id,company_id,item_id,movement_type,quantity,from_location_id,created_by) VALUES('sugar-new-issue','company-bakery','sugar','issue',1,'HQ','reviewer')").run();
@@ -402,6 +410,22 @@ assert.throws(()=>db.prepare("UPDATE inventory_categories SET category_type='fin
  /cannot become finished goods/i,'Reclassifying the parent category cannot bypass the valued material lock');
 assert.equal(db.prepare("SELECT unit FROM inventory_items WHERE id='flour'").get().unit,'kg');
 assert.equal(db.prepare("SELECT category_id FROM inventory_items WHERE id='flour'").get().category_id,'raw-ingredient');
+
+db.exec("INSERT INTO inventory_categories(id,company_id,category_type) VALUES('foreign-finished','company-printing','finished_good')");
+assert.throws(()=>db.prepare("UPDATE inventory_items SET category_id='foreign-finished' WHERE id='flour'").run(),
+ /category must remain company scoped/i,
+ 'A valued Bakery item cannot be reclassified using a foreign-company category');
+assert.throws(()=>db.prepare("UPDATE inventory_categories SET company_id='company-printing' WHERE id='raw-ingredient'").run(),
+ /category company is locked/i,
+ 'A linked Bakery category cannot migrate to another company while financial value exists');
+assert.throws(()=>db.prepare("INSERT INTO bakery_products(id,company_id,inventory_item_id) VALUES('flour-finished','company-bakery','flour')").run(),
+ /valued raw material/i,
+ 'A verified raw material cannot also become a finished Bakery product');
+assert.throws(()=>db.prepare("UPDATE bakery_products SET inventory_item_id='flour' WHERE id='bread'").run(),
+ /valued raw material/i,
+ 'Reassigning an existing Bakery product cannot bypass material valuation identity');
+assert.equal(db.prepare("SELECT category_id FROM inventory_items WHERE id='flour'").get().category_id,'raw-ingredient');
+
 assert.equal(entry(await readReconciliation(),'HQ','flour').status,'reconciled');
 
 db.exec("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name,category_id) VALUES('orphan-material','company-bakery','kg',0,1,NULL,'ORPHAN','Orphan value','raw-ingredient')");
