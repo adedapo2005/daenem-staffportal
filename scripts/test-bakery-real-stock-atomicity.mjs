@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 const bakery=fs.readFileSync(new URL('../worker/bakery.ts',import.meta.url),'utf8');
-const accountability=fs.readFileSync(new URL('../worker/bakery-accountability.ts',import.meta.url),'utf8');
 const migration=fs.readFileSync(new URL('../migrations/0005_commerce_printing.sql',import.meta.url),'utf8');
 const stockGuard=fs.readFileSync(new URL('../migrations/0102_bakery_financial_integrity.sql',import.meta.url),'utf8');
 function sql(source,marker){
@@ -32,8 +31,7 @@ const issueLegacySource=issueSource.replace(guardInterpolation,guardSql);
 function sqlLast(source,marker){const index=source.lastIndexOf(marker);assert(index>=0);const tick=String.fromCharCode(96),a=source.lastIndexOf(tick,index),b=source.indexOf(tick,index);assert(a>=0&&b>a);return source.slice(a+1,b)}
 const statements={
  pos:[sql(posSource,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(posSource,"'sale',CASE WHEN changes()=1 THEN ? ELSE NULL END")],
- issue:[sqlLast(issueSource,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(issueLegacySource,"'issue',CASE WHEN changes()=1 AND NOT EXISTS(")],
- dispatch:[sql(accountability,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(accountability,"'transfer_out',CASE WHEN changes()=1 THEN ? ELSE NULL END")]
+ issue:[sqlLast(issueSource,'UPDATE stock_balances SET quantity=quantity-?,updated_at=CURRENT_TIMESTAMP WHERE location_id=? AND item_id=? AND company_id=? AND quantity-reserved_quantity>=?'),sql(issueLegacySource,"'issue',CASE WHEN changes()=1 AND NOT EXISTS(")]
 };
 const db=new DatabaseSync(':memory:');
 db.exec('PRAGMA foreign_keys=OFF;');
@@ -67,15 +65,12 @@ assert.equal(moveBatch([['pos',4,'office','bread700']]),true);
 assert.equal(balance('office','bread700'),6);
 assert.equal(moveBatch([['pos',1,'office','bread700']]),false);
 assert.equal(balance('office','bread700'),6);
-assert.equal(moveBatch([['dispatch',4,'office','bread350']]),false);
-assert.equal(balance('office','bread350'),10);
 assert.equal(moveBatch([['issue',4,'office','flour']]),true);
 assert.equal(balance('office','flour'),6);
 assert.equal(moveBatch([['issue',7,'office','flour']]),false);
 assert.equal(balance('office','flour'),6);
 assert.equal(moveBatch([['pos',1,'other-location','bread700']]),false);
 assert.equal(balance('other-location','bread700'),12);
-assert.equal(moveBatch([['dispatch',1,'office','missing']]),false);
 const before=count();
 assert.equal(moveBatch([['issue',5,'office','flour'],['issue',5,'office','flour']]),false);
 assert.equal(balance('office','flour'),6);
@@ -87,5 +82,6 @@ assert.equal(moveBatch([['issue',1,'office','flour']]),false,'Legacy issue canno
 assert.equal(count(),valuedIssueCount);
 assert.equal(balance('office','flour'),valuedIssueStock);
 db.close();
-console.log('PASS actual Bakery SQL: cash sale, agent dispatch and ingredient stock movements require successful deduction');
+console.log('PASS actual Bakery SQL: cash sale and ingredient stock movements require successful deduction');
+console.log('PASS dispatch stock movements are separately tested with D1 migration 0115 in test-bakery-dispatch-custody-lock.mjs');
 console.log('PASS fail-closed SQLite transaction rollback: reserved stock, missing stock, wrong company, and multi-line stale stock');
