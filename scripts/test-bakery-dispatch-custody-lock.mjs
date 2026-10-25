@@ -15,6 +15,7 @@ const custody=fs.readFileSync(new URL('../migrations/0113_bakery_dispatch_issued
 const stockGuard=fs.readFileSync(new URL('../migrations/0114_bakery_dispatch_stock_movement_integrity.sql',import.meta.url),'utf8');
 const atomicDebit=fs.readFileSync(new URL('../migrations/0115_bakery_dispatch_atomic_stock_debit.sql',import.meta.url),'utf8');
 const issueAudit=fs.readFileSync(new URL('../migrations/0116_bakery_dispatch_issue_audit_and_reversal_lock.sql',import.meta.url),'utf8');
+const debitedDraftLock=fs.readFileSync(new URL('../migrations/0117_bakery_dispatch_draft_after_debit_lock.sql',import.meta.url),'utf8');
 const load=name=>{
  if(name==='./auth')return {hasPermission:(ctx,code,level,company)=>
   ctx.companies.some(c=>c.id===company)&&ctx.grants.includes(code+':'+level)};
@@ -80,7 +81,7 @@ db.exec(`
  VALUES('bakery-hq','inv-1','company-bakery',20,0),
        ('bakery-hq','inv-2','company-bakery',15,0);
 `);
-db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);db.exec(atomicDebit);db.exec(issueAudit);
+db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);db.exec(atomicDebit);db.exec(issueAudit);db.exec(debitedDraftLock);
 
 let beforeBatch=null;
 const env={DB:{
@@ -189,6 +190,27 @@ assert.throws(()=>db.prepare(`INSERT INTO stock_movements(id,company_id,item_id,
  /Bakery transfer would exceed approved dispatch quantity/,
  'A repeated direct transfer cannot debit inventory again');
 assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,beforeRawDebit-2);
+// A draft is editable until transfer STARTS; afterwards quantity, price,
+// item identity, custody owner and product->inventory binding are frozen.
+assert.throws(()=>db.prepare("UPDATE bakery_dispatch_items SET quantity=999 WHERE id='raw-item'").run(),
+ /Bakery draft with debited stock cannot alter issued quantities or prices/);
+assert.throws(()=>db.prepare("UPDATE bakery_dispatch_items SET unit_price_kobo=1 WHERE id='raw-item'").run(),
+ /Bakery draft with debited stock cannot alter issued quantities or prices/);
+assert.throws(()=>db.prepare("DELETE FROM bakery_dispatch_items WHERE id='raw-item'").run(),
+ /Bakery draft with debited stock cannot delete dispatch items/);
+assert.throws(()=>db.prepare("INSERT INTO bakery_dispatch_items VALUES('raw-appended','raw-draft','bread-2',1,1500)").run(),
+ /Bakery draft with debited stock cannot add dispatch items/);
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET location_id='other-hq' WHERE id='raw-draft'").run(),
+ /Bakery draft with debited stock has immutable custody identity/);
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET custodian_id='other-agent' WHERE id='raw-draft'").run(),
+ /Bakery draft with debited stock has immutable custody identity/);
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET note='altered' WHERE id='raw-draft'").run(),
+ /Bakery draft with debited stock has immutable custody identity/);
+assert.throws(()=>db.prepare("UPDATE bakery_products SET inventory_item_id='forged-link' WHERE id='bread-1'").run(),
+ /Bakery product inventory identity is locked by issued stock evidence/);
+assert.equal(db.prepare("SELECT quantity FROM bakery_dispatch_items WHERE id='raw-item'").get().quantity,2);
+assert.equal(db.prepare("SELECT inventory_item_id FROM bakery_products WHERE id='bread-1'").get().inventory_item_id,'inv-1');
+
 assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='in_transit',dispatched_at=CURRENT_TIMESTAMP WHERE id='raw-draft'").run(),
  /Bakery issue requires a named employee and issue timestamp/);
 assert.equal(db.prepare("SELECT status FROM bakery_dispatches WHERE id='raw-draft'").get().status,'draft');
@@ -255,6 +277,7 @@ assert.throws(()=>db.prepare('UPDATE bakery_dispatch_items SET unit_price_kobo=1
 db.close();
 console.log('PASS Bakery staged dispatch: 2 products, canonical stock issue, immutable issued prices/quantities');
 console.log('PASS direct SQL stock transfers debit exactly once, fail without stock and are immutable even in draft');
+console.log('PASS after debit: no draft quantity, price, product inventory link or custody identity tampering');
 console.log('PASS raw issue rejects missing custody; shortage rolls back draft, stock, ledger and audit');
 console.log('PASS direct and API issuance create immutable attributed audits, failed issuances create none');
 console.log('PASS issued dispatch cannot revert to draft or cancel without governed reversal');
