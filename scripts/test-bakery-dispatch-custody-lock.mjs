@@ -12,6 +12,7 @@ const source=fs.readFileSync(new URL('../worker/bakery-accountability.ts',import
 const base=fs.readFileSync(new URL('../migrations/0111_bakery_dispatch_atomic_close.sql',import.meta.url),'utf8');
 const audit=fs.readFileSync(new URL('../migrations/0112_bakery_dispatch_closure_audit.sql',import.meta.url),'utf8');
 const custody=fs.readFileSync(new URL('../migrations/0113_bakery_dispatch_issued_custody_lock.sql',import.meta.url),'utf8');
+const stockGuard=fs.readFileSync(new URL('../migrations/0114_bakery_dispatch_stock_movement_integrity.sql',import.meta.url),'utf8');
 const load=name=>{
  if(name==='./auth')return {hasPermission:(ctx,code,level,company)=>
   ctx.companies.some(c=>c.id===company)&&ctx.grants.includes(code+':'+level)};
@@ -77,7 +78,7 @@ db.exec(`
  VALUES('bakery-hq','inv-1','company-bakery',20,0),
        ('bakery-hq','inv-2','company-bakery',15,0);
 `);
-db.exec(base);db.exec(audit);db.exec(custody);
+db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);
 
 let beforeBatch=null;
 const env={DB:{
@@ -155,9 +156,12 @@ db.prepare(`INSERT INTO bakery_bread_ledger
   quantity,direction,reference_type,reference_id,recorded_by)
  VALUES('raw-ledger','company-bakery','2026-10-25','bread-1','raw-draft',
         'agent-1','in_transit',2,'out','bakery_dispatch','raw-draft','manager-1')`).run();
+db.prepare(`INSERT INTO stock_movements(id,company_id,item_id,movement_type,quantity,from_location_id,reference_type,reference_id) VALUES('raw-stock','company-bakery','inv-1','transfer_out',2,'bakery-hq','bakery_dispatch','raw-draft')`).run();
 db.prepare(`UPDATE bakery_dispatches SET status='in_transit'
  WHERE id='raw-draft'`).run();
 assert.equal(db.prepare("SELECT status FROM bakery_dispatches WHERE id='raw-draft'").get().status,'in_transit');
+assert.throws(()=>db.prepare("DELETE FROM stock_movements WHERE id='raw-stock'").run(),/stock transfer evidence cannot be deleted/);
+assert.throws(()=>db.prepare("UPDATE stock_movements SET quantity=500 WHERE id='raw-stock'").run(),/stock transfer evidence is immutable/);
 
 // Simulate a stock shortage between validation and transactional posting.
 // The mandatory stock movement must fail, rolling back the entire dispatch.
