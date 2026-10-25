@@ -16,6 +16,7 @@ const stockGuard=fs.readFileSync(new URL('../migrations/0114_bakery_dispatch_sto
 const atomicDebit=fs.readFileSync(new URL('../migrations/0115_bakery_dispatch_atomic_stock_debit.sql',import.meta.url),'utf8');
 const issueAudit=fs.readFileSync(new URL('../migrations/0116_bakery_dispatch_issue_audit_and_reversal_lock.sql',import.meta.url),'utf8');
 const debitedDraftLock=fs.readFileSync(new URL('../migrations/0117_bakery_dispatch_draft_after_debit_lock.sql',import.meta.url),'utf8');
+const initialStateGuard=fs.readFileSync(new URL('../migrations/0118_bakery_dispatch_initial_state_guard.sql',import.meta.url),'utf8');
 const load=name=>{
  if(name==='./auth')return {hasPermission:(ctx,code,level,company)=>
   ctx.companies.some(c=>c.id===company)&&ctx.grants.includes(code+':'+level)};
@@ -81,7 +82,7 @@ db.exec(`
  VALUES('bakery-hq','inv-1','company-bakery',20,0),
        ('bakery-hq','inv-2','company-bakery',15,0);
 `);
-db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);db.exec(atomicDebit);db.exec(issueAudit);db.exec(debitedDraftLock);
+db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);db.exec(atomicDebit);db.exec(issueAudit);db.exec(debitedDraftLock);db.exec(initialStateGuard);
 
 let beforeBatch=null;
 const env={DB:{
@@ -117,6 +118,22 @@ const counts=()=>db.prepare(`SELECT
  (SELECT COUNT(*) FROM audit_logs WHERE action='create_dispatch') AS audits`).get();
 assert.equal((await route(request(),env,denied)).status,403);
 assert.equal(counts().dispatches,0);
+// A raw INSERT must not fabricate an already-issued or already-closed
+// dispatch without the D1 accounting, custody and immutable audit chain.
+assert.throws(()=>db.prepare(`INSERT INTO bakery_dispatches
+ (id,company_id,custodian_id,status,created_by)
+ VALUES('forged-direct-in-transit','company-bakery','agent-1','in_transit','manager-1')`).run(),
+ /Bakery dispatch must start in draft/);
+assert.throws(()=>db.prepare(`INSERT INTO bakery_dispatches
+ (id,company_id,custodian_id,status,created_by,closed_at,closed_by)
+ VALUES('forged-direct-closed','company-bakery','agent-1','closed','manager-1',CURRENT_TIMESTAMP,'manager-1')`).run(),
+ /Bakery dispatch must start in draft/);
+assert.throws(()=>db.prepare(`INSERT INTO bakery_dispatches
+ (id,company_id,custodian_id,status,created_by,closed_at)
+ VALUES('forged-preclosed-draft','company-bakery','agent-1','draft','manager-1',CURRENT_TIMESTAMP)`).run(),
+ /New Bakery draft cannot claim issuance, receipt or closure/);
+assert.equal(counts().dispatches,0,'No forged issued/closed row may be created');
+assert.equal(counts().audits,0,'No false audit may be created');
 const response=await route(request(),env,manager);
 const data=await response.json();
 assert.equal(response.status,201,JSON.stringify(data));
@@ -275,6 +292,7 @@ assert.throws(()=>db.prepare('DELETE FROM bakery_dispatches WHERE id=?').run(dis
 assert.throws(()=>db.prepare('UPDATE bakery_dispatch_items SET unit_price_kobo=1 WHERE dispatch_id=?').run(dispatchId),
  /Issued Bakery dispatch items and prices are immutable/);
 db.close();
+console.log('PASS Bakery lifecycle: direct issued/closed inserts are rejected before audit and stock can be bypassed');
 console.log('PASS Bakery staged dispatch: 2 products, canonical stock issue, immutable issued prices/quantities');
 console.log('PASS direct SQL stock transfers debit exactly once, fail without stock and are immutable even in draft');
 console.log('PASS after debit: no draft quantity, price, product inventory link or custody identity tampering');
