@@ -20,6 +20,7 @@ function load(name){
  if(name==='./auth')return {hasPermission:(ctx,code,_level,companyId)=>
    companyId==='company-bakery'&&ctx.grants?.includes(code)===true};
  if(name==='./bakery-material-units')return {routeBakeryMaterialUnits:async()=>null};
+ if(name==='./bakery-dispatch-history-integrity')return {routeBakeryDispatchHistoryIntegrity:async()=>null};
  if(cache.has(name))return cache.get(name);
  assert(modules[name],name);
  const mod={exports:{}};cache.set(name,mod.exports);
