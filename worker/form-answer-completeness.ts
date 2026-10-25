@@ -3,7 +3,7 @@
  * independent of React and D1 so direct requests and offline replay share it.
  * Authoritative record/company/permission checks remain in worker/forms.ts.
  */
-import { guidedFieldVisible } from '../src/guided-form-dependencies';
+import { guidedFieldVisible } from '../src/guided-form-dependencies.ts';
 
 export type CompletenessField = {
   key: string;
