@@ -1,7 +1,7 @@
 import { hasPermission, type AuthEnv, type SessionContext } from './auth';
 import { validNewSelectOptions, validSubmittedSelectAnswer } from './form-select-contract';
 import { checkFormAnswerCompleteness } from './form-answer-completeness';
-import { validGuidedDependencies, guidedFieldVisible } from '../src/guided-form-dependencies';
+import { validGuidedDependencies, guidedFieldVisible } from '../src/guided-form-dependencies.ts';
 
 interface FormsEnv extends AuthEnv {}
 const json=(body:Record<string,unknown>|unknown[],status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
