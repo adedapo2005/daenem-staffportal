@@ -9,6 +9,7 @@
 .v116-icon-button{width:2.15rem;height:2.15rem;display:grid;place-items:center;border:1px solid var(--p-line);border-radius:.68rem;background:color-mix(in srgb,var(--p-surface) 92%,transparent);color:var(--p-muted);transition:color .2s ease,border-color .2s ease,transform .2s ease}
 .v116-icon-button:hover{color:var(--p-accent);border-color:color-mix(in srgb,var(--p-accent) 42%,var(--p-line));transform:translateY(-1px)}
 .v116-icon-button:disabled{opacity:.55;transform:none}
+.v116-icon-button:focus-visible{outline:3px solid var(--p-accent,#2563eb);outline-offset:3px}
 .v116-headlines{list-style:none;padding:0;margin:0;display:grid;gap:.15rem}
 .v116-headlines li{border-top:1px solid color-mix(in srgb,var(--p-line) 82%,transparent)}
 .v116-headlines li:first-child{border-top:0}
