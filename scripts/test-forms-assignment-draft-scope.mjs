@@ -40,3 +40,14 @@ test('offline authority enforces the exact company identity when using an assign
   assert.match(source, /ensureCurrentGrant\(identity\.companyId, 'forms\.submit'\)/);
   assert.match(source, /permitsOfflineKind\(context, identity\.companyId, 'forms\.submit'\)/);
 });
+
+test('incomplete or invalid entries are drafted before any offline submit is queued', () => {
+  const source = readFileSync(new URL('../src/centers.tsx', import.meta.url), 'utf8');
+  const preflight = source.indexOf('const completeness=guidedCompletion(schema,payload),invalid=guidedInvalidAnswers(schema,payload);');
+  const submitQueue = source.indexOf('if(!navigator.onLine){await offline.queueFormsSubmission(');
+  assert.ok(preflight > 0 && submitQueue > preflight, 'completeness must run before queueing a submission');
+  assert.match(source, /if\(completeness\.missingLabels\.length\|\|invalid\.length\)/);
+  assert.match(source, /saved as a local draft, not submitted/);
+  assert.match(source, /was not submitted\. Draft could not be saved securely/);
+  assert.match(source, /Group-wide forms require a live connection/);
+});
