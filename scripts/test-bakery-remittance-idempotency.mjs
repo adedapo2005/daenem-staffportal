@@ -13,6 +13,7 @@ const load=name=>{
  if(name==='./auth')return {hasPermission:(ctx,perm,level,company)=>
    company==='company-bakery'&&ctx.grants?.includes(perm+':'+level)===true};
  if(name==='./bakery-material-units')return {routeBakeryMaterialUnits:async()=>null};
+ if(name==='./bakery-dispatch-history-integrity')return {routeBakeryDispatchHistoryIntegrity:async()=>null};
  if(name==='./bakery-finance-bridge')return {
    routeBakeryFinanceBridge:async()=>null,routeBakeryDispatchFinanceBridge:async()=>null
  };
