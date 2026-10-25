@@ -84,6 +84,7 @@ jobs:
           node --disable-warning=ExperimentalWarning scripts/test-bakery-remittance-idempotency.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-close-atomicity.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-custody-lock.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-history-readonly.mjs
           node scripts/check-bakery-changed-syntax.mjs
           node scripts/check-bakery-accountability.mjs
           node scripts/test-bakery-kpi-comparisons.mjs
