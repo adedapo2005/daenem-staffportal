@@ -42,7 +42,7 @@ db.exec(schema);
 db.exec("ALTER TABLE inventory_items ADD COLUMN category_id TEXT");
 db.exec("CREATE TABLE inventory_categories(id TEXT PRIMARY KEY,company_id TEXT,category_type TEXT)");
 db.exec("INSERT INTO inventory_categories(id,company_id,category_type) VALUES('raw-ingredient','company-bakery','stock'),('finished-ingredient','company-bakery','finished_good')");
-for(const migration of ['0106_bakery_material_unit_rules.sql','0107_bakery_precise_material_valuation.sql','0108_bakery_verified_opening_valuations.sql']){
+for(const migration of ['0106_bakery_material_unit_rules.sql','0107_bakery_precise_material_valuation.sql','0108_bakery_verified_opening_valuations.sql','0109_bakery_valued_material_identity_lock.sql']){
  db.exec(fs.readFileSync(new URL('../migrations/'+migration,import.meta.url),'utf8'));
 }
 db.prepare("INSERT INTO bakery_material_unit_rules(id,company_id,inventory_item_id,input_unit,inventory_unit,base_quantity_per_input,version_no,status,reason,proposed_by,reviewed_by,review_note,reviewed_at) VALUES('rule-yeast','company-bakery','yeast','carton','g',1000,1,'approved','Supplier carton is exactly 1,000 g','operator','reviewer','Supplier label independently checked',CURRENT_TIMESTAMP)").run();
@@ -394,14 +394,14 @@ assert.equal(entry(valueDrift,'HQ','flour').status,'valuation_event_mismatch',
  'Stock count parity cannot conceal altered monetary value');
 assert.equal(entry(valueDrift,'HQ','flour').valueVarianceMicroKobo,100);
 db.prepare("UPDATE bakery_material_valuation_balances SET remaining_value_microkobo=? WHERE location_id='HQ' AND inventory_item_id='flour'").run(currentFlourValue);
-db.prepare("UPDATE inventory_items SET unit='g' WHERE id='flour'").run();
-assert.equal(entry(await readReconciliation(),'HQ','flour').status,'opening_unit_changed',
- 'Changing the Inventory base unit after opening must surface an exception');
-db.prepare("UPDATE inventory_items SET unit='kg' WHERE id='flour'").run();
-db.prepare("UPDATE inventory_items SET category_id='finished-ingredient' WHERE id='flour'").run();
-assert.equal(entry(await readReconciliation(),'HQ','flour').status,'category_conflict',
- 'Reclassifying valued raw material as finished goods cannot hide its financial balance');
-db.prepare("UPDATE inventory_items SET category_id='raw-ingredient' WHERE id='flour'").run();
+assert.throws(()=>db.prepare("UPDATE inventory_items SET unit='g' WHERE id='flour'").run(),
+ /identity is locked/i,'Approved valuation freezes the base material unit');
+assert.throws(()=>db.prepare("UPDATE inventory_items SET category_id='finished-ingredient' WHERE id='flour'").run(),
+ /cannot become finished goods/i,'Approved valuation blocks finished-goods reclassification');
+assert.throws(()=>db.prepare("UPDATE inventory_categories SET category_type='finished_good' WHERE id='raw-ingredient'").run(),
+ /cannot become finished goods/i,'Reclassifying the parent category cannot bypass the valued material lock');
+assert.equal(db.prepare("SELECT unit FROM inventory_items WHERE id='flour'").get().unit,'kg');
+assert.equal(db.prepare("SELECT category_id FROM inventory_items WHERE id='flour'").get().category_id,'raw-ingredient');
 assert.equal(entry(await readReconciliation(),'HQ','flour').status,'reconciled');
 
 db.exec("INSERT INTO inventory_items(id,company_id,unit,unit_cost_kobo,active,updated_at,sku,name,category_id) VALUES('orphan-material','company-bakery','kg',0,1,NULL,'ORPHAN','Orphan value','raw-ingredient')");
