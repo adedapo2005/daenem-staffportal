@@ -14,6 +14,7 @@ const audit=fs.readFileSync(new URL('../migrations/0112_bakery_dispatch_closure_
 const custody=fs.readFileSync(new URL('../migrations/0113_bakery_dispatch_issued_custody_lock.sql',import.meta.url),'utf8');
 const stockGuard=fs.readFileSync(new URL('../migrations/0114_bakery_dispatch_stock_movement_integrity.sql',import.meta.url),'utf8');
 const atomicDebit=fs.readFileSync(new URL('../migrations/0115_bakery_dispatch_atomic_stock_debit.sql',import.meta.url),'utf8');
+const issueAudit=fs.readFileSync(new URL('../migrations/0116_bakery_dispatch_issue_audit_and_reversal_lock.sql',import.meta.url),'utf8');
 const load=name=>{
  if(name==='./auth')return {hasPermission:(ctx,code,level,company)=>
   ctx.companies.some(c=>c.id===company)&&ctx.grants.includes(code+':'+level)};
@@ -79,7 +80,7 @@ db.exec(`
  VALUES('bakery-hq','inv-1','company-bakery',20,0),
        ('bakery-hq','inv-2','company-bakery',15,0);
 `);
-db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);db.exec(atomicDebit);
+db.exec(base);db.exec(audit);db.exec(custody);db.exec(stockGuard);db.exec(atomicDebit);db.exec(issueAudit);
 
 let beforeBatch=null;
 const env={DB:{
@@ -120,6 +121,18 @@ const data=await response.json();
 assert.equal(response.status,201,JSON.stringify(data));
 const dispatchId=data.dispatch.id;
 assert.equal(data.dispatch.status,'in_transit');
+const issueRecord=db.prepare(`SELECT id,actor_employee_id,source,after_json FROM audit_logs
+ WHERE entity_id=? AND action='issue_dispatch'`).get(dispatchId);
+assert.equal(issueRecord.id,'bakery-dispatch-issue-'+dispatchId);
+assert.equal(issueRecord.actor_employee_id,'manager-1');
+assert.equal(issueRecord.source,'database');
+assert.equal(JSON.parse(issueRecord.after_json).auditOrigin,'database_trigger');
+assert.equal(db.prepare("SELECT issued_by FROM bakery_dispatches WHERE id=?").get(dispatchId).issued_by,'manager-1');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE action='issue_dispatch' AND entity_id=?").get(dispatchId).n,1);
+assert.throws(()=>db.prepare("UPDATE audit_logs SET after_json='{}' WHERE id=?").run(issueRecord.id),
+ /Bakery database issuance audit is immutable/);
+assert.throws(()=>db.prepare("DELETE FROM audit_logs WHERE id=?").run(issueRecord.id),
+ /Bakery database issuance audit cannot be deleted/);
 assert.deepEqual({...counts()},{dispatches:1,items:2,bread:2,movements:2,audits:1});
 const issued=db.prepare('SELECT status,dispatched_at AS at FROM bakery_dispatches WHERE id=?').get(dispatchId);
 assert.equal(issued.status,'in_transit');assert(issued.at,'Issue time must be set');
@@ -136,7 +149,10 @@ const rejects=[
  ['item append',()=>db.prepare("INSERT INTO bakery_dispatch_items VALUES('fake-item',?,'bread-1',5,1000)").run(dispatchId),/Issued Bakery dispatch cannot add bread items/],
  ['custodian swap',()=>db.prepare("UPDATE bakery_dispatches SET custodian_id='another-agent' WHERE id=?").run(dispatchId),/Issued Bakery dispatch identity is immutable/],
  ['dispatch number swap',()=>db.prepare("UPDATE bakery_dispatches SET dispatch_no='FAKE' WHERE id=?").run(dispatchId),/Issued Bakery dispatch identity is immutable/],
- ['issued dispatch deletion',()=>db.prepare('DELETE FROM bakery_dispatches WHERE id=?').run(dispatchId),/Issued Bakery dispatch cannot be deleted/]
+ ['issued dispatch deletion',()=>db.prepare('DELETE FROM bakery_dispatches WHERE id=?').run(dispatchId),/Issued Bakery dispatch cannot be deleted/],
+ ['issued actor change',()=>db.prepare("UPDATE bakery_dispatches SET issued_by='unknown-actor' WHERE id=?").run(dispatchId),/Bakery dispatch issuing employee is immutable/],
+ ['revert issued to draft',()=>db.prepare("UPDATE bakery_dispatches SET status='draft' WHERE id=?").run(dispatchId),/Issued Bakery dispatch requires governed reversal/],
+ ['cancel issued without reversal',()=>db.prepare("UPDATE bakery_dispatches SET status='cancelled' WHERE id=?").run(dispatchId),/Issued Bakery dispatch requires governed reversal/]
 ];
 for(const [name,act,error] of rejects)assert.throws(act,error,name);
 assert.deepEqual({...counts()},{dispatches:1,items:2,bread:2,movements:2,audits:1},
@@ -146,11 +162,13 @@ assert.deepEqual({...counts()},{dispatches:1,items:2,bread:2,movements:2,audits:
 db.prepare(`INSERT INTO bakery_dispatches(id,company_id,dispatch_no,
  location_id,custodian_id,status,created_by)
  VALUES('raw-draft','company-bakery','RAW-QA','bakery-hq','agent-1','draft','manager-1')`).run();
-assert.throws(()=>db.prepare(`UPDATE bakery_dispatches SET status='in_transit'
+assert.throws(()=>db.prepare(`UPDATE bakery_dispatches SET status='in_transit',
+ issued_by='manager-1',dispatched_at=CURRENT_TIMESTAMP
  WHERE id='raw-draft'`).run(),/issue requires bread items/);
 db.prepare(`INSERT INTO bakery_dispatch_items VALUES
  ('raw-item','raw-draft','bread-1',2,1000)`).run();
-assert.throws(()=>db.prepare(`UPDATE bakery_dispatches SET status='in_transit'
+assert.throws(()=>db.prepare(`UPDATE bakery_dispatches SET status='in_transit',
+ issued_by='manager-1',dispatched_at=CURRENT_TIMESTAMP
  WHERE id='raw-draft'`).run(),/bread custody evidence is incomplete|matching inventory stock movements/);
 db.prepare(`INSERT INTO bakery_bread_ledger
  (id,company_id,business_date,product_id,dispatch_id,custodian_id,status,
@@ -171,9 +189,15 @@ assert.throws(()=>db.prepare(`INSERT INTO stock_movements(id,company_id,item_id,
  /Bakery transfer would exceed approved dispatch quantity/,
  'A repeated direct transfer cannot debit inventory again');
 assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,beforeRawDebit-2);
-db.prepare(`UPDATE bakery_dispatches SET status='in_transit'
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='in_transit',dispatched_at=CURRENT_TIMESTAMP WHERE id='raw-draft'").run(),
+ /Bakery issue requires a named employee and issue timestamp/);
+assert.equal(db.prepare("SELECT status FROM bakery_dispatches WHERE id='raw-draft'").get().status,'draft');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE action='issue_dispatch' AND entity_id='raw-draft'").get().n,0);
+db.prepare(`UPDATE bakery_dispatches SET status='in_transit',
+ issued_by='manager-1',dispatched_at=CURRENT_TIMESTAMP
  WHERE id='raw-draft'`).run();
 assert.equal(db.prepare("SELECT status FROM bakery_dispatches WHERE id='raw-draft'").get().status,'in_transit');
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE action='issue_dispatch' AND entity_id='raw-draft'").get().n,1);
 assert.throws(()=>db.prepare("DELETE FROM stock_movements WHERE id='raw-stock'").run(),/stock transfer evidence cannot be deleted/);
 assert.throws(()=>db.prepare("UPDATE stock_movements SET quantity=500 WHERE id='raw-stock'").run(),/stock transfer evidence is immutable/);
 
@@ -189,7 +213,7 @@ assert.throws(()=>db.prepare(`INSERT INTO stock_movements
  /insufficient unreserved stock/);
 assert.equal(db.prepare("SELECT quantity FROM stock_balances WHERE item_id='inv-1'").get().quantity,rawBalance);
 assert.equal(counts().movements,3,'Unfunded transfer must leave no stock movement');
-assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='in_transit' WHERE id='raw-unfunded'").run(),
+assert.throws(()=>db.prepare("UPDATE bakery_dispatches SET status='in_transit',issued_by='manager-1',dispatched_at=CURRENT_TIMESTAMP WHERE id='raw-unfunded'").run(),
  /matching inventory stock movements|bread custody evidence is incomplete/);
 
 // Simulate a stock shortage between validation and transactional posting.
@@ -232,4 +256,6 @@ db.close();
 console.log('PASS Bakery staged dispatch: 2 products, canonical stock issue, immutable issued prices/quantities');
 console.log('PASS direct SQL stock transfers debit exactly once, fail without stock and are immutable even in draft');
 console.log('PASS raw issue rejects missing custody; shortage rolls back draft, stock, ledger and audit');
+console.log('PASS direct and API issuance create immutable attributed audits, failed issuances create none');
+console.log('PASS issued dispatch cannot revert to draft or cancel without governed reversal');
 console.log('PASS final dispatch metadata, prices, identity and delete locked; valid closure keeps 1 audit');
