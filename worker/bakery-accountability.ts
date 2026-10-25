@@ -249,26 +249,21 @@ async function closeDispatch(request:Request,env:Env,context:SessionContext){
               WHERE dispatch_id=? GROUP BY product_id) v ON v.product_id=r.product_id`).bind(dispatchId,dispatchId).first<{quantity:number}>();
  if(Number(pendingReturns?.quantity||0)>0)return json({error:'Agent-declared returns require independent physical warehouse verification before dispatch closure.',unverifiedReturnQty:Number(pendingReturns?.quantity||0)},409);
  const breadVariance=Number(row.dispatchedQty||0)-Number(row.accountedQty||0),moneyVariance=Number(row.expectedMoneyKobo||0)-Number(row.accountedMoneyKobo||0);if(Math.abs(breadVariance)>=.0001||moneyVariance!==0){const entries:D1PreparedStatement[]=[];if(Math.abs(breadVariance)>=.0001)entries.push(env.DB.prepare(`INSERT INTO bakery_accountability_exceptions(id,company_id,business_date,dispatch_id,custodian_id,exception_type,severity,quantity_variance,message) VALUES(?,?,?,?,?,'bread_variance','critical',?,'POSSIBLE THEFT OR ACCOUNTABILITY ISSUE DETECTED')`).bind(uid('bakery-exception'),COMPANY,businessDate(),dispatchId,row.custodianId,breadVariance));if(moneyVariance!==0)entries.push(env.DB.prepare(`INSERT INTO bakery_accountability_exceptions(id,company_id,business_date,dispatch_id,custodian_id,exception_type,severity,amount_variance_kobo,message) VALUES(?,?,?,?,?,'unremitted_sales','critical',?,'UNREMITTED SALES DETECTED')`).bind(uid('bakery-exception'),COMPANY,businessDate(),dispatchId,row.custodianId,moneyVariance));await env.DB.batch(entries);return json({error:'Dispatch cannot close until every loaf and every naira is accounted for.',breadVariance,moneyVarianceKobo:moneyVariance},409)}
- // Preflight explains rejection but is not the financial authority. The D1
- // trigger rechecks all balances and physical return evidence at UPDATE time.
- // A concurrent no-op update cannot create a false close audit.
+ // The preflight explains rejection, but D1 rechecks balances and creates
+ // the mandatory, immutable close audit in the SAME status-update statement.
+ // A trigger/audit failure therefore rolls the closure back. Do not write a
+ // second, potentially misleading application-level close audit.
  try{
   const results=await env.DB.batch([
    env.DB.prepare(`UPDATE bakery_dispatches SET status='closed',
      closed_at=CURRENT_TIMESTAMP,closed_by=?,updated_at=CURRENT_TIMESTAMP
      WHERE id=? AND company_id=? AND status NOT IN ('closed','cancelled')`)
-    .bind(context.employee.id,dispatchId,COMPANY),
-   env.DB.prepare(`INSERT INTO audit_logs
-     (id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source)
-     SELECT ?,?,?,'bakery','close_reconciliation','bakery_dispatch',?,?,'web'
-     WHERE changes()=1`)
-    .bind(uid('audit'),context.employee.id,COMPANY,dispatchId,
-      JSON.stringify({breadVariance:0,moneyVarianceKobo:0,guardedAtCommit:true}))
+    .bind(context.employee.id,dispatchId,COMPANY)
   ]);
   if(Number(results[0]?.meta?.changes)!==1)
    return json({error:'Dispatch already closed or changed during reconciliation. Refresh and review.'},409);
  }catch{
-  return json({error:'Dispatch evidence changed or closure audit could not commit. Refresh and review bread, money, receipt references and returns.'},409);
+  return json({error:'Dispatch evidence changed or its mandatory D1 closure audit could not commit. Refresh and review bread, money, receipt references and returns.'},409);
  }
  return json({ok:true,status:'closed'});
 }
