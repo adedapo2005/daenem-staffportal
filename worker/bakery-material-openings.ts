@@ -153,7 +153,10 @@ async function review(request:Request,env:OpeningEnv,context:SessionContext){
 type ReconciliationRow={
  locationId:string;itemId:string;itemName:string;baseUnit:string;locationName:string;
  itemActive:number;locationActive:number;physicalQuantity:number|null;reservedQuantity:number|null;
- valuedQuantityMicro:number|null;valuedMicroKobo:number|null
+ valuedQuantityMicro:number|null;valuedMicroKobo:number|null;
+ openingBaseUnit:string|null;openingQuantityMicro:number|null;openingValueMicroKobo:number|null;
+ latestEventId:string|null;latestEventQuantityMicro:number|null;latestEventValueMicroKobo:number|null;
+ categorizedFinished:number
 };
 // A page is one read-only snapshot, not a claim of company-wide acceptance.
 async function reconciliation(request:Request,env:OpeningEnv,context:SessionContext){
@@ -172,7 +175,14 @@ async function reconciliation(request:Request,env:OpeningEnv,context:SessionCont
      i.name AS itemName,i.unit AS baseUnit,i.active AS itemActive,
      l.name AS locationName,l.active AS locationActive,
      sb.quantity AS physicalQuantity,sb.reserved_quantity AS reservedQuantity,
-     v.remaining_quantity_micro AS valuedQuantityMicro,v.remaining_value_microkobo AS valuedMicroKobo
+     v.remaining_quantity_micro AS valuedQuantityMicro,v.remaining_value_microkobo AS valuedMicroKobo,
+     o.base_unit AS openingBaseUnit,o.counted_quantity_micro AS openingQuantityMicro,
+     o.opening_value_microkobo AS openingValueMicroKobo,
+     ev.id AS latestEventId,ev.after_quantity_micro AS latestEventQuantityMicro,
+     ev.after_value_microkobo AS latestEventValueMicroKobo,
+     CASE WHEN COALESCE(c.category_type,'')='finished_good'
+       OR EXISTS(SELECT 1 FROM bakery_products bp WHERE bp.company_id=i.company_id AND bp.inventory_item_id=i.id)
+       THEN 1 ELSE 0 END AS categorizedFinished
    FROM material_keys k
    JOIN inventory_items i ON i.id=k.item_id AND i.company_id=?
    JOIN company_locations l ON l.id=k.location_id AND l.company_id=i.company_id
@@ -180,8 +190,14 @@ async function reconciliation(request:Request,env:OpeningEnv,context:SessionCont
    LEFT JOIN bakery_material_valuation_balances v
      ON v.company_id=i.company_id AND v.location_id=k.location_id AND v.inventory_item_id=k.item_id
    LEFT JOIN inventory_categories c ON c.id=i.category_id AND c.company_id=i.company_id
-   WHERE NOT EXISTS(SELECT 1 FROM bakery_products bp WHERE bp.company_id=i.company_id AND bp.inventory_item_id=i.id)
-     AND COALESCE(c.category_type,'')<>'finished_good'
+   LEFT JOIN bakery_material_opening_valuations o ON o.company_id=i.company_id
+     AND o.location_id=k.location_id AND o.inventory_item_id=k.item_id AND o.status='approved'
+   LEFT JOIN bakery_material_valuation_events ev ON ev.rowid=(
+     SELECT historical.rowid FROM bakery_material_valuation_events historical
+     WHERE historical.company_id=i.company_id AND historical.location_id=k.location_id
+       AND historical.inventory_item_id=k.item_id ORDER BY historical.rowid DESC LIMIT 1)
+   WHERE (v.id IS NOT NULL OR (COALESCE(c.category_type,'')<>'finished_good'
+     AND NOT EXISTS(SELECT 1 FROM bakery_products bp WHERE bp.company_id=i.company_id AND bp.inventory_item_id=i.id)))
      AND (COALESCE(sb.quantity,0)<>0 OR COALESCE(sb.reserved_quantity,0)<>0 OR v.id IS NOT NULL)
      AND (k.location_id>? OR (k.location_id=? AND k.item_id>?))
    ORDER BY k.location_id,k.item_id LIMIT 101`)
@@ -201,22 +217,47 @@ async function reconciliation(request:Request,env:OpeningEnv,context:SessionCont
   else if(!Number.isSafeInteger(valuedQty)||!Number.isSafeInteger(valuedMoney)
     ||valuedQty<0||Number(valuedMoney)<0)status='invalid_valuation';
   else if(valuedQty===0&&Number(valuedMoney)>0)status='orphan_value';
+  else if(Number(row.categorizedFinished)!==0)status='category_conflict';
+  else if(row.openingBaseUnit!==null
+    &&row.openingBaseUnit.trim().toLowerCase()!==row.baseUnit.trim().toLowerCase())status='opening_unit_changed';
   else if(countedMicro!==valuedQty)status='quantity_mismatch';
-  else if(Number(row.itemActive)!==1||Number(row.locationActive)!==1)status='inactive_inventory';
+  const eventQty=row.latestEventQuantityMicro===null?null:Number(row.latestEventQuantityMicro);
+  const eventValue=row.latestEventValueMicroKobo===null?null:Number(row.latestEventValueMicroKobo);
+  const sourceQty=row.latestEventId!==null?eventQty:
+   row.openingBaseUnit!==null?Number(row.openingQuantityMicro):null;
+  const sourceValue=row.latestEventId!==null?eventValue:
+   row.openingBaseUnit!==null?Number(row.openingValueMicroKobo):null;
+  if(status==='reconciled'&&row.latestEventId!==null
+    &&(!Number.isSafeInteger(sourceQty)||!Number.isSafeInteger(sourceValue)
+      ||sourceQty!==valuedQty||sourceValue!==valuedMoney))status='valuation_event_mismatch';
+  else if(status==='reconciled'&&row.latestEventId===null&&row.openingBaseUnit!==null
+    &&(!Number.isSafeInteger(sourceQty)||!Number.isSafeInteger(sourceValue)
+      ||sourceQty!==valuedQty||sourceValue!==valuedMoney))status='opening_value_mismatch';
+  else if(status==='reconciled'&&row.latestEventId===null&&row.openingBaseUnit===null
+    &&(valuedQty!==null&&(valuedQty>0||Number(valuedMoney)>0)))status='missing_value_provenance';
+  if(status==='reconciled'&&(Number(row.itemActive)!==1||Number(row.locationActive)!==1))
+   status='inactive_inventory';
+  const valueVariance=sourceValue!==null&&valuedMoney!==null
+    &&Number.isSafeInteger(sourceValue)&&Number.isSafeInteger(valuedMoney)
+    &&Number.isSafeInteger(valuedMoney-sourceValue)?valuedMoney-sourceValue:null;
   const varianceMicro=countedMicro!==null&&valuedQty!==null&&Number.isSafeInteger(valuedQty)
    &&Number.isSafeInteger(countedMicro-valuedQty)?countedMicro-valuedQty:null;
   return{locationId:row.locationId,itemId:row.itemId,itemName:row.itemName,
    locationName:row.locationName,baseUnit:row.baseUnit,
    physicalQuantity:physical,reservedQuantity:reserved,
    physicalQuantityMicro:countedMicro,valuedQuantityMicro:valuedQty,
-   valuedMicroKobo:valuedMoney,quantityVarianceMicro:varianceMicro,status};
+   valuedMicroKobo:valuedMoney,quantityVarianceMicro:varianceMicro,
+   valueVarianceMicroKobo:valueVariance,
+   valuationEvidence:row.latestEventId!==null?'latest_immutable_event':
+     row.openingBaseUnit!==null?'approved_opening':'none',
+   openingBaseUnit:row.openingBaseUnit,status};
  });
  const last=source.at(-1);
  return json({companyId:COMPANY,readOnly:true,scope:'page_only',
   unitScale:1000000,valueScaleMicroKobo:1000000,
   entries,returned:entries.length,exceptionsOnPage:entries.filter(x=>x.status!=='reconciled').length,
   hasMore,nextCursor:hasMore&&last?{afterLocationId:last.locationId,afterItemId:last.itemId}:null,
-  explanation:'Each page compares physical stock and exact financial value; unvalued stock is flagged, never assigned an invented cost.'});
+  explanation:'Each page compares physical stock and exact value with the latest immutable movement or approved opening. This is not a full historical ledger or Finance GL audit.'});
 }
 export async function routeBakeryMaterialOpenings(request:Request,env:OpeningEnv,context:SessionContext){
  const path=new URL(request.url).pathname;
