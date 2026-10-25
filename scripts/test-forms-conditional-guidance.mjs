@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {validGuidedDependencies, guidedVisibleFields, pruneHiddenGuidedAnswers, guidedCompletion} from '../src/guided-form-dependencies.ts';
+import {validGuidedDependencies, guidedVisibleFields, pruneHiddenGuidedAnswers, guidedCompletion, guidedInvalidAnswers} from '../src/guided-form-dependencies.ts';
 import {checkFormAnswerCompleteness} from '../worker/form-answer-completeness.ts';
 
 const schema=[
@@ -47,4 +47,31 @@ test('Worker authority gate and UI progress integration stay connected',()=>{
  assert.match(ui,/guidedCompletion\(schema,draft\)/);
  assert.match(ui,/pruneHiddenGuidedAnswers\(formSchema\(item\)/);
  assert.doesNotMatch(ui,/Select company to continue/i);
+});
+
+test('invalid dates, numeric values and approved options never inflate completeness',()=>{
+ const typed=[
+  {key:'date',label:'Activity Date',type:'date',required:true},
+  {key:'amount',label:'Amount',type:'number',required:true},
+  {key:'decision',label:'Decision',type:'select',required:true,options:['Approved','Rejected']},
+  {key:'reason',label:'Reason',type:'text'},
+ ];
+ const invalid={date:'2025-02-30',amount:'Infinity',decision:'Approvd',reason:{fake:true}};
+ const progress=guidedCompletion(typed,invalid);
+ assert.equal(progress.percent,0);
+ assert.deepEqual(progress.missingLabels,['Activity Date','Amount','Decision']);
+ assert.deepEqual(guidedInvalidAnswers(typed,invalid),['Activity Date','Amount','Decision','Reason']);
+ const corrected={date:'2024-02-29',amount:'0',decision:'Approved',reason:'Verified'};
+ assert.equal(guidedCompletion(typed,corrected).percent,100);
+ assert.deepEqual(guidedInvalidAnswers(typed,corrected),[]);
+});
+
+test('backend validates stored conditional dependency graphs before evaluating answers',()=>{
+ const backend=readFileSync(new URL('../worker/forms.ts',import.meta.url),'utf8');
+ assert.match(backend,/if\(!validGuidedDependencies\(schema\)\)return json/);
+ const corrupted=[
+  {key:'one',label:'First',type:'checkbox',showWhen:{fieldKey:'two',equals:true}},
+  {key:'two',label:'Second',type:'checkbox',showWhen:{fieldKey:'one',equals:true}},
+ ];
+ assert.equal(validGuidedDependencies(corrupted),false);
 });
