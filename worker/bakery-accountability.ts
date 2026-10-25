@@ -77,8 +77,9 @@ async function createDispatch(request:Request,env:Env,context:SessionContext){
   // A missing or insufficient balance aborts the entire D1.batch, including
   // movement, bread custody, dispatch and audit; no separate debit is allowed.
   statements.push(env.DB.prepare(`UPDATE bakery_dispatches
-   SET status='in_transit',dispatched_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
-   WHERE id=? AND company_id=? AND status='draft'`).bind(id,COMPANY));
+   SET status='in_transit',dispatched_at=CURRENT_TIMESTAMP,
+    issued_by=?,updated_at=CURRENT_TIMESTAMP
+   WHERE id=? AND company_id=? AND status='draft'`).bind(context.employee.id,id,COMPANY));
   statements.push(env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source) VALUES(?,?,?,'bakery','create_dispatch','bakery_dispatch',?,?,'web')`).bind(uid('audit'),context.employee.id,COMPANY,id,JSON.stringify({dispatchNo,custodianId:body.custodianId,itemCount:body.items.length})));await env.DB.batch(statements);return json({ok:true,dispatch:{id,dispatchNo,status:'in_transit'}},201);
 }
 
