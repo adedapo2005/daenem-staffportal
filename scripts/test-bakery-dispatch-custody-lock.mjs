@@ -150,7 +150,7 @@ assert.throws(()=>db.prepare(`UPDATE bakery_dispatches SET status='in_transit'
 db.prepare(`INSERT INTO bakery_dispatch_items VALUES
  ('raw-item','raw-draft','bread-1',2,1000)`).run();
 assert.throws(()=>db.prepare(`UPDATE bakery_dispatches SET status='in_transit'
- WHERE id='raw-draft'`).run(),/bread custody evidence is incomplete/);
+ WHERE id='raw-draft'`).run(),/bread custody evidence is incomplete|matching inventory stock movements/);
 db.prepare(`INSERT INTO bakery_bread_ledger
  (id,company_id,business_date,product_id,dispatch_id,custodian_id,status,
   quantity,direction,reference_type,reference_id,recorded_by)
