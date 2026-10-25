@@ -38,6 +38,10 @@ const schema=[
  "INSERT INTO bakery_recipe_ingredients VALUES('ri1','recipe1','yeast',100,'g',0,1);"
 ].join('\n');
 db.exec(schema);
+// The production opening guard also checks Inventory's finished-good category.
+db.exec("ALTER TABLE inventory_items ADD COLUMN category_id TEXT");
+db.exec("CREATE TABLE inventory_categories(id TEXT PRIMARY KEY,company_id TEXT,category_type TEXT)");
+db.exec("INSERT INTO inventory_categories(id,company_id,category_type) VALUES('raw-ingredient','company-bakery','stock'),('finished-ingredient','company-bakery','finished_good')");
 for(const migration of ['0106_bakery_material_unit_rules.sql','0107_bakery_precise_material_valuation.sql','0108_bakery_verified_opening_valuations.sql']){
  db.exec(fs.readFileSync(new URL('../migrations/'+migration,import.meta.url),'utf8'));
 }
@@ -192,6 +196,13 @@ const duplicate=await post(routeBakery,'/api/bakery/batches/status',{batchId:'ba
 assert.equal(duplicate.code,409,'Completed bread must never be stocked twice');
 // The opening proposal never manufactures extra physical units; independent approval
 // activates the precise valuation only against the unchanged existing stock quantity.
+db.prepare("UPDATE inventory_items SET category_id='finished-ingredient' WHERE id='flour'").run();
+const finishedOpening=await post(routeBakeryMaterialOpenings,'/api/inventory/bakery/openings/propose',
+ {locationId:'HQ',inventoryItemId:'flour',countedQuantity:50,totalValueNaira:25000,
+  reason:'Finished goods must not receive raw material opening values',
+  evidenceReference:'FINISHED-GOODS-CATEGORY-TEST'});
+assert.equal(finishedOpening.code,404,'A categorized finished good cannot receive a raw material financial opening');
+db.prepare("UPDATE inventory_items SET category_id='raw-ingredient' WHERE id='flour'").run();
 const openingBody={locationId:'HQ',inventoryItemId:'flour',countedQuantity:50,totalValueNaira:25000,
  reason:'Counted and independently costed the existing flour at HQ',
  evidenceReference:'PHYSICAL-STOCK-COUNT-FLOUR-01'};
