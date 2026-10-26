@@ -21,6 +21,8 @@ function load(name){
    companyId==='company-bakery'&&ctx.grants?.includes(code)===true};
  if(name==='./bakery-material-units')return {routeBakeryMaterialUnits:async()=>null};
  if(name==='./bakery-dispatch-history-integrity')return {routeBakeryDispatchHistoryIntegrity:async()=>null};
+ // This legacy-test fixture isolates its own route; sandbox Monnify is covered separately.
+ if(name==='./bakery-monnify-sandbox-route')return {routeBakeryMonnifySandbox:async()=>null};
  if(cache.has(name))return cache.get(name);
  assert(modules[name],name);
  const mod={exports:{}};cache.set(name,mod.exports);
