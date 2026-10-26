@@ -162,9 +162,14 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
   const first = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
   const replay = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
   assert.equal(first.status, 200, 'first verified promotion succeeds');
-  assert.equal(replay.status, 404, 'replaying the consumed candidate is a neutral denial');
+  assert.equal(replay.status, 200, 'same-key replay returns the original safe success');
   assert.equal(db.prepare("SELECT id FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().id, 'candidate-a');
   assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 1, 'replay creates no second success audit');
+  const changedTimestampReplay = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, { ...input, verifiedAt: '2026-10-11T12:00:00.000Z' });
+  assert.equal(changedTimestampReplay.status, 200, 'same-key replay uses the original durable operation despite a regenerated timestamp');
+  const conflictingReplay = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, { ...input, bankAccountId: 'candidate-b' });
+  assert.equal(conflictingReplay.status, 404, 'same operation key cannot be replayed against a different account');
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 1, 'conflicting key reuse creates no audit');
   db.close();
 }
 
@@ -190,6 +195,28 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
     assert.equal(audits.length, 1, 'losing invocation creates no success audit');
     assert.equal(audits[0].entity_id, winnerId, 'success audit belongs to the promoted candidate');
     assert.ok(['sqlite-race-a', 'sqlite-race-b'].includes(audits[0].request_id), 'winner audit preserves request correlation');
+  } finally {
+    competingDb.close();
+    db.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+{
+  const directory = mkdtempSync(join(tmpdir(), 'staffportal-payroll-same-key-'));
+  const databasePath = join(directory, 'promotion.sqlite');
+  const { db, adapter } = createDatabase({}, databasePath);
+  const competingDb = new DatabaseSync(databasePath);
+  competingDb.exec('PRAGMA foreign_keys=ON;');
+  const competingAdapter = adapterFor(competingDb);
+  try {
+    const [first, replay] = await Promise.all([
+      promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-same-key-a' } }), { DB: adapter }, context, input),
+      promoteVerifiedEmployeeBankAccount(new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-same-key-b' } }), { DB: competingAdapter }, context, input)
+    ]);
+    assert.deepEqual([first.status, replay.status].sort(), [200, 200], 'concurrent identical operation keys safely return success to both callers');
+    assert.equal(db.prepare("SELECT id FROM employee_bank_accounts WHERE employee_id='employee-a' AND active=1 AND is_primary=1").get().id, 'candidate-a');
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action='verify_employee_bank'").get().count, 1, 'same-key race has one durable winning audit');
   } finally {
     competingDb.close();
     db.close();
@@ -287,8 +314,8 @@ const request = new Request('https://staffportal.test/api/payroll/employee-bank/
 
 {
   const { db, adapter } = createDatabase({ ignoreAudit: true });
-  await assert.rejects(promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input), /malformed JSON/,
-    'a silently ignored required audit must fail the batch');
+  const response = await promoteVerifiedEmployeeBankAccount(request, { DB: adapter }, context, input);
+  assert.equal(response.status, 404, 'a silently ignored required audit fails closed');
   assert.equal(db.prepare("SELECT is_primary FROM employee_bank_accounts WHERE id='primary-a'").get().is_primary, 1,
     'silent audit failure preserves the existing primary');
   assert.equal(db.prepare("SELECT is_primary,verified_at FROM employee_bank_accounts WHERE id='candidate-a'").get().is_primary, 0,
