@@ -135,6 +135,9 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
   const payload=pruneHiddenGuidedAnswers(schema,responsesRef.current[item.assignmentId]||responses[item.assignmentId]||{});
   const evidenceBlocker=guidedFormEvidenceBlocker(schema,payload,{requirePhoto:item.requirePhoto===1,requireSignature:item.requireSignature===1});
   if(evidenceBlocker){setMessage(evidenceBlocker);return}
+  // Keep one attempt identity accessible to both the online request and
+  // a catch-block fallback after a lost HTTP acknowledgement.
+  const idempotencyKey=submissionAttempts.get(item.assignmentId,assignmentCompanyId,payload,item.submissionUpdatedAt);
   let heldForSubmission=false,storedDraft=false;
   const markQueued=()=>{
    heldForSubmission=true;
@@ -165,8 +168,6 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
     }
     return;
    }
-   // Same key for the first network request and any queued offline replay.
-   const idempotencyKey=submissionAttempts.get(item.assignmentId,assignmentCompanyId,payload,item.submissionUpdatedAt);
    if(!navigator.onLine&&!assignmentCompanyId){
     setMessage(item.title+' is not saved offline. Group-wide forms need a live connection. Keep this page open until you can submit.');
     return;
