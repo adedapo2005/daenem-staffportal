@@ -105,6 +105,7 @@ if(apiOnly){
    // Inspect the status of a one-byte-range GET; abort/cancel without storing
    // its response body. A response that ignores Range still fails on HTTP 2xx.
    get:async url=>rangeGetStatusOnly(url),
+   getFull:async url=>rangeGetStatusOnly(url,{plain:true}),
   });
  }catch{
   receipt.media={status:'UNVERIFIED',reason:'PRIVATE_MEDIA_PROBE_UNVERIFIED',
