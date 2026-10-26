@@ -96,8 +96,8 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
   const selected = PRESETS[preset];
   const openPreview = () => {
     // Same-origin public renderer, no iframe: retain CSP frame-ancestors 'none' and X-Frame-Options DENY.
-    const next = window.open('/staff-portal-signin?studioReview=signin-v180', '_blank', 'noopener,noreferrer');
-    if (!next) window.location.assign('/staff-portal-signin?studioReview=signin-v180');
+    // With noopener, browsers may return null even when the new tab opened.
+    window.open('/staff-portal-signin?studioReview=signin-v180', '_blank', 'noopener,noreferrer');
   };
   return createPortal(
     <section className="stage1-studio-authority" data-approved-studio-source="cloudflare-v180" aria-label="StaffPortal approved Sign-In Studio workbench">
