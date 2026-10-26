@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Building2, ChevronDown, ChevronRight, Grid3X3, LockKeyhole, Search } from 'lucide-react';
 import type { WorkforceContext } from './auth';
 import { authorisedLiveWorkspaces } from './authorised-live-workspaces';
@@ -39,6 +39,8 @@ export default function Stage1GrantNavigation({
   const [query,setQuery]=useState('');
   const [busy,setBusy]=useState('');
   const [error,setError]=useState('');
+  const latestContext=useRef(context);
+  latestContext.current=context;
   const companies=useMemo(()=>grantedCompanyModuleGroups(context),[context]);
   const workspaces=useMemo(()=>authorisedLiveWorkspaces(context),[context]);
   const term=query.trim().toLocaleLowerCase();
@@ -60,7 +62,7 @@ export default function Stage1GrantNavigation({
     const requested=companyId+'/'+moduleId;
     setBusy(requested);setError('');
     try{
-      await launchGrantedModule(context,{scopeId:companyId,moduleId});
+      await launchGrantedModule(context,{scopeId:companyId,moduleId},()=>latestContext.current);
     }catch(cause){
       setError(cause instanceof Error?cause.message:'The authorised module could not be opened.');
     }finally{setBusy('');}
