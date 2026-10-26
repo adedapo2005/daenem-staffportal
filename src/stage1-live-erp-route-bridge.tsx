@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, CheckCircle2, Database, LockKeyhole, RefreshCw } from 'lucide-react';
+import { Building2, CheckCircle2, Database, LockKeyhole, RefreshCw, ChevronRight } from 'lucide-react';
 import type { WorkforceContext } from './auth';
-import { hasWorkforcePermission } from './auth';
+import { authorisedLiveWorkspaces, liveRouteCompanyScope } from './authorised-live-workspaces';
 import { usePathname, useRouter } from './next-navigation-shim';
 import './stage1-live-erp-route-bridge.css';
 
@@ -14,14 +14,6 @@ const Facilities = lazy(() => import('./centers').then((module) => ({ default: m
 // The existing SpendCenter is a genuine authenticated ERP workflow.
 // Its standalone-launcher entrypoint is not mounted inside V115.
 const Spend = lazy(() => import('./spend-entry').then((module) => ({ default: module.SpendCenter })));
-
-function canViewLiveCompany(context: WorkforceContext, route: LiveRoute, companyId: string) {
-  if (!context.companies.some((company) => company.id === companyId)) return false;
-  if (route === 'forms') return hasWorkforcePermission(context, 'forms.access', 'view', companyId);
-  if (route === 'facilities') return hasWorkforcePermission(context, 'facilities.access', 'view', companyId);
-  return ['expense.requests', 'expense.own', 'expense.approve', 'expense.master']
-    .some((permission) => hasWorkforcePermission(context, permission, 'view', companyId));
-}
 
 const TITLES: Record<LiveRoute, { title: string; detail: string }> = {
   forms: {
@@ -49,7 +41,6 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
   const router = useRouter();
   const route = liveRouteForPath(pathname);
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   useEffect(() => {
     if (!route) {
@@ -89,21 +80,16 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
     return correctLiveErpShellLabels(root);
   }, [route, mount]);
 
-  const companyChoices = useMemo(() => {
-    if (!route) return [];
-    return context.companies.filter((company) => canViewLiveCompany(context, route, company.id));
-  }, [context, route]);
-
-  const company = companyChoices.find((item) => item.id === selectedCompanyId)
-    || companyChoices.find((item) => item.primary)
-    || companyChoices[0];
-
-  const authorisedContext = useMemo(() => ({
-    ...context,
-    // Do not present unauthorised company options to the live workflow.
-    // Worker company checks and endpoint permissions remain authoritative.
-    companies: companyChoices,
-  }), [context, companyChoices]);
+  // The authenticated grants, not a picker or default company, drive the pages.
+  const authorisedWorkspaces = useMemo(() => authorisedLiveWorkspaces(context), [context]);
+  const moduleWorkspaces = authorisedWorkspaces.filter((item) => item.pages.some((page) => page.route === route));
+  const scope = liveRouteCompanyScope(pathname, route || 'forms', authorisedWorkspaces);
+  const displayedWorkspaces = scope.explicit
+    ? scope.workspace ? [scope.workspace] : []
+    : route === 'spend' && moduleWorkspaces.length > 1 ? [] : moduleWorkspaces;
+  const contextFor = (scopeId: string | null): WorkforceContext => scopeId === null
+    ? context
+    : { ...context, companies: context.companies.filter((item) => item.id === scopeId) };
 
   if (!route || !mount) return null;
   const title = TITLES[route];
@@ -122,33 +108,62 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
         </div>
         <span className="daenem-live-erp-authority"><CheckCircle2 size={17} aria-hidden="true" /> Permission-Scoped ERP</span>
       </header>
-      {companyChoices.length === 0 ? (
+      {moduleWorkspaces.length === 0 ? (
         <div className="daenem-live-erp-denied" role="status">
           <LockKeyhole size={25} aria-hidden="true" />
           <strong>Workspace Access Not Assigned</strong>
-          <p>Your active StaffPortal account has no permitted company for this module. No demo records are displayed in place of restricted data.</p>
+          <p>Your authenticated account has no permission for this module in any assigned company.</p>
         </div>
       ) : (
         <>
-          {route !== 'spend' && (
-            <div className="daenem-live-erp-company-row">
-              <Building2 size={17} aria-hidden="true" />
-              <label htmlFor="daenem-live-company">Working Company</label>
-              <select
-                id="daenem-live-company"
-                value={company?.id || ''}
-                onChange={(event) => setSelectedCompanyId(event.target.value)}
-              >
-                {companyChoices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-              <span>Only authorised company records are available.</span>
+          <nav className="daenem-live-erp-company-directory" aria-label="Company modules and authorised pages">
+            {authorisedWorkspaces.map((item) => (
+              <section className="daenem-live-erp-directory-company" key={item.scopeId || 'group'}>
+                <h3><Building2 size={17} aria-hidden="true" />{item.scopeName}</h3>
+                <div className="daenem-live-erp-directory-pages">
+                  {item.pages.map((page) => (
+                    <button
+                      type="button"
+                      key={page.route}
+                      data-authorised-company={item.scopeId || 'group'}
+                      data-authorised-page={page.route}
+                      aria-current={scope.workspace?.scopeId === item.scopeId && route === page.route ? 'page' : undefined}
+                      onClick={() => router.push(page.href)}
+                    >{page.label}<ChevronRight size={14} aria-hidden="true" /></button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </nav>
+          {scope.denied && (
+            <div className="daenem-live-erp-denied" role="alert">
+              <LockKeyhole size={23} aria-hidden="true" />
+              <strong>This company page is not assigned to your account.</strong>
+              <p>Use the automatically displayed authorised pages above. No company access is granted through the URL.</p>
             </div>
           )}
-          <Suspense fallback={<div className="daenem-live-erp-loading" role="status"><RefreshCw size={18} aria-hidden="true" /> Opening authorised records…</div>}>
-            {route === 'forms' && <Forms key={'forms-' + company?.id} context={authorisedContext} companyId={company?.id || null} />}
-            {route === 'facilities' && <Facilities key={'facilities-' + company?.id} context={authorisedContext} companyId={company?.id || null} />}
-            {route === 'spend' && <Spend context={authorisedContext} initialTab="requests" onClose={() => router.push('/home')} />}
-          </Suspense>
+          {!scope.denied && displayedWorkspaces.length === 0 && (
+            <div className="daenem-live-erp-directory-hint" role="status">
+              <strong>All authorised pages are shown above.</strong>
+              <p>Open the permitted Spend page under its company; there is no separate company-selection step.</p>
+            </div>
+          )}
+          {!scope.denied && displayedWorkspaces.map((entry) => (
+            <section className="daenem-live-erp-scoped-page" key={entry.scopeId || 'group'}
+              data-authorised-company-workspace={entry.scopeId || 'group'}>
+              <header><Building2 size={18} aria-hidden="true" />
+                <div><strong>{entry.scopeName}</strong><small>{title.title} · access from assigned permissions</small></div>
+              </header>
+              <Suspense fallback={<div className="daenem-live-erp-loading" role="status">
+                <RefreshCw size={18} aria-hidden="true" /> Opening authorised records…
+              </div>}>
+                {route === 'forms' && <Forms context={contextFor(entry.scopeId)} companyId={entry.scopeId} />}
+                {route === 'facilities' && entry.scopeId !== null && <Facilities context={contextFor(entry.scopeId)} companyId={entry.scopeId} />}
+                {route === 'spend' && entry.scopeId !== null && <Spend context={contextFor(entry.scopeId)}
+                  fixedCompanyId={entry.scopeId} initialTab="requests" onClose={() => router.push('/home')} />}
+              </Suspense>
+            </section>
+          ))}
         </>
       )}
     </section>,
