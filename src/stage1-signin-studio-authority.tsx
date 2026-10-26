@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { hasWorkforcePermission, type WorkforceContext } from './auth';
 import { fetchAdminSignInPreferences, fetchAdminSignInDraft } from './signin-preferences';
 import './stage1-signin-studio-authority.css';
 
 const STUDIO_PATH = '/admin/experience/sign-in-studio';
+export function isSignInStudioRoutePathname(pathname: string): boolean {
+  return pathname === STUDIO_PATH || pathname === STUDIO_PATH + '/';
+}
 const APPROVED_PREVIEW_PATH = '/staff-portal-signin?studioReview=signin-v180';
 
 export function hasStudioManagementGrant(context: WorkforceContext): boolean {
@@ -34,7 +37,7 @@ function sectionFromUrl(): AuthoritySection {
   return null;
 }
 function isStudioPath() {
-  return window.location.pathname === STUDIO_PATH || window.location.pathname === STUDIO_PATH + '/';
+  return isSignInStudioRoutePathname(window.location.pathname);
 }
 function navigateSection(section: 'Home' | 'Themes' | 'Preview') {
   window.history.pushState({}, '', STUDIO_PATH + '?studioSection=' + section);
@@ -42,7 +45,7 @@ function navigateSection(section: 'Home' | 'Themes' | 'Preview') {
   window.dispatchEvent(new Event('daenem-studio-section-change'));
 }
 
-export default function Stage1SignInStudioAuthority({ context }: { context: WorkforceContext }) {
+export default function Stage1SignInStudioAuthority({ context, standalone = false }: { context: WorkforceContext; standalone?: boolean }) {
   const [section, setSection] = useState<AuthoritySection>(sectionFromUrl);
   const [active, setActive] = useState(isStudioPath);
   const [mount, setMount] = useState<HTMLElement | null>(null);
@@ -65,13 +68,23 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
   }, []);
 
   useEffect(() => {
-    const refresh = () => setAuthRefresh(value => value + 1);
+    const refresh = () => {
+      // Discard the previous privileged projection before an async grant recheck.
+      setSnapshot(null);
+      setLoad('loading');
+      setAuthRefresh(value => value + 1);
+    };
+    const onVisibilityChange = () => { if (!document.hidden) refresh(); };
     window.addEventListener('focus', refresh);
-    return () => window.removeEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
-    if (!active || section === null) { setMount(null); return; }
+    if (standalone || !active || section === null) { setMount(null); return; }
     const locate = () => {
       const node = document.querySelector<HTMLElement>('[data-approved-postlogin="qa-review-v115"] #main-content');
       setMount(previous => previous === node ? previous : node);
@@ -80,16 +93,16 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
     const observer = new MutationObserver(locate);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [active, section]);
+  }, [active, section, standalone]);
 
   useEffect(() => {
-    if (!mount || !active || section === null) return;
+    if (standalone || !mount || !active || section === null) return;
     mount.dataset.daenemStudioAuthority = section.toLowerCase();
     return () => { delete mount.dataset.daenemStudioAuthority; };
-  }, [mount, active, section]);
+  }, [mount, active, section, standalone]);
 
   useEffect(() => {
-    if (!active || !mount || section === null) return;
+    if (!active || section === null || (!standalone && !mount)) return;
     let cancelled = false;
     setSnapshot(null);
     if (!localGrant) {
@@ -137,31 +150,44 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
       }
     })();
     return () => { cancelled = true; };
-  }, [active, mount, section, context.sessionId, localGrant, authRefresh]);
+  }, [active, mount, section, context.sessionId, localGrant, authRefresh, standalone]);
 
-  if (!active || !mount || section === null) return null;
+  if (!active || (!standalone && !mount)) return null;
+  const present = (content: ReactNode) => standalone ? content : createPortal(content, mount!);
   if (!localGrant || load === 'denied') {
-    return createPortal(
+    return present(
       <section className="stage1-studio-authority" data-studio-access="denied" aria-label="Studio access unavailable">
         <div className="stage1-studio-guard" role="alert">
           <strong>This destination is unavailable.</strong>
-          <p>Sign-In Studio requires an active Owner/Admin grant and Manage Settings permission.</p>
+          <p>Sign-In Studio requires an active Owner/Admin grant and Manage Settings permission. Your workspace permissions do not allow this section.</p>
         </div>
-      </section>, mount
+      </section>
+    );
+  }
+  if (section === null) {
+    if (!standalone) return null;
+    return present(
+      <section className="stage1-studio-authority" data-studio-access="legacy-hold" aria-label="Unmigrated Studio section">
+        <div className="stage1-studio-guard" role="status">
+          <strong>This historical editor has not been connected to the approved V180 design.</strong>
+          <p>Old Webflow and Sites controls cannot publish changes to the protected Cloudflare Sign-In. Use the approved Studio sections until the editor has been migrated and independently accepted.</p>
+        </div>
+        <button type="button" className="stage1-studio-primary" onClick={() => navigateSection('Home')}>Return to Approved Studio Overview</button>
+      </section>
     );
   }
   if (load !== 'ready' || !snapshot || snapshot.sessionId !== context.sessionId) {
-    return createPortal(
+    return present(
       <section className="stage1-studio-authority" data-studio-access="checking" aria-label="Verifying Studio access">
         <div className="stage1-studio-guard" role="status">
           <strong>{load === 'unavailable' ? 'Cannot verify Studio access.' : 'Verifying Studio access…'}</strong>
           <p>{load === 'unavailable' ? 'The current permission and configuration check failed closed. Refresh to retry.' : 'Checking current Worker permissions before showing the Studio.'}</p>
         </div>
-      </section>, mount
+      </section>
     );
   }
   const selected = PRESETS[preset] || PRESETS[3];
-  return createPortal(
+  return present(
     <section className="stage1-studio-authority" data-approved-studio-source="cloudflare-v180" aria-label="StaffPortal approved Sign-In Studio workbench">
       <header className="stage1-studio-authority-hero">
         <div><span className="stage1-studio-eyebrow">STAFFPORTAL / EXPERIENCE / SIGN-IN STUDIO</span>
@@ -229,6 +255,6 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
         <p className="stage1-studio-review-note">Frame embedding is intentionally disabled by Pre-Production anti-clickjacking policy. Opening the preview does not modify settings or publish drafts.</p>
       </div>}
       <footer>Owner-approved V180 source remains protected. Other legacy Studio sections are retained but are not verified controls for the public V180 renderer. Source binding and Owner approval remain release gates.</footer>
-    </section>, mount
+    </section>
   );
 }
