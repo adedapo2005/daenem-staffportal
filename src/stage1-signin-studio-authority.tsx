@@ -180,7 +180,7 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
         </div>
         <div className="stage1-studio-guard" role="status">
           <strong>Protected Studio settings are unavailable.</strong>
-          <p>Owner and Group Admin roles do not override missing independent Group Manage Settings authorization. No unpublished drafts, Worker settings or historical activation controls have been requested or displayed.</p>
+          <p>Owner and Group Admin roles do not override missing independent Group Manage Settings authorization. No protected settings, unpublished drafts or historical activation controls are displayed. This public reference cannot edit or publish anything.</p>
         </div>
         <div className="stage1-studio-main-actions">
           <a href={APPROVED_PREVIEW_PATH} target="_blank" rel="noopener noreferrer" className="stage1-studio-primary">View approved V180 public Sign-In</a>
