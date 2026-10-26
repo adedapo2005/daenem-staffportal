@@ -19,8 +19,6 @@ import {
   type CommandCenterPermissionCheck,
 } from "./enterprise-command-center-model";
 import { Stage1RuntimeContext } from "./stage1-runtime-context";
-import { Stage1AuthenticatedWorkforceContext } from './stage1-authenticated-workforce-context';
-import Stage1GrantNavigation from './stage1-grant-navigation';
 
 export interface EnterpriseCommandCenterNavigationProps {
   session: Session;
@@ -82,12 +80,8 @@ const isPlainActivation = (event: React.MouseEvent<HTMLAnchorElement>) =>
 
 /** A navigation overlay only. All navigation is delegated to the approved host. */
 export function EnterpriseCommandCenterNavigation(props: EnterpriseCommandCenterNavigationProps) {
-  const workforce=useContext(Stage1AuthenticatedWorkforceContext);
-  // Real authenticated StaffPortal users see their authoritative company/page
-  // grants on BOTH desktop and mobile. Protected V115/demo renderers that lack
-  // the provider retain their original snapshot navigation for reference only.
-  if(workforce) return <Stage1GrantNavigation context={workforce}
-    collapsed={props.collapsed} onExpand={props.onExpand}/>;
+  // Keying this child prevents search or disclosure state from crossing a session
+  // change; the outer prop belongs to the host's existing scope identity.
   return <CommandCenterSession key={props.sessionScopeKey} {...props} />;
 }
 
