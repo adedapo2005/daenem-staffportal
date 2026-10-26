@@ -128,3 +128,18 @@ test('historical one-choice and over-30-choice forms remain readable while new b
   assert.equal(validGuidedFormSchema(legacyMany),true);
   assert.equal(guidedFormEvidenceBlocker(legacyMany,{}),null);
 });
+
+
+test('restored numeric zero remains visible and legacy string false cannot masquerade as checked',()=>{
+ const schema=[
+  {key:'count',label:'Count',type:'number',required:true},
+  {key:'confirmed',label:'Confirmed',type:'checkbox',required:true},
+ ];
+ assert.equal(guidedCompletion(schema,{count:0,confirmed:true}).percent,100);
+ assert.equal(guidedCompletion(schema,{count:0,confirmed:'false'}).percent,50);
+ assert.deepEqual(guidedInvalidAnswers(schema,{count:0,confirmed:'false'}),['Confirmed']);
+ const ui=readFileSync(new URL('../src/centers.tsx',import.meta.url),'utf8');
+ assert.doesNotMatch(ui,/value=\{String\(responses\[item\.assignmentId\]\?\.\[f\.key\]\|\|''\)\}/);
+ assert.match(ui,/value=\{String\(responses\[item\.assignmentId\]\?\.\[f\.key\]\?\?''\)\}/);
+ assert.match(ui,/checked=\{responses\[item\.assignmentId\]\?\.\[f\.key\]===true\}/);
+});
