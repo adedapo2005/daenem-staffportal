@@ -75,12 +75,37 @@ WHEN OLD.company_id='company-bakery'
  AND EXISTS(
   SELECT 1 FROM bakery_monnify_sandbox_intents i
   JOIN finance_receivables fr ON fr.id=i.receivable_id
-  WHERE i.company_id='company-bakery' AND i.status IN ('reserved','initialized')
+  WHERE i.company_id='company-bakery' AND i.status IN ('reserved','initialized','review_required')
    AND fr.company_id='company-bakery' AND fr.source_module='sales'
    AND fr.source_id=OLD.id
  )
 BEGIN
  SELECT RAISE(ABORT,'Bakery payment intent must be reconciled before changing sale money');
+END;
+
+-- A review-required intent may already have reached Monnify. No alternate
+-- receipt may be recorded against that source until independently resolved.
+CREATE TRIGGER IF NOT EXISTS bakery_monnify_source_payment_lock
+BEFORE INSERT ON payments
+WHEN NEW.company_id='company-bakery' AND EXISTS(
+ SELECT 1 FROM bakery_monnify_sandbox_intents i
+ JOIN finance_receivables fr ON fr.id=i.receivable_id
+ WHERE fr.company_id='company-bakery' AND fr.source_module='sales'
+ AND fr.source_id=NEW.sales_order_id
+)
+BEGIN
+ SELECT RAISE(ABORT,'Bakery Monnify payment intent needs reconciliation before another receipt');
+END;
+CREATE TRIGGER IF NOT EXISTS bakery_monnify_source_payment_update_lock
+BEFORE UPDATE OF company_id,sales_order_id,amount_kobo,status ON payments
+WHEN EXISTS(
+ SELECT 1 FROM bakery_monnify_sandbox_intents i
+ JOIN finance_receivables fr ON fr.id=i.receivable_id
+ WHERE fr.company_id='company-bakery' AND fr.source_module='sales'
+ AND fr.source_id IN (OLD.sales_order_id,NEW.sales_order_id)
+)
+BEGIN
+ SELECT RAISE(ABORT,'Bakery Monnify intent prevents payment mutation');
 END;
 
 CREATE TRIGGER IF NOT EXISTS bakery_monnify_intent_no_delete
