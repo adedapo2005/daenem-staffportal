@@ -122,6 +122,9 @@ test('legacy interactive company and demo profile selectors are suppressed outsi
  const css=readFileSync(new URL('../src/stage1-granted-command-navigation.css',import.meta.url),'utf8');
  const protectedSnapshot=readFileSync(new URL('../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx',import.meta.url),'utf8');
  assert.match(css,/\[data-approved-postlogin="qa-review-v115"\] \.p-company/);
+ assert.match(css,/\.p-responsive-navigation-sheet \.p-company/);
+ assert.match(css,/\.p-modal \.p-field:has\(\[aria-label="Switch Company"\]\)/);
+ assert.match(css,/\.p-modal \.p-field:has\(\[aria-label="Acceptance profile"\]\)/);
  for(const label of ['Switch Company','Demo company','Demo role','Acceptance profile'])
   assert.ok(css.includes('[aria-label="'+label+'"]'));
  assert.match(protectedSnapshot,/className="p-company"/);
