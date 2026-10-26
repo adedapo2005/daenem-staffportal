@@ -86,12 +86,12 @@ try {
     permissions:{'forms.access':'view'},
     companyPermissions:{printing:{'forms.access':'view'},bakery:{'forms.access':'none'}},
   };
-  async function call(assignmentId,responses,extra={},headers={}){
+  async function call(assignmentId,responses,extra={},headers={},database=db){
     const req=new Request('https://isolated.local/api/forms/submit',{
       method:'POST',headers:{'content-type':'application/json',...headers},
       body:JSON.stringify({assignmentId,responses,...extra}),
     });
-    const response=await submit(req,{DB:db},ctx);
+    const response=await submit(req,{DB:database},ctx);
     return {status:response.status,body:await response.json()};
   }
   const valid={outcome:'Pass',qty:'0'};
@@ -129,6 +129,91 @@ try {
   result=await call('assignment-other',{outcome:'Fail',note:'Repair logged',qty:'1'});
   assert.equal(result.status,200,JSON.stringify(result));
   console.log('PASS real D1 accepts corrected conditional form');
+
+  // Two submissions within the same second must still have distinct versions.
+  const printingId=await db.prepare("SELECT id FROM workflow_form_submissions WHERE assignment_id='assignment-printing'").first().then(r=>r.id);
+  const oldVersion=await db.prepare('SELECT updated_at AS version FROM workflow_form_submissions WHERE id=?')
+    .bind(printingId).first().then(r=>r.version);
+  result=await call('assignment-printing',{...valid,qty:'2'},{baseUpdatedAt:oldVersion});
+  assert.equal(result.status,200,JSON.stringify(result));
+  const nextVersion=await db.prepare('SELECT updated_at AS version FROM workflow_form_submissions WHERE id=?')
+    .bind(printingId).first().then(r=>r.version);
+  assert.ok(nextVersion>oldVersion,'Update must advance the revision even when wall-clock second is unchanged');
+  result=await call('assignment-printing',{...valid,qty:'3'},{baseUpdatedAt:oldVersion});
+  assert.equal(result.status,409,JSON.stringify(result));
+  assert.equal(result.body.code,'CONFLICT');
+  console.log('PASS real D1 monotonic submission versions and stale offline conflict');
+
+  // Interleave a reviewer between read and write, proving SQL (not just
+  // preflight code) prevents a stale submit from overwriting review status.
+  const beforeSubmitAudit=await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='submit'").first().then(r=>r.n);
+  let injected=false;
+  const staleSubmitDb={
+    prepare:(...args)=>db.prepare(...args),
+    batch:async statements=>{
+      if(!injected){
+        injected=true;
+        await db.prepare("UPDATE workflow_form_submissions SET status='reviewed',updated_at='2040-01-01 00:00:00' WHERE id=?").bind(printingId).run();
+      }
+      return db.batch(statements);
+    },
+  };
+  result=await call('assignment-printing',{...valid,qty:'4'},{}, {},staleSubmitDb);
+  assert.equal(result.status,409,JSON.stringify(result));
+  assert.equal(result.body.code,'CONFLICT');
+  const reviewed=await db.prepare('SELECT status,response_json FROM workflow_form_submissions WHERE id=?')
+    .bind(printingId).first();
+  assert.equal(reviewed.status,'reviewed');
+  assert.equal(JSON.parse(reviewed.response_json).qty,'2');
+  assert.equal(await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='submit'").first().then(r=>r.n),beforeSubmitAudit);
+  console.log('PASS real D1 concurrent review cannot be overwritten or create phantom submit audit');
+
+  // Approvals use the same compare-and-swap gate and cannot double-review.
+  await db.prepare("INSERT INTO employees(id,display_name) VALUES('qa-reviewer','Synthetic Forms Reviewer')").run();
+  const reviewerContext={...ctx,employee:{id:'qa-reviewer',department:''},
+    permissions:{'forms.access':'approve'},
+    companyPermissions:{printing:{'forms.access':'approve'},bakery:{'forms.access':'none'}}};
+  const reviewForm=new Function('json','hasPermission','canGroup','uid',
+    compile('review')+'\nreturn review;')(
+      json,hasPermission,canGroup,prefix=>prefix+'-qa-'+crypto.randomUUID());
+  async function reviewCall(submissionId,decision,database=db){
+    const request=new Request('https://isolated.local/api/forms/review',{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({submissionId,decision,note:'QA reviewer decision'}),
+    });
+    const response=await reviewForm(request,{DB:database},reviewerContext);
+    return {status:response.status,body:await response.json()};
+  }
+  const otherId=await db.prepare("SELECT id FROM workflow_form_submissions WHERE assignment_id='assignment-other'").first().then(r=>r.id);
+  let concurrentReview=false;
+  const staleReviewDb={
+    prepare:(...args)=>db.prepare(...args),
+    batch:async statements=>{
+      if(!concurrentReview){
+        concurrentReview=true;
+        await db.prepare("UPDATE workflow_form_submissions SET status='approved',updated_at='2040-01-01 00:00:00' WHERE id=?")
+          .bind(otherId).run();
+      }
+      return db.batch(statements);
+    },
+  };
+  let reviewResult=await reviewCall(otherId,'rejected',staleReviewDb);
+  assert.equal(reviewResult.status,409,JSON.stringify(reviewResult));
+  assert.equal(reviewResult.body.code,'CONFLICT');
+  assert.equal(await db.prepare('SELECT status FROM workflow_form_submissions WHERE id=?').bind(otherId).first().then(r=>r.status),'approved');
+  assert.equal(await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='review'").first().then(r=>r.n),0);
+  console.log('PASS real D1 competing reviewers cannot silently reverse approved decisions');
+
+  await db.prepare("INSERT INTO workflow_form_assignments(id,form_id,company_id,employee_id,audience_type,assigned_by) VALUES('assignment-review','form-printing','printing','staff','employee','staff')").run();
+  result=await call('assignment-review',valid);
+  assert.equal(result.status,200,JSON.stringify(result));
+  reviewResult=await reviewCall(result.body.submissionId,'approved');
+  assert.equal(reviewResult.status,200,JSON.stringify(reviewResult));
+  assert.equal(await db.prepare('SELECT status,reviewed_by FROM workflow_form_submissions WHERE id=?')
+    .bind(result.body.submissionId).first().then(r=>r.status),'approved');
+  assert.equal(await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='review'").first().then(r=>r.n),1);
+  console.log('PASS real D1 authorised review commits one state transition and one audit');
+
   console.log('LOCAL_FORMS_D1_ACCEPTANCE=PASS; synthetic local database only');
 } finally {await mf.dispose();}
 
