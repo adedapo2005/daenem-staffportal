@@ -14,7 +14,7 @@ Issue: [P0 #207](https://github.com/adedapo2005/daenem-staffportal/issues/207).
 node --test scripts/test-staffportal-sites-zero-disclosure.mjs
 ```
 
-The 18 synthetic tests cover the expected 50-approved-only public listing, 32 draft/pending disclosures, forbidden internal fields, fail-closed responses, invalid URLs, revoked/disabled states, key set mismatch versus the official Worker, duplicate keys, anonymous direct-image media HTTP 200, redirects/timeouts and HEAD-only concurrency.
+The 27 synthetic tests cover the expected 50-approved-only public listing, 32 draft/pending disclosures, forbidden internal fields, fail-closed responses, invalid URLs, revoked/disabled states, key set mismatch versus the official Worker, duplicate keys, anonymous direct-image media HTTP 200, redirects/timeouts, and HEAD-GET permission mismatch. Tests also assert a one-byte-range GET is cancelled without reading or retaining its response body.
 
 ## Run external public API audit (read-only, incomplete release gate)
 
@@ -41,7 +41,7 @@ node scripts/check-staffportal-sites-zero-disclosure-live.mjs \
   --report /AUTHORIZED/QA-REPORT-DIR/sites-zero-disclosure-receipt.json
 ```
 
-Both live public APIs are accessed by **anonymous HTTPS GET**. Historical unpublished media are tested by **anonymous HEAD only**, without fetching bodies. A media URL returning any HTTP 2xx—including generic `application/octet-stream`—is treated as accessible and **fails**. Only 401/403/404/410 count as denied. Redirects, timeouts and unrecognized responses fail closed. A stale cached-default catalogue, any pending/draft record, internal review field, disabled item, unsafe URL, or mismatch against the approved Worker keys also fails.
+Both live public APIs are accessed by **anonymous HTTPS GET**. Historical unpublished media are first checked by **anonymous HEAD**. **If HEAD is denied**, a second **GET with `Range: bytes=0-0`** verifies the same URL cannot be retrieved by the method browsers actually use. Only the status is retained; its response body is immediately cancelled and is never logged, decoded or saved. A media URL returning any HTTP 2xx—including generic `application/octet-stream` or partial HTTP 206—**fails**. Only 401/403/404/410 on **both methods** count as denied. Redirects, timeouts and unrecognized responses fail closed. The gate refuses to inspect an Owner-private media manifest when the official approved public image inventory cannot be loaded, and it refuses any private URL that overlaps that approved inventory. A stale cached-default catalogue, pending/draft record, internal review field, disabled item, unsafe URL, or Worker key mismatch also fails.
 
 All logs and JSON receipts contain only aggregate counts and fixed violation codes. No private media mapping is included in this repository.
 
@@ -61,5 +61,5 @@ A verified local run using the Owner-only historical 24-URL inventory returned *
 
 - This PR must remain **draft** and must **not be merged or deployed** merely because fixture tests pass.
 - This script is a **historical URL test**, not a complete discoverer of future aliases. Manual media inventory, current Sites source/code acceptance, private R2 and Owner Studio permission checks, and an authenticated browser audit remain mandatory.
-- No new scheduler or recurring workflow. The live gate is manually invoked during release acceptance.
+- No new scheduler, recurring workflow or external-network calls in CI. The **27 offline fixture tests** run as one additional step in the existing Staff Portal CI workflow, whose triggers and deployment permissions are unchanged. The **live** gate remains manually invoked during release acceptance.
 - No passwords, cookies, R2 credentials or private media are required for fixture tests or public API-only checks.
