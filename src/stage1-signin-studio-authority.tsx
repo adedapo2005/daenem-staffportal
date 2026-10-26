@@ -93,7 +93,7 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
   }, [active, mount, context.sessionId]);
 
   if (!active || !mount || (section !== 'Home' && section !== 'Preview')) return null;
-  const selected = PRESETS[preset];
+  const selected = PRESETS[preset] || PRESETS[3];
   const openPreview = () => {
     // Same-origin public renderer, no iframe: retain CSP frame-ancestors 'none' and X-Frame-Options DENY.
     // With noopener, browsers may return null even when the new tab opened.
