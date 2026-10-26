@@ -119,3 +119,24 @@ html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115
 @media(prefers-reduced-motion:reduce){
  [data-approved-postlogin="qa-review-v115"] .sp-grant-navigation * {transition:none!important;animation:none!important}
 }
+
+/* Preserve approved ECC source and checksum. On the authenticated host only,
+   conceal the simulated menu; the real grant menu is portaled beside it. */
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"]
+  nav.ecc-navigation:not([data-grant-navigation]) {display:none!important;}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-host {
+  width:100%;min-width:0;min-height:0;display:block;flex:1;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-mount {min-width:0;width:100%;display:grid;gap:3px;}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-rail-open {
+  display:none;min-height:44px;width:100%;align-items:center;justify-content:center;
+  background:#123d40;border:1px solid #53877a;border-radius:10px;color:#f0fffa;
+}
+html[data-staffportal-postlogin="true"] .p-app.p-shell-nav-collapsed .p-sidebar
+  .sp-grant-nav-host .sp-grant-navigation {display:none!important;}
+html[data-staffportal-postlogin="true"] .p-app.p-shell-nav-collapsed .p-sidebar
+  .sp-grant-nav-host .sp-grant-rail-open {display:flex;}
+/* The mobile Sheet renders the same protected ECC anchor, so the portaled
+   permission menu occupies that container independently of desktop collapse. */
+.p-mobile-nav .sp-grant-nav-host {display:block;width:100%;min-width:0;}
+.p-mobile-nav .sp-grant-nav-mount .sp-grant-navigation {display:flex;}
