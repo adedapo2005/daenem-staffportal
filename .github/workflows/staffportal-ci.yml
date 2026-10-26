@@ -67,6 +67,10 @@ jobs:
           node scripts/check-offline-sync-auth-scope.mjs
           node scripts/test-forms-isolated-d1.mjs
 
+      - name: Permission-scoped company navigation and responsive review
+        run: |
+          node --test scripts/test-authorised-live-workspaces.mjs scripts/test-stage1-responsive-workbench.mjs
+
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
 
