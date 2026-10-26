@@ -5,7 +5,7 @@ import {
 
 /**
  * Only trusted Worker GET responses may populate this review; never call
- * storeSignInPreferences(), change localStorage, or publish the public V180.
+ * modify browser preferences or publish the public V180.
  */
 export class StudioPermissionDenied extends Error {
   constructor() {
