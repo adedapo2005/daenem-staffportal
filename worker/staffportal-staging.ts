@@ -1,9 +1,11 @@
 import runtimeHandler from './runtime';
 import { routeWorkspaceShell } from './workspace-route';
-import { routeV180PublicAssets } from './v180-public-assets';
+import type { AuthEnv } from './auth';
+import { routeCloudflareV180Media, type PreprodMediaEnv } from './v180-cloudflare-public-media';
+import { routeOwnerStudioV180Media } from './v180-media-publication-admin';
 import type { StagingQaEnv } from './staging-qa-seeder';
 
-interface Env {
+interface Env extends AuthEnv, Omit<PreprodMediaEnv, 'DB'> {
   STAFF_PORTAL_FRONTEND_ORIGIN?: string;
   ASSETS?: { fetch(request: Request): Promise<Response> };
 }
@@ -50,7 +52,7 @@ function preflight(request:Request,env:Env){
   const headers=new Headers({
     'access-control-allow-origin':origin,
     'access-control-allow-credentials':'true',
-    'access-control-allow-methods':'GET,POST,OPTIONS',
+    'access-control-allow-methods':'GET,POST,PUT,OPTIONS',
     'access-control-allow-headers':'Accept, Content-Type, Idempotency-Key',
     'access-control-max-age':'600',
   });
@@ -83,7 +85,10 @@ export default {
       return secure(json({ok:true,service:'daenem-staffportal-api-staging',stage:'staging'}),request,env);
     }
 
-    const publicAssetsResponse=await routeV180PublicAssets(request);
+    const ownerMediaResponse=await routeOwnerStudioV180Media(request,env);
+    if(ownerMediaResponse)return secure(ownerMediaResponse,request,env);
+
+    const publicAssetsResponse=await routeCloudflareV180Media(request,env);
     if(publicAssetsResponse)return secure(publicAssetsResponse,request,env);
 
     const legacySceneryResponse=await routeLegacySceneryAsset(request,env);
