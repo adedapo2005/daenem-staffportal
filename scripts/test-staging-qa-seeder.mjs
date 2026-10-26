@@ -66,8 +66,20 @@ async function main() {
   for (const migration of migrations) { lastCheck = `Schema: ${migration}`; db.exec(baseline.files[migration]); }
   const rows = sql => db.prepare(sql).all();
   const scalar = sql => Object.values(db.prepare(sql).get())[0];
+  // Authenticated requests refresh auth_sessions.last_seen_at independently of
+  // domain transactions. A legitimate heartbeat cannot invalidate rollback QA.
+  // Exempt only that column: session identity, revocation, permissions, business
+  // records, financial data, and immutable audit events remain exact comparisons.
+  const withoutAuthHeartbeat = (table, row) => table === 'auth_sessions'
+    ? Object.fromEntries(Object.entries(row).filter(([column]) => column !== 'last_seen_at'))
+    : row;
+  const example = withoutAuthHeartbeat('auth_sessions', { id: 'session', revoked_at: null, last_seen_at: 'heartbeat' });
+  check(example.id === 'session' && example.revoked_at === null && !Object.hasOwn(example, 'last_seen_at'),
+    'Rollback snapshot excludes only the independent authentication heartbeat');
+  check(withoutAuthHeartbeat('facilities', { id: 'facility', last_seen_at: 'domain' }).last_seen_at === 'domain',
+    'Rollback snapshot never strips business evidence columns');
   const snapshot = () => JSON.stringify(rows("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
-    .map(({ name }) => [name, rows(`SELECT * FROM "${name}" ORDER BY rowid`)]));
+    .map(({ name }) => [name, rows(`SELECT * FROM "${name}" ORDER BY rowid`).map(row => withoutAuthHeartbeat(name, row))]));
   // Preserve every pre-existing row, including the canonical non-QA companies/roles.
   const original = rows("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
     .map(({ name }) => ({ name, data: rows(`SELECT rowid AS qa_rowid,* FROM "${name}"`) }));

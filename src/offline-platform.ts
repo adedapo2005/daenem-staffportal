@@ -87,6 +87,8 @@ export type FormsDraftInput = {
   supportedForOfflineSubmit: boolean;
   formTitle?: string;
   baseUpdatedAt?: string;
+  // One logical submit has the same identity online and when queued offline.
+  idempotencyKey?: string;
   attachmentRefs?: string[];
 };
 
@@ -392,11 +394,24 @@ async function upsertOperationUnlocked(
   const namespace = namespaceFor(identity);
   const current = input.operationId ? await readRecord<StoredOperation>(OPERATION_STORE, input.operationId) : await existingForEntity(identity, input.entityId);
   if (current && current.namespace !== namespace) throw new Error('Offline operation scope mismatch.');
+  // A separate tab must not rewrite a queued Forms submission as a local draft
+  // or replace its payload under an existing idempotency key. The server may
+  // already have accepted the original submission before this device knows.
+  if (current?.kind === 'forms.submit' && input.kind === 'forms.submit'
+    && ['waiting-to-sync', 'syncing'].includes(current.state)
+    && ['local-draft', 'waiting-to-sync'].includes(input.state)) {
+    throw new Error('This form has already been queued for sync. Refresh its status before editing.');
+  }
   const timestamp = nowIso();
   const stored: StoredOperation = {
     id: current?.id || input.operationId || strongId('offline-op'),
     namespace,
-    idempotencyKey: current?.idempotencyKey || input.idempotencyKey || strongId('offline-key'),
+    // A fresh Forms submit attempt can replace an old local draft key, but
+    // NEVER alter an already queued/syncing attempt's replay identity.
+    idempotencyKey: input.kind === 'forms.submit' && input.state === 'waiting-to-sync'
+      && input.idempotencyKey && !['waiting-to-sync', 'syncing'].includes(current?.state || '')
+      ? input.idempotencyKey
+      : current?.idempotencyKey || input.idempotencyKey || strongId('offline-key'),
     kind: input.kind,
     employeeId: identity.employeeId,
     companyId: identity.companyId,
@@ -448,6 +463,7 @@ export async function saveFormsDraft(identity: OfflineIdentity, input: FormsDraf
 
 export async function queueFormsSubmission(identity: OfflineIdentity, input: FormsDraftInput) {
   return upsertOperation(identity, {
+    idempotencyKey: input.idempotencyKey,
     kind: 'forms.submit',
     entityType: 'workflow_form_assignment',
     entityId: input.assignmentId,

@@ -56,6 +56,17 @@ jobs:
       - name: Company-scoped access contract
         run: npm run check:company-scoped-access
 
+      # Owner-managed Forms W1/W2: run the same strict acceptance checks for
+      # every candidate commit, not only on a reviewer's local machine.
+      - name: Forms completeness, drafts and permission regression
+        run: |
+          node --test scripts/test-form-answer-completeness.mjs scripts/test-forms-conditional-guidance.mjs scripts/test-forms-assignment-draft-scope.mjs scripts/test-forms-draft-autosave.mjs scripts/test-forms-offline-queued-guard.mjs scripts/test-forms-worker-atomic-submission.mjs scripts/test-forms-submission-attempt.mjs
+          node scripts/test-guided-form-options.mjs
+          node scripts/check-forms-builder-boundaries.mjs
+          node scripts/check-guided-forms.mjs
+          node scripts/check-offline-sync-auth-scope.mjs
+          node scripts/test-forms-isolated-d1.mjs
+
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
 
