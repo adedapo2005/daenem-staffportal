@@ -3,7 +3,7 @@ import { routeWorkspaceShell } from './workspace-route';
 import type { AuthEnv } from './auth';
 import { routeCloudflareV180Media, type PreprodMediaEnv } from './v180-cloudflare-public-media';
 import { routeOwnerStudioV180Media } from './v180-media-publication-admin';
-import { routeV180PublicStaffContent } from './v180-public-staff-content';
+import { routeV180PublicStaffContent } from './staffportal-cloudflare-content';
 import type { StagingQaEnv } from './staging-qa-seeder';
 
 interface Env extends AuthEnv, Omit<PreprodMediaEnv, 'DB'> {

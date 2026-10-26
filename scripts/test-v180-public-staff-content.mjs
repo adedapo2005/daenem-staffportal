@@ -10,7 +10,7 @@ const ts = require('typescript');
 const database = new DatabaseSync(':memory:');
 database.exec(`CREATE TABLE permissions(id TEXT PRIMARY KEY,code TEXT UNIQUE,module TEXT,action TEXT,description TEXT,sensitive INTEGER);`);
 database.exec(fs.readFileSync(path.join(root, 'migrations/0104_staffportal_staff_content_publication.sql'), 'utf8'));
-const source = fs.readFileSync(path.join(root, 'worker/v180-public-staff-content.ts'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'worker/staffportal-cloudflare-content.ts'), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
 let context = { employee: { id: 'employee-approved', status: 'active' }, sessionId: 'session-approved', permissions: { 'staffportal.content.publish': 'manage' } };
 let contextReads = 0;

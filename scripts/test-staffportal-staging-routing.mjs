@@ -52,7 +52,7 @@ new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (
     } });
   } };
   if (specifier === './v180-media-publication-admin') return { routeOwnerStudioV180Media: async () => null };
-  if (specifier === './v180-public-staff-content') return { routeV180PublicStaffContent: async (input) => {
+  if (specifier === './staffportal-cloudflare-content') return { routeV180PublicStaffContent: async (input) => {
     const path = new URL(input.url).pathname;
     staffContentRequests.push(path);
     if (path === '/api/staff-content') return new Response('{"error":"Staff content is temporarily unavailable."}', {
