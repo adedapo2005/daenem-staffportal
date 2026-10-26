@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 const root = process.cwd();
 const workbench = readFileSync(root + '/src/stage1-signin-studio-authority.tsx', 'utf8');
+const reviewSource = readFileSync(root + '/src/stage1-signin-studio-review.ts', 'utf8');
 const styles = readFileSync(root + '/src/stage1-signin-studio-authority.css', 'utf8');
 const runtime = readFileSync(root + '/src/qa-review-v115-runtime.tsx', 'utf8');
 const approved = readFileSync(root + '/src/signin-experience.tsx', 'utf8');
@@ -14,18 +15,20 @@ const checks = [
   ['approved runtime source remains the only official preview', workbench.includes("'/staff-portal-signin?studioReview=signin-v180'")],
   ['auth runtime includes immutable V180 approved source', approved.includes("approved-signin-v180/reference-v180.html?raw")],
   ['historic Webflow Home not described as authoritative', workbench.includes('Webflow Home is not the current public Sign-In')],
-  ['read-only Worker settings used', workbench.includes('fetchAdminSignInPreferences()')],
-  ['only existing Worker draft read used', workbench.includes('fetchAdminSignInDraft()')],
-  ['no permission-less settings request', workbench.includes("if (!localGrant) {") && workbench.indexOf("if (!localGrant) {") < workbench.indexOf('fetchAdminSignInPreferences()')],
+  ['read-only Worker settings used', workbench.includes('readStudioReviewWithoutSideEffects(controller.signal)')],
+  ['only existing Worker draft read used', reviewSource.includes("'/api/theme/signin/draft'")],
+  ['no permission-less settings request', workbench.includes("if (!localGrant) {") && workbench.indexOf("if (!localGrant) {") < workbench.indexOf('readStudioReviewWithoutSideEffects(controller.signal)')],
   ['owner and admin roles require explicit settings grant', workbench.includes("'group_admin'") && workbench.includes("'settings.access', 'manage'")],
-  ['Worker permission denial fails closed before draft read', workbench.indexOf("if (current.canManage !== true)") < workbench.indexOf('fetchAdminSignInDraft()')],
+  ['Worker permission denial fails closed before draft read', reviewSource.indexOf("'/api/theme/signin'") < reviewSource.indexOf("'/api/theme/signin/draft'") && reviewSource.includes('if (payload.canManage !== true)')],
   ['async permission scope cancellation', workbench.includes('if (cancelled) return') && workbench.includes('context.sessionId, localGrant, authRefresh')],
-  ['draft unavailable cannot be misreported as absent', workbench.includes('hasDraft: boolean | null = null') && workbench.includes("setLoad('unavailable')")],
+  ['draft unavailable cannot be misreported as absent', reviewSource.includes("if (!Object.prototype.hasOwnProperty.call(draft, 'draft'))") && workbench.includes("'denied' : 'unavailable'")],
   ['legacy Studio destinations cannot expose old editors', workbench.includes("if (requested === 'Themes') return 'Themes'") && workbench.includes('data-studio-access="legacy-hold"')],
   ['authoritative Themes route replaces Webflow default', workbench.includes("section === 'Themes'") && workbench.includes('HISTORICAL REFERENCE · NOT ACTIVE')],
+  ['draft comparison uses Worker settings and never publishes', workbench.includes("section === 'Draft'") && workbench.includes('studioDraftDifferences(published, draft)') && !workbench.includes('saveSignInPreferences')],
+  ['settings retrieval never mutates client storage', !/localStorage|sessionStorage|storeSignInPreferences|storeWorldClockPreferences/.test(reviewSource) && reviewSource.includes("credentials: 'include'") && reviewSource.includes("cache: 'no-store'")],
   ['stored Worker settings distinguished from source locked V180', workbench.includes('not proof that the source-locked V180') && workbench.includes('not proof of editable controls')],
-  ['draft recheck denies revoked grant after second Worker read', workbench.includes('if (result.canManage !== true)') && workbench.includes("setLoad('denied');")],
-  ['failed draft recheck blocks presentation', workbench.includes("if (!cancelled) setLoad('unavailable');")],
+  ['draft recheck denies revoked grant after second Worker read', reviewSource.includes("const draft = await trustedGet('/api/theme/signin/draft', signal)") && reviewSource.includes('if (payload.canManage !== true)')],
+  ['failed draft recheck blocks presentation', workbench.includes("error instanceof StudioPermissionDenied ? 'denied' : 'unavailable'")],
 
   ['preview opens in separate tab with no opener', workbench.includes('target="_blank" rel="noopener noreferrer"')],
   ['preview markup has keyboard focus style', styles.includes('.stage1-studio-authority a:focus-visible')],
@@ -108,6 +111,7 @@ const sections = [
   ['', 'Home'],
   ['?studioSection=Home', 'Home'],
   ['?studioSection=Themes', 'Themes'],
+  ['?studioSection=Draft', 'Draft'],
   ['?studioSection=Preview', 'Preview'],
   ['?studioSection=Editor', null],
   ['?studioSection=Widgets', null],
@@ -132,3 +136,88 @@ for (const [path, expected] of paths) {
   console.log('PASS runtime: exact route', path);
 }
 console.log('Executed grant and navigation policy scenarios: ' + (scenarios.length + 1 + sections.length + paths.length) + '/' + (scenarios.length + 1 + sections.length + paths.length) + ' PASS');
+
+// Execute the side-effect-free Worker reader and complete draft-delta projection
+// against synthetic payloads. This does not send real requests or touch D1.
+const reviewCompiled = ts.transpileModule(reviewSource, {
+  fileName: 'stage1-signin-studio-review.ts',
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+});
+assert.equal(reviewCompiled.diagnostics?.filter(d => d.category === ts.DiagnosticCategory.Error).length || 0, 0);
+const requests = [];
+const responses = [];
+const mockResponse = (status, payload) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  json: async () => payload,
+});
+const reviewSandbox = {
+  exports: {},
+  require(path) {
+    if (path === './signin-preferences') return { normalizeSignInPreferences: (data) => data };
+    return {};
+  },
+  fetch: async (path, opts) => {
+    requests.push({ path, opts });
+    if (!responses.length) throw new Error('Unexpected additional request: ' + path);
+    return responses.shift();
+  },
+};
+runInNewContext(reviewCompiled.outputText, reviewSandbox, { timeout: 5000 });
+const { readStudioReviewWithoutSideEffects, studioDraftDifferences } = reviewSandbox.exports;
+const signal = new AbortController().signal;
+const published = { themeMode: 'day', backgroundId: 'original', labels: { auth: { signInTitle: 'Approved Sign In' } }, widgetOrder: ['news', 'weather'] };
+const draft = { themeMode: 'night', backgroundId: 'original', labels: { auth: { signInTitle: 'Proposed Sign In' } }, widgetOrder: ['weather', 'news'] };
+const granted = (config = published) => mockResponse(200, { canManage: true, config });
+const grantedDraft = (config = draft) => mockResponse(200, { canManage: true, draft: config });
+requests.length = 0;
+responses.push(mockResponse(200, { canManage: false, config: published }));
+await assert.rejects(readStudioReviewWithoutSideEffects(signal), (err) => err.name === 'StudioPermissionDenied');
+assert.equal(requests.length, 1, 'No draft GET after first denial');
+console.log('PASS Worker read: initial permission denial and no draft request');
+
+requests.length = 0;
+responses.push(granted(), mockResponse(403, { error: 'revoked' }));
+await assert.rejects(readStudioReviewWithoutSideEffects(signal), (err) => err.name === 'StudioPermissionDenied');
+assert.equal(requests.length, 2, 'Draft endpoint must independently enforce grant');
+console.log('PASS Worker read: grant revoked before draft GET');
+
+requests.length = 0;
+responses.push(granted(), grantedDraft());
+const reviewResult = await readStudioReviewWithoutSideEffects(signal);
+assert.equal(requests.length, 2);
+assert.deepEqual(requests.map(x => x.path), ['/api/theme/signin', '/api/theme/signin/draft']);
+for (const call of requests) {
+  assert.equal(call.opts.method, 'GET');
+  assert.equal(call.opts.cache, 'no-store');
+  assert.equal(call.opts.credentials, 'include');
+  assert.equal(call.opts.signal, signal);
+}
+assert.equal(reviewResult.published.labels.auth.signInTitle, 'Approved Sign In');
+assert.equal(reviewResult.draft.labels.auth.signInTitle, 'Proposed Sign In');
+const changes = studioDraftDifferences(reviewResult.published, reviewResult.draft);
+assert.equal(changes.length, 3, 'Theme, auth copy and widget order should be distinct changes');
+assert.ok(changes.some(x => x.path === 'labels.auth.signInTitle' && x.section === 'Authentication copy'));
+assert.ok(changes.some(x => x.path === 'widgetOrder' && x.section === 'Widgets and layout'));
+assert.ok(changes.some(x => x.path === 'themeMode' && x.section === 'Appearance'));
+console.log('PASS Worker read: complete published-versus-draft comparison with no writes');
+
+requests.length = 0;
+responses.push(granted(), grantedDraft(null));
+const absent = await readStudioReviewWithoutSideEffects(signal);
+assert.equal(absent.draft, null);
+assert.equal(studioDraftDifferences(absent.published, absent.draft).length, 0);
+console.log('PASS Worker read: absence of draft is not fabricated');
+
+requests.length = 0;
+responses.push(granted(), mockResponse(200, { canManage: true }));
+await assert.rejects(readStudioReviewWithoutSideEffects(signal), /Studio draft state was not returned/);
+assert.equal(requests.length, 2);
+console.log('PASS Worker read: malformed draft response fails closed');
+
+requests.length = 0;
+responses.push(mockResponse(401, { error: 'expired' }));
+await assert.rejects(readStudioReviewWithoutSideEffects(signal), (err) => err.name === 'StudioPermissionDenied');
+assert.equal(requests.length, 1);
+console.log('PASS Worker read: expired authentication denies without draft access');
+console.log('Executed Worker read and draft projection cases: 6/6 PASS');
