@@ -347,3 +347,58 @@ test('real CLI wiring checks HEAD then Range GET; GET 200 still blocks release',
   assert.equal(receipt.originalUrlsOrPrivateRecordsIncluded,false);
  }finally{fs.rmSync(temp,{recursive:true,force:true});}
 });
+
+
+test('private data added to the legacy response envelope must fail release',()=>{
+ const {legacy,official}=recordSet();
+ legacy.ownerInternal={auditNote:'SECRET-ENVELOPE-DATA'};
+ const r=evaluatePublication(legacy,official);
+ assert.equal(r.status,'FAIL');
+ assert.ok(codes(r).includes('LEGACY_UNEXPECTED_ENVELOPE_FIELDS'));
+ assert.ok(!JSON.stringify(r).includes('SECRET-ENVELOPE-DATA'));
+});
+test('private data added to the official response envelope must fail release',()=>{
+ const {legacy,official}=recordSet();
+ official.ownerDebug={token:'SECRET-OFFICIAL-DATA'};
+ const r=evaluatePublication(legacy,official);
+ assert.equal(r.status,'FAIL');
+ assert.ok(codes(r).includes('OFFICIAL_UNEXPECTED_ENVELOPE_FIELDS'));
+ assert.ok(!JSON.stringify(r).includes('SECRET-OFFICIAL-DATA'));
+});
+test('allowlisted legacy visual fields cannot contain nested private objects',()=>{
+ const {legacy,official}=recordSet();
+ legacy.assets[0].label={privatePrompt:'SECRET-LABEL-OBJECT'};
+ legacy.assets[1].purpose=['SECRET-PURPOSE-ARRAY'];
+ const r=evaluatePublication(legacy,official);
+ assert.equal(r.status,'FAIL');
+ assert.ok(codes(r).includes('INVALID_LEGACY_VISUAL_FIELD_VALUES'));
+ assert.ok(!JSON.stringify(r).includes('SECRET-'));
+});
+test('allowlisted official visual fields cannot contain nested private objects',()=>{
+ const {legacy,official}=recordSet();
+ official.assets[0].category={privateOwner:'SECRET-WORKER-OBJECT'};
+ const r=evaluatePublication(legacy,official);
+ assert.equal(r.status,'FAIL');
+ assert.ok(codes(r).includes('INVALID_OFFICIAL_VISUAL_FIELD_VALUES'));
+ assert.ok(!JSON.stringify(r).includes('SECRET-WORKER-OBJECT'));
+});
+test('out-of-range or nonfinite visual numerics are not public-safe',()=>{
+ const {legacy,official}=recordSet();
+ legacy.assets[0].focal_x=-0.2;
+ legacy.assets[1].zoom=Number.NaN;
+ official.assets[2].sort_order=10001;
+ const r=evaluatePublication(legacy,official);
+ assert.equal(r.status,'FAIL');
+ assert.ok(codes(r).includes('INVALID_LEGACY_VISUAL_FIELD_VALUES'));
+ assert.ok(codes(r).includes('INVALID_OFFICIAL_VISUAL_FIELD_VALUES'));
+});
+test('invalid visual enumeration, boolean and oversize text fail',()=>{
+ const {legacy,official}=recordSet();
+ legacy.assets[0].phase='private';
+ legacy.assets[1].fit_mode='javascript';
+ legacy.assets[2].is_virtual={draft:true};
+ legacy.assets[3].purpose='x'.repeat(181);
+ const r=evaluatePublication(legacy,official);
+ assert.equal(r.status,'FAIL');
+ assert.ok(codes(r).includes('INVALID_LEGACY_VISUAL_FIELD_VALUES'));
+});
