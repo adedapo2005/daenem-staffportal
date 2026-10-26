@@ -84,6 +84,7 @@ jobs:
           node --disable-warning=ExperimentalWarning scripts/test-bakery-finance-ar-settlement-lock.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-sales-journal-cash-guard.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-monnify-verification.mjs
+          python3 scripts/test-bakery-unverified-manual-cash-guard.py
           node --disable-warning=ExperimentalWarning scripts/test-bakery-remittance-idempotency.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-close-atomicity.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-custody-lock.mjs
