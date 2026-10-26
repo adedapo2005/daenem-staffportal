@@ -66,8 +66,8 @@ add.run('ar-debit','real-posting','bakery-ar',10000,0);
 add.run('sales-credit','real-posting','bakery-sales',0,10000);
 add.run('cogs-debit','real-posting','bakery-cogs',4000,0);
 add.run('inventory-credit','real-posting','bakery-inventory',0,4000);
-assert.deepEqual(db.prepare(`SELECT SUM(debit_kobo) AS dr,SUM(credit_kobo) AS cr
- FROM journal_lines WHERE journal_entry_id='real-posting'`).get(),
+assert.deepEqual({...db.prepare(`SELECT SUM(debit_kobo) AS dr,SUM(credit_kobo) AS cr
+ FROM journal_lines WHERE journal_entry_id='real-posting'`).get()},
  {dr:14000,cr:14000},'Proper accrual and cost postings remain possible');
 
 const illegal=[
@@ -109,7 +109,7 @@ db.prepare(`INSERT INTO journal_entries VALUES(
  'manual-bakery','company-bakery','M-1','2026-10-25','Manual Finance QA',
  'manual','adjustment',NULL,'posted')`).run();
 add.run('bakery-manual-cash','manual-bakery','bakery-cash',10000,0);
-assert.deepEqual(counts(),{journals:4,lines:8});
+assert.deepEqual({...counts()},{journals:4,lines:8});
 db.close();
 console.log('PASS Bakery automatic sales GL: no false cash, cross-company or wrong-side posting');
 console.log('PASS real accrual Dr AR/Cr Revenue + Dr COGS/Cr Inventory and immutable lines');
