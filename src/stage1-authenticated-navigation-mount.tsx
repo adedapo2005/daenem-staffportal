@@ -16,6 +16,7 @@ export default function Stage1AuthenticatedNavigationMount({context}:{context:Wo
   const [mounts,setMounts]=useState<NavigationMount[]>([]);
   useEffect(()=>{
     const active=new Map<HTMLElement,HTMLDivElement>();
+    let nextId=0;
     let stopped=false;
     function sync(){
       if(stopped)return;
@@ -29,6 +30,7 @@ export default function Stage1AuthenticatedNavigationMount({context}:{context:Wo
         const host=document.createElement('div');
         host.className='sp-grant-nav-host';
         host.dataset.authenticatedNavigationHost='true';
+        host.dataset.authenticatedNavigationId=String(++nextId);
         legacy.insertAdjacentElement('afterend',host);
         active.set(legacy,host);
         changed=true;
@@ -59,5 +61,5 @@ export default function Stage1AuthenticatedNavigationMount({context}:{context:Wo
       </button>
       <Stage1GrantNavigation context={context} collapsed={false}
         onExpand={()=>legacy.closest('.p-sidebar')?.querySelector<HTMLButtonElement>('.p-shell-collapse')?.click()}/>
-    </div>,host,legacy.dataset.navigationAnchorId||legacy.id||String(mounts.indexOf(mounts.find(m=>m.legacy===legacy)!))))}</>;
+    </div>,host,host.dataset.authenticatedNavigationId))}</>;
 }
