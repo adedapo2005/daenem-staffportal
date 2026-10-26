@@ -63,8 +63,10 @@ function fixture(options = {}) {
       assert.match(statements[1].sql, /INSERT INTO audit_logs/);
       queries.push({kind:'batch',sql:statements.map(s=>s.sql)});
       if (options.failAudit) throw Error('Injected transaction rollback');
+      assert.match(statements[1].sql,/WHERE changes\(\)=1/,'Audit must depend on a committed response change');
+      if (options.concurrentChange) return [{success:true,meta:{changes:0}},{success:true,meta:{changes:0}}];
       for (const statement of statements) committed.push({sql:statement.sql,args:statement.args});
-      return statements.map(()=>({success:true}));
+      return [{success:true,meta:{changes:1}},{success:true,meta:{changes:1}}];
     },
   };
   const context = {employee:{id:'staff-1'}, permissions:{'forms.access':'view'}, companies:[]};
@@ -172,4 +174,26 @@ test('idempotent replay returns original receipt without a second batch write',a
   assert.equal(out.body.deduplicated,true);
   assert.equal(out.body.submissionId,'submission-1');
   assert.equal(f.committed.length,0);
+});
+
+
+test('concurrent review before the D1 write prevents stale submission and phantom audit',async()=>{
+  const f=fixture({existing:{id:'submission-1',status:'submitted',updatedAt:'2026-10-25 12:00:00'},concurrentChange:true});
+  const result=await f.run(answers,{baseUpdatedAt:'2026-10-25 12:00:00'});
+  assert.equal(result.status,409);
+  assert.equal(result.body.code,'CONFLICT');
+  assert.equal(f.committed.length,0);
+  const batch=f.queries.find(q=>q.kind==='batch');
+  assert.ok(batch);
+  assert.match(batch.sql[0],/AND updated_at=\? AND status NOT IN \('reviewed','approved'\)/);
+  assert.match(batch.sql[1],/WHERE changes\(\)=1/);
+});
+
+test('concurrent newer submission wins and same-second update timestamps are advanced',async()=>{
+  const f=fixture({existing:{id:'submission-1',status:'submitted',updatedAt:'2026-10-25 12:00:00'},concurrentChange:true});
+  const result=await f.run(answers);
+  assert.equal(result.status,409);
+  assert.equal(f.committed.length,0);
+  const batch=f.queries.find(q=>q.kind==='batch');
+  assert.match(batch.sql[0],/strftime\('%Y-%m-%d %H:%M:%f',updated_at,'\+0\.001 seconds'\)/);
 });
