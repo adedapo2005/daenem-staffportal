@@ -3,6 +3,7 @@ import { routeWorkspaceShell } from './workspace-route';
 import type { AuthEnv } from './auth';
 import { routeCloudflareV180Media, type PreprodMediaEnv } from './v180-cloudflare-public-media';
 import { routeOwnerStudioV180Media } from './v180-media-publication-admin';
+import { routeV180PublicStaffContent } from './v180-public-staff-content';
 import type { StagingQaEnv } from './staging-qa-seeder';
 
 interface Env extends AuthEnv, Omit<PreprodMediaEnv, 'DB'> {
@@ -84,6 +85,9 @@ export default {
     if(url.pathname==='/health'){
       return secure(json({ok:true,service:'daenem-staffportal-api-staging',stage:'staging'}),request,env);
     }
+
+    const staffContentResponse=await routeV180PublicStaffContent(request,env);
+    if(staffContentResponse)return secure(staffContentResponse,request,env);
 
     const ownerMediaResponse=await routeOwnerStudioV180Media(request,env);
     if(ownerMediaResponse)return secure(ownerMediaResponse,request,env);

@@ -11,6 +11,7 @@ const compiled = ts.transpileModule(source, {
 const delegated = [];
 const workspaceAssetRequests = [];
 const cloudflareMediaRequests = [];
+const staffContentRequests = [];
 const workspaceCompiled = ts.transpileModule(workspaceSource, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -29,7 +30,7 @@ const runtimeHandler = {
   fetch: async (request) => {
     delegated.push(new URL(request.url).pathname);
     if (new URL(request.url).pathname === '/api/assets') {
-      return new Response('{"assets":[]}', { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=60, s-maxage=300' } });
+      return new Response('{"assets":[]}', { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
     }
     if (new URL(request.url).pathname.startsWith('/api/finance/')) {
       return new Response('{"error":"Authentication required."}', { status: 401, headers: { 'content-type': 'application/json' } });
@@ -47,10 +48,21 @@ new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (
     cloudflareMediaRequests.push(new URL(input.url).pathname);
     if (new URL(input.url).pathname !== '/api/assets') return null;
     return new Response('{"assets":[]}', { status: 200, headers: {
-      'content-type': 'application/json', 'cache-control': 'public, max-age=60, s-maxage=300',
+      'content-type': 'application/json', 'cache-control': 'no-store',
     } });
   } };
   if (specifier === './v180-media-publication-admin') return { routeOwnerStudioV180Media: async () => null };
+  if (specifier === './v180-public-staff-content') return { routeV180PublicStaffContent: async (input) => {
+    const path = new URL(input.url).pathname;
+    staffContentRequests.push(path);
+    if (path === '/api/staff-content') return new Response('{"error":"Staff content is temporarily unavailable."}', {
+      status: 503, headers: { 'content-type':'application/json','cache-control':'no-store' },
+    });
+    if (path === '/api/owner/studio/staff-content') return new Response('{"error":"Publication permission required."}', {
+      status: 403, headers: { 'content-type':'application/json','cache-control':'no-store' },
+    });
+    return null;
+  } };
   assert.equal(specifier, './runtime');
   return { __esModule: true, default: runtimeHandler };
 });
@@ -136,11 +148,11 @@ await check('unrecognized API requests remain JSON 404 responses instead of SPA 
   assert.deepEqual(await response.json(), { error: 'API route not found.' });
 });
 
-await check('safe public asset cache policy survives staging response hardening', async () => {
+await check('revocation-safe public asset no-store survives staging response hardening', async () => {
   const runtimeBefore = delegated.length;
   const response = await handler.fetch(request('/api/assets'), env, ctx);
   assert.equal(response.status, 200);
-  assert.match(response.headers.get('cache-control'), /max-age=60, s-maxage=300/);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.equal(await response.text(), '{"assets":[]}');
   assert.equal(delegated.length, runtimeBefore, 'public asset feed is served by its explicit safe adapter');
   assert.equal(cloudflareMediaRequests.at(-1), '/api/assets', 'Cloudflare D1 media adapter owns the public asset feed');
@@ -168,6 +180,32 @@ await check('health remains staging-only and does not invoke module routing', as
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { ok: true, service: 'daenem-staffportal-api-staging', stage: 'staging' });
   assert.equal(delegated.length, before);
+});
+
+await check('approved scenery JPG-to-responsive-WebP rewrite survives media and content cutover', async () => {
+  const before = workspaceAssetRequests.length;
+  const delegatedBefore = delegated.length;
+  const response = await handler.fetch(request('/assets/scenery/approved-ops-v115.jpg'), env, ctx);
+  assert.equal(response.status, 200);
+  assert.equal(workspaceAssetRequests.length, before + 1);
+  assert.equal(new URL(workspaceAssetRequests.at(-1).url).pathname, '/assets/scenery/approved-ops-v115-1280.webp');
+  assert.equal(delegated.length, delegatedBefore);
+});
+
+await check('staff content is Cloudflare-owned, denied before publication and separate from approved Sign-In context', async () => {
+  const before = delegated.length;
+  const unpublished = await handler.fetch(request('/api/staff-content'), env, ctx);
+  assert.equal(unpublished.status, 503);
+  assert.equal(unpublished.headers.get('cache-control'), 'no-store');
+  assert.equal(unpublished.headers.get('x-staffportal-auth-runtime'), 'worker-password-auth-v1');
+  assert.equal(staffContentRequests.at(-1), '/api/staff-content');
+  assert.equal(delegated.length, before);
+  const denied = await handler.fetch(request('/api/owner/studio/staff-content'), env, ctx);
+  assert.equal(denied.status, 403);
+  assert.equal(denied.headers.get('access-control-allow-origin'), null);
+  const signinContext = await handler.fetch(request('/api/context/signin'), env, ctx);
+  assert.equal(signinContext.status, 404);
+  assert.equal(delegated.at(-1), '/api/context/signin');
 });
 
 console.log(`Staging routing acceptance: ${checks.length}/${checks.length} PASS`);
