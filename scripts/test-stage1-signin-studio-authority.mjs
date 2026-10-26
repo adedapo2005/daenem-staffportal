@@ -20,7 +20,7 @@ const checks = [
   ['no permission-less settings request', workbench.includes("if (!localGrant) {") && workbench.indexOf("if (!localGrant) {") < workbench.indexOf('readStudioReviewWithoutSideEffects(controller.signal)')],
   ['owner and admin roles require explicit settings grant', workbench.includes("'group_admin'") && workbench.includes("'settings.access', 'manage'")],
   ['Worker permission denial fails closed before draft read', reviewSource.indexOf("'/api/theme/signin'") < reviewSource.indexOf("'/api/theme/signin/draft'") && reviewSource.includes('if (payload.canManage !== true)')],
-  ['async permission scope cancellation', workbench.includes('if (cancelled) return') && workbench.includes('context.sessionId, localGrant, authRefresh')],
+  ['async permission scope cancellation', workbench.includes('if (cancelled || controller.signal.aborted) return') && workbench.includes('context.sessionId, localGrant, authRefresh')],
   ['draft unavailable cannot be misreported as absent', reviewSource.includes("if (!Object.prototype.hasOwnProperty.call(draft, 'draft'))") && workbench.includes("'denied' : 'unavailable'")],
   ['legacy Studio destinations cannot expose old editors', workbench.includes("if (requested === 'Themes') return 'Themes'") && workbench.includes('data-studio-access="legacy-hold"')],
   ['authoritative Themes route replaces Webflow default', workbench.includes("section === 'Themes'") && workbench.includes('HISTORICAL REFERENCE · NOT ACTIVE')],
