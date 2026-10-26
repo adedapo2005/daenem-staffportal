@@ -51,7 +51,7 @@ export function buildGrantedCompanyNavigation(context:WorkforceContext):GrantedN
       }));
     if(!pages.length && !pending.length)continue;
     output.push({
-      id:company.id,companyId:company.id,title:company.name,
+      id:'company:'+company.id,companyId:company.id,title:company.name,
       subtitle:company.code,pages,pending,
     });
   }
