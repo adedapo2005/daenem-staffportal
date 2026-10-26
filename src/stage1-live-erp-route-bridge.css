@@ -124,3 +124,58 @@ html[data-daenem-live-route] .p-footer > span:last-child {
     transition-duration: .01ms !important;
   }
 }
+
+/* Permission-grant navigation: company → ERP page, with no company picker. */
+html[data-daenem-live-route] .p-company { display: none !important; }
+.daenem-live-erp-company-directory {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));
+  gap:12px;align-items:stretch;
+}
+.daenem-live-erp-directory-company {
+  min-width:0;padding:14px 16px;
+  border:1px solid #d9e3e9;border-radius:15px;
+  background:#fff;color:#203c48;
+}
+.daenem-live-erp-directory-company h3 {
+  display:flex;gap:10px;align-items:center;min-width:0;overflow-wrap:anywhere;
+  font-size:clamp(14px,.53vw,18px);font-weight:820;line-height:1.45;margin:0 0 9px;
+}
+.daenem-live-erp-directory-company h3 svg {color:#18765b;flex:none}
+.daenem-live-erp-directory-pages {display:grid;gap:5px}
+.daenem-live-erp-directory-pages button {
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-height:44px;width:100%;padding:9px 12px;text-align:left;
+  font:inherit;font-size:clamp(13px,.44vw,16px);font-weight:690;
+  background:#f4f8f7;color:#274353;border:1px solid #e0ebe8;border-radius:9px;
+  overflow-wrap:anywhere;cursor:pointer;
+}
+.daenem-live-erp-directory-pages button:hover,
+.daenem-live-erp-directory-pages button[aria-current="page"] {
+  background:#eaf7ef;border-color:#95caba;color:#11593e;
+}
+.daenem-live-erp-directory-pages button:focus-visible {
+  outline:3px solid #18765b;outline-offset:2px;
+}
+.daenem-live-erp-scoped-page {
+  display:grid;gap:15px;min-width:0;
+  border:1px solid #d6e3df;border-radius:16px;padding:clamp(10px,1vw,24px);
+  background:#fff;
+}
+.daenem-live-erp-scoped-page>header {
+  display:flex;align-items:center;gap:11px;padding-bottom:11px;
+  border-bottom:1px solid #e4eeeb;color:#184a40;
+}
+.daenem-live-erp-scoped-page>header svg {flex:none;color:#19795e}
+.daenem-live-erp-scoped-page>header div {display:grid;gap:2px;min-width:0}
+.daenem-live-erp-scoped-page>header strong {font-size:clamp(15px,.58vw,19px);overflow-wrap:anywhere}
+.daenem-live-erp-scoped-page>header small {font-size:13px;color:#5b6b73;overflow-wrap:anywhere}
+.daenem-live-erp-directory-hint {
+  background:#f5f9f7;border:1px solid #d7e5dd;
+  border-radius:14px;padding:16px;color:#254b44;line-height:1.5;
+}
+.daenem-live-erp-directory-hint p {margin:4px 0 0}
+@media (max-width:720px) {
+ .daenem-live-erp-company-directory {grid-template-columns:minmax(0,1fr)}
+ .daenem-live-erp-scoped-page {padding:10px}
+ .daenem-live-erp-directory-pages button {font-size:14px}
+}
