@@ -114,6 +114,8 @@ test('authenticated UI adapter bypasses old simulated session, without weakening
  assert.match(ecc,/runtime\.authenticatedContext/);
  assert.match(ecc,/<Stage1GrantedCommandNavigation/);
  assert.match(runtime,/authenticatedContext: context/);
+ assert.match(runtime,/isLegacyCompanyOrRolePreview\(event\)/);
+ assert.match(runtime,/event\.stopPropagation\(\)/);
  assert.match(nav,/router\.push\(href\)/);
  assert.match(nav,/data-navigation-source="authenticated-company-grants"/);
  assert.doesNotMatch(nav,/sessionForProfile|changeSession|setCompany|selectedCompany|onClick=\{.*goRoute/);
