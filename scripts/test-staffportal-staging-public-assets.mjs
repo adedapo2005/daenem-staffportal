@@ -1,173 +1,126 @@
 import assert from 'node:assert/strict';
 
-const stagingBase = new URL(
-  process.env.STAFFPORTAL_STAGING_URL || 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev',
-);
-const upstreamBase = new URL('https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site');
-const trustedImageOrigins = new Set([upstreamBase.origin, 'https://media.base44.com']);
-const approvedStates = new Set(['approved', 'approved_v179']);
-const publicFields = new Set([
-  'id',
-  'asset_key',
-  'category',
-  'purpose',
-  'image_url',
-  'default_image_url',
-  'zoom',
-  'focal_x',
-  'focal_y',
-  'display_enabled',
-  'master_width',
-  'master_height',
+const official = 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev';
+const base = new URL(process.env.STAFFPORTAL_STAGING_URL || official);
+assert.equal(base.origin, official, 'Only the authorized StaffPortal Cloudflare Pre-Production origin may be verified');
+
+const allowedFields = new Set([
+  'id','asset_key','category','purpose','image_url','default_image_url',
+  'zoom','focal_x','focal_y','display_enabled','master_width','master_height',
 ]);
-const numericFields = new Set(['zoom', 'focal_x', 'focal_y', 'master_width', 'master_height']);
-const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const numericFields = ['zoom','focal_x','focal_y','master_width','master_height'];
+const formerOrigins = [
+  'https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site',
+  'https://daenem-staffportal-qa-review.daenem-group-9873.chatgpt.site',
+];
+const request = (pathname, init = {}) => fetch(new URL(pathname, base), {
+  redirect: 'manual',
+  cache: 'no-store',
+  signal: AbortSignal.timeout(30000),
+  headers: {accept: '*/*', ...(init.headers || {})},
+  ...init,
+});
+const mime = (value) => (value || '').split(';')[0].trim().toLowerCase();
+const imageMagicMime = (bytes) => {
+  const b = Buffer.from(bytes);
+  if (b.length >= 12 && b.toString('ascii',0,4) === 'RIFF' && b.toString('ascii',8,12) === 'WEBP') return 'image/webp';
+  if (b.length >= 8 && b.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex'))) return 'image/png';
+  if (b.length >= 3 && b[0] === 255 && b[1] === 216 && b[2] === 255) return 'image/jpeg';
+  return null;
+};
+const noStore = (response, label) => {
+  assert.match(response.headers.get('cache-control') || '', /(?:^|,)\s*no-store(?:,|$)/i, label + ' must not cache revocable media');
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff', label + ' must prevent content sniffing');
+  assert.equal(response.headers.get('x-staffportal-auth-runtime'), 'worker-password-auth-v1', label + ' must preserve approved auth runtime');
+};
 
-async function read(url, init = {}) {
-  return fetch(url, {
-    redirect: 'manual',
-    cache: 'no-store',
-    headers: { accept: 'application/json', ...(init.headers || {}) },
-    ...init,
-  });
-}
+const publicResponse = await request('/api/assets', {headers: {accept: 'application/json'}});
+assert.equal(publicResponse.status, 200, 'Pre-Production public assets must return HTTP 200');
+assert.equal(mime(publicResponse.headers.get('content-type')), 'application/json');
+noStore(publicResponse, 'Public catalogue');
+const payload = await publicResponse.json();
+assert.deepEqual(Object.keys(payload).sort(), ['assets'], 'Only public assets envelope may be exposed');
+assert.ok(Array.isArray(payload.assets), 'Public assets must be an array');
+assert.equal(payload.assets.length, 50, 'Exactly 50 approved V180 assets are required');
 
-function normalizedSourceImage(value) {
-  if (typeof value !== 'string' || value.length === 0 || value.length > 2048) return null;
-  let url;
-  try {
-    if (value.startsWith('/assets/')) {
-      if (value.includes('\\') || value.includes('?') || value.includes('#')) return null;
-      url = new URL(value, upstreamBase);
-      if (url.origin !== upstreamBase.origin || !url.pathname.startsWith('/assets/')) return null;
-    } else {
-      url = new URL(value);
-    }
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:' || url.username || url.password || !trustedImageOrigins.has(url.origin)) return null;
-  return url.toString();
-}
-
-function buildApprovedSourceMap(payload) {
-  assert.ok(payload && typeof payload === 'object' && !Array.isArray(payload), 'upstream body must be an object');
-  assert.ok(Array.isArray(payload.assets), 'upstream body must contain an assets array');
-  assert.ok(payload.assets.length <= 500, 'upstream asset list exceeds the 500-record safety limit');
-
-  const approved = new Map();
-  for (const source of payload.assets) {
-    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
-    if (!approvedStates.has(source.qa_status) || source.display_enabled !== true) continue;
-    if (typeof source.asset_key !== 'string' || !source.asset_key) continue;
-    const imageUrl = normalizedSourceImage(source.image_url);
-    if (!imageUrl) continue;
-    assert.ok(!approved.has(source.asset_key), `approved upstream asset_key is duplicated: ${source.asset_key}`);
-    approved.set(source.asset_key, {
-      image_url: imageUrl,
-      default_image_url: normalizedSourceImage(source.default_image_url),
-    });
-  }
-  assert.ok(approved.size > 0, 'upstream contains no eligible approved public assets');
-  return approved;
-}
-
-function assertSafePublicAsset(asset, approvedSource, seen) {
-  assert.ok(asset && typeof asset === 'object' && !Array.isArray(asset), 'public asset must be an object');
-  for (const field of Object.keys(asset)) {
-    assert.ok(publicFields.has(field), `public asset leaked unexpected field: ${field}`);
-  }
-
-  assert.equal(typeof asset.asset_key, 'string', 'public asset_key must be a string');
-  assert.ok(asset.asset_key.length > 0, 'public asset_key must not be empty');
-  assert.ok(!seen.has(asset.asset_key), `public asset_key is duplicated: ${asset.asset_key}`);
-  seen.add(asset.asset_key);
-
-  const source = approvedSource.get(asset.asset_key);
-  assert.ok(source, `public response exposed a non-approved, disabled, missing-image, or unknown asset: ${asset.asset_key}`);
-
-  assert.equal(typeof asset.image_url, 'string', `${asset.asset_key} image_url must be a string`);
-  const image = new URL(asset.image_url);
-  assert.equal(image.protocol, 'https:', `${asset.asset_key} image_url must use HTTPS`);
-  assert.equal(image.username, '', `${asset.asset_key} image_url must not contain credentials`);
-  assert.equal(image.password, '', `${asset.asset_key} image_url must not contain credentials`);
-  assert.equal(image.toString(), source.image_url, `${asset.asset_key} image_url does not match its approved source record`);
-
-  if (asset.default_image_url !== undefined) {
-    assert.ok(source.default_image_url, `${asset.asset_key} exposed an unapproved default_image_url`);
-    const fallback = new URL(asset.default_image_url);
-    assert.equal(fallback.protocol, 'https:', `${asset.asset_key} default_image_url must use HTTPS`);
-    assert.equal(fallback.username, '', `${asset.asset_key} default_image_url must not contain credentials`);
-    assert.equal(fallback.password, '', `${asset.asset_key} default_image_url must not contain credentials`);
-    assert.equal(fallback.toString(), source.default_image_url, `${asset.asset_key} default_image_url does not match its approved source record`);
-  }
-
-  if (asset.display_enabled !== undefined) {
-    assert.equal(asset.display_enabled, true, `${asset.asset_key} must not expose a disabled asset`);
-  }
+const keys = new Set();
+const counts = {global: 0, widget: 0};
+const tasks = [];
+for (const row of payload.assets) {
+  assert.ok(row && typeof row === 'object' && !Array.isArray(row), 'Asset must be a record');
+  for (const field of Object.keys(row)) assert.ok(allowedFields.has(field), 'Private asset metadata leaked: ' + field);
+  assert.match(row.asset_key, /^[A-Za-z0-9_.-]{1,120}$/, 'Invalid approved asset key');
+  assert.ok(!keys.has(row.asset_key), 'Duplicate approved asset key: ' + row.asset_key);
+  keys.add(row.asset_key);
+  assert.equal(row.display_enabled, true, 'Disabled asset must not be public');
+  assert.ok(row.category === 'global' || row.category === 'widget', 'Invalid public category');
+  counts[row.category]++;
   for (const field of numericFields) {
-    if (asset[field] !== undefined) assert.ok(Number.isFinite(asset[field]), `${asset.asset_key} ${field} must be finite`);
+    if (row[field] !== undefined && row[field] !== null) assert.ok(Number.isFinite(row[field]), 'Invalid numeric field: ' + field);
+  }
+  for (const [field, suffix] of [['image_url','image'], ['default_image_url','default']]) {
+    assert.equal(typeof row[field], 'string', 'Missing public image path: ' + field);
+    const url = new URL(row[field], base);
+    assert.equal(url.origin, base.origin, 'No external Sites, Base44 or public R2 host may deliver media');
+    assert.equal(url.pathname, '/api/assets/images/' + row.asset_key + '/' + suffix, 'Only canonical Worker image paths are allowed');
+    assert.equal(url.search, '', 'Image path must not contain a query');
+    assert.equal(url.hash, '', 'Image path must not contain a fragment');
+    tasks.push({assetKey: row.asset_key, field, path: url.pathname});
   }
 }
+assert.deepEqual(counts, {global:10, widget:40}, 'Approved image family inventory changed');
+assert.equal(tasks.length, 100, 'Both image and default paths must be verified for all 50 assets');
 
-async function verifyOnce() {
-  const upstreamResponse = await read(new URL('/api/assets', upstreamBase));
-  assert.equal(upstreamResponse.status, 200, `approved source returned ${upstreamResponse.status}`);
-  assert.match(upstreamResponse.headers.get('content-type') || '', /^application\/json(?:\s*;|$)/i, 'approved source must return JSON');
-  const approvedSource = buildApprovedSourceMap(await upstreamResponse.json());
-
-  const publicResponse = await read(new URL('/api/assets', stagingBase));
-  assert.equal(publicResponse.status, 200, `deployed /api/assets returned ${publicResponse.status}`);
-  assert.match(publicResponse.headers.get('content-type') || '', /^application\/json(?:\s*;|$)/i, 'deployed /api/assets must return JSON');
-  assert.match(publicResponse.headers.get('cache-control') || '', /(?:^|,)\s*public(?:,|$)/i, 'deployed /api/assets must be publicly cacheable');
-  assert.equal(publicResponse.headers.get('x-content-type-options'), 'nosniff', 'deployed /api/assets must prevent content sniffing');
-
-  const payload = await publicResponse.json();
-  assert.ok(payload && typeof payload === 'object' && !Array.isArray(payload), 'public response body must be an object');
-  assert.deepEqual(Object.keys(payload).sort(), ['assets'], 'public response must contain only the assets envelope');
-  assert.ok(Array.isArray(payload.assets), 'public response must contain an assets array');
-  assert.ok(payload.assets.length > 0, 'public response must contain at least one approved asset');
-  assert.ok(payload.assets.length <= 500, 'public response exceeds the 500-record safety limit');
-
-  const seen = new Set();
-  for (const asset of payload.assets) assertSafePublicAsset(asset, approvedSource, seen);
-  return { publicCount: seen.size, approvedEligibleCount: approvedSource.size };
+let verified = 0;
+async function verifyMedia(item) {
+  const label = item.assetKey + '/' + item.field;
+  const head = await request(item.path,{method:'HEAD'});
+  assert.equal(head.status,200,label + ' HEAD must succeed');
+  const headMime = mime(head.headers.get('content-type'));
+  assert.ok(['image/webp','image/png','image/jpeg'].includes(headMime),label + ' HEAD returned non-image MIME');
+  noStore(head,label + ' HEAD');
+  const response = await request(item.path,{headers:{accept:'image/*'}});
+  assert.equal(response.status,200,label + ' GET must succeed');
+  assert.equal(mime(response.headers.get('content-type')),headMime,label + ' GET/HEAD MIME disagreement');
+  noStore(response,label + ' GET');
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  assert.ok(bytes.byteLength > 0 && bytes.byteLength <= 12_000_000,label + ' invalid image size');
+  assert.equal(imageMagicMime(bytes),headMime,label + ' actual bytes are not an image');
+  verified++;
 }
+// Bounded concurrency protects the Cloudflare Worker and prevents redundant hammering.
+await Promise.all(Array.from({length:3},async(_,worker) => {
+  for(let index=worker;index<tasks.length;index+=3) await verifyMedia(tasks[index]);
+}));
+assert.equal(verified,100, 'All 100 private Worker media GET/HEAD pairs must pass');
 
-let lastError;
-let result;
-for (let attempt = 1; attempt <= 5; attempt++) {
-  try {
-    result = await verifyOnce();
-    lastError = undefined;
-    break;
-  } catch (error) {
-    lastError = error;
-    console.error(`Public asset contract attempt ${attempt}/5 failed: ${error instanceof Error ? error.message : String(error)}`);
-    if (attempt < 5) await delay(4_000);
-  }
+for (const origin of formerOrigins) {
+  // A header-only request to Cloudflare; do not browse or fetch from retired Sites.
+  const response = await request('/api/assets',{headers:{Origin:origin}});
+  assert.notEqual(response.headers.get('access-control-allow-origin'),origin,'Retired Sites CORS still enabled');
+  assert.notEqual(response.headers.get('access-control-allow-credentials'),'true','Retired Sites may not receive credentialed CORS');
 }
-if (lastError) throw lastError;
+const officialCors = await request('/api/assets',{headers:{Origin:official}});
+assert.equal(officialCors.headers.get('access-control-allow-origin'),official,'Official Cloudflare origin must be configured');
 
-const queryVariant = await read(new URL('/api/assets?probe=1', stagingBase));
-assert.equal(queryVariant.status, 404, `query variant must return 404, got ${queryVariant.status}`);
-
-const methodVariant = await read(new URL('/api/assets', stagingBase), { method: 'POST' });
-assert.equal(methodVariant.status, 405, `non-GET variant must return 405, got ${methodVariant.status}`);
-assert.equal(methodVariant.headers.get('allow'), 'GET', 'non-GET response must advertise Allow: GET');
-
+const queryVariant = await request('/api/assets?probe=1');
+assert.equal(queryVariant.status,404,'Catalogue query variant must fail closed');
+const methodVariant = await request('/api/assets',{method:'POST'});
+assert.equal(methodVariant.status,405,'Non-GET catalogue request must not mutate media');
+const missing = await request('/api/assets/images/unpublished-qa-probe/image');
+assert.equal(missing.status,404,'Unknown image must not fall through to a successful HTML page');
+assert.equal(mime(missing.headers.get('content-type')),'application/json');
+for(const pathname of ['/api/auth/me','/api/finance/transactions']){
+  const response=await request(pathname);
+  assert.equal(response.status,401,'Anonymous protected API access must remain denied');
+}
 console.log(JSON.stringify({
-  ok: true,
-  surface: 'staffportal-staging-public-assets',
-  publicCount: result.publicCount,
-  approvedEligibleCount: result.approvedEligibleCount,
-  checks: [
-    'deployed-200-json',
-    'approved-and-enabled-source-membership',
-    'safe-public-field-projection',
-    'trusted-image-url-normalization',
-    'no-duplicate-asset-keys',
-    'public-cache-and-nosniff',
-    'query-and-method-rejection',
-  ],
-}, null, 2));
+  ok:true,scope:'StaffPortal Cloudflare Pre-Production only',approvedRecords:keys.size,
+  categories:counts,validImageGetAndHeadPairs:verified,retiredSitesAllowed:0,
+  tests:['D1-approved-only public projection','canonical same-origin Worker image links',
+  'real GET and HEAD image MIME and magic','revocation-safe no-store',
+  'retired Sites credentialed CORS denied','unknown/invalid paths denied',
+  'anonymous protected routes 401'],
+  browserVisualAcceptance:'separately required',
+  sitesUsedAsRuntimeSource:false,cloudflareWrites:0,productionWrites:0
+},null,2));
