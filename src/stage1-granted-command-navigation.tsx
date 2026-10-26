@@ -14,7 +14,7 @@ type Props={
 export function Stage1GrantedCommandNavigation({context,collapsed,onExpand}:Props){
   const groups=useMemo(()=>buildGrantedCompanyNavigation(context),[context]);
   const [query,setQuery]=useState('');
-  const [expanded,setExpanded]=useState<string[]>([]);
+  const [closedCompanies,setClosedCompanies]=useState<string[]>([]);
   const pathname=usePathname();
   const router=useRouter();
   const normalized=query.trim().toLocaleLowerCase();
@@ -55,11 +55,11 @@ export function Stage1GrantedCommandNavigation({context,collapsed,onExpand}:Prop
             onClick={event=>openRoute(event,page.href)}><Home size={15} aria-hidden="true"/>{page.label}</a>)}
         </div>
         {filtered.length ? filtered.map((group,index)=>{
-          const isOpen=normalized!=='' || expanded.includes(group.id) || (expanded.length===0&&index===0);
+          const isOpen=normalized!=='' || !closedCompanies.includes(group.id);
           return <section className="sp-granted-company" key={group.id} data-granted-company={group.companyId||'__group__'}>
             <button type="button" className="sp-granted-company-heading"
               aria-expanded={isOpen} aria-controls={'sp-granted-'+index}
-              onClick={()=>setExpanded(current=>isOpen?current.filter(id=>id!==group.id):[...current,group.id])}>
+              onClick={()=>setClosedCompanies(current=>current.includes(group.id)?current.filter(id=>id!==group.id):[...current,group.id])}>
               <Building2 size={16} aria-hidden="true"/>
               <span><strong>{group.title}</strong><small>{group.pages.length} live page{group.pages.length===1?'':'s'} · {group.pending.length} other grant{group.pending.length===1?'':'s'}</small></span>
               <ChevronDown size={15} aria-hidden="true"/>
