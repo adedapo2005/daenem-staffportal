@@ -1,5 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   LEGACY_ORIGIN, OFFICIAL_ORIGIN, evaluatePublication, evaluateDirectMedia,
   validatePrivateMediaList, safeImageURL, rangeGetStatusOnly,
@@ -264,4 +269,81 @@ test('status-only range GET reads headers and cancels body, never reading bytes'
 test('status-only GET rejects unsafe adapter and timeouts',async()=>{
  await assert.rejects(rangeGetStatusOnly(LEGACY_ORIGIN+'/assets/test.webp',{fetchImpl:null}),/Invalid status-only GET transport/);
  await assert.rejects(rangeGetStatusOnly(LEGACY_ORIGIN+'/assets/test.webp',{fetchImpl:()=>{},timeoutMs:0}),/Invalid status-only GET transport/);
+});
+
+
+test('same approved asset key but different image URL fails exact-image acceptance',()=>{
+ const {legacy,official}=recordSet();
+ legacy.assets[1].image_url=LEGACY_ORIGIN+'/assets/unapproved/replacement.webp';
+ const result=evaluatePublication(legacy,official);
+ assert.equal(result.status,'FAIL');
+ assert.ok(codes(result).includes('APPROVED_IMAGE_SOURCE_MISMATCH'));
+ assert.equal(result.legacyRecords,50);
+ assert.ok(!JSON.stringify(result).includes('unapproved/replacement.webp'));
+});
+test('same approved key but different fallback URL fails approval gate',()=>{
+ const {legacy,official}=recordSet();
+ legacy.assets[2].default_image_url=LEGACY_ORIGIN+'/assets/unapproved/fallback.png';
+ const result=evaluatePublication(legacy,official);
+ assert.equal(result.status,'FAIL');
+ assert.ok(codes(result).includes('APPROVED_FALLBACK_IMAGE_MISMATCH'));
+ assert.equal(result.legacyRecords,50);
+ assert.ok(!JSON.stringify(result).includes('unapproved/fallback.png'));
+});
+
+
+// End-to-end CLI tests inject an entirely synthetic, offline fetch adapter.
+// No real StaffPortal endpoint, private media or credentials are accessed.
+const CLI_FIXTURE_SOURCE = [  "const origin='https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site';",
+  "const approved=Array.from({length:50},(_,i)=>({",
+  "  asset_key:'global.synthetic'+i+'.day',",
+  "  image_url:origin+'/assets/approved/synthetic'+i+'.webp',",
+  "  display_enabled:true",
+  "}));",
+  "globalThis.fetch=async (url,options={})=>{",
+  "  const value=String(url);",
+  "  if(value.endsWith('/api/assets'))",
+  "    return new Response(JSON.stringify({assets:approved}),{status:200,headers:{'content-type':'application/json'}});",
+  "  if(options.method==='HEAD')return new Response(null,{status:404});",
+  "  if(options.method==='GET' && options.headers?.range==='bytes=0-0')",
+  "    return new Response('SYNTHETIC-PRIVATE-MEDIA-MUST-NEVER-APPEAR-IN-LOGS',{",
+  "      status:200,headers:{'content-type':'application/octet-stream'}",
+  "    });",
+  "  throw new Error('UNEXPECTED_NETWORK_REQUEST');",
+  "};",
+].join('\n');
+const CLI_FIXTURE_URL='data:text/javascript,'+encodeURIComponent(CLI_FIXTURE_SOURCE);
+const CLI_SCRIPT=fileURLToPath(new URL('./check-staffportal-sites-zero-disclosure-live.mjs',import.meta.url));
+const invokeMockCLI=args=>spawnSync(process.execPath,['--import',CLI_FIXTURE_URL,CLI_SCRIPT,...args],{
+  encoding:'utf8',timeout:12000,maxBuffer:3_000_000,
+});
+test('API-only command never exits 0 even when synthetic public feed passes',()=>{
+ const result=invokeMockCLI(['--api-only']);
+ assert.equal(result.status,2,result.stderr?.slice(0,260));
+ const receipt=JSON.parse(result.stdout);
+ assert.equal(receipt.api.status,'PASS');
+ assert.equal(receipt.media.status,'NOT_RUN');
+ assert.equal(receipt.decision,'API_ONLY_PASS_MEDIA_UNVERIFIED');
+});
+test('real CLI wiring checks HEAD then Range GET; GET 200 still blocks release',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'staffportal-p0-gate-fixture-'));
+ const privateLabel='SYNTHETIC-PRIVATE-MEDIA-MUST-NEVER-APPEAR-IN-LOGS';
+ try{
+  const urls=Array.from({length:24},(_,i)=>LEGACY_ORIGIN+'/assets/unpublished/synthetic'+i+'.webp');
+  const fixture=path.join(temp,'fake-private-url-inventory.json');
+  fs.writeFileSync(fixture,JSON.stringify({urls}));
+  const result=invokeMockCLI(['--media-manifest',fixture]);
+  assert.equal(result.status,1,result.stderr?.slice(0,260));
+  const receipt=JSON.parse(result.stdout);
+  assert.equal(receipt.api.status,'PASS');
+  assert.equal(receipt.media.status,'FAIL');
+  assert.equal(receipt.media.checked,24);
+  assert.equal(receipt.media.headDenied,24);
+  assert.equal(receipt.media.statusOnlyGetRequests,24);
+  assert.equal(receipt.media.getAccessible,24);
+  assert.equal(receipt.media.anonymouslyAccessible,24);
+  assert.ok(!result.stdout.includes('/assets/unpublished/'));
+  assert.ok(!result.stdout.includes(privateLabel));
+  assert.equal(receipt.originalUrlsOrPrivateRecordsIncluded,false);
+ }finally{fs.rmSync(temp,{recursive:true,force:true});}
 });
