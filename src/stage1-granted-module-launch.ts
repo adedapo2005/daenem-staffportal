@@ -47,10 +47,13 @@ export async function launchGrantedModule(context:WorkforceContext,request:Scope
   await afterRender();
   // Permission and authenticated session may change while a chunk loads.
   // Do not open a previously authorised module for a revoked/new employee.
-  const latest=currentContext();
-  if(latest.sessionId!==context.sessionId || latest.employee.id!==context.employee.id
-    || !authorisedModuleLaunch(latest,request))
-    throw new Error('Your company access changed while the module was loading. Refresh your authorised workspace.');
+  const assertStillAuthorised=()=>{
+    const latest=currentContext();
+    if(latest.sessionId!==context.sessionId || latest.employee.id!==context.employee.id
+      || !authorisedModuleLaunch(latest,request))
+      throw new Error('Your company access changed while the module was loading. Refresh your authorised workspace.');
+  };
+  assertStillAuthorised();
   publish();
   window.dispatchEvent(new CustomEvent('daenem:active-company-changed',{
     detail:{companyId:company.id,companyCode:company.code},
@@ -58,12 +61,14 @@ export async function launchGrantedModule(context:WorkforceContext,request:Scope
   if(module.selector) {
     let opened=false;
     for(let count=0;count<80;count++){
+      assertStillAuthorised();
       const button=document.querySelector<HTMLButtonElement>(module.selector);
-      if(button && !button.disabled){button.click();opened=true;break;}
+      if(button && !button.disabled){assertStillAuthorised();button.click();opened=true;break;}
       await new Promise<void>(resolve=>window.setTimeout(resolve,100));
     }
     if(!opened)throw new Error(module.label+' could not open its authorised workspace. Please retry.');
   }
+  assertStillAuthorised();
   if(module.event)window.dispatchEvent(new CustomEvent(module.event.name,{
     detail:{...module.event.detail,companyId:company.id,companyCode:company.code,experience},
   }));
