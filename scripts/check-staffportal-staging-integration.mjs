@@ -6,6 +6,8 @@ const staging = read('worker/staffportal-staging.ts');
 const runtime = read('worker/runtime.ts');
 const entry = read('worker/entry.ts');
 const wrangler = read('wrangler.staffportal-staging.jsonc');
+const configuredOrigins = String(JSON.parse(wrangler).vars?.STAFF_PORTAL_FRONTEND_ORIGIN || '')
+  .split(',').map((value) => value.trim()).filter(Boolean);
 const delegated = staging.includes('runtimeHandler.fetch(request,runtimeEnv,ctx)');
 const checks = [
   ['password authentication routes are delegated', delegated && /import\s*\{\s*routePasswordAuth\b/.test(runtime) && /routePasswordAuth\(request,\s*env\)/.test(runtime)],
@@ -13,8 +15,8 @@ const checks = [
   ['preflight is handled before authenticated routes', staging.includes("request.method==='OPTIONS'") && /return preflight\(request,\s*env\)/.test(staging)],
   ['CORS credentials are enabled', staging.includes("'access-control-allow-credentials','true'")],
   ['CORS origin is exact and not wildcarded', staging.includes('allowed.includes(origin)') && !staging.includes("'access-control-allow-origin','*'")],
-  ['approved Sign-In Sites origin is explicit and rejected Premium Lab is absent', wrangler.includes('https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site') && !wrangler.includes('premium-lab')],
-  ['owner-only QA mirror origin is explicitly configured', wrangler.includes('https://daenem-staffportal-qa-review.daenem-group-9873.chatgpt.site')],
+  ['Cloudflare Pre-Production is the sole credentialed frontend origin', configuredOrigins.length === 1 && configuredOrigins[0] === 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev'],
+  ['retired Sites and Premium Lab origins are not authorized', !configuredOrigins.some((origin) => /chatgpt[.]site|premium-lab/i.test(origin))],
   ['configured origins are parsed as exact allowlist entries', staging.includes("env.STAFF_PORTAL_FRONTEND_ORIGIN||") && staging.includes(".split(',')") && staging.includes('.trim()') && staging.includes('allowed.includes(origin)')],
   ['unrelated origins cannot match configured allowlist entries', staging.includes(".split(',')") && staging.includes('.trim()') && staging.includes('allowed.includes(origin)')],
   ['cross-origin session cookies are SameSite=None', staging.includes('SameSite=None')],
