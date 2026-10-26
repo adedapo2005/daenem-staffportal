@@ -170,7 +170,7 @@ try {
       return db.batch(statements);
     },
   };
-  result=await call('assignment-printing',{...valid,qty:'4'},{}, {},staleSubmitDb);
+  result=await call('assignment-printing',{...valid,qty:'4'},{baseUpdatedAt:nextVersion}, {},staleSubmitDb);
   assert.equal(result.status,409,JSON.stringify(result));
   assert.equal(result.body.code,'CONFLICT');
   const reviewed=await db.prepare('SELECT status,response_json FROM workflow_form_submissions WHERE id=?')
