@@ -6,6 +6,7 @@ import ts from 'typescript';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host=source('src/qa-review-v115-runtime.tsx');
 const adapter=source('src/enterprise-command-center-navigation.tsx');
+const portalMount=source('src/stage1-authenticated-navigation-mount.tsx');
 const navigation=source('src/stage1-grant-navigation.tsx');
 const css=source('src/stage1-grant-navigation.css');
 const launcher=source('src/stage1-granted-module-launch.ts');
@@ -61,12 +62,17 @@ const ctx=(roles=[{code:'owner',id:'owner'}],grants={
  permissions:{},companyPermissions:grants,
 });
 
-test('desktop and mobile command navigation share the real authenticated grant provider',()=>{
- assert.match(host,/Stage1AuthenticatedWorkforceContext\.Provider value=\{context\}/);
- assert.match(adapter,/useContext\(Stage1AuthenticatedWorkforceContext\)/);
- assert.match(adapter,/if\(workforce\) return <Stage1GrantNavigation context=\{workforce\}/);
+test('desktop and mobile receive grants from host while protected command overlay stays unchanged',()=>{
+ assert.match(host,/<Stage1AuthenticatedNavigationMount context=\{context\} \/>/);
+ assert.doesNotMatch(adapter,/Stage1GrantNavigation|Stage1AuthenticatedWorkforceContext/);
  assert.match(adapter,/return <CommandCenterSession key=\{props\.sessionScopeKey\}/);
  assert.match(protectedSnapshot,/EnterpriseCommandCenterNavigation/);
+ assert.match(protectedSnapshot,/className="p-mobile-nav p-responsive-navigation-sheet"/);
+ assert.match(portalMount,/createPortal\(/);
+ assert.match(portalMount,/nav\.ecc-navigation:not\(\[data-grant-navigation\]\)/);
+ assert.match(portalMount,/observer\.observe\(document\.body,\{childList:true,subtree:true\}\)/);
+ assert.match(portalMount,/host\.dataset\.authenticatedNavigationId=String\(\+\+nextId\)/);
+ assert.match(css,/nav\.ecc-navigation:not\(\[data-grant-navigation\]\) \{display:none!important;\}/);
 });
 
 test('all assigned companies are displayed automatically, without first-company fallback',()=>{
@@ -227,4 +233,13 @@ test('revocation while an entry launcher is still mounting prevents any click',a
    selected.load=originalLoad;selected.selector=originalSelector;
    globalThis.window=priorWindow;globalThis.document=priorDocument;globalThis.CustomEvent=priorEvent;
  }
+});
+
+
+test('desktop collapsed rail and mobile Sheet retain distinct working navigation mounts',()=>{
+ assert.match(portalMount,/legacy\.closest\('\.p-sidebar'\)\?\.querySelector<HTMLButtonElement>\('\.p-shell-collapse'\)\?\.click\(\)/);
+ assert.match(css,/\.p-app\.p-shell-nav-collapsed \.p-sidebar/);
+ assert.match(css,/\.sp-grant-rail-open \{display:flex;\}/);
+ assert.match(css,/\.p-mobile-nav \.sp-grant-nav-host/);
+ assert.match(css,/\.p-mobile-nav \.sp-grant-nav-mount \.sp-grant-navigation \{display:flex;\}/);
 });
