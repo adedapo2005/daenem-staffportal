@@ -310,14 +310,14 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         void onLogout();
       }}
     >
-      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole, authenticatedContext: context }}>
         <Portal />
       </Stage1RuntimeContext.Provider>
       <Stage1LiveErpRouteBridge context={context} />
       <LivePostLoginEnhancementsV116 />
       <Stage1SearchResults enabled={stage1Enabled} />
       <Stage1AccessibleMetrics enabled={stage1Enabled} />
-      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole, authenticatedContext: context }}>
         <Stage1WorkflowFocus />
       </Stage1RuntimeContext.Provider>
       <Stage1AppearanceStudio enabled={stage1Enabled} />
