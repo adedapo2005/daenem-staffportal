@@ -123,6 +123,14 @@ function companyNavigationRole(context: WorkforceContext, fallback: Stage1Naviga
   return 'Employee';
 }
 
+function isLegacyCompanyOrRolePreview(event: ReactMouseEvent<HTMLDivElement>) {
+  const element=event.target as HTMLElement;
+  // The V115 demo company/role controls are nonauthoritative. Do not let a
+  // keyboard or pointer activation mutate even the local simulated session.
+  const legacy=element.closest('.p-company, .p-demo-strip button, [aria-label="Demo company"], [aria-label="Switch Company"], [aria-label="Demo role"], [aria-label="Acceptance profile"]');
+  return Boolean(legacy);
+}
+
 function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
   const button = (event.target as HTMLElement).closest('button');
   return button?.textContent?.trim() === 'Sign out' && Boolean(button.closest('[role="dialog"]'));
@@ -304,6 +312,11 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       data-staging-build-branch={STAGING_BUILD.branch}
       data-staging-deployed-at={STAGING_BUILD.deployedAt}
       onClickCapture={(event) => {
+        if (isLegacyCompanyOrRolePreview(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         if (!isConfirmedSignOut(event)) return;
         event.preventDefault();
         event.stopPropagation();
