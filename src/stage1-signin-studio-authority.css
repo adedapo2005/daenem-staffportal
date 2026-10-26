@@ -10,10 +10,11 @@
 .stage1-studio-version span { font-size:11px; font-weight:750; color:#46677a; }
 .stage1-studio-guard { background:#f7fafc; color:#27485f; padding:14px 17px; border-left:4px solid #2e9577; border-radius:8px; }
 .stage1-studio-tabs { display:flex; flex-wrap:wrap; gap:8px; border-bottom:1px solid #d3e0e7; padding-bottom:10px; }
-.stage1-studio-authority button,.stage1-studio-authority select { font:inherit; min-height:44px; border:1px solid #afc7d2; border-radius:11px; background:#fff; color:#20465c; padding:10px 16px; cursor:pointer; font-weight:700; }
+.stage1-studio-authority button,.stage1-studio-authority select,.stage1-studio-authority a.stage1-studio-primary,.stage1-studio-main-actions a { font:inherit; min-height:44px; border:1px solid #afc7d2; border-radius:11px; background:#fff; color:#20465c; padding:10px 16px; cursor:pointer; font-weight:700; }
 .stage1-studio-tabs button[aria-current="page"] { background:#164d62; color:#fff; border-color:#164d62; }
 .stage1-studio-authority button:hover { border-color:#19785e; }
-.stage1-studio-authority button:focus-visible,.stage1-studio-authority select:focus-visible { outline:3px solid #e1a447; outline-offset:3px; }
+.stage1-studio-authority button:focus-visible,.stage1-studio-authority select:focus-visible,.stage1-studio-authority a:focus-visible { outline:3px solid #e1a447; outline-offset:3px; }
+.stage1-studio-authority a { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
 .stage1-studio-authority .stage1-studio-primary { background:#116a57; color:#fff; border-color:#116a57; }
 .stage1-studio-authority-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
 .stage1-studio-authority-grid article,.stage1-studio-preview { background:#fff; border:1px solid #d4e0e5; border-radius:16px; padding:clamp(17px,1.4vw,26px); display:grid; gap:14px; min-width:0; align-content:start; }
