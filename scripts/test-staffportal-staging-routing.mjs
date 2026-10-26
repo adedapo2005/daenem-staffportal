@@ -11,6 +11,7 @@ const compiled = ts.transpileModule(source, {
 const delegated = [];
 const workspaceAssetRequests = [];
 const cloudflareMediaRequests = [];
+const staffContentRequests = [];
 const workspaceCompiled = ts.transpileModule(workspaceSource, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -51,6 +52,11 @@ new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (
     } });
   } };
   if (specifier === './v180-media-publication-admin') return { routeOwnerStudioV180Media: async () => null };
+  if (specifier === './v180-public-staff-content') return { routeV180PublicStaffContent: async (input) => {
+    staffContentRequests.push(new URL(input.url).pathname);
+    if (new URL(input.url).pathname === '/api/staff-content') return new Response('{"error":"Staff content is temporarily unavailable."}', { status: 503, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+    return null;
+  } };
   assert.equal(specifier, './runtime');
   return { __esModule: true, default: runtimeHandler };
 });
@@ -134,6 +140,15 @@ await check('unrecognized API requests remain JSON 404 responses instead of SPA 
   assert.equal(response.status, 404);
   assert.match(response.headers.get('content-type'), /application\/json/);
   assert.deepEqual(await response.json(), { error: 'API route not found.' });
+});
+
+await check('Staff content is handled by the Cloudflare D1 route before legacy runtime routing', async () => {
+  const runtimeBefore = delegated.length;
+  const response = await handler.fetch(request('/api/staff-content'), env, ctx);
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.equal(delegated.length, runtimeBefore);
+  assert.equal(staffContentRequests.at(-1), '/api/staff-content');
 });
 
 await check('safe public asset cache policy survives staging response hardening', async () => {
