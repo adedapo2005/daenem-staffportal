@@ -214,6 +214,27 @@ try {
   assert.equal(await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='review'").first().then(r=>r.n),1);
   console.log('PASS real D1 authorised review commits one state transition and one audit');
 
+  // The first online POST may have succeeded while its HTTP response was
+  // lost. The offline sync engine must forward exactly that same key so D1
+  // returns the original receipt rather than rewriting answers or auditing twice.
+  await db.prepare("INSERT INTO workflow_form_assignments(id,form_id,company_id,employee_id,audience_type,assigned_by) VALUES('assignment-replay','form-printing','printing','staff','employee','staff')").run();
+  const beforeReplayAudits=await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='submit'").first().then(r=>r.n);
+  const attemptKey='online-offline-same-attempt-qa';
+  const original=await call('assignment-replay',{...valid,qty:'5'},{},{'idempotency-key':attemptKey});
+  assert.equal(original.status,200,JSON.stringify(original));
+  const replay=await call('assignment-replay',{...valid,qty:'999'},{},{'idempotency-key':attemptKey});
+  assert.equal(replay.status,200,JSON.stringify(replay));
+  assert.equal(replay.body.deduplicated,true);
+  assert.equal(replay.body.submissionId,original.body.submissionId);
+  const storedReplay=await db.prepare("SELECT response_json FROM workflow_form_submissions WHERE id=?")
+    .bind(original.body.submissionId).first();
+  assert.equal(JSON.parse(storedReplay.response_json).qty,'5','Duplicate attempt never replaces first accepted answers');
+  const afterReplayAudits=await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='submit'").first().then(r=>r.n);
+  assert.equal(afterReplayAudits-beforeReplayAudits,1,'A lost receipt produces exactly one submission audit');
+  const offlineSource=readFileSync(new URL('../worker/offline.ts',import.meta.url),'utf8');
+  assert.match(offlineSource,/const formRequest = new Request[\s\S]*?'idempotency-key': idempotencyKey/);
+  console.log('PASS real D1 lost online receipt + offline replay share one submission and audit');
+
   console.log('LOCAL_FORMS_D1_ACCEPTANCE=PASS; synthetic local database only');
 } finally {await mf.dispose();}
 
