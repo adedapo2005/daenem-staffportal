@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { WorkforceContext } from './auth';
+import { hasWorkforcePermission, type WorkforceContext } from './auth';
 import { fetchAdminSignInPreferences, fetchAdminSignInDraft } from './signin-preferences';
 import './stage1-signin-studio-authority.css';
 
 const STUDIO_PATH = '/admin/experience/sign-in-studio';
+const APPROVED_PREVIEW_PATH = '/staff-portal-signin?studioReview=signin-v180';
+
+export function hasStudioManagementGrant(context: WorkforceContext): boolean {
+  const administrativeRole = context.roles.some(role =>
+    ['owner', 'group_admin'].includes(role.code.toLowerCase()));
+  return administrativeRole && hasWorkforcePermission(context, 'settings.access', 'manage');
+}
 const APPROVED = { name: 'StaffPortal Pre-Production — Approved V180', version: 'V180', source: 'Approved Cloudflare runtime · source-locked' } as const;
 const PRESETS = [
   { label: 'Mobile · 390 × 844', width: 390, height: 844 },
@@ -14,12 +21,16 @@ const PRESETS = [
   { label: '32-inch 4K · 3840 × 2160', width: 3840, height: 2160 },
 ] as const;
 
-type Snapshot = { canManage: boolean; backgroundId: string; themeMode: string; widgets: number; hasDraft: boolean };
-type LoadState = 'loading' | 'ready' | 'unavailable';
+type Snapshot = { sessionId: string; backgroundId: string; themeMode: string; widgets: number; hasDraft: boolean | null };
+type LoadState = 'loading' | 'ready' | 'denied' | 'unavailable';
+type AuthoritySection = 'Home' | 'Preview' | null;
 
-function sectionFromUrl() {
+function sectionFromUrl(): AuthoritySection {
   const requested = new URLSearchParams(window.location.search).get('studioSection');
-  return requested === 'Preview' ? 'Preview' : 'Home';
+  if (requested === null || requested === 'Home') return 'Home';
+  if (requested === 'Preview') return 'Preview';
+  // Every other legacy Studio section keeps its original component/navigation.
+  return null;
 }
 function isStudioPath() {
   return window.location.pathname === STUDIO_PATH || window.location.pathname === STUDIO_PATH + '/';
@@ -31,12 +42,14 @@ function navigateSection(section: 'Home' | 'Preview') {
 }
 
 export default function Stage1SignInStudioAuthority({ context }: { context: WorkforceContext }) {
-  const [section, setSection] = useState<'Home' | 'Preview'>(sectionFromUrl);
+  const [section, setSection] = useState<AuthoritySection>(sectionFromUrl);
   const [active, setActive] = useState(isStudioPath);
   const [mount, setMount] = useState<HTMLElement | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [load, setLoad] = useState<LoadState>('loading');
   const [preset, setPreset] = useState(3);
+  const [authRefresh, setAuthRefresh] = useState(0);
+  const localGrant = hasStudioManagementGrant(context);
 
   useEffect(() => {
     const sync = () => { setActive(isStudioPath()); setSection(sectionFromUrl()); };
@@ -51,7 +64,13 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
   }, []);
 
   useEffect(() => {
-    if (!active || (section !== 'Home' && section !== 'Preview')) { setMount(null); return; }
+    const refresh = () => setAuthRefresh(value => value + 1);
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
+
+  useEffect(() => {
+    if (!active || section === null) { setMount(null); return; }
     const locate = () => {
       const node = document.querySelector<HTMLElement>('[data-approved-postlogin="qa-review-v115"] #main-content');
       setMount(previous => previous === node ? previous : node);
@@ -69,36 +88,70 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
   }, [mount, active, section]);
 
   useEffect(() => {
-    if (!active || !mount) return;
+    if (!active || !mount || section === null) return;
     let cancelled = false;
-    setLoad('loading');
     setSnapshot(null);
-    Promise.allSettled([fetchAdminSignInPreferences(), fetchAdminSignInDraft()])
-      .then(([config, draft]) => {
+    if (!localGrant) {
+      // Deny before any settings or draft request; the old demo role is NOT an authority.
+      setLoad('denied');
+      return () => { cancelled = true; };
+    }
+    setLoad('loading');
+    void (async () => {
+      try {
+        const current = await fetchAdminSignInPreferences();
         if (cancelled) return;
-        if (config.status !== 'fulfilled') { setLoad('unavailable'); return; }
-        const current = config.value;
-        const canManage = current.canManage === true;
-        const storedDraft = canManage && draft.status === 'fulfilled' && draft.value.canManage === true && draft.value.draft !== null;
+        if (current.canManage !== true) {
+          setLoad('denied');
+          return;
+        }
+        // Draft data is privileged. Never request it unless the Worker first
+        // confirms Manage Settings, and never claim no draft on a failed read.
+        let hasDraft: boolean | null = null;
+        try {
+          const result = await fetchAdminSignInDraft();
+          if (result.canManage === true) hasDraft = result.draft !== null;
+        } catch {
+          // The draft is unknown, NOT absent.
+        }
+        if (cancelled) return;
         setSnapshot({
-          canManage,
+          sessionId: context.sessionId,
           backgroundId: current.config.backgroundId,
           themeMode: current.config.themeMode,
           widgets: current.config.widgetInstances.filter(widget => widget.visible).length,
-          hasDraft: storedDraft,
+          hasDraft,
         });
         setLoad('ready');
-      }).catch(() => { if (!cancelled) setLoad('unavailable'); });
+      } catch {
+        if (!cancelled) setLoad('unavailable');
+      }
+    })();
     return () => { cancelled = true; };
-  }, [active, mount, context.sessionId]);
+  }, [active, mount, section, context.sessionId, localGrant, authRefresh]);
 
-  if (!active || !mount || (section !== 'Home' && section !== 'Preview')) return null;
+  if (!active || !mount || section === null) return null;
+  if (!localGrant || load === 'denied') {
+    return createPortal(
+      <section className="stage1-studio-authority" data-studio-access="denied" aria-label="Studio access unavailable">
+        <div className="stage1-studio-guard" role="alert">
+          <strong>This destination is unavailable.</strong>
+          <p>Sign-In Studio requires an active Owner/Admin grant and Manage Settings permission.</p>
+        </div>
+      </section>, mount
+    );
+  }
+  if (load !== 'ready' || !snapshot || snapshot.sessionId !== context.sessionId) {
+    return createPortal(
+      <section className="stage1-studio-authority" data-studio-access="checking" aria-label="Verifying Studio access">
+        <div className="stage1-studio-guard" role="status">
+          <strong>{load === 'unavailable' ? 'Cannot verify Studio access.' : 'Verifying Studio access…'}</strong>
+          <p>{load === 'unavailable' ? 'The current permission and configuration check failed closed. Refresh to retry.' : 'Checking current Worker permissions before showing the Studio.'}</p>
+        </div>
+      </section>, mount
+    );
+  }
   const selected = PRESETS[preset] || PRESETS[3];
-  const openPreview = () => {
-    // Same-origin public renderer, no iframe: retain CSP frame-ancestors 'none' and X-Frame-Options DENY.
-    // With noopener, browsers may return null even when the new tab opened.
-    window.open('/staff-portal-signin?studioReview=signin-v180', '_blank', 'noopener,noreferrer');
-  };
   return createPortal(
     <section className="stage1-studio-authority" data-approved-studio-source="cloudflare-v180" aria-label="StaffPortal approved Sign-In Studio workbench">
       <header className="stage1-studio-authority-hero">
@@ -107,7 +160,7 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
         </div>
         <div className="stage1-studio-version"><strong>{APPROVED.version}</strong><span>PUBLIC BASELINE · SOURCE LOCKED</span></div>
       </header>
-      <div className="stage1-studio-guard" role="status"><strong>No changes to public Sign-In.</strong> Review here is read-only. Publishing, activation, and rollback require separate Owner-authorized release gates.</div>
+      <div className="stage1-studio-guard" role="status"><strong>No changes to public Sign-In.</strong> This approved-baseline workbench is read-only. Legacy Studio editors are separate and are not approved to publish the public Sign-In.</div>
       <nav className="stage1-studio-tabs" aria-label="Approved Sign-In Studio">
         <button type="button" aria-current={section === 'Home' ? 'page' : undefined} onClick={() => navigateSection('Home')}>Overview</button>
         <button type="button" aria-current={section === 'Preview' ? 'page' : undefined} onClick={() => navigateSection('Preview')}>Approved Live Preview</button>
@@ -117,12 +170,12 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
           <article><small>AUTHORITATIVE PUBLIC DESIGN</small><h3>Approved V180 · Cloudflare</h3><p>Live renderer: the same approved V180 markup and Worker-bound authentication as the Pre-Production root.</p><span className="stage1-studio-state">CURRENT · READ ONLY</span></article>
           <article><small>HISTORICAL COLLECTION</small><h3>Webflow / Sites variants</h3><p>Retained as historical comparisons. Webflow Home is not the current public Sign-In and must not be labeled active.</p><span className="stage1-studio-state">REFERENCE ONLY</span></article>
           <article><small>CURRENT WORKER CONFIGURATION</small><h3>{load === 'loading' ? 'Checking authority…' : load === 'unavailable' ? 'Configuration unavailable' : 'Server-backed settings'}</h3>
-            {load === 'ready' && snapshot ? <p>Theme mode: {snapshot.themeMode}. Background: {snapshot.backgroundId}. Visible configured widgets: {snapshot.widgets}. {snapshot.canManage ? (snapshot.hasDraft ? 'An unpublished draft exists.' : 'No stored unpublished draft reported.') : 'You have view-only access.'}</p> : <p>{load === 'unavailable' ? 'Unable to verify the current configuration. No values are assumed.' : 'Reading authorised settings without modifications.'}</p>}
+            {load === 'ready' && snapshot ? <p>Theme mode: {snapshot.themeMode}. Background: {snapshot.backgroundId}. Visible configured widgets: {snapshot.widgets}. {snapshot.hasDraft === null ? 'Draft availability could not be verified.' : snapshot.hasDraft ? 'An unpublished draft exists.' : 'No stored unpublished draft reported.'}</p> : <p>{load === 'unavailable' ? 'Unable to verify the current configuration. No values are assumed.' : 'Reading authorised settings without modifications.'}</p>}
           </article>
         </div>
         <div className="stage1-studio-main-actions">
           <button type="button" className="stage1-studio-primary" onClick={() => navigateSection('Preview')}>Review Approved Sign-In</button>
-          <button type="button" onClick={() => window.open('/staff-portal-signin?studioReview=signin-v180', '_blank', 'noopener,noreferrer')}>Open Official V180 Preview</button>
+          <a href={APPROVED_PREVIEW_PATH} target="_blank" rel="noopener noreferrer">Open Official V180 Preview</a>
         </div>
       </> : <div className="stage1-studio-preview">
         <div><h3>Preview the actual public renderer</h3><p>Opens the approved Cloudflare Sign-In in a separate same-origin window. The old Sites laboratory preview and static miniatures are not used. Browser window dimensions are requests, not verified viewport measurements.</p></div>
@@ -130,7 +183,7 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
           {PRESETS.map((item, index) => <option value={index} key={item.label}>{item.label}</option>)}
         </select></label>
         <p className="stage1-studio-review-note">Selected target: {selected.width} × {selected.height}. Adjust the browser viewport using TinyFish or device QA tools for measured acceptance.</p>
-        <button type="button" className="stage1-studio-primary" onClick={openPreview}>Open approved Sign-In in new window</button>
+        <a href={APPROVED_PREVIEW_PATH} target="_blank" rel="noopener noreferrer" className="stage1-studio-primary">Open approved Sign-In in new window</a>
         <p className="stage1-studio-review-note">Frame embedding is intentionally disabled by Pre-Production anti-clickjacking policy. Opening the preview does not modify settings or publish drafts.</p>
       </div>}
       <footer>Owner-approved V180 source remains protected. Legacy Studio sections retain their existing implementation; they are not evidence of current public authority until migrated and accepted.</footer>
