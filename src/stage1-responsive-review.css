@@ -13,10 +13,11 @@
 .sp-viewport-choice-row button small{font-size:12px;font-weight:500}
 .sp-viewport-review-shell :is(a,button):focus-visible{outline:3px solid #0c8061;outline-offset:3px}
 .sp-viewport-disclaimer{padding:14px 17px;background:#fffaf0;border:1px solid #e8d49f;border-radius:13px;color:#604d24;font-size:13px;line-height:1.6}
-.sp-viewport-preview-area{display:grid;gap:8px;justify-items:center;min-width:0;width:100%;padding:clamp(9px,1.1vw,18px);background:#fff;border:1px solid #d9e3e8;border-radius:19px;box-sizing:border-box}
-.sp-viewport-preview-caption{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;width:100%;font-size:13px;color:#496271}
-.sp-viewport-preview-caption strong{font-size:15px;color:#1c434b}
-.sp-viewport-frame-clip{position:relative;max-width:100%;min-width:0;overflow:hidden;flex:none;border:2px solid #284d55;background:#e7edee;border-radius:8px}
-.sp-viewport-frame-clip iframe{position:absolute;top:0;left:0;border:0;background:white;display:block;max-width:none}
-@media(max-width:700px){.sp-viewport-review-header{padding:17px}.sp-viewport-control-groups{grid-template-columns:minmax(0,1fr)}.sp-viewport-review-shell{padding:12px}.sp-viewport-frame-clip{border-radius:4px}}
+.sp-viewport-review-instructions{display:grid;gap:12px;padding:clamp(18px,1.5vw,26px);background:#fff;border:1px solid #d9e3e8;border-radius:18px;line-height:1.55}
+.sp-viewport-review-instructions strong{color:#184b43;font-size:16px}
+.sp-viewport-review-instructions p{margin:6px 0 0;color:#536a74;font-size:14px;max-width:90ch}
+.sp-viewport-review-instructions a{color:#146d55;font-size:14px;font-weight:730}
+.sp-viewport-open{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 17px;max-width:max-content;background:#126a52;border:1px solid #09543d;border-radius:10px;color:#fff;font:inherit;font-weight:780;cursor:pointer}
+.sp-viewport-result{background:#eff7f3;border:1px solid #abcdbf;border-radius:10px;padding:12px;color:#255749!important;max-width:none!important}
+@media(max-width:700px){.sp-viewport-review-header{padding:17px}.sp-viewport-control-groups{grid-template-columns:minmax(0,1fr)}.sp-viewport-review-shell{padding:12px}}
 @media(prefers-reduced-motion:reduce){.sp-viewport-review-shell *{transition:none!important;animation:none!important}}
