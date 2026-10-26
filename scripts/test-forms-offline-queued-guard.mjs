@@ -33,7 +33,7 @@ function operation(kind, state) {
     createdAt: '2026-10-25T00:00:00.000Z', updatedAt: '2026-10-25T00:00:00.000Z',
   };
 }
-async function run(current, nextKind, nextState) {
+async function run(current, nextKind, nextState, submissionKey) {
   const writes = [];
   const helpers = {
     namespaceFor: () => namespace,
@@ -52,6 +52,7 @@ async function run(current, nextKind, nextState) {
   const input = {
     kind: nextKind, entityType: 'workflow_form_assignment',
     entityId: 'form-a', state: nextState,
+    idempotencyKey: submissionKey,
     payload: { responses: { answer: 'later edit' } },
   };
   try {
@@ -95,4 +96,29 @@ test('cross-company offline scope mismatch still fails closed before a write', a
   const result = await run(other,'forms.submit','local-draft');
   assert.match(result.error?.message || '', /scope mismatch/);
   assert.deepEqual(result.writes, []);
+});
+
+test('online submission key replaces an old local-draft key when queued after network failure',async()=>{
+ const result=await run(operation('forms.submit','local-draft'),'forms.submit','waiting-to-sync','online-attempt-1');
+ assert.ok(result.result);
+ assert.equal(result.result.idempotencyKey,'online-attempt-1');
+ assert.equal(result.writes[0].idempotencyKey,'online-attempt-1');
+});
+
+test('different follow-up attempt after synced Forms work receives new key',async()=>{
+ const result=await run(operation('forms.submit','synced'),'forms.submit','waiting-to-sync','second-attempt');
+ assert.ok(result.result);
+ assert.equal(result.result.idempotencyKey,'second-attempt');
+});
+
+test('rejected second-tab writes cannot replace an already-queued idempotency token',async()=>{
+ const result=await run(operation('forms.submit','waiting-to-sync'),'forms.submit','waiting-to-sync','new-key-from-second-tab');
+ assert.match(result.error?.message||'',/already been queued for sync/);
+ assert.equal(result.writes.length,0);
+});
+
+test('Expense offline idempotency remains unchanged by Forms-specific key rotation',async()=>{
+ const result=await run(operation('expense.draft.save','local-draft'),'expense.draft.save','waiting-to-sync','new-key');
+ assert.ok(result.result);
+ assert.equal(result.result.idempotencyKey,'same-key');
 });
