@@ -38,8 +38,8 @@ BEGIN
     AND fr.source_module='sales' AND fr.status IN ('open','overdue')
     AND fr.amount_kobo=NEW.expected_amount_kobo
     AND fr.balance_kobo=fr.amount_kobo AND fr.paid_kobo=0
-    AND so.status='completed' AND so.payment_status!='refunded'
-    AND so.total_kobo=fr.amount_kobo
+    AND so.status='completed' AND so.payment_status='unpaid'
+    AND so.amount_paid_kobo=0 AND so.total_kobo=fr.amount_kobo
   );
 END;
 
@@ -62,6 +62,27 @@ WHEN NEW.id IS NOT OLD.id OR NEW.company_id IS NOT OLD.company_id
 BEGIN
  SELECT RAISE(ABORT,'Bakery Monnify intent identity and history are immutable');
 END;
+-- An outstanding sandbox intent takes exclusive custody of payment initiation.
+-- Prevent cash receipts, refunds or sale repricing racing the provider checkout.
+-- An uncertain failed intent must be reviewed before any alternative payment.
+CREATE TRIGGER IF NOT EXISTS bakery_monnify_intent_sale_money_lock
+BEFORE UPDATE OF company_id,status,payment_status,amount_paid_kobo,total_kobo ON sales_orders
+WHEN OLD.company_id='company-bakery'
+ AND (NEW.company_id IS NOT OLD.company_id OR NEW.status IS NOT OLD.status
+  OR NEW.payment_status IS NOT OLD.payment_status
+  OR NEW.amount_paid_kobo IS NOT OLD.amount_paid_kobo
+  OR NEW.total_kobo IS NOT OLD.total_kobo)
+ AND EXISTS(
+  SELECT 1 FROM bakery_monnify_sandbox_intents i
+  JOIN finance_receivables fr ON fr.id=i.receivable_id
+  WHERE i.company_id='company-bakery' AND i.status IN ('reserved','initialized')
+   AND fr.company_id='company-bakery' AND fr.source_module='sales'
+   AND fr.source_id=OLD.id
+ )
+BEGIN
+ SELECT RAISE(ABORT,'Bakery payment intent must be reconciled before changing sale money');
+END;
+
 CREATE TRIGGER IF NOT EXISTS bakery_monnify_intent_no_delete
 BEFORE DELETE ON bakery_monnify_sandbox_intents
 BEGIN
