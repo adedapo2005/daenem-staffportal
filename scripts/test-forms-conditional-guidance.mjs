@@ -85,7 +85,7 @@ test('malformed historical schema cannot crash recursive Forms Center rendering'
   for (const invalid of [null, {}, 'broken-json', [], cycle,
     [{key:'__proto__',label:'Danger',type:'text'}],
     [{key:'bad',label:'Bad',type:'unknown'}],
-    [{key:'bad',label:'Bad',type:'select',options:['One']}],
+    [{key:'bad',label:'Bad',type:'select',options:[]}],
   ]) {
     assert.equal(validGuidedFormSchema(invalid), false);
     assert.deepEqual(guidedVisibleFields(invalid, {}), []);
@@ -117,4 +117,14 @@ test('required verified evidence has a clear submission blocker instead of a fak
   const ui=readFileSync(new URL('../src/centers.tsx',import.meta.url),'utf8');
   assert.match(ui,/Boolean\(evidenceBlocker\)/);
   assert.match(ui,/Verified \{f\.type\} evidence cannot be captured as ordinary text/);
+});
+
+
+test('historical one-choice and over-30-choice forms remain readable while new builders enforce their own limits',()=>{
+  const legacySingle=[{key:'outcome',label:'Outcome',type:'select',required:true,options:['Only legacy option']}];
+  assert.equal(validGuidedFormSchema(legacySingle),true);
+  assert.equal(guidedCompletion(legacySingle,{outcome:'Only legacy option'}).percent,100);
+  const legacyMany=[{key:'outcome',label:'Outcome',type:'select',options:Array.from({length:35},(_,i)=>'Option '+i)}];
+  assert.equal(validGuidedFormSchema(legacyMany),true);
+  assert.equal(guidedFormEvidenceBlocker(legacyMany,{}),null);
 });
