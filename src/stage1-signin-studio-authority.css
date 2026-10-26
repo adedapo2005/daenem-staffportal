@@ -92,3 +92,21 @@
 @media(prefers-reduced-motion: reduce) {
   .stage1-studio-isolated-shell * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Server-derived draft comparisons are always read-only, opaque and responsive. */
+.stage1-studio-draft-review { display:grid; gap:18px; min-width:0; }
+.stage1-studio-draft-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px; background:#fff; border:1px solid #d4e0e5; border-radius:16px; padding:clamp(18px,1.6vw,30px); }
+.stage1-studio-draft-heading > div { min-width:0; flex:1 1 260px; display:grid; gap:8px; }
+.stage1-studio-draft-heading small,.stage1-studio-draft-row small { font-size:12px; font-weight:800; letter-spacing:.04em; color:#28735f; }
+.stage1-studio-draft-heading h3 { margin:0; }
+.stage1-studio-draft-empty { background:#fff; border:1px solid #d4e0e5; border-radius:16px; padding:22px; display:grid; gap:10px; }
+.stage1-studio-draft-empty strong { color:#163b4b; }
+.stage1-studio-draft-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; min-width:0; }
+.stage1-studio-draft-row { display:grid; gap:14px; padding:clamp(16px,1.25vw,24px); background:#fff; border:1px solid #d4e0e5; border-radius:16px; min-width:0; }
+.stage1-studio-draft-row h4 { margin:6px 0 0; font-size:15px; color:#204257; overflow-wrap:anywhere; }
+.stage1-studio-draft-row dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0; }
+.stage1-studio-draft-row dt { font-size:12px; font-weight:800; color:#527083; margin-bottom:7px; }
+.stage1-studio-draft-row dd { margin:0; overflow-wrap:anywhere; white-space:pre-wrap; line-height:1.45; font-size:13px; color:#1c465b; }
+.stage1-studio-draft-review > .stage1-studio-primary { justify-self:start; }
+@media(max-width:1000px) { .stage1-studio-draft-list { grid-template-columns:1fr; } }
+@media(max-width:520px) { .stage1-studio-draft-row dl { grid-template-columns:1fr; } .stage1-studio-draft-review > .stage1-studio-primary { justify-self:stretch; } }
