@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {validGuidedDependencies, guidedVisibleFields, pruneHiddenGuidedAnswers, guidedCompletion, guidedInvalidAnswers} from '../src/guided-form-dependencies.ts';
+import {validGuidedDependencies, guidedVisibleFields, pruneHiddenGuidedAnswers, guidedCompletion, guidedInvalidAnswers, validGuidedFormSchema, guidedFormEvidenceBlocker, guidedFieldVisible} from '../src/guided-form-dependencies.ts';
 import {checkFormAnswerCompleteness} from '../worker/form-answer-completeness.ts';
 
 const schema=[
@@ -74,4 +74,47 @@ test('backend validates stored conditional dependency graphs before evaluating a
   {key:'two',label:'Second',type:'checkbox',showWhen:{fieldKey:'one',equals:true}},
  ];
  assert.equal(validGuidedDependencies(corrupted),false);
+});
+
+
+test('malformed historical schema cannot crash recursive Forms Center rendering', () => {
+  const cycle=[
+    {key:'a',label:'A',type:'checkbox',showWhen:{fieldKey:'b',equals:true}},
+    {key:'b',label:'B',type:'checkbox',showWhen:{fieldKey:'a',equals:true}},
+  ];
+  for (const invalid of [null, {}, 'broken-json', [], cycle,
+    [{key:'__proto__',label:'Danger',type:'text'}],
+    [{key:'bad',label:'Bad',type:'unknown'}],
+    [{key:'bad',label:'Bad',type:'select',options:['One']}],
+  ]) {
+    assert.equal(validGuidedFormSchema(invalid), false);
+    assert.deepEqual(guidedVisibleFields(invalid, {}), []);
+  }
+  assert.equal(guidedFieldVisible(cycle, {a:true,b:true}, cycle[0]), false);
+});
+
+test('one invalid form does not prevent a different valid assigned form rendering', () => {
+  const invalid=[{key:'a',label:'A',type:'checkbox',showWhen:{fieldKey:'a',equals:true}}];
+  const validForm=[{key:'result',label:'Result',type:'select',required:true,options:['Yes','No']}];
+  assert.equal(validGuidedFormSchema(invalid),false);
+  assert.equal(validGuidedFormSchema(validForm),true);
+  assert.equal(guidedCompletion(validForm,{result:'Yes'}).percent,100);
+  const ui=readFileSync(new URL('../src/centers.tsx',import.meta.url),'utf8');
+  assert.match(ui,/!configured\?<div className="form-configuration-error" role="alert">/);
+  assert.match(ui,/configured\?guidedCompletion\(schema,draft\)/);
+  assert.match(ui,/This form cannot be submitted because its field configuration is invalid/);
+});
+
+test('required verified evidence has a clear submission blocker instead of a fake text input', () => {
+  const schema=[{key:'reason',label:'Reason',type:'textarea',required:true}];
+  assert.equal(guidedFormEvidenceBlocker(schema,{reason:'test'}),null);
+  assert.match(guidedFormEvidenceBlocker(schema,{reason:'test'},{requirePhoto:true}),/verified photo or signature/);
+  assert.match(guidedFormEvidenceBlocker(schema,{reason:'test'},{requireSignature:true}),/verified photo or signature/);
+  const withEvidence=[...schema,{key:'proof',label:'Proof',type:'photo',required:true}];
+  assert.match(guidedFormEvidenceBlocker(withEvidence,{reason:'test'}),/Proof requires a verified evidence workflow/);
+  const optional=[...schema,{key:'proof',label:'Proof',type:'file'}];
+  assert.equal(guidedFormEvidenceBlocker(optional,{reason:'test'}),null);
+  const ui=readFileSync(new URL('../src/centers.tsx',import.meta.url),'utf8');
+  assert.match(ui,/Boolean\(evidenceBlocker\)/);
+  assert.match(ui,/Verified \{f\.type\} evidence cannot be captured as ordinary text/);
 });
