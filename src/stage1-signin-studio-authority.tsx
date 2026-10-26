@@ -20,13 +20,16 @@ const APPROVED_PREVIEW_PATH = '/staff-portal-signin?studioReview=signin-v180';
  * any-company, all-companies, Owner role, or demo session as Group proof.
  * Backend Worker endpoints must separately enforce the same authority.
  */
-export function hasStudioManagementGrant(context: WorkforceContext): boolean {
-  const administrativeRole = context.roles.some(role =>
+export function hasStudioReferenceRole(context: WorkforceContext): boolean {
+  return context.roles.some(role =>
     ['owner', 'group_admin'].includes(role.code.toLowerCase()));
+}
+
+export function hasStudioManagementGrant(context: WorkforceContext): boolean {
   const scope = context as WorkforceContext & {
     groupPermissions?: Record<string, string>;
   };
-  return administrativeRole &&
+  return hasStudioReferenceRole(context) &&
     scope.groupPermissions?.['settings.access'] === 'manage';
 }
 const APPROVED = { name: 'StaffPortal Pre-Production — Approved V180', version: 'V180', source: 'Approved Cloudflare runtime · source-locked' } as const;
@@ -150,12 +153,39 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
   if (!active || (!standalone && !mount)) return null;
   const present = (content: ReactNode) => standalone ? content : createPortal(content, mount!);
   if (!localGrant || load === 'denied') {
+    if (!hasStudioReferenceRole(context)) {
+      return present(
+        <section className="stage1-studio-authority" data-studio-access="denied" aria-label="Studio access unavailable">
+          <div className="stage1-studio-guard" role="alert">
+            <strong>This destination is unavailable.</strong>
+            <p>Only appropriately assigned Owner or Group Admin accounts may access Sign-In Studio. Contact Access Control for authorization.</p>
+          </div>
+        </section>
+      );
+    }
+    // A recognized administrator may inspect PUBLIC approved Sign-In references,
+    // but no stored Group preferences, draft, internal Webflow previews or editor
+    // tools may appear without independent Group authorization from the Worker.
     return present(
-      <section className="stage1-studio-authority" data-studio-access="denied" aria-label="Studio access unavailable">
-        <div className="stage1-studio-guard" role="alert">
-          <strong>This destination is unavailable.</strong>
-          <p>Verified Group-wide Manage Settings permission is required. Company-only grants and Owner/Admin roles alone cannot authorize protected Sign-In settings. Group authorization is unavailable or unverified for this session.</p>
+      <section className="stage1-studio-authority stage1-studio-public-reference" data-studio-access="reference-only" aria-label="Approved public Sign-In reference">
+        <div className="stage1-studio-authority-hero">
+          <div>
+            <span className="stage1-studio-eyebrow">DAENEM STAFFPORTAL / APPROVED PUBLIC REFERENCE</span>
+            <h2>{APPROVED.name}</h2>
+            <p>The approved public Cloudflare Sign-In can be inspected safely while Group-level Studio access is unverified.</p>
+          </div>
+          <div className="stage1-studio-version">
+            <strong>{APPROVED.version}</strong><span>PUBLIC DESIGN · SOURCE LOCKED</span>
+          </div>
         </div>
+        <div className="stage1-studio-guard" role="status">
+          <strong>Protected Studio settings are unavailable.</strong>
+          <p>Owner and Group Admin roles do not override missing independent Group Manage Settings authorization. No unpublished drafts, Worker settings or historical activation controls have been requested or displayed.</p>
+        </div>
+        <div className="stage1-studio-main-actions">
+          <a href={APPROVED_PREVIEW_PATH} target="_blank" rel="noopener noreferrer" className="stage1-studio-primary">View approved V180 public Sign-In</a>
+        </div>
+        <footer>Public reference only · no company selection · no edits · no publishing</footer>
       </section>
     );
   }
