@@ -4,8 +4,8 @@ import {
 } from './signin-preferences';
 
 /**
- * Only trusted Worker GET responses may populate this review; never call
- * modify browser preferences or publish the public V180.
+ * Only trusted Worker GET responses with explicit Group authority may populate
+ * this review. Never modify browser preferences or publish public V180.
  */
 export class StudioPermissionDenied extends Error {
   constructor() {
@@ -49,6 +49,15 @@ async function trustedGet(path: string, signal: AbortSignal): Promise<JsonRecord
   const payload = record(await response.json());
   if (!payload) throw new Error('Invalid Studio settings response.');
   if (payload.canManage !== true) throw new StudioPermissionDenied();
+  // The Worker must independently establish Group authority, rather than
+  // recycling context.permissions (a MAX across company memberships).
+  // Current deployed Worker omits this explicit contract; fail closed until
+  // Backend A defines and proves its separate Group grant at both endpoints.
+  const authority = record(payload.groupSignInAuthority);
+  if (authority?.scope !== 'group' || authority.level !== 'manage' ||
+      authority.basis !== 'explicit-group-assignment') {
+    throw new StudioPermissionDenied();
+  }
   return payload;
 }
 
