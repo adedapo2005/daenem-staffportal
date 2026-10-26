@@ -1,4 +1,5 @@
 import { createContext } from 'react';
+import type { WorkforceContext } from './auth';
 
 export type Stage1NavigationRole = 'Owner' | 'Manager' | 'Employee';
 
@@ -9,4 +10,5 @@ export type Stage1NavigationRole = 'Owner' | 'Manager' | 'Employee';
 export const Stage1RuntimeContext = createContext<{
   enabled: boolean;
   companyRole?: Stage1NavigationRole;
+  authenticatedContext?: WorkforceContext;
 }>({ enabled: true });

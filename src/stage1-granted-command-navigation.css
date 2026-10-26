@@ -1,0 +1,110 @@
+/* Authenticated StaffPortal company → module pages (opaque, nonglass).
+   Does not modify the Owner-approved V115 snapshot or Sign-In. */
+[data-approved-postlogin="qa-review-v115"] .p-company,
+.p-responsive-navigation-sheet .p-company,
+[data-approved-postlogin="qa-review-v115"] .p-demo-strip button,
+[data-approved-postlogin="qa-review-v115"] main[data-auth-renderer] details:has(button),
+[data-approved-postlogin="qa-review-v115"] details:has(> summary):has(button[aria-label="Change simulated profile"]),
+[data-approved-postlogin="qa-review-v115"] .p-field:has([aria-label="Demo company"]),
+.p-modal .p-field:has([aria-label="Demo company"]),
+[data-approved-postlogin="qa-review-v115"] .p-field:has([aria-label="Switch Company"]),
+.p-modal .p-field:has([aria-label="Switch Company"]),
+[data-approved-postlogin="qa-review-v115"] .p-field:has([aria-label="Demo role"]),
+.p-modal .p-field:has([aria-label="Demo role"]),
+[data-approved-postlogin="qa-review-v115"] .p-field:has([aria-label="Acceptance profile"]),
+.p-modal .p-field:has([aria-label="Acceptance profile"]) {
+  display:none !important;
+}
+[data-approved-postlogin="qa-review-v115"] .p-workspace-scope {display:none !important}
+.sp-granted-nav {
+  display:flex;flex-direction:column;min-width:0;max-width:100%;
+  height:100%;background:#fff;color:#203d48;
+}
+.sp-granted-nav .sp-granted-rail {display:none;align-items:center;justify-content:center;gap:5px;padding:11px 5px}
+.sp-granted-rail button {
+  display:grid;place-items:center;min-width:40px;min-height:44px;
+  background:#edf7f1;border:1px solid #a4cbbb;border-radius:11px;color:#155e48;cursor:pointer;
+}
+.sp-granted-rail-mark{display:grid;place-items:center;color:#a7843e}
+.sp-granted-full {min-width:0;display:flex;flex:1;flex-direction:column;min-height:0}
+.sp-granted-heading{
+  display:flex;align-items:center;gap:10px;min-width:0;
+  padding:14px 12px 9px;color:#184738;
+}
+.sp-granted-heading svg{color:#a88741;flex:none}
+.sp-granted-heading div{min-width:0;display:grid;gap:2px}
+.sp-granted-heading strong{font-size:14px;line-height:1.4;font-weight:790}
+.sp-granted-heading small{font-size:12px;line-height:1.4;color:#637c77;overflow-wrap:anywhere}
+.sp-granted-search{
+  display:flex;align-items:center;gap:8px;min-width:0;
+  margin:4px 10px 10px;padding:9px 10px;border:1px solid #bfd8cc;
+  background:#f8faf9;border-radius:9px;color:#346556;
+}
+.sp-granted-search input{
+  min-width:0;width:100%;font:inherit;font-size:13px;color:#214338;
+  border:0;outline:none;background:transparent;
+}
+.sp-granted-nav .sp-granted-scroll{
+  display:grid;align-content:start;gap:12px;min-height:0;overflow-y:auto;
+  overscroll-behavior:contain;padding:4px 10px 14px;
+  scrollbar-width:thin;
+}
+.sp-granted-section-caption{
+  font-size:11px;font-weight:810;text-transform:uppercase;letter-spacing:.07em;color:#647c76;
+}
+.sp-granted-personal{display:grid;gap:5px}
+.sp-granted-personal a{
+  display:flex;gap:9px;align-items:center;min-height:40px;
+  padding:9px 11px;color:#245344;text-decoration:none;font-size:13px;
+  font-weight:700;border:1px solid transparent;border-radius:9px;
+}
+.sp-granted-personal a:hover,.sp-granted-personal a[aria-current="page"]{
+  background:#eaf5ee;border-color:#b1d6c3;
+}
+.sp-granted-company{min-width:0;border:1px solid #d6e6df;border-radius:12px;background:#fff;overflow:clip}
+.sp-granted-company-heading{
+  display:flex;align-items:center;gap:8px;width:100%;min-height:51px;
+  padding:10px 9px;background:#f2f7f4;color:#1e5143;border:0;
+  text-align:left;cursor:pointer;font:inherit;
+}
+.sp-granted-company-heading>svg{flex:none}
+.sp-granted-company-heading>span{display:grid;min-width:0;flex:1;gap:2px}
+.sp-granted-company-heading strong{font-size:13px;font-weight:790;line-height:1.35;overflow-wrap:anywhere}
+.sp-granted-company-heading small{font-size:11px;line-height:1.4;color:#667d75}
+.sp-granted-company-heading[aria-expanded="true"]>svg:last-child{transform:rotate(180deg)}
+.sp-granted-company-pages{padding:8px;display:grid;gap:4px}
+.sp-granted-company-pages>a{
+  display:flex;align-items:center;gap:8px;min-height:44px;
+  padding:9px;border-radius:8px;border:1px solid transparent;
+  text-decoration:none;color:#2d4f44;font-size:13px;font-weight:710;
+}
+.sp-granted-company-pages>a span{flex:1;min-width:0}
+.sp-granted-company-pages>a svg{flex:none;color:#237c61}
+.sp-granted-company-pages>a:hover,.sp-granted-company-pages>a[aria-current="page"]{
+  background:#edf6f1;border-color:#bedccc;color:#15553c;
+}
+.sp-granted-pending{font-size:12px;line-height:1.5;border-top:1px solid #dce7e3;margin-top:5px}
+.sp-granted-pending summary{cursor:pointer;padding:10px 5px;color:#556f68;font-weight:730}
+.sp-granted-pending>p{color:#637976;margin:4px 5px 10px}
+.sp-granted-pending ul{margin:0;padding:0 3px;list-style:none;display:grid;gap:6px}
+.sp-granted-pending li{display:grid;gap:2px;border-radius:7px;background:#f6f8f7;padding:8px 9px}
+.sp-granted-pending li span{font-weight:700;color:#36544e}
+.sp-granted-pending li small{color:#6a7d77}
+.sp-granted-empty{display:flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.5;padding:12px;color:#536e60}
+.sp-granted-footer{display:flex;gap:8px;align-items:center;padding:10px 12px;font-size:11px;line-height:1.4;color:#647b72;border-top:1px solid #e2e9e6}
+.sp-granted-nav a:focus-visible,.sp-granted-nav button:focus-visible,
+.sp-granted-nav input:focus-visible,.sp-granted-nav summary:focus-visible{
+ outline:3px solid #187e5e;outline-offset:2px;
+}
+/* Collapsed left rail retains a keyboard-operable expand affordance.
+   Mobile Sheet uses the full projection regardless of desktop collapse state. */
+.p-sidebar .sp-granted-nav[data-collapsed="true"] .sp-granted-rail{display:flex;flex-direction:column}
+.p-sidebar .sp-granted-nav[data-collapsed="true"] .sp-granted-full{display:none}
+.p-responsive-navigation-sheet .sp-granted-nav[data-collapsed="true"] .sp-granted-rail{display:none}
+.p-responsive-navigation-sheet .sp-granted-nav[data-collapsed="true"] .sp-granted-full{display:flex}
+@media(max-width:1024px){
+ .sp-granted-nav{max-height:min(85vh,840px)}
+ .sp-granted-nav .sp-granted-scroll{overflow-y:auto;max-height:min(68vh,650px)}
+ .sp-granted-company-heading{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){.sp-granted-nav *{scroll-behavior:auto!important;transition:none!important}}

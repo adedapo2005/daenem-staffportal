@@ -470,8 +470,9 @@ async function clickWhenReady(selector: string) {
 export type PostAuthModuleExperience = { moduleId?: string; canonicalPath?: string; layoutId: string; shellMode: string; density: string; motion: string; erpId: ErpId; };
 type ModuleExperienceResolver = (erpId: ErpId, companyId: string | null, companyCode: string) => Promise<PostAuthModuleExperience>;
 
-export function ModuleHub({ context, companyId, companyCode, showLauncher = false, experience, resolveExperience }: { context: WorkforceContext; companyId: string | null; companyCode: string; showLauncher?: boolean; experience?: PostAuthModuleExperience; resolveExperience?: ModuleExperienceResolver }) {
-  const [open, setOpen] = useState(false);
+export function ModuleHub({ context, companyId, companyCode, showLauncher = false, initialOpen = false, onDismiss, experience, resolveExperience }: { context: WorkforceContext; companyId: string | null; companyCode: string; showLauncher?: boolean; initialOpen?: boolean; onDismiss?: () => void; experience?: PostAuthModuleExperience; resolveExperience?: ModuleExperienceResolver }) {
+  const [open, setOpen] = useState(initialOpen);
+  const dismiss = () => { setOpen(false); onDismiss?.(); };
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState('');
   const [message, setMessage] = useState('');
@@ -549,7 +550,7 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
       const opened = module.selector ? await clickWhenReady(module.selector) : true;
       if (!opened) throw new Error(`${module.label} did not finish opening. Please try once more.`);
       if (module.event) window.dispatchEvent(new CustomEvent(module.event.name, { detail: { ...module.event.detail, companyId: companyId || '', companyCode, experience: moduleExperience } }));
-      setOpen(false);
+      dismiss();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : `${module.label} could not be opened.`);
     } finally {
@@ -559,9 +560,9 @@ export function ModuleHub({ context, companyId, companyCode, showLauncher = fals
 
   return <div className="postauth-module-envelope" data-module-envelope="true" data-module-layout={experience?.layoutId || 'executive-command'} data-module-erp={experience?.erpId || 'staff'}>
     {showLauncher && <button className="module-hub-launcher" onClick={() => setOpen(true)} aria-label="Open module hub"><Grid3X3 size={18} /><span>Modules</span></button>}
-    {open && <div className="module-hub-backdrop" onClick={() => !loading && setOpen(false)}>
+    {open && <div className="module-hub-backdrop" onClick={() => !loading && dismiss()}>
       <section className="module-hub-panel" role="dialog" aria-modal="true" aria-labelledby="module-hub-title" onClick={(event) => event.stopPropagation()}>
-        <header><div><span className="eyebrow">ON-DEMAND WORKSPACES</span><h2 id="module-hub-title">Module Hub</h2><p>Only the workspace you open is loaded, keeping the portal fast and memory-efficient.</p></div><button onClick={() => setOpen(false)} disabled={Boolean(loading)} aria-label="Close module hub"><X size={20} /></button></header>
+        <header><div><span className="eyebrow">ON-DEMAND WORKSPACES</span><h2 id="module-hub-title">Module Hub</h2><p>Only the workspace you open is loaded, keeping the portal fast and memory-efficient.</p></div><button onClick={() => dismiss()} disabled={Boolean(loading)} aria-label="Close module hub"><X size={20} /></button></header>
         <label className="module-hub-search"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your modules…" autoFocus /></label>
         {message && <div className="module-hub-message">{message}</div>}
         <main>{groups.length ? groups.map((group) => <section key={group.label}><div className="module-hub-group-title"><span>{group.label}</span><small>{group.items.length}</small></div><div className="module-hub-grid">{group.items.map((item) => {
