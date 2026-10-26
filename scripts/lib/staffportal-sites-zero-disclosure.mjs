@@ -194,11 +194,13 @@ export function validatePrivateMediaList(urls, {approvedURLs = []} = {}) {
   return normalized;
 }
 
-// A HEAD-only 403/404 is NOT proof that GET denies the same media.
-// On a HEAD denial, verify status with a one-byte-range GET adapter too.
-export async function evaluateDirectMedia(urls, { head, get, approvedURLs = [], concurrency = 4 } = {}) {
-  if (typeof head !== 'function' || typeof get !== 'function')
-    throw new TypeError('Both HEAD and status-only GET adapters are required');
+// A HEAD or Range-only denial is NOT proof of browser-visible GET denial.
+// On HEAD denial, test one-byte Range GET and then plain, browser-like GET.
+// All GET adapters must cancel immediately after response headers; no media body
+// may be inspected, printed, persisted or used to decide the release.
+export async function evaluateDirectMedia(urls, { head, get, getFull, approvedURLs = [], concurrency = 4 } = {}) {
+  if (typeof head !== 'function' || typeof get !== 'function' || typeof getFull !== 'function')
+    throw new TypeError('HEAD, Range GET and plain GET status-only adapters are required');
   const targets = validatePrivateMediaList(urls, {approvedURLs});
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8)
     throw new TypeError('Concurrency must be between 1 and 8');
@@ -206,8 +208,9 @@ export async function evaluateDirectMedia(urls, { head, get, approvedURLs = [], 
   const accessibleStatus = value => Number.isInteger(value) && value >= 200 && value < 300;
   const summary = {
     checked:targets.length, denied:0, anonymouslyAccessible:0, unknown:0,
-    headAccessible:0, getAccessible:0, headDenied:0, getDenied:0,
-    statusOnlyGetRequests:0,
+    headAccessible:0, getAccessible:0, fullGetAccessible:0,
+    headDenied:0, getDenied:0, fullGetDenied:0,
+    statusOnlyGetRequests:0, plainGetRequests:0,
   };
   let index = 0;
   const workers = Array.from({length:Math.min(concurrency, targets.length)},async () => {
@@ -218,23 +221,35 @@ export async function evaluateDirectMedia(urls, { head, get, approvedURLs = [], 
       if (accessibleStatus(headStatus)) {
         summary.headAccessible++;
         summary.anonymouslyAccessible++;
-        // Already a definite failure. Do not request any private body.
+        // Already a definite release failure; never fetch the image body.
         continue;
       }
       if (!deniedStatus(headStatus)) {
-        summary.unknown++; // Redirects, 405, 5xx and timeouts are never passing evidence.
+        summary.unknown++; // Redirects, 405, 5xx and timeouts do not prove denial.
         continue;
       }
       summary.headDenied++;
       summary.statusOnlyGetRequests++;
-      let getStatus;
-      try { getStatus = await get(url); } catch { summary.unknown++; continue; }
-      if (deniedStatus(getStatus)) {
-        summary.getDenied++;
-        summary.denied++;
-      } else if (accessibleStatus(getStatus)) {
+      let rangeStatus;
+      try { rangeStatus = await get(url); } catch { summary.unknown++; continue; }
+      if (accessibleStatus(rangeStatus)) {
         summary.getAccessible++;
         summary.anonymouslyAccessible++;
+        continue;
+      }
+      if (!deniedStatus(rangeStatus)) { summary.unknown++; continue; }
+      summary.getDenied++;
+      // A host could deny Range requests but still serve a normal browser GET.
+      // Only an explicit denial of the third, plain GET establishes denial.
+      summary.plainGetRequests++;
+      let fullStatus;
+      try { fullStatus = await getFull(url); } catch { summary.unknown++; continue; }
+      if (accessibleStatus(fullStatus)) {
+        summary.fullGetAccessible++;
+        summary.anonymouslyAccessible++;
+      } else if (deniedStatus(fullStatus)) {
+        summary.fullGetDenied++;
+        summary.denied++;
       } else summary.unknown++;
     }
   });
@@ -242,7 +257,7 @@ export async function evaluateDirectMedia(urls, { head, get, approvedURLs = [], 
   return Object.freeze({...summary,
     status:summary.denied===targets.length ? 'PASS' : 'FAIL',
     rawURLsRecorded:false,
-    finding:'HEAD_AND_RANGE_GET_STATUS_NO_BODY_SAVED',
+    finding:'HEAD_RANGE_AND_PLAIN_GET_STATUS_NO_BODY_SAVED',
   });
 }
 
@@ -253,7 +268,7 @@ export async function evaluateDirectMedia(urls, { head, get, approvedURLs = [], 
  * Do NOT read, persist, print or return the body of any unpublished image.
  * If the CDN ignores Range, the 2xx status itself still blocks the release.
  */
-export async function rangeGetStatusOnly(url, {fetchImpl = globalThis.fetch, timeoutMs = 13000} = {}) {
+export async function rangeGetStatusOnly(url, {fetchImpl = globalThis.fetch, timeoutMs = 13000, plain = false} = {}) {
   if (typeof fetchImpl !== 'function' || !Number.isSafeInteger(timeoutMs)
     || timeoutMs < 1000 || timeoutMs > 30000)
     throw new TypeError('Invalid status-only GET transport');
@@ -262,7 +277,8 @@ export async function rangeGetStatusOnly(url, {fetchImpl = globalThis.fetch, tim
   try {
     const response = await fetchImpl(url,{
       method:'GET', redirect:'manual',signal,
-      headers:{range:'bytes=0-0','cache-control':'no-cache',
+      headers:{...(!plain ? {range:'bytes=0-0'} : {}),
+        'cache-control':'no-cache',
         accept:'image/avif,image/webp,image/png,image/jpeg,*/*;q=0.1'},
     });
     const status = response.status;
