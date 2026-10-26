@@ -280,7 +280,8 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
   }, [stage1Enabled]);
 
   if (typeof window !== 'undefined') {
-    sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
+    // Never persist a fictional demo-role projection for the real-authority Studio route.
+    if (!standaloneStudio) sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
     if (window.location.pathname === '/' || window.location.pathname.startsWith('/workspace')) {
       window.history.replaceState({}, '', '/home');
     }
