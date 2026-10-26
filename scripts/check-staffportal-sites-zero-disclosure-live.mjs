@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
  LEGACY_ORIGIN, OFFICIAL_ORIGIN,
- evaluatePublication, evaluateDirectMedia,
+ evaluatePublication, evaluateDirectMedia, rangeGetStatusOnly,
 } from './lib/staffportal-sites-zero-disclosure.mjs';
 
 // This tool is intentionally invoked manually, and is always READ ONLY.
@@ -53,11 +53,19 @@ const receipt={
  expectedPublicCount:expected,api:null,media:null,decision:null,
 };
 let exitCode=0;
+let approvedPublicURLs=null;
 try{
  const [legacy,worker]=await Promise.all([
   readPublicJSON(LEGACY_ORIGIN),readPublicJSON(OFFICIAL_ORIGIN),
  ]);
  receipt.api=evaluatePublication(legacy,worker,{expected});
+ // Refuse to audit an Owner-private manifest until the approved public
+ // inventory is independently available to protect approved image sources.
+ if(Array.isArray(worker.assets) && worker.assets.length===expected) {
+  approvedPublicURLs=worker.assets.flatMap(item=>[
+    item.image_url,item.default_image_url,
+  ]).filter(value=>typeof value==='string' && value.length>0);
+ }
 }catch(error){
  receipt.api={
   status:'UNVERIFIED',reason:safeErrorMessage(error),violations:[{code:'UNVERIFIED_PUBLIC_FEED',count:1}],
@@ -78,16 +86,23 @@ if(apiOnly){
   const input=JSON.parse(fs.readFileSync(mediaManifest,'utf8'));
   if(!Array.isArray(input.urls)||input.urls.length!==24)
    throw new TypeError('Unexpected confidential historical direct media inventory count');
+  if(!approvedPublicURLs?.length)throw new Error('Approved public image list not verified');
   receipt.media=await evaluateDirectMedia(input.urls,{
    concurrency:4,
+   approvedURLs:approvedPublicURLs,
    head:async url=>{
     const response=await fetch(url,{
      method:'HEAD',redirect:'manual',
-     headers:{accept:'image/avif,image/webp,image/png,image/jpeg,*/*;q=0.1'},
+     headers:{accept:'image/avif,image/webp,image/png,image/jpeg,*/*;q=0.1',
+      'cache-control':'no-cache'},
      signal:AbortSignal.timeout(13000),
     });
     return response.status;
    },
+   // Only reached if HEAD was already denied. A HEAD 404 can mask a GET 200.
+   // Inspect the status of a one-byte-range GET; abort/cancel without storing
+   // its response body. A response that ignores Range still fails on HTTP 2xx.
+   get:async url=>rangeGetStatusOnly(url),
   });
  }catch{
   receipt.media={status:'UNVERIFIED',reason:'PRIVATE_MEDIA_PROBE_UNVERIFIED',
