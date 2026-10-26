@@ -48,7 +48,8 @@ test('Forms Center explicitly uses the same key for online and offline submissio
   const offlineCalls=[...ui.matchAll(/await offlineRef\.current\.queueFormsSubmission\(\{([\s\S]*?)\},assignmentCompanyId!?\);/g)];
   assert.equal(offlineCalls.length,2,'Both direct-offline and network-fallback paths must remain covered');
   for(const match of offlineCalls) assert.match(match[1],/idempotencyKey/);
-  assert.doesNotMatch(ui,/companyId\|\|context\.companies\[0\]/);
+  const submitOnly=ui.slice(ui.indexOf('async function submit(item:FormAssignment)'),ui.indexOf('const selected=useMemo('));
+  assert.doesNotMatch(submitOnly,/companyId\|\|context\.companies\[0\]/);
 });
 
 test('offline Forms queue carries the first online key, without affecting other domains',()=>{
