@@ -56,7 +56,7 @@ export function Stage1GrantedCommandNavigation({context,collapsed,onExpand}:Prop
         </div>
         {filtered.length ? filtered.map((group,index)=>{
           const isOpen=normalized!=='' || !closedCompanies.includes(group.id);
-          return <section className="sp-granted-company" key={group.id} data-granted-company={group.companyId||'__group__'}>
+          return <section className="sp-granted-company" key={group.id} data-granted-company={group.companyId===null?'__group__':'company:'+group.companyId}>
             <button type="button" className="sp-granted-company-heading"
               aria-expanded={isOpen} aria-controls={'sp-granted-'+index}
               onClick={()=>setClosedCompanies(current=>current.includes(group.id)?current.filter(id=>id!==group.id):[...current,group.id])}>
