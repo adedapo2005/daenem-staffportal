@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { hasWorkforcePermission, type WorkforceContext } from './auth';
-import { fetchAdminSignInPreferences, fetchAdminSignInDraft } from './signin-preferences';
+import { readStudioReviewWithoutSideEffects, studioDraftDifferences, StudioPermissionDenied, type StudioDraftDifference } from './stage1-signin-studio-review';
 import './stage1-signin-studio-authority.css';
 
 const STUDIO_PATH = '/admin/experience/sign-in-studio';
@@ -24,22 +24,23 @@ const PRESETS = [
   { label: '32-inch 4K · 3840 × 2160', width: 3840, height: 2160 },
 ] as const;
 
-type Snapshot = { sessionId: string; backgroundId: string; themeMode: string; widgets: number; hasDraft: boolean | null };
+type Snapshot = { sessionId: string; backgroundId: string; themeMode: string; widgets: number; hasDraft: boolean; changes: StudioDraftDifference[] };
 type LoadState = 'loading' | 'ready' | 'denied' | 'unavailable';
-type AuthoritySection = 'Home' | 'Themes' | 'Preview' | null;
+type AuthoritySection = 'Home' | 'Themes' | 'Draft' | 'Preview' | null;
 
 function sectionFromUrl(): AuthoritySection {
   const requested = new URLSearchParams(window.location.search).get('studioSection');
   if (requested === null || requested === 'Home') return 'Home';
   if (requested === 'Preview') return 'Preview';
   if (requested === 'Themes') return 'Themes';
+  if (requested === 'Draft') return 'Draft';
   // Every other legacy Studio section keeps its original component/navigation.
   return null;
 }
 function isStudioPath() {
   return isSignInStudioRoutePathname(window.location.pathname);
 }
-function navigateSection(section: 'Home' | 'Themes' | 'Preview') {
+function navigateSection(section: 'Home' | 'Themes' | 'Draft' | 'Preview') {
   window.history.pushState({}, '', STUDIO_PATH + '?studioSection=' + section);
   window.dispatchEvent(new PopStateEvent('popstate'));
   window.dispatchEvent(new Event('daenem-studio-section-change'));
@@ -104,52 +105,32 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
   useEffect(() => {
     if (!active || section === null || (!standalone && !mount)) return;
     let cancelled = false;
+    const controller = new AbortController();
     setSnapshot(null);
     if (!localGrant) {
-      // Deny before any settings or draft request; the old demo role is NOT an authority.
+      // The demo Owner/Manager projection is NEVER a substitute for the grant.
       setLoad('denied');
-      return () => { cancelled = true; };
+      return () => { cancelled = true; controller.abort(); };
     }
     setLoad('loading');
-    void (async () => {
-      try {
-        const current = await fetchAdminSignInPreferences();
-        if (cancelled) return;
-        if (current.canManage !== true) {
-          setLoad('denied');
-          return;
-        }
-        // Draft data is privileged. Never request it unless the Worker first
-        // confirms Manage Settings, and never claim no draft on a failed read.
-        let hasDraft: boolean | null = null;
-        try {
-          const result = await fetchAdminSignInDraft();
-          if (cancelled) return;
-          // A grant may be revoked between these two awaited Worker reads.
-          // Do not display the earlier response after the second denial.
-          if (result.canManage !== true) {
-            setLoad('denied');
-            return;
-          }
-          hasDraft = result.draft !== null;
-        } catch {
-          if (!cancelled) setLoad('unavailable');
-          return;
-        }
-        if (cancelled) return;
+    void readStudioReviewWithoutSideEffects(controller.signal)
+      .then(({ published, draft }) => {
+        if (cancelled || controller.signal.aborted) return;
         setSnapshot({
           sessionId: context.sessionId,
-          backgroundId: current.config.backgroundId,
-          themeMode: current.config.themeMode,
-          widgets: current.config.widgetInstances.filter(widget => widget.visible).length,
-          hasDraft,
+          backgroundId: published.backgroundId,
+          themeMode: published.themeMode,
+          widgets: published.widgetInstances.filter(widget => widget.visible).length,
+          hasDraft: draft !== null,
+          changes: studioDraftDifferences(published, draft),
         });
         setLoad('ready');
-      } catch {
-        if (!cancelled) setLoad('unavailable');
-      }
-    })();
-    return () => { cancelled = true; };
+      })
+      .catch((error: unknown) => {
+        if (cancelled || controller.signal.aborted) return;
+        setLoad(error instanceof StudioPermissionDenied ? 'denied' : 'unavailable');
+      });
+    return () => { cancelled = true; controller.abort(); };
   }, [active, mount, section, context.sessionId, localGrant, authRefresh, standalone]);
 
   if (!active || (!standalone && !mount)) return null;
@@ -199,6 +180,7 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
       <nav className="stage1-studio-tabs" aria-label="Approved Sign-In Studio">
         <button type="button" aria-current={section === 'Home' ? 'page' : undefined} onClick={() => navigateSection('Home')}>Overview</button>
         <button type="button" aria-current={section === 'Themes' ? 'page' : undefined} onClick={() => navigateSection('Themes')}>Approved Theme</button>
+        <button type="button" aria-current={section === 'Draft' ? 'page' : undefined} onClick={() => navigateSection('Draft')}>Review Unpublished Draft</button>
         <button type="button" aria-current={section === 'Preview' ? 'page' : undefined} onClick={() => navigateSection('Preview')}>Approved Live Preview</button>
       </nav>
       {section === 'Home' ? <>
@@ -206,7 +188,7 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
           <article><small>AUTHORITATIVE PUBLIC DESIGN</small><h3>Approved V180 · Cloudflare</h3><p>Live renderer: the same approved V180 markup and Worker-bound authentication as the Pre-Production root.</p><span className="stage1-studio-state">CURRENT · READ ONLY</span></article>
           <article><small>HISTORICAL COLLECTION</small><h3>Webflow / Sites variants</h3><p>Retained as historical comparisons. Webflow Home is not the current public Sign-In and must not be labeled active.</p><span className="stage1-studio-state">REFERENCE ONLY</span></article>
           <article><small>SERVER SETTINGS · DISTINCT FROM LOCKED DESIGN</small><h3>Worker-backed preferences</h3>
-            <p>Stored theme mode: {snapshot.themeMode}. Stored background ID: {snapshot.backgroundId}. Stored visible widgets: {snapshot.widgets}. {snapshot.hasDraft === null ? 'Draft availability could not be verified.' : snapshot.hasDraft ? 'An unpublished draft exists.' : 'No stored unpublished draft reported.'}</p>
+            <p>Stored theme mode: {snapshot.themeMode}. Stored background ID: {snapshot.backgroundId}. Stored visible widgets: {snapshot.widgets}. {snapshot.hasDraft ? 'An unpublished draft exists.' : 'No unpublished draft is recorded.'}</p>
             <p className="stage1-studio-review-note">These values are server records, not proof that the source-locked V180 hero, layouts or widgets are editable through the legacy design library.</p>
           </article>
         </div>
@@ -234,7 +216,7 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
               <div><dt>Theme mode</dt><dd>{snapshot.themeMode}</dd></div>
               <div><dt>Background setting</dt><dd>{snapshot.backgroundId}</dd></div>
               <div><dt>Configured visible widgets</dt><dd>{snapshot.widgets}</dd></div>
-              <div><dt>Unpublished Worker draft</dt><dd>{snapshot.hasDraft === null ? 'Unknown' : snapshot.hasDraft ? 'Present' : 'None recorded'}</dd></div>
+              <div><dt>Unpublished Worker draft</dt><dd>{snapshot.hasDraft ? 'Present' : 'None recorded'}</dd></div>
             </dl>
             <p>These settings are readable but are not proof of editable controls for the protected V180 page. No activation or publish action is offered here.</p>
           </article>
@@ -245,6 +227,43 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
             <span className="stage1-studio-state">ARCHIVED REFERENCE ONLY</span>
           </article>
         </div>
+      </div> : section === 'Draft' ? <div className="stage1-studio-draft-review">
+        <header className="stage1-studio-draft-heading">
+          <div>
+            <small>LIVE WORKER RECORDS · READ ONLY</small>
+            <h3>Unpublished draft compared with stored settings</h3>
+            <p>These differences come from the authenticated Cloudflare Worker. This comparison does not claim that every stored field currently controls the source-locked V180 design.</p>
+          </div>
+          <span className="stage1-studio-state">{snapshot.hasDraft ? snapshot.changes.length + ' settings different' : 'NO UNPUBLISHED DRAFT'}</span>
+        </header>
+        {!snapshot.hasDraft ? (
+          <div className="stage1-studio-draft-empty" role="status">
+            <strong>No unpublished Sign-In settings draft was returned.</strong>
+            <p>The public approved V180 source remains unchanged. No draft or example values were invented.</p>
+          </div>
+        ) : snapshot.changes.length === 0 ? (
+          <div className="stage1-studio-draft-empty" role="status">
+            <strong>A saved draft exists with no changes from the stored settings.</strong>
+            <p>No publish or overwrite operation has been performed.</p>
+          </div>
+        ) : (
+          <>
+            <div className="stage1-studio-draft-list" role="list" aria-label="Stored Sign-In settings changes">
+              {snapshot.changes.slice(0, 32).map(item => (
+                <article role="listitem" key={item.path} className="stage1-studio-draft-row">
+                  <div><small>{item.section}</small><h4>{item.path}</h4></div>
+                  <dl>
+                    <div><dt>Currently stored</dt><dd>{item.before}</dd></div>
+                    <div><dt>Draft value</dt><dd>{item.after}</dd></div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+            {snapshot.changes.length > 32 && <p className="stage1-studio-review-note">Showing the first 32 of {snapshot.changes.length} changed fields. The full count includes remaining settings; this is not an approval or publication report.</p>}
+          </>
+        )}
+        <p className="stage1-studio-review-note">Reviewing these settings does not modify them, populate browser preferences, send an approval, or publish public Sign-In changes.</p>
+        <button type="button" className="stage1-studio-primary" onClick={() => navigateSection('Preview')}>Inspect protected V180 public baseline</button>
       </div> : <div className="stage1-studio-preview">
         <div><h3>Preview the actual public renderer</h3><p>Opens the approved Cloudflare Sign-In in a separate same-origin window. The old Sites laboratory preview and static miniatures are not used. Review presets document target dimensions; opening a new tab does not resize the browser.</p></div>
         <label>Review viewport preset <select value={preset} onChange={e => setPreset(Number(e.target.value))}>
