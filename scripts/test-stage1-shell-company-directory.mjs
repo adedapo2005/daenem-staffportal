@@ -11,9 +11,9 @@ test('host mounts a grant-derived directory without modifying snapshot',()=>{
  assert.match(directory,/data-company-page=\{page.href\}/);
  assert.match(snapshot,/className="p-company"/);
 });
-test('old company switchers and demo strip are not presented',()=>{
+test('legacy switches are hidden but truthful demo warning remains visible',()=>{
  assert.match(css,/\.p-company,/);
- assert.match(css,/\.p-demo-strip,/);
+ assert.match(css,/\.p-demo-strip > button,/);\n assert.doesNotMatch(css,/\.p-demo-strip,/);
  assert.match(css,/Demo company/);
  assert.match(css,/Switch Company/);
  assert.match(css,/display:none!important/);
