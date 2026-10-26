@@ -245,15 +245,17 @@ function AdminMasterControls({ kind, item, options, onMutate }: { kind: AdminMas
   </div>;
 }
 
-export function SpendCenter({ context, initialTab, onClose }: { context: WorkforceContext; initialTab: Tab; onClose: () => void }) {
+export function SpendCenter({ context, initialTab, onClose, fixedCompanyId }: { context: WorkforceContext; initialTab: Tab; onClose: () => void; fixedCompanyId?: string }) {
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [selectedCompany, setSelectedCompany] = useState(context.companies.find((company) => company.primary)?.id || context.companies[0]?.id || '');
+  // A company-specific page is routed from the authorised navigation, not a picker.
+  const scopedCompany = fixedCompanyId ? context.companies.find((item) => item.id === fixedCompanyId) : undefined;
+  const selectedCompany = fixedCompanyId ? scopedCompany?.id || '' : context.companies.find((item) => item.primary)?.id || context.companies[0]?.id || '';
   const [erpModule, setErpModule] = useState<ErpModuleId>('finance');
   const [master, setMaster] = useState<MasterData | null>(null);
   const [loadingMaster, setLoadingMaster] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { status, waitingCount, needsAttentionCount } = useOfflinePlatform();
-  const company = context.companies.find((item) => item.id === selectedCompany) || context.companies[0];
+  const company = fixedCompanyId ? scopedCompany : context.companies.find((item) => item.id === selectedCompany);
   const canCreate = Boolean(company && can(context, 'expense.requests', 'create', company.id));
   const canApprove = Boolean(company && can(context, 'expense.approve', 'view', company.id));
   const canAdmin = Boolean(company && can(context, 'expense.master', 'manage', company.id));
@@ -297,7 +299,7 @@ export function SpendCenter({ context, initialTab, onClose }: { context: Workfor
         <button type="button" className="spend-close" onClick={onClose} aria-label="Close Spend and Cost workspace"><X size={20} /></button>
       </header>
       <div className="spend-toolbar">
-        <label className="spend-company"><Building2 size={16} /><span>Working company</span><select value={selectedCompany} onChange={(event) => setSelectedCompany(event.target.value)} aria-label="Working company">{context.companies.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
+        <div className="spend-company" aria-label="Company assigned by access permissions"><Building2 size={16} /><span>Authorised company</span><strong>{company?.name || 'No assigned company'}</strong></div>
         {erpOptions.length > 0 && <label className="spend-company"><Landmark size={16} /><span>ERP context</span><select value={erpModule} onChange={(event) => setErpModule(event.target.value as ErpModuleId)} aria-label="ERP context">{erpOptions.map((item) => <option value={item.id} key={item.id}>{item.label}</option>)}</select></label>}
         <span className="spend-sync-status" data-spend-sync-status={status}><span aria-hidden="true">●</span>{status === 'offline' ? (waitingCount ? `Offline · ${waitingCount} waiting` : 'Offline') : status === 'waiting' ? `${waitingCount} waiting to sync` : status === 'needs-attention' ? `${needsAttentionCount} needs attention` : status === 'synced' ? 'All work synced' : status === 'syncing' ? `Syncing ${waitingCount} item${waitingCount === 1 ? '' : 's'}…` : 'Online'}</span>
       </div>
