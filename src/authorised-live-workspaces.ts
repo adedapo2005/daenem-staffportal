@@ -21,7 +21,7 @@ function permitted(context:WorkforceContext, code:string, companyId:string|null)
   return levels[level||'none']>=levels.view;
 }
 function companyPageHref(route:LiveErpRoute, scopeId:string|null):string {
-  return '/'+route+'/company/'+encodeURIComponent(scopeId||'group');
+  return scopeId===null?'/'+route+'/group':'/'+route+'/company/'+encodeURIComponent(scopeId);
 }
 
 /** All permitted company → module pages, not a company dropdown or picker. */
@@ -49,10 +49,14 @@ export function authorisedLiveWorkspaces(context:WorkforceContext):AuthorisedWor
 }
 
 export function liveRouteCompanyScope(pathname:string,route:LiveErpRoute,workspaces:readonly AuthorisedWorkspace[]) {
+  if(pathname==='/'+route+'/group'||pathname==='/'+route+'/group/'){
+    const workspace=workspaces.find(w=>w.scopeId===null&&w.pages.some(p=>p.route===route))||null;
+    return {explicit:true,denied:!workspace,workspace};
+  }
   const match=pathname.match(/^\/(forms|facilities|spend)\/company\/([^/?#]+)\/?$/);
   if(!match || match[1]!==route)return {explicit:false,denied:false,workspace:null as AuthorisedWorkspace|null};
   let id:string;
   try{id=decodeURIComponent(match[2]);}catch{return {explicit:true,denied:true,workspace:null};}
-  const workspace=workspaces.find(w=>(w.scopeId||'group')===id&&w.pages.some(p=>p.route===route))||null;
+  const workspace=workspaces.find(w=>w.scopeId===id&&w.pages.some(p=>p.route===route))||null;
   return {explicit:true,denied:!workspace,workspace};
 }
