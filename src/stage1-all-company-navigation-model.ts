@@ -48,7 +48,9 @@ export function projectAllAuthorisedCompanyModules(
     if (!company.id || seen.has(company.id)) continue;
     seen.add(company.id);
     const workspace = workspaces.find(w => w.scopeId === company.id);
+    const pageRoutes = new Set((workspace?.pages || []).map(page => page.route));
     const modules = definitions
+      .filter(m => !pageRoutes.has(m.id as AuthorisedWorkspace['pages'][number]['route']))
       .filter(m => !isPersonalModuleId(m.id) && Boolean(m.permissions?.length || m.prefixes?.length))
       .filter(m => canSee(context, m, company.id, company.code))
       .map(m => ({id:m.id, label:m.label, detail:m.detail, group:m.group}));

@@ -36,7 +36,7 @@ test('all granted companies appear automatically without an active/primary compa
   workspace('printing','Printing',[page('forms','printing')]),workspace('bakery','Bakery',[page('forms','bakery')]),
  ]);
  assert.deepEqual(p.companies.map(x=>x.companyId),['printing','bakery']);
- assert.deepEqual(p.companies[0].modules.map(x=>x.id),['printing','forms']);
+ assert.deepEqual(p.companies[0].modules.map(x=>x.id),['printing']);
  assert.deepEqual(p.companies[1].modules.map(x=>x.id),['bakery']);
  assert.equal(p.companies[0].pages[0].href,'/forms/company/printing');
  assert.equal(p.companies.some(x=>x.companyId==='autos'),false);
@@ -123,4 +123,23 @@ test('personal launch focus and touch targets retain opaque responsive legibilit
  assert.match(css,/sp-all-company-nav :is\(button,a\):focus-visible/);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
  assert.doesNotMatch(css,/backdrop-filter|filter:blur/);
+});
+
+test('canonical Forms page suppresses only same-company duplicate module',()=>{
+ const c=ctx({printing:{'forms.access':'view'},bakery:{'forms.access':'view'}});
+ const p=project(c,[workspace('printing','Printing',[page('forms','printing')])]);
+ assert.deepEqual(p.companies.find(x=>x.companyId==='printing').modules.map(x=>x.id),[]);
+ assert.deepEqual(p.companies.find(x=>x.companyId==='printing').pages.map(x=>x.route),['forms']);
+ assert.deepEqual(p.companies.find(x=>x.companyId==='bakery').modules.map(x=>x.id),['forms']);
+});
+
+test('Forms Facilities Spend page routes do not duplicate modules or hide unrelated modules',()=>{
+ const defs=[...modules,
+  {id:'facilities',label:'Facilities',detail:'Facilities',group:'Operations',permissions:['facilities.access']},
+  {id:'spend',label:'Spend',detail:'Spend',group:'Operations',permissions:['expense.requests']}];
+ const c=ctx({printing:{'forms.access':'view','facilities.access':'view','expense.requests':'view','printing.access':'view'}});
+ const p=projectAllAuthorisedCompanyModules(c,defs,[workspace('printing','Printing',[
+  page('forms','printing'),page('facilities','printing'),page('spend','printing')])],canSee);
+ assert.deepEqual(p.companies[0].pages.map(x=>x.route),['forms','facilities','spend']);
+ assert.deepEqual(p.companies[0].modules.map(x=>x.id),['printing']);
 });
