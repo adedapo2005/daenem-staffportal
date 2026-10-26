@@ -46,7 +46,7 @@ export function validGuidedFormSchema(schema: unknown): schema is GuidedField[] 
       || typeof field.type !== 'string' || !validTypes.has(field.type)) return false;
     if (field.type === 'select') {
       if (!Array.isArray(field.options) || field.options.length < 1
-        || field.options.some(option => typeof option !== 'string' || !option.trim())) return false;
+        || field.options.some((option:unknown) => typeof option !== 'string' || !option.trim())) return false;
     }
   }
   return true;
