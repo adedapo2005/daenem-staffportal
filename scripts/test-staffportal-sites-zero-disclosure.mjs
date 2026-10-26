@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {
   LEGACY_ORIGIN, OFFICIAL_ORIGIN, evaluatePublication, evaluateDirectMedia,
-  validatePrivateMediaList, safeImageURL,
+  validatePrivateMediaList, safeImageURL, rangeGetStatusOnly,
 } from './lib/staffportal-sites-zero-disclosure.mjs';
 
 const publicAsset = n => ({
@@ -125,22 +125,34 @@ test('media gate accepts only 401,403,404,410 as denial',async()=>{
   LEGACY_ORIGIN+'/assets/unpublished/two.webp',
   'https://media.base44.com/images/public/6ab5b6bf4880fcfae2d44d4a/three.png',
  ];
- const statuses=[403,404,410];
- const res=await evaluateDirectMedia(urls,{head:async()=>statuses.shift()});
+ const statusByUrl=new Map(urls.map((url,i)=>[url,[403,404,410][i]]));
+ const res=await evaluateDirectMedia(urls,{
+  head:async url=>statusByUrl.get(url),
+  get:async url=>statusByUrl.get(url),
+ });
  assert.equal(res.status,'PASS'); assert.equal(res.denied,3);
+ assert.equal(res.statusOnlyGetRequests,3);
  assert.ok(!JSON.stringify(res).includes('unpublished'));
 });
 test('HTTP 200 octet-stream cannot be mistaken for denial',async()=>{
  const url=LEGACY_ORIGIN+'/assets/review.webp';
- const res=await evaluateDirectMedia([url],{head:async()=>200});
+ let getCalled=false;
+ const res=await evaluateDirectMedia([url],{
+  head:async()=>200,get:async()=>{getCalled=true;return 404;},
+ });
  assert.equal(res.status,'FAIL');assert.equal(res.anonymouslyAccessible,1);
+ assert.equal(res.statusOnlyGetRequests,0);
+ assert.equal(getCalled,false);
 });
 test('redirect and outage are unknown, so gate still fails',async()=>{
  const urls=[LEGACY_ORIGIN+'/assets/one.webp',LEGACY_ORIGIN+'/assets/two.webp'];
- const res=await evaluateDirectMedia(urls,{head:async u=>{
-  if(u.includes('one.webp'))return 302;
-  throw new Error('secret-bearing timeout');
- }});
+ const res=await evaluateDirectMedia(urls,{
+  head:async u=>{
+   if(u.includes('one.webp'))return 302;
+   throw new Error('secret-bearing timeout');
+  },
+  get:async()=>404,
+ });
  assert.equal(res.status,'FAIL');assert.equal(res.unknown,2);
  assert.ok(!JSON.stringify(res).includes('secret-bearing'));
 });
@@ -162,7 +174,94 @@ test('concurrent media adapter never fetches body and respects count',async()=>{
    await Promise.resolve();active--;
    return 404;
   },
+  get:async()=>404,
  });
  assert.equal(r.checked,24);assert.equal(calls,24);assert.ok(peak<=4);
  assert.equal(r.status,'PASS');
+});
+
+
+test('HEAD 404 but GET 200 is still anonymously accessible',async()=>{
+ const url=LEGACY_ORIGIN+'/assets/review.webp';
+ const result=await evaluateDirectMedia([url],{
+  head:async()=>404, get:async()=>200,
+ });
+ assert.equal(result.status,'FAIL');
+ assert.equal(result.headDenied,1);
+ assert.equal(result.getAccessible,1);
+ assert.equal(result.anonymouslyAccessible,1);
+ assert.equal(result.denied,0);
+ assert.equal(result.statusOnlyGetRequests,1);
+});
+test('HEAD 403 but range GET 206 fails release',async()=>{
+ const url=LEGACY_ORIGIN+'/assets/review.webp';
+ const result=await evaluateDirectMedia([url],{
+  head:async()=>403, get:async()=>206,
+ });
+ assert.equal(result.status,'FAIL');
+ assert.equal(result.getAccessible,1);
+});
+test('HEAD denial and GET 410 both pass historical media check',async()=>{
+ const result=await evaluateDirectMedia([LEGACY_ORIGIN+'/assets/review.webp'],{
+  head:async()=>404,get:async()=>410,
+ });
+ assert.equal(result.status,'PASS');
+ assert.equal(result.denied,1);
+ assert.equal(result.getDenied,1);
+});
+test('HEAD denial and a GET timeout never count as access denial',async()=>{
+ const result=await evaluateDirectMedia([LEGACY_ORIGIN+'/assets/review.webp'],{
+  head:async()=>404,get:async()=>{throw new Error('SECRET_PRIVATE_URL');},
+ });
+ assert.equal(result.status,'FAIL');
+ assert.equal(result.unknown,1);
+ assert.ok(!JSON.stringify(result).includes('SECRET_PRIVATE_URL'));
+});
+test('GET redirect after HEAD 404 remains unknown',async()=>{
+ const result=await evaluateDirectMedia([LEGACY_ORIGIN+'/assets/review.webp'],{
+  head:async()=>404,get:async()=>302,
+ });
+ assert.equal(result.status,'FAIL');
+ assert.equal(result.unknown,1);
+});
+test('HEAD-only release adapter is rejected rather than declaring pass',async()=>{
+ await assert.rejects(evaluateDirectMedia([LEGACY_ORIGIN+'/assets/review.webp'],{
+  head:async()=>404,
+ }),/Both HEAD and status-only GET adapters are required/);
+});
+test('approved images cannot be accidentally included in private media scan',async()=>{
+ const image=LEGACY_ORIGIN+'/assets/approved.webp';
+ await assert.rejects(evaluateDirectMedia([image],{
+  approvedURLs:[image],
+  head:async()=>404,get:async()=>404,
+ }),/Untrusted, approved, or duplicate/);
+});
+test('status-only range GET reads headers and cancels body, never reading bytes',async()=>{
+ const url=LEGACY_ORIGIN+'/assets/review.webp';
+ let fetchCalls=0,cancelCount=0,readCount=0,request;
+ const response={
+  status:404,
+  body:{
+   cancel:async()=>{cancelCount++;},
+   getReader:()=>{readCount++;throw Error('body must never be read');},
+  }
+ };
+ const status=await rangeGetStatusOnly(url,{fetchImpl:async(_url,init)=>{
+  fetchCalls++;
+  request=init;
+  assert.equal(_url,url);
+  return response;
+ }});
+ assert.equal(status,404);
+ assert.equal(fetchCalls,1);
+ assert.equal(cancelCount,1);
+ assert.equal(readCount,0);
+ assert.equal(request.method,'GET');
+ assert.equal(request.headers.range,'bytes=0-0');
+ assert.equal(request.redirect,'manual');
+ assert.equal(request.signal.aborted,true);
+});
+test('status-only GET rejects unsafe adapter and timeouts',async()=>{
+ await assert.rejects(rangeGetStatusOnly(LEGACY_ORIGIN+'/assets/test.webp',{fetchImpl:null}),/Invalid status-only GET transport/);
+ await assert.rejects(rangeGetStatusOnly(LEGACY_ORIGIN+'/assets/test.webp',{fetchImpl:()=>{},timeoutMs:0}),/Invalid status-only GET transport/);
 });
