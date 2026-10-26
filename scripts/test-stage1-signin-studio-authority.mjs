@@ -21,6 +21,8 @@ const checks = [
   ['owner and admin roles require independently granted Group access', workbench.includes("'group_admin'") && workbench.includes("groupPermissions?.['settings.access'] === 'manage'")],
   ['aggregate company manage cannot grant Group Studio', !workbench.includes("hasWorkforcePermission(context, 'settings.access', 'manage')")],
   ['both Worker GETs demand explicit Group-scope proof', reviewSource.includes('record(payload.groupSignInAuthority)') && reviewSource.includes("authority.basis !== 'explicit-group-assignment'")],
+  ['Owner/Group Admin fallback exposes only public V180 reference', workbench.includes('data-studio-access="reference-only"') && workbench.includes('hasStudioReferenceRole(context)') && workbench.includes('View approved V180 public Sign-In')],
+  ['public reference cannot reveal draft or offer save and publish actions', workbench.includes('data-studio-access="reference-only"') && !/saveSignInDraft|saveSignInPreferences/.test(workbench)],
   ['Worker permission denial fails closed before draft read', reviewSource.indexOf("'/api/theme/signin'") < reviewSource.indexOf("'/api/theme/signin/draft'") && reviewSource.includes('if (payload.canManage !== true)')],
   ['async permission scope cancellation', workbench.includes('if (cancelled || controller.signal.aborted) return') && workbench.includes('context.sessionId, localGrant, authRefresh')],
   ['draft unavailable cannot be misreported as absent', reviewSource.includes("if (!Object.prototype.hasOwnProperty.call(draft, 'draft'))") && workbench.includes("'denied' : 'unavailable'")],
@@ -79,8 +81,9 @@ const sandbox = {
   },
 };
 runInNewContext(compiled.outputText + '\nexports.__parseSection = sectionFromUrl;', sandbox, { timeout: 5000 });
-const { hasStudioManagementGrant, isSignInStudioRoutePathname, __parseSection } = sandbox.exports;
+const { hasStudioManagementGrant, hasStudioReferenceRole, isSignInStudioRoutePathname, __parseSection } = sandbox.exports;
 assert.equal(typeof hasStudioManagementGrant, 'function');
+assert.equal(typeof hasStudioReferenceRole, 'function');
 assert.equal(typeof __parseSection, 'function');
 assert.equal(typeof isSignInStudioRoutePathname, 'function');
 
@@ -112,6 +115,17 @@ assert.equal(hasStudioManagementGrant(revoked), true);
 revoked.groupPermissions['settings.access'] = 'none';
 assert.equal(hasStudioManagementGrant(revoked), false, 'revoked explicit Group grant must deny despite aggregate manage');
 console.log('PASS runtime: grant revocation');
+const referenceRoleScenarios = [
+  ['Owner may open public reference', subject('owner'), true],
+  ['Group Admin may open public reference', subject('group_admin'), true],
+  ['Employee may not open Studio route', subject('employee'), false],
+  ['Unknown role may not open Studio route', subject('super_admin'), false],
+];
+for (const [name, ctx, expected] of referenceRoleScenarios) {
+  assert.equal(hasStudioReferenceRole(ctx), expected, name);
+  console.log('PASS reference-only:', name);
+}
+console.log('Executed public reference-role cases: ' + referenceRoleScenarios.length + '/' + referenceRoleScenarios.length + ' PASS');
 
 const sections = [
   ['', 'Home'],
