@@ -10,7 +10,8 @@ export type ScopedModuleLaunch = {
 export function authorisedModuleLaunch(context: WorkforceContext, request: ScopedModuleLaunch) {
   const company=context.companies.find(c=>c.id===request.scopeId);
   const module=getCanonicalModule(request.moduleId);
-  if(!company || !module || !isModuleVisible(context,module,company.id,company.code))return null;
+  if(!company || !module || !(module.permissions?.length||module.prefixes?.length)
+    || !isModuleVisible(context,module,company.id,company.code))return null;
   return {company,module};
 }
 
