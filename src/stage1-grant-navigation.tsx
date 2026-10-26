@@ -19,7 +19,9 @@ export function grantedCompanyModuleGroups(context:WorkforceContext):CompanyModu
   return context.companies.flatMap(company=>{
     if(!company.id || seen.has(company.id))return [];
     seen.add(company.id);
-    const modules=moduleDefinitions.filter(m=>m.id!=='layout-studio'&&isModuleVisible(context,m,company.id,company.code));
+    // Personal self-service is not a grant to access an unassigned company.
+    const modules=moduleDefinitions.filter(m=>m.id!=='layout-studio' && Boolean(m.permissions?.length||m.prefixes?.length)
+      && isModuleVisible(context,m,company.id,company.code));
     return modules.length?[{id:company.id,code:company.code,name:company.name,modules}]:[];
   });
 }
@@ -40,13 +42,16 @@ export default function Stage1GrantNavigation({
   const companies=useMemo(()=>grantedCompanyModuleGroups(context),[context]);
   const workspaces=useMemo(()=>authorisedLiveWorkspaces(context),[context]);
   const term=query.trim().toLocaleLowerCase();
-  const rows=companies.map(company=>{
+  const rows=context.companies.flatMap(company=>{
+    const assigned=companies.find(row=>row.id===company.id);
     const pages=workspaces.find(w=>w.scopeId===company.id)?.pages||[];
-    return {...company,
-      pages:pages.filter(p=>(p.label+' '+company.name).toLocaleLowerCase().includes(term)),
-      modules:company.modules.filter(m=>(m.label+' '+m.functionalItem+' '+company.name).toLocaleLowerCase().includes(term)),
-    };
-  }).filter(company=>company.pages.length||company.modules.length);
+    if(!assigned && !pages.length)return [];
+    const modules=assigned?.modules||[];
+    const matchedPages=pages.filter(p=>(p.label+' '+company.name).toLocaleLowerCase().includes(term));
+    const matchedModules=modules.filter(m=>(m.label+' '+m.functionalItem+' '+company.name).toLocaleLowerCase().includes(term));
+    return matchedPages.length||matchedModules.length
+      ?[{id:company.id,code:company.code,name:company.name,pages:matchedPages,modules:matchedModules}]:[];
+  });
   const groupPages=(workspaces.find(w=>w.scopeId===null)?.pages||[])
     .filter(p=>(p.label+' Group').toLocaleLowerCase().includes(term));
 
