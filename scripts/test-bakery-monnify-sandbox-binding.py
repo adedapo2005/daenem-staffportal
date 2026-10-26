@@ -5,6 +5,7 @@ db=sqlite3.connect(':memory:')
 db.executescript("""
 PRAGMA foreign_keys=ON;
 CREATE TABLE employees(id TEXT PRIMARY KEY);
+CREATE TABLE payments(id TEXT PRIMARY KEY,company_id TEXT,sales_order_id TEXT,amount_kobo INTEGER,status TEXT);
 CREATE TABLE sales_orders(id TEXT PRIMARY KEY,company_id TEXT,status TEXT,payment_status TEXT,total_kobo INTEGER,amount_paid_kobo INTEGER DEFAULT 0);
 CREATE TABLE finance_receivables(id TEXT PRIMARY KEY,company_id TEXT,source_module TEXT,source_id TEXT,status TEXT,amount_kobo INTEGER,paid_kobo INTEGER,balance_kobo INTEGER);
 INSERT INTO employees VALUES('reviewer');
@@ -48,6 +49,8 @@ checkout_url='https://sandbox.monnify.com/checkout/qa',initialized_at=CURRENT_TI
 WHERE id='intent'""")
 deny("UPDATE bakery_monnify_sandbox_intents SET status='review_required'")
 deny("UPDATE sales_orders SET amount_paid_kobo=10000,payment_status='paid' WHERE id='good'")
+deny("INSERT INTO payments VALUES('forged','company-bakery','good',10000,'confirmed')")
+
 deny("DELETE FROM bakery_monnify_sandbox_intents")
 db.execute("""INSERT INTO bakery_monnify_collection_inquiries
 (id,intent_id,company_id,collection_state,provider_status,amount_paid_kobo)
