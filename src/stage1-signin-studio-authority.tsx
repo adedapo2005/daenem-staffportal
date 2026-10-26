@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { hasWorkforcePermission, type WorkforceContext } from './auth';
+import type { WorkforceContext } from './auth';
 import { readStudioReviewWithoutSideEffects, studioDraftDifferences, StudioPermissionDenied, type StudioDraftDifference } from './stage1-signin-studio-review';
 import './stage1-signin-studio-authority.css';
 
@@ -10,10 +10,24 @@ export function isSignInStudioRoutePathname(pathname: string): boolean {
 }
 const APPROVED_PREVIEW_PATH = '/staff-portal-signin?studioReview=signin-v180';
 
+/**
+ * Group-level Sign-In settings must NOT inherit the maximum of company-scoped
+ * grants. Current /api/auth/me only returns an aggregate `permissions` map;
+ * a future Backend A release must provide an independent, server-derived
+ * `groupPermissions` map before privileged Studio reads are enabled.
+ *
+ * This deliberately fails closed for the current runtime. Do not substitute
+ * any-company, all-companies, Owner role, or demo session as Group proof.
+ * Backend Worker endpoints must separately enforce the same authority.
+ */
 export function hasStudioManagementGrant(context: WorkforceContext): boolean {
   const administrativeRole = context.roles.some(role =>
     ['owner', 'group_admin'].includes(role.code.toLowerCase()));
-  return administrativeRole && hasWorkforcePermission(context, 'settings.access', 'manage');
+  const scope = context as WorkforceContext & {
+    groupPermissions?: Record<string, string>;
+  };
+  return administrativeRole &&
+    scope.groupPermissions?.['settings.access'] === 'manage';
 }
 const APPROVED = { name: 'StaffPortal Pre-Production — Approved V180', version: 'V180', source: 'Approved Cloudflare runtime · source-locked' } as const;
 const PRESETS = [
@@ -140,7 +154,7 @@ export default function Stage1SignInStudioAuthority({ context, standalone = fals
       <section className="stage1-studio-authority" data-studio-access="denied" aria-label="Studio access unavailable">
         <div className="stage1-studio-guard" role="alert">
           <strong>This destination is unavailable.</strong>
-          <p>Sign-In Studio requires an active Owner/Admin grant and Manage Settings permission. Your workspace permissions do not allow this section.</p>
+          <p>Verified Group-wide Manage Settings permission is required. Company-only grants and Owner/Admin roles alone cannot authorize protected Sign-In settings. Group authorization is unavailable or unverified for this session.</p>
         </div>
       </section>
     );
