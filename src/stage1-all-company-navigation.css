@@ -13,7 +13,11 @@
 .sp-all-company-nav-page:hover,.sp-all-company-nav-page[aria-current=page]{background:#e6f5ec;border-color:#89cbb2;color:#16573e}
 .sp-all-company-nav-page svg{flex:none}
 .sp-all-company-nav :is(button,a):focus-visible{outline:3px solid #a97421;outline-offset:2px}
-.sp-all-company-personal-item{display:flex;align-items:center;min-height:44px;padding:10px 12px;border-radius:10px;background:#fbfcfb;border:1px solid #e5ebe8;font-size:13px;color:#4d636a;line-height:1.35}
+.sp-all-company-personal-item{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:44px;padding:10px 12px;border-radius:10px;background:#fbfcfb;border:1px solid #e5ebe8;font-size:clamp(14px,.44vw,16px);color:#4d636a;line-height:1.35;overflow-wrap:anywhere}
+.sp-all-company-personal-button{width:100%;font:inherit;font-size:clamp(14px,.44vw,16px);font-weight:710;text-align:left;cursor:pointer;background:#f3f8f5;color:#205244}
+.sp-all-company-personal-button:hover{background:#e6f5ec;border-color:#89cbb2;color:#16573e}
+.sp-all-company-personal-button svg{flex:none}
+.sp-all-company-personal-item[data-navigation-state="presentation-only"]{cursor:default;border-style:dashed;background:#f8faf9}
 .sp-all-company-nav-denied{display:flex;align-items:center;gap:9px;margin:0;min-height:44px;border:1px solid #d6dfdc;border-radius:10px;background:#fff;color:#4e5f65;padding:12px;line-height:1.45;font-size:14px}
 .sp-all-company-nav-denied svg{flex:none}
 @media(max-width:720px){.sp-all-company-nav{padding:10px;gap:9px}.sp-all-company-nav-items{grid-template-columns:minmax(0,1fr)}.sp-all-company-nav-page{font-size:14px}}

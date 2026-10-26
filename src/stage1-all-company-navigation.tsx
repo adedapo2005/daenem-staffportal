@@ -3,7 +3,7 @@ import { Building2, ChevronRight, LayoutGrid, LockKeyhole, ShieldCheck, UserRoun
 import type { WorkforceContext } from './auth';
 import { authorisedLiveWorkspaces } from './authorised-live-workspaces';
 import { isModuleVisible, moduleDefinitions } from './module-hub';
-import { projectAllAuthorisedCompanyModules } from './stage1-all-company-navigation-model';
+import { projectAllAuthorisedCompanyModules, type PersonalModuleId } from './stage1-all-company-navigation-model';
 import './stage1-all-company-navigation.css';
 
 export type Stage1AllCompanyNavigationProps = {
@@ -11,6 +11,8 @@ export type Stage1AllCompanyNavigationProps = {
   pathname: string;
   /** Integration owner must open the module with this exact authorised company scope. */
   onOpenModule: (moduleId: string, companyId: string, companyCode: string) => void;
+  /** Optional self-service launcher. Without it, personal entries are labels, NOT fake links. */
+  onOpenPersonalModule?: (moduleId: PersonalModuleId) => void;
 };
 
 /**
@@ -19,7 +21,7 @@ export type Stage1AllCompanyNavigationProps = {
  * page appears directly, and module launch receives a company-specific scope.
  */
 export function Stage1AllCompanyNavigation({
-  context, pathname, onOpenModule,
+  context, pathname, onOpenModule, onOpenPersonalModule,
 }: Stage1AllCompanyNavigationProps) {
   const navigation = useMemo(
     () => projectAllAuthorisedCompanyModules(context,moduleDefinitions,authorisedLiveWorkspaces(context),isModuleVisible),
@@ -34,9 +36,18 @@ export function Stage1AllCompanyNavigation({
     {navigation.personal.length > 0 && <section className="sp-all-company-nav-scope" aria-label="Personal workspace">
       <h3><UserRound size={16} aria-hidden="true"/> My Workspace</h3>
       <div className="sp-all-company-nav-items">
-        {navigation.personal.map(item => <span key={item.id} className="sp-all-company-personal-item">
-          {item.label}
-        </span>)}
+        {navigation.personal.map(item => onOpenPersonalModule
+          ? <button type="button" key={item.id}
+              className="sp-all-company-personal-item sp-all-company-personal-button"
+              data-authorised-personal-module={item.id}
+              title={item.detail}
+              onClick={() => onOpenPersonalModule(item.id)}>
+              <span>{item.label}</span><ChevronRight size={15} aria-hidden="true"/>
+            </button>
+          : <span key={item.id} className="sp-all-company-personal-item"
+              data-navigation-state="presentation-only" title={item.detail}>
+              {item.label}
+            </span>)}
       </div>
     </section>}
     {navigation.companies.map(company => <section className="sp-all-company-nav-scope" key={company.companyId}

@@ -100,3 +100,27 @@ test('accessible 44px links, keyboard focus, opaque surfaces and reduced motion'
  assert.match(css,/background:#fff/);
  assert.doesNotMatch(css,/backdrop-filter|filter:blur/);
 });
+
+test('personal module IDs are a typed allowlist, not arbitrary company-scoped launches',()=>{
+ const model=readFileSync(new URL('../src/stage1-all-company-navigation-model.ts',import.meta.url),'utf8');
+ assert.match(model,/export type PersonalModuleId = typeof PERSONAL_MODULE_IDS\[number\]/);
+ assert.match(model,/isPersonalModuleId\(module\.id\) && canSee\(context, module, null, ''\)/);
+ assert.doesNotMatch(model,/PERSONAL_MODULES\.has\(/);
+});
+test('personal entries use a real native keyboard-operable button only when a launcher is mounted',()=>{
+ const ui=readFileSync(new URL('../src/stage1-all-company-navigation.tsx',import.meta.url),'utf8');
+ assert.match(ui,/onOpenPersonalModule\?: \(moduleId: PersonalModuleId\) => void/);
+ assert.match(ui,/onOpenPersonalModule\s*\? <button type="button" key=\{item\.id\}/);
+ assert.match(ui,/onClick=\{\(\) => onOpenPersonalModule\(item\.id\)\}/);
+ assert.match(ui,/: <span key=\{item\.id\} className="sp-all-company-personal-item"/);
+ assert.match(ui,/data-navigation-state="presentation-only"/);
+ assert.doesNotMatch(ui,/window\.location\.(href|assign).*item\.id/);
+});
+test('personal launch focus and touch targets retain opaque responsive legibility',()=>{
+ const css=readFileSync(new URL('../src/stage1-all-company-navigation.css',import.meta.url),'utf8');
+ assert.match(css,/\.sp-all-company-personal-button\{/);
+ assert.match(css,/sp-all-company-personal-item\{[^}]*min-height:44px/);
+ assert.match(css,/sp-all-company-nav :is\(button,a\):focus-visible/);
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.doesNotMatch(css,/backdrop-filter|filter:blur/);
+});
