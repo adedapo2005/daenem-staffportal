@@ -1,0 +1,13 @@
+/* Legacy snapshot switches simulate access. Authenticated grants drive the directory. */
+[data-approved-postlogin="qa-review-v115"] .p-company,
+[data-approved-postlogin="qa-review-v115"] .p-demo-strip,
+[data-approved-postlogin="qa-review-v115"] [role="dialog"] .p-field:has([aria-label="Demo company"]),
+[data-approved-postlogin="qa-review-v115"] [role="dialog"] .p-field:has([aria-label="Switch Company"]){display:none!important}
+.stage1-company-directory{display:grid;gap:12px;padding:14px 12px;margin:8px 0;border-top:1px solid #d8e5df;border-bottom:1px solid #d8e5df;background:#fff;color:#27453e}
+.stage1-company-directory h2{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;font-weight:850;color:#195c47}
+.stage1-company-directory section{display:grid;gap:6px;padding:10px;border:1px solid #d8e5df;border-radius:11px;background:#f7faf8;min-width:0}
+.stage1-company-directory h3{margin:0;font-size:13px;font-weight:800;overflow-wrap:anywhere}
+.stage1-company-directory button{min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;padding:9px 11px;font-size:13px;font-weight:720;background:white;color:#234d43;border:1px solid #d7e5de;border-radius:9px;cursor:pointer;overflow-wrap:anywhere}
+.stage1-company-directory button:focus-visible{outline:3px solid #117a59;outline-offset:2px}
+.stage1-company-directory p{margin:0;font-size:13px;line-height:1.5}
+@media(max-width:720px){.stage1-company-directory{padding:12px 8px}.stage1-company-directory button{min-height:44px}}
