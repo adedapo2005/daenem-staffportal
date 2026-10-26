@@ -87,6 +87,8 @@ export type FormsDraftInput = {
   supportedForOfflineSubmit: boolean;
   formTitle?: string;
   baseUpdatedAt?: string;
+  // One logical submit has the same identity online and when queued offline.
+  idempotencyKey?: string;
   attachmentRefs?: string[];
 };
 
@@ -404,7 +406,12 @@ async function upsertOperationUnlocked(
   const stored: StoredOperation = {
     id: current?.id || input.operationId || strongId('offline-op'),
     namespace,
-    idempotencyKey: current?.idempotencyKey || input.idempotencyKey || strongId('offline-key'),
+    // A fresh Forms submit attempt can replace an old local draft key, but
+    // NEVER alter an already queued/syncing attempt's replay identity.
+    idempotencyKey: input.kind === 'forms.submit' && input.state === 'waiting-to-sync'
+      && input.idempotencyKey && !['waiting-to-sync', 'syncing'].includes(current?.state || '')
+      ? input.idempotencyKey
+      : current?.idempotencyKey || input.idempotencyKey || strongId('offline-key'),
     kind: input.kind,
     employeeId: identity.employeeId,
     companyId: identity.companyId,
@@ -456,6 +463,7 @@ export async function saveFormsDraft(identity: OfflineIdentity, input: FormsDraf
 
 export async function queueFormsSubmission(identity: OfflineIdentity, input: FormsDraftInput) {
   return upsertOperation(identity, {
+    idempotencyKey: input.idempotencyKey,
     kind: 'forms.submit',
     entityType: 'workflow_form_assignment',
     entityId: input.assignmentId,
