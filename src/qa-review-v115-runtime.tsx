@@ -12,6 +12,8 @@ import Stage1AccessibleMetrics from './stage1-accessible-metrics';
 import Stage1WorkflowFocus from './stage1-workflow-focus';
 import Stage1AppearanceStudio from './stage1-appearance-studio';
 import Stage1LiveErpRouteBridge from './stage1-live-erp-route-bridge';
+import Stage1ResponsiveReview from './stage1-responsive-review';
+import { usePathname } from './next-navigation-shim';
 import {
   POSTLOGIN_DEFAULT_PALETTE,
   normalizePostLoginPaletteId,
@@ -127,6 +129,7 @@ function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
 }
 
 export default function ApprovedPostLoginV115({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
+  const routePathname = usePathname();
   const session = useMemo(() => sessionFor(context), [context]);
   const [stage1Enabled, setStage1Enabled] = useState(true);
   const [postLoginPalette, setPostLoginPalette] = useState<PostLoginPaletteId>(() =>
@@ -280,6 +283,11 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       window.history.replaceState({}, '', '/home');
     }
   }
+
+  // The protected snapshot's Owner review link points here. Keep the snapshot
+  // bytes unchanged and render a permission-gated, read-only workbench instead.
+  if (routePathname === '/review/viewports' || routePathname === '/review/viewports/')
+    return <Stage1ResponsiveReview context={context} />;
 
   return (
     <div
