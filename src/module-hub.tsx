@@ -432,15 +432,18 @@ export function isModuleVisible(context: WorkforceContext, module: ModuleDefinit
     if (companyId && !module.companyCodes.includes(companyCode)) return false;
     if (!companyId && !context.companies.some((company) => module.companyCodes?.includes(company.code))) return false;
   }
+  // Roles classify sensitive surfaces but never create a company/page grant.
+  // Keep Owner-only tools unavailable unless an explicit matching permission
+  // exists; the backend independently applies its stricter Owner policy.
   if (module.strictOwnerOnly && !context.roles.some((role) => role.code === 'owner')) return false;
-  if (owner(context)) return true;
-  if (module.ownerOnly) return false;
-  if (!module.permissions?.length && !module.prefixes?.length) return true;
+  if (module.ownerOnly && !context.roles.some((role) => role.code === 'owner')) return false;
+  if (!module.permissions?.length && !module.prefixes?.length) {
+    // Self-service and personal appearance/navigation do not expose company data.
+    return ['employee','profile','themes','navigation'].includes(module.id);
+  }
   const scopeIds = companyId
-    ? [companyId]
-    : module.companyCodes?.length
-      ? context.companies.filter((company) => module.companyCodes?.includes(company.code)).map((company) => company.id)
-      : [null];
+    ? context.companies.some((company) => company.id === companyId) ? [companyId] : []
+    : [null, ...context.companies.filter((company) => !module.companyCodes?.length || module.companyCodes.includes(company.code)).map((company) => company.id)];
   if (module.permissions?.some((permission) => scopeIds.some((scopeId) => hasWorkforcePermission(context, permission, module.minimum || 'view', scopeId)))) return true;
   return module.prefixes?.some((prefix) => scopeIds.some((scopeId) => {
     const permissions = scopeId ? context.companyPermissions?.[scopeId] || {} : context.permissions;
