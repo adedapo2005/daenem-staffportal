@@ -12,14 +12,19 @@ export type CompanyModuleNav = {
 };
 
 export type AllCompanyNav = {
-  personal: Array<{ id: string; label: string; detail: string }>;
+  personal: Array<{ id: PersonalModuleId; label: string; detail: string }>;
   companies: CompanyModuleNav[];
   groupPages: AuthorisedWorkspace['pages'];
 };
 
 type VisibleModule = (context: WorkforceContext, module: ModuleDefinition, companyId: string | null, companyCode: string) => boolean;
 
-const PERSONAL_MODULES = new Set(['employee', 'profile', 'themes', 'navigation']);
+const PERSONAL_MODULE_IDS = ['employee', 'profile', 'themes', 'navigation'] as const;
+export type PersonalModuleId = typeof PERSONAL_MODULE_IDS[number];
+
+function isPersonalModuleId(id: string): id is PersonalModuleId {
+  return PERSONAL_MODULE_IDS.some((personalId) => personalId === id);
+}
 
 /**
  * Project EVERY authorised company and its pages at once.
@@ -35,14 +40,16 @@ export function projectAllAuthorisedCompanyModules(
 ): AllCompanyNav {
   const companies: CompanyModuleNav[] = [];
   const seen = new Set<string>();
-  const personal = definitions.filter(m => PERSONAL_MODULES.has(m.id) && canSee(context, m, null, ''))
-    .map(m => ({id:m.id, label:m.label, detail:m.detail}));
+  const personal = definitions
+    .filter((module): module is ModuleDefinition & { id: PersonalModuleId } =>
+      isPersonalModuleId(module.id) && canSee(context, module, null, ''))
+    .map(module => ({ id: module.id, label: module.label, detail: module.detail }));
   for (const company of context.companies) {
     if (!company.id || seen.has(company.id)) continue;
     seen.add(company.id);
     const workspace = workspaces.find(w => w.scopeId === company.id);
     const modules = definitions
-      .filter(m => !PERSONAL_MODULES.has(m.id) && Boolean(m.permissions?.length || m.prefixes?.length))
+      .filter(m => !isPersonalModuleId(m.id) && Boolean(m.permissions?.length || m.prefixes?.length))
       .filter(m => canSee(context, m, company.id, company.code))
       .map(m => ({id:m.id, label:m.label, detail:m.detail, group:m.group}));
     // A company with NO granted page/module is not a navigation choice and
