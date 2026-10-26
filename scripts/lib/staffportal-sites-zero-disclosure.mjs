@@ -140,27 +140,80 @@ export function validatePrivateMediaList(urls, {approvedURLs = []} = {}) {
   return normalized;
 }
 
-export async function evaluateDirectMedia(urls, { head, approvedURLs = [], concurrency = 4 } = {}) {
-  if (typeof head !== 'function') throw new TypeError('A HEAD-only adapter is required');
+// A HEAD-only 403/404 is NOT proof that GET denies the same media.
+// On a HEAD denial, verify status with a one-byte-range GET adapter too.
+export async function evaluateDirectMedia(urls, { head, get, approvedURLs = [], concurrency = 4 } = {}) {
+  if (typeof head !== 'function' || typeof get !== 'function')
+    throw new TypeError('Both HEAD and status-only GET adapters are required');
   const targets = validatePrivateMediaList(urls, {approvedURLs});
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8)
     throw new TypeError('Concurrency must be between 1 and 8');
-  const summary = {checked:targets.length, denied:0, anonymouslyAccessible:0, unknown:0};
+  const deniedStatus = value => [401,403,404,410].includes(value);
+  const accessibleStatus = value => Number.isInteger(value) && value >= 200 && value < 300;
+  const summary = {
+    checked:targets.length, denied:0, anonymouslyAccessible:0, unknown:0,
+    headAccessible:0, getAccessible:0, headDenied:0, getDenied:0,
+    statusOnlyGetRequests:0,
+  };
   let index = 0;
   const workers = Array.from({length:Math.min(concurrency, targets.length)},async () => {
     while (index < targets.length) {
       const url = targets[index++];
-      let status;
-      try { status = await head(url); } catch { summary.unknown++; continue; }
-      if ([401,403,404,410].includes(status)) summary.denied++;
-      else if (status === 200 || (status >= 200 && status < 300)) summary.anonymouslyAccessible++;
-      else summary.unknown++; // never claim a 302, timeout or 5xx as proof of denial
+      let headStatus;
+      try { headStatus = await head(url); } catch { summary.unknown++; continue; }
+      if (accessibleStatus(headStatus)) {
+        summary.headAccessible++;
+        summary.anonymouslyAccessible++;
+        // Already a definite failure. Do not request any private body.
+        continue;
+      }
+      if (!deniedStatus(headStatus)) {
+        summary.unknown++; // Redirects, 405, 5xx and timeouts are never passing evidence.
+        continue;
+      }
+      summary.headDenied++;
+      summary.statusOnlyGetRequests++;
+      let getStatus;
+      try { getStatus = await get(url); } catch { summary.unknown++; continue; }
+      if (deniedStatus(getStatus)) {
+        summary.getDenied++;
+        summary.denied++;
+      } else if (accessibleStatus(getStatus)) {
+        summary.getAccessible++;
+        summary.anonymouslyAccessible++;
+      } else summary.unknown++;
     }
   });
   await Promise.all(workers);
   return Object.freeze({...summary,
     status:summary.denied===targets.length ? 'PASS' : 'FAIL',
     rawURLsRecorded:false,
-    finding:'HEAD_ONLY_NO_BODY_DOWNLOAD',
+    finding:'HEAD_AND_RANGE_GET_STATUS_NO_BODY_SAVED',
   });
+}
+
+
+/**
+ * Status-only GET, used after an already denied HEAD response.
+ * Request only byte 0, capture the status and cancel immediately.
+ * Do NOT read, persist, print or return the body of any unpublished image.
+ * If the CDN ignores Range, the 2xx status itself still blocks the release.
+ */
+export async function rangeGetStatusOnly(url, {fetchImpl = globalThis.fetch, timeoutMs = 13000} = {}) {
+  if (typeof fetchImpl !== 'function' || !Number.isSafeInteger(timeoutMs)
+    || timeoutMs < 1000 || timeoutMs > 30000)
+    throw new TypeError('Invalid status-only GET transport');
+  const controller = new AbortController();
+  const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(timeoutMs)]);
+  try {
+    const response = await fetchImpl(url,{
+      method:'GET', redirect:'manual',signal,
+      headers:{range:'bytes=0-0','cache-control':'no-cache',
+        accept:'image/avif,image/webp,image/png,image/jpeg,*/*;q=0.1'},
+    });
+    const status = response.status;
+    controller.abort();
+    try { await response.body?.cancel(); } catch { /* cancelled after abort */ }
+    return status;
+  } finally { controller.abort(); }
 }
