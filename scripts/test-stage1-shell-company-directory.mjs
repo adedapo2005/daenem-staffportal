@@ -13,7 +13,8 @@ test('host mounts a grant-derived directory without modifying snapshot',()=>{
 });
 test('legacy switches are hidden but truthful demo warning remains visible',()=>{
  assert.match(css,/\.p-company,/);
- assert.match(css,/\.p-demo-strip > button,/);\n assert.doesNotMatch(css,/\.p-demo-strip,/);
+ assert.match(css,/\.p-demo-strip > button,/);
+ assert.doesNotMatch(css,/\.p-demo-strip,/);
  assert.match(css,/Demo company/);
  assert.match(css,/Switch Company/);
  assert.match(css,/display:none!important/);
