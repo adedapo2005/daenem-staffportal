@@ -49,7 +49,7 @@ const compiled = ts.transpileModule(workbench, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2020 },
 });
 assert.equal(compiled.diagnostics?.filter(d => d.category === ts.DiagnosticCategory.Error).length || 0, 0);
-const runtime = {
+const sandbox = {
   exports: {},
   URLSearchParams,
   window: { location: { search: '' } },
@@ -61,8 +61,8 @@ const runtime = {
     return {};
   },
 };
-runInNewContext(compiled.outputText + '\nexports.__parseSection = sectionFromUrl;', runtime, { timeout: 5000 });
-const { hasStudioManagementGrant, __parseSection } = runtime.exports;
+runInNewContext(compiled.outputText + '\nexports.__parseSection = sectionFromUrl;', sandbox, { timeout: 5000 });
+const { hasStudioManagementGrant, __parseSection } = sandbox.exports;
 assert.equal(typeof hasStudioManagementGrant, 'function');
 assert.equal(typeof __parseSection, 'function');
 
@@ -101,7 +101,7 @@ const sections = [
   ['?studioSection=Unknown', null],
 ];
 for (const [search, expected] of sections) {
-  runtime.window.location.search = search;
+  sandbox.window.location.search = search;
   assert.equal(__parseSection(), expected, 'Studio route: ' + search);
   console.log('PASS runtime: route', search || '(default)');
 }
