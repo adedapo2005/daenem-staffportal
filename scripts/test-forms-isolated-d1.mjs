@@ -105,6 +105,18 @@ try {
   assert.equal(audits.count,1);
   console.log('PASS real D1 successful form submission and matching audit');
 
+  // Existing assignments cannot be blindly overwritten with a fresh request
+  // lacking the record revision. Only the original submission may remain.
+  const blind=await call('assignment-printing',{outcome:'Pass',qty:'99'},{},
+    {'idempotency-key':'new-key-without-server-version'});
+  assert.equal(blind.status,409,JSON.stringify(blind));
+  assert.equal(blind.body.code,'CONFLICT');
+  const originalResponse=await db.prepare('SELECT response_json FROM workflow_form_submissions WHERE id=?')
+    .bind(result.body.submissionId).first();
+  assert.equal(JSON.parse(originalResponse.response_json).qty,'0');
+  assert.equal(await db.prepare("SELECT COUNT(*) AS n FROM audit_logs WHERE module='forms' AND action='submit'").first().then(x=>x.n),1);
+  console.log('PASS real D1 rejects blind existing-response overwrite without server version');
+
   result=await call('assignment-bakery',valid);
   assert.equal(result.status,404,JSON.stringify(result));
   console.log('PASS real D1 rejects unauthorized second company even with membership');
