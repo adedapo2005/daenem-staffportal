@@ -13,6 +13,7 @@ import Stage1WorkflowFocus from './stage1-workflow-focus';
 import Stage1AppearanceStudio from './stage1-appearance-studio';
 import Stage1LiveErpRouteBridge from './stage1-live-erp-route-bridge';
 import Stage1ResponsiveReview from './stage1-responsive-review';
+import Stage1CompanyDirectory from './stage1-company-directory';
 import { usePathname } from './next-navigation-shim';
 import {
   POSTLOGIN_DEFAULT_PALETTE,
@@ -314,6 +315,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         <Portal />
       </Stage1RuntimeContext.Provider>
       <Stage1LiveErpRouteBridge context={context} />
+      <Stage1CompanyDirectory context={context} />
       <LivePostLoginEnhancementsV116 />
       <Stage1SearchResults enabled={stage1Enabled} />
       <Stage1AccessibleMetrics enabled={stage1Enabled} />
