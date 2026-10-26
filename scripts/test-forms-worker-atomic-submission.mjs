@@ -201,7 +201,7 @@ test('concurrent review before the D1 write prevents stale submission and phanto
 
 test('concurrent newer submission wins and same-second update timestamps are advanced',async()=>{
   const f=fixture({existing:{id:'submission-1',status:'submitted',updatedAt:'2026-10-25 12:00:00'},concurrentChange:true});
-  const result=await f.run(answers);
+  const result=await f.run(answers,{baseUpdatedAt:'2026-10-25 12:00:00'});
   assert.equal(result.status,409);
   assert.equal(f.committed.length,0);
   const batch=f.queries.find(q=>q.kind==='batch');
