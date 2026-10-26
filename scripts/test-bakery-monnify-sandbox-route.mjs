@@ -15,7 +15,6 @@ const loader=(name)=>{
  if(name==='./bakery-monnify-verification')return{verifyBoundBakeryMonnifyTransaction:()=>{counters.network++;throw Error('Provider must not be called')}};
  throw Error('Unexpected module '+name);
 };
-new vm.Script('(function(require,module,exports){'+js+'\n})').runInNewContext({Request,Response,URL,crypto,fetch:()=>{counters.network++;throw Error('Network called')},console,JSON,Number});
 const sandbox={exports};
 new vm.Script('(function(require,module,exports){'+js+'\n})').runInNewContext({Request,Response,URL,crypto,fetch:()=>{counters.network++;throw Error('Network called')},console})(loader,sandbox,sandbox.exports);
 const route=sandbox.exports.routeBakeryMonnifySandbox;
