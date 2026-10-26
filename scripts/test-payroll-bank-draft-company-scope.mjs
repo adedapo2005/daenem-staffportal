@@ -20,7 +20,7 @@ assert.ok(erpSource.includes('ba.active=1 AND ba.is_primary=1 AND ba.verified_at
 assert.ok(erpSource.includes("pbi.status='ready' AND ba.id IS NOT NULL") && erpSource.includes('ba.verified_at IS NOT NULL WHERE pbi.batch_id=?'), 'CSV export must include only ready items linked to a verified bank account');
 assert.ok(erpSource.includes('ba.active=1 AND ba.is_primary=1 AND ba.verified_at IS NOT NULL WHERE m.company_id=? AND m.active=1'), 'Payroll readiness must treat unverified bank details as missing');
 
-function mockEnv(runStatus = 'approved') {
+function mockEnv(runStatus = 'approved', batchInsertChanges = 1) {
   const writes = [];
   const prepared = [];
   const env = { DB: {
@@ -40,7 +40,7 @@ function mockEnv(runStatus = 'approved') {
       prepared.push(statement);
       return statement;
     },
-    async batch(statements) { writes.push(...statements); },
+    async batch(statements) { writes.push(...statements); return [{ meta: { changes: batchInsertChanges } }]; },
   } };
   return { env, writes, prepared };
 }
@@ -76,10 +76,21 @@ async function requestFor(env, user) {
   assert.ok(writes.every(statement => /^\s*INSERT INTO (payroll_payment_batches|payroll_payment_batch_items|audit_logs)\b/i.test(statement.sql)), 'authorized writes must remain limited to draft records and audit evidence');
   assert.equal(writes[0].bindings[2], 'company-b', 'the payment draft is stored in Company B');
   assert.equal(writes.at(-1).bindings[2], 'company-b', 'audit evidence is scoped to Company B');
+  assert.match(writes[0].sql, /FROM payroll_runs WHERE id=\? AND company_id=\? AND status IN \('approved','processing'\)/, 'draft creation rechecks payable status inside the write transaction');
+  assert.match(writes[0].sql, /NOT EXISTS \(SELECT 1 FROM payroll_payment_batches/, 'draft creation checks for an active duplicate inside the write transaction');
+  assert.ok(writes.slice(1).every(statement => /WHERE EXISTS \(SELECT 1 FROM payroll_payment_batches WHERE id=\? AND status='draft'\)/.test(statement.sql)), 'items and audit can only be inserted for the successfully created draft');
   assert.equal(writes[2].bindings[4], null, 'an unverified primary account is not snapshotted onto a held payment line');
   assert.equal(writes[2].bindings[6], null, 'unverified bank identity is withheld from the held payment line');
   assert.equal(writes[2].bindings[7], null, 'unverified account last-four digits are withheld from the held payment line');
   assert.equal(writes[2].bindings[10], 'held', 'unverified bank details cannot produce a ready payout line');
+}
+
+{
+  const { env, writes } = mockEnv('approved', 0);
+  const response = await requestFor(env, context({ companyPermissions: { 'company-b': { 'payroll.access': 'edit' } } }));
+  assert.equal(response.status, 409, 'a run finalized or duplicated after preflight cannot create a draft');
+  assert.match((await response.json()).error, /changed or already has a current payment draft/i);
+  assert.match(writes[0].sql, /status IN \('approved','processing'\)/);
 }
 
 {
