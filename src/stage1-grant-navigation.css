@@ -1,0 +1,142 @@
+/* Authenticated grant navigation. Opaque, responsive and permission-driven.
+   The protected V115 snapshot is never edited; only its legacy picker UI
+   is suppressed when the actual authenticated host is active. */
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"] .p-company,
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"] .p-demo-strip button,
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"] label.p-field:has([aria-label="Switch Company"]),
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"] label.p-field:has([aria-label="Demo company"]),
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"] label.p-field:has([aria-label="Demo role"]),
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"] label.p-field:has([aria-label="Acceptance profile"]) {
+  display:none!important;
+}
+/* A simulated single-company header is not the employee's true permitted
+   company set. Scope is shown in the generated navigation, not as a picker. */
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"] .p-workspace-scope {
+  display:none!important;
+}
+[data-approved-postlogin="qa-review-v115"] .ecc-navigation.sp-grant-navigation {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  width:100%;
+  min-width:0;
+  min-height:0;
+  max-height:max(14rem,calc(100dvh - 13rem));
+  padding:5px;
+  background:transparent;
+  color:#edf6f6;
+  border:0;
+  font-family:inherit;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-head {display:grid;gap:10px;flex:none;padding:6px}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-head>span {
+  color:#9ed9ca;font-size:12px;line-height:1.4;letter-spacing:.075em;font-weight:800;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-search {
+  display:flex;align-items:center;gap:8px;min-height:43px;padding:7px 10px;
+  background:#081f2d;color:#c6d8df;border:1px solid #355766;border-radius:10px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-search input {
+  min-width:0;width:100%;background:transparent;color:#fff;border:0;outline:0;
+  font:inherit;font-size:13px;line-height:1.5;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-search:focus-within {
+  outline:2px solid #8bddc4;outline-offset:2px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-scroll {
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;scrollbar-color:#456779 transparent;
+  display:grid;gap:9px;align-content:start;padding:4px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-home {
+  display:flex;gap:10px;align-items:center;min-height:44px;padding:10px;
+  color:#fff;text-decoration:none;background:#123a46;border:1px solid #3c6570;
+  border-radius:11px;font-weight:800;font-size:14px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-home svg:last-child {margin-left:auto}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-company {
+  min-width:0;border:1px solid #2b5260;border-radius:13px;background:#0b2534;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-company-details>summary {
+  display:flex;align-items:center;gap:9px;cursor:pointer;min-height:46px;padding:11px;
+  color:#e7f6f2;font-weight:780;font-size:14px;line-height:1.45;list-style:none;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-company-details>summary::-webkit-details-marker {display:none}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-company-details>summary strong {
+  min-width:0;overflow-wrap:anywhere;flex:1;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-company-count {
+  background:#154a4b;color:#c6f7e6;border-radius:999px;padding:2px 7px;font-size:12px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-company-details>summary svg:first-child {
+  color:#7fe3bd;flex:none;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-pages {
+  list-style:none;margin:0;padding:0 6px 8px;display:grid;gap:3px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-pages li {margin:0;padding:0;min-width:0}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-pages :is(button,a) {
+  display:flex;width:100%;min-width:0;min-height:44px;align-items:center;justify-content:space-between;
+  gap:8px;box-sizing:border-box;padding:9px 10px;
+  background:transparent;border:1px solid transparent;border-radius:9px;
+  font:inherit;font-size:13px;font-weight:630;line-height:1.45;
+  text-align:left;color:#deebf0;text-decoration:none;overflow-wrap:anywhere;
+  cursor:pointer;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-pages :is(button,a):hover,
+[data-approved-postlogin="qa-review-v115"] .sp-grant-pages [aria-current="page"] {
+  background:#17443f;color:#fff;border-color:#427f70;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-pages button:disabled {
+  opacity:.65;cursor:progress;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-pages :is(button,a):focus-visible,
+[data-approved-postlogin="qa-review-v115"] .sp-grant-company-details>summary:focus-visible,
+[data-approved-postlogin="qa-review-v115"] .sp-grant-collapsed>button:focus-visible {
+  outline:2px solid #91f1ce;outline-offset:2px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-launch-status {flex:none;white-space:nowrap;font-size:12px}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-foot {
+  padding:10px;flex:none;background:#0b2931;border:1px solid #245253;
+  border-radius:10px;color:#bddecf;font-size:12px;line-height:1.5;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-error {color:#ffd1b9}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-empty {
+  display:flex;align-items:center;gap:10px;padding:14px;line-height:1.5;
+  color:#ffdfa6;background:#332d26;border:1px solid #5d4b32;border-radius:10px;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-collapsed {max-height:initial}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-collapsed>button {
+  display:flex;align-items:center;justify-content:center;width:100%;
+  min-height:44px;background:#144a48;color:white;border:1px solid #4a8d77;border-radius:10px;
+}
+.sp-grant-visually-hidden {position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1024px){
+ [data-approved-postlogin="qa-review-v115"] .ecc-navigation.sp-grant-navigation {max-height:min(72dvh,760px)}
+ [data-approved-postlogin="qa-review-v115"] .sp-grant-company-details>summary {font-size:15px}
+ [data-approved-postlogin="qa-review-v115"] .sp-grant-pages :is(button,a) {font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){
+ [data-approved-postlogin="qa-review-v115"] .sp-grant-navigation * {transition:none!important;animation:none!important}
+}
+
+/* Preserve approved ECC source and checksum. On the authenticated host only,
+   conceal the simulated menu; the real grant menu is portaled beside it. */
+html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"]
+  nav.ecc-navigation:not([data-grant-navigation]) {display:none!important;}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-host {
+  width:100%;min-width:0;min-height:0;display:block;flex:1;
+}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-nav-mount {min-width:0;width:100%;display:grid;gap:3px;}
+[data-approved-postlogin="qa-review-v115"] .sp-grant-rail-open {
+  display:none;min-height:44px;width:100%;align-items:center;justify-content:center;
+  background:#123d40;border:1px solid #53877a;border-radius:10px;color:#f0fffa;
+}
+html[data-staffportal-postlogin="true"] .p-app.p-shell-nav-collapsed .p-sidebar
+  .sp-grant-nav-host .sp-grant-navigation {display:none!important;}
+html[data-staffportal-postlogin="true"] .p-app.p-shell-nav-collapsed .p-sidebar
+  .sp-grant-nav-host .sp-grant-rail-open {display:flex;}
+/* The mobile Sheet renders the same protected ECC anchor, so the portaled
+   permission menu occupies that container independently of desktop collapse. */
+.p-mobile-nav .sp-grant-nav-host {display:block;width:100%;min-width:0;}
+.p-mobile-nav .sp-grant-nav-mount .sp-grant-navigation {display:flex;}

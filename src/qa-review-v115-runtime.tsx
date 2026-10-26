@@ -21,6 +21,7 @@ import {
   type PostLoginPaletteId,
 } from './postlogin-palette-system';
 import { Stage1RuntimeContext, type Stage1NavigationRole } from './stage1-runtime-context';
+import Stage1AuthenticatedNavigationMount from './stage1-authenticated-navigation-mount';
 import './stage1-live-search.css';
 import './stage1-context-density.css';
 import './stage1-finance-visibility.css';
@@ -313,6 +314,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
         <Portal />
       </Stage1RuntimeContext.Provider>
+      <Stage1AuthenticatedNavigationMount context={context} />
       <Stage1LiveErpRouteBridge context={context} />
       <LivePostLoginEnhancementsV116 />
       <Stage1SearchResults enabled={stage1Enabled} />
