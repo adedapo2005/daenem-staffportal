@@ -195,3 +195,36 @@ test('changing authenticated employee while a module chunk loads cancels activat
    globalThis.window=previousWindow;globalThis.CustomEvent=previousCustomEvent;
  }
 });
+
+
+test('revocation while an entry launcher is still mounting prevents any click',async()=>{
+ const selected=catalog('printing'),originalLoad=selected.load,originalSelector=selected.selector;
+ selected.load=async()=>{};
+ selected.selector='.printing-launcher';
+ const priorWindow=globalThis.window,priorDocument=globalThis.document,priorEvent=globalThis.CustomEvent;
+ let latest=ctx(),clicked=0,lookups=0;
+ globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detail=options?.detail;}};
+ globalThis.window={
+   dispatchEvent:()=>true,
+   setTimeout:resolve=>{
+     latest=ctx(latest.roles,{'bakery':{'bakery.access':'view'}});
+     resolve();
+   },
+ };
+ globalThis.document={querySelector:()=>{
+   lookups++;
+   if(lookups===1)return null;
+   return {disabled:false,click:()=>{clicked++;}};
+ }};
+ const action=extract('src/stage1-granted-module-launch.ts','launchGrantedModule',{
+   authorisedModuleLaunch:authorisedLaunch,afterRender:async()=>{},
+ });
+ try{
+   await assert.rejects(action(ctx(),{scopeId:'printing',moduleId:'printing'},()=>latest),/company access changed/);
+   assert.equal(clicked,0);
+   assert.equal(lookups,1,'Do not even query the second launcher after scope revocation');
+ }finally{
+   selected.load=originalLoad;selected.selector=originalSelector;
+   globalThis.window=priorWindow;globalThis.document=priorDocument;globalThis.CustomEvent=priorEvent;
+ }
+});
