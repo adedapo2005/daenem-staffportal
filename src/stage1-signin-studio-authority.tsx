@@ -23,19 +23,20 @@ const PRESETS = [
 
 type Snapshot = { sessionId: string; backgroundId: string; themeMode: string; widgets: number; hasDraft: boolean | null };
 type LoadState = 'loading' | 'ready' | 'denied' | 'unavailable';
-type AuthoritySection = 'Home' | 'Preview' | null;
+type AuthoritySection = 'Home' | 'Themes' | 'Preview' | null;
 
 function sectionFromUrl(): AuthoritySection {
   const requested = new URLSearchParams(window.location.search).get('studioSection');
   if (requested === null || requested === 'Home') return 'Home';
   if (requested === 'Preview') return 'Preview';
+  if (requested === 'Themes') return 'Themes';
   // Every other legacy Studio section keeps its original component/navigation.
   return null;
 }
 function isStudioPath() {
   return window.location.pathname === STUDIO_PATH || window.location.pathname === STUDIO_PATH + '/';
 }
-function navigateSection(section: 'Home' | 'Preview') {
+function navigateSection(section: 'Home' | 'Themes' | 'Preview') {
   window.history.pushState({}, '', STUDIO_PATH + '?studioSection=' + section);
   window.dispatchEvent(new PopStateEvent('popstate'));
   window.dispatchEvent(new Event('daenem-studio-section-change'));
@@ -110,9 +111,17 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
         let hasDraft: boolean | null = null;
         try {
           const result = await fetchAdminSignInDraft();
-          if (result.canManage === true) hasDraft = result.draft !== null;
+          if (cancelled) return;
+          // A grant may be revoked between these two awaited Worker reads.
+          // Do not display the earlier response after the second denial.
+          if (result.canManage !== true) {
+            setLoad('denied');
+            return;
+          }
+          hasDraft = result.draft !== null;
         } catch {
-          // The draft is unknown, NOT absent.
+          if (!cancelled) setLoad('unavailable');
+          return;
         }
         if (cancelled) return;
         setSnapshot({
@@ -156,37 +165,70 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
     <section className="stage1-studio-authority" data-approved-studio-source="cloudflare-v180" aria-label="StaffPortal approved Sign-In Studio workbench">
       <header className="stage1-studio-authority-hero">
         <div><span className="stage1-studio-eyebrow">STAFFPORTAL / EXPERIENCE / SIGN-IN STUDIO</span>
-          <h2>{APPROVED.name}</h2><p>Current public Pre-Production Sign-In is the approved baseline. Its historical Sites origin does not make Webflow Home the active release.</p>
+          <h2>{APPROVED.name}</h2><p>Current public Pre-Production Sign-In is the approved baseline. Its historical Sites origin does not make Webflow Home the active release. Worker theme preferences are separate from the protected page source.</p>
         </div>
         <div className="stage1-studio-version"><strong>{APPROVED.version}</strong><span>PUBLIC BASELINE · SOURCE LOCKED</span></div>
       </header>
       <div className="stage1-studio-guard" role="status"><strong>No changes to public Sign-In.</strong> This approved-baseline workbench is read-only. Legacy Studio editors are separate and are not approved to publish the public Sign-In.</div>
       <nav className="stage1-studio-tabs" aria-label="Approved Sign-In Studio">
         <button type="button" aria-current={section === 'Home' ? 'page' : undefined} onClick={() => navigateSection('Home')}>Overview</button>
+        <button type="button" aria-current={section === 'Themes' ? 'page' : undefined} onClick={() => navigateSection('Themes')}>Approved Theme</button>
         <button type="button" aria-current={section === 'Preview' ? 'page' : undefined} onClick={() => navigateSection('Preview')}>Approved Live Preview</button>
       </nav>
       {section === 'Home' ? <>
         <div className="stage1-studio-authority-grid">
           <article><small>AUTHORITATIVE PUBLIC DESIGN</small><h3>Approved V180 · Cloudflare</h3><p>Live renderer: the same approved V180 markup and Worker-bound authentication as the Pre-Production root.</p><span className="stage1-studio-state">CURRENT · READ ONLY</span></article>
           <article><small>HISTORICAL COLLECTION</small><h3>Webflow / Sites variants</h3><p>Retained as historical comparisons. Webflow Home is not the current public Sign-In and must not be labeled active.</p><span className="stage1-studio-state">REFERENCE ONLY</span></article>
-          <article><small>CURRENT WORKER CONFIGURATION</small><h3>Server-backed settings</h3>
-            <p>Theme mode: {snapshot.themeMode}. Background: {snapshot.backgroundId}. Visible configured widgets: {snapshot.widgets}. {snapshot.hasDraft === null ? 'Draft availability could not be verified.' : snapshot.hasDraft ? 'An unpublished draft exists.' : 'No stored unpublished draft reported.'}</p>
+          <article><small>SERVER SETTINGS · DISTINCT FROM LOCKED DESIGN</small><h3>Worker-backed preferences</h3>
+            <p>Stored theme mode: {snapshot.themeMode}. Stored background ID: {snapshot.backgroundId}. Stored visible widgets: {snapshot.widgets}. {snapshot.hasDraft === null ? 'Draft availability could not be verified.' : snapshot.hasDraft ? 'An unpublished draft exists.' : 'No stored unpublished draft reported.'}</p>
+            <p className="stage1-studio-review-note">These values are server records, not proof that the source-locked V180 hero, layouts or widgets are editable through the legacy design library.</p>
           </article>
         </div>
         <div className="stage1-studio-main-actions">
           <button type="button" className="stage1-studio-primary" onClick={() => navigateSection('Preview')}>Review Approved Sign-In</button>
           <a href={APPROVED_PREVIEW_PATH} target="_blank" rel="noopener noreferrer">Open Official V180 Preview</a>
         </div>
-      </> : <div className="stage1-studio-preview">
-        <div><h3>Preview the actual public renderer</h3><p>Opens the approved Cloudflare Sign-In in a separate same-origin window. The old Sites laboratory preview and static miniatures are not used. Browser window dimensions are requests, not verified viewport measurements.</p></div>
+      </> : section === 'Themes' ? <div className="stage1-studio-themes">
+        <div className="stage1-studio-theme-grid">
+          <article className="stage1-studio-theme-current">
+            <small>PUBLIC DESIGN · SOURCE LOCKED</small>
+            <h3>{APPROVED.name}</h3>
+            <p>The official published Sign-In continues to render the protected V180 markup and the current Cloudflare Worker authentication. This is the source of truth, not a Webflow Home theme preset.</p>
+            <div className="stage1-studio-theme-facts">
+              <span><strong>Version</strong> {APPROVED.version}</span>
+              <span><strong>Source</strong> {APPROVED.source}</span>
+              <span><strong>Rendering</strong> Current Worker public endpoint</span>
+            </div>
+            <a href={APPROVED_PREVIEW_PATH} target="_blank" rel="noopener noreferrer" className="stage1-studio-primary">Inspect real approved V180</a>
+          </article>
+          <article>
+            <small>WORKER PREFERENCES · NOT PAGE SOURCE</small>
+            <h3>Current stored configuration</h3>
+            <dl className="stage1-studio-theme-facts">
+              <div><dt>Theme mode</dt><dd>{snapshot.themeMode}</dd></div>
+              <div><dt>Background setting</dt><dd>{snapshot.backgroundId}</dd></div>
+              <div><dt>Configured visible widgets</dt><dd>{snapshot.widgets}</dd></div>
+              <div><dt>Unpublished Worker draft</dt><dd>{snapshot.hasDraft === null ? 'Unknown' : snapshot.hasDraft ? 'Present' : 'None recorded'}</dd></div>
+            </dl>
+            <p>These settings are readable but are not proof of editable controls for the protected V180 page. No activation or publish action is offered here.</p>
+          </article>
+          <article>
+            <small>HISTORICAL REFERENCE · NOT ACTIVE</small>
+            <h3>Earlier Webflow and Sites themes</h3>
+            <p>The old Webflow Home default and Sites laboratory are retained by the historical V115 source. Their miniatures and activation buttons do not control the approved Cloudflare V180 public Sign-In.</p>
+            <span className="stage1-studio-state">ARCHIVED REFERENCE ONLY</span>
+          </article>
+        </div>
+      </div> : <div className="stage1-studio-preview">
+        <div><h3>Preview the actual public renderer</h3><p>Opens the approved Cloudflare Sign-In in a separate same-origin window. The old Sites laboratory preview and static miniatures are not used. Review presets document target dimensions; opening a new tab does not resize the browser.</p></div>
         <label>Review viewport preset <select value={preset} onChange={e => setPreset(Number(e.target.value))}>
           {PRESETS.map((item, index) => <option value={index} key={item.label}>{item.label}</option>)}
         </select></label>
-        <p className="stage1-studio-review-note">Selected target: {selected.width} × {selected.height}. Adjust the browser viewport using TinyFish or device QA tools for measured acceptance.</p>
+        <p className="stage1-studio-review-note">Target to check: {selected.width} × {selected.height}. Set the actual browser size in TinyFish or device QA tools; this selection alone does not resize or validate a viewport.</p>
         <a href={APPROVED_PREVIEW_PATH} target="_blank" rel="noopener noreferrer" className="stage1-studio-primary">Open approved Sign-In in new window</a>
         <p className="stage1-studio-review-note">Frame embedding is intentionally disabled by Pre-Production anti-clickjacking policy. Opening the preview does not modify settings or publish drafts.</p>
       </div>}
-      <footer>Owner-approved V180 source remains protected. Legacy Studio sections retain their existing implementation; they are not evidence of current public authority until migrated and accepted.</footer>
+      <footer>Owner-approved V180 source remains protected. Other legacy Studio sections are retained but are not verified controls for the public V180 renderer. Source binding and Owner approval remain release gates.</footer>
     </section>, mount
   );
 }
