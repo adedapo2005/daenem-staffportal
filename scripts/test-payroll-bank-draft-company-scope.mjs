@@ -72,13 +72,14 @@ async function requestFor(env, user) {
   assert.equal(payload.batch.status, 'draft');
   assert.equal(payload.batch.heldCount, 1, 'employees without verified bank details remain held');
   assert.ok(prepared.some(statement => statement.sql.includes('ba.verified_at IS NOT NULL')), 'the effective dedicated POST query requires verified primary bank details');
-  assert.equal(writes.length, 4, 'the only writes are one batch, two draft items, and one audit entry');
-  assert.ok(writes.every(statement => /^\s*INSERT INTO (payroll_payment_batches|payroll_payment_batch_items|audit_logs)\b/i.test(statement.sql)), 'authorized writes must remain limited to draft records and audit evidence');
+  assert.equal(writes.length, 5, 'the batch includes one draft, two items, one audit entry, and its audit assertion');
+  assert.ok(writes.slice(0, 4).every(statement => /^\s*INSERT INTO (payroll_payment_batches|payroll_payment_batch_items|audit_logs)\b/i.test(statement.sql)), 'authorized writes must remain limited to draft records and audit evidence');
+  assert.match(writes[4].sql, /CASE WHEN changes\(\)=1 THEN 1 ELSE json_extract\('audit insert was suppressed', '\$'\) END/i, 'a silently ignored audit insert must raise inside the same D1 batch and roll back draft rows');
   assert.equal(writes[0].bindings[2], 'company-b', 'the payment draft is stored in Company B');
-  assert.equal(writes.at(-1).bindings[2], 'company-b', 'audit evidence is scoped to Company B');
+  assert.equal(writes[3].bindings[2], 'company-b', 'audit evidence is scoped to Company B');
   assert.match(writes[0].sql, /FROM payroll_runs WHERE id=\? AND company_id=\? AND status IN \('approved','processing'\)/, 'draft creation rechecks payable status inside the write transaction');
   assert.match(writes[0].sql, /NOT EXISTS \(SELECT 1 FROM payroll_payment_batches/, 'draft creation checks for an active duplicate inside the write transaction');
-  assert.ok(writes.slice(1).every(statement => /WHERE EXISTS \(SELECT 1 FROM payroll_payment_batches WHERE id=\? AND status='draft'\)/.test(statement.sql)), 'items and audit can only be inserted for the successfully created draft');
+  assert.ok(writes.slice(1, 4).every(statement => /WHERE EXISTS \(SELECT 1 FROM payroll_payment_batches WHERE id=\? AND status='draft'\)/.test(statement.sql)), 'items and audit can only be inserted for the successfully created draft');
   assert.equal(writes[2].bindings[4], null, 'an unverified primary account is not snapshotted onto a held payment line');
   assert.equal(writes[2].bindings[6], null, 'unverified bank identity is withheld from the held payment line');
   assert.equal(writes[2].bindings[7], null, 'unverified account last-four digits are withheld from the held payment line');
@@ -98,7 +99,7 @@ async function requestFor(env, user) {
   const user = context({ owner: true, companies: ['company-a'], permissions: {}, companyPermissions: {} });
   const response = await requestFor(env, user);
   assert.equal(response.status, 201, 'Owner retains group-wide internal draft authority');
-  assert.equal(writes.length, 4);
+  assert.equal(writes.length, 5);
   assert.equal(writes[0].bindings[2], 'company-b', 'Owner-created internal draft remains scoped to its target company');
 }
 
