@@ -23,7 +23,8 @@ async function afterRender():Promise<void> {
  * Reuse the existing canonical module entry contract without introducing a
  * separate data writer. The module's own Worker checks remain authoritative.
  */
-export async function launchGrantedModule(context:WorkforceContext,request:ScopedModuleLaunch) {
+export async function launchGrantedModule(context:WorkforceContext,request:ScopedModuleLaunch,
+  currentContext:()=>WorkforceContext=()=>context) {
   const allowed=authorisedModuleLaunch(context,request);
   if(!allowed)throw new Error('This company module is not assigned to your account.');
   const {company,module}=allowed;
@@ -44,7 +45,12 @@ export async function launchGrantedModule(context:WorkforceContext,request:Scope
   await module.load();
   await afterRender();
   await afterRender();
-  // Ensure a newly mounted entry receives the company context before opening.
+  // Permission and authenticated session may change while a chunk loads.
+  // Do not open a previously authorised module for a revoked/new employee.
+  const latest=currentContext();
+  if(latest.sessionId!==context.sessionId || latest.employee.id!==context.employee.id
+    || !authorisedModuleLaunch(latest,request))
+    throw new Error('Your company access changed while the module was loading. Refresh your authorised workspace.');
   publish();
   window.dispatchEvent(new CustomEvent('daenem:active-company-changed',{
     detail:{companyId:company.id,companyCode:company.code},
