@@ -5,20 +5,22 @@ db=sqlite3.connect(':memory:')
 db.executescript("""
 PRAGMA foreign_keys=ON;
 CREATE TABLE employees(id TEXT PRIMARY KEY);
-CREATE TABLE sales_orders(id TEXT PRIMARY KEY,company_id TEXT,status TEXT,payment_status TEXT,total_kobo INTEGER);
+CREATE TABLE sales_orders(id TEXT PRIMARY KEY,company_id TEXT,status TEXT,payment_status TEXT,total_kobo INTEGER,amount_paid_kobo INTEGER DEFAULT 0);
 CREATE TABLE finance_receivables(id TEXT PRIMARY KEY,company_id TEXT,source_module TEXT,source_id TEXT,status TEXT,amount_kobo INTEGER,paid_kobo INTEGER,balance_kobo INTEGER);
 INSERT INTO employees VALUES('reviewer');
 INSERT INTO sales_orders VALUES
 ('good','company-bakery','completed','unpaid',10000),
 ('draft','company-bakery','draft','unpaid',10000),
 ('refunded','company-bakery','completed','refunded',10000),
-('foreign','company-printing','completed','unpaid',10000);
+('foreign','company-printing','completed','unpaid',10000),
+('cash-paid','company-bakery','completed','paid',10000,10000);
 INSERT INTO finance_receivables VALUES
 ('ar-good','company-bakery','sales','good','open',10000,0,10000),
 ('ar-draft','company-bakery','sales','draft','open',10000,0,10000),
 ('ar-refunded','company-bakery','sales','refunded','open',10000,0,10000),
 ('ar-foreign','company-printing','sales','foreign','open',10000,0,10000),
 ('ar-manual','company-bakery','manual','good','open',10000,0,10000),
+('ar-cash','company-bakery','sales','cash-paid','open',10000,0,10000),
 ('ar-paid','company-bakery','sales','good','paid',10000,10000,0),
 ('ar-partial','company-bakery','sales','good','open',10000,500,9500);
 """)
@@ -31,7 +33,7 @@ def deny(sql,args=()):
 create="""INSERT INTO bakery_monnify_sandbox_intents
 (id,company_id,receivable_id,payment_reference,expected_amount_kobo,currency,provider_environment,status,created_by)
 VALUES(?,?,?,?,?,'NGN','sandbox','reserved','reviewer')"""
-for name in ['ar-draft','ar-refunded','ar-foreign','ar-manual','ar-paid','ar-partial','missing']:
+for name in ['ar-draft','ar-refunded','ar-foreign','ar-manual','ar-cash','ar-paid','ar-partial','missing']:
  deny(create,('x-'+name,'company-bakery',name,'QA-REFERENCE-'+name,10000))
 deny(create,('cross','company-printing','ar-good','QA-REFERENCE-CROSS',10000))
 deny(create,('bad-money','company-bakery','ar-good','QA-REFERENCE-MONEY',9000))
@@ -45,6 +47,7 @@ SET status='initialized',provider_transaction_reference='MNFY|QA|1',
 checkout_url='https://sandbox.monnify.com/checkout/qa',initialized_at=CURRENT_TIMESTAMP
 WHERE id='intent'""")
 deny("UPDATE bakery_monnify_sandbox_intents SET status='review_required'")
+deny("UPDATE sales_orders SET amount_paid_kobo=10000,payment_status='paid' WHERE id='good'")
 deny("DELETE FROM bakery_monnify_sandbox_intents")
 db.execute("""INSERT INTO bakery_monnify_collection_inquiries
 (id,intent_id,company_id,collection_state,provider_status,amount_paid_kobo)
