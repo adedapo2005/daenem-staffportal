@@ -71,6 +71,38 @@ jobs:
       - name: Isolated staging QA persona acceptance
         run: node --disable-warning=ExperimentalWarning scripts/test-staging-qa-seeder.mjs
 
+      - name: Bakery stock, recipe, financial and unit-integrity regression
+        run: |
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-real-stock-atomicity.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-http-stock-guards.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-recipe-cost-integrity.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-flour-unit-truth.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-material-unit-governance.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-material-receipt-cost.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-precise-material-valuation.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-finance-bridge.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-finance-ar-settlement-lock.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-sales-journal-cash-guard.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-monnify-verification.mjs
+          python3 scripts/test-bakery-unverified-manual-cash-guard.py
+          python3 scripts/test-bakery-monnify-sandbox-binding.py
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-monnify-sandbox-init.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-monnify-sandbox-route.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-remittance-idempotency.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-close-atomicity.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-custody-lock.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-history-readonly.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-history-api.mjs
+          node scripts/check-bakery-changed-syntax.mjs
+          node scripts/check-bakery-accountability.mjs
+          node scripts/test-bakery-kpi-comparisons.mjs
+          python3 scripts/test-bakery-integrity.py
+          python3 scripts/test-bakery-agent-integrity.py
+          python3 scripts/test-bakery-return-receipts.py
+          python3 scripts/test-bakery-return-ui.py
+          python3 scripts/test-bakery-dashboard-history.py
+          python3 scripts/test-bakery-dashboard-permissions.py
+
       - name: Enterprise Command Center preservation and navigation
         run: |
           node scripts/test-navigation-overlay.mjs

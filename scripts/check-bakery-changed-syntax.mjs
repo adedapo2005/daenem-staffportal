@@ -1,0 +1,8 @@
+import fs from 'node:fs';
+import ts from '../node_modules/typescript/lib/typescript.js';
+for(const [path,kind] of [['worker/bakery.ts',ts.ScriptKind.TS],['src/bakery-v2.tsx',ts.ScriptKind.TSX],['worker/bakery-accountability.ts',ts.ScriptKind.TS],['src/bakery-intelligence-metrics.ts',ts.ScriptKind.TS],['src/bakery-kpi-strip.tsx',ts.ScriptKind.TSX],['worker/bakery-material-units.ts',ts.ScriptKind.TS],['worker/bakery-material-valuation.ts',ts.ScriptKind.TS],['worker/bakery-material-openings.ts',ts.ScriptKind.TS],['worker/bakery-material-transfers.ts',ts.ScriptKind.TS],['worker/inventory.ts',ts.ScriptKind.TS],['src/bakery-material-units.tsx',ts.ScriptKind.TSX],['src/inventory.tsx',ts.ScriptKind.TSX],['src/bakery-opening-valuation.tsx',ts.ScriptKind.TSX]]){
+ const source=fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
+ const file=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,kind);
+ if(file.parseDiagnostics.length){for(const d of file.parseDiagnostics)console.error(path,ts.flattenDiagnosticMessageText(d.messageText,' '));process.exitCode=1;}
+ else console.log('PASS syntax',path);
+}

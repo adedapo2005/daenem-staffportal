@@ -1,0 +1,17 @@
+.bakery-comparison{display:grid;gap:12px}
+.bakery-comparison-period{margin:0;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:12px;font-variant-numeric:tabular-nums;line-height:1.6;opacity:.78}
+.bakery-comparison-period strong{font-weight:750}
+.bakery-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.bakery-kpi-card{min-width:0;min-height:128px;padding:clamp(14px,1.4vw,22px);border:1px solid var(--bakery-border,#d6e1e2);border-radius:17px;background:var(--panel,#fff);display:flex;flex-direction:column;justify-content:space-between;gap:9px;box-shadow:0 4px 18px rgba(13,44,49,.035)}
+.bakery-kpi-card small{display:block;font-weight:720;letter-spacing:.025em;opacity:.77}
+.bakery-kpi-card strong{font-size:clamp(1.35rem,2.15vw,2.05rem);line-height:1.05;letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bakery-kpi-card span{font-size:12px;line-height:1.45;font-weight:570;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bakery-kpi-favorable span{color:#08765c}
+.bakery-kpi-adverse span{color:#ad4a1e}
+.bakery-kpi-neutral span{opacity:.73}
+.bakery-comparison-note{margin:0;font-size:12px;line-height:1.6;opacity:.73;max-width:85ch}
+.bakery-kpi-unavailable{padding:16px;border:1px dashed var(--bakery-border,#cdd9de);border-radius:12px;font-size:13px;opacity:.75}
+@media(min-width:1850px){.bakery-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.bakery-kpi-card{min-height:148px}}
+@media(max-width:920px){.bakery-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.bakery-kpi-grid{grid-template-columns:1fr}.bakery-kpi-card{min-height:104px}.bakery-kpi-card strong{font-size:1.6rem}.bakery-comparison-period{font-size:11px}}
+@media(prefers-contrast:more){.bakery-kpi-card{border-width:2px}.bakery-kpi-favorable span,.bakery-kpi-adverse span{font-weight:800}}

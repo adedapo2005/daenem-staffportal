@@ -61,13 +61,24 @@ async function main() {
   const worker = load('worker/staffportal-staging.ts').default;
   const auth = load('worker/auth.ts');
   const migrations = Object.keys(baseline.files).filter(name => name.startsWith('migrations/') && name.endsWith('.sql')).sort();
-  check(migrations.length === 106, 'All 106 committed migrations');
+  const bakeryMigrations = ['migrations/0102_bakery_financial_integrity.sql','migrations/0103_bakery_agent_sale_price_integrity.sql','migrations/0104_bakery_verified_return_custody.sql','migrations/0106_bakery_material_unit_rules.sql','migrations/0107_bakery_precise_material_valuation.sql','migrations/0108_bakery_verified_opening_valuations.sql','migrations/0109_bakery_valued_material_identity_lock.sql','migrations/0110_bakery_remittance_idempotency.sql','migrations/0111_bakery_dispatch_atomic_close.sql','migrations/0112_bakery_dispatch_closure_audit.sql','migrations/0113_bakery_dispatch_issued_custody_lock.sql','migrations/0114_bakery_dispatch_stock_movement_integrity.sql','migrations/0115_bakery_dispatch_atomic_stock_debit.sql','migrations/0116_bakery_dispatch_issue_audit_and_reversal_lock.sql','migrations/0117_bakery_dispatch_draft_after_debit_lock.sql','migrations/0118_bakery_dispatch_initial_state_guard.sql','migrations/0119_bakery_finance_unverified_settlement_guard.sql','migrations/0120_bakery_sales_journal_cash_integrity.sql','migrations/0121_bakery_unverified_manual_cash_guard.sql','migrations/0122_bakery_monnify_sandbox_intent_binding.sql'];
+  check(migrations.length === 126 && bakeryMigrations.every(name => migrations.includes(name)), 'All 126 committed migrations, including Bakery GL cash integrity guards');
   const db = new DatabaseSync(':memory:');
   for (const migration of migrations) { lastCheck = `Schema: ${migration}`; db.exec(baseline.files[migration]); }
   const rows = sql => db.prepare(sql).all();
   const scalar = sql => Object.values(db.prepare(sql).get())[0];
   const snapshot = () => JSON.stringify(rows("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
     .map(({ name }) => [name, rows(`SELECT * FROM "${name}" ORDER BY rowid`)]));
+  // Authenticated Worker requests normally update auth_sessions.last_seen_at
+  // outside the operation's D1 batch. A financial/facility rollback must
+  // preserve EVERY other database field, but not compare a legitimate session
+  // heartbeat that may cross a second boundary while the test is running.
+  const transactionSnapshot = () => JSON.stringify(JSON.parse(snapshot()).map(([name, records]) => [
+    name,
+    name === 'auth_sessions'
+      ? records.map(record => ({ ...record, last_seen_at: null }))
+      : records,
+  ]));
   // Preserve every pre-existing row, including the canonical non-QA companies/roles.
   const original = rows("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
     .map(({ name }) => ({ name, data: rows(`SELECT rowid AS qa_rowid,* FROM "${name}"`) }));
@@ -615,7 +626,7 @@ async function main() {
   same(snapshot(),afterTx,'Fixture reset refusal preserves transaction reservation and evidence');
   const facilityDraft = { companyId: companyA, locationId: qa('site-a'),
     facilityType: 'office', name: 'QA Transaction Acceptance Building' };
-  const failedCreateBefore = snapshot();
+  const failedCreateBefore = transactionSnapshot();
   failureIndex = 1; // Fail the audit write after the facility insert.
   let createRolledBack = false;
   try { await postFacility('/api/facilities', 'manager',
@@ -623,7 +634,7 @@ async function main() {
   catch { createRolledBack = true; }
   finally { failureIndex = -1; }
   check(createRolledBack, 'Facility audit failure propagates instead of falsely succeeding');
-  same(snapshot(), failedCreateBefore, 'Facility insert and audit fail atomically');
+  same(transactionSnapshot(), failedCreateBefore, 'Facility insert and audit fail atomically');
 
   const facilityResponse = await postFacility('/api/facilities', 'manager', facilityDraft);
   check(facilityResponse.status === 201, 'Authenticated Facilities creation persists in isolated D1');
@@ -654,14 +665,14 @@ async function main() {
 
   const meterInput = { companyId: companyA, facilityId: facility.id, assetId: asset.id,
     readingType: 'running_hours', readingValue: 321.5, unit: 'hours' };
-  const beforeMeter = snapshot();
+  const beforeMeter = transactionSnapshot();
   failureIndex = 1; // Fail audit: meter insert and asset update must roll back.
   let meterRolledBack = false;
   try { await postFacility('/api/facilities/readings', 'manager', meterInput); }
   catch { meterRolledBack = true; }
   finally { failureIndex = -1; }
   check(meterRolledBack, 'Meter audit failure propagates instead of falsely succeeding');
-  same(snapshot(), beforeMeter, 'Meter write, audit and running-hours update roll back atomically');
+  same(transactionSnapshot(), beforeMeter, 'Meter write, audit and running-hours update roll back atomically');
 
   const meterResponse = await postFacility('/api/facilities/readings', 'manager', meterInput);
   // The established Worker API returns HTTP 200 with the canonical readingId.
@@ -752,7 +763,7 @@ async function main() {
   check(externalCalls === 0, 'Zero provider delivery logging or external calls');
   check(rows('PRAGMA foreign_key_check').length === 0, 'Canonical foreign keys intact');
   db.close();
-  console.log(`PASS staging QA composed runtime: ${assertions} checks; seed ${seedBatchLength}/50; reset ${resetBatchLength}/50; 106 migrations; zero external calls.`);
+  console.log(`PASS staging QA composed runtime: ${assertions} checks; seed ${seedBatchLength}/50; reset ${resetBatchLength}/50; ${migrations.length} migrations; zero external calls.`);
 }
 
 main().catch(() => {

@@ -1,6 +1,6 @@
 import fs from'node:fs';
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
-const migration=read('migrations/0045_bakery_accountability_ledger.sql'),controls=read('migrations/0046_bakery_investigation_flour_controls.sql'),dedicated=read('migrations/0047_bakery_dedicated_reports.sql'),productionReady=read('migrations/0048_bakery_theft_report_controls.sql'),evidenceFiles=read('migrations/0050_bakery_investigation_evidence_files.sql'),worker=read('worker/bakery-accountability.ts'),bakery=read('worker/bakery.ts'),runtime=read('worker/runtime.ts'),client=read('src/bakery-v2.tsx'),css=read('src/bakery-accountability.css')+read('src/bakery-controls.css'),release=read('src/main.tsx');let passed=0;
+const migration=read('migrations/0045_bakery_accountability_ledger.sql'),controls=read('migrations/0046_bakery_investigation_flour_controls.sql'),dedicated=read('migrations/0047_bakery_dedicated_reports.sql'),productionReady=read('migrations/0048_bakery_theft_report_controls.sql'),evidenceFiles=read('migrations/0050_bakery_investigation_evidence_files.sql'),worker=read('worker/bakery-accountability.ts'),bakery=read('worker/bakery.ts'),runtime=read('worker/runtime.ts'),client=read('src/bakery-v2.tsx'),css=read('src/bakery-accountability.css')+read('src/bakery-controls.css'),launcher=read('src/bakery-entry-v2.tsx'),moduleHub=read('src/module-hub.tsx');let passed=0;
 const check=(name,value)=>{if(!value)throw new Error(`Bakery accountability contract failed: ${name}`);passed++};
 check('bread ledger supports all required statuses',['produced','sold','returned','damaged','promotional','staff_consumption','in_store','in_transit'].every(value=>migration.includes(`'${value}'`)));
 check('money ledger supports all required statuses',['cash_received','pos_received','transfer_received','outstanding','refunded','pos_charges'].every(value=>migration.includes(`'${value}'`)));
@@ -21,7 +21,7 @@ check('completed production enters bread ledger',bakery.includes("'produced'")&&
 check('permission-only accountability navigation',client.includes("can(context,'bakery.reconciliation')")&&client.includes('Bread & Money Control'));
 check('forms clearly describe their outcome',client.includes('Deduct finished stock and assign every loaf')&&client.includes('Classify all expected sale money'));
 check('responsive accountability interface exists',css.includes('@media(max-width:760px)')&&css.includes('.account-table'));
-check('version summary explains the checkpoint',release.includes('Bakery reporting production-readiness')&&/version: '7\.0\.0-alpha\.\d+'/.test(release));
+check('Bakery V2 authenticated launcher is the module-hub entry',launcher.includes("import{BakeryWorkspaceV2}from'./bakery-v2'")&&launcher.includes('if(!context)return null')&&launcher.includes('<BakeryWorkspaceV2 context={context}')&&moduleHub.includes("load: () => import('./bakery-entry-v2')"));
 check('POS sold bread posts automatically',bakery.includes("'bakery_pos'")&&bakery.includes('Automatically posted from completed Bakery POS sale'));
 check('POS payment status maps to accountability money',bakery.includes("method==='pos_terminal'?'pos_received'")&&bakery.includes("method==='bank_transfer'?'transfer_received'"));
 check('POS outstanding balance posts automatically',bakery.includes('Automatically posted unpaid Bakery POS balance'));
@@ -41,7 +41,7 @@ check('resolution requires independent approval',worker.includes('cannot approve
 check('flour bag setting validates Bakery flour inventory',worker.includes('active Bakery flour inventory item'));
 check('report CSV export is permission scoped',worker.includes("'/api/bakery/accountability/reports/export'")&&worker.includes("allowed(context,'bakery.reconciliation')"));
 check('multiple products can be dispatched together',client.includes('dispatchRows.map')&&client.includes('+ Add another product'));
-check('flour controls are usable in client',client.includes('Set bag size')&&client.includes("'/api/bakery/accountability/flour-bag'"));
+check('flour controls are usable in client',client.includes('Set verified bag size')&&client.includes('Bag equivalent unavailable')&&client.includes("'/api/bakery/accountability/flour-bag'"));
 check('investigation controls are usable in client',client.includes('Add evidence')&&client.includes('Submit resolution')&&client.includes("'/api/bakery/accountability/investigations'"));
 check('reports support CSV and print',client.includes('Export CSV')&&client.includes('window.print()'));
 check('new controls are responsive and printable',css.includes('.dispatch-line')&&css.includes('@media print'));
