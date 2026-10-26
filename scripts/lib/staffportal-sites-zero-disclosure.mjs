@@ -1,0 +1,166 @@
+// DAENEM StaffPortal external publication release gate.
+// Read-only security assertions: never print or persist asset keys, private URLs,
+// prompts, author IDs, image content, credentials, or unpublished record bodies.
+// Separate from the protected Owner-approved Sign-In implementation.
+export const LEGACY_ORIGIN = 'https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site';
+export const OFFICIAL_ORIGIN = 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev';
+const TRUSTED_IMAGE_HOSTS = new Set([
+  new URL(LEGACY_ORIGIN).hostname,
+  new URL(OFFICIAL_ORIGIN).hostname,
+  'media.base44.com',
+]);
+const PUBLIC_FIELDS = new Set([
+  'asset_key', 'image_url', 'default_image_url', 'display_enabled',
+  'category', 'purpose', 'id', 'label', 'phase', 'sort_order', 'fit_mode',
+  'is_virtual', 'zoom', 'focal_x', 'focal_y', 'opacity', 'overlay_strength',
+  'blur', 'master_width', 'master_height', 'width', 'height',
+]);
+const STATUSES = new Set(['approved', 'approved_v179']);
+const has = (v, k) => Object.prototype.hasOwnProperty.call(v, k);
+const finite = n => Number.isSafeInteger(n) && n >= 1 && n <= 500;
+const KEY = /^[a-z0-9][a-z0-9._-]{0,120}$/i;
+const safeCount = (items, test) => items.filter(test).length;
+
+export function safeImageURL(input, base = LEGACY_ORIGIN) {
+  if (typeof input !== 'string' || input.length > 1500 || !input.trim()
+      || input.trim() !== input || /[\u0000-\u001f\u007f\\]/.test(input)) return null;
+  const decoded = (() => { try { return decodeURIComponent(input); } catch { return null; } })();
+  if (decoded === null || /[\u0000-\u001f\u007f\\]/.test(decoded)) return null;
+  if (decoded.startsWith('//') || decoded.split('/').some(x => x === '..' || x === '.')) return null;
+  let url;
+  try {
+    if (input.startsWith('/')) {
+      if (!input.startsWith('/assets/') && !input.startsWith('/api/assets/images/')) return null;
+      url = new URL(input, base);
+    } else url = new URL(input);
+  } catch { return null; }
+  if (url.protocol !== 'https:' || url.username || url.password
+      || url.search || url.hash || url.port || !TRUSTED_IMAGE_HOSTS.has(url.hostname)) return null;
+  let path;
+  try { path = decodeURIComponent(url.pathname); } catch { return null; }
+  if (/[\u0000-\u001f\u007f\\]/.test(path) || path.includes('//')
+      || path.split('/').some(x => x === '..' || x === '.')) return null;
+  const isLegacy = url.hostname === new URL(LEGACY_ORIGIN).hostname;
+  const isOfficial = url.hostname === new URL(OFFICIAL_ORIGIN).hostname;
+  const allowed = isLegacy
+    ? /^\/assets\/[A-Za-z0-9._/-]+\.(png|jpe?g|webp)$/i.test(path)
+    : isOfficial
+      ? /^\/(?:assets\/[A-Za-z0-9._/-]+\.(png|jpe?g|webp)|api\/assets\/images\/[A-Za-z0-9._/-]+)$/i.test(path)
+      : /^\/images\/public\/[a-f0-9]{24}\/[A-Za-z0-9._~/-]+\.(png|jpe?g|webp)$/i.test(path);
+  return allowed ? url.href : null;
+}
+function recordKeyValid(row) {
+  return typeof row.asset_key === 'string' && KEY.test(row.asset_key)
+    && !row.asset_key.includes('..');
+}
+function duplicates(rows) {
+  const counts = new Map();
+  for (const row of rows) {
+    const key = row && typeof row === 'object' ? row.asset_key : null;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return [...counts.values()].filter(n => n > 1).reduce((n, c) => n + c, 0);
+}
+function failFinding(code, count, violations) {
+  if (count > 0) violations.push({ code, count }); // fixed labels only
+}
+function validPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)
+    || !Array.isArray(payload.assets) || payload.assets.length > 500) return false;
+  return payload.assets.every(row => row && typeof row === 'object' && !Array.isArray(row));
+}
+export function evaluatePublication(legacy, official, options = {}) {
+  const expected = options.expected ?? 50;
+  if (!finite(expected)) throw new TypeError('Expected public count must be between 1 and 500');
+  const violations = [];
+  const legacyValid = validPayload(legacy), officialValid = validPayload(official);
+  if (!legacyValid) violations.push({code: 'LEGACY_RESPONSE_INVALID', count: 1});
+  if (!officialValid) violations.push({code: 'OFFICIAL_RESPONSE_INVALID', count: 1});
+  const raw = legacyValid ? legacy.assets : [];
+  const worker = officialValid ? official.assets : [];
+  const unapproved = safeCount(raw, row =>
+    has(row, 'qa_status') && !STATUSES.has(row.qa_status));
+  const statusesExposed = safeCount(raw, row => has(row, 'qa_status'));
+  const disabled = safeCount(raw, row => row.display_enabled !== true);
+  const privateFields = safeCount(raw, row =>
+    Object.keys(row).some(field => !PUBLIC_FIELDS.has(field)));
+  const invalidKeys = safeCount(raw, row => !recordKeyValid(row));
+  const invalidImages = safeCount(raw, row => !safeImageURL(row.image_url, LEGACY_ORIGIN)
+    || (row.default_image_url && !safeImageURL(row.default_image_url, LEGACY_ORIGIN)));
+  const workerInvalid = safeCount(worker, row => !recordKeyValid(row)
+    || row.display_enabled !== true || !safeImageURL(row.image_url, OFFICIAL_ORIGIN));
+  const workerPrivateFields = safeCount(worker, row => Object.keys(row).some(field => !PUBLIC_FIELDS.has(field)));
+  const legacyDuplicates = duplicates(raw);
+  const workerDuplicates = duplicates(worker);
+  const publicWorkerSet = new Set(worker.filter(recordKeyValid).map(x => x.asset_key));
+  const publicLegacySet = new Set(raw.filter(recordKeyValid).map(x => x.asset_key));
+  const missing = [...publicWorkerSet].filter(x => !publicLegacySet.has(x)).length;
+  const unexpected = [...publicLegacySet].filter(x => !publicWorkerSet.has(x)).length;
+  const fallback = legacy?.state === 'cached_default' ? 1 : 0;
+
+  failFinding('LEGACY_COUNT_MISMATCH', Math.abs(raw.length - expected), violations);
+  failFinding('OFFICIAL_COUNT_MISMATCH', Math.abs(worker.length - expected), violations);
+  failFinding('UNAPPROVED_EXPOSED', unapproved, violations);
+  failFinding('QA_STATUSES_EXPOSED', statusesExposed, violations);
+  failFinding('DISABLED_EXPOSED', disabled, violations);
+  failFinding('PRIVATE_OR_UNKNOWN_FIELDS_EXPOSED', privateFields, violations);
+  failFinding('INVALID_PUBLIC_KEYS', invalidKeys, violations);
+  failFinding('INVALID_PUBLIC_IMAGE_URLS', invalidImages, violations);
+  failFinding('INVALID_OFFICIAL_ASSETS', workerInvalid, violations);
+  failFinding('INVALID_OFFICIAL_FIELDS', workerPrivateFields, violations);
+  failFinding('DUPLICATE_LEGACY_KEYS', legacyDuplicates, violations);
+  failFinding('DUPLICATE_OFFICIAL_KEYS', workerDuplicates, violations);
+  failFinding('MISSING_APPROVED_PUBLIC_KEYS', missing, violations);
+  failFinding('EXTRA_PUBLIC_KEYS', unexpected, violations);
+  failFinding('UNVERIFIED_STALE_FALLBACK', fallback, violations);
+
+  return Object.freeze({
+    status: violations.length ? 'FAIL' : 'PASS',
+    expectedPublicCount: expected,
+    legacyRecords: raw.length,
+    officialRecords: worker.length,
+    unapprovedRecords: unapproved,
+    statusMetadataRows: statusesExposed,
+    unpublishedMediaLeakChecks: 'NOT_COVERED_BY_JSON_ONLY',
+    violations,
+  });
+}
+
+export function validatePrivateMediaList(urls, {approvedURLs = []} = {}) {
+  if (!Array.isArray(urls) || urls.length < 1 || urls.length > 100)
+    throw new TypeError('The Owner-only media audit requires 1–100 URLs');
+  const approved = new Set(approvedURLs.map(u => safeImageURL(u, LEGACY_ORIGIN)).filter(Boolean));
+  const seen = new Set(), normalized = [];
+  for (const item of urls) {
+    const url = safeImageURL(item, LEGACY_ORIGIN);
+    if (!url || approved.has(url) || seen.has(url))
+      throw new TypeError('Untrusted, approved, or duplicate owner-private media input');
+    seen.add(url); normalized.push(url);
+  }
+  return normalized;
+}
+
+export async function evaluateDirectMedia(urls, { head, approvedURLs = [], concurrency = 4 } = {}) {
+  if (typeof head !== 'function') throw new TypeError('A HEAD-only adapter is required');
+  const targets = validatePrivateMediaList(urls, {approvedURLs});
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8)
+    throw new TypeError('Concurrency must be between 1 and 8');
+  const summary = {checked:targets.length, denied:0, anonymouslyAccessible:0, unknown:0};
+  let index = 0;
+  const workers = Array.from({length:Math.min(concurrency, targets.length)},async () => {
+    while (index < targets.length) {
+      const url = targets[index++];
+      let status;
+      try { status = await head(url); } catch { summary.unknown++; continue; }
+      if ([401,403,404,410].includes(status)) summary.denied++;
+      else if (status === 200 || (status >= 200 && status < 300)) summary.anonymouslyAccessible++;
+      else summary.unknown++; // never claim a 302, timeout or 5xx as proof of denial
+    }
+  });
+  await Promise.all(workers);
+  return Object.freeze({...summary,
+    status:summary.denied===targets.length ? 'PASS' : 'FAIL',
+    rawURLsRecorded:false,
+    finding:'HEAD_ONLY_NO_BODY_DOWNLOAD',
+  });
+}
