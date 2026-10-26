@@ -152,6 +152,16 @@ test('offline optimistic conflict prevents response and audit changes',async()=>
   assert.equal(f.committed.length,0);
 });
 
+test('a blind overwrite without server version is rejected, even when unreviewed',async()=>{
+  const f=fixture({existing:{id:'submission-1',status:'submitted',updatedAt:'2026-10-25 13:00:00'}});
+  const result=await f.run({...answers,quantity:'98'});
+  assert.equal(result.status,409);
+  assert.equal(result.body.code,'CONFLICT');
+  assert.equal(result.body.state,'needs-review');
+  assert.equal(f.committed.length,0);
+  assert.equal(f.queries.filter(q=>q.kind==='batch').length,0);
+});
+
 test('already-reviewed entries reject updates before any write',async()=>{
   const f=fixture({existing:{id:'submission-1',status:'reviewed',updatedAt:'v1'}});
   assert.equal((await f.run()).status,409);
