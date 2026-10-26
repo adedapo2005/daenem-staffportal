@@ -1,6 +1,6 @@
 /* Legacy snapshot switches simulate access. Authenticated grants drive the directory. */
 [data-approved-postlogin="qa-review-v115"] .p-company,
-[data-approved-postlogin="qa-review-v115"] .p-demo-strip,
+[data-approved-postlogin="qa-review-v115"] .p-demo-strip > button,
 [data-approved-postlogin="qa-review-v115"] [role="dialog"] .p-field:has([aria-label="Demo company"]),
 [data-approved-postlogin="qa-review-v115"] [role="dialog"] .p-field:has([aria-label="Switch Company"]){display:none!important}
 .stage1-company-directory{display:grid;gap:12px;padding:14px 12px;margin:8px 0;border-top:1px solid #d8e5df;border-bottom:1px solid #d8e5df;background:#fff;color:#27453e}
