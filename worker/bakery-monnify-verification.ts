@@ -70,12 +70,12 @@ const validBinding=(binding:BoundBakeryPayment):boolean=>
  binding.companyId==='company-bakery'
  &&binding.currency==='NGN'
  &&binding.referenceOrigin==='server_initiated'
- &&/^[a-zA-Z0-9._:|/-]{1,128}$/.test(binding.paymentReference)
+ &&/^[a-zA-Z0-9._:|-]{1,128}$/.test(binding.paymentReference)
  &&/^[a-zA-Z0-9._:-]{1,128}$/.test(binding.receivableId)
  &&Number.isSafeInteger(binding.expectedAmountKobo)
  &&binding.expectedAmountKobo>0
  &&(!binding.expectedTransactionReference
-  ||/^[a-zA-Z0-9._:|/-]{1,200}$/.test(binding.expectedTransactionReference));
+  ||/^[a-zA-Z0-9._:|-]{1,200}$/.test(binding.expectedTransactionReference));
 
 export async function verifyBoundBakeryMonnifyTransaction(
  env:MonnifyVerificationEnv,binding:BoundBakeryPayment,
