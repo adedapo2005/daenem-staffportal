@@ -6,6 +6,7 @@ import { useOfflinePlatform } from './offline-sync';
 import { FORM_PRESETS, FORM_OPTION_SETS, prepareFormSchema } from './guided-form-fields';
 import { guidedVisibleFields, guidedCompletion, guidedInvalidAnswers, pruneHiddenGuidedAnswers, validGuidedFormSchema, guidedFormEvidenceBlocker } from './guided-form-dependencies';
 import { assignedFormDraftCompany } from './forms-assignment-draft-scope';
+import { createFormSubmissionAttemptTokens } from './forms-submission-attempt';
 import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle, createScopedFormsDraftCallbacks } from './forms-draft-autosave';
 import type { FormsDraftInput } from './offline-platform';
 import { SmartMasterSelect } from './smart-master-select';
@@ -42,6 +43,7 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
  // A grant/session change immediately abandons pending writes from the previous scope.
  const autosaveScope=JSON.stringify([context.sessionId,context.employee.id,context.companies.map(c=>c.id),context.roles,context.permissions,context.companyPermissions]);
  const currentAutosaveScope=useRef(autosaveScope);currentAutosaveScope.current=autosaveScope;
+ const submissionAttempts=useMemo(()=>createFormSubmissionAttemptTokens(()=>crypto.randomUUID()),[autosaveScope]);
  const draftWriter=useMemo(()=>{
   const scoped=createScopedFormsDraftCallbacks<FormsDraftInput>(
    autosaveScope,()=>currentAutosaveScope.current,
@@ -136,6 +138,7 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
   let heldForSubmission=false,storedDraft=false;
   const markQueued=()=>{
    heldForSubmission=true;
+   submissionAttempts.forget(item.assignmentId);
    setQueuedAssignments(current=>new Set([...current,item.assignmentId]));
   };
   setBusy(true);
@@ -162,6 +165,8 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
     }
     return;
    }
+   // Same key for the first network request and any queued offline replay.
+   const idempotencyKey=submissionAttempts.get(item.assignmentId,assignmentCompanyId,payload,item.submissionUpdatedAt);
    if(!navigator.onLine&&!assignmentCompanyId){
     setMessage(item.title+' is not saved offline. Group-wide forms need a live connection. Keep this page open until you can submit.');
     return;
@@ -177,7 +182,7 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
    if(!navigator.onLine){
     await offlineRef.current.queueFormsSubmission({assignmentId:item.assignmentId,companyId:assignmentCompanyId!,
      responses:payload,supportedForOfflineSubmit:true,formTitle:item.title,
-     baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId!);
+     idempotencyKey,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId!);
     markQueued();
     setMessage(item.title+' saved offline · Waiting to sync.');
     return;
@@ -188,7 +193,7 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
      navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:12000}));
     location={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy};
    }
-   await api('/api/forms/submit',{method:'POST',body:JSON.stringify({
+   await api('/api/forms/submit',{method:'POST',headers:{'idempotency-key':idempotencyKey},body:JSON.stringify({
     assignmentId:item.assignmentId,responses:payload,baseUpdatedAt:item.submissionUpdatedAt,...location
    })});
    markQueued(); // Prevent edits between authoritative success and refreshed server status.
@@ -204,7 +209,7 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
       if(supported){
        await offlineRef.current.queueFormsSubmission({assignmentId:item.assignmentId,companyId:assignmentCompanyId,
         responses:payload,supportedForOfflineSubmit:true,formTitle:item.title,
-        baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId);
+        idempotencyKey,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId);
        markQueued();
        setMessage(item.title+' saved offline · Waiting to sync.');
       }else{
