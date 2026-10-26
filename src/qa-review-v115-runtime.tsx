@@ -11,6 +11,7 @@ import Stage1SearchResults from './stage1-live-search';
 import Stage1AccessibleMetrics from './stage1-accessible-metrics';
 import Stage1WorkflowFocus from './stage1-workflow-focus';
 import Stage1AppearanceStudio from './stage1-appearance-studio';
+import Stage1SignInStudioAuthority from './stage1-signin-studio-authority';
 import Stage1LiveErpRouteBridge from './stage1-live-erp-route-bridge';
 import {
   POSTLOGIN_DEFAULT_PALETTE,
@@ -313,6 +314,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         <Stage1WorkflowFocus />
       </Stage1RuntimeContext.Provider>
       <Stage1AppearanceStudio enabled={stage1Enabled} />
+      <Stage1SignInStudioAuthority context={context} />
     </div>
   );
 }
