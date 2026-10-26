@@ -21,6 +21,40 @@ const finite = n => Number.isSafeInteger(n) && n >= 1 && n <= 500;
 const KEY = /^[a-z0-9][a-z0-9._-]{0,120}$/i;
 const safeCount = (items, test) => items.filter(test).length;
 
+// A known public-field name is not a safe publication contract by itself:
+// hidden/private objects must never be smuggled inside visual metadata.
+const TEXT_LIMITS = {id:255, category:80, purpose:180, label:150, phase:16, fit_mode:16};
+const NUMBER_BOUNDS = {
+  zoom:[1,2], focal_x:[0,1], focal_y:[0,1],
+  opacity:[0,1], overlay_strength:[0,1], blur:[0,16],
+  sort_order:[0,10000], master_width:[0,100000], master_height:[0,100000],
+  width:[0,100000], height:[0,100000],
+};
+const INTEGER_VISUAL_FIELDS = new Set(['sort_order','master_width','master_height','width','height']);
+const PHASES = new Set(['day','dawn','dusk','night']);
+const FIT_MODES = new Set(['cover','contain','fill']);
+function invalidPublicVisualShape(row) {
+  for(const [field, max] of Object.entries(TEXT_LIMITS)) {
+    if(!has(row,field))continue;
+    const value=row[field];
+    if(typeof value!=='string'||value.length>max)return true;
+    if(field==='phase'&&!PHASES.has(value))return true;
+    if(field==='fit_mode'&&!FIT_MODES.has(value))return true;
+  }
+  if(has(row,'is_virtual')&&typeof row.is_virtual!=='boolean')return true;
+  for(const [field,[min,max]] of Object.entries(NUMBER_BOUNDS)) {
+    if(!has(row,field))continue;
+    const value=row[field];
+    if(typeof value!=='number'||!Number.isFinite(value)||value<min||value>max
+       ||(INTEGER_VISUAL_FIELDS.has(field)&&!Number.isSafeInteger(value)))return true;
+  }
+  return false;
+}
+function unexpectedEnvelopeFields(payload) {
+  if(!payload||typeof payload!=='object'||Array.isArray(payload))return 0;
+  return Object.keys(payload).filter(key=>key!=='assets').length;
+}
+
 export function safeImageURL(input, base = LEGACY_ORIGIN) {
   if (typeof input !== 'string' || input.length > 1500 || !input.trim()
       || input.trim() !== input || /[\u0000-\u001f\u007f\\]/.test(input)) return null;
@@ -109,7 +143,13 @@ export function evaluatePublication(legacy, official, options = {}) {
     safeImageURL(fallbackSource(row), LEGACY_ORIGIN)
     !== safeImageURL(fallbackSource(workerByKey.get(row.asset_key)), OFFICIAL_ORIGIN));
   const fallback = legacy?.state === 'cached_default' ? 1 : 0;
+  const invalidLegacyVisual = safeCount(raw, invalidPublicVisualShape);
+  const invalidOfficialVisual = safeCount(worker, invalidPublicVisualShape);
 
+  failFinding('LEGACY_UNEXPECTED_ENVELOPE_FIELDS', unexpectedEnvelopeFields(legacy), violations);
+  failFinding('OFFICIAL_UNEXPECTED_ENVELOPE_FIELDS', unexpectedEnvelopeFields(official), violations);
+  failFinding('INVALID_LEGACY_VISUAL_FIELD_VALUES', invalidLegacyVisual, violations);
+  failFinding('INVALID_OFFICIAL_VISUAL_FIELD_VALUES', invalidOfficialVisual, violations);
   failFinding('LEGACY_COUNT_MISMATCH', Math.abs(raw.length - expected), violations);
   failFinding('OFFICIAL_COUNT_MISMATCH', Math.abs(worker.length - expected), violations);
   failFinding('UNAPPROVED_EXPOSED', unapproved, violations);
