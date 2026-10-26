@@ -82,7 +82,7 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
   }, [active, section]);
 
   useEffect(() => {
-    if (!mount || !active) return;
+    if (!mount || !active || section === null) return;
     mount.dataset.daenemStudioAuthority = section.toLowerCase();
     return () => { delete mount.dataset.daenemStudioAuthority; };
   }, [mount, active, section]);
@@ -169,8 +169,8 @@ export default function Stage1SignInStudioAuthority({ context }: { context: Work
         <div className="stage1-studio-authority-grid">
           <article><small>AUTHORITATIVE PUBLIC DESIGN</small><h3>Approved V180 · Cloudflare</h3><p>Live renderer: the same approved V180 markup and Worker-bound authentication as the Pre-Production root.</p><span className="stage1-studio-state">CURRENT · READ ONLY</span></article>
           <article><small>HISTORICAL COLLECTION</small><h3>Webflow / Sites variants</h3><p>Retained as historical comparisons. Webflow Home is not the current public Sign-In and must not be labeled active.</p><span className="stage1-studio-state">REFERENCE ONLY</span></article>
-          <article><small>CURRENT WORKER CONFIGURATION</small><h3>{load === 'loading' ? 'Checking authority…' : load === 'unavailable' ? 'Configuration unavailable' : 'Server-backed settings'}</h3>
-            {load === 'ready' && snapshot ? <p>Theme mode: {snapshot.themeMode}. Background: {snapshot.backgroundId}. Visible configured widgets: {snapshot.widgets}. {snapshot.hasDraft === null ? 'Draft availability could not be verified.' : snapshot.hasDraft ? 'An unpublished draft exists.' : 'No stored unpublished draft reported.'}</p> : <p>{load === 'unavailable' ? 'Unable to verify the current configuration. No values are assumed.' : 'Reading authorised settings without modifications.'}</p>}
+          <article><small>CURRENT WORKER CONFIGURATION</small><h3>Server-backed settings</h3>
+            <p>Theme mode: {snapshot.themeMode}. Background: {snapshot.backgroundId}. Visible configured widgets: {snapshot.widgets}. {snapshot.hasDraft === null ? 'Draft availability could not be verified.' : snapshot.hasDraft ? 'An unpublished draft exists.' : 'No stored unpublished draft reported.'}</p>
           </article>
         </div>
         <div className="stage1-studio-main-actions">
