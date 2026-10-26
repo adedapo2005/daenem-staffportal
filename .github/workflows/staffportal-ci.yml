@@ -87,6 +87,7 @@ jobs:
           python3 scripts/test-bakery-unverified-manual-cash-guard.py
           python3 scripts/test-bakery-monnify-sandbox-binding.py
           node --disable-warning=ExperimentalWarning scripts/test-bakery-monnify-sandbox-init.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-bakery-monnify-sandbox-route.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-remittance-idempotency.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-close-atomicity.mjs
           node --disable-warning=ExperimentalWarning scripts/test-bakery-dispatch-custody-lock.mjs
