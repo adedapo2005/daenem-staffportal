@@ -14,3 +14,22 @@
 [data-forms-center="true"] fieldset.dynamic-form{border:0;padding:0;margin:12px 0 0;min-width:0}
 [data-forms-center="true"] fieldset.dynamic-form:disabled{opacity:.87}
 [data-forms-center="true"] .form-answers-legend{font-size:13px;font-weight:800;line-height:1.5;margin-bottom:8px}
+
+/* Fail-closed Forms states. Opaque surfaces, readable on both compact and 4K screens. */
+[data-forms-center="true"] .form-configuration-error,
+[data-forms-center="true"] .form-evidence-warning{
+  display:block;max-width:100%;min-width:0;overflow-wrap:anywhere;
+  border:1px solid #d9a77c;background:#fff8ef;color:#653a14;
+  border-radius:12px;padding:12px 14px;margin:9px 0;
+  font-size:13px;font-weight:650;line-height:1.6
+}
+[data-forms-center="true"] .form-configuration-error{
+  border-color:#d99c95;background:#fff3f1;color:#72291e
+}
+[data-forms-center="true"] fieldset.dynamic-form button:disabled{
+  opacity:.65;cursor:not-allowed
+}
+[data-forms-center="true"] .form-rule-editor select:focus-visible,
+[data-forms-center="true"] fieldset.dynamic-form :is(input,select,textarea,button):focus-visible{
+  outline:3px solid var(--accent,#08785b);outline-offset:2px
+}
