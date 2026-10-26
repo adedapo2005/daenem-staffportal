@@ -75,7 +75,9 @@ try{
 if(apiOnly){
  receipt.media={status:'NOT_RUN',reason:'API_ONLY_MODE',checked:0,rawURLsRecorded:false};
  receipt.decision=receipt.api.status==='PASS'?'API_ONLY_PASS_MEDIA_UNVERIFIED':'FAIL_OR_UNVERIFIED';
- if(receipt.api.status==='FAIL')exitCode=1;
+ // Even if the API passes, an API-only run is NOT release-success evidence.
+ // Exit 2 prevents accidental approval by a CI/release script checking only $?
+ exitCode=receipt.api.status==='FAIL'?1:2;
 }else if(!mediaManifest){
  receipt.media={status:'NOT_RUN',reason:'OWNER_PRIVATE_MEDIA_MANIFEST_REQUIRED',
   checked:0,rawURLsRecorded:false};
