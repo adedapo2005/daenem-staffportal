@@ -2,6 +2,7 @@
    Does not modify the Owner-approved V115 snapshot or Sign-In. */
 [data-approved-postlogin="qa-review-v115"] .p-company,
 [data-approved-postlogin="qa-review-v115"] .p-demo-strip button,
+[data-approved-postlogin="qa-review-v115"] main[data-auth-renderer] details:has(button),
 [data-approved-postlogin="qa-review-v115"] details:has(> summary):has(button[aria-label="Change simulated profile"]),
 [data-approved-postlogin="qa-review-v115"] .p-field:has([aria-label="Demo company"]),
 [data-approved-postlogin="qa-review-v115"] .p-field:has([aria-label="Switch Company"]),
