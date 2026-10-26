@@ -68,13 +68,17 @@ export function guidedFormEvidenceBlocker(
     : null;
 }
 
-export function guidedFieldVisible(schema: readonly GuidedField[], answers: Answers, field: GuidedField): boolean {
+export function guidedFieldVisible(schema: readonly GuidedField[], answers: Answers, field: GuidedField, seen = new Set<string>()): boolean {
+  // Bound the recursion even if a caller bypasses schema validation on corrupt legacy data.
+  if (seen.has(field.key)) return false;
+  seen.add(field.key);
   if (!field.showWhen) return true;
   const parent = schema.find(s => s.key === field.showWhen?.fieldKey);
-  if (!parent || !guidedFieldVisible(schema,answers,parent)) return false;
+  if (!parent || !guidedFieldVisible(schema,answers,parent,seen)) return false;
   return has(answers,parent.key) && answers[parent.key] === field.showWhen.equals;
 }
 export function guidedVisibleFields(schema: readonly GuidedField[], answers: Answers): GuidedField[] {
+  if (!validGuidedFormSchema(schema)) return [];
   return schema.filter(f=>guidedFieldVisible(schema, answers, f));
 }
 export function pruneHiddenGuidedAnswers(schema: readonly GuidedField[], answers: Answers): Answers {
