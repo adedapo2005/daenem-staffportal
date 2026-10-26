@@ -96,6 +96,18 @@ export function evaluatePublication(legacy, official, options = {}) {
   const publicLegacySet = new Set(raw.filter(recordKeyValid).map(x => x.asset_key));
   const missing = [...publicWorkerSet].filter(x => !publicLegacySet.has(x)).length;
   const unexpected = [...publicLegacySet].filter(x => !publicWorkerSet.has(x)).length;
+  // Matching key counts do not prove the same approved artwork is delivered.
+  // Reject silently swapped primary or fallback media until an explicitly
+  // reviewed same-origin/private-proxy migration updates this contract.
+  const workerByKey = new Map(worker.filter(recordKeyValid).map(row => [row.asset_key, row]));
+  const matching = raw.filter(row => recordKeyValid(row) && workerByKey.has(row.asset_key));
+  const sourceMismatches = safeCount(matching, row =>
+    safeImageURL(row.image_url, LEGACY_ORIGIN)
+    !== safeImageURL(workerByKey.get(row.asset_key).image_url, OFFICIAL_ORIGIN));
+  const fallbackSource = row => row.default_image_url || row.image_url;
+  const fallbackMismatches = safeCount(matching, row =>
+    safeImageURL(fallbackSource(row), LEGACY_ORIGIN)
+    !== safeImageURL(fallbackSource(workerByKey.get(row.asset_key)), OFFICIAL_ORIGIN));
   const fallback = legacy?.state === 'cached_default' ? 1 : 0;
 
   failFinding('LEGACY_COUNT_MISMATCH', Math.abs(raw.length - expected), violations);
@@ -112,6 +124,8 @@ export function evaluatePublication(legacy, official, options = {}) {
   failFinding('DUPLICATE_OFFICIAL_KEYS', workerDuplicates, violations);
   failFinding('MISSING_APPROVED_PUBLIC_KEYS', missing, violations);
   failFinding('EXTRA_PUBLIC_KEYS', unexpected, violations);
+  failFinding('APPROVED_IMAGE_SOURCE_MISMATCH', sourceMismatches, violations);
+  failFinding('APPROVED_FALLBACK_IMAGE_MISMATCH', fallbackMismatches, violations);
   failFinding('UNVERIFIED_STALE_FALLBACK', fallback, violations);
 
   return Object.freeze({
