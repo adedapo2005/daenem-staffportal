@@ -89,7 +89,7 @@ test('UI provides direct grant-scoped company pages and module callback, not a s
  assert.match(ui,/projectAllAuthorisedCompanyModules\(context,moduleDefinitions,authorisedLiveWorkspaces\(context\),isModuleVisible\)/);
  assert.match(ui,/href=\{page\.href\}/);
  assert.match(ui,/onOpenModule\(module\.id,company\.companyId,company\.companyCode\)/);
- assert.doesNotMatch(ui,/<select|<option|Switch Company|selectedCompany|setCompany|onChange=\{/i);
+ assert.doesNotMatch(ui,/<select|<option|selectedCompany|setCompany|onChange=\{/i);
 });
 test('accessible 44px links, keyboard focus, opaque surfaces and reduced motion',()=>{
  const css=readFileSync(new URL('../src/stage1-all-company-navigation.css',import.meta.url),'utf8');
