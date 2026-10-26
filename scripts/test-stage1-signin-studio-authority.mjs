@@ -21,7 +21,7 @@ const checks = [
   ['Worker permission denial fails closed before draft read', workbench.indexOf("if (current.canManage !== true)") < workbench.indexOf('fetchAdminSignInDraft()')],
   ['async permission scope cancellation', workbench.includes('if (cancelled) return') && workbench.includes('context.sessionId, localGrant, authRefresh')],
   ['draft unavailable cannot be misreported as absent', workbench.includes('hasDraft: boolean | null = null') && workbench.includes("setLoad('unavailable')")],
-  ['legacy nonmigrated Studio destinations remain mounted', workbench.includes("if (requested === 'Themes') return 'Themes'") && workbench.includes('return null;')],
+  ['legacy Studio destinations cannot expose old editors', workbench.includes("if (requested === 'Themes') return 'Themes'") && workbench.includes('data-studio-access="legacy-hold"')],
   ['authoritative Themes route replaces Webflow default', workbench.includes("section === 'Themes'") && workbench.includes('HISTORICAL REFERENCE · NOT ACTIVE')],
   ['stored Worker settings distinguished from source locked V180', workbench.includes('not proof that the source-locked V180') && workbench.includes('not proof of editable controls')],
   ['draft recheck denies revoked grant after second Worker read', workbench.includes('if (result.canManage !== true)') && workbench.includes("setLoad('denied');")],
@@ -30,14 +30,26 @@ const checks = [
   ['preview opens in separate tab with no opener', workbench.includes('target="_blank" rel="noopener noreferrer"')],
   ['preview markup has keyboard focus style', styles.includes('.stage1-studio-authority a:focus-visible')],
   ['no write/publish API calls in workbench', !/saveSignInPreferences|saveSignInDraft|method:\s*['"]POST['"]|\/api\/theme\/signin\/publish/.test(workbench)],
-  ['runtime bridge installed outside protected snapshot', runtime.includes('<Stage1SignInStudioAuthority context={context} />')],
+  ['standalone workbench mounted without legacy demo Studio', runtime.includes('<Stage1SignInStudioAuthority context={context} standalone />') && runtime.includes('isSignInStudioRoutePathname(pathname)')],
   ['responsive visual review presets include 4K', workbench.includes('3840, height: 2160')],
   ['cross-origin iframe not used', !workbench.includes('<iframe')],
   ['CSP frame-ancestor policy verified in canonical Worker', worker.includes("frame-ancestors 'none'")],
   ['Worker framing-deny headers verified in both variants', worker.includes("headers.set('x-frame-options', 'DENY')") && stagingWorker.includes("headers.set('x-frame-options','DENY')")],
-  ['null Studio section cannot write dataset', workbench.includes("if (!mount || !active || section === null) return;")],
+  ['unsupported Studio section cannot access legacy dataset', workbench.includes("if (standalone || !mount || !active || section === null) return;")],
   ['read-only tab navigation provides focus', styles.includes(':focus-visible')],
   ['legacy source left intact for separate migration', legacy.includes('Webflow Home — Accepted Default')],
+  ['Studio route never persists demo Owner projection', runtime.includes("if (!standaloneStudio) sessionStorage.setItem('daenem-demo-session-v3'")],
+  ['route switches before legacy Portal mounts', (() => {
+    const start = runtime.indexOf('{standaloneStudio ? (');
+    const end = runtime.indexOf(') : (', start);
+    return start >= 0 && end > start && runtime.slice(start, end).includes('data-studio-authority-route="workforce-permission-v1"')
+      && !runtime.slice(start, end).includes('<Portal />')
+      && !runtime.slice(start, end).includes('<select')
+      && runtime.indexOf('<Portal />', end) > end;
+  })()],
+  ['Studio route has standalone focus and return controls', styles.includes('.stage1-studio-shell-skip:focus-visible') && styles.includes('.stage1-studio-shell-return:focus-visible')],
+  ['visible Studio sections revalidate Worker rights on window focus', workbench.includes("document.addEventListener('visibilitychange', onVisibilityChange)") && workbench.includes('setSnapshot(null)')],
+
 ];
 checks.forEach(([name, ok]) => { assert.ok(ok, name); console.log('PASS',name); });
 console.log('Approved V180 Studio runtime tests: ' + checks.length + '/' + checks.length + ' PASS');
@@ -62,9 +74,10 @@ const sandbox = {
   },
 };
 runInNewContext(compiled.outputText + '\nexports.__parseSection = sectionFromUrl;', sandbox, { timeout: 5000 });
-const { hasStudioManagementGrant, __parseSection } = sandbox.exports;
+const { hasStudioManagementGrant, isSignInStudioRoutePathname, __parseSection } = sandbox.exports;
 assert.equal(typeof hasStudioManagementGrant, 'function');
 assert.equal(typeof __parseSection, 'function');
+assert.equal(typeof isSignInStudioRoutePathname, 'function');
 
 const subject = (role, globalPermission = 'none', companyPermission = 'none') => ({
   roles: role ? [{ id: 'role', code: role, name: role, companyId: 'company-a' }] : [],
@@ -105,4 +118,17 @@ for (const [search, expected] of sections) {
   assert.equal(__parseSection(), expected, 'Studio route: ' + search);
   console.log('PASS runtime: route', search || '(default)');
 }
-console.log('Executed grant and navigation policy scenarios: ' + (scenarios.length + 1 + sections.length) + '/' + (scenarios.length + 1 + sections.length) + ' PASS');
+const paths = [
+  ['/admin/experience/sign-in-studio', true],
+  ['/admin/experience/sign-in-studio/', true],
+  ['/admin/experience/sign-in-studio/legacy', false],
+  ['/admin/experience/sign-in-studio-not-approved', false],
+  ['/admin/experience', false],
+  ['/home', false],
+  ['/', false],
+];
+for (const [path, expected] of paths) {
+  assert.equal(isSignInStudioRoutePathname(path), expected, 'authoritative route ' + path);
+  console.log('PASS runtime: exact route', path);
+}
+console.log('Executed grant and navigation policy scenarios: ' + (scenarios.length + 1 + sections.length + paths.length) + '/' + (scenarios.length + 1 + sections.length + paths.length) + ' PASS');
