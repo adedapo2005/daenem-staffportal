@@ -138,3 +138,60 @@ test('responsive keyboard controls and reduced motion remain available',()=>{
  assert.match(navigation,/disabled=\{Boolean\(busy\)\}/);
  assert.match(navigation,/Expand authorised company navigation/);
 });
+
+
+test('permission revocation during lazy import never opens an obsolete company module',async()=>{
+ const selected=catalog('printing'),originalLoad=selected.load;
+ let started,release;
+ const began=new Promise(resolve=>{started=resolve;});
+ const barrier=new Promise(resolve=>{release=resolve;});
+ selected.load=async()=>{started();await barrier;};
+ const events=[];
+ const previousWindow=globalThis.window,previousCustomEvent=globalThis.CustomEvent;
+ globalThis.window={dispatchEvent:event=>{events.push(event.type);return true;}};
+ globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detail=options?.detail;}};
+ const action=extract('src/stage1-granted-module-launch.ts','launchGrantedModule',{
+   authorisedModuleLaunch:authorisedLaunch,afterRender:async()=>{},
+ });
+ const initial=ctx(),request={scopeId:'printing',moduleId:'printing'};
+ let latest=initial;
+ try{
+   const pending=action(initial,request,()=>latest);
+   await began;
+   latest=ctx(initial.roles,{'bakery':{'bakery.access':'view'}});
+   release();
+   await assert.rejects(pending,/company access changed/);
+   assert.ok(!events.includes('daenem:active-company-changed'));
+ }finally{
+   selected.load=originalLoad;
+   globalThis.window=previousWindow;globalThis.CustomEvent=previousCustomEvent;
+ }
+});
+
+test('changing authenticated employee while a module chunk loads cancels activation',async()=>{
+ const selected=catalog('printing'),originalLoad=selected.load;
+ let started,release;
+ const began=new Promise(resolve=>{started=resolve;});
+ const barrier=new Promise(resolve=>{release=resolve;});
+ selected.load=async()=>{started();await barrier;};
+ const previousWindow=globalThis.window,previousCustomEvent=globalThis.CustomEvent;
+ const events=[];
+ globalThis.window={dispatchEvent:event=>{events.push(event.type);return true;}};
+ globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detail=options?.detail;}};
+ const action=extract('src/stage1-granted-module-launch.ts','launchGrantedModule',{
+   authorisedModuleLaunch:authorisedLaunch,afterRender:async()=>{},
+ });
+ const initial=ctx(),request={scopeId:'printing',moduleId:'printing'};
+ let latest=initial;
+ try{
+   const pending=action(initial,request,()=>latest);
+   await began;
+   latest={...initial,sessionId:'different-session',employee:{id:'different-employee',displayName:'Other'}};
+   release();
+   await assert.rejects(pending,/company access changed/);
+   assert.ok(!events.includes('daenem:active-company-changed'));
+ }finally{
+   selected.load=originalLoad;
+   globalThis.window=previousWindow;globalThis.CustomEvent=previousCustomEvent;
+ }
+});
