@@ -14,7 +14,7 @@ Issue: [P0 #207](https://github.com/adedapo2005/daenem-staffportal/issues/207).
 node --test scripts/test-staffportal-sites-zero-disclosure.mjs
 ```
 
-The 27 synthetic tests cover the expected 50-approved-only public listing, 32 draft/pending disclosures, forbidden internal fields, fail-closed responses, invalid URLs, revoked/disabled states, key set mismatch versus the official Worker, duplicate keys, anonymous direct-image media HTTP 200, redirects/timeouts, and HEAD-GET permission mismatch. Tests also assert a one-byte-range GET is cancelled without reading or retaining its response body.
+The 31 automated offline tests cover the expected 50-approved-only public listing, 32 draft/pending disclosures, forbidden internal fields, fail-closed responses, invalid URLs, revoked/disabled states, key set mismatch versus the official Worker, duplicate keys, anonymous direct-image media HTTP 200, redirects/timeouts, and HEAD-GET permission mismatch. Tests also assert a one-byte-range GET is cancelled without reading or retaining its response body. Matching approved keys are insufficient: the tests require the primary and fallback image URLs to match the official public source, preventing silent image substitutions. Two isolated CLI-level tests also prove that API-only mode never returns release success and that a HEAD 404 followed by GET 200 still blocks promotion, without real network calls.
 
 ## Run external public API audit (read-only, incomplete release gate)
 
@@ -22,7 +22,7 @@ The 27 synthetic tests cover the expected 50-approved-only public listing, 32 dr
 node scripts/check-staffportal-sites-zero-disclosure-live.mjs --api-only --expected-public 50
 ```
 
-This never logs raw records, keys, URLs, prompts, creator identities or media bytes. If public API filtering is correct it can print `API_ONLY_PASS_MEDIA_UNVERIFIED`; this **does not** clear the release security hold.
+This never logs raw records, keys, URLs, prompts, creator identities or media bytes. If public API filtering is correct it can print `API_ONLY_PASS_MEDIA_UNVERIFIED` but **always exits 2 (incomplete)**; this can never clear the release security hold.
 
 ## Run full historical P0 audit with Owner-only local URL inventory
 
@@ -45,7 +45,7 @@ Both live public APIs are accessed by **anonymous HTTPS GET**. Historical unpubl
 
 All logs and JSON receipts contain only aggregate counts and fixed violation codes. No private media mapping is included in this repository.
 
-**Exit codes:** `0` means the requested checks passed; `1` means verified disclosure/failure; `2` means an incomplete or unverifiable release gate. Running without a media manifest, and without `--api-only`, intentionally exits 2.
+**Exit codes:** `0` means the full historical API + direct-media HEAD/GET gate passed; `1` means verified disclosure/failure; `2` means an incomplete or unverifiable gate. **API-only never exits 0**, even if the public metadata appears safe. Running without a media manifest also intentionally exits 2.
 
 ## As of October 25, 2026, 8 PM ET
 
