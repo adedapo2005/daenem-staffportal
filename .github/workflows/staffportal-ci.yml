@@ -65,6 +65,7 @@ jobs:
           node scripts/check-forms-builder-boundaries.mjs
           node scripts/check-guided-forms.mjs
           node scripts/check-offline-sync-auth-scope.mjs
+          node scripts/test-forms-isolated-d1.mjs
 
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
