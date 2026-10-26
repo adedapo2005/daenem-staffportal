@@ -51,7 +51,7 @@ deny("UPDATE journal_lines SET account_id='pc' WHERE id='asset-debit'",
 deny("INSERT INTO journal_lines VALUES('foreign','posted','pc',10000,0)",
  "different company account")
 deny("UPDATE journal_entries SET company_id='company-printing' WHERE id='historical'",
- "cannot move into or out of Bakery")
+ "historical posted cash journal")
 deny("DELETE FROM journal_entries WHERE id='historical'",
  "historical posted cash journal")
 deny("DELETE FROM journal_lines WHERE id='historical-cash'",
