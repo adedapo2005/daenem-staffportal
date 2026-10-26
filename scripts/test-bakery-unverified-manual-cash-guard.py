@@ -36,16 +36,14 @@ def deny(sql,msg):
 
 reason="requires independently verified settlement"
 deny("INSERT INTO journal_lines VALUES('fraud','posted','bc',10000,0)",reason)
-deny("UPDATE journal_lines SET account_id='bc' WHERE id='historical-revenue'",reason)
 db.execute("INSERT INTO journal_lines VALUES('draft-cash','draft','bc',10000,0)")
 db.execute("INSERT INTO journal_lines VALUES('draft-revenue','draft','br',0,10000)")
 deny("UPDATE journal_entries SET status='posted' WHERE id='draft'",reason)
 assert db.execute("SELECT status FROM journal_entries WHERE id='draft'").fetchone()[0]=="draft"
-deny("UPDATE finance_accounts SET code='1000' WHERE id='ba'",
- "posted cash account classification") if False else None
 
 # A posted generic asset debit cannot be relabeled to Cash & Bank.
 db.execute("INSERT INTO journal_lines VALUES('asset-debit','posted','ba',10000,0)")
+deny("UPDATE journal_lines SET account_id='bc' WHERE id='asset-debit'",reason)
 deny("UPDATE finance_accounts SET code='1000' WHERE id='ba'",
  "posted cash account classification")
 deny("UPDATE journal_lines SET account_id='pc' WHERE id='asset-debit'",
