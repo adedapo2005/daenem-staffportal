@@ -18,7 +18,9 @@ const checks = [
   ['read-only Worker settings used', workbench.includes('readStudioReviewWithoutSideEffects(controller.signal)')],
   ['only existing Worker draft read used', reviewSource.includes("'/api/theme/signin/draft'")],
   ['no permission-less settings request', workbench.includes("if (!localGrant) {") && workbench.indexOf("if (!localGrant) {") < workbench.indexOf('readStudioReviewWithoutSideEffects(controller.signal)')],
-  ['owner and admin roles require explicit settings grant', workbench.includes("'group_admin'") && workbench.includes("'settings.access', 'manage'")],
+  ['owner and admin roles require independently granted Group access', workbench.includes("'group_admin'") && workbench.includes("groupPermissions?.['settings.access'] === 'manage'")],
+  ['aggregate company manage cannot grant Group Studio', !workbench.includes("hasWorkforcePermission(context, 'settings.access', 'manage')")],
+  ['both Worker GETs demand explicit Group-scope proof', reviewSource.includes('record(payload.groupSignInAuthority)') && reviewSource.includes("authority.basis !== 'explicit-group-assignment'")],
   ['Worker permission denial fails closed before draft read', reviewSource.indexOf("'/api/theme/signin'") < reviewSource.indexOf("'/api/theme/signin/draft'") && reviewSource.includes('if (payload.canManage !== true)')],
   ['async permission scope cancellation', workbench.includes('if (cancelled || controller.signal.aborted) return') && workbench.includes('context.sessionId, localGrant, authRefresh')],
   ['draft unavailable cannot be misreported as absent', reviewSource.includes("if (!Object.prototype.hasOwnProperty.call(draft, 'draft'))") && workbench.includes("'denied' : 'unavailable'")],
@@ -82,29 +84,33 @@ assert.equal(typeof hasStudioManagementGrant, 'function');
 assert.equal(typeof __parseSection, 'function');
 assert.equal(typeof isSignInStudioRoutePathname, 'function');
 
-const subject = (role, globalPermission = 'none', companyPermission = 'none') => ({
+const subject = (role, globalPermission = 'none', companyPermission = 'none', groupPermission) => ({
   roles: role ? [{ id: 'role', code: role, name: role, companyId: 'company-a' }] : [],
   permissions: { 'settings.access': globalPermission },
   companyPermissions: { 'company-a': { 'settings.access': companyPermission } },
+  ...(groupPermission === undefined ? {} : { groupPermissions: { 'settings.access': groupPermission } }),
 });
 const scenarios = [
-  ['owner explicit manage grant', subject('owner', 'manage'), true],
-  ['group admin explicit manage grant', subject('group_admin', 'manage'), true],
-  ['owner with no manage grant', subject('owner'), false],
-  ['group admin with view only', subject('group_admin', 'view'), false],
-  ['employee cannot self-declare global manage', subject('employee', 'manage'), false],
-  ['unknown administrative role does not bypass Worker rule', subject('super_admin', 'manage'), false],
-  ['company grant cannot bypass global Owner Studio grant', subject('owner', 'none', 'manage'), false],
-  ['no role cannot inherit global permission', subject(null, 'manage'), false],
+  ['owner with explicit independent Group grant', subject('owner', 'none', 'none', 'manage'), true],
+  ['group admin with explicit independent Group grant', subject('group_admin', 'none', 'none', 'manage'), true],
+  ['owner with company-only aggregate manage denied', subject('owner', 'manage', 'manage'), false],
+  ['group admin with company-only aggregate manage denied', subject('group_admin', 'manage', 'manage'), false],
+  ['owner with no Group grant denied', subject('owner'), false],
+  ['group admin with Group view only denied', subject('group_admin', 'manage', 'manage', 'view'), false],
+  ['explicit Group none denies despite company manage', subject('owner', 'manage', 'manage', 'none'), false],
+  ['employee cannot inherit explicit Group manage', subject('employee', 'manage', 'manage', 'manage'), false],
+  ['unrecognised admin role cannot inherit Group manage', subject('super_admin', 'manage', 'manage', 'manage'), false],
+  ['no role cannot inherit Group manage', subject(null, 'manage', 'manage', 'manage'), false],
+  ['owner valid Group manage survives unrelated company deny', subject('owner', 'manage', 'none', 'manage'), true],
 ];
 for (const [name, ctx, expected] of scenarios) {
   assert.equal(hasStudioManagementGrant(ctx), expected, name);
   console.log('PASS runtime:', name);
 }
-const revoked = subject('owner', 'manage');
+const revoked = subject('owner', 'manage', 'manage', 'manage');
 assert.equal(hasStudioManagementGrant(revoked), true);
-revoked.permissions['settings.access'] = 'none';
-assert.equal(hasStudioManagementGrant(revoked), false, 'grant revocation must deny the next check');
+revoked.groupPermissions['settings.access'] = 'none';
+assert.equal(hasStudioManagementGrant(revoked), false, 'revoked explicit Group grant must deny despite aggregate manage');
 console.log('PASS runtime: grant revocation');
 
 const sections = [
@@ -168,8 +174,9 @@ const { readStudioReviewWithoutSideEffects, studioDraftDifferences } = reviewSan
 const signal = new AbortController().signal;
 const published = { themeMode: 'day', backgroundId: 'original', labels: { auth: { signInTitle: 'Approved Sign In' } }, widgetOrder: ['news', 'weather'] };
 const draft = { themeMode: 'night', backgroundId: 'original', labels: { auth: { signInTitle: 'Proposed Sign In' } }, widgetOrder: ['weather', 'news'] };
-const granted = (config = published) => mockResponse(200, { canManage: true, config });
-const grantedDraft = (config = draft) => mockResponse(200, { canManage: true, draft: config });
+const groupProof = { scope: 'group', level: 'manage', basis: 'explicit-group-assignment' };
+const granted = (config = published) => mockResponse(200, { canManage: true, groupSignInAuthority: groupProof, config });
+const grantedDraft = (config = draft) => mockResponse(200, { canManage: true, groupSignInAuthority: groupProof, draft: config });
 requests.length = 0;
 responses.push(mockResponse(200, { canManage: false, config: published }));
 await assert.rejects(readStudioReviewWithoutSideEffects(signal), (err) => err.name === 'StudioPermissionDenied');
@@ -210,14 +217,28 @@ assert.equal(studioDraftDifferences(absent.published, absent.draft).length, 0);
 console.log('PASS Worker read: absence of draft is not fabricated');
 
 requests.length = 0;
-responses.push(granted(), mockResponse(200, { canManage: true }));
+responses.push(granted(), mockResponse(200, { canManage: true, groupSignInAuthority: groupProof }));
 await assert.rejects(readStudioReviewWithoutSideEffects(signal), /Studio draft state was not returned/);
 assert.equal(requests.length, 2);
 console.log('PASS Worker read: malformed draft response fails closed');
+
+requests.length = 0;
+// The existing Worker still returns this old aggregate-only response.
+// It must never reach the privileged draft request, even for an Owner.
+responses.push(mockResponse(200, { canManage: true, config: published }));
+await assert.rejects(readStudioReviewWithoutSideEffects(signal), err => err.name === 'StudioPermissionDenied');
+assert.equal(requests.length, 1);
+console.log('PASS Worker read: legacy aggregate-only manage cannot unlock Group draft');
+
+requests.length = 0;
+responses.push(granted(), mockResponse(200, { canManage: true, draft }));
+await assert.rejects(readStudioReviewWithoutSideEffects(signal), err => err.name === 'StudioPermissionDenied');
+assert.equal(requests.length, 2);
+console.log('PASS Worker read: second GET must independently prove Group authority');
 
 requests.length = 0;
 responses.push(mockResponse(401, { error: 'expired' }));
 await assert.rejects(readStudioReviewWithoutSideEffects(signal), (err) => err.name === 'StudioPermissionDenied');
 assert.equal(requests.length, 1);
 console.log('PASS Worker read: expired authentication denies without draft access');
-console.log('Executed Worker read and draft projection cases: 6/6 PASS');
+console.log('Executed Worker read and draft projection cases: 8/8 PASS');
