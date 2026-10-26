@@ -33,6 +33,41 @@ export function validGuidedDependencies(schema: readonly GuidedField[]): boolean
   }
   return true;
 }
+
+const validTypes = new Set(['text','textarea','number','date','checkbox','select','file','photo','signature','location']);
+const forbiddenKeys = new Set(['__proto__','constructor','prototype']);
+
+/** Untrusted historical schema from D1 must never reach recursive rendering unchecked. */
+export function validGuidedFormSchema(schema: unknown): schema is GuidedField[] {
+  if (!Array.isArray(schema) || !validGuidedDependencies(schema)) return false;
+  for (const field of schema) {
+    if (!field || typeof field.key !== 'string' || forbiddenKeys.has(field.key)
+      || typeof field.label !== 'string' || !field.label.trim()
+      || typeof field.type !== 'string' || !validTypes.has(field.type)) return false;
+    if (field.type === 'select') {
+      if (!Array.isArray(field.options) || field.options.length < 2 || field.options.length > 30
+        || field.options.some(option => typeof option !== 'string' || !option.trim())) return false;
+    }
+  }
+  return true;
+}
+
+/** Never claim a Forms submission is ready when verified evidence cannot be collected. */
+export function guidedFormEvidenceBlocker(
+  schema: readonly GuidedField[],
+  answers: Answers,
+  policy: { requirePhoto?: boolean; requireSignature?: boolean } = {},
+): string | null {
+  if (!validGuidedFormSchema(schema)) return 'This form has an invalid configuration. Ask an administrator to review it.';
+  if (policy.requirePhoto || policy.requireSignature)
+    return 'This form requires verified photo or signature evidence that the current Forms Center cannot collect. Save your draft and contact an administrator.';
+  const requiredEvidence = guidedVisibleFields(schema, answers)
+    .find(field => field.required && ['file','photo','signature','location'].includes(field.type));
+  return requiredEvidence
+    ? requiredEvidence.label + ' requires a verified evidence workflow that is not available in this form yet. Save your draft and contact an administrator.'
+    : null;
+}
+
 export function guidedFieldVisible(schema: readonly GuidedField[], answers: Answers, field: GuidedField): boolean {
   if (!field.showWhen) return true;
   const parent = schema.find(s => s.key === field.showWhen?.fieldKey);
