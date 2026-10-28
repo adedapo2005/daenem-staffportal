@@ -36,8 +36,8 @@ check('Payslips filter to authorized company IDs', ess.includes("permittedCompan
 check('Review reads and acknowledgements filter authorized companies', ess.includes("permittedCompanies(context,'reviews.access')") && ess.includes("permittedCompanies(context,'reviews.access')"));
 check('Review creation uses target-company authority', ess.includes("hasPermission(context,'reviews.admin','edit',companyId)"));
 check('Document reads and creates use company permission truth', ess.includes("permittedCompanies(context,'document_requests.access')") && ess.includes("hasPermission(context,'document_requests.access','create',companyId)"));
-check('Notification reads exclude revoked company scope', ess.includes("broadcastCompanyIds=permittedCompanies(context,'broadcasts.access')") && ess.includes('(company_id IS NULL OR company_id IN (${companyPlaceholders}))'));
-check('Notification actions repeat current company authority', ess.includes('EXISTS(SELECT 1 FROM broadcasts b') && ess.includes('b.company_id IN (${placeholders})'));
+check('Notification reads require current employee and company membership', ess.includes("n.employee_id=? AND (n.company_id IS NULL OR EXISTS(SELECT 1 FROM employee_company_memberships m") && ess.includes("br.employee_id=? AND b.approval_status='published' AND (b.company_id IS NULL OR EXISTS(SELECT 1 FROM employee_company_memberships m"));
+check('Notification actions require published recipient and current company membership', ess.includes("b.id=broadcast_recipients.broadcast_id AND b.approval_status='published'") && ess.includes('m.company_id=b.company_id AND m.active=1') && ess.includes('m.company_id=employee_notifications.company_id AND m.active=1'));
 check('Chat thread lists filter authorized companies', ess.includes("permittedCompanies(context,'chat.access')") && ess.includes('t.company_id IN (${placeholders})'));
 check('Direct chats use target-company create authority', ess.includes("hasPermission(context,'chat.access','create',companyId)"));
 check('Chat message reads recheck target-company view authority', ess.includes("hasPermission(context,'chat.access','view',member.companyId)"));
