@@ -2,6 +2,7 @@ import { sessionCookie, type AuthEnv } from './auth';
 import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth';
 import { startPasswordRecoveryWhatsApp, verifyPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings';
+import { staffPortalCompanyPredicate } from './staffportal-account-scope';
 
 interface EmailBinding {
   send(message: {
@@ -891,7 +892,7 @@ export async function recoveryPolicyForEmployee(env:PasswordAuthEnv,employeeId:s
   const company=await env.DB.prepare(`
     SELECT co.id,co.code,co.name
     FROM employee_company_memberships m
-    JOIN companies co ON co.id=m.company_id AND co.active=1 AND lower(co.name) NOT LIKE '%farm%'
+    JOIN companies co ON co.id=m.company_id AND co.active=1 AND ${staffPortalCompanyPredicate('co.id')}
     WHERE m.employee_id=? AND m.active=1
     ORDER BY m.is_primary DESC,co.id ASC
     LIMIT 1
@@ -906,17 +907,20 @@ async function recoveryOptions(_request:Request,_env:PasswordAuthEnv){
 }
 
 async function recoveryAccountForIdentifier(env:PasswordAuthEnv,identifier:string){
-  return env.DB.prepare(`
+  const rows=await env.DB.prepare(`
     SELECT e.id,e.email,e.display_name AS displayName,m.company_id AS companyId
     FROM employee_credentials c
     JOIN employees e ON e.id=c.employee_id
     JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
-    JOIN companies co ON co.id=m.company_id AND co.active=1 AND lower(co.name) NOT LIKE '%farm%'
+    JOIN companies co ON co.id=m.company_id AND co.active=1 AND ${staffPortalCompanyPredicate('co.id')}
     WHERE (LOWER(c.username)=LOWER(?) OR LOWER(e.email)=LOWER(?))
       AND e.employment_status IN ('active','provisional')
     ORDER BY m.is_primary DESC,co.id ASC
-    LIMIT 1
-  `).bind(identifier,identifier).first<{id:string;email?:string;displayName:string;companyId:string}>();
+    LIMIT 50
+  `).bind(identifier,identifier).all<{id:string;email?:string;displayName:string;companyId:string}>();
+  const candidates=rows.results||[];
+  if(new Set(candidates.map(row=>row.id)).size!==1)return null;
+  return candidates[0]||null;
 }
 
 async function forgotPassword(request: Request, env: PasswordAuthEnv) {
@@ -965,11 +969,34 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
     const digest = await codeHash(env, 'password-reset', challengeId, code);
     const minutes = Number(await setting(env, 'security.password_reset_code_minutes', '10')) || 10;
     const expiresAt = new Date(Date.now() + minutes * 60_000).toISOString();
-    await env.DB.prepare(`
+    const inserted=await env.DB.prepare(`
       INSERT INTO password_reset_challenges (
         id, employee_id, code_hash, requested_ip, requested_user_agent, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(challengeId, employee.id, digest, requestIp(request) || null, request.headers.get('user-agent'), expiresAt).run();
+      )
+      SELECT ?, ?, ?, ?, ?, ?
+      WHERE EXISTS(
+        SELECT 1 FROM employee_credentials c
+        JOIN employees e ON e.id=c.employee_id
+        JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
+        JOIN companies co ON co.id=m.company_id AND co.active=1
+          AND ${staffPortalCompanyPredicate('co.id')}
+        WHERE e.id=? AND lower(e.email)=lower(?)
+          AND e.employment_status IN ('active','provisional')
+          AND m.company_id=?
+          AND (lower(c.username)=lower(?) OR lower(e.email)=lower(?))
+      )
+    `).bind(
+      challengeId, employee.id, digest, requestIp(request) || null,
+      request.headers.get('user-agent'), expiresAt,
+      employee.id, employee.email, employee.companyId, identifier, identifier,
+    ).run();
+    if(Number(inserted.meta?.changes||0)!==1){
+      await logSecurity(env,request,'password_reset_requested',{result:'generic',details:{accountMatched:false}});
+      return json({
+        ok:true,challengeId,destination:'your verified recovery contact',
+        message:'If the account details match an eligible employee login, a verification code has been sent to the verified recovery contact on file.',
+      });
+    }
 
     await logSecurity(env, request, 'password_reset_requested', {
       employeeId: employee.id, result: 'requested', details: { destination: maskEmail(employee.email) },

@@ -19,8 +19,14 @@ function loadRoute(source) {
   }).outputText;
   const loaded = { exports: {} };
   new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
-    assert.equal(specifier, './credential-security');
-    return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+    if (specifier === './password-auth') return { recoveryPolicyForEmployee: async () => null };
+    if (specifier === './whatsapp-recovery') return { startPasswordRecoveryWhatsApp: async () => new Response(null, { status: 501 }) };
+    if (specifier === './scoped-settings') return { recoveryMethods: () => ['email'] };
+    if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+    if (specifier === './staffportal-account-scope') return {
+      staffPortalCompanyPredicate: (column) => `${column} IN ('company-printing','company-bakery','company-autos','company-logistics','company-properties')`,
+    };
+    throw new Error(`Unexpected auth-refinement dependency: ${specifier}`);
   });
   return loaded.exports.routeAuthRefinement;
 }
@@ -103,9 +109,8 @@ if (!isMainThread) {
     database.exec(identity);
     database.exec(credentials);
     database.exec(refinement);
-    database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-a','QA-A','QA Company A','other')").run();
     database.prepare("INSERT INTO employees(id,employee_no,display_name,email,employment_status) VALUES('employee-a','QA-A-001','Ada Staff','ada@example.test','active'),('employee-b','QA-B-001','Ben Staff','ben@example.test','active')").run();
-    database.prepare("INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES('membership-a','employee-a','company-a',1)").run();
+    database.prepare("INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES('membership-a','employee-a','company-printing',1)").run();
     database.prepare(`INSERT INTO password_reset_challenges
       (id,employee_id,code_hash,expires_at,reset_token_hash,verified_at,consumed_at,reset_token_expires_at)
       VALUES('reset-a','employee-a','fixture-code-hash',datetime('now','+10 minutes'),?,CURRENT_TIMESTAMP,NULL,datetime('now','+10 minutes'))`).run(tokenHash);
