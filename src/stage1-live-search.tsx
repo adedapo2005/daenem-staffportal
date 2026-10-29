@@ -92,10 +92,10 @@ export default function Stage1SearchResults({ enabled }: { enabled: boolean }): 
       <div className="stage1-search-heading">
         <strong>Live records</strong>
         <span role="status" aria-live="polite">
-          {status === 'loading' ? 'Checking authorised records…' :
-            status === 'unavailable' ? 'Live search unavailable · existing search remains available' :
-              status === 'ready' ? response?.partial ? 'Some record sources unavailable' : 'Authorised record sources checked' :
-                'Preparing live search…'}
+          {status === 'loading' ? 'Checking Authorised Records…' :
+            status === 'unavailable' ? 'Live Search Unavailable · Existing Search Remains Available' :
+              status === 'ready' ? response?.partial ? 'Some Record Sources Unavailable' : 'Authorised Record Sources Checked' :
+                'Preparing Live Search…'}
         </span>
       </div>
       {status === 'ready' && records.length > 0 && (
@@ -103,7 +103,7 @@ export default function Stage1SearchResults({ enabled }: { enabled: boolean }): 
           const href = recordHref(item);
           return <li key={item.type + ':' + (item.entityId || index)}>
             {href ? <a href={href} aria-label={`Open ${item.group} workspace for ${item.label}`}>
-              <span>{item.label}</span><small>{item.group} · {item.description || 'Open authorised workspace'}</small>
+              <span>{item.label}</span><small>{item.group} · {item.description || 'Open Authorised Workspace'}</small>
             </a> : <span>{item.label}<small>{item.group} · {item.description}</small></span>}
           </li>;
         })}</ul>

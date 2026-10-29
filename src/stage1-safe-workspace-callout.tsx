@@ -22,7 +22,9 @@ export function Callout({
 }) {
   const isText = typeof children === 'string' || typeof children === 'number';
   return (
-    <div className={`p-callout ${tone}`}>
+    // Dynamic policy failures and confirmations need accessible announcements.
+    // Do not announce static neutral or amber informational callouts.
+    <div className={`p-callout ${tone}`} role={tone === 'red' ? 'alert' : tone === 'green' ? 'status' : undefined}>
       <AlertCircle size={19}/>
       <div>
         <strong>{title}</strong>
