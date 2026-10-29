@@ -5,18 +5,20 @@ const workflow = fs.readFileSync(new URL('../.github/workflows/deploy-staffporta
 const controller = fs.readFileSync(new URL('../.github/workflows/staffportal-release-controller-ci.yml', import.meta.url), 'utf8');
 
 const checks = [
-  ['workflow is labelled Pre-Production', workflow.includes('name: StaffPortal Pre-Production Deploy')],
-  ['official branch push auto-deploy is enabled', workflow.includes("push:\n    branches:\n      - 'preproduction/staffportal'") || workflow.includes("push:\r\n    branches:\r\n      - 'preproduction/staffportal'")],
-  ['manual exact-SHA recovery remains available', workflow.includes('workflow_dispatch:') && workflow.includes('candidate_sha:')],
-  ['automatic run uses github.sha', workflow.includes("github.event_name == 'push' && github.sha || inputs.candidate_sha")],
-  ['stale queued deployment is rejected', workflow.includes('Skipping stale Pre-Production deploy')],
-  ['production safety gates remain closed', workflow.includes('productionDeployAuthorized') && workflow.includes('productionMigrationAuthorized')],
-  ['post-deploy health verification remains present', workflow.includes('Verify Pre-Production health')],
-  ['runtime verification remains present', workflow.includes('Verify Pre-Production runtime and auth route contract')],
-  ['asset integrity verification remains present', workflow.includes('Verify versioned Pre-Production asset integrity')],
-  ['controller CI targets official Pre-Production source', controller.includes('ref: preproduction/staffportal')],
+  ['Pre-Production workflow identity', workflow.includes('name: StaffPortal Pre-Production Deploy')],
+  ['manual-only deployment trigger', /^on:\r?\n  workflow_dispatch:/m.test(workflow) && !/^  push:/m.test(workflow.split('permissions:')[0])],
+  ['exact SHA and Owner approval ID required', workflow.includes('candidate_sha:') && workflow.includes('approval_comment_id:')],
+  ['approval job has scoped issues write', workflow.includes('issues: write')],
+  ['Owner dispatch only', workflow.includes("context.eventName !== 'workflow_dispatch'") && workflow.includes('context.actor?.toLowerCase() !== owner.toLowerCase()')],
+  ['Issue #5 exact SHA Owner comment', workflow.includes('issues.getComment') && workflow.includes("'/issues/5'") && workflow.includes('approval.user?.login?.toLowerCase()') && workflow.includes('APPROVE STAFFPORTAL STAGING DEPLOY SHA')],
+  ['official HEAD exact SHA check', workflow.includes("branch: 'preproduction/staffportal'") && workflow.includes('branch.data.commit.sha.toLowerCase() !== sha')],
+  ['consumed approval before deploy', workflow.includes('github.paginate(github.rest.issues.listComments') && workflow.includes('issues.createComment') && workflow.includes('STAFFPORTAL STAGING APPROVAL CONSUMED SHA')],
+  ['production gates retained', workflow.includes('productionDeployAuthorized') && workflow.includes('productionMigrationAuthorized')],
+  ['staging health retained', workflow.includes('Verify Pre-Production health')],
+  ['staging auth/runtime retained', workflow.includes('Verify Pre-Production runtime and auth route contract')],
+  ['staging assets retained', workflow.includes('Verify versioned Pre-Production asset integrity')],
+  ['controller CI uses official branch', controller.includes('ref: preproduction/staffportal')],
 ];
-
 for (const [name, pass] of checks) {
   assert.ok(pass, name);
   console.log('PASS ' + name);
