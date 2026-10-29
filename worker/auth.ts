@@ -437,7 +437,7 @@ async function verifySignIn(request: Request, env: AuthEnv) {
   return responseJson({ ok: true, context }, 200, { 'set-cookie': cookie });
 }
 
-async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<SessionContext | null> {
+export async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<SessionContext | null> {
   const base = await env.DB.prepare(`
     SELECT s.id AS sessionId, e.id, e.employee_no AS employeeNo, e.display_name AS displayName,
            e.email, e.phone, e.job_title AS jobTitle, e.department,
