@@ -52,6 +52,22 @@ function headline(value: unknown): Headline | null {
   }
 }
 
+/** Each list uses headline.id as a React key. Treat a duplicate upstream ID as
+ * untrusted input, keeping the first valid item in feed order rather than
+ * rendering two records with the same DOM identity.
+ */
+function uniqueHeadlines(values: unknown[]): Headline[] {
+  const seen = new Set<string>();
+  const result: Headline[] = [];
+  for (const value of values) {
+    const entry = headline(value);
+    if (!entry || seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    result.push(entry);
+  }
+  return result;
+}
+
 /** All required feed metadata must be present. Bad headline URLs are dropped,
  * not allowed to turn the entire authenticated workspace into an error.
  */
@@ -72,8 +88,8 @@ export function normalizePostLoginContext(value: unknown): PostLoginContext | nu
     activeSourceCount: value.activeSourceCount,
     configuredSourceCount: value.configuredSourceCount,
     successfulFeedCount: value.successfulFeedCount,
-    news: value.news.map(headline).filter((entry): entry is Headline => entry !== null),
-    intelligence: value.intelligence.map(headline).filter((entry): entry is Headline => entry !== null),
+    news: uniqueHeadlines(value.news),
+    intelligence: uniqueHeadlines(value.intelligence),
     inspiration: {
       title: safeString(focus.title, 180) ? focus.title : 'A clear start',
       message: safeString(focus.message, 800) ? focus.message : 'Start with the work that removes the biggest obstacle for the team.',
