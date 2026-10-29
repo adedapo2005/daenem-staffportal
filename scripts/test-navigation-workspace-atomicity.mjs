@@ -73,12 +73,13 @@ const context = {
   companies: [{ id: 'company-printing', code: 'PRINTING', name: 'Printing', primary: true }],
   roles: [{ id: 'owner-role', code: 'owner', name: 'Owner', companyId: 'company-printing' }],
   permissions: {},
-  companyPermissions: {},
+  companyPermissions: { 'company-printing': { 'navigation.assign': 'manage' } },
 };
 const env = { DB };
 const call = async (pathname, body) => routeNavigationWorkspace(new Request(`https://worker.test${pathname}`, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
 }), env, context);
+const get = async pathname => routeNavigationWorkspace(new Request(`https://worker.test${pathname}`), env, context);
 const scalar = (sql, ...args) => sqlite.prepare(sql).get(...args);
 const installAuditFault = (action) => sqlite.exec(`CREATE TRIGGER fail_${action} BEFORE INSERT ON audit_logs WHEN NEW.action='${action}' BEGIN SELECT RAISE(ABORT,'injected audit failure'); END`);
 const removeAuditFault = (action) => sqlite.exec(`DROP TRIGGER fail_${action}`);
@@ -90,6 +91,17 @@ check(response.status === 200, 'role grant succeeds with a valid audit');
 check(scalar("SELECT access_level FROM role_permissions WHERE role_id='role-worker' AND permission_id='p-printing'").access_level === 'manage', 'role grant is stored');
 check(scalar("SELECT COUNT(*) n FROM navigation_access_changes").n === 1, 'role change history is stored');
 check(scalar("SELECT COUNT(*) n FROM audit_logs WHERE action='workspace_assignment'").n === 1, 'role assignment audit is stored');
+
+const ownerWithoutCompanyGrant = { ...context, companyPermissions: {}, permissions: {} };
+response = await routeNavigationWorkspace(new Request('https://worker.test/api/navigation/assign', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ companyId: 'company-printing', targetType: 'role', targetId: 'role-worker', itemKey: 'printing', accessLevel: 'manage', reason: 'Owner role is not a company grant' }),
+}), env, ownerWithoutCompanyGrant);
+check(response.status === 403, 'Owner role without company assignment grant cannot write company access');
+check(scalar("SELECT COUNT(*) n FROM navigation_access_changes").n === 1, 'denied Owner role adds no assignment history');
+response = await routeNavigationWorkspace(new Request('https://worker.test/api/navigation/access'), env, context);
+check(response.status === 400, 'access overview requires an explicit company instead of selecting the first membership');
+response = await get('/api/navigation/access?companyId=company-foreign');
+check(response.status === 403, 'Owner role cannot inspect an unassigned company');
 
 installAuditFault('workspace_assignment');
 response = await call('/api/navigation/assign', { companyId: 'company-printing', targetType: 'role', targetId: 'role-worker', itemKey: 'printing', accessLevel: 'edit', reason: 'QA rollback' });

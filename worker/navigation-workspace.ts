@@ -92,14 +92,14 @@ const json = (body: Record<string, unknown> | unknown[], status = 200) => new Re
 });
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 const isOwner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
-const companyAllowed = (context: SessionContext, companyId: string) => isOwner(context) || context.companies.some((company) => company.id === companyId);
+const companyAllowed = (context: SessionContext, companyId: string) => context.companies.some((company) => company.id === companyId);
 const hasAnyCompanyPermission = (context: EnhancedSessionContext,code:string,minimum:AccessLevel='view',companyId?:string) => {
   if (!companyId && hasPermission(context,code,minimum)) return true;
   const selected = companyId ? [context.companyPermissions[companyId] || {}] : Object.values(context.companyPermissions);
   return selected.some((permissions) => levels.indexOf(permissions[code] || 'none') >= levels.indexOf(minimum));
 };
 const canManageStudio = (context: EnhancedSessionContext) => isOwner(context) || hasAnyCompanyPermission(context,'navigation.studio','manage');
-const canAssign = (context: EnhancedSessionContext,companyId?:string) => isOwner(context) || hasAnyCompanyPermission(context,'navigation.assign','manage',companyId) || hasAnyCompanyPermission(context,'roles.access','manage',companyId) || hasAnyCompanyPermission(context,'users.access','manage',companyId);
+const canAssign = (context: EnhancedSessionContext,companyId?:string) => hasAnyCompanyPermission(context,'navigation.assign','manage',companyId) || hasAnyCompanyPermission(context,'roles.access','manage',companyId) || hasAnyCompanyPermission(context,'users.access','manage',companyId);
 
 async function setting(env: Env, key: string, fallback = '') {
   const row = await env.DB.prepare('SELECT setting_value value FROM app_settings WHERE setting_key=?').bind(key).first<{ value: string }>();
@@ -221,7 +221,8 @@ async function savePolicy(request: Request, env: Env, context: EnhancedSessionCo
 }
 
 async function accessOverview(request: Request, env: Env, context: EnhancedSessionContext) {
-  const companyId = String(new URL(request.url).searchParams.get('companyId') || context.companies[0]?.id || '');
+  const companyId = String(new URL(request.url).searchParams.get('companyId') || '');
+  if (!companyId) return json({error:'Company ID is required.'},400);
   if (!companyId || !companyAllowed(context,companyId)) return json({error:'Company access is not assigned.'},403);
   if (!canAssign(context,companyId)) return json({error:'Authorized Workspace management permission is required for this company.'},403);
   const permissionCodes = [...new Set(navigationItems.map((item) => item.permissionCode).filter(Boolean))] as string[];
