@@ -18,7 +18,7 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false, ignoreAudi
     { id: 'candidate-a', employee_id: 'employee-a', active: 1, is_primary: 0, verified_at: null, verification_source: null },
     { id: 'candidate-b', employee_id: 'employee-a', active: 1, is_primary: 0, verified_at: null, verification_source: null }
   ];
-  const audits = duplicateAudit ? [{ entity_id: duplicateAudit.entityId, action: 'verify_employee_bank', after_json: JSON.stringify({ verificationSource: duplicateAudit.source, verificationReference: duplicateAudit.reference }), request_id: 'prior-request' }] : [];
+  const audits = duplicateAudit ? [{ actor_employee_id: duplicateAudit.actorId || 'actor-a', company_id: duplicateAudit.companyId || 'company-a', entity_id: duplicateAudit.entityId, module: 'payroll', action: 'verify_employee_bank', after_json: JSON.stringify({ employeeId: duplicateAudit.employeeId || 'employee-a', verificationSource: duplicateAudit.source, verificationReference: duplicateAudit.reference, verifiedAt: duplicateAudit.verifiedAt || input.verifiedAt }), request_id: 'prior-request' }] : [];
   const membership = { employee_id: 'employee-a', company_id: 'company-a', active: 1 };
   const actorMembership = { employee_id: 'actor-a', company_id: 'company-a', active: 1 };
   const actorGrant = { active: true };
@@ -29,6 +29,12 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false, ignoreAudi
         sql, args: [], bind(...args) { this.args = args; return this; },
         async first() {
           if (this.sql.includes('employee_company_memberships')) return membership.active === 1 ? { one: 1 } : null;
+          if (this.sql.includes('FROM audit_logs')) {
+            const row = audits.find(item => item.module === 'payroll' && item.action === 'verify_employee_bank' && JSON.parse(item.after_json).verificationSource === this.args[0] && JSON.parse(item.after_json).verificationReference === this.args[1]);
+            if (!row) return null;
+            const detail = JSON.parse(row.after_json);
+            return { actorEmployeeId: row.actor_employee_id, companyId: row.company_id, bankAccountId: row.entity_id, employeeId: detail.employeeId, verificationSource: detail.verificationSource, verificationReference: detail.verificationReference, verifiedAt: detail.verifiedAt };
+          }
           if (this.sql.includes('employee_bank_accounts')) {
             const candidate = accounts.find(row => row.id === this.args[0] && row.employee_id === this.args[1] && row.active === 1 && row.is_primary === 0 && row.verified_at === null);
             const primary = accounts.find(row => row.employee_id === this.args[1] && row.active === 1 && row.is_primary === 1);
@@ -78,16 +84,18 @@ function createDb({ duplicateAudit, onPendingRead, failAudit = false, ignoreAudi
         const duplicate = audits.some(item => item.action === 'verify_employee_bank' && JSON.parse(item.after_json).verificationSource === auditSource && JSON.parse(item.after_json).verificationReference === auditReference);
         if (failAudit) throw new Error('simulated audit insert failure');
         if (changes > 0 && row && !duplicate && !ignoreAudit) {
-          audits.push({ id: auditId, actor_employee_id: actorId, company_id: companyId, entity_id: entityId, action: 'verify_employee_bank', after_json: afterJson, request_id: requestId });
+          audits.push({ id: auditId, actor_employee_id: actorId, company_id: companyId, entity_id: entityId, module: 'payroll', action: 'verify_employee_bank', after_json: afterJson, request_id: requestId });
         }
-        assert.match(select.sql, /^SELECT json_extract\(CASE WHEN EXISTS \(SELECT 1 FROM audit_logs WHERE id=\?\) THEN/);
-        const [requiredAuditId, expectedSource, expectedReference, promotedId, promotedEmployeeId, expectedVerifiedAt, expectedVerification] = select.args;
+        assert.match(select.sql, /^SELECT CASE WHEN EXISTS \(SELECT 1 FROM audit_logs WHERE id=\?\) THEN/);
+        const [requiredAuditId, expectedActor, expectedCompany, expectedId, expectedEmployee, expectedSource, expectedReference] = select.args;
         const auditPersisted = audits.some(item => item.id === requiredAuditId);
-        const sameReferenceAuditExists = audits.some(item => item.action === 'verify_employee_bank' && JSON.parse(item.after_json).verificationSource === expectedSource && JSON.parse(item.after_json).verificationReference === expectedReference);
-        const candidatePromoted = accounts.some(item => item.id === promotedId && item.employee_id === promotedEmployeeId && item.active === 1 && item.is_primary === 1 && item.verified_at === expectedVerifiedAt && item.verification_source === expectedVerification);
-        if (!auditPersisted && !sameReferenceAuditExists && candidatePromoted) throw new Error('malformed JSON: required audit was silently ignored');
-        changes = auditPersisted ? 1 : 0;
-        return [{ results: [] }, { results: [] }, { results: [{ changed: changes }] }];
+        const sameOperationAuditExists = audits.some(item => {
+          const detail = JSON.parse(item.after_json);
+          return item.module === 'payroll' && item.action === 'verify_employee_bank' && item.actor_employee_id === expectedActor && item.company_id === expectedCompany && item.entity_id === expectedId && detail.employeeId === expectedEmployee && detail.verificationSource === expectedSource && detail.verificationReference === expectedReference;
+        });
+        changes = auditPersisted || sameOperationAuditExists ? 1 : 0;
+        if (!changes) throw new Error('malformed JSON: required audit was silently ignored');
+        return [{ results: [] }, { results: [] }, { results: [{ accepted: changes }] }];
       } catch (error) {
         accounts.splice(0, accounts.length, ...originalAccounts);
         audits.splice(0, audits.length, ...originalAudits);
@@ -137,7 +145,7 @@ const responseJson = response => response.json();
   const first = await promoteVerifiedEmployeeBankAccount(makeRequest('request-first'), { DB: db }, context, input);
   const replay = await promoteVerifiedEmployeeBankAccount(makeRequest('request-replay'), { DB: db }, context, input);
   assert.equal(first.status, 200);
-  assert.equal(replay.status, 404);
+  assert.equal(replay.status, 200);
   assert.equal(auditCount(db), 1);
   assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 1);
 }
@@ -217,7 +225,8 @@ const responseJson = response => response.json();
 
 {
   const db = createDb({ ignoreAudit: true });
-  await assert.rejects(promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, context, input), /silently ignored/);
+  const response = await promoteVerifiedEmployeeBankAccount(makeRequest(), { DB: db }, context, input);
+  assert.equal(response.status, 404);
   assert.equal(db.accounts.find(row => row.id === 'primary-a').is_primary, 1);
   assert.equal(db.accounts.find(row => row.id === 'candidate-a').is_primary, 0);
   assert.equal(db.accounts.find(row => row.id === 'candidate-a').verified_at, null);
