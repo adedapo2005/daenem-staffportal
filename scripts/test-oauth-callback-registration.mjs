@@ -7,6 +7,9 @@ const compiled = ts.transpileModule(source,{
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},
 }).outputText;
 const applications=[];
+let existingGoogle=false;
+let existingMicrosoft=false;
+let approvalState='pending';
 const loaded={exports:{}};
 new Function('module','exports','require',compiled)(loaded,loaded.exports,(name)=>{
   if(name==='./auth')return{
@@ -25,7 +28,7 @@ new Function('module','exports','require',compiled)(loaded,loaded.exports,(name)
       issuer:'https://login.microsoftonline.com/'+p.tid+'/v2.0',
     }:null,
     organizationSigningKeyIssuerMatches:()=>true,
-    linkedMicrosoftEmployee:async()=>null,
+    linkedMicrosoftEmployee:async()=>existingMicrosoft?'existing-employee':null,
     organizationsLinkStorageReady:async()=>true,
     linkedMicrosoftIdentityForEmployee:async()=>null,
     bindMicrosoftEmployeeIdentity:()=>{throw new Error('Cannot auto-link existing employee');},
@@ -34,7 +37,7 @@ new Function('module','exports','require',compiled)(loaded,loaded.exports,(name)
     provisionOAuthApplicant:async (_env,applicant)=>{
       applications.push(applicant);return 'pending';
     },
-    oauthApplicantPending:async()=>true,
+    oauthApplicantApproval:async()=>approvalState,
   };
   throw new Error('Unexpected dependency '+name);
 });
@@ -63,7 +66,7 @@ const env={
     async put(key,value){cache.set(key,value);},
     async delete(key){cache.delete(key);},
   },
-  DB:{ prepare(sql){return{bind(){return this;},async first(){return null;}};} },
+  DB:{ prepare(sql){return{bind(){return this;},async first(){if(existingGoogle && sql.includes('employment_status AS status FROM employees')) return {id:'existing-employee',status:'active'};return null;}};} },
 };
 const oldFetch=globalThis.fetch;
 let context=null;
@@ -140,5 +143,18 @@ try{
   assert.equal(applications.length,2);
   console.log('PASS: Microsoft unusable email cannot register');passed++;
 
+  approvalState='not_approved';
+  existingGoogle=true;
+  result=await oauth('google',{email:'rejected-google@example.test',email_verified:true});
+  assert.equal(result.status,303);
+  assert.match(result.headers.get('location'),/result=not_approved/);
+  assert.equal(applications.length,2);
+  console.log('PASS: rejected Google applicant denied after pending ends');passed++;
+  existingMicrosoft=true;
+  result=await oauth('microsoft',{tid:'tenant-synthetic',oid:'object-rejected',preferred_username:'rejected-microsoft@example.test'});
+  assert.equal(result.status,303);
+  assert.match(result.headers.get('location'),/result=not_approved/);
+  assert.equal(applications.length,2);
+  console.log('PASS: rejected Microsoft applicant denied after pending ends');passed++;
   console.log(JSON.stringify({ok:true,tests:passed}));
 }finally{globalThis.fetch=oldFetch;}
