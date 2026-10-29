@@ -9,8 +9,14 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const loaded = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
-  assert.equal(specifier, './credential-security');
-  return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './password-auth') return { recoveryPolicyForEmployee: async () => ({}) };
+  if (specifier === './whatsapp-recovery') return { startPasswordRecoveryWhatsApp: async () => null };
+  if (specifier === './scoped-settings') return { recoveryMethods: () => [] };
+  if (specifier === './staffportal-account-scope') return {
+    staffPortalCompanyPredicate: () => '1=1', isStaffPortalCompanyId: () => true,
+  };
+  throw new Error('Unexpected authentication dependency: ' + specifier);
 });
 const { routeAuthRefinement } = loaded.exports;
 
@@ -93,16 +99,19 @@ const neutral = { ok: true, message: 'Verification is complete. If your request 
 const passed = [];
 const check = async (name, fn) => { await fn(); passed.push(name); console.log(`PASS: ${name}`); };
 
-await check('invalid company code returns the same public response for known and unknown email', async () => {
+await check('legacy client company code is ignored; backend onboarding company is authoritative', async () => {
   const db = new SqliteD1();
   db.db.exec(`INSERT INTO employees(id,email,employment_status) VALUES('known','known@example.test','active');
     INSERT INTO employee_company_memberships VALUES('known-membership','known','company-print',1,1);`);
   const known = await start(db, { ...base, email: 'known@example.test', companyCode: 'INVALID' });
   const unknown = await start(db, { ...base, email: 'unknown@example.test', companyCode: 'INVALID' });
-  assert.equal(known.response.status, 503);
-  assert.equal(unknown.response.status, 503);
-  assert.deepEqual(known.body, unknown.body);
-  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM signup_verifications').get().n, 0);
+  assert.equal(known.response.status, 200);
+  assert.equal(unknown.response.status, 200);
+  assert.equal(known.body.ok, true);
+  assert.equal(unknown.body.ok, true);
+  const assigned = db.db.prepare('SELECT DISTINCT company_id FROM signup_verifications').all();
+  assert.equal(assigned.length, 1);
+  assert.equal(assigned[0].company_id, 'company-print');
   db.close();
 });
 

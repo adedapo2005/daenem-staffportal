@@ -7,6 +7,7 @@ import {
   linkedMicrosoftEmployee, linkedMicrosoftIdentityForEmployee, bindMicrosoftEmployeeIdentity,
   organizationsLinkStorageReady,
 } from './microsoft-organizations';
+import { provisionOAuthApplicant, oauthApplicantPending, type ApplicantResult } from './oauth-provisional-signup';
 
 type Provider = 'google' | 'microsoft';
 
@@ -133,6 +134,49 @@ function failure(request: Request, provider: Provider, code: string) {
   const url = new URL('/', request.url);
   url.searchParams.set('auth_error', code); url.searchParams.set('auth_provider', provider);
   return Response.redirect(url.toString(), 302);
+}
+function applicantRedirect(request: Request, provider: Provider, result: ApplicantResult | 'email_required') {
+  const target = new URL('/api/auth/oauth/registration-status', request.url);
+  target.searchParams.set('provider', provider);
+  target.searchParams.set('result', result);
+  return new Response(null, { status: 303, headers: {
+    location: target.toString(), 'cache-control': 'no-store',
+    'set-cookie': stateCookie(request, '', 0),
+  } });
+}
+function applicantStatusPage(request: Request) {
+  const query = new URL(request.url).searchParams;
+  const provider = query.get('provider') === 'microsoft' ? 'Microsoft' : 'Google';
+  const outcome = query.get('result');
+  const pending = outcome === 'pending';
+  const heading = pending ? 'Account Request Received'
+    : outcome === 'disabled' ? 'Account Registration Is Unavailable'
+    : outcome === 'rate_limited' ? 'Too Many Registration Attempts'
+    : outcome === 'email_required' ? 'Email Address Required'
+    : 'Account Registration Could Not Be Completed';
+  const message = pending
+    ? 'Your ' + provider + ' identity was verified and your StaffPortal application is pending management approval. No employee access has been granted yet.'
+    : outcome === 'email_required'
+    ? 'Your identity provider did not supply a usable email address. Complete Create Account with your email address instead.'
+    : outcome === 'disabled'
+    ? 'Employee self-registration is disabled. Contact your administrator.'
+    : outcome === 'rate_limited'
+    ? 'Registration attempts are temporarily limited. Please try again later.'
+    : 'The registration request could not be saved. Please try Create Account again or contact your administrator.';
+  const html = '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<meta name="robots" content="noindex,nofollow">' +
+    '<title>' + heading + ' | DAENEM StaffPortal</title>' +
+    '<style>body{margin:0;background:#f4faf5;color:#183b2b;font:16px system-ui,Segoe UI,Arial,sans-serif;min-height:100vh;display:grid;place-items:center}' +
+    'main{max-width:520px;background:#fff;border:1px solid #cfe5d7;border-radius:16px;padding:36px;margin:20px;box-shadow:0 12px 40px #193d2312}' +
+    'h1{font-size:27px;line-height:1.2}p{line-height:1.7}a{display:inline-block;background:#087f50;color:white;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:700;margin-top:14px}' +
+    '</style></head><body><main><h1>' + heading + '</h1><p>' + message +
+    '</p><a href="/">Return To StaffPortal</a></main></body></html>';
+  return new Response(html, { headers: {
+    'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
+    'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+    'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
+  } });
 }
 async function providerJson(response: Response) {
   const body = await response.json().catch(() => ({})) as Record<string, unknown>;
@@ -316,7 +360,25 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
       }
       // Never grant access based on Microsoft email, UPN or preferred_username.
       const linkedId = await linkedMicrosoftEmployee(env.DB, organization);
-      if (!linkedId) return failure(request, provider, 'microsoft_link_required');
+      if (!linkedId) {
+        // A Microsoft UPN/email is not authority to link an existing employee.
+        // New identities may request provisional onboarding only; no session
+        // or permissions are issued before management approves the request.
+        const email = String(identity.email || identity.preferred_username || '').trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          return applicantRedirect(request, provider, 'email_required');
+        }
+        const outcome = await provisionOAuthApplicant(env, {
+          provider, email, name: String(identity.name || email.split('@')[0]),
+          firstName: String(identity.given_name || ''),
+          lastName: String(identity.family_name || ''),
+          microsoftTenantId: organization.tenantId,
+          microsoftObjectId: organization.objectId,
+        }, request);
+        return outcome === 'existing'
+          ? failure(request, provider, 'microsoft_link_required')
+          : applicantRedirect(request, provider, outcome);
+      }
       employeeId = linkedId;
     } else {
       if (state.intent === 'link') return failure(request, provider, 'invalid_oauth_state');
@@ -337,10 +399,26 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
       const employee = await env.DB.prepare(
         'SELECT id, employment_status AS status FROM employees WHERE LOWER(email) = ? LIMIT 1'
       ).bind(email).first<{ id: string; status: string }>();
-      if (!employee || !['active', 'provisional'].includes(employee.status)) {
+      if (!employee) {
+        if (provider !== 'google') return failure(request, provider, 'employee_not_authorized');
+        const outcome = await provisionOAuthApplicant(env, {
+          provider, email, name: String(identity.name || profile.name || email.split('@')[0]),
+          firstName: String(identity.given_name || profile.given_name || ''),
+          lastName: String(identity.family_name || profile.family_name || ''),
+        }, request);
+        return outcome === 'existing'
+          ? failure(request, provider, 'employee_not_authorized')
+          : applicantRedirect(request, provider, outcome);
+      }
+      if (!['active', 'provisional'].includes(employee.status)) {
         return failure(request, provider, 'employee_not_authorized');
       }
       employeeId = employee.id;
+    }
+    // Newly registered social applicants are never silently signed in while
+    // approval is pending, even if their provider identity is valid.
+    if (await oauthApplicantPending(env.DB, employeeId)) {
+      return applicantRedirect(request, provider, 'pending');
     }
     const session = await createSession(request, env, employeeId, provider);
     const headers = new Headers({ location: new URL('/workspace/', request.url).toString(), 'cache-control': 'no-store' });
@@ -353,6 +431,9 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
 }
 export async function routeProviderAuth(request: Request, env: ProviderAuthEnv): Promise<Response | null> {
   const url = new URL(request.url);
+  if (url.pathname === '/api/auth/oauth/registration-status' && request.method === 'GET') {
+    return applicantStatusPage(request);
+  }
   if (url.pathname === '/api/auth/oauth/microsoft/link' && request.method === 'GET') {
     return accountLinkPage(request, env);
   }

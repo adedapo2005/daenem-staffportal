@@ -8,8 +8,14 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const module = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(module, module.exports, (specifier) => {
-  assert.equal(specifier, './credential-security');
-  return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './password-auth') return { recoveryPolicyForEmployee: async () => ({}) };
+  if (specifier === './whatsapp-recovery') return { startPasswordRecoveryWhatsApp: async () => null };
+  if (specifier === './scoped-settings') return { recoveryMethods: () => [] };
+  if (specifier === './staffportal-account-scope') return {
+    staffPortalCompanyPredicate: () => '1=1', isStaffPortalCompanyId: () => true,
+  };
+  throw new Error('Unexpected authentication dependency: ' + specifier);
 });
 const { routeAuthRefinement } = module.exports;
 
