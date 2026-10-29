@@ -7,7 +7,7 @@ import {
   linkedMicrosoftEmployee, linkedMicrosoftIdentityForEmployee, bindMicrosoftEmployeeIdentity,
   organizationsLinkStorageReady,
 } from './microsoft-organizations';
-import { provisionOAuthApplicant, oauthApplicantPending, type ApplicantResult } from './oauth-provisional-signup';
+import { provisionOAuthApplicant, oauthApplicantApproval, type ApplicantResult } from './oauth-provisional-signup';
 
 type Provider = 'google' | 'microsoft';
 
@@ -152,6 +152,7 @@ function applicantStatusPage(request: Request) {
   const heading = pending ? 'Account Request Received'
     : outcome === 'disabled' ? 'Account Registration Is Unavailable'
     : outcome === 'rate_limited' ? 'Too Many Registration Attempts'
+    : outcome === 'not_approved' ? 'Account Request Not Approved'
     : outcome === 'email_required' ? 'Email Address Required'
     : 'Account Registration Could Not Be Completed';
   const message = pending
@@ -162,6 +163,8 @@ function applicantStatusPage(request: Request) {
     ? 'Employee self-registration is disabled. Contact your administrator.'
     : outcome === 'rate_limited'
     ? 'Registration attempts are temporarily limited. Please try again later.'
+    : outcome === 'not_approved'
+    ? 'This employee registration request is not approved. Please contact your administrator.'
     : 'The registration request could not be saved. Please try Create Account again or contact your administrator.';
   const html = '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
@@ -415,10 +418,14 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
       }
       employeeId = employee.id;
     }
-    // Newly registered social applicants are never silently signed in while
-    // approval is pending, even if their provider identity is valid.
-    if (await oauthApplicantPending(env.DB, employeeId)) {
+    // Rejected, cancelled or expired applications must never become eligible
+    // merely because they are no longer pending.
+    const applicantApproval = await oauthApplicantApproval(env.DB, employeeId);
+    if (applicantApproval === 'pending') {
       return applicantRedirect(request, provider, 'pending');
+    }
+    if (applicantApproval === 'not_approved') {
+      return applicantRedirect(request, provider, 'not_approved');
     }
     const session = await createSession(request, env, employeeId, provider);
     const headers = new Headers({ location: new URL('/workspace/', request.url).toString(), 'cache-control': 'no-store' });
