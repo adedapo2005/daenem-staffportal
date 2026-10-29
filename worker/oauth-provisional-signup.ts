@@ -108,11 +108,17 @@ export async function provisionOAuthApplicant(
   ).bind(uid('security'), employeeId, sourceIp, request.headers.get('user-agent'),
     JSON.stringify({ provider: applicant.provider, companyId: company.id,
       verifiedBy: 'signed_provider_identity', approvalRequired: true })));
+  // A trigger may silently ignore the mandatory audit insert. Keep the check
+  // inside the batch so an ignored audit rolls back every provisional row.
+  statements.push(env.DB.prepare(
+    "SELECT CASE WHEN changes()=1 THEN 1 " +
+    "ELSE json_extract('oauth signup security audit required','$') END AS audit_required"
+  ));
 
   try {
     // D1.batch commits all writes or rolls all of them back on SQL failure.
     const results = await env.DB.batch(statements);
-    if (results.some(result => Number(result?.meta?.changes || 0) !== 1)) {
+    if (results.slice(0, -1).some(result => Number(result?.meta?.changes || 0) !== 1)) {
       console.error('staffportal_oauth_signup_incomplete_batch');
       return 'unavailable';
     }

@@ -55,9 +55,14 @@ class D1 {
   async batch(statements) {
     this.db.exec('BEGIN IMMEDIATE');
     try {
-      const result = statements.map(s => ({
-        meta: { changes: Number(this.db.prepare(s.sql).run(...s.values).changes) },
-      }));
+      const result = statements.map(s => {
+        const statement = this.db.prepare(s.sql);
+        if (statement.reader) {
+          statement.get(...s.values);
+          return { meta: { changes: 0 } };
+        }
+        return { meta: { changes: Number(statement.run(...s.values).changes) } };
+      });
       this.db.exec('COMMIT');
       return result;
     } catch (error) {
@@ -148,6 +153,14 @@ await check('Mandatory audit failure rolls back employee, roles and application'
   assert.equal(await provisionOAuthApplicant(db.env,google,request),'unavailable');
   for(const table of ['employees','employee_company_memberships','employee_roles','signup_requests','security_logs'])
     assert.equal(db.count(table),0,table);
+  db.close();
+});
+await check('Silently suppressed audit rolls back every Microsoft provisional row', async()=>{
+  const db=new D1();
+  db.db.exec("CREATE TRIGGER ignored_audit BEFORE INSERT ON security_logs BEGIN SELECT RAISE(IGNORE); END;");
+  assert.equal(await provisionOAuthApplicant(db.env,microsoft,request),'unavailable');
+  for(const table of ['employees','employee_company_memberships','employee_roles','signup_requests',
+    'staffportal_external_identity_links','security_logs']) assert.equal(db.count(table),0,table);
   db.close();
 });
 await check('Known IP rate limit blocks bulk account creation', async()=>{
