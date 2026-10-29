@@ -19,11 +19,21 @@ const uid = (prefix: string) => prefix + '-' + crypto.randomUUID();
 const normalizedEmail = (value: string) => value.trim().toLowerCase();
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-export async function oauthApplicantPending(db: D1Database, employeeId: string): Promise<boolean> {
+export type OAuthApplicantApproval = 'not_applicant' | 'pending' | 'not_approved' | 'approved';
+
+/** Only explicit management approval may unlock a social applicant. */
+export async function oauthApplicantApproval(
+  db: D1Database, employeeId: string,
+): Promise<OAuthApplicantApproval> {
   const row = await db.prepare(
-    "SELECT id FROM signup_requests WHERE employee_id=? AND status='pending' LIMIT 1"
-  ).bind(employeeId).first<{ id: string }>();
-  return Boolean(row);
+    "SELECT status FROM signup_requests WHERE employee_id=? " +
+    "AND requested_role_text IN ('Social Applicant: google','Social Applicant: microsoft') " +
+    "ORDER BY created_at DESC, id DESC LIMIT 1"
+  ).bind(employeeId).first<{ status: string }>();
+  if (!row) return 'not_applicant';
+  if (row.status === 'approved') return 'approved';
+  if (row.status === 'pending') return 'pending';
+  return 'not_approved';
 }
 
 export async function provisionOAuthApplicant(
