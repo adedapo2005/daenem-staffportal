@@ -37,14 +37,14 @@ check('employee detail requires target-company HR view before querying', detail.
 const executable = source.replace(
   "import { hasPermission, type AuthEnv, type SessionContext } from './auth';",
   "const hasPermission=(context,code,minimum='view',companyId)=>{const levels=['none','view','create','edit','approve','manage'];const level=companyId?(context.companyPermissions?.[companyId]?.[code]||'none'):(context.permissions?.[code]||'none');return levels.indexOf(level)>=levels.indexOf(minimum)};"
-);
+).replace("import { previewAuditRetention } from './audit-retention';", "const previewAuditRetention=()=>({});");
 const compiled = ts.transpileModule(executable, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
 }).outputText;
 const { routeGroupErp } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
-function fixture({ owner = false, companyBPermission = 'none', companyBPayrollPermission = 'none' } = {}) {
-  const calls = [], writes = [];
+function fixture({ owner = false, companyBPermission = 'none', companyBPayrollPermission = 'none', failBankBatch = false, ignoreBankAudit = false } = {}) {
+  const calls = [], writes = [], batches = [];
   const context = {
     roles: owner ? [{ code: 'owner' }] : [{ code: 'employee' }],
     companies: [{ id: 'company-a' }, { id: 'company-b' }],
@@ -56,11 +56,19 @@ function fixture({ owner = false, companyBPermission = 'none', companyBPayrollPe
     employee: { id: 'actor' }
   };
   const DB = {
+    async batch(statements) {
+      batches.push(statements);
+      if (failBankBatch) throw new Error('simulated required audit insert failure');
+      if (ignoreBankAudit) throw new Error('sentinel rejected silently ignored audit insert');
+      writes.push(...statements);
+      return statements.map((statement, index) => ({ meta: { changes: 1 }, results: index === statements.length - 1 ? [{ committed: 1 }] : [] }));
+    },
     prepare(sql) {
       return {
         bind(...args) {
           calls.push({ sql, args });
           return {
+            sql, args,
             first: async () => sql.includes('payroll_banks') ? { name: 'Test Bank' } : sql.includes('employee_company_memberships') ? { id: 'employee-b', companyId: 'company-b' } : { n: 3 },
             all: async () => ({ results: [{ id: 'employee-b', companyId: 'company-b' }] }),
             run: async () => { writes.push({ sql, args }); return { success: true }; }
@@ -69,7 +77,7 @@ function fixture({ owner = false, companyBPermission = 'none', companyBPayrollPe
       };
     }
   };
-  return { context, env: { DB, AUTH_PEPPER: 'test-only-fixture-key' }, calls, writes };
+  return { context, env: { DB, AUTH_PEPPER: 'test-only-fixture-key' }, calls, writes, batches };
 }
 
 const hrWriteBody = { employeeId: 'employee-b', companyId: 'company-b', employmentType: 'full_time' };
@@ -96,7 +104,16 @@ check('bank profile denial performs zero reads and writes', deniedBankWrite.call
 const allowedBankWrite = fixture({ companyBPayrollPermission: 'manage' });
 const allowedBankResponse = await routeGroupErp(new Request('https://staffportal.test/api/hr/bank-account', { method: 'POST', body: JSON.stringify(bankBody) }), allowedBankWrite.env, allowedBankWrite.context);
 check('authorized Company B Payroll manager can update its employee bank profile', allowedBankResponse.status === 200);
-check('bank profile mutation binds employee lookup, update, insert and audit to Company B', allowedBankWrite.calls.some(call => call.sql.includes('employee_company_memberships') && call.args.includes('company-b')) && allowedBankWrite.writes.length >= 3 && allowedBankWrite.writes.every(write => write.args.includes('company-b') || write.sql.includes('employee_bank_accounts')));
+check('pending bank account and required company-scoped audit share one verified atomic batch', allowedBankWrite.batches.length === 1 && allowedBankWrite.batches[0].length === 3 && allowedBankWrite.batches[0][0].sql.includes('INSERT INTO employee_bank_accounts') && allowedBankWrite.batches[0][1].sql.includes('INSERT INTO audit_logs') && allowedBankWrite.batches[0][1].args.includes('company-b') && allowedBankWrite.batches[0][2].sql.includes("json_extract(CASE WHEN EXISTS") && allowedBankWrite.writes.length === 3);
+
+const failedBankAudit = fixture({ companyBPayrollPermission: 'manage', failBankBatch: true });
+const failedBankResponse = await routeGroupErp(new Request('https://staffportal.test/api/hr/bank-account', { method: 'POST', body: JSON.stringify(bankBody) }), failedBankAudit.env, failedBankAudit.context);
+check('required bank-profile audit failure returns bounded unavailable response', failedBankResponse.status === 503);
+check('bank-profile audit failure leaves no committed account or success response', failedBankAudit.batches.length === 1 && failedBankAudit.writes.length === 0 && !(await failedBankResponse.text()).includes('verified'));
+
+const ignoredBankAudit = fixture({ companyBPayrollPermission: 'manage', ignoreBankAudit: true });
+const ignoredBankAuditResponse = await routeGroupErp(new Request('https://staffportal.test/api/hr/bank-account', { method: 'POST', body: JSON.stringify(bankBody) }), ignoredBankAudit.env, ignoredBankAudit.context);
+check('silently suppressed bank-profile audit aborts the atomic write', ignoredBankAuditResponse.status === 503 && ignoredBankAudit.batches.length === 1 && ignoredBankAudit.writes.length === 0);
 
 const ownerBankWrite = fixture({ owner: true });
 const ownerBankResponse = await routeGroupErp(new Request('https://staffportal.test/api/hr/bank-account', { method: 'POST', body: JSON.stringify(bankBody) }), ownerBankWrite.env, ownerBankWrite.context);
