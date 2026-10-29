@@ -2,13 +2,14 @@
 name: StaffPortal Pre-Production Deploy
 
 on:
-  push:
-    branches:
-      - 'preproduction/staffportal'
   workflow_dispatch:
     inputs:
       candidate_sha:
-        description: 'Exact 40-character SHA of a verified Pre-Production candidate'
+        description: 'Exact 40-character SHA of approved Pre-Production HEAD'
+        required: true
+        type: string
+      approval_comment_id:
+        description: 'Issue #5 Owner approval comment ID for the identical SHA'
         required: true
         type: string
 
@@ -21,53 +22,87 @@ concurrency:
 
 jobs:
   approval:
-    name: Verify Pre-Production candidate
+    name: Verify Exact SHA And One-Time Owner Approval
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
     outputs:
       candidate_sha: ${{ steps.validate.outputs.candidate_sha }}
     steps:
-      - name: Validate exact commit SHA and repository source
+      - name: Validate exact candidate, Owner approval, and one-time consumption
         id: validate
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
         env:
-          CANDIDATE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.candidate_sha }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          APPROVAL_COMMENT_ID: ${{ inputs.approval_comment_id }}
         with:
           script: |
             const sha = (process.env.CANDIDATE_SHA || '').trim().toLowerCase();
-            if (!/^[0-9a-f]{40}$/.test(sha)) {
-              core.setFailed('A full 40-character commit SHA is required.');
+            const rawCommentId = (process.env.APPROVAL_COMMENT_ID || '').trim();
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            if (context.eventName !== 'workflow_dispatch' ||
+                context.actor?.toLowerCase() !== owner.toLowerCase()) {
+              core.setFailed('Only the repository Owner may dispatch a Pre-Production deployment.');
               return;
             }
-
+            if (!/^[0-9a-f]{40}$/.test(sha)) {
+              core.setFailed('Exact 40-character candidate SHA is required.');
+              return;
+            }
+            if (!/^[1-9][0-9]{0,15}$/.test(rawCommentId) ||
+                !Number.isSafeInteger(Number(rawCommentId))) {
+              core.setFailed('A valid Issue #5 approval comment ID is required.');
+              return;
+            }
             try {
-              const result = await github.rest.repos.getCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: sha
+              const branch = await github.rest.repos.getBranch({
+                owner, repo, branch: 'preproduction/staffportal'
               });
-
-              if (result.data.sha.toLowerCase() !== sha) {
-                core.setFailed('Commit verification failed.');
+              if (branch.data.commit.sha.toLowerCase() !== sha) {
+                core.setFailed('Candidate does not match current official Pre-Production HEAD.');
                 return;
               }
-
-              if (context.eventName === 'push') {
-                const branch = await github.rest.repos.getBranch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  branch: 'preproduction/staffportal'
-                });
-                const head = branch.data.commit.sha.toLowerCase();
-                if (head !== sha) {
-                  core.setFailed(`Skipping stale Pre-Production deploy. Branch head is ${head}, run candidate is ${sha}.`);
-                  return;
-                }
+              const commit = await github.rest.repos.getCommit({owner, repo, ref: sha});
+              if (commit.data.sha.toLowerCase() !== sha) {
+                core.setFailed('Exact commit verification failed.');
+                return;
               }
-
+              const response = await github.rest.issues.getComment({
+                owner, repo, comment_id: Number(rawCommentId)
+              });
+              const approval = response.data;
+              const expected = 'APPROVE STAFFPORTAL STAGING DEPLOY SHA ' + sha;
+              const approved = (approval.body || '').split(/\r?\n/)
+                .some(line => line.trim().toLowerCase() === expected.toLowerCase());
+              const issuePath = new URL(approval.issue_url || 'https://invalid.example').pathname;
+              const expectedPath = '/repos/' + owner + '/' + repo + '/issues/5';
+              if (approval.user?.login?.toLowerCase() !== owner.toLowerCase() ||
+                  issuePath.toLowerCase() !== expectedPath.toLowerCase() || !approved) {
+                core.setFailed('Approval must be a matching SHA line on Issue #5 written by Owner.');
+                return;
+              }
+              const comments = await github.paginate(github.rest.issues.listComments,
+                {owner, repo, issue_number: 5, per_page: 100});
+              const marker = 'STAFFPORTAL STAGING APPROVAL CONSUMED SHA ' + sha;
+              if (comments.some(comment => (comment.body || '').split(/\r?\n/)
+                  .some(line => line.trim().toLowerCase() === marker.toLowerCase()))) {
+                core.setFailed('This SHA already consumed its staging approval.');
+                return;
+              }
+              // Fail closed and claim before secret checkout/deployment.
+              // Retry after a failed attempt requires a new approved SHA.
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: 5,
+                body: marker + '\nApproval Comment ID: ' + rawCommentId +
+                  '\nWorkflow Run: ' + context.runId +
+                  '\nAuthorization claimed before staging deployment.'
+              });
               core.setOutput('candidate_sha', sha);
             } catch (error) {
-              core.setFailed('Commit could not be verified as the current Pre-Production source.');
+              core.setFailed('Owner approval could not be verified or claimed.');
             }
 
   deploy:
