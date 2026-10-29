@@ -2,6 +2,7 @@ import { recoveryPolicyForEmployee, type PasswordAuthEnv } from './password-auth
 import { startPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 import { recoveryMethods } from './scoped-settings';
 import { WORKER_SAFE_PASSWORD_ITERATIONS } from './credential-security';
+import { staffPortalCompanyPredicate } from './staffportal-account-scope';
 
 interface Env extends PasswordAuthEnv {}
 
@@ -93,7 +94,7 @@ async function missingCredentialRecovery(request:Request,env:Env){
     ) AS preferredUsername
   FROM employees e
   JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
-  JOIN companies co ON co.id=m.company_id AND co.active=1 AND lower(co.name) NOT LIKE '%farm%'
+  JOIN companies co ON co.id=m.company_id AND co.active=1 AND ${staffPortalCompanyPredicate('co.id')}
   WHERE e.employment_status IN ('active','provisional')
     AND NOT EXISTS(SELECT 1 FROM employee_credentials c WHERE c.employee_id=e.id)
     AND (lower(e.email)=lower(?) OR lower(COALESCE(
@@ -126,25 +127,45 @@ async function missingCredentialRecovery(request:Request,env:Env){
   return json({error:'Password recovery email is temporarily unavailable. Please contact the system administrator.'},503);
  }
  const challengeId=uid('password-reset'),otp=code(),digest=await challengeHash(env,'password-reset',challengeId,otp),minutes=Number(await setting(env,'security.password_reset_code_minutes','10'))||10,expiresAt=new Date(Date.now()+minutes*60000).toISOString();
- await env.DB.prepare(`INSERT INTO password_reset_challenges(id,employee_id,code_hash,requested_ip,requested_user_agent,expires_at) VALUES(?,?,?,?,?,?)`).bind(challengeId,employee.id,digest,ip(request),request.headers.get('user-agent'),expiresAt).run();
+ const neutral={ok:true,challengeId,destination:'your verified recovery contact',message:'If the account details match an eligible employee login, a verification code has been sent to the verified recovery contact on file.'};
+ const inserted=await env.DB.prepare(`
+  INSERT INTO password_reset_challenges(id,employee_id,code_hash,requested_ip,requested_user_agent,expires_at)
+  SELECT ?,?,?,?,?,?
+  WHERE EXISTS(
+   SELECT 1 FROM employees e
+   WHERE e.id=? AND lower(e.email)=lower(?)
+    AND e.employment_status IN ('active','provisional')
+    AND NOT EXISTS(SELECT 1 FROM employee_credentials c WHERE c.employee_id=e.id)
+    AND (
+     EXISTS(SELECT 1 FROM employee_login_access_requests ar WHERE ar.employee_id=e.id AND ar.status='ready' AND (ar.expires_at IS NULL OR datetime(ar.expires_at)>datetime('now')))
+     OR EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner')
+    )
+    AND (
+     EXISTS(SELECT 1 FROM employee_company_memberships m JOIN companies co ON co.id=m.company_id AND co.active=1 AND ${staffPortalCompanyPredicate('co.id')} WHERE m.employee_id=e.id AND m.active=1)
+     OR EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner')
+    )
+  )
+ `).bind(challengeId,employee.id,digest,ip(request),request.headers.get('user-agent'),expiresAt,employee.id,employee.email).run();
+ if(Number(inserted.meta?.changes||0)!==1)return json(neutral);
  try{
   await security(env,request,'login_access_activation_requested',employee.id,{destination:maskEmail(employee.email)});
   const delivery=await sendCode(env,employee.email,employee.displayName,otp,'reset');
-  return json({ok:true,challengeId,destination:'your verified recovery contact',...(delivery.bootstrapCode?{bootstrapCode:delivery.bootstrapCode}:{}),message:'If the account details match, a verification code has been sent to the email on file.'});
+  return json({...neutral,...(delivery.bootstrapCode?{bootstrapCode:delivery.bootstrapCode}:{})});
  }catch{
   await env.DB.prepare('DELETE FROM password_reset_challenges WHERE id=?').bind(challengeId).run();
-  return json({error:'We could not send the verification code. Please try again.'},503);
+  await security(env,request,'login_access_recovery_delivery_failed',employee.id);
+  return json(neutral);
  }
 }
 
 async function refinedReset(request:Request,env:Env){
  let b:{resetToken?:string;newPassword?:string};try{b=await request.json()}catch{return null}const token=String(b.resetToken||''),password=String(b.newPassword||'');if(!token||!password)return null;const tokenHash=await resetTokenHash(env,token);
- const row=await env.DB.prepare(`SELECT pr.id,pr.employee_id AS employeeId,c.username,c.password_hash AS currentHash,c.password_salt AS currentSalt,c.password_iterations AS currentIterations,e.email,COALESCE((SELECT preferred_username FROM employee_login_access_requests ar WHERE ar.employee_id=e.id AND ar.status='ready' AND (ar.expires_at IS NULL OR datetime(ar.expires_at)>datetime('now')) ORDER BY requested_at DESC LIMIT 1),(SELECT setting_value FROM app_settings WHERE setting_key='owner.bootstrap_username'),'owner') AS activationUsername,EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner') AS isOwner FROM password_reset_challenges pr JOIN employees e ON e.id=pr.employee_id LEFT JOIN employee_credentials c ON c.employee_id=pr.employee_id WHERE pr.reset_token_hash=? AND pr.verified_at IS NOT NULL AND pr.consumed_at IS NULL AND datetime(pr.reset_token_expires_at)>datetime('now') AND e.employment_status IN ('active','provisional') AND (EXISTS(SELECT 1 FROM employee_company_memberships m JOIN companies co ON co.id=m.company_id AND co.active=1 WHERE m.employee_id=e.id AND m.active=1) OR EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner')) LIMIT 1`).bind(tokenHash).first<{id:string;employeeId:string;username?:string;currentHash?:string;currentSalt?:string;currentIterations?:number;email?:string;activationUsername?:string;isOwner:number}>();if(!row)return json({error:'This password reset authorization is invalid or has expired. Start again.'},401);
+ const row=await env.DB.prepare(`SELECT pr.id,pr.employee_id AS employeeId,c.username,c.password_hash AS currentHash,c.password_salt AS currentSalt,c.password_iterations AS currentIterations,e.email,COALESCE((SELECT preferred_username FROM employee_login_access_requests ar WHERE ar.employee_id=e.id AND ar.status='ready' AND (ar.expires_at IS NULL OR datetime(ar.expires_at)>datetime('now')) ORDER BY requested_at DESC LIMIT 1),(SELECT setting_value FROM app_settings WHERE setting_key='owner.bootstrap_username'),'owner') AS activationUsername,EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner') AS isOwner FROM password_reset_challenges pr JOIN employees e ON e.id=pr.employee_id LEFT JOIN employee_credentials c ON c.employee_id=pr.employee_id WHERE pr.reset_token_hash=? AND pr.verified_at IS NOT NULL AND pr.consumed_at IS NULL AND datetime(pr.reset_token_expires_at)>datetime('now') AND e.employment_status IN ('active','provisional') AND (EXISTS(SELECT 1 FROM employee_company_memberships m JOIN companies co ON co.id=m.company_id AND co.active=1 AND ${staffPortalCompanyPredicate('co.id')} WHERE m.employee_id=e.id AND m.active=1) OR EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner')) LIMIT 1`).bind(tokenHash).first<{id:string;employeeId:string;username?:string;currentHash?:string;currentSalt?:string;currentIterations?:number;email?:string;activationUsername?:string;isOwner:number}>();if(!row)return json({error:'This password reset authorization is invalid or has expired. Start again.'},401);
  const errors=await passwordErrors(password,env);if(errors.length)return json({error:'Please update the new password before continuing.',passwordErrors:errors},400);let user=row.username||username(row.activationUsername||row.email?.split('@')[0]||'employee');if(!validUsername(user))user=`employee.${row.employeeId.slice(-8).replace(/[^a-z0-9]/gi,'').toLowerCase()}`;
  let accessGrantId:string|undefined;if(!row.username){const taken=await env.DB.prepare(`SELECT employee_id FROM employee_credentials WHERE lower(username)=lower(?) AND employee_id<>?`).bind(user,row.employeeId).first();if(taken)user=`${user.slice(0,20)}.${row.employeeId.slice(-6).replace(/[^a-z0-9]/gi,'').toLowerCase()}`;const access=await env.DB.prepare(`SELECT id FROM employee_login_access_requests WHERE employee_id=? AND status='ready' AND (expires_at IS NULL OR datetime(expires_at)>datetime('now')) ORDER BY requested_at DESC LIMIT 1`).bind(row.employeeId).first<{id:string}>();accessGrantId=access?.id;if(!accessGrantId&&!row.isOwner)return json({error:'This password reset authorization is invalid or has expired. Start again.'},401)}
  if(row.currentHash&&row.currentSalt&&row.currentIterations){const same=await passwordHash(env,password,row.currentSalt,Number(row.currentIterations));if(equal(same,row.currentHash))return json({error:'Choose a new password that is different from your current password.'},400)}
  const configuredIterations=Number(await setting(env,row.isOwner?'security.worker_safe_pbkdf2_iterations':'security.password_pbkdf2_iterations',String(row.isOwner?WORKER_SAFE_PASSWORD_ITERATIONS:310000))),iterations=row.isOwner?(Number.isFinite(configuredIterations)&&configuredIterations>=1000?Math.min(configuredIterations,20000):WORKER_SAFE_PASSWORD_ITERATIONS):(configuredIterations||310000),salt=hex(randomBytes(16)),derived=await passwordHash(env,password,salt,iterations),changedAt=new Date().toISOString(),completionId=uid('password-reset-complete'),auditId=uid('security'),eventType=row.isOwner?'owner_password_activation_completed':row.username?'password_reset_completed':'login_access_activated',details=JSON.stringify({username:user});
- const employeeStillEligible=`EXISTS(SELECT 1 FROM employees e WHERE e.id=? AND e.employment_status IN ('active','provisional') AND (EXISTS(SELECT 1 FROM employee_company_memberships m JOIN companies co ON co.id=m.company_id AND co.active=1 WHERE m.employee_id=e.id AND m.active=1) OR EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner')))`,accessStillValid=`EXISTS(SELECT 1 FROM employee_login_access_requests ar WHERE ar.id=? AND ar.employee_id=? AND ar.status='ready' AND (ar.expires_at IS NULL OR datetime(ar.expires_at)>datetime('now')))`,statements=[
+ const employeeStillEligible=`EXISTS(SELECT 1 FROM employees e WHERE e.id=? AND e.employment_status IN ('active','provisional') AND (EXISTS(SELECT 1 FROM employee_company_memberships m JOIN companies co ON co.id=m.company_id AND co.active=1 AND ${staffPortalCompanyPredicate('co.id')} WHERE m.employee_id=e.id AND m.active=1) OR EXISTS(SELECT 1 FROM employee_roles er WHERE er.employee_id=e.id AND er.role_id='role-owner')))`,accessStillValid=`EXISTS(SELECT 1 FROM employee_login_access_requests ar WHERE ar.id=? AND ar.employee_id=? AND ar.status='ready' AND (ar.expires_at IS NULL OR datetime(ar.expires_at)>datetime('now')))`,statements=[
   env.DB.prepare(`UPDATE password_reset_challenges SET consumed_at=? WHERE id=? AND employee_id=? AND reset_token_hash=? AND verified_at IS NOT NULL AND consumed_at IS NULL AND datetime(reset_token_expires_at)>datetime('now')`).bind(completionId,row.id,row.employeeId,tokenHash),
   row.username
    ?env.DB.prepare(`UPDATE employee_credentials SET password_hash=?,password_salt=?,password_algorithm='PBKDF2-SHA256',password_iterations=?,password_changed_at=?,failed_attempts=0,locked_until=NULL,updated_at=CURRENT_TIMESTAMP WHERE employee_id=? AND password_hash=? AND password_salt=? AND password_iterations=? AND EXISTS(SELECT 1 FROM password_reset_challenges WHERE id=? AND employee_id=? AND consumed_at=?) AND ${employeeStillEligible}`).bind(derived,salt,iterations,changedAt,row.employeeId,row.currentHash,row.currentSalt,row.currentIterations,row.id,row.employeeId,completionId,row.employeeId)
