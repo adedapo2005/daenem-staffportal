@@ -56,6 +56,11 @@ jobs:
       - name: Company-scoped access contract
         run: npm run check:company-scoped-access
 
+      - name: Employee Self Service authorization and audit regressions
+        run: |
+          node scripts/test-ess-explicit-company-binding.mjs
+          node scripts/test-ess-notification-review-audit.mjs
+
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
 
