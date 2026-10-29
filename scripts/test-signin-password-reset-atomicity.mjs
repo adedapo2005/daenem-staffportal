@@ -9,8 +9,11 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const module = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(module, module.exports, (specifier) => {
-  assert.equal(specifier, './credential-security');
-  return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './staffportal-account-scope') return {
+    staffPortalCompanyPredicate: (column) => `${column} IN ('company-printing','company-bakery','company-autos','company-logistics','company-properties')`,
+  };
+  throw new Error(`Unexpected auth-refinement dependency: ${specifier}`);
 });
 const { routeAuthRefinement } = module.exports;
 const pepper = 'password-reset-atomicity-fixture';
@@ -24,7 +27,7 @@ class ResetFixture {
     this.challenge = { id: 'reset-a', employeeId: 'employee-a', hash: tokenHash,
       verified: true, consumedAt: null, expired };
     this.employee = { id: 'employee-a', status: 'active' };
-    this.memberships = [{ employeeId: 'employee-a', companyId: 'company-a', active: true, companyActive: true }];
+    this.memberships = [{ employeeId: 'employee-a', companyId: 'company-printing', active: true, companyActive: true }];
     this.roles = { owner };
     this.credential = credential ? { username: 'ada.staff', hash: 'old-hash', salt: 'old-salt', iterations: 1000 } : null;
     this.sessions = [

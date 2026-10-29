@@ -2,6 +2,7 @@ import { sessionCookie, type AuthEnv } from './auth';
 import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth';
 import { startPasswordRecoveryWhatsApp, verifyPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings';
+import { staffPortalCompanyPredicate } from './staffportal-account-scope';
 
 interface EmailBinding {
   send(message: {
@@ -915,11 +916,7 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
   const identifier = String(body.identifier || '').trim().toLowerCase();
   const companyCode = String(body.companyCode || '').trim();
   if (!identifier) return json({ error: 'Enter your username or email address.' }, 400);
-  const recoveryPolicy = await recoveryPolicyForCompany(env, companyCode);
-  if (!recoveryPolicy) return json({ error: 'Select a valid company.' }, 400);
-  if (!recoveryMethods(recoveryPolicy.policy).includes('email')) {
-    return json({ error: 'Email password recovery is not enabled for this company.', code: 'RECOVERY_METHOD_NOT_ALLOWED' }, 409);
-  }
+  // Resolve recovery eligibility from active backend memberships, not a UI company selector.
   const pepperFailure = await requireProductionPepper(env, request, 'configuration');
   if (pepperFailure) return pepperFailure;
   if ((!env.EMAIL || typeof env.EMAIL.send !== 'function') && env.APP_STAGE !== 'bootstrap') {
@@ -928,32 +925,71 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
 
   const recent = await env.DB.prepare(`
     SELECT COUNT(*) AS count FROM security_logs
-    WHERE ip_address = ? AND event_type = 'password_reset_requested'
+    WHERE ip_address = ? AND event_type IN ('password_reset_requested','login_access_activation_requested')
       AND datetime(occurred_at) >= datetime('now','-15 minutes')
   `).bind(requestIp(request) || '').first<{ count: number }>();
   if (Number(recent?.count || 0) >= 5) return json({ error: 'Too many recovery requests. Wait 15 minutes and try again.' }, 429);
 
   const challengeId = uid('password-reset');
-  const employee = await env.DB.prepare(`
-    SELECT e.id, e.email, e.display_name AS displayName
+  // Optional legacy companyCode can only narrow active memberships; never grant access.
+  const membershipRows = await env.DB.prepare(`
+    SELECT e.id,e.email,e.display_name AS displayName,co.code AS companyCode
     FROM employee_credentials c
-    JOIN employees e ON e.id = c.employee_id
-    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1
-    WHERE (LOWER(c.username) = LOWER(?) OR LOWER(e.email) = LOWER(?))
+    JOIN employees e ON e.id=c.employee_id
+    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
+    JOIN companies co ON co.id=m.company_id AND co.active=1
+      AND ${staffPortalCompanyPredicate('co.id')}
+    WHERE (lower(c.username)=lower(?) OR lower(e.email)=lower(?))
       AND e.employment_status IN ('active','provisional')
-    LIMIT 1
-  `).bind(recoveryPolicy.company.id, identifier, identifier).first<{ id: string; email?: string; displayName: string }>();
+      AND (?='' OR lower(co.code)=lower(?))
+    ORDER BY m.is_primary DESC,co.code ASC
+    LIMIT 50
+  `).bind(identifier,identifier,companyCode,companyCode)
+    .all<{ id:string;email?:string;displayName:string;companyCode:string }>();
+  const candidates=membershipRows.results||[];
+  const employeeIds=new Set(candidates.map(row=>row.id));
+  let employee: {id:string;email?:string;displayName:string;companyCode:string}|null=null;
+  // Never silently select between two different employee accounts.
+  if(employeeIds.size===1){
+    for(const row of candidates){
+      if(!row.email)continue;
+      const scoped=await recoveryPolicyForCompany(env,row.companyCode);
+      if(scoped&&recoveryMethods(scoped.policy).includes('email')){
+        employee={id:row.id,email:row.email,displayName:row.displayName,companyCode:row.companyCode};
+        break;
+      }
+    }
+  }
 
   if (employee?.email) {
     const code = randomCode();
     const digest = await codeHash(env, 'password-reset', challengeId, code);
     const minutes = Number(await setting(env, 'security.password_reset_code_minutes', '10')) || 10;
     const expiresAt = new Date(Date.now() + minutes * 60_000).toISOString();
-    await env.DB.prepare(`
+    const insertResult = await env.DB.prepare(`
       INSERT INTO password_reset_challenges (
         id, employee_id, code_hash, requested_ip, requested_user_agent, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(challengeId, employee.id, digest, requestIp(request) || null, request.headers.get('user-agent'), expiresAt).run();
+      )
+      SELECT ?, ?, ?, ?, ?, ?
+      WHERE EXISTS (
+        SELECT 1 FROM employee_credentials c
+        JOIN employees e ON e.id=c.employee_id
+        JOIN employee_company_memberships m ON m.employee_id=e.id AND m.active=1
+        JOIN companies co ON co.id=m.company_id AND co.active=1
+          AND ${staffPortalCompanyPredicate('co.id')}
+        WHERE e.id=? AND lower(e.email)=lower(?)
+          AND e.employment_status IN ('active','provisional')
+          AND lower(co.code)=lower(?)
+          AND (lower(c.username)=lower(?) OR lower(e.email)=lower(?))
+      )
+    `).bind(
+      challengeId, employee.id, digest, requestIp(request) || null,
+      request.headers.get('user-agent'), expiresAt,
+      employee.id, employee.email, employee.companyCode, identifier, identifier,
+    ).run();
+    if (Number(insertResult.meta?.changes || 0) !== 1) {
+      employee = null; // Company access or employee eligibility changed before the write.
+    } else {
 
     try {
       const delivery = await sendCode(env, { to: employee.email, name: employee.displayName, code, purpose: 'reset' });
@@ -968,6 +1004,7 @@ async function forgotPassword(request: Request, env: PasswordAuthEnv) {
     } catch {
       await env.DB.prepare('DELETE FROM password_reset_challenges WHERE id = ?').bind(challengeId).run();
     }
+    } // successful, authorized challenge write
   }
 
   await logSecurity(env, request, 'password_reset_requested', { result: 'generic', details: { accountMatched: Boolean(employee) } });
