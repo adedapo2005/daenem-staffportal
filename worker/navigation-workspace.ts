@@ -92,24 +92,29 @@ const json = (body: Record<string, unknown> | unknown[], status = 200) => new Re
 });
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 const isOwner = (context: SessionContext) => context.roles.some((role) => role.code === 'owner');
-const companyAllowed = (context: SessionContext, companyId: string) => isOwner(context) || context.companies.some((company) => company.id === companyId);
+const companyAllowed = (context: SessionContext, companyId: string) => context.companies.some((company) => company.id === companyId);
 const hasAnyCompanyPermission = (context: EnhancedSessionContext,code:string,minimum:AccessLevel='view',companyId?:string) => {
   if (!companyId && hasPermission(context,code,minimum)) return true;
   const selected = companyId ? [context.companyPermissions[companyId] || {}] : Object.values(context.companyPermissions);
   return selected.some((permissions) => levels.indexOf(permissions[code] || 'none') >= levels.indexOf(minimum));
 };
 const canManageStudio = (context: EnhancedSessionContext) => isOwner(context) || hasAnyCompanyPermission(context,'navigation.studio','manage');
-const canAssign = (context: EnhancedSessionContext,companyId?:string) => isOwner(context) || hasAnyCompanyPermission(context,'navigation.assign','manage',companyId) || hasAnyCompanyPermission(context,'roles.access','manage',companyId) || hasAnyCompanyPermission(context,'users.access','manage',companyId);
+const canAssign = (context: EnhancedSessionContext,companyId?:string) => hasAnyCompanyPermission(context,'navigation.assign','manage',companyId) || hasAnyCompanyPermission(context,'roles.access','manage',companyId) || hasAnyCompanyPermission(context,'users.access','manage',companyId);
 
 async function setting(env: Env, key: string, fallback = '') {
   const row = await env.DB.prepare('SELECT setting_value value FROM app_settings WHERE setting_key=?').bind(key).first<{ value: string }>();
   return row?.value ?? fallback;
 }
 
-async function saveSetting(env: Env, key: string, value: string, type = 'string') {
-  await env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP)
+function settingWrite(env: Env, key: string, value: string, type = 'string') {
+  return env.DB.prepare(`INSERT INTO app_settings(setting_key,setting_value,value_type,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP)
     ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type=excluded.value_type,updated_at=CURRENT_TIMESTAMP`)
-    .bind(key,value,type).run();
+    .bind(key,value,type);
+}
+
+function requireAudit(env: Env, auditId: string) {
+  return env.DB.prepare(`SELECT CASE WHEN EXISTS(SELECT 1 FROM audit_logs WHERE id=?) THEN 1
+    ELSE json_extract('required navigation audit row missing','$') END AS audit_required`).bind(auditId);
 }
 
 function visibleFor(context: EnhancedSessionContext, item: NavigationItem) {
@@ -174,12 +179,16 @@ async function savePreference(request: Request, env: Env, context: EnhancedSessi
   const itemOrder = (body.itemOrder || []).filter((value,index,array) => validKeys.has(value) && array.indexOf(value) === index);
   const pinnedItems = (body.pinnedItems || []).filter((value,index,array) => validKeys.has(value) && array.indexOf(value) === index);
   const existing = await env.DB.prepare('SELECT style_id styleId,group_order_json groupOrderJson,item_order_json itemOrderJson,pinned_items_json pinnedItemsJson FROM employee_navigation_preferences WHERE employee_id=?').bind(targetEmployeeId).first<Record<string,string>>();
-  await env.DB.prepare(`INSERT INTO employee_navigation_preferences(employee_id,style_id,group_order_json,item_order_json,pinned_items_json,updated_by,updated_at)
+  const auditId=uid('audit');
+  try { await env.DB.batch([
+    env.DB.prepare(`INSERT INTO employee_navigation_preferences(employee_id,style_id,group_order_json,item_order_json,pinned_items_json,updated_by,updated_at)
     VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)
     ON CONFLICT(employee_id) DO UPDATE SET style_id=excluded.style_id,group_order_json=excluded.group_order_json,item_order_json=excluded.item_order_json,pinned_items_json=excluded.pinned_items_json,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
-    .bind(targetEmployeeId,body.styleId || existing?.styleId || 'guided-groups',JSON.stringify(body.groupOrder ?? parseList(existing?.groupOrderJson)),JSON.stringify(body.itemOrder ?? parseList(existing?.itemOrderJson)),JSON.stringify(body.pinnedItems ?? parseList(existing?.pinnedItemsJson)),context.employee.id).run();
-  await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
-    VALUES(?,?,'navigation','save_preference','employee',?,?,'web')`).bind(uid('audit'),context.employee.id,targetEmployeeId,JSON.stringify({styleId:body.styleId||existing?.styleId||'guided-groups',groupOrder,itemOrder,pinnedItems})).run();
+    .bind(targetEmployeeId,body.styleId || existing?.styleId || 'guided-groups',JSON.stringify(body.groupOrder ?? parseList(existing?.groupOrderJson)),JSON.stringify(body.itemOrder ?? parseList(existing?.itemOrderJson)),JSON.stringify(body.pinnedItems ?? parseList(existing?.pinnedItemsJson)),context.employee.id),
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+      VALUES(?,?,'navigation','save_preference','employee',?,?,'web')`).bind(auditId,context.employee.id,targetEmployeeId,JSON.stringify({styleId:body.styleId||existing?.styleId||'guided-groups',groupOrder,itemOrder,pinnedItems})),
+    requireAudit(env,auditId),
+  ]); } catch { return json({error:'Navigation preference was not saved or audited.'},409); }
   return json({ok:true,employeeId:targetEmployeeId,forcedStyle:forced || undefined});
 }
 
@@ -189,21 +198,31 @@ async function savePolicy(request: Request, env: Env, context: EnhancedSessionCo
   try { body = await request.json(); } catch { return json({error:'Invalid navigation policy.'},400); }
   if (body.defaultStyle !== undefined && !styleIds.includes(body.defaultStyle as typeof styleIds[number])) return json({error:'Select an available default style.'},400);
   if (body.forcedStyle && !styleIds.includes(body.forcedStyle as typeof styleIds[number])) return json({error:'Select an available forced style.'},400);
-  if (body.defaultStyle !== undefined) await saveSetting(env,'navigation.default_style',body.defaultStyle);
-  if (body.forcedStyle !== undefined) await saveSetting(env,'navigation.forced_style',body.forcedStyle || '');
-  if (body.allowEmployeeChoice !== undefined) await saveSetting(env,'navigation.allow_employee_choice',String(body.allowEmployeeChoice),'boolean');
-  const policy = {
-    defaultStyle:await setting(env,'navigation.default_style','guided-groups'),
-    forcedStyle:(await setting(env,'navigation.forced_style','')) || undefined,
-    allowEmployeeChoice:(await setting(env,'navigation.allow_employee_choice','true')) === 'true',
+  const [currentDefault,currentForced,currentAllowChoice]=await Promise.all([
+    setting(env,'navigation.default_style','guided-groups'),
+    setting(env,'navigation.forced_style',''),
+    setting(env,'navigation.allow_employee_choice','true'),
+  ]);
+  const policy={
+    defaultStyle:body.defaultStyle ?? currentDefault,
+    forcedStyle:(body.forcedStyle === undefined ? currentForced : body.forcedStyle) || undefined,
+    allowEmployeeChoice:body.allowEmployeeChoice ?? currentAllowChoice === 'true',
   };
-  await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
-    VALUES(?,?,'navigation','update_group_policy','policy','group',?,'web')`).bind(uid('audit'),context.employee.id,JSON.stringify(policy)).run();
+  const writes=[];
+  if (body.defaultStyle !== undefined) writes.push(settingWrite(env,'navigation.default_style',body.defaultStyle));
+  if (body.forcedStyle !== undefined) writes.push(settingWrite(env,'navigation.forced_style',body.forcedStyle || ''));
+  if (body.allowEmployeeChoice !== undefined) writes.push(settingWrite(env,'navigation.allow_employee_choice',String(body.allowEmployeeChoice),'boolean'));
+  const auditId=uid('audit');
+  writes.push(env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+    VALUES(?,?,'navigation','update_group_policy','policy','group',?,'web')`).bind(auditId,context.employee.id,JSON.stringify(policy)));
+  writes.push(requireAudit(env,auditId));
+  try { await env.DB.batch(writes); } catch { return json({error:'Navigation policy was not saved or audited.'},409); }
   return json({ok:true,policy});
 }
 
 async function accessOverview(request: Request, env: Env, context: EnhancedSessionContext) {
-  const companyId = String(new URL(request.url).searchParams.get('companyId') || context.companies[0]?.id || '');
+  const companyId = String(new URL(request.url).searchParams.get('companyId') || '');
+  if (!companyId) return json({error:'Company ID is required.'},400);
   if (!companyId || !companyAllowed(context,companyId)) return json({error:'Company access is not assigned.'},403);
   if (!canAssign(context,companyId)) return json({error:'Authorized Workspace management permission is required for this company.'},403);
   const permissionCodes = [...new Set(navigationItems.map((item) => item.permissionCode).filter(Boolean))] as string[];
@@ -242,7 +261,7 @@ async function assign(request: Request, env: Env, context: EnhancedSessionContex
   try { body = await request.json(); } catch { return json({error:'Invalid workspace assignment.'},400); }
   const companyId = String(body.companyId || ''), targetType = body.targetType, targetId = String(body.targetId || ''), level = body.accessLevel as AccessLevel;
   const item = navigationItems.find((candidate) => candidate.key === body.itemKey && candidate.permissionCode);
-  if (!companyId || !companyAllowed(context,companyId) || !targetType || !targetId || !item || !levels.includes(level)) return json({error:'Company, target, workspace item and access level are required.'},400);
+  if (!companyId || !companyAllowed(context,companyId) || !['employee','role'].includes(String(targetType)) || !targetId || !item || !levels.includes(level) || (body.clear !== undefined && typeof body.clear !== 'boolean')) return json({error:'Company, target, workspace item and access level are required.'},400);
   if (!canAssign(context,companyId)) return json({error:'Authorized Workspace management permission is required for this company.'},403);
   const reason = String(body.reason || '').trim();
   if (reason.length < 3) return json({error:'Provide a short reason for this access assignment.'},400);
@@ -250,6 +269,8 @@ async function assign(request: Request, env: Env, context: EnhancedSessionContex
   const permission = await env.DB.prepare('SELECT id,code FROM permissions WHERE code=?').bind(item.permissionCode).first<{id:string;code:string}>();
   if (!permission) return json({error:`The ${item.label} permission is not configured.`},409);
   let oldLevel: AccessLevel = 'none';
+  const writes=[];
+  const changeId=uid('nav-change'),auditId=uid('audit');
   if (targetType === 'role') {
     const role = await env.DB.prepare(`SELECT id,code,company_id companyId FROM roles WHERE id=? AND active=1 AND (company_id=? OR company_id IS NULL)`).bind(targetId,companyId).first<{id:string;code:string;companyId?:string|null}>();
     if (!role) return json({error:'Role not found for this company.'},404);
@@ -257,31 +278,33 @@ async function assign(request: Request, env: Env, context: EnhancedSessionContex
     if (!role.companyId && !isOwner(context)) return json({error:'Only the Owner can change a Group-wide role. Use an employee override or a company-specific role.'},403);
     const current = await env.DB.prepare('SELECT access_level accessLevel FROM role_permissions WHERE role_id=? AND permission_id=?').bind(targetId,permission.id).first<{accessLevel:AccessLevel}>();
     oldLevel = current?.accessLevel || 'none';
-    await env.DB.prepare('DELETE FROM role_permissions WHERE role_id=? AND permission_id=?').bind(targetId,permission.id).run();
-    if (level !== 'none') await env.DB.prepare('INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,?,?)').bind(uid('role-permission'),targetId,permission.id,level).run();
+    writes.push(env.DB.prepare('DELETE FROM role_permissions WHERE role_id=? AND permission_id=?').bind(targetId,permission.id));
+    if (level !== 'none') writes.push(env.DB.prepare('INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,?,?)').bind(uid('role-permission'),targetId,permission.id,level));
   } else {
     const employee = await env.DB.prepare(`SELECT e.id,MAX(CASE WHEN r.code='owner' THEN 1 ELSE 0 END) isOwner FROM employees e JOIN employee_company_memberships m ON m.employee_id=e.id LEFT JOIN employee_roles er ON er.employee_id=e.id AND er.company_id=m.company_id LEFT JOIN roles r ON r.id=er.role_id WHERE e.id=? AND m.company_id=? AND m.active=1 GROUP BY e.id`).bind(targetId,companyId).first<{id:string;isOwner:number}>();
     if (!employee) return json({error:'Employee not found for this company.'},404);
     if (employee.isOwner) return json({error:'Owner / Super Admin navigation and permissions are protected.'},403);
     const current = await env.DB.prepare('SELECT access_level accessLevel FROM employee_permission_overrides_v2 WHERE employee_id=? AND company_id=? AND permission_id=?').bind(targetId,companyId,permission.id).first<{accessLevel:AccessLevel}>();
     oldLevel = current?.accessLevel || 'none';
-    await env.DB.batch([
+    writes.push(
       env.DB.prepare('DELETE FROM employee_permission_overrides_v2 WHERE employee_id=? AND company_id=? AND permission_id=?').bind(targetId,companyId,permission.id),
       env.DB.prepare('DELETE FROM employee_permission_overrides WHERE employee_id=? AND company_id=? AND permission_id=?').bind(targetId,companyId,permission.id),
-    ]);
-    if(!body.clear)await env.DB.batch([
+    );
+    if(!body.clear) writes.push(
       env.DB.prepare(`INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by,expires_at)
         VALUES(?,?,?,?,?,?,?,?)`).bind(uid('permission-override'),targetId,companyId,permission.id,level,reason,context.employee.id,body.expiresAt || null),
       env.DB.prepare(`INSERT INTO employee_permission_overrides(id,employee_id,company_id,permission_id,access_level,reason,granted_by,expires_at)
         VALUES(?,?,?,?,?,?,?,?)`).bind(uid('permission-compat'),targetId,companyId,permission.id,level,reason,context.employee.id,body.expiresAt || null),
-    ]);
+    );
   }
-  await env.DB.batch([
+  writes.push(
     env.DB.prepare(`INSERT INTO navigation_access_changes(id,company_id,target_type,target_id,item_key,permission_code,old_access_level,new_access_level,reason,changed_by)
-      VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(uid('nav-change'),companyId,targetType,targetId,item.key,permission.code,oldLevel,body.clear?'none':level,reason,context.employee.id),
+      VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(changeId,companyId,targetType,targetId,item.key,permission.code,oldLevel,body.clear?'none':level,reason,context.employee.id),
     env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,before_json,after_json,source)
-      VALUES(?,?,?,'navigation','workspace_assignment',?,?,?,?,?,'web')`).bind(uid('audit'),context.employee.id,companyId,targetType,targetId,JSON.stringify({itemKey:item.key,permissionCode:permission.code,accessLevel:oldLevel}),JSON.stringify({itemKey:item.key,permissionCode:permission.code,accessLevel:level,reason})),
-  ]);
+      VALUES(?,?,?,'navigation','workspace_assignment',?,?,?,?,'web')`).bind(auditId,context.employee.id,companyId,targetType,targetId,JSON.stringify({itemKey:item.key,permissionCode:permission.code,accessLevel:oldLevel}),JSON.stringify({itemKey:item.key,permissionCode:permission.code,accessLevel:level,reason})),
+    requireAudit(env,auditId),
+  );
+  try { await env.DB.batch(writes); } catch { return json({error:'Workspace assignment was not saved or audited.'},409); }
   return json({ok:true,targetType,targetId,itemKey:item.key,permissionCode:permission.code,oldAccessLevel:oldLevel,accessLevel:body.clear?null:level,cleared:Boolean(body.clear)});
 }
 
