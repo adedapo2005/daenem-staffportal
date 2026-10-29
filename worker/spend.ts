@@ -949,8 +949,9 @@ async function approvals(request: Request, env: SpendEnv, context: SessionContex
 
 async function bootstrap(request: Request, env: SpendEnv, context: SessionContext) {
   const url = new URL(request.url);
-  const companyId = safeText(url.searchParams.get('companyId'), 160) || context.companies.find((company) => company.primary)?.id || context.companies[0]?.id || '';
-  if (!companyId || !companyInScope(context, companyId)) return error('Company access is not assigned.', 403);
+  const companyId = safeText(url.searchParams.get('companyId'), 160);
+  if (!companyId) return error('Company scope is required.', 400);
+  if (!companyInScope(context, companyId)) return error('Company access is not assigned.', 403);
   if (!can(context, 'expense.requests', 'create', companyId) && !can(context, 'expense.own', 'view', companyId)) return error('Expense access is not assigned.', 403);
   const costCenterScope = context.companies.map((company) => company.id);
   const costCenterQuery = owner(context)
