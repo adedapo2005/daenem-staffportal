@@ -10,7 +10,9 @@ function Launcher(){
  useEffect(() => {
   let active = true;
   let latestRequest = 0;
+  let logoutStarted = false;
   const refresh = async () => {
+   if (logoutStarted) return;
    const request = ++latestRequest;
    try {
     const response = await api<{ authenticated: boolean; context?: WorkforceContext }>('/api/auth/me');
@@ -31,6 +33,7 @@ function Launcher(){
   // Portal logout emits before the server logout call completes.
   // Clear locally first; do not revalidate that still-live session mid-logout.
   const authChanged = () => {
+   logoutStarted = true;
    latestRequest++;
    setContext(null);
    setOpen(false);
