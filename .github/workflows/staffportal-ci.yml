@@ -61,6 +61,11 @@ jobs:
           node scripts/test-ess-explicit-company-binding.mjs
           node scripts/test-ess-notification-review-audit.mjs
 
+      - name: Spend approval atomicity and bootstrap scope regressions
+        run: |
+          node scripts/test-spend-approval-transition-atomicity.mjs
+          node scripts/test-spend-explicit-bootstrap-scope.mjs
+
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
 

@@ -119,6 +119,31 @@ function safeMetadata(request: Request, context: SessionContext, details: Record
   return metadata;
 }
 
+function auditStatement(
+  env: SpendEnv,
+  request: Request,
+  context: SessionContext,
+  action: string,
+  entityType: string,
+  entityId: string | undefined,
+  companyId: string | undefined,
+  details: Record<string, unknown> = {},
+  reason?: string,
+  id = uid('audit'),
+) {
+  const metadata = safeMetadata(request, context, details);
+  return {
+    id,
+    statement: env.DB.prepare(`
+    INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,reason,source,request_id)
+    VALUES(?,?,?,?,?,?,?,?,?,'web',?)
+  `).bind(
+    id, context.employee.id, companyId || null, 'spend', action, entityType, entityId || null,
+    JSON.stringify(metadata), reason || null, requestId(request) || null,
+    ),
+  };
+}
+
 async function audit(
   env: SpendEnv,
   request: Request,
@@ -130,14 +155,35 @@ async function audit(
   details: Record<string, unknown> = {},
   reason?: string,
 ) {
-  const metadata = safeMetadata(request, context, details);
-  await env.DB.prepare(`
-    INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,reason,source,request_id)
-    VALUES(?,?,?,?,?,?,?,?,?,'web',?)
+  await auditStatement(env, request, context, action, entityType, entityId, companyId, details, reason).statement.run();
+}
+
+function eventStatement(
+  env: SpendEnv,
+  request: Request,
+  context: SessionContext,
+  expenseRequestId: string,
+  companyId: string,
+  action: string,
+  previousStatus: string | undefined,
+  nextStatus: string | undefined,
+  reason: string | undefined,
+  details: Record<string, unknown> = {},
+  id = uid('spend-event'),
+) {
+  return {
+    id,
+    statement: env.DB.prepare(`
+    INSERT INTO spend_expense_events(
+      id,expense_request_id,actor_employee_id,company_id,action,previous_status,next_status,
+      reason,request_id,source,captured_at,metadata_json
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
   `).bind(
-    uid('audit'), context.employee.id, companyId || null, 'spend', action, entityType, entityId || null,
-    JSON.stringify(metadata), reason || null, requestId(request) || null,
-  ).run();
+    id, expenseRequestId, context.employee.id, companyId, action,
+    previousStatus || null, nextStatus || null, reason || null, requestId(request) || null,
+    request.url.includes('/api/offline/sync') ? 'offline' : 'web', parseIso(details.capturedAt) || null, JSON.stringify(safeMetadata(request, context, details)),
+    ),
+  };
 }
 
 async function event(
@@ -152,16 +198,7 @@ async function event(
   reason: string | undefined,
   details: Record<string, unknown> = {},
 ) {
-  await env.DB.prepare(`
-    INSERT INTO spend_expense_events(
-      id,expense_request_id,actor_employee_id,company_id,action,previous_status,next_status,
-      reason,request_id,source,captured_at,metadata_json
-    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
-  `).bind(
-    uid('spend-event'), expenseRequestId, context.employee.id, companyId, action,
-    previousStatus || null, nextStatus || null, reason || null, requestId(request) || null,
-    request.url.includes('/api/offline/sync') ? 'offline' : 'web', parseIso(details.capturedAt) || null, JSON.stringify(safeMetadata(request, context, details)),
-  ).run();
+  await eventStatement(env, request, context, expenseRequestId, companyId, action, previousStatus, nextStatus, reason, details).statement.run();
 }
 
 async function deny(env: SpendEnv, request: Request, context: SessionContext, companyId: string | undefined, message: string, action = 'permission_denied') {
@@ -656,6 +693,122 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
   return json({ ok: true, request: await serializeRequest(env, context, next, false), deduplicated: Boolean(existing && safeText(request.headers.get('idempotency-key'), 200)) }, existing ? 200 : 201);
 }
 
+async function commitApprovalAction(
+  request: Request,
+  env: SpendEnv,
+  context: SessionContext,
+  expenseRequestId: string,
+  companyId: string,
+  currentStatus: string,
+  nextStatus: string,
+  approvalStatus: string,
+  approvalId: string,
+  action: string,
+  reason: string | undefined,
+  details: Record<string, unknown>,
+) {
+  const auditId = uid('audit');
+  const eventId = uid('spend-event');
+  const auditMetadata = safeMetadata(request, context, details);
+  const eventMetadata = safeMetadata(request, context, details);
+  const auditAction = action === 'approve' ? 'expense_request_approved'
+    : nextStatus === 'returned' ? 'expense_request_returned' : 'expense_request_rejected';
+  const eventAction = action === 'approve' ? 'request_approved'
+    : nextStatus === 'returned' ? 'request_returned' : 'request_rejected';
+  const results = await env.DB.batch([
+    // Insert the operation-specific audit first. Every mutation below requires it,
+    // so a silently ignored audit cannot leave the request changed.
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,reason,source,request_id)
+      SELECT ?,?,?, 'spend',?,'expense_request',?,?,?, 'web',?
+      WHERE EXISTS(SELECT 1 FROM spend_expense_approvals WHERE id=? AND expense_request_id=? AND status='pending')
+        AND EXISTS(SELECT 1 FROM spend_expense_requests WHERE id=? AND status=?)`).bind(
+      auditId, context.employee.id, companyId, auditAction, expenseRequestId, JSON.stringify(auditMetadata), reason || null,
+      requestId(request) || null, approvalId, expenseRequestId, expenseRequestId, currentStatus,
+    ),
+    env.DB.prepare(`UPDATE spend_expense_approvals SET status=?,approver_employee_id=?,reason=?,acted_at=CURRENT_TIMESTAMP
+      WHERE id=? AND expense_request_id=? AND status='pending' AND EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`).bind(
+      approvalStatus, context.employee.id, reason || null, approvalId, expenseRequestId, auditId,
+    ),
+    env.DB.prepare(`UPDATE spend_expense_requests SET status=?,approved_at=CASE WHEN ?='approved' THEN CURRENT_TIMESTAMP ELSE approved_at END,updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND status=? AND EXISTS(SELECT 1 FROM spend_expense_approvals WHERE id=? AND status=? AND approver_employee_id=?) AND EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`).bind(
+      nextStatus, nextStatus, expenseRequestId, currentStatus, approvalId, approvalStatus, context.employee.id, auditId,
+    ),
+    env.DB.prepare(`INSERT INTO spend_expense_events(id,expense_request_id,actor_employee_id,company_id,action,previous_status,next_status,reason,request_id,source,captured_at,metadata_json)
+      SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM spend_expense_requests WHERE id=? AND status=?)
+        AND EXISTS(SELECT 1 FROM spend_expense_approvals WHERE id=? AND status=? AND approver_employee_id=?)
+        AND EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`).bind(
+      eventId, expenseRequestId, context.employee.id, companyId, eventAction, currentStatus, nextStatus, reason || null,
+      requestId(request) || null, request.url.includes('/api/offline/sync') ? 'offline' : 'web', parseIso(details.capturedAt) || null,
+      JSON.stringify(eventMetadata), expenseRequestId, nextStatus, approvalId, approvalStatus, context.employee.id, auditId,
+    ),
+    env.DB.prepare(`SELECT json_extract(CASE
+      WHEN EXISTS(SELECT 1 FROM audit_logs WHERE id=?)
+       AND EXISTS(SELECT 1 FROM spend_expense_requests WHERE id=? AND status=?)
+       AND EXISTS(SELECT 1 FROM spend_expense_approvals WHERE id=? AND status=? AND approver_employee_id=?)
+       AND EXISTS(SELECT 1 FROM spend_expense_events WHERE id=?) THEN '{"changed":1}'
+      WHEN NOT EXISTS(SELECT 1 FROM audit_logs WHERE id=?) THEN '{"changed":0}'
+      ELSE '{' END,'$.changed') AS changed`).bind(
+      auditId, expenseRequestId, nextStatus, approvalId, approvalStatus, context.employee.id, eventId, auditId,
+    ),
+  ]);
+  return Number((results.at(-1) as { results?: Array<{ changed?: number }> })?.results?.[0]?.changed || 0) === 1;
+}
+
+async function commitSubmitAction(
+  request: Request,
+  env: SpendEnv,
+  context: SessionContext,
+  expenseRequestId: string,
+  companyId: string,
+  currentStatus: string,
+  approvalRules: Array<Record<string, unknown>>,
+  reason: string | undefined,
+  details: Record<string, unknown>,
+) {
+  const auditId = uid('audit');
+  const eventRow = eventStatement(env, request, context, expenseRequestId, companyId, 'request_submitted', currentStatus, 'submitted', reason, details);
+  const statements: D1PreparedStatement[] = [
+    env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,reason,source,request_id)
+      SELECT ?,?,?, 'spend','expense_request_submitted','expense_request',?,?,NULL,?,?
+      WHERE EXISTS(SELECT 1 FROM spend_expense_requests WHERE id=? AND company_id=? AND status=?)`)
+      .bind(auditId, context.employee.id, companyId, expenseRequestId, JSON.stringify(safeMetadata(request, context, details)),
+        request.url.includes('/api/offline/sync') ? 'offline' : 'web', requestId(request) || null, expenseRequestId, companyId, currentStatus),
+    env.DB.prepare(`UPDATE spend_expense_requests
+      SET status='submitted',submitted_at=COALESCE(submitted_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND company_id=? AND status=? AND status IN ('draft','returned')
+        AND EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`)
+      .bind(expenseRequestId, companyId, currentStatus, auditId),
+    env.DB.prepare(`DELETE FROM spend_expense_approvals WHERE expense_request_id=? AND EXISTS(
+      SELECT 1 FROM spend_expense_requests WHERE id=? AND company_id=? AND status='submitted')
+      AND EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`)
+      .bind(expenseRequestId, expenseRequestId, companyId, auditId),
+  ];
+  for (const rule of approvalRules) {
+    statements.push(env.DB.prepare(`INSERT OR IGNORE INTO spend_expense_approvals(id,expense_request_id,rule_id,step_no,approver_role_code,status)
+      SELECT ?,?,?,?,?,'pending' WHERE EXISTS(
+        SELECT 1 FROM spend_expense_requests WHERE id=? AND company_id=? AND status='submitted')
+        AND EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`)
+      .bind(uid('expense-approval'), expenseRequestId, rule.id || null, Number(rule.stepNo || 1), safeText(rule.approverRoleCode, 80) || 'manager', expenseRequestId, companyId, auditId));
+  }
+  statements.push(env.DB.prepare(`INSERT INTO spend_expense_events(
+      id,expense_request_id,actor_employee_id,company_id,action,previous_status,next_status,reason,request_id,source,captured_at,metadata_json)
+    SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(
+      SELECT 1 FROM audit_logs WHERE id=?) AND EXISTS(
+      SELECT 1 FROM spend_expense_requests WHERE id=? AND company_id=? AND status='submitted')`)
+    .bind(eventRow.id, expenseRequestId, context.employee.id, companyId, 'request_submitted', currentStatus, 'submitted', reason || null,
+      requestId(request) || null, request.url.includes('/api/offline/sync') ? 'offline' : 'web', parseIso(details.capturedAt) || null,
+      JSON.stringify(safeMetadata(request, context, details)), auditId, expenseRequestId, companyId));
+  statements.push(env.DB.prepare(`SELECT json_extract(CASE
+    WHEN EXISTS(SELECT 1 FROM audit_logs WHERE id=?)
+      AND EXISTS(SELECT 1 FROM spend_expense_events WHERE id=?)
+      AND EXISTS(SELECT 1 FROM spend_expense_requests WHERE id=? AND company_id=? AND status='submitted') THEN '{"changed":1}'
+    WHEN NOT EXISTS(SELECT 1 FROM audit_logs WHERE id=?) THEN '{"changed":0}'
+    ELSE '{' END,'$.changed') AS changed`)
+    .bind(auditId, eventRow.id, expenseRequestId, companyId, auditId));
+  const results = await env.DB.batch(statements);
+  return Number((results.at(-1) as { results?: Array<{ changed?: number }> })?.results?.[0]?.changed || 0) === 1;
+}
+
 async function actionExpense(request: Request, env: SpendEnv, context: SessionContext, id: string) {
   let body: Record<string, unknown>;
   try { body = parseObject(await request.json()); } catch { return error('Invalid expense action.', 400); }
@@ -673,13 +826,11 @@ async function actionExpense(request: Request, env: SpendEnv, context: SessionCo
     const rule = await evidenceRequirement(env, String(current.categoryId), companyId, Number(current.totalKobo));
     const evidence = await env.DB.prepare(`SELECT COUNT(*) AS count FROM spend_expense_evidence WHERE expense_request_id=?`).bind(id).first<{ count: number }>();
     if (rule.required && Number(evidence?.count || 0) < rule.minimumCount && !safeText(body.missingEvidenceReason, 300)) return error('Attach required evidence or provide a missing-evidence reason.', 422, { errorCategory: 'evidence' });
-    await env.DB.batch([
-      env.DB.prepare(`UPDATE spend_expense_requests SET status='submitted',submitted_at=COALESCE(submitted_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(id),
-      env.DB.prepare('DELETE FROM spend_expense_approvals WHERE expense_request_id=?').bind(id),
-    ]);
     const rules = await matchingApprovalRules(env, context, companyId, current, String(current.categoryId), String(current.costCenterId), Number(current.totalKobo));
-    await env.DB.batch(rules.map((ruleRow) => env.DB.prepare(`INSERT OR IGNORE INTO spend_expense_approvals(id,expense_request_id,rule_id,step_no,approver_role_code,status) VALUES(?,?,?,?,?,'pending')`).bind(uid('expense-approval'), id, ruleRow.id || null, Number(ruleRow.stepNo || 1), safeText(ruleRow.approverRoleCode, 80) || 'manager')));
-    await event(env, request, context, id, companyId, 'request_submitted', String(current.status), 'submitted', safeText(body.missingEvidenceReason, 300) || undefined, { capturedAt: body.capturedAt, clientTimezone: body.clientTimezone });
+    const reason = safeText(body.missingEvidenceReason, 300) || undefined;
+    const details = { capturedAt: body.capturedAt, clientTimezone: body.clientTimezone, missingEvidenceReason: reason };
+    const changed = await commitSubmitAction(request, env, context, id, companyId, String(current.status), rules, reason, details);
+    if (!changed) return error('This request changed before it could be submitted. Refresh and review its current status.', 409, { errorCategory: 'request-state' });
     return json({ ok: true, request: await serializeRequest(env, context, (await requestById(env, id))!, true) });
   }
   const pending = await env.DB.prepare(`
@@ -697,23 +848,15 @@ async function actionExpense(request: Request, env: SpendEnv, context: SessionCo
     if (!['submitted', 'reviewed'].includes(String(current.status))) return error('This request is not awaiting approval.', 409);
     const pendingCount = await env.DB.prepare(`SELECT COUNT(*) AS count FROM spend_expense_approvals WHERE expense_request_id=? AND status='pending'`).bind(id).first<{ count: number }>();
     const nextStatus = Number(pendingCount?.count || 0) <= 1 ? 'approved' : 'reviewed';
-    await env.DB.batch([
-      env.DB.prepare(`UPDATE spend_expense_approvals SET status='approved',approver_employee_id=?,acted_at=CURRENT_TIMESTAMP WHERE id=?`).bind(context.employee.id, pending.id),
-      env.DB.prepare(`UPDATE spend_expense_requests SET status=?,approved_at=CASE WHEN ?='approved' THEN CURRENT_TIMESTAMP ELSE approved_at END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(nextStatus, nextStatus, id),
-    ]);
-    await event(env, request, context, id, companyId, 'request_approved', String(current.status), nextStatus, undefined, { action: 'approve', stepNo: pending.stepNo });
-    await audit(env, request, context, 'expense_request_approved', 'expense_request', id, companyId, { outcome: nextStatus, action: 'approve', stepNo: pending.stepNo });
+    const changed = await commitApprovalAction(request, env, context, id, companyId, String(current.status), nextStatus, 'approved', pending.id, 'approve', undefined, { outcome: nextStatus, action: 'approve', stepNo: pending.stepNo });
+    if (!changed) return error('This approval step has already changed. Refresh the request and review its current status.', 409, { errorCategory: 'approval-state' });
     return json({ ok: true, request: await serializeRequest(env, context, (await requestById(env, id))!, true) });
   }
   const reason = safeText(body.reason, 1000);
   if (reason.length < 3) return error('A reason is required for return or rejection.', 422);
   const nextStatus = action === 'return' ? 'returned' : 'rejected';
-  await env.DB.batch([
-    env.DB.prepare(`UPDATE spend_expense_requests SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(nextStatus, id),
-    env.DB.prepare(`UPDATE spend_expense_approvals SET status=?,approver_employee_id=?,reason=?,acted_at=CURRENT_TIMESTAMP WHERE expense_request_id=? AND status='pending'`).bind(nextStatus === 'returned' ? 'returned' : 'rejected', context.employee.id, reason, id),
-  ]);
-  await event(env, request, context, id, companyId, nextStatus === 'returned' ? 'request_returned' : 'request_rejected', String(current.status), nextStatus, reason, { action });
-  await audit(env, request, context, nextStatus === 'returned' ? 'expense_request_returned' : 'expense_request_rejected', 'expense_request', id, companyId, { outcome: nextStatus, action, reason });
+  const changed = await commitApprovalAction(request, env, context, id, companyId, String(current.status), nextStatus, nextStatus, pending.id, action, reason, { outcome: nextStatus, action, reason });
+  if (!changed) return error('This approval step has already changed. Refresh the request and review its current status.', 409, { errorCategory: 'approval-state' });
   return json({ ok: true, request: await serializeRequest(env, context, (await requestById(env, id))!, true) });
 }
 
@@ -806,8 +949,9 @@ async function approvals(request: Request, env: SpendEnv, context: SessionContex
 
 async function bootstrap(request: Request, env: SpendEnv, context: SessionContext) {
   const url = new URL(request.url);
-  const companyId = safeText(url.searchParams.get('companyId'), 160) || context.companies.find((company) => company.primary)?.id || context.companies[0]?.id || '';
-  if (!companyId || !companyInScope(context, companyId)) return error('Company access is not assigned.', 403);
+  const companyId = safeText(url.searchParams.get('companyId'), 160);
+  if (!companyId) return error('Company scope is required.', 400);
+  if (!companyInScope(context, companyId)) return error('Company access is not assigned.', 403);
   if (!can(context, 'expense.requests', 'create', companyId) && !can(context, 'expense.own', 'view', companyId)) return error('Expense access is not assigned.', 403);
   const costCenterScope = context.companies.map((company) => company.id);
   const costCenterQuery = owner(context)
