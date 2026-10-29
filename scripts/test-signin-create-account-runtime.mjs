@@ -285,7 +285,8 @@ await check('delivery failure removes the prepared challenge and returns bounded
   const result = await start(fixture);
   assert.equal(result.response.status, 503);
   assert.equal(fixture.verifications.size, 0);
-  assert.equal(result.body.code, undefined);
+  assert.equal(result.body.code, 'SIGNUP_EMAIL_DELIVERY_UNAVAILABLE');
+  assert.equal(Object.hasOwn(result.body, 'bootstrapCode'), false);
 });
 
 await check('malformed request remains a bounded validation error', async () => {
