@@ -135,7 +135,7 @@ function failure(request: Request, provider: Provider, code: string) {
   url.searchParams.set('auth_error', code); url.searchParams.set('auth_provider', provider);
   return Response.redirect(url.toString(), 302);
 }
-function applicantRedirect(request: Request, provider: Provider, result: ApplicantResult | 'email_required') {
+function applicantRedirect(request: Request, provider: Provider, result: ApplicantResult | 'email_required' | 'not_approved') {
   const target = new URL('/api/auth/oauth/registration-status', request.url);
   target.searchParams.set('provider', provider);
   target.searchParams.set('result', result);
