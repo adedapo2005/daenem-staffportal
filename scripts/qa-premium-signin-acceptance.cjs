@@ -35,11 +35,38 @@ const box = (el) => {
         if(pathname==='/api/auth/password-policy') body={minimumLength:6,maximumLength:128,requiresUppercase:true,requiresLowercase:true,requiresNumber:true,requiresSymbol:true};
         return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
       });
+      if(width===390) {
+        await page.route('**/approved-signin-v180.css', async route => {
+          await new Promise(resolve => setTimeout(resolve,600));
+          await route.continue();
+        });
+      }
       try {
         await page.goto(base+'/qa/signin/index.html',{waitUntil:'domcontentloaded',timeout:45000});
         const auth=page.locator('#staffportal-auth-mount.sp-auth-mode-signin');
         await auth.waitFor({timeout:30000});
         await page.waitForTimeout(1000);
+        if(width===390) {
+          const mobileDockGuard=await page.evaluate(()=>{
+            const mount=document.querySelector('#staffportal-auth-mount');
+            const bounds=[mount,...mount.children].map(element=>element.getBoundingClientRect());
+            const top=Math.min(...bounds.map(rect=>rect.top));
+            const bottom=Math.max(...bounds.map(rect=>rect.bottom));
+            const dock=document.querySelector('[data-mobile-auth-dock="true"]');
+            const dockRect=dock?.getBoundingClientRect();
+            const overlaps=dockRect?[...mount.querySelectorAll('button,input,a[href]')]
+              .filter(element=>element.getClientRects().length)
+              .filter(element=>{
+                const rect=element.getBoundingClientRect();
+                return Math.min(rect.right,dockRect.right)>Math.max(rect.left,dockRect.left) &&
+                  Math.min(rect.bottom,dockRect.bottom)>Math.max(rect.top,dockRect.top);
+              }).map(element=>(element.textContent||element.getAttribute('placeholder')||'').trim()):[];
+            return {panelVisible:bottom>0&&top<innerHeight,dockVisible:!!dock,overlaps};
+          });
+          assert.ok(mobileDockGuard.panelVisible,'mobile auth panel is visible after delayed stylesheet settles');
+          assert.equal(mobileDockGuard.dockVisible,false,'mobile dock stays hidden while auth panel is visible');
+          assert.deepEqual(mobileDockGuard.overlaps,[],'mobile dock never covers an authentication control');
+        }
         const email=page.locator('#staffportal-auth-mount .sp-auth-form input[autocomplete="username"]');
         const password=page.locator('#staffportal-auth-mount .sp-auth-form input[autocomplete="current-password"]');
         assert.equal(await email.count(),1,'Email field present');

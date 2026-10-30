@@ -1,0 +1,665 @@
+{
+  "schema": 1,
+  "policy": "OWNER_LOCKED_DO_NOT_MODIFY_WITHOUT_EXPLICIT_OWNER_PROMPT",
+  "date": "2026-10-29",
+  "tag": "staffportal-signin-locked-2026-10-29-mobile-dock",
+  "approvedCommit": "f60a87c69d1c4ba90510740219363d98acb9dad0",
+  "repository": "adedapo2005/daenem-staffportal",
+  "branch": "preproduction/staffportal",
+  "selectors": [
+    "src/approved-signin-v180/",
+    "src/signin-",
+    "src/auth.tsx",
+    "public/approved-signin-v180.css",
+    "public/signin-credits.html",
+    "public/reference-images/signin/",
+    "public/assets/",
+    "worker/v180-public-assets.ts",
+    "worker/v180-public-signin-widgets.ts",
+    "worker/v180-public-staff-content.ts",
+    "worker/v180-curated-content-schedule.ts"
+  ],
+  "files": [
+    {
+      "path": "public/approved-signin-v180.css",
+      "sha256": "45d1861fd9e885325f98275e502e0c343ac58788f9eed5b8093bf254c0ecf92d",
+      "bytes": 849259
+    },
+    {
+      "path": "public/assets/daenem-campus.png",
+      "sha256": "6aea7a04f1dedaf63afeefed18cbbb48901044df05524ea5ee271072dc7ed660",
+      "bytes": 2680346
+    },
+    {
+      "path": "public/assets/fonts/inter-OFL.txt",
+      "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+      "bytes": 4377
+    },
+    {
+      "path": "public/assets/fonts/inter-variable.ttf",
+      "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "bytes": 876576
+    },
+    {
+      "path": "public/assets/fonts/manrope-OFL.txt",
+      "sha256": "e01b637272e0cbdfb240184dd98ea5cc671556d9894dae2668d92ab2c906787c",
+      "bytes": 4384
+    },
+    {
+      "path": "public/assets/fonts/manrope-variable.ttf",
+      "sha256": "d0639be45d0af36e798172419d7bd173c4bd4f29e2b76cbb69db1d11bf8b0a40",
+      "bytes": 165420
+    },
+    {
+      "path": "public/assets/global/beijing-day-v110.jpg",
+      "sha256": "f7a8ff0b3bd73c3e5e13b79ac16b311520c27d912eab2dfe05245b5c40e57ba1",
+      "bytes": 2761108
+    },
+    {
+      "path": "public/assets/global/beijing-day-v115-card.jpg",
+      "sha256": "441bd9d328dc6d5d2843972e508d9c4640cb00bdc51594fa0a4625422e913dc3",
+      "bytes": 319721
+    },
+    {
+      "path": "public/assets/global/beijing-night-v109.jpg",
+      "sha256": "f0b39460ae2ae69c429c56a9468c779006cf2743425eaa24420b03248286e3b2",
+      "bytes": 2649712
+    },
+    {
+      "path": "public/assets/global/london-day-v110.jpg",
+      "sha256": "8ef4204e8604bbb1aa14f4572830b60a6a3ecb8f3290164a0644e7ab9f4860a1",
+      "bytes": 1757660
+    },
+    {
+      "path": "public/assets/global/london-day-v115-card.jpg",
+      "sha256": "4d2d721eba359012ec65b6bbf630ec38b2b8d729413fef01deb6a8d2f8d8d96e",
+      "bytes": 256938
+    },
+    {
+      "path": "public/assets/global/london-night-v180-card.webp",
+      "sha256": "b987523c8ac643c1f0073eb428658bf6ffe193ebb7e990fdc2ba633b6b32c9df",
+      "bytes": 46030
+    },
+    {
+      "path": "public/assets/global/moscow-day-v110.jpg",
+      "sha256": "b24b238dbc0f34966bf5225f970e2213f80d6ffa8236e601a1e8a98899da5fee",
+      "bytes": 3016527
+    },
+    {
+      "path": "public/assets/global/moscow-day-v115-card.jpg",
+      "sha256": "8c22970c0357a5106dbc8a02cbddf2416ec8f561c8bb814cb3fd236a5d4ef719",
+      "bytes": 409122
+    },
+    {
+      "path": "public/assets/global/moscow-night-approved-v180.png",
+      "sha256": "b0a436f77e1deb95eab8c0f64c3a36bbefcfb8bd1256157762adc6cb40505777",
+      "bytes": 6281775
+    },
+    {
+      "path": "public/assets/global/moscow-night-v180-card.webp",
+      "sha256": "a476ce546b86da8f2ee634adaea0bbe01e28a3d30b7f96bc5c3083567140b9c7",
+      "bytes": 48136
+    },
+    {
+      "path": "public/assets/global/newyork-dawn-v179-4k.webp",
+      "sha256": "0bf9b96cf05eefc08c4add1917681bc0be90eb499118a2ee04e9b52480bf18a5",
+      "bytes": 633778
+    },
+    {
+      "path": "public/assets/global/newyork-dawn-v179-card.webp",
+      "sha256": "82c592cf44b00e27a1da84f4777626d657840a02b0c6c4021d8726e2caac31fc",
+      "bytes": 97560
+    },
+    {
+      "path": "public/assets/global/newyork-day-v179-4k.webp",
+      "sha256": "30010a1a99b43e34dad3a995bb34362b00c5985ea99a4d219da6c714939539cc",
+      "bytes": 615946
+    },
+    {
+      "path": "public/assets/global/newyork-day-v179-card.webp",
+      "sha256": "49f00bda262e479c513e5d39c73eeb4e1d52a638bbd9cf0855e6f83d63ddf525",
+      "bytes": 91694
+    },
+    {
+      "path": "public/assets/global/newyork-dusk-v179-4k.webp",
+      "sha256": "23873a85fb572f8f935c4425ff45f4aefd3289a786284549503f36258d3b7fe8",
+      "bytes": 778420
+    },
+    {
+      "path": "public/assets/global/newyork-dusk-v179-card.webp",
+      "sha256": "9d5b19c718c1cbe13d3311a62dd6708d35389cb0b16264c406055dc1fe59cdd7",
+      "bytes": 113022
+    },
+    {
+      "path": "public/assets/global/newyork-night-v179-4k.webp",
+      "sha256": "89acf9451d707a24d29f75357794a2222bb6b4e35aba46775345481c3fd5ed7c",
+      "bytes": 720252
+    },
+    {
+      "path": "public/assets/global/newyork-night-v179-card.webp",
+      "sha256": "4d1bd60ae860acb204d70be0f91e4b3374432ca510a4b679865e7edfb83b9ce3",
+      "bytes": 103876
+    },
+    {
+      "path": "public/assets/global/tokyo-day-v110.jpg",
+      "sha256": "3972a05e28f95eafd52136e51c5be669e5cacc9b2314bfa31d843d3374e30537",
+      "bytes": 3948990
+    },
+    {
+      "path": "public/assets/global/tokyo-day-v115-card.jpg",
+      "sha256": "805d927211d31d8fae1dc2b37a558458d37fd13d75c2a9bc5922dd7ca095f66d",
+      "bytes": 542531
+    },
+    {
+      "path": "public/assets/global/toronto-day-v110.jpg",
+      "sha256": "6073655f036577547805f106364d1e567239b58d514892348c9a6e012e725bf3",
+      "bytes": 1578453
+    },
+    {
+      "path": "public/assets/global/toronto-day-v115-card.jpg",
+      "sha256": "335707bf050989cdebf2a9a232f3eb7ff5547e669a01b26595a35db633caf6f4",
+      "bytes": 237564
+    },
+    {
+      "path": "public/assets/global/toronto-night-approved-v180.png",
+      "sha256": "2686db650675b99060e33575ea4ecd794a7dba9d697498c3ead9447204a312d6",
+      "bytes": 6976115
+    },
+    {
+      "path": "public/assets/global/toronto-night-v180-card.webp",
+      "sha256": "1cb748c13ea4cb9846d4db983167b99753434fa1033e5d83063694f3aa3f31f9",
+      "bytes": 51778
+    },
+    {
+      "path": "public/assets/left-widgets/inspiration/01-day.webp",
+      "sha256": "c48494b07615f87a5f081c4ae28bff49256b6e87aaa51adfde36337ac14c49c1",
+      "bytes": 141108
+    },
+    {
+      "path": "public/assets/left-widgets/inspiration/02-day.webp",
+      "sha256": "b4e62b3cc92a2d3bd41642e10ac250a2d9ce2be2a765c7441f0d2646b7e693c9",
+      "bytes": 152334
+    },
+    {
+      "path": "public/assets/left-widgets/intelligence/01-day.webp",
+      "sha256": "560fbfdee222034db11b58a5e05d9be7e1361442bca6a40f0701cf7399ecc831",
+      "bytes": 116872
+    },
+    {
+      "path": "public/assets/left-widgets/intelligence/05-day.webp",
+      "sha256": "b870f2fba64f0e9b77d10954278995de31b3db82bce469462b5d8465e1f2df76",
+      "bytes": 92090
+    },
+    {
+      "path": "public/assets/left-widgets/news/01-day.webp",
+      "sha256": "461e2f6c8b2d0902a92e897c19652a7b2cee61284ac934478d54f8ef5ad8db74",
+      "bytes": 122322
+    },
+    {
+      "path": "public/assets/left-widgets/news/04-day.webp",
+      "sha256": "f5a32b8190397c21576659de92bd023449e12c56c50ff654dcb000a40d2ed6cf",
+      "bytes": 117668
+    },
+    {
+      "path": "public/assets/left-widgets/spotlight/01-day.webp",
+      "sha256": "7bd45b460d91d57ebe04aeff2511b93f6ed651743a1e7a9bc2666773b2f08818",
+      "bytes": 99294
+    },
+    {
+      "path": "public/assets/nigeria/abuja-urban-towers.jpg",
+      "sha256": "5142cd94217da1635dd2535a066083ab3406012b6bf6555a15d30f11040f298f",
+      "bytes": 2377485
+    },
+    {
+      "path": "public/assets/nigeria/ibadan-senate-building.jpg",
+      "sha256": "eec38e08aab1c0bde70ec5d011a6f76a464113597ebe57da2a53fba2fcf6550e",
+      "bytes": 1458349
+    },
+    {
+      "path": "public/assets/nigeria/lagos-bridge-drive.jpg",
+      "sha256": "94298544c5d65744820bae72e0e9dc7e23cb6786a6db9196167f9e049604b339",
+      "bytes": 2538789
+    },
+    {
+      "path": "public/assets/nigeria/lagos-marina-banks.jpg",
+      "sha256": "7bbd8c90c3c8a3a5e98b4d89759265530de79a61df0f721eac72579e0d22ca24",
+      "bytes": 3022165
+    },
+    {
+      "path": "public/assets/nigeria/victoria-island-overcast.jpg",
+      "sha256": "6502c757baf1a61877573817806e94b1a9ee1da2713737d92a3d1ddc8d7cc033",
+      "bytes": 1733959
+    },
+    {
+      "path": "public/assets/scenery/01-manhattan-day-1280.webp",
+      "sha256": "4641a031199fbd1d611509198337bc8df9cbbe087c7f3f8a5d15b2fc91c25a49",
+      "bytes": 123100
+    },
+    {
+      "path": "public/assets/scenery/01-manhattan-day-2560.webp",
+      "sha256": "7f86685924f8408e22e9fef4df61129faa53e8372e2a118a8517f9ad5edc3f4c",
+      "bytes": 368808
+    },
+    {
+      "path": "public/assets/scenery/01-manhattan-day-3840.webp",
+      "sha256": "a2d0264c98294245c18066cb7a1a5a387d2fe42d0acf7433ef53ea56ee4ab033",
+      "bytes": 637114
+    },
+    {
+      "path": "public/assets/scenery/01-manhattan-day-640.webp",
+      "sha256": "1ee30d292b8c44077f519d3be30da0bca1c3070da0278a49310d64a3de15259a",
+      "bytes": 35400
+    },
+    {
+      "path": "public/assets/scenery/02-pudong-glass-1280.webp",
+      "sha256": "d822be5b71af6ca71b30812482c0ad1052da78933292e7da9d0de208b46a6945",
+      "bytes": 77846
+    },
+    {
+      "path": "public/assets/scenery/02-pudong-glass-2560.webp",
+      "sha256": "21cee55af2d2e832eedba68192c17c61ab25b7f711d2faf53bfffa403ea46f1d",
+      "bytes": 218340
+    },
+    {
+      "path": "public/assets/scenery/02-pudong-glass-3840.webp",
+      "sha256": "c0320c6caa6a5be2cd12e2833cc18ff47a840ec290e206e9a63a9db016240e04",
+      "bytes": 378342
+    },
+    {
+      "path": "public/assets/scenery/02-pudong-glass-640.webp",
+      "sha256": "496058d698bf989ad8020948aeae7115661ca6a66ff122e90892e26ef5caca9f",
+      "bytes": 28534
+    },
+    {
+      "path": "public/assets/scenery/03-shanghai-glass-1280.webp",
+      "sha256": "828b4167253133f0e23a5c2c4444c5adeb7f4849d40807e5ce89d477889ed8ff",
+      "bytes": 76776
+    },
+    {
+      "path": "public/assets/scenery/03-shanghai-glass-2560.webp",
+      "sha256": "dc90ac0277d72464d466d77613b4ed08213baf1c74a3a76db824a2a5040544aa",
+      "bytes": 244518
+    },
+    {
+      "path": "public/assets/scenery/03-shanghai-glass-3840.webp",
+      "sha256": "557594641556fe3c0ff3dd5e17b79ee248fcc1addf1086ae3fdb6bf304fcbddc",
+      "bytes": 492150
+    },
+    {
+      "path": "public/assets/scenery/03-shanghai-glass-640.webp",
+      "sha256": "9bee97d3a75dcc63bb178ac0f38aa3edf8be7f1ebd0a87e5b872a2ebe91c8b88",
+      "bytes": 27120
+    },
+    {
+      "path": "public/assets/scenery/04-white-atrium-1280.webp",
+      "sha256": "5d4604405d1ed928cc1f127d43a4db31b88fa6a862b2deb3d6f4065e43ff0b17",
+      "bytes": 314782
+    },
+    {
+      "path": "public/assets/scenery/04-white-atrium-2560.webp",
+      "sha256": "fec4cdfb368bb138d465dca1c706cce13ee0fe21ba02df3be273315ac227f2ea",
+      "bytes": 1577250
+    },
+    {
+      "path": "public/assets/scenery/04-white-atrium-3840.webp",
+      "sha256": "3cf120a072a5821fe179eed3635f52081a77ae6e1a78f456fd19e062e4cad98c",
+      "bytes": 3569390
+    },
+    {
+      "path": "public/assets/scenery/04-white-atrium-640.webp",
+      "sha256": "c207490e686741ccacb22e390bc0e80e97e8a85da0c5384af6755f2e814861c2",
+      "bytes": 98262
+    },
+    {
+      "path": "public/assets/scenery/05-singapore-blue-hour-1280.webp",
+      "sha256": "567c563af50f053504a8208ce684ddc308b5b84ad99ab01baf3e13d0685aad63",
+      "bytes": 68366
+    },
+    {
+      "path": "public/assets/scenery/05-singapore-blue-hour-2560.webp",
+      "sha256": "d8b69d54ff51fac52e85e3c971556cbc76fc49916f734ff9f929129c08c01f50",
+      "bytes": 204864
+    },
+    {
+      "path": "public/assets/scenery/05-singapore-blue-hour-3840.webp",
+      "sha256": "b3180237ff3554d6f62925a08e5539fe6210e4f602b06aea8a02bbcc61e91775",
+      "bytes": 379378
+    },
+    {
+      "path": "public/assets/scenery/05-singapore-blue-hour-640.webp",
+      "sha256": "d8f15d77f8fb812978ab7e7bf555983be251ea94b54f766dc0e97ac41d7a38d1",
+      "bytes": 21938
+    },
+    {
+      "path": "public/assets/scenery/07-hintersee-winter-1280.webp",
+      "sha256": "065a3b38070296c534ef60a58502f1088ee7508f77e58b1ff47287d27b8b5e33",
+      "bytes": 186914
+    },
+    {
+      "path": "public/assets/scenery/07-hintersee-winter-2560.webp",
+      "sha256": "eda5aa84ff7b600efc28a9765eea767fa58895c45beca4f3bf7c3bdf58892708",
+      "bytes": 588730
+    },
+    {
+      "path": "public/assets/scenery/07-hintersee-winter-3840.webp",
+      "sha256": "d04aabfdf91e7729dc3f8565a585af8b772214e89b682f5b93638600d324d163",
+      "bytes": 1313304
+    },
+    {
+      "path": "public/assets/scenery/07-hintersee-winter-640.webp",
+      "sha256": "4bd64598a026564655675fa2c0d07b56fbc6c6078692db96ce916b664583f977",
+      "bytes": 52574
+    },
+    {
+      "path": "public/assets/scenery/08-moraine-lake-1280.webp",
+      "sha256": "f83536c315c2978b65494586c5c364b2a2240f81d34e530de7cc05be5fd76a59",
+      "bytes": 157916
+    },
+    {
+      "path": "public/assets/scenery/08-moraine-lake-2560.webp",
+      "sha256": "1a1f5685e8887f29699f30a129573eb82d648e75f5a2b530484e4e634f5b3e1f",
+      "bytes": 562896
+    },
+    {
+      "path": "public/assets/scenery/08-moraine-lake-3840.webp",
+      "sha256": "5594093c1dd3166f07dd7e6cb583b4159ab0148719f156f1c02d3b6f76ec9966",
+      "bytes": 1093104
+    },
+    {
+      "path": "public/assets/scenery/08-moraine-lake-640.webp",
+      "sha256": "035f9f85dfa05cd8405592a63c569db4c237d8b3cb3793ab38107b542e30a707",
+      "bytes": 43640
+    },
+    {
+      "path": "public/assets/scenery/10-olympic-sunrise-1280.webp",
+      "sha256": "d7e8d5bd0f4e135cf11992a6c08e013f50582c8dc32703ed07ceb4bd4ef79d1a",
+      "bytes": 14612
+    },
+    {
+      "path": "public/assets/scenery/10-olympic-sunrise-2560.webp",
+      "sha256": "78497b50b10c2b30d01723645533f78ec28d52d1556c277546c8e3e98a5242c1",
+      "bytes": 41322
+    },
+    {
+      "path": "public/assets/scenery/10-olympic-sunrise-3840.webp",
+      "sha256": "6db48bc2942ab999b576ab3ee3379d5ca060b9061d033f334c0eb14108a6e62f",
+      "bytes": 79860
+    },
+    {
+      "path": "public/assets/scenery/10-olympic-sunrise-640.webp",
+      "sha256": "fbbba317277be342a312416859f0be19b8772489562b63e6d9b4462bddd605ee",
+      "bytes": 5396
+    },
+    {
+      "path": "public/assets/scenery/lagos-bridge-drive-1280.webp",
+      "sha256": "f7aa1e077bb460c3afccffb7953124e119f96158cceb21c61360bbdf939c4083",
+      "bytes": 31900
+    },
+    {
+      "path": "public/assets/scenery/lagos-bridge-drive-2560.webp",
+      "sha256": "411c312b89cdaf0a8e96de8655d0788d7c8c63eff64db81d4bcd230918b24140",
+      "bytes": 78314
+    },
+    {
+      "path": "public/assets/scenery/lagos-bridge-drive-3840.webp",
+      "sha256": "51dbb8a86746d092899ba29529a0c095a437345d03a25c704e767418b3a47082",
+      "bytes": 135896
+    },
+    {
+      "path": "public/assets/scenery/lagos-bridge-drive-640.webp",
+      "sha256": "43c570bf86230a11a406ac932814b6cbd7d100992626be92011322a02d981f72",
+      "bytes": 12238
+    },
+    {
+      "path": "public/assets/scenery/nigeria-ibadan-senate-1280.webp",
+      "sha256": "d258110a5dbf0be76326b91db75f4c68a61d1c5dfceeb411a32957aea876fac7",
+      "bytes": 104100
+    },
+    {
+      "path": "public/assets/scenery/nigeria-ibadan-senate-2560.webp",
+      "sha256": "9d0453b54d37ed06038f44e6a45af59f6dcb68e60d4224f0f1d6e699708ffce1",
+      "bytes": 286480
+    },
+    {
+      "path": "public/assets/scenery/nigeria-ibadan-senate-3840.webp",
+      "sha256": "b349090e42b94976c82e6b976944ce3b9b21ceb4c18efb704b9b6f652453bdb4",
+      "bytes": 486946
+    },
+    {
+      "path": "public/assets/scenery/nigeria-ibadan-senate-640.webp",
+      "sha256": "f301a4239fef7e0b3a73730f4f2ab019ea8d7aebd5692e2de9e72b6c4f197574",
+      "bytes": 35666
+    },
+    {
+      "path": "public/assets/staffportal-hero/executive-headquarters-day.webp",
+      "sha256": "1cbd35fa45ec14b248e44653dcaeb5a705287cf73fee3bae517e39eb27c90562",
+      "bytes": 513928
+    },
+    {
+      "path": "public/assets/staffportal-weather/ibadan-day-v125-card.webp",
+      "sha256": "a54d40993d292ee7895f8be152bf2b7c282ed19b2719804e2d13b2a049d398a5",
+      "bytes": 76716
+    },
+    {
+      "path": "public/assets/staffportal-weather/ibadan-night-v125.png",
+      "sha256": "c62d5fe6147f9407251e7101ef97b323bcbf10651c2c322373e55fb061820450",
+      "bytes": 2201949
+    },
+    {
+      "path": "public/assets/webflow-home/day-4k.jpg",
+      "sha256": "9223dc6bc51ff8289abeffb89bcb1b02ef72832caac0f0b68725644aca0a356a",
+      "bytes": 2398420
+    },
+    {
+      "path": "public/assets/webflow-home/night-4k.jpg",
+      "sha256": "9460e94ddbb6aa37c2322d08e9e76d076683d69fde0bc122aa067f6b9f1ec152",
+      "bytes": 2165802
+    },
+    {
+      "path": "public/assets/webflow-home/weather-cloudy-4k.jpg",
+      "sha256": "32683163b526e59c4ed6408aa5f0702c36fe6b5e251fc789e2729b7843cc4b8c",
+      "bytes": 1521944
+    },
+    {
+      "path": "public/reference-images/signin/approved-sunlit-meridian-signin-crop-4k.jpg",
+      "sha256": "8be045d036ce668cb229d6b0d05f4a15bae499b0945d727d2d5e1ad8c7510206",
+      "bytes": 292092
+    },
+    {
+      "path": "public/reference-images/signin/approved-sunlit-meridian-signin-crop.jpg",
+      "sha256": "063f652fb9d32d51e8ec6e143a4ca953833298a26b5572223507cd13f5947bbf",
+      "bytes": 301857
+    },
+    {
+      "path": "public/reference-images/signin/bright-executive-global-atrium-thumb.webp",
+      "sha256": "d7c32333d9f0248757ede9cd7efd5f158c7cd2828872523985d693b16b5d4a44",
+      "bytes": 8810
+    },
+    {
+      "path": "public/reference-images/signin/bright-executive-global-atrium.webp",
+      "sha256": "2df215204d29bb75870582c0495b131f4de328439ca9bac62ec0789eddf7a779",
+      "bytes": 132322
+    },
+    {
+      "path": "public/reference-images/signin/daenem-unified-daylight-4k.webp",
+      "sha256": "acef2d786e7a86c94c3ae8793a3a95e93fdbcde30a0014b89985a71149f122e2",
+      "bytes": 256090
+    },
+    {
+      "path": "public/reference-images/signin/daylight-glass-skyline-thumb.webp",
+      "sha256": "ad9a79f141b2a11f2e9f7e3f71eb920fe2d66d9b4b4bff430cb6404110e0e86b",
+      "bytes": 10916
+    },
+    {
+      "path": "public/reference-images/signin/daylight-glass-skyline.webp",
+      "sha256": "8956c5488e0a14675bc8e26a98e6ffa14ca9ee0822824d15589bd4a204cabe5f",
+      "bytes": 178564
+    },
+    {
+      "path": "public/reference-images/signin/daylight-technology-campus-thumb.webp",
+      "sha256": "65c39d53671d6f5e47961ec043dfb56c72d777f5f50b8e2701e3c3a527dfaee9",
+      "bytes": 10018
+    },
+    {
+      "path": "public/reference-images/signin/daylight-technology-campus.webp",
+      "sha256": "4ff949092bb836665a165be6561ad52bfd53890cab6e6845df8b07cf81fba695",
+      "bytes": 133682
+    },
+    {
+      "path": "public/reference-images/signin/future-technology-campus-thumb.webp",
+      "sha256": "08dcae2da86ffec987ff250172fcdcc08b262db670685b0340f12a8a950eb721",
+      "bytes": 16384
+    },
+    {
+      "path": "public/reference-images/signin/future-technology-campus.webp",
+      "sha256": "4047a49e0cf6646c1a8b7d74408530131adf0cb4f1ac348938fa0f0e0cd8b5f5",
+      "bytes": 311296
+    },
+    {
+      "path": "public/reference-images/signin/global-executive-atrium-thumb.webp",
+      "sha256": "f4270d92aa34f02f976b0f517882c032b5747ef044e674d20249b4e74575e8f0",
+      "bytes": 19328
+    },
+    {
+      "path": "public/reference-images/signin/global-executive-atrium.webp",
+      "sha256": "909d2b761f454cd96e738fd404ce469e3359d638d88cb2e7499aff2a67433d3a",
+      "bytes": 317840
+    },
+    {
+      "path": "public/reference-images/signin/premium-connected-workspace-thumb.webp",
+      "sha256": "210570020f6c9938b06565f42e01c28ae68a9584acccba952c0e0a13637da79a",
+      "bytes": 11528
+    },
+    {
+      "path": "public/reference-images/signin/premium-connected-workspace.webp",
+      "sha256": "df5a6d863f6523077351b50dff50688155c55cec140df2d8ff954864e518e692",
+      "bytes": 153926
+    },
+    {
+      "path": "public/reference-images/signin/theme-01-lagos-sunrise.png",
+      "sha256": "ded76d48863b9fe249984d47cc8239b7a039332da2db921a5ac7b3872572d766",
+      "bytes": 786446
+    },
+    {
+      "path": "public/reference-images/signin/theme-02-print-neon-grid.png",
+      "sha256": "d55d210951bf6ebf30dc480bb1f3315a78d3b2e16cbfa2baf32c202f7b949038",
+      "bytes": 786444
+    },
+    {
+      "path": "public/reference-images/signin/theme-03-digital-indigo.png",
+      "sha256": "971b45a0edc40e0db9706af5d7578b5afb8bc2f3e9caf907123f935533fb5554",
+      "bytes": 786444
+    },
+    {
+      "path": "public/reference-images/signin/theme-04-auto-showroom-night.png",
+      "sha256": "55ee401e11fe3f04b8fa83060f0ebbd944420aad99629903b4e5abf11572e4af",
+      "bytes": 786446
+    },
+    {
+      "path": "public/reference-images/signin/theme-05-urban-property-skyline.png",
+      "sha256": "e07ca0964d7f7a4a26f5a29726118ac79f9f981d2690bb02fd0d84a84ba5a2dd",
+      "bytes": 786444
+    },
+    {
+      "path": "public/reference-images/signin/theme-06-cargo-flow.png",
+      "sha256": "dee6c9e6fa91ec3f7bb4f711c6a7a1bbd158ab59c682ea6d394f71e0e83b7d19",
+      "bytes": 786446
+    },
+    {
+      "path": "public/reference-images/signin/theme-07-executive-boardroom.png",
+      "sha256": "fd87f731bdd76c941b8a5235f2aab12f63ce7177814e1d6164215e670bc29248",
+      "bytes": 786446
+    },
+    {
+      "path": "public/reference-images/signin/theme-08-job-market-pulse.png",
+      "sha256": "1887cf3c686b6d53463de720f4bd888e4e5b5b37dd0a01f1652a4b524b1eb1ef",
+      "bytes": 786446
+    },
+    {
+      "path": "public/reference-images/signin/theme-09-global-operations-mesh.png",
+      "sha256": "daeaf2967251bb90d6ba26c3b5ef6935142652d9ca2057d3834aaeaa2864131d",
+      "bytes": 786444
+    },
+    {
+      "path": "public/reference-images/signin/theme-10-minimal-tech-white.png",
+      "sha256": "e1cc3d851790e57cafb48995e3e3a5c3c54908dfde7500551cdd0fef1ef88e69",
+      "bytes": 786445
+    },
+    {
+      "path": "public/signin-credits.html",
+      "sha256": "2038bc4aa48fc564a02736d4e8f2b427e643cebbfc06f6c85a2aa97199802146",
+      "bytes": 3121
+    },
+    {
+      "path": "src/approved-signin-v180/reference-v180.html",
+      "sha256": "00984e096a08ffd936780f6cde928912db0ff30678922962d85574dd526395d7",
+      "bytes": 267269
+    },
+    {
+      "path": "src/approved-signin-v180/staff-portal-v3.css",
+      "sha256": "193c4c2dc78e579b88f8c7b18a335a7dd67e32fe31352b35db0268c9a394a455",
+      "bytes": 528987
+    },
+    {
+      "path": "src/approved-signin-v180/staff-portal.css",
+      "sha256": "4e2219dbf73b44951dba44413db1e79faadb5da1b999d8f16fd8dd7ec4d4e4a7",
+      "bytes": 188557
+    },
+    {
+      "path": "src/auth.tsx",
+      "sha256": "2f9cd3d5ef61042ef73a95251829232957fdcef0254c3f8d71e68a582084c33b",
+      "bytes": 75995
+    },
+    {
+      "path": "src/signin-experience.css",
+      "sha256": "cedb8313ddca4784496174b3fc638f37c91696617fd0fad14585fe44ebea45dd",
+      "bytes": 156903
+    },
+    {
+      "path": "src/signin-experience.tsx",
+      "sha256": "830f32cbffdd3ed110398ed165cd097b3bd74d01b6b8dd04cd853cf218ff19da",
+      "bytes": 44106
+    },
+    {
+      "path": "src/signin-font-loader.ts",
+      "sha256": "a07ed88df779d052c7eb67572155cacb725a328650a36ca1340086cb2f52a3be",
+      "bytes": 1240
+    },
+    {
+      "path": "src/signin-preferences.ts",
+      "sha256": "6c6f45335eb9f6ae3ab963ca4f70cf2d1c30e59513e7c8eb177de588b7428ad6",
+      "bytes": 44465
+    },
+    {
+      "path": "src/signin-weather-visuals.ts",
+      "sha256": "8c9ac81cfc7688f9b3296f75e8d4ceefaf56df53d69d4b9d2129505e6b40eb50",
+      "bytes": 11063
+    },
+    {
+      "path": "src/signin-widgets.ts",
+      "sha256": "5e75d1609206e9b91bb2969be9d119cfbe1315eb464f3d0b9017abdbab02cf84",
+      "bytes": 23394
+    },
+    {
+      "path": "worker/v180-curated-content-schedule.ts",
+      "sha256": "f565071723f8d9996145a9f205f7d3fb7b6746237f0b2e6f18d0472bb654c7ff",
+      "bytes": 3588
+    },
+    {
+      "path": "worker/v180-public-assets.ts",
+      "sha256": "b28ca1e9faccd81672ba330ead8f014c5f6ef395a6ce5437ffdb1602211e983b",
+      "bytes": 6101
+    },
+    {
+      "path": "worker/v180-public-signin-widgets.ts",
+      "sha256": "353e61da1b5e7d2473e9ea32b2d860c30f6643d4719b7b457df575108b99913e",
+      "bytes": 7422
+    },
+    {
+      "path": "worker/v180-public-staff-content.ts",
+      "sha256": "bfa86fda8d093e199808e6a69a05d7af56088f0398abc69dce2730895f2f7886",
+      "bytes": 5895
+    }
+  ],
+  "sharedCodeWarning": "worker/index.ts, worker/entry.ts, src/main.tsx and global styles serve post-login too. They are backed up but are not completely frozen. Protected Sign-In regression checks remain mandatory."
+}

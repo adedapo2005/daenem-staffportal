@@ -771,21 +771,35 @@ export function SignInExperience({ authPanel, authMode, onInstall, onSwitchAuth 
   useEffect(() => {
     if (!authMount) return;
     const update = () => {
-      // Keep the primary form uncluttered. Provide quick access only after it
-      // leaves the mobile viewport; never overlay the active form or keyboard.
-      const rect = authMount.getBoundingClientRect();
+      // Keep the primary form uncluttered. Include rendered portal content so
+      // a late stylesheet/layout shift cannot leave the dock over a live form.
+      const bounds = [authMount, ...Array.from(authMount.children).filter((child): child is HTMLElement => child instanceof HTMLElement)]
+        .map((element) => element.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && rect.height > 0);
+      const top = Math.min(...bounds.map((rect) => rect.top));
+      const bottom = Math.max(...bounds.map((rect) => rect.bottom));
       const mobile = window.matchMedia('(max-width: 720px)').matches;
-      const visible = mobile && (rect.bottom < 16 || rect.top > window.innerHeight);
+      const visible = mobile && (bottom < 16 || top > window.innerHeight);
       setShowMobileAuthDock((previous) => previous === visible ? previous : visible);
     };
+    const intersectionObserver = new IntersectionObserver(update);
+    const resizeObserver = new ResizeObserver(update);
+    intersectionObserver.observe(authMount);
+    resizeObserver.observe(authMount);
+    const layoutRoot = authMount.closest<HTMLElement>('.sp-root');
+    if (layoutRoot) resizeObserver.observe(layoutRoot);
     update();
+    window.requestAnimationFrame(update);
+    void document.fonts?.ready.then(update);
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
     return () => {
+      intersectionObserver.disconnect();
+      resizeObserver.disconnect();
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
-  }, [authMount]);
+  }, [authMount, authMode]);
 
   const navigateToAuth = (next: 'signin' | 'signup') => {
     onSwitchAuth(next);

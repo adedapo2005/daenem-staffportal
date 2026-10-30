@@ -4,7 +4,17 @@
 
 **Scope:** Public Sign-In ONLY. Post-login StaffPortal, FarmPortal and WebAdmin are separate workstreams. Do not pause, reset, clean, force-push, merge or redeploy other writers. The approved protected V115 post-login system is unaffected.
 
-## Recovery anchors
+## Owner-authorized replacement baseline candidate — 29 October 2026
+
+The Owner explicitly authorized PR #247's mobile-dock Sign-In correction and the corresponding replacement baseline/checker. The scope is limited to preventing the mobile Sign In/Create Account dock from covering a visible authentication form after responsive styles settle.
+
+- **Approved candidate source commit:** `f60a87c69d1c4ba90510740219363d98acb9dad0`
+- **Replacement manifest:** `delivery/owner-lock/staffportal-signin-2026-10-29-mobile-dock.manifest.json`
+- **Replacement recovery tag after live acceptance:** `staffportal-signin-locked-2026-10-29-mobile-dock`
+- The original 24 October tag, release, manifest and backups remain immutable recovery evidence and must never be deleted, retargeted or overwritten.
+- PR #247 must pass the independent Owner-lock guard, full CI, production build, Cloudflare staging dry-run and fresh live visual acceptance before the replacement tag/release is published.
+
+## Original immutable recovery anchors
 
 - **Private GitHub release:** https://github.com/adedapo2005/daenem-staffportal/releases/tag/staffportal-signin-locked-2026-10-24
 - **Protected Git tag:** `staffportal-signin-locked-2026-10-24`
