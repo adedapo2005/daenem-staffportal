@@ -24,7 +24,7 @@ sqlite.exec(`
   CREATE TABLE employee_company_memberships(employee_id TEXT,company_id TEXT,active INTEGER NOT NULL DEFAULT 1,PRIMARY KEY(employee_id,company_id));
   CREATE TABLE employee_roles(employee_id TEXT,company_id TEXT,role_id TEXT);
   CREATE TABLE employee_permission_overrides_v2(id TEXT PRIMARY KEY,employee_id TEXT,company_id TEXT,permission_id TEXT,access_level TEXT,reason TEXT,assigned_by TEXT,expires_at TEXT,UNIQUE(employee_id,company_id,permission_id));
-  CREATE TABLE employee_permission_overrides(id TEXT PRIMARY KEY,employee_id TEXT,company_id TEXT,permission_id TEXT,access_level TEXT,reason TEXT,granted_by TEXT,expires_at TEXT);
+  CREATE TABLE employee_permission_overrides(id TEXT PRIMARY KEY,employee_id TEXT,company_id TEXT,permission_id TEXT,access_level TEXT,reason TEXT,granted_by TEXT,expires_at TEXT,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
   CREATE TABLE navigation_access_changes(id TEXT PRIMARY KEY,company_id TEXT,target_type TEXT,target_id TEXT,item_key TEXT,permission_code TEXT,old_access_level TEXT,new_access_level TEXT,reason TEXT,changed_by TEXT);
   CREATE TABLE audit_logs(id TEXT PRIMARY KEY,actor_employee_id TEXT,company_id TEXT,module TEXT,action TEXT,entity_type TEXT,entity_id TEXT,before_json TEXT,after_json TEXT,source TEXT);
   CREATE TABLE employee_navigation_preferences(employee_id TEXT PRIMARY KEY,style_id TEXT,group_order_json TEXT,item_order_json TEXT,pinned_items_json TEXT,updated_by TEXT,updated_at TEXT);
@@ -41,7 +41,7 @@ sqlite.exec(`
   INSERT INTO role_permissions VALUES('rp-owner-nav','role-owner','p-nav-assign','manage'),('rp-manager-nav','role-manager','p-nav-assign','manage');
   INSERT INTO auth_sessions VALUES('session-owner','employee-owner','2099-12-31T00:00:00Z',NULL);
   INSERT INTO employee_permission_overrides_v2 VALUES('override-v2','employee-target','company-printing','p-printing','view','initial','employee-owner',NULL);
-  INSERT INTO employee_permission_overrides VALUES('override-v1','employee-target','company-printing','p-printing','view','initial','employee-owner',NULL);
+  INSERT INTO employee_permission_overrides(id,employee_id,company_id,permission_id,access_level,reason,granted_by,expires_at) VALUES('override-v1','employee-target','company-printing','p-printing','view','initial','employee-owner',NULL);
   INSERT INTO app_settings VALUES('navigation.default_style','guided-groups','string',CURRENT_TIMESTAMP),('navigation.forced_style','','string',CURRENT_TIMESTAMP),('navigation.allow_employee_choice','true','boolean',CURRENT_TIMESTAMP);
 `);
 
@@ -228,6 +228,80 @@ const financeGate = financeCode.slice(financeCode.indexOf('const financeJournalW
 check(financeGate.includes("actor.employment_status='active'")
   && !financeGate.includes("actor.employment_status IN ('active','provisional')"),
   'Finance Journal at-write grant excludes Provisional employment status');
+
+
+// Group-wide override revocations must reach the D1 write guard even if a
+// request already passed its initial cached role/company permission check.
+const overrideGrantSql = {
+  path:'/api/navigation/assign',
+  body:{companyId:'company-printing',targetType:'role',targetId:'role-worker',
+    itemKey:'printing',accessLevel:'edit',reason:'QA group-wide override at-write'},
+};
+const snapshotOverride = () => ({
+  level:scalar("SELECT access_level FROM role_permissions WHERE role_id='role-worker' AND permission_id='p-printing'").access_level,
+  changes:scalar("SELECT COUNT(*) n FROM navigation_access_changes").n,
+  audits:scalar("SELECT COUNT(*) n FROM audit_logs").n,
+});
+const sameSnapshot = (a,b) => a.level===b.level && a.changes===b.changes && a.audits===b.audits;
+let overrideBefore = snapshotOverride();
+beforeBatchHook = () => sqlite.exec(
+  "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level) VALUES('qa-group-none','employee-owner',NULL,'p-nav-assign','none')",
+);
+response = await call(overrideGrantSql.path,overrideGrantSql.body);
+check(response.status===409, 'Group-wide V2 NONE revocation denies stale role grant at final write');
+check(sameSnapshot(overrideBefore,snapshotOverride()),
+  'Group-wide V2 deny rolls back role, change history and audit');
+sqlite.exec("DELETE FROM employee_permission_overrides_v2 WHERE id='qa-group-none'");
+
+overrideBefore = snapshotOverride();
+beforeBatchHook = () => sqlite.exec(
+  "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level) VALUES('qa-group-none','employee-owner',NULL,'p-nav-assign','none');"+
+  "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level) VALUES('qa-scoped-manage','employee-owner','company-printing','p-nav-assign','manage')",
+);
+response = await call(overrideGrantSql.path,overrideGrantSql.body);
+check(response.status===409 && sameSnapshot(overrideBefore,snapshotOverride()),
+  'Group-wide V2 NONE vetoes a conflicting company-level Manage grant');
+sqlite.exec("DELETE FROM employee_permission_overrides_v2 WHERE id IN ('qa-group-none','qa-scoped-manage')");
+
+overrideBefore = snapshotOverride();
+beforeBatchHook = () => sqlite.exec(
+  "INSERT INTO employee_permission_overrides(id,employee_id,company_id,permission_id,access_level) VALUES('qa-legacy-global-none','employee-owner','company-other','p-nav-assign','none')",
+);
+response = await call(overrideGrantSql.path,overrideGrantSql.body);
+check(response.status===409 && sameSnapshot(overrideBefore,snapshotOverride()),
+  'Legacy Group-wide NONE on another company revokes navigation write authority');
+sqlite.exec("DELETE FROM employee_permission_overrides WHERE id='qa-legacy-global-none'");
+
+overrideBefore = snapshotOverride();
+beforeBatchHook = () => sqlite.exec(
+  "UPDATE role_permissions SET access_level='none' WHERE permission_id='p-nav-assign';"+
+  "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level) VALUES('qa-global-manage','employee-owner',NULL,'p-nav-assign','manage')",
+);
+response = await call(overrideGrantSql.path,overrideGrantSql.body);
+check(response.status===200, 'Group-wide V2 Manage supports authorized write without live role grant');
+check(snapshotOverride().changes===overrideBefore.changes+1 &&
+  snapshotOverride().audits===overrideBefore.audits+1,
+  'Group-wide V2 grant commits permission and audit atomically');
+sqlite.exec("DELETE FROM employee_permission_overrides_v2 WHERE id='qa-global-manage';"+
+  "UPDATE role_permissions SET access_level='manage' WHERE permission_id='p-nav-assign'");
+
+overrideBefore = snapshotOverride();
+beforeBatchHook = () => sqlite.exec(
+  "UPDATE role_permissions SET access_level='none' WHERE permission_id='p-nav-assign';"+
+  "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level) VALUES('qa-global-manage','employee-owner',NULL,'p-nav-assign','manage');"+
+  "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level) VALUES('qa-scoped-none','employee-owner','company-printing','p-nav-assign','none')",
+);
+response = await call(overrideGrantSql.path,{...overrideGrantSql.body,accessLevel:'manage'});
+check(response.status===409 && sameSnapshot(overrideBefore,snapshotOverride()),
+  'Company-specific V2 NONE denies despite Group-wide Manage grant');
+sqlite.exec("DELETE FROM employee_permission_overrides_v2 WHERE id IN ('qa-global-manage','qa-scoped-none');"+
+  "UPDATE role_permissions SET access_level='manage' WHERE permission_id='p-nav-assign'");
+check(financeGate.includes("group_deny.company_id IS NULL") &&
+  financeGate.includes("group_deny.access_level='none'") &&
+  financeGate.includes("g.company_id IS NULL"),
+  'Finance journal at-write SQL checks Group-wide NONE and Group-wide V2 grants');
+check(financeGate.includes("ORDER BY CASE WHEN o.access_level='none' THEN 0 ELSE 1 END"),
+  'Finance journal at-write SQL honors legacy Group-wide denies');
 
 console.log(`PASS navigation workspace mutation/audit atomicity (${checks} assertions; actual Worker module + disposable SQLite)`);
 sqlite.close();

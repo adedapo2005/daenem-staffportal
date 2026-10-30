@@ -20,6 +20,14 @@ const financeJournalWriteGate=(context:SessionContext,companyId:string,minimum:'
     WHERE s.id=? AND s.employee_id=? AND s.revoked_at IS NULL
       AND datetime(s.expires_at)>datetime('now')
       AND actor.employment_status='active'
+      -- Group-wide revoked permission must veto stale scoped and role grants.
+      AND NOT EXISTS(
+        SELECT 1 FROM employee_permission_overrides_v2 group_deny
+        JOIN permissions denied ON denied.id=group_deny.permission_id
+        WHERE group_deny.employee_id=? AND group_deny.company_id IS NULL
+          AND denied.code='finance.journal' AND group_deny.access_level='none'
+          AND (group_deny.expires_at IS NULL OR datetime(group_deny.expires_at)>datetime('now'))
+      )
       AND COALESCE(
         (SELECT ${financeJournalLevelSql('o.access_level')}
          FROM employee_permission_overrides_v2 o
@@ -28,12 +36,21 @@ const financeJournalWriteGate=(context:SessionContext,companyId:string,minimum:'
            AND p.code='finance.journal'
            AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
          LIMIT 1),
+        (SELECT ${financeJournalLevelSql('g.access_level')}
+         FROM employee_permission_overrides_v2 g
+         JOIN permissions p ON p.id=g.permission_id
+         WHERE g.employee_id=? AND g.company_id IS NULL
+           AND p.code='finance.journal'
+           AND (g.expires_at IS NULL OR datetime(g.expires_at)>datetime('now'))
+         LIMIT 1),
         (SELECT ${financeJournalLevelSql('o.access_level')}
          FROM employee_permission_overrides o
          JOIN permissions p ON p.id=o.permission_id
-         WHERE o.employee_id=? AND o.company_id=?
-           AND p.code='finance.journal'
+         WHERE o.employee_id=? AND p.code='finance.journal'
            AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
+         -- Legacy overrides are Group-wide in session projection; fail closed
+         -- for conflicting legacy rows by honoring an explicit denial first.
+         ORDER BY CASE WHEN o.access_level='none' THEN 0 ELSE 1 END, o.created_at DESC
          LIMIT 1),
         (SELECT MAX(${financeJournalLevelSql('rp.access_level')})
          FROM employee_roles er
@@ -47,9 +64,11 @@ const financeJournalWriteGate=(context:SessionContext,companyId:string,minimum:'
       ) >= ?
   )`,
   params:[companyId,context.sessionId,context.employee.id,
-    context.employee.id,companyId,
-    context.employee.id,companyId,
-    context.employee.id,companyId,
+    context.employee.id, // Group-wide denial veto
+    context.employee.id,companyId, // Company-scoped V2 override
+    context.employee.id, // Group-wide V2 override
+    context.employee.id, // Legacy Group-wide override
+    context.employee.id,companyId, // Live active role grant
     minimum==='approve'?4:2] as Array<string|number>,
 });
 

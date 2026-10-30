@@ -366,6 +366,16 @@ function navigationAssignmentAtWriteGuard(
       AND EXISTS(
         SELECT 1 FROM permissions permission
         WHERE permission.code IN ('navigation.assign','roles.access','users.access')
+          -- Group-wide NONE takes away a permission even when a scoped/role
+          -- grant is still present in a cached request context.
+          AND NOT EXISTS(
+            SELECT 1 FROM employee_permission_overrides_v2 group_deny
+            WHERE group_deny.employee_id=actor.id
+              AND group_deny.company_id IS NULL
+              AND group_deny.permission_id=permission.id
+              AND group_deny.access_level='none'
+              AND (group_deny.expires_at IS NULL OR datetime(group_deny.expires_at)>datetime('now'))
+          )
           AND COALESCE(
             (SELECT ${navigationAssignmentLevelSql('override.access_level')}
              FROM employee_permission_overrides_v2 override
@@ -374,11 +384,21 @@ function navigationAssignmentAtWriteGuard(
                AND override.permission_id=permission.id
                AND (override.expires_at IS NULL OR datetime(override.expires_at)>datetime('now'))
              LIMIT 1),
+            (SELECT ${navigationAssignmentLevelSql('group_override.access_level')}
+             FROM employee_permission_overrides_v2 group_override
+             WHERE group_override.employee_id=actor.id
+               AND group_override.company_id IS NULL
+               AND group_override.permission_id=permission.id
+               AND (group_override.expires_at IS NULL OR datetime(group_override.expires_at)>datetime('now'))
+             LIMIT 1),
             (SELECT ${navigationAssignmentLevelSql('legacy.access_level')}
              FROM employee_permission_overrides legacy
-             WHERE legacy.employee_id=actor.id AND legacy.company_id=business.id
+             WHERE legacy.employee_id=actor.id
                AND legacy.permission_id=permission.id
                AND (legacy.expires_at IS NULL OR datetime(legacy.expires_at)>datetime('now'))
+             -- Auth treats legacy overrides as Group-wide; explicit revocation wins.
+             ORDER BY CASE WHEN legacy.access_level='none' THEN 0 ELSE 1 END,
+                      legacy.created_at DESC
              LIMIT 1),
             (SELECT MAX(${navigationAssignmentLevelSql('grant.access_level')})
              FROM employee_roles assigned
