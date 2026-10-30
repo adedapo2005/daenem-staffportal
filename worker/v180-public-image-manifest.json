@@ -1,0 +1,37 @@
+{
+  "https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site/assets/global/beijing-night-v109.jpg": {
+    "sha256": "f0b39460ae2ae69c429c56a9468c779006cf2743425eaa24420b03248286e3b2",
+    "mime": "image/jpeg",
+    "bytes": 2649712
+  },
+  "https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site/assets/global/toronto-day-v110.jpg": {
+    "sha256": "6073655f036577547805f106364d1e567239b58d514892348c9a6e012e725bf3",
+    "mime": "image/jpeg",
+    "bytes": 1578453
+  },
+  "https://media.base44.com/images/public/6ab5ccef159888436a51d726/2ce3cabd9_generated_e465b750.png": {
+    "sha256": "2686db650675b99060e33575ea4ecd794a7dba9d697498c3ead9447204a312d6",
+    "mime": "image/png",
+    "bytes": 6976115
+  },
+  "https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site/assets/global/london-day-v110.jpg": {
+    "sha256": "8ef4204e8604bbb1aa14f4572830b60a6a3ecb8f3290164a0644e7ab9f4860a1",
+    "mime": "image/jpeg",
+    "bytes": 1757660
+  },
+  "https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site/assets/global/moscow-day-v110.jpg": {
+    "sha256": "b24b238dbc0f34966bf5225f970e2213f80d6ffa8236e601a1e8a98899da5fee",
+    "mime": "image/jpeg",
+    "bytes": 3016527
+  },
+  "https://media.base44.com/images/public/6ab5ccef159888436a51d726/0a3d309c7_generated_1c7eee1a.png": {
+    "sha256": "b0a436f77e1deb95eab8c0f64c3a36bbefcfb8bd1256157762adc6cb40505777",
+    "mime": "image/png",
+    "bytes": 6281775
+  },
+  "https://daenem-staffportal-sites-migration-v1.daenem-group-9873.chatgpt.site/assets/global/tokyo-day-v110.jpg": {
+    "sha256": "3972a05e28f95eafd52136e51c5be669e5cacc9b2314bfa31d843d3374e30537",
+    "mime": "image/jpeg",
+    "bytes": 3948990
+  }
+}

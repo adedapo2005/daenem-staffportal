@@ -10,6 +10,8 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const delegated = [];
 const workspaceAssetRequests = [];
+const cloudflareMediaRequests = [];
+const staffContentRequests = [];
 const workspaceCompiled = ts.transpileModule(workspaceSource, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -42,11 +44,18 @@ const runtimeHandler = {
 const loaded = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
   if (specifier === './workspace-route') return { routeWorkspaceShell };
-  if (specifier === './v180-public-assets') return { routeV180PublicAssets: async (input) => {
+  if (specifier === './v180-cloudflare-public-media') return { routeCloudflareV180Media: async (input) => {
+    cloudflareMediaRequests.push(new URL(input.url).pathname);
     if (new URL(input.url).pathname !== '/api/assets') return null;
     return new Response('{"assets":[]}', { status: 200, headers: {
       'content-type': 'application/json', 'cache-control': 'public, max-age=60, s-maxage=300',
     } });
+  } };
+  if (specifier === './v180-media-publication-admin') return { routeOwnerStudioV180Media: async () => null };
+  if (specifier === './v180-public-staff-content') return { routeV180PublicStaffContent: async (input) => {
+    staffContentRequests.push(new URL(input.url).pathname);
+    if (new URL(input.url).pathname === '/api/staff-content') return new Response('{"error":"Staff content is temporarily unavailable."}', { status: 503, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+    return null;
   } };
   assert.equal(specifier, './runtime');
   return { __esModule: true, default: runtimeHandler };
@@ -66,12 +75,9 @@ const checks = [];
 const check = async (name, action) => { await action(); checks.push(name); console.log(`PASS: ${name}`); };
 
 await check('staging serves the current built client through Worker-first SPA assets', async () => {
-  assert.deepEqual(config.assets, {
-    directory: './dist/client',
-    binding: 'ASSETS',
-    run_worker_first: true,
-    not_found_handling: 'single-page-application',
-  });
+  assert.equal(config.main, './worker/staffportal-staging.ts');
+  assert.equal(config.vars.STAFF_PORTAL_FRONTEND_ORIGIN, 'https://daenem-staffportal-api-staging.adedapo2005.workers.dev');
+  assert.doesNotMatch(config.vars.STAFF_PORTAL_FRONTEND_ORIGIN, /chatgpt\.site/i);
   assert.match(source, /runtimeHandler\.fetch\(request,runtimeEnv,ctx\)/);
   for (const path of ['/', '/index.html', '/staff-portal-signin']) {
     const response = await handler.fetch(request(path), env, ctx);
@@ -136,6 +142,15 @@ await check('unrecognized API requests remain JSON 404 responses instead of SPA 
   assert.deepEqual(await response.json(), { error: 'API route not found.' });
 });
 
+await check('Staff content is handled by the Cloudflare D1 route before legacy runtime routing', async () => {
+  const runtimeBefore = delegated.length;
+  const response = await handler.fetch(request('/api/staff-content'), env, ctx);
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.equal(delegated.length, runtimeBefore);
+  assert.equal(staffContentRequests.at(-1), '/api/staff-content');
+});
+
 await check('safe public asset cache policy survives staging response hardening', async () => {
   const runtimeBefore = delegated.length;
   const response = await handler.fetch(request('/api/assets'), env, ctx);
@@ -143,6 +158,7 @@ await check('safe public asset cache policy survives staging response hardening'
   assert.match(response.headers.get('cache-control'), /max-age=60, s-maxage=300/);
   assert.equal(await response.text(), '{"assets":[]}');
   assert.equal(delegated.length, runtimeBefore, 'public asset feed is served by its explicit safe adapter');
+  assert.equal(cloudflareMediaRequests.at(-1), '/api/assets', 'Cloudflare D1 media adapter owns the public asset feed');
 });
 
 await check('approved preflight allows Idempotency-Key and rejects unknown origins', async () => {
@@ -151,6 +167,7 @@ await check('approved preflight allows Idempotency-Key and rejects unknown origi
   }), env, ctx);
   assert.equal(allowed.status, 204);
   assert.equal(allowed.headers.get('access-control-allow-origin'), 'https://review.example.test');
+  assert.match(allowed.headers.get('access-control-allow-methods'), /PUT/);
   assert.match(allowed.headers.get('access-control-allow-headers'), /Idempotency-Key/);
   const denied = await handler.fetch(request('/api/finance/receivables', {
     method: 'OPTIONS', headers: { origin: 'https://attacker.example.test' },

@@ -12,8 +12,19 @@ for(const module of['printing','bakery','autos','logistics','properties'])check(
 for(const field of['operatingExpenseKobo','outstandingReceivablesKobo','postedJournals'])check(`Finance metric: ${field}`,backend.includes(field)&&dashboard.includes(field));
 for(const field of['activeProjects','budgetKobo','spentKobo','overdueMilestones'])check(`Construction metric: ${field}`,backend.includes(field)&&dashboard.includes(field));
 check('Owner dashboard replaces placeholder for management',main.includes("<GroupExecutiveDashboard companyId={company.id} />")&&main.includes("can(context, 'dashboard.access', 'manage', company.id)"));
-check('company scope is validated server-side',backend.includes('Selected company is not assigned to this Owner workspace.')&&backend.includes('context.companies'));
-check('unassigned company data is suppressed',backend.includes("visible.has('company-printing')")&&backend.includes('scopePlaceholders'));
+// Structural guards complement the actual auth/D1 cases in
+// test-owner-intelligence-p0-221-v30-full-schema.mjs. The previous strings
+// described the retired role-bypass implementation, not the security contract.
+const compactBackend=backend.replace(/\s+/g,'');
+check('company scope uses current server session and company/domain grants',[
+  'sessionContextFromId(env,original.sessionId)',
+  'live.companies.some(c=>c.id===id)&&hasPermission(live,intelligenceDomainCode(d,id),\'view\',id)',
+  'if(companyId&&!selected)throwdenied()',
+].every(fragment=>compactBackend.includes(fragment)));
+check('unassigned company data is omitted and revoked scopes are denied',[
+  'supportedCompanies.filter(c=>intelligenceDomains.some(d=>allow(d,c.id)))',
+  'if(permittedAtStart!==exposedGrantSignature(stillCurrent,scopeIds))throwdenied()',
+].every(fragment=>compactBackend.includes(fragment))&&!/authority\s*===?\s*['"]owner['"]\s*\|\|/.test(backend));
 check('queries are bound',backend.includes('.bind(companyId, range.start, range.end)')&&backend.includes('companyIds.map(() =>'));
 check('independent D1 reads are batched',backend.includes('env.DB.batch(['));
 check('two-minute refresh cadence',dashboard.includes('120000'));

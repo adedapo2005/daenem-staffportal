@@ -1,4 +1,4 @@
-import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { getSessionContext, hasPermission, type AuthEnv, type SessionContext } from './auth';
 
 interface PrintingEnv extends AuthEnv {}
 
@@ -205,14 +205,29 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
     quotedNaira?: number; designerId?: string; operatorId?: string; locationId?: string;
   };
   try { body = await request.json(); } catch { return json({ error: 'Invalid print job request.' }, 400); }
+  let currentContext = context;
+  const revalidate = async () => {
+    const current = await getSessionContext(request, env);
+    if (!current || current.sessionId !== context.sessionId || current.employee.id !== context.employee.id) return json({ error: 'Authentication required.' }, 401);
+    if (!canPrint(current, 'create')) return json({ error: 'Create Printing Job permission is required.' }, 403);
+    if (koboFromNaira(body.quotedNaira) > 0 && !canViewPrintFinancials(current)) return json({ error: 'Printing approval or Finance view permission is required to set quoted value.' }, 403);
+    currentContext = current;
+    return null;
+  };
+  let denied = await revalidate();
+  if (denied) return denied;
   const title = String(body.title || '').trim();
   if (!title) return json({ error: 'Print job title is required.' }, 400);
   if (body.customerId) {
     const customer = await env.DB.prepare(`SELECT id FROM customers WHERE id = ? AND company_id = ? AND active = 1`).bind(body.customerId, companyId).first();
+    denied = await revalidate();
+    if (denied) return denied;
     if (!customer) return json({ error: 'Selected Printing customer was not found.' }, 400);
   }
   if (body.serviceId) {
     const service = await env.DB.prepare(`SELECT id FROM printing_services WHERE id = ? AND company_id = ? AND active = 1`).bind(body.serviceId, companyId).first();
+    denied = await revalidate();
+    if (denied) return denied;
     if (!service) return json({ error: 'Selected Printing service was not found.' }, 400);
   }
   if (koboFromNaira(body.quotedNaira) > 0 && !canViewPrintFinancials(context)) {
@@ -220,6 +235,8 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
   }
   const locationId = String(body.locationId || 'location-printing-hq');
   const location = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(locationId, companyId).first();
+  denied = await revalidate();
+  if (denied) return denied;
   if (!location) return json({ error: 'Selected Printing location was not found.' }, 400);
   for (const [employeeId, label] of [[body.designerId, 'designer'], [body.operatorId, 'operator']] as const) {
     if (!employeeId) continue;
@@ -229,12 +246,30 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
       WHERE e.id = ? AND m.company_id = ? AND m.active = 1 AND e.employment_status = 'active'
       LIMIT 1
     `).bind(employeeId, companyId).first();
+    denied = await revalidate();
+    if (denied) return denied;
     if (!employee) return json({ error: `Selected Printing ${label} is not an active company employee.` }, 400);
   }
   const jobNo = await nextNumber(env, 'DP', 'print_jobs', 'job_no');
+  denied = await revalidate();
+  if (denied) return denied;
   const id = uid('print-job');
   const quotedKobo = koboFromNaira(body.quotedNaira);
+  const requestId = (request.headers.get('x-request-id') || request.headers.get('cf-ray') || crypto.randomUUID()).slice(0, 128);
+  // Repeat reference eligibility inside the transaction: preflight reads can
+  // become stale before the job, initial event and required audit are committed.
   await env.DB.batch([
+    env.DB.prepare(`SELECT json_extract(CASE WHEN
+      EXISTS(SELECT 1 FROM company_locations WHERE id = ? AND company_id = ? AND active = 1)
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM customers WHERE id = ? AND company_id = ? AND active = 1))
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM printing_services WHERE id = ? AND company_id = ? AND active = 1))
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM employees e JOIN employee_company_memberships m ON m.employee_id = e.id WHERE e.id = ? AND m.company_id = ? AND m.active = 1 AND e.employment_status = 'active'))
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM employees e JOIN employee_company_memberships m ON m.employee_id = e.id WHERE e.id = ? AND m.company_id = ? AND m.active = 1 AND e.employment_status = 'active'))
+      THEN '{}' ELSE '{' END, '$')`).bind(locationId, companyId,
+      body.customerId || null, body.customerId || null, companyId,
+      body.serviceId || null, body.serviceId || null, companyId,
+      body.designerId || null, body.designerId || null, companyId,
+      body.operatorId || null, body.operatorId || null, companyId),
     env.DB.prepare(`
       INSERT INTO print_jobs (
         id, company_id, location_id, customer_id, service_id, job_no, title, description,
@@ -242,22 +277,15 @@ async function createJob(request: Request, env: PrintingEnv, context: SessionCon
         quoted_kobo, assigned_designer_id, assigned_operator_id, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(id, companyId, locationId, body.customerId || null, body.serviceId || null, jobNo, title, body.description || null, Math.max(1, numberValue(body.quantity, 1)), body.unit || 'job', body.sizeSpec || null, body.colorSpec || null, body.finishingSpec || null, body.priority || 'normal', body.dueAt || null, quotedKobo, body.designerId || null, body.operatorId || null, context.employee.id),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`INSERT INTO print_job_status_events (id, print_job_id, from_status, to_status, changed_by, note) VALUES (?, ?, NULL, 'enquiry', ?, 'Print job created')`).bind(uid('print-event'), id, context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'printing', 'create_job', 'print_job', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, id, JSON.stringify({ jobNo, title, quotedKobo })),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
+    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source, request_id) VALUES (?, ?, ?, 'printing', 'create_job', 'print_job', ?, ?, 'web', ?)`).bind(uid('audit'), context.employee.id, companyId, id, JSON.stringify({ jobNo, title, quotedKobo }), requestId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
   ]);
-  return json({ ok: true, job: { id, jobNo, title, status: 'enquiry', ...(canViewPrintFinancials(context) ? { quotedKobo } : {}) } }, 201);
-}
-
-async function recalculateJob(env: PrintingEnv, jobId: string) {
-  const material = await env.DB.prepare(`SELECT COALESCE(SUM((actual_quantity + waste_quantity) * unit_cost_kobo),0) AS amount FROM print_job_materials WHERE print_job_id = ?`).bind(jobId).first<{ amount: number }>();
-  const job = await env.DB.prepare(`SELECT quoted_kobo AS quotedKobo, invoiced_kobo AS invoicedKobo, labour_cost_kobo AS labourCostKobo, finishing_cost_kobo AS finishingCostKobo, other_cost_kobo AS otherCostKobo FROM print_jobs WHERE id = ?`).bind(jobId).first<{ quotedKobo: number; invoicedKobo: number; labourCostKobo: number; finishingCostKobo: number; otherCostKobo: number }>();
-  if (!job) return;
-  const materialCost = Math.round(Number(material?.amount || 0));
-  const revenue = Number(job.invoicedKobo || job.quotedKobo || 0);
-  const totalCost = materialCost + Number(job.labourCostKobo || 0) + Number(job.finishingCostKobo || 0) + Number(job.otherCostKobo || 0);
-  const profit = revenue - totalCost;
-  const margin = revenue > 0 ? Math.round((profit / revenue) * 10000) : 0;
-  await env.DB.prepare(`UPDATE print_jobs SET material_cost_kobo = ?, gross_profit_kobo = ?, margin_basis_points = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(materialCost, profit, margin, jobId).run();
+  denied = await revalidate();
+  if (denied) return denied;
+  return json({ ok: true, job: { id, jobNo, title, status: 'enquiry', ...(canViewPrintFinancials(context) && canViewPrintFinancials(currentContext) ? { quotedKobo } : {}) } }, 201);
 }
 
 async function addMaterial(request: Request, env: PrintingEnv, context: SessionContext) {
@@ -270,28 +298,65 @@ async function addMaterial(request: Request, env: PrintingEnv, context: SessionC
   if (koboFromNaira(body.unitCostNaira) > 0 && !canViewPrintFinancials(context)) {
     return json({ error: 'Printing approval or Finance view permission is required to override material cost.' }, 403);
   }
+  // Each awaited preflight can outlast the original authority. Recheck before
+  // disclosing job/stock state and immediately before the mutation batch.
+  const revalidate = async () => {
+    const current = await getSessionContext(request, env);
+    if (!current || current.sessionId !== context.sessionId || current.employee.id !== context.employee.id) return json({ error: 'Authentication required.' }, 401);
+    if (!canPrint(current, 'create')) return json({ error: 'Create Printing data permission is required.' }, 403);
+    if (koboFromNaira(body.unitCostNaira) > 0 && !canViewPrintFinancials(current)) return json({ error: 'Printing approval or Finance view permission is required to override material cost.' }, 403);
+    return null;
+  };
   const [job, item] = await Promise.all([
     env.DB.prepare(`SELECT id, production_status AS status FROM print_jobs WHERE id = ? AND company_id = ?`).bind(body.jobId, companyId).first<{ id: string; status: string }>(),
     env.DB.prepare(`SELECT id, name, unit_cost_kobo AS unitCostKobo FROM inventory_items WHERE id = ? AND company_id = ? AND active = 1`).bind(body.itemId, companyId).first<{ id: string; name: string; unitCostKobo: number }>(),
   ]);
+  const jobDenial = await revalidate();
+  if (jobDenial) return jobDenial;
   if (!job || !item) return json({ error: 'Print job or Printing inventory item was not found.' }, 404);
   if (['completed','cancelled'].includes(job.status)) return json({ error: 'Materials cannot be added to a completed or cancelled job.' }, 409);
   const locationId = String(body.locationId || 'location-printing-hq');
   const location = await env.DB.prepare(`SELECT id FROM company_locations WHERE id = ? AND company_id = ? AND active = 1`).bind(locationId, companyId).first();
+  const locationDenial = await revalidate();
+  if (locationDenial) return locationDenial;
   if (!location) return json({ error: 'Selected Printing stock location was not found.' }, 400);
   const balance = await env.DB.prepare(`SELECT id, quantity, reserved_quantity AS reservedQuantity FROM stock_balances WHERE company_id = ? AND location_id = ? AND item_id = ?`).bind(companyId, locationId, body.itemId).first<{ id: string; quantity: number; reservedQuantity: number }>();
+  const stockDenial = await revalidate();
+  if (stockDenial) return stockDenial;
   const required = actual + waste;
   if (!balance || Number(balance.quantity) - Number(balance.reservedQuantity || 0) < required) {
     return json({ error: `Insufficient stock for ${item.name}. Available quantity is ${Math.max(0, Number(balance?.quantity || 0) - Number(balance?.reservedQuantity || 0))}.` }, 409);
   }
   const unitCostKobo = body.unitCostNaira == null ? Number(item.unitCostKobo || 0) : koboFromNaira(body.unitCostNaira);
-  await env.DB.batch([
+  const requestId = (request.headers.get('x-request-id') || request.headers.get('cf-ray') || crypto.randomUUID()).slice(0, 128);
+  // Every write must affect one row, including required audit and cost summary.
+  // A silently skipped write aborts the same batch and restores consumed stock.
+  try {
+    await env.DB.batch([
+    env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND location_id = ? AND item_id = ? AND quantity - COALESCE(reserved_quantity, 0) >= ? AND EXISTS (SELECT 1 FROM print_jobs WHERE id = ? AND company_id = ? AND production_status NOT IN ('completed','cancelled'))`).bind(required, balance.id, companyId, locationId, body.itemId, required, body.jobId, companyId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`INSERT INTO print_job_materials (id, print_job_id, item_id, actual_quantity, waste_quantity, unit_cost_kobo, issued_from_location_id, issued_by, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(uid('print-material'), body.jobId, body.itemId, actual, waste, unitCostKobo, locationId, context.employee.id, body.note || null),
-    env.DB.prepare(`UPDATE stock_balances SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(required, balance.id),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
     env.DB.prepare(`INSERT INTO stock_movements (id, company_id, item_id, movement_type, quantity, unit_cost_kobo, from_location_id, reference_type, reference_id, reason, created_by) VALUES (?, ?, ?, 'issue', ?, ?, ?, 'print_job', ?, ?, ?)`).bind(uid('stock-movement'), companyId, body.itemId, required, unitCostKobo, locationId, body.jobId, body.note || 'Print job material usage', context.employee.id),
-    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source) VALUES (?, ?, ?, 'printing', 'record_material_usage', 'print_job', ?, ?, 'web')`).bind(uid('audit'), context.employee.id, companyId, body.jobId, JSON.stringify({ itemId: body.itemId, actual, waste, unitCostKobo })),
-  ]);
-  await recalculateJob(env, body.jobId);
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
+    env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source, request_id) VALUES (?, ?, ?, 'printing', 'record_material_usage', 'print_job', ?, ?, 'web', ?)`).bind(uid('audit'), context.employee.id, companyId, body.jobId, JSON.stringify({ itemId: body.itemId, actual, waste, unitCostKobo }), requestId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
+    env.DB.prepare(`WITH cost AS (SELECT COALESCE(ROUND(SUM((actual_quantity + waste_quantity) * unit_cost_kobo)), 0) AS amount FROM print_job_materials WHERE print_job_id = ?)
+      UPDATE print_jobs SET
+        material_cost_kobo = (SELECT amount FROM cost),
+        gross_profit_kobo = COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) - (SELECT amount FROM cost) - COALESCE(labour_cost_kobo, 0) - COALESCE(finishing_cost_kobo, 0) - COALESCE(other_cost_kobo, 0),
+        margin_basis_points = CASE WHEN COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) > 0 THEN ROUND((COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0) - (SELECT amount FROM cost) - COALESCE(labour_cost_kobo, 0) - COALESCE(finishing_cost_kobo, 0) - COALESCE(other_cost_kobo, 0)) * 10000.0 / COALESCE(NULLIF(invoiced_kobo, 0), quoted_kobo, 0)) ELSE 0 END,
+        updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?`).bind(body.jobId, body.jobId, companyId),
+    env.DB.prepare(`SELECT json_extract(CASE WHEN changes() = 1 THEN '{}' ELSE '{' END, '$')`),
+    ]);
+  } catch (error) {
+    const current = await env.DB.prepare(`SELECT quantity - COALESCE(reserved_quantity, 0) AS available FROM stock_balances WHERE id = ? AND company_id = ? AND location_id = ? AND item_id = ?`).bind(balance.id, companyId, locationId, body.itemId).first<{ available: number }>();
+    const openJob = await env.DB.prepare(`SELECT id FROM print_jobs WHERE id = ? AND company_id = ? AND production_status NOT IN ('completed','cancelled')`).bind(body.jobId, companyId).first();
+    const failureDenial = await revalidate();
+    if (failureDenial) return failureDenial;
+    if (!openJob || !current || Number(current.available) < required) return json({ error: 'Printing stock or job status changed. Refresh and try again.' }, 409);
+    throw error;
+  }
   return json({ ok: true, message: 'Material usage recorded and Printing stock reduced automatically.' });
 }
 
@@ -322,7 +387,7 @@ async function transitionJob(request: Request, env: PrintingEnv, context: Sessio
     }
   }
   if (body.toStatus === 'packaging') {
-    const qc = await env.DB.prepare(`SELECT result FROM print_quality_checks WHERE print_job_id = ? ORDER BY checked_at DESC LIMIT 1`).bind(job.id).first<{ result: string }>();
+    const qc = await env.DB.prepare(`SELECT result FROM print_quality_checks WHERE print_job_id = ? ORDER BY checked_at DESC, rowid DESC LIMIT 1`).bind(job.id).first<{ result: string }>();
     if (qc?.result !== 'pass') return json({ error: 'A passed quality-control check is required before packaging.' }, 409);
   }
 
@@ -346,9 +411,35 @@ async function qualityCheck(request: Request, env: PrintingEnv, context: Session
   try { body = await request.json(); } catch { return json({ error: 'Invalid quality check request.' }, 400); }
   if (!body.jobId || !['pass','rework','reject'].includes(String(body.result))) return json({ error: 'Job and QC result are required.' }, 400);
   const job = await env.DB.prepare(`SELECT id, production_status AS status FROM print_jobs WHERE id = ? AND company_id = ?`).bind(body.jobId, companyId).first<{ id: string; status: string }>();
+  // Parsing and the job read can outlast the initial session/permission snapshot.
+  // Reauthorize the same actor and session before status disclosure or QC writes.
+  const currentContext = await getSessionContext(request, env);
+  if (!currentContext || currentContext.sessionId !== context.sessionId || currentContext.employee.id !== context.employee.id) return json({ error: 'Authentication required.' }, 401);
+  if (!canPrint(currentContext, 'edit')) return json({ error: 'Edit Printing Job permission is required.' }, 403);
   if (!job) return json({ error: 'Print job not found.' }, 404);
   if (!['quality_control','finishing','printing'].includes(job.status)) return json({ error: 'Quality control can only be recorded for a job in production/QC stages.' }, 409);
-  await env.DB.prepare(`INSERT INTO print_quality_checks (id, print_job_id, checked_by, result, checklist_json, note) VALUES (?, ?, ?, ?, ?, ?)`).bind(uid('print-qc'), body.jobId, context.employee.id, body.result, body.checklist ? JSON.stringify(body.checklist) : null, body.note || null).run();
+  const checkId = uid('print-qc');
+  const auditId = uid('audit');
+  const requestId = (request.headers.get('x-request-id') || request.headers.get('cf-ray') || crypto.randomUUID()).slice(0, 128);
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO print_quality_checks (id, print_job_id, checked_by, result, checklist_json, note)
+        SELECT ?, id, ?, ?, ?, ? FROM print_jobs
+        WHERE id = ? AND company_id = ? AND production_status IN ('quality_control','finishing','printing')`)
+        .bind(checkId, context.employee.id, body.result, body.checklist ? JSON.stringify(body.checklist) : null, body.note || null, body.jobId, companyId),
+      env.DB.prepare(`INSERT INTO audit_logs (id, actor_employee_id, company_id, module, action, entity_type, entity_id, after_json, source, request_id)
+        SELECT ?, ?, ?, 'printing', 'quality_check', 'print_job', ?, ?, 'web', ?
+        FROM print_quality_checks WHERE id = ? AND print_job_id = ?`)
+        .bind(auditId, context.employee.id, companyId, body.jobId, JSON.stringify({ result: body.result, checkId }), requestId, checkId, body.jobId),
+      env.DB.prepare(`SELECT json_extract(CASE WHEN EXISTS(SELECT 1 FROM print_quality_checks WHERE id = ? AND print_job_id = ?)
+        AND EXISTS(SELECT 1 FROM audit_logs WHERE id = ? AND company_id = ? AND module = 'printing' AND action = 'quality_check' AND entity_id = ? AND request_id = ?)
+        THEN '{}' ELSE '{' END, '$')`).bind(checkId, body.jobId, auditId, companyId, body.jobId, requestId),
+    ]);
+  } catch (error) {
+    const current = await env.DB.prepare(`SELECT production_status AS status FROM print_jobs WHERE id = ? AND company_id = ?`).bind(body.jobId, companyId).first<{ status: string }>();
+    if (!current || !['quality_control','finishing','printing'].includes(current.status)) return json({ error: 'Print job status has changed. Refresh and try again.' }, 409);
+    throw error;
+  }
   return json({ ok: true, result: body.result });
 }
 
@@ -359,9 +450,21 @@ export async function routePrinting(request: Request, env: PrintingEnv, context:
   if (url.pathname === '/api/printing/customers' && request.method === 'GET') return customers(env, context, url.searchParams.get('q') || '');
   if (url.pathname === '/api/printing/customers' && request.method === 'POST') return createCustomer(request, env, context);
   if (url.pathname === '/api/printing/jobs' && request.method === 'GET') return listJobs(request, env, context);
-  if (url.pathname === '/api/printing/jobs' && request.method === 'POST') return createJob(request, env, context);
+  if (url.pathname === '/api/printing/jobs' && request.method === 'POST') {
+    try { return await createJob(request, env, context); } catch {
+      return json({ error: 'The Printing job could not be saved. Refresh and try again.' }, 503);
+    }
+  }
   if (url.pathname === '/api/printing/jobs/status' && request.method === 'POST') return transitionJob(request, env, context);
-  if (url.pathname === '/api/printing/jobs/materials' && request.method === 'POST') return addMaterial(request, env, context);
-  if (url.pathname === '/api/printing/jobs/qc' && request.method === 'POST') return qualityCheck(request, env, context);
+  if (url.pathname === '/api/printing/jobs/materials' && request.method === 'POST') {
+    try { return await addMaterial(request, env, context); } catch {
+      return json({ error: 'The Printing material usage could not be saved. Refresh and try again.' }, 503);
+    }
+  }
+  if (url.pathname === '/api/printing/jobs/qc' && request.method === 'POST') {
+    try { return await qualityCheck(request, env, context); } catch {
+      return json({ error: 'The Printing quality check could not be saved. Refresh and try again.' }, 503);
+    }
+  }
   return null;
 }

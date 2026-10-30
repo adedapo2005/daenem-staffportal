@@ -8,9 +8,9 @@ import ts from 'typescript';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
-const [runtime, appEntry, entry, staging, productionConfig, stagingConfig, source, coreMigration, identityMigration, credentialMigration, refinementMigration] = await Promise.all([
+const [runtime, appEntry, entry, staging, productionConfig, stagingConfig, source, scopeSource, coreMigration, identityMigration, credentialMigration, refinementMigration] = await Promise.all([
   read('worker/runtime.ts'), read('worker/app-entry.ts'), read('worker/entry.ts'), read('worker/staffportal-staging.ts'),
-  read('wrangler.jsonc'), read('wrangler.staffportal-staging.jsonc'), read('worker/auth-refinement.ts'),
+  read('wrangler.jsonc'), read('wrangler.staffportal-staging.jsonc'), read('worker/auth-refinement.ts'), read('worker/staffportal-account-scope.ts'),
   read('migrations/0001_core.sql'), read('migrations/0002_identity_auth.sql'),
   read('migrations/0010_password_credentials.sql'), read('migrations/0033_auth_profile_refinement.sql'),
 ]);
@@ -20,9 +20,15 @@ const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const loaded = { exports: {} };
+const compiledScope = ts.transpileModule(scopeSource, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const scopeModule = { exports: {} };
+new Function('module', 'exports', compiledScope)(scopeModule, scopeModule.exports);
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
-  assert.equal(specifier, './credential-security');
-  return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
+  if (specifier === './staffportal-account-scope') return scopeModule.exports;
+  throw new Error(`Unexpected auth-refinement dependency: ${specifier}`);
 });
 const { routeAuthRefinement } = loaded.exports;
 const pepper = 'password-reset-sqlite-fixture';
@@ -51,9 +57,8 @@ class SqliteD1 {
       this.database.exec(credentialMigration);
       this.database.exec(refinementMigration);
       this.database.prepare("INSERT INTO app_settings(setting_key,setting_value,value_type) VALUES('security.worker_safe_pbkdf2_iterations','1000','number') ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value").run();
-      this.database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-a','QA-A','QA Company A','other')").run();
       this.database.prepare("INSERT INTO employees(id,employee_no,display_name,email,employment_status) VALUES('employee-a','QA-A-001','Ada Staff','ada@example.test','active'),('employee-b','QA-B-001','Ben Staff','ben@example.test','active')").run();
-      if (!owner) this.database.prepare("INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES('membership-a','employee-a','company-a',1)").run();
+      if (!owner) this.database.prepare("INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES('membership-a','employee-a','company-printing',1)").run();
       if (owner) this.database.prepare("INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES('employee-role-owner-a','employee-a','company-printing','role-owner')").run();
       this.database.prepare(`INSERT INTO password_reset_challenges
         (id,employee_id,code_hash,expires_at,reset_token_hash,verified_at,consumed_at,reset_token_expires_at)
@@ -143,6 +148,54 @@ await check('Owner recovery stays eligible through the shared route and cannot r
   assert.equal(offboarded.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
 });
 
+await check('Owner recovery requires an active canonical role assigned inside Account A at preflight and write', async () => {
+  const outside = "INSERT INTO companies(id,code,name,business_type) VALUES('company-external','EXT','External','other')";
+  const cases = [
+    ['external assignment', (database) => {
+      database.prepare(outside).run();
+      database.prepare("UPDATE employee_roles SET company_id='company-external' WHERE employee_id='employee-a'").run();
+    }],
+    ['inactive assignment company', (database) => database.prepare("UPDATE companies SET active=0 WHERE id='company-printing'").run()],
+    ['inactive canonical role', (database) => database.prepare("UPDATE roles SET active=0 WHERE id='role-owner'").run()],
+  ];
+  for (const [name, revoke] of cases) {
+    const before = new SqliteD1({ owner: true });
+    revoke(before.database);
+    assert.equal((await invoke(before)).status, 401, `${name} preflight`);
+    assert.equal(before.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
+
+    const during = new SqliteD1({ owner: true, beforeBatch: revoke });
+    assert.notEqual((await invoke(during)).status, 200, `${name} at write`);
+    assert.equal(during.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
+    assert.equal(during.scalar("SELECT password_hash FROM employee_credentials WHERE employee_id='employee-a'").password_hash, 'old-hash');
+    assert.equal(during.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE employee_id='employee-a' AND result='success'").count, 0);
+  }
+});
+
+await check('credentialless Owner recovery initiation rejects an external or inactive role assignment', async () => {
+  const forgot = () => new Request('https://staffportal.test/api/auth/password/forgot', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ identifier: 'ada@example.test' }),
+  });
+  const valid = new SqliteD1({ credential: false, owner: true });
+  valid.env.APP_STAGE = 'bootstrap';
+  assert.equal((await routeAuthRefinement(forgot(), valid.env)).status, 200);
+  assert.equal(valid.scalar("SELECT COUNT(*) AS count FROM password_reset_challenges WHERE employee_id='employee-a'").count, 2);
+
+  for (const revoke of [
+    (database) => {
+      database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-external','EXT','External','other')").run();
+      database.prepare("UPDATE employee_roles SET company_id='company-external' WHERE employee_id='employee-a'").run();
+    },
+    (database) => database.prepare("UPDATE roles SET active=0 WHERE id='role-owner'").run(),
+  ]) {
+    const denied = new SqliteD1({ credential: false, owner: true });
+    denied.env.APP_STAGE = 'bootstrap';
+    revoke(denied.database);
+    assert.equal(await routeAuthRefinement(forgot(), denied.env), null);
+    assert.equal(denied.scalar("SELECT COUNT(*) AS count FROM password_reset_challenges WHERE employee_id='employee-a'").count, 1);
+  }
+});
+
 await check('credentialless employee reset activates the current grant and writes audit in the same SQLite transaction', async () => {
   const fixture = new SqliteD1({ credential: false });
   assert.equal((await invoke(fixture)).status, 200);
@@ -166,6 +219,29 @@ await check('credentialless reset loses safely when its grant or Owner authority
     assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM auth_sessions WHERE employee_id='employee-a' AND revoked_at IS NOT NULL").count, 0, name);
     assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE employee_id='employee-a' AND result='success'").count, 0, name);
   }
+});
+
+await check('active membership outside the configured Account A company IDs cannot use a preissued reset token', async () => {
+  const fixture = new SqliteD1();
+  fixture.database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-external','EXT','A company named StaffPortal but outside Account A','other')").run();
+  fixture.database.prepare("UPDATE employee_company_memberships SET company_id='company-external' WHERE employee_id='employee-a'").run();
+  const response = await invoke(fixture);
+  assert.equal(response.status, 401);
+  assert.equal(fixture.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
+  assert.equal(fixture.scalar("SELECT password_hash FROM employee_credentials WHERE employee_id='employee-a'").password_hash, 'old-hash');
+  assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE result='success'").count, 0);
+});
+
+await check('moving membership outside the configured Account A company IDs before the D1 batch rolls back the reset', async () => {
+  const fixture = new SqliteD1({ beforeBatch: (database) => {
+    database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-external','EXT','Daenem Printing','printing')").run();
+    database.prepare("UPDATE employee_company_memberships SET company_id='company-external' WHERE employee_id='employee-a'").run();
+  } });
+  const response = await invoke(fixture);
+  assert.notEqual(response.status, 200);
+  assert.equal(fixture.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
+  assert.equal(fixture.scalar("SELECT password_hash FROM employee_credentials WHERE employee_id='employee-a'").password_hash, 'old-hash');
+  assert.equal(fixture.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE result='success'").count, 0);
 });
 
 await check('two simultaneous reset submissions produce exactly one winner and one durable success audit', async () => {

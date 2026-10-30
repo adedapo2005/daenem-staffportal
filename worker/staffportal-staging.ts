@@ -1,8 +1,12 @@
 import runtimeHandler from './runtime';
 import { routeWorkspaceShell } from './workspace-route';
-import { routeV180PublicAssets } from './v180-public-assets';
+import type { AuthEnv } from './auth';
+import { routeCloudflareV180Media, type PreprodMediaEnv } from './v180-cloudflare-public-media';
+import { routeOwnerStudioV180Media } from './v180-media-publication-admin';
+import { routeV180PublicStaffContent } from './v180-public-staff-content';
+import type { StagingQaEnv } from './staging-qa-seeder';
 
-interface Env {
+interface Env extends AuthEnv, Omit<PreprodMediaEnv, 'DB'> {
   STAFF_PORTAL_FRONTEND_ORIGIN?: string;
   ASSETS?: { fetch(request: Request): Promise<Response> };
 }
@@ -30,6 +34,7 @@ function secure(response:Response,request:Request,env:Env){
   headers.set('referrer-policy','no-referrer');
   headers.set('x-frame-options','DENY');
   headers.set('x-content-type-options','nosniff');
+  headers.set('x-staffportal-auth-runtime','worker-password-auth-v1');
   if(!(new URL(request.url).pathname==='/api/assets'&&response.status===200))headers.set('cache-control','no-store');
   const origin=corsOrigin(request,env);
   if(origin){
@@ -48,7 +53,7 @@ function preflight(request:Request,env:Env){
   const headers=new Headers({
     'access-control-allow-origin':origin,
     'access-control-allow-credentials':'true',
-    'access-control-allow-methods':'GET,POST,OPTIONS',
+    'access-control-allow-methods':'GET,POST,PUT,OPTIONS',
     'access-control-allow-headers':'Accept, Content-Type, Idempotency-Key',
     'access-control-max-age':'600',
   });
@@ -58,13 +63,24 @@ function preflight(request:Request,env:Env){
 
 export default {
   async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
+    if(new URL(request.url).pathname==='/api/staging/qa-fixture'){
+      const { routeStagingQaSeeder }=await import('./staging-qa-seeder');
+      const qaResponse=await routeStagingQaSeeder(request,env as unknown as StagingQaEnv);
+      if(qaResponse)return qaResponse;
+    }
     if(request.method==='OPTIONS')return preflight(request,env);
     const url=new URL(request.url);
     if(url.pathname==='/health'){
       return secure(json({ok:true,service:'daenem-staffportal-api-staging',stage:'staging'}),request,env);
     }
 
-    const publicAssetsResponse=await routeV180PublicAssets(request);
+    const staffContentResponse=await routeV180PublicStaffContent(request,env);
+    if(staffContentResponse)return secure(staffContentResponse,request,env);
+
+    const ownerMediaResponse=await routeOwnerStudioV180Media(request,env);
+    if(ownerMediaResponse)return secure(ownerMediaResponse,request,env);
+
+    const publicAssetsResponse=await routeCloudflareV180Media(request,env);
     if(publicAssetsResponse)return secure(publicAssetsResponse,request,env);
 
     // Reuse the canonical session, company-hint and exact-asset guard. Never
