@@ -600,6 +600,140 @@ await check('Master GET company membership revoked during D1 read suppresses com
  "UPDATE employee_company_memberships SET active=1 WHERE employee_id='emp-owner' AND company_id='company-printing'");
 });
 
+// Every denied mutation must leave zero business and audit rows.
+function assertNoIndependentExpenseWrites(id){
+ for(const [table,column] of [
+  ['spend_expense_requests','id'],
+  ['spend_expense_lines','expense_request_id'],
+  ['spend_expense_allocations','expense_request_id'],
+  ['spend_expense_approvals','expense_request_id'],
+  ['spend_expense_events','expense_request_id'],
+  ['audit_logs','entity_id'],
+ ]) assert.equal(Number(one(`SELECT COUNT(*) AS n FROM ${table} WHERE ${column}=?`,id).n),0,`${table} must retain no rows after authorization denial`);
+}
+// Independent regression: source company is not a beneficiary.
+// Product source remains unmodified; all mutations occur only in :memory: SQLite.
+run("INSERT INTO employee_company_memberships(id,employee_id,company_id,is_primary,active) VALUES('qa-independent-autos-membership','emp-owner','company-autos',0,1)");
+run("INSERT INTO roles(id,company_id,code,name) VALUES('qa-independent-autos-role','company-autos','qa_independent_autos_allocator','QA Independent Autos Allocator')");
+grantPermission('qa-independent-autos-perm','qa-independent-autos-role','expense.allocations','manage');
+grant('qa-independent-autos-bind','emp-owner','company-autos','qa-independent-autos-role');
+run("INSERT INTO spend_cost_centers(id,company_id,code,name) VALUES('qa-independent-autos-cc','company-autos','QA-INDEPENDENT-AUTOS','QA Independent Autos Cost Center')");
+const foreignOnlyShared=(id)=>({...shared(id),allocations:[
+ {companyId:'company-bakery',costCenterId:'qa-scope-bakery-cc',percentage:50},
+ {companyId:'company-autos',costCenterId:'qa-independent-autos-cc',percentage:50}
+]});
+await check('Independent positive control: source Printing may allocate only to Bakery and Autos with all three grants',async()=>{
+ const id='qa-independent-source-not-beneficiary-positive';
+ const r=await post('/api/spend/requests',foreignOnlyShared(id));
+ console.log('INDEPENDENT_POSITIVE '+JSON.stringify({status:r.status,requestCount:expenseCount(id),allocations:database.prepare('SELECT company_id,allocated_amount_kobo FROM spend_expense_allocations WHERE expense_request_id=? ORDER BY company_id').all(id)}));
+ assert.equal(r.status,201,JSON.stringify(r.body));
+ assert.equal(expenseCount(id),1);
+});
+await check('Independent negative control: source Printing allocation grant is required before request',async()=>{
+ const id='qa-independent-source-not-beneficiary-preflight-deny';
+ run("UPDATE role_permissions SET access_level='none' WHERE id='qa-owner-expense-alloc'");
+ try {
+  const r=await post('/api/spend/requests',foreignOnlyShared(id));
+  console.log('INDEPENDENT_PREFLIGHT_DENY '+JSON.stringify({status:r.status,requestCount:expenseCount(id),error:r.body.error}));
+  assert.ok([403,422].includes(r.status));
+  assertNoIndependentExpenseWrites(id);
+ } finally { run("UPDATE role_permissions SET access_level='manage' WHERE id='qa-owner-expense-alloc'"); }
+});
+await check('Independent source allocation revocation at write must block foreign-only beneficiaries',async()=>{
+ const id='qa-independent-source-not-beneficiary-midflight';
+ const originalBatch=env.DB.batch;
+ let injected=0;
+ env.DB.batch=async function(statements){
+  injected++;
+  run("UPDATE role_permissions SET access_level='none' WHERE id='qa-owner-expense-alloc'");
+  return originalBatch(statements);
+ };
+ try {
+  const r=await post('/api/spend/requests',foreignOnlyShared(id));
+  const observations={status:r.status,injected,sourceGrant:one("SELECT access_level FROM role_permissions WHERE id='qa-owner-expense-alloc'").access_level,requestCount:expenseCount(id),allocations:database.prepare('SELECT company_id,allocated_amount_kobo FROM spend_expense_allocations WHERE expense_request_id=? ORDER BY company_id').all(id),auditCount:one('SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id=?',id).n,eventCount:one('SELECT COUNT(*) AS n FROM spend_expense_events WHERE expense_request_id=?',id).n};
+  console.log('INDEPENDENT_AT_WRITE_RESULT '+JSON.stringify(observations));
+  assert.equal(injected,1,'Must reach the D1 batch boundary exactly once');
+  assert.ok([403,409,422].includes(r.status),'Source permission was revoked but returned HTTP '+r.status);
+  assertNoIndependentExpenseWrites(id);
+ } finally { env.DB.batch=originalBatch;run("UPDATE role_permissions SET access_level='manage' WHERE id='qa-owner-expense-alloc'"); }
+});
+// Direct explicit allocation and default implicit direct must have different gates.
+const explicitDirect=(id)=>({...shared(id),directShared:'direct',allocations:[
+ {companyId:'company-printing',costCenterId:'qa-scope-print-cc',percentage:100}
+]});
+const implicitDirect=(id)=>{const body={...shared(id),directShared:'direct'};delete body.allocations;delete body.allocationMethod;return body;};
+await check('Independent direct-explicit positive control with current source allocation grant',async()=>{
+ const id='qa-independent-direct-explicit-positive';
+ const r=await post('/api/spend/requests',explicitDirect(id));
+ console.log('INDEPENDENT_DIRECT_EXPLICIT_POSITIVE '+JSON.stringify({status:r.status,requestCount:expenseCount(id)}));
+ assert.equal(r.status,201,JSON.stringify(r.body));
+ assert.equal(expenseCount(id),1);
+});
+await check('Independent direct-explicit preflight source allocation denial',async()=>{
+ const id='qa-independent-direct-explicit-preflight';
+ run("UPDATE role_permissions SET access_level='none' WHERE id='qa-owner-expense-alloc'");
+ try{
+  const r=await post('/api/spend/requests',explicitDirect(id));
+  console.log('INDEPENDENT_DIRECT_EXPLICIT_PREFLIGHT_DENY '+JSON.stringify({status:r.status,requestCount:expenseCount(id),error:r.body.error}));
+  assert.ok([403,422].includes(r.status));
+  assertNoIndependentExpenseWrites(id);
+ }finally{run("UPDATE role_permissions SET access_level='manage' WHERE id='qa-owner-expense-alloc'");}
+});
+await check('Independent default implicit direct expense works with expense.requests and no allocation grant',async()=>{
+ const id='qa-independent-direct-implicit-no-alloc-grant';
+ run("UPDATE role_permissions SET access_level='none' WHERE id='qa-owner-expense-alloc'");
+ try{
+  const r=await post('/api/spend/requests',implicitDirect(id));
+  console.log('INDEPENDENT_IMPLICIT_DIRECT_NO_ALLOC_GRANT '+JSON.stringify({status:r.status,requestCount:expenseCount(id),sourceGrant:one("SELECT access_level FROM role_permissions WHERE id='qa-owner-expense-alloc'").access_level}));
+  assert.equal(r.status,201,JSON.stringify(r.body));
+  assert.equal(expenseCount(id),1);
+ }finally{run("UPDATE role_permissions SET access_level='manage' WHERE id='qa-owner-expense-alloc'");}
+});
+await check('Independent explicit direct source allocation revocation at write must block',async()=>{
+ const id='qa-independent-direct-explicit-midflight';
+ const originalBatch=env.DB.batch;let injected=0;
+ env.DB.batch=async function(statements){injected++;run("UPDATE role_permissions SET access_level='none' WHERE id='qa-owner-expense-alloc'");return originalBatch(statements);};
+ try{
+  const r=await post('/api/spend/requests',explicitDirect(id));
+  const observations={status:r.status,injected,sourceGrant:one("SELECT access_level FROM role_permissions WHERE id='qa-owner-expense-alloc'").access_level,requestCount:expenseCount(id),allocations:database.prepare('SELECT company_id,allocated_amount_kobo FROM spend_expense_allocations WHERE expense_request_id=?').all(id),auditCount:one('SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id=?',id).n,eventCount:one('SELECT COUNT(*) AS n FROM spend_expense_events WHERE expense_request_id=?',id).n};
+  console.log('INDEPENDENT_DIRECT_EXPLICIT_AT_WRITE '+JSON.stringify(observations));
+  assert.equal(injected,1);
+  assert.ok([403,409,422].includes(r.status),'Explicit direct source allocation revoked but HTTP '+r.status);
+  assertNoIndependentExpenseWrites(id);
+ }finally{env.DB.batch=originalBatch;run("UPDATE role_permissions SET access_level='manage' WHERE id='qa-owner-expense-alloc'");}
+});
+// Approved templates also require the source grant at the final write boundary.
+const independentTemplateCreated=await post('/api/spend/admin/master',{
+ kind:'template',action:'create',companyId:'company-printing',
+ name:'QA Independent Foreign Only Approved Template',method:'percentage',
+ items:[{companyId:'company-bakery',costCenterId:'qa-scope-bakery-cc',percentage:50},
+        {companyId:'company-autos',costCenterId:'qa-independent-autos-cc',percentage:50}]
+});
+assert.equal(independentTemplateCreated.status,201,JSON.stringify(independentTemplateCreated.body));
+const approvedDirectTemplate=(id)=>{
+ const body={...shared(id),directShared:'direct',allocationTemplateId:independentTemplateCreated.body.id};
+ delete body.allocations;delete body.allocationMethod;return body;
+};
+await check('Independent approved-template direct allocation works with current source and destination grants',async()=>{
+ const id='qa-independent-approved-template-positive';
+ const r=await post('/api/spend/requests',approvedDirectTemplate(id));
+ console.log('INDEPENDENT_APPROVED_TEMPLATE_POSITIVE '+JSON.stringify({status:r.status,requestCount:expenseCount(id),allocations:database.prepare('SELECT company_id,allocated_amount_kobo FROM spend_expense_allocations WHERE expense_request_id=? ORDER BY company_id').all(id)}));
+ assert.equal(r.status,201,JSON.stringify(r.body));
+ assert.equal(expenseCount(id),1);
+});
+await check('Independent approved-template source allocation revocation at write must block',async()=>{
+ const id='qa-independent-approved-template-midflight';
+ const originalBatch=env.DB.batch;let injected=0;
+ env.DB.batch=async function(statements){injected++;run("UPDATE role_permissions SET access_level='none' WHERE id='qa-owner-expense-alloc'");return originalBatch(statements);};
+ try{
+  const r=await post('/api/spend/requests',approvedDirectTemplate(id));
+  const observations={status:r.status,injected,sourceGrant:one("SELECT access_level FROM role_permissions WHERE id='qa-owner-expense-alloc'").access_level,requestCount:expenseCount(id),allocationCount:one('SELECT COUNT(*) AS n FROM spend_expense_allocations WHERE expense_request_id=?',id).n,auditCount:one('SELECT COUNT(*) AS n FROM audit_logs WHERE entity_id=?',id).n,eventCount:one('SELECT COUNT(*) AS n FROM spend_expense_events WHERE expense_request_id=?',id).n};
+  console.log('INDEPENDENT_APPROVED_TEMPLATE_AT_WRITE '+JSON.stringify(observations));
+  assert.equal(injected,1);
+  assert.ok([403,409,422].includes(r.status),'Approved-template source allocation revoked but HTTP '+r.status);
+  assertNoIndependentExpenseWrites(id);
+ }finally{env.DB.batch=originalBatch;run("UPDATE role_permissions SET access_level='manage' WHERE id='qa-owner-expense-alloc'");}
+});
 const failed=results.filter(x=>!x.pass);
 console.log('SPEND_MASTER_ALLOCATION_SCOPE '+(results.length-failed.length)+'/'+results.length+' PASS');
 for(const f of failed) console.log('CASE_FAILURE '+f.name+' '+f.error);

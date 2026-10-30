@@ -683,13 +683,14 @@ function spendScopedWriteAuthorityGate(
 
 function spendWriteAuthorityGate(
   env: SpendEnv, context: SessionContext, sourceCompanyId: string,
-  allocations: AllocationRow[], directShared: string,
+  allocations: AllocationRow[], requiresAllocationGrant: boolean,
 ): D1PreparedStatement {
   const required: SpendWriteGrant[] = [
     { companyId: sourceCompanyId, permissionCode: 'expense.requests', threshold: 2 },
   ];
-  if (directShared !== 'direct' || allocations.some((row) => row.companyId !== sourceCompanyId)) {
-    for (const companyId of new Set(allocations.map((row) => row.companyId))) {
+  if (requiresAllocationGrant) {
+    // The source retains allocation authority even when it is not a beneficiary.
+    for (const companyId of new Set([sourceCompanyId, ...allocations.map((row) => row.companyId)])) {
       required.push({ companyId, permissionCode: 'expense.allocations', threshold: 5 });
     }
   }
@@ -810,8 +811,12 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
     const rules = await matchingApprovalRules(env, context, companyId, body, categoryId, costCenterId, amount);
     for (const rule of rules) statements.push(env.DB.prepare(`INSERT OR IGNORE INTO spend_expense_approvals(id,expense_request_id,rule_id,step_no,approver_role_code,status) VALUES(?,?,?,?,?,'pending')`).bind(uid('expense-approval'), id, rule.id || null, Number(rule.stepNo || 1), safeText(rule.approverRoleCode, 80) || 'manager'));
   }
+  // Match allocationRows for explicit and template allocations, including direct expenses.
+  // A default direct expense still requires only expense.requests in its own company.
+  const requiresAllocationGrant = directShared !== 'direct' ||
+    parseArray(body.allocations).length > 0 || Boolean(safeText(body.allocationTemplateId, 180));
   // Check exact current authority within this write transaction.
-  statements.unshift(spendWriteAuthorityGate(env, context, companyId, allocationsResult, directShared));
+  statements.unshift(spendWriteAuthorityGate(env, context, companyId, allocationsResult, requiresAllocationGrant));
   try {
     await env.DB.batch(statements);
   } catch (cause) {
