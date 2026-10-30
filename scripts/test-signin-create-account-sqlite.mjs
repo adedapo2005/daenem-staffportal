@@ -133,6 +133,18 @@ await check('missing Provisional Profile Edit fails before local challenge',asyn
   assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM signup_verifications').get().n,0);
   db.close();
 });
+await check('pre-verification signup responses cannot enumerate existing employee company membership', async () => {
+  const db = new SqliteD1();
+  db.db.exec("INSERT INTO companies VALUES('company-other','OTHER',1); UPDATE roles SET company_id='company-print' WHERE id='role-provisional'; INSERT INTO employees(id,email,employment_status) VALUES('other-company-employee','known@example.test','active'); INSERT INTO employee_company_memberships VALUES('other-company-membership','other-company-employee','company-other',1,1);");
+  const known = await start(db, { ...base, email:'known@example.test', username:'staff.known' });
+  const unknown = await start(db, { ...base, email:'knight@example.test', username:'staff.knight' });
+  const publicShape = ({response,body}) => ({ status:response.status,
+    keys:Object.keys(body).sort(),destination:body.destination,message:body.message });
+  assert.deepEqual(publicShape(known),publicShape(unknown),
+    'Unauthenticated enrollment cannot reveal the company of an existing employee');
+  assert.equal(known.response.status,200);
+  db.close();
+});
 await check('legacy client company code is ignored; backend onboarding company is authoritative', async () => {
   const db = new SqliteD1();
   db.db.exec(`INSERT INTO employees(id,email,employment_status) VALUES('known','known@example.test','active');
