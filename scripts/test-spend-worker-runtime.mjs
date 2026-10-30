@@ -139,10 +139,12 @@ function procurementTransitionInit(toStatus, idempotencyKey, requestIdHeader, re
 async function main() {
   const original = JSON.parse(await fs.readFile(sourceConfig, 'utf8'));
   const ownerToken = 'qa-spend-owner-token';
+  const ownerNoSpendToken = 'qa-spend-owner-no-spend-token';
   const managerToken = 'qa-spend-manager-token';
   const managerBToken = 'qa-spend-manager-b-token';
   const employeeToken = 'qa-spend-employee-token';
   const ownerHash = sha256(ownerToken + ':' + pepper);
+  const ownerNoSpendHash = sha256(ownerNoSpendToken + ':' + pepper);
   const managerHash = sha256(managerToken + ':' + pepper);
   const managerBHash = sha256(managerBToken + ':' + pepper);
   const employeeHash = sha256(employeeToken + ':' + pepper);
@@ -164,20 +166,25 @@ async function main() {
     "INSERT OR IGNORE INTO employees(id,employee_no,display_name,email,job_title,department,employment_status) VALUES ('qa-spend-manager','QA-SM-001','Spend Manager','qa-spend-manager@example.invalid','Operations Manager','Operations','active');",
     "INSERT OR IGNORE INTO employees(id,employee_no,display_name,email,job_title,department,employment_status) VALUES ('qa-spend-manager-b','QA-SM-002','Role B Manager','qa-spend-manager-b@example.invalid','Special Approval Manager','Operations','active');",
     "INSERT OR IGNORE INTO employees(id,employee_no,display_name,email,job_title,department,employment_status) VALUES ('qa-spend-employee','QA-SE-001','Spend Employee','qa-spend-employee@example.invalid','Portal Employee','Operations','active');",
+    "INSERT OR IGNORE INTO employees(id,employee_no,display_name,email,job_title,department,employment_status) VALUES ('qa-spend-owner-no-spend','QA-SO-001','Owner Without Spend Grants','qa-spend-owner-no-spend@example.invalid','Owner','Operations','active');",
     "INSERT OR IGNORE INTO employee_preferences(employee_id,timezone) VALUES ('employee-owner-bootstrap','America/Los_Angeles');",
     "INSERT OR IGNORE INTO employee_preferences(employee_id,timezone) VALUES ('qa-spend-manager','Africa/Lagos');",
     "INSERT OR IGNORE INTO employee_preferences(employee_id,timezone) VALUES ('qa-spend-manager-b','Africa/Lagos');",
     "INSERT OR IGNORE INTO employee_preferences(employee_id,timezone) VALUES ('qa-spend-employee','Africa/Lagos');",
+    "INSERT OR IGNORE INTO employee_preferences(employee_id,timezone) VALUES ('qa-spend-owner-no-spend','Africa/Lagos');",
     "INSERT OR IGNORE INTO company_locations(id,company_id,name,timezone) VALUES ('qa-spend-print-location','company-printing','Spend QA Printing Location','Africa/Lagos');",
     "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,location_id,is_primary,active) VALUES ('qa-spend-manager-print','qa-spend-manager','company-printing','qa-spend-print-location',1,1);",
     "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,location_id,is_primary,active) VALUES ('qa-spend-manager-b-print','qa-spend-manager-b','company-printing','qa-spend-print-location',1,1);",
     "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,location_id,is_primary,active) VALUES ('qa-spend-employee-print','qa-spend-employee','company-printing','qa-spend-print-location',1,1);",
+    "INSERT OR IGNORE INTO employee_company_memberships(id,employee_id,company_id,location_id,is_primary,active) VALUES ('qa-spend-owner-no-spend-print','qa-spend-owner-no-spend','company-printing','qa-spend-print-location',1,1);",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-spend-manager-print-role','qa-spend-manager','company-printing','role-print-manager');",
     "INSERT OR IGNORE INTO roles(id,company_id,code,name,description,is_system) VALUES ('qa-spend-role-manager-b','company-printing','qa_manager_b','Role B Approval Manager','Scoped role for approval RBAC runtime verification',0);",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-spend-manager-b-print-role','qa-spend-manager-b','company-printing','qa-spend-role-manager-b');",
     "INSERT OR IGNORE INTO permissions(id,code,module,action,description,sensitive) VALUES ('qa-perm-spend-special','qa.expense.approve.special','expense','approve','Runtime-only narrower approval permission',1);",
     "INSERT OR IGNORE INTO role_permissions(id,role_id,permission_id,access_level) SELECT 'qa-spend-manager-b-'||p.id,'qa-spend-role-manager-b',p.id,'approve' FROM permissions p WHERE p.code IN ('expense.approve','qa.expense.approve.special');",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-spend-employee-role','qa-spend-employee','company-printing','role-print-designer');",
+    "INSERT OR IGNORE INTO roles(id,company_id,code,name,description,is_system,active) VALUES ('qa-spend-owner-no-grant-role',NULL,'owner','Owner Without Spend Grant','Synthetic Group Owner with Printing membership and no Spend grants',0,1);",
+    "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-spend-owner-no-spend-role','qa-spend-owner-no-spend','company-printing','qa-spend-owner-no-grant-role');",
     "INSERT OR IGNORE INTO spend_suppliers(id,company_id,name,normalized_name,source) VALUES ('qa-spend-supplier-a','company-printing','Supplier A','supplier a','admin');",
     "INSERT OR IGNORE INTO spend_categories(id,company_id,code,name,normalized_name,accounting_treatment_id,employee_request_allowed,evidence_required,direct_shared_policy,default_cost_center_id,allowed_erp_json,source) VALUES ('qa-spend-capex-category','company-printing','QA_CAPEX','QA capital equipment','qa capital equipment','spend-treatment-capex',1,0,'direct','spend-cc-PRINT-general','[\"finance\"]','system');",
     "INSERT OR IGNORE INTO spend_categories(id,company_id,code,name,normalized_name,accounting_treatment_id,employee_request_allowed,evidence_required,direct_shared_policy,default_cost_center_id,allowed_erp_json,source) VALUES ('qa-spend-payroll-category','company-printing','QA_PAYROLL','QA canonical payroll category','qa canonical payroll category','spend-treatment-payroll',1,0,'direct','spend-cc-PRINT-general','[\"finance\"]','system');",
@@ -185,6 +192,7 @@ async function main() {
     "INSERT OR IGNORE INTO spend_approval_rules(id,company_id,category_id,min_amount_kobo,max_amount_kobo,step_no,approver_role_code,required_permission) VALUES ('qa-spend-role-b-rule','company-printing','qa-spend-role-b-category',0,NULL,1,'qa_manager_b','qa.expense.approve.special');",
     managerRolePermissions, employeeRolePermissions,
     `INSERT OR IGNORE INTO auth_sessions(id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,created_at,last_seen_at,expires_at) VALUES ('qa-spend-owner-session','employee-owner-bootstrap',${quote(ownerHash)},'qa-spend-owner-device','Spend QA Owner','spend-runtime-test','198.51.100.20','2026-09-05T08:00:00.000Z','2026-09-05T14:40:00.000Z','2999-01-01T00:00:00.000Z');`,
+    `INSERT OR IGNORE INTO auth_sessions(id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,created_at,last_seen_at,expires_at) VALUES ('qa-spend-owner-no-spend-session','qa-spend-owner-no-spend',${quote(ownerNoSpendHash)},'qa-spend-owner-no-spend-device','Spend QA Owner Without Grants','spend-runtime-test','198.51.100.24','2026-09-05T08:00:00.000Z','2026-09-05T14:40:00.000Z','2999-01-01T00:00:00.000Z');`,
     `INSERT OR IGNORE INTO auth_sessions(id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,created_at,last_seen_at,expires_at) VALUES ('qa-spend-manager-session','qa-spend-manager',${quote(managerHash)},'qa-spend-manager-device','Spend QA Manager','spend-runtime-test','198.51.100.21','2026-09-05T08:00:00.000Z','2026-09-05T14:40:00.000Z','2999-01-01T00:00:00.000Z');`,
     `INSERT OR IGNORE INTO auth_sessions(id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,created_at,last_seen_at,expires_at) VALUES ('qa-spend-manager-b-session','qa-spend-manager-b',${quote(managerBHash)},'qa-spend-manager-b-device','Spend QA Role B Manager','spend-runtime-test','198.51.100.23','2026-09-05T08:00:00.000Z','2026-09-05T14:40:00.000Z','2999-01-01T00:00:00.000Z');`,
     `INSERT OR IGNORE INTO auth_sessions(id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,created_at,last_seen_at,expires_at) VALUES ('qa-spend-employee-session','qa-spend-employee',${quote(employeeHash)},'qa-spend-employee-device','Spend QA Employee','spend-runtime-test','198.51.100.22','2026-09-05T08:00:00.000Z','2026-09-05T14:40:00.000Z','2999-01-01T00:00:00.000Z');`,
@@ -214,6 +222,10 @@ async function main() {
 
     let result = await request(baseUrl, '', '/api/spend/bootstrap'); expect('unauthenticated spend bootstrap', result, 401); matrix.push(['GET /api/spend/bootstrap', 'unauthenticated', 401]);
     result = await request(baseUrl, ownerToken, '/api/spend/bootstrap?companyId=company-printing'); expect('owner spend bootstrap', result, 200); assert('owner master categories', result.body.masterData?.categories?.length > 0, result.body); matrix.push(['GET /api/spend/bootstrap', 'owner', 200]);
+    result = await request(baseUrl, ownerNoSpendToken, '/api/spend/requests?companyId=company-printing'); expect('owner without Spend grant cannot list company requests', result, 403); matrix.push(['GET /api/spend/requests', 'Owner without company Spend grant', 403]);
+    result = await request(baseUrl, ownerNoSpendToken, '/api/spend/requests/qa-spend-loss-request'); expect('owner without Spend grant cannot read a guessed request', result, 404); matrix.push(['GET /api/spend/requests/:id', 'Owner without company Spend grant', 404]);
+    result = await request(baseUrl, ownerNoSpendToken, '/api/spend/approvals?companyId=company-printing'); expect('owner without Spend grant cannot read approvals', result, 403); matrix.push(['GET /api/spend/approvals', 'Owner without company Spend grant', 403]);
+    result = await request(baseUrl, ownerNoSpendToken, '/api/spend/requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(expensePayload('qa-owner-no-spend-request')) }); expect('owner without Spend grant cannot create a request', result, 403); matrix.push(['POST /api/spend/requests', 'Owner without company Spend grant', 403]);
     result = await request(baseUrl, employeeToken, '/api/spend/bootstrap?companyId=company-printing'); expect('employee spend bootstrap', result, 200); matrix.push(['GET /api/spend/bootstrap', 'employee', 200]);
     result = await request(baseUrl, employeeToken, '/api/offline/bootstrap?companyId=company-printing'); expect('employee offline bootstrap', result, 200); assert('expense operations are visible only with the employee permission', result.body.operations?.some((item) => item.kind === 'expense.request.submit'), result.body); matrix.push(['GET /api/offline/bootstrap', 'employee expense allowlist', 200]);
     result = await request(baseUrl, employeeToken, '/api/offline/activity?companyId=company-printing'); expect('employee offline activity', result, 200); assert('offline activity remains own-scope', Array.isArray(result.body.operations) && !JSON.stringify(result.body).includes('qa-spend-manager'), result.body); matrix.push(['GET /api/offline/activity', 'employee own scope', 200]);

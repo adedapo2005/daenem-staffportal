@@ -86,11 +86,12 @@ function roleAssignedForCompany(context: SessionContext, roleCode: string, compa
 }
 
 function approvalPermissionSatisfied(context: SessionContext, requiredPermission: string, companyId: string) {
-  return owner(context) || hasPermission(context, requiredPermission, 'approve', companyId);
+  return hasPermission(context, requiredPermission, 'approve', companyId);
 }
 
 function can(context: SessionContext, code: string, level: 'view' | 'create' | 'edit' | 'approve' | 'manage', companyId?: string) {
-  return owner(context) || hasPermission(context, code, level, companyId);
+  // Owner identity does not grant company-scoped Spend permissions.
+  return hasPermission(context, code, level, companyId);
 }
 
 function error(message: string, status = 400, extra: Record<string, unknown> = {}) {
@@ -461,7 +462,7 @@ async function requestById(env: SpendEnv, id: string) {
 }
 
 async function pendingApprovalForViewer(env: SpendEnv, context: SessionContext, requestIdValue: string, companyId: string) {
-  if (owner(context) || !companyInScope(context, companyId)) return false;
+  if (!companyInScope(context, companyId)) return false;
   const pending = await env.DB.prepare(`
     SELECT a.approver_role_code AS approverRoleCode,COALESCE(r.required_permission,'expense.approve') AS requiredPermission
     FROM spend_expense_approvals a
@@ -477,10 +478,14 @@ async function pendingApprovalForViewer(env: SpendEnv, context: SessionContext, 
 async function visibleRequest(env: SpendEnv, context: SessionContext, row: Record<string, unknown>) {
   const companyId = String(row.companyId || '');
   if (!companyInScope(context, companyId)) return false;
-  if (owner(context)) return true;
-  if (String(row.requesterEmployeeId) === context.employee.id && can(context, 'expense.own', 'view', companyId)) return true;
-  if (['submitted', 'reviewed'].includes(String(row.status || ''))) return pendingApprovalForViewer(env, context, String(row.id), companyId);
-  return can(context, 'expense.review', 'view', companyId);
+  if (hasPermission(context, 'expense.review', 'view', companyId)) return true;
+  if (String(row.requesterEmployeeId) === context.employee.id &&
+      (hasPermission(context, 'expense.own', 'view', companyId) ||
+       hasPermission(context, 'expense.requests', 'view', companyId) ||
+       hasPermission(context, 'expense.requests', 'create', companyId))) return true;
+  if (['submitted', 'reviewed'].includes(String(row.status || '')))
+    return pendingApprovalForViewer(env, context, String(row.id), companyId);
+  return false;
 }
 
 function safeOwnerAuditDetails(value: unknown) {
@@ -534,32 +539,54 @@ async function serializeRequest(env: SpendEnv, context: SessionContext, row: Rec
 async function listRequests(request: Request, env: SpendEnv, context: SessionContext) {
   const url = new URL(request.url);
   const companyId = safeText(url.searchParams.get('companyId'), 160);
-  const scopedCompanyIds = owner(context)
-    ? ((await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()).results || []).map((row) => row.id)
-    : context.companies.map((company) => company.id);
+  // Spend lists are bounded by current company membership plus an explicit
+  // domain grant. Owner status never supplies either implicitly.
+  const scopedCompanyIds = context.companies
+    .filter((company) =>
+      hasPermission(context, 'expense.own', 'view', company.id) ||
+      hasPermission(context, 'expense.requests', 'view', company.id) ||
+      hasPermission(context, 'expense.requests', 'create', company.id) ||
+      hasPermission(context, 'expense.review', 'view', company.id) ||
+      hasPermission(context, 'expense.approve', 'approve', company.id))
+    .map((company) => company.id);
   if (companyId && !scopedCompanyIds.includes(companyId)) return error('Company access is not assigned.', 403);
-  const reviewCompanyIds = owner(context)
-    ? scopedCompanyIds
-    : context.companies.filter((company) => can(context, 'expense.review', 'view', company.id)).map((company) => company.id);
+  const reviewCompanyIds = context.companies
+    .filter((company) => hasPermission(context, 'expense.review', 'view', company.id))
+    .map((company) => company.id);
+  const approvalCompanyIds = context.companies
+    .filter((company) => hasPermission(context, 'expense.approve', 'approve', company.id))
+    .map((company) => company.id);
   const bindings: unknown[] = [];
   const conditions: string[] = [];
   if (companyId) {
     conditions.push('r.company_id=?');
     bindings.push(companyId);
     if (!reviewCompanyIds.includes(companyId)) {
-      conditions.push('r.requester_employee_id=?');
+      if (approvalCompanyIds.includes(companyId)) {
+        conditions.push(`(r.requester_employee_id=? OR (r.status IN ('submitted','reviewed') AND EXISTS
+          (SELECT 1 FROM spend_expense_approvals a WHERE a.expense_request_id=r.id AND a.status='pending')))`);
+      } else {
+        conditions.push('r.requester_employee_id=?');
+      }
       bindings.push(context.employee.id);
     }
   } else if (scopedCompanyIds.length) {
     conditions.push(`r.company_id IN (${scopedCompanyIds.map(() => '?').join(',')})`);
     bindings.push(...scopedCompanyIds);
-    if (reviewCompanyIds.length && !owner(context)) {
-      conditions.push(`(r.company_id IN (${reviewCompanyIds.map(() => '?').join(',')}) OR r.requester_employee_id=?)`);
-      bindings.push(...reviewCompanyIds, context.employee.id);
-    } else if (!owner(context)) {
-      conditions.push('r.requester_employee_id=?');
-      bindings.push(context.employee.id);
+    const visibleConditions = ['r.requester_employee_id=?'];
+    const visibleBindings: unknown[] = [context.employee.id];
+    if (reviewCompanyIds.length) {
+      visibleConditions.push(`r.company_id IN (${reviewCompanyIds.map(() => '?').join(',')})`);
+      visibleBindings.push(...reviewCompanyIds);
     }
+    if (approvalCompanyIds.length) {
+      visibleConditions.push(`(r.company_id IN (${approvalCompanyIds.map(() => '?').join(',')})
+        AND r.status IN ('submitted','reviewed') AND EXISTS
+        (SELECT 1 FROM spend_expense_approvals a WHERE a.expense_request_id=r.id AND a.status='pending'))`);
+      visibleBindings.push(...approvalCompanyIds);
+    }
+    conditions.push(`(${visibleConditions.join(' OR ')})`);
+    bindings.push(...visibleBindings);
   } else return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), requests: [] });
   const rows = await env.DB.prepare(`
     SELECT r.id,r.request_no AS requestNo,r.requester_employee_id AS requesterEmployeeId,e.display_name AS requesterName,
@@ -575,7 +602,9 @@ async function listRequests(request: Request, env: SpendEnv, context: SessionCon
     ORDER BY r.updated_at DESC LIMIT 100
   `).bind(...bindings).all<Record<string, unknown>>();
   const visibleRows = await Promise.all((rows.results || []).map(async (row) => {
-    if (owner(context) || String(row.requesterEmployeeId) === context.employee.id || !['submitted', 'reviewed'].includes(String(row.status || ''))) return row;
+    const rowCompanyId = String(row.companyId || '');
+    if (String(row.requesterEmployeeId) === context.employee.id || reviewCompanyIds.includes(rowCompanyId)) return row;
+    if (!['submitted', 'reviewed'].includes(String(row.status || ''))) return null;
     return await pendingApprovalForViewer(env, context, String(row.id), String(row.companyId || '')) ? row : null;
   }));
   return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), requests: visibleRows.filter((row): row is Record<string, unknown> => Boolean(row)) });
@@ -840,8 +869,8 @@ async function actionExpense(request: Request, env: SpendEnv, context: SessionCo
     WHERE a.expense_request_id=? AND a.status='pending' ORDER BY a.step_no LIMIT 1
   `).bind(id).first<{ id: string; stepNo: number; approverRoleCode: string; requiredPermission: string }>();
   if (!pending) return error('This request has no pending approval step.', 409, { errorCategory: 'approval-state' });
-  if (!owner(context) && (!roleAssignedForCompany(context, String(pending.approverRoleCode), companyId)
-    || !approvalPermissionSatisfied(context, String(pending.requiredPermission || 'expense.approve'), companyId))) {
+  if (!roleAssignedForCompany(context, String(pending.approverRoleCode), companyId)
+    || !approvalPermissionSatisfied(context, String(pending.requiredPermission || 'expense.approve'), companyId)) {
     return deny(env, request, context, companyId, 'This approval step is assigned to another role or permission scope.', 'approval_role_denied');
   }
   if (action === 'approve') {
@@ -923,9 +952,11 @@ async function approvals(request: Request, env: SpendEnv, context: SessionContex
   // controlled rule may name a narrower permission, and users without a
   // matching role/permission must receive zero rows rather than a broader
   // company queue.
-  const allowed = context.companies.filter((company) => !companyId || company.id === companyId);
-  if (!allowed.length && !owner(context)) return error('Expense approval company scope is not assigned.', 403);
-  const ids = owner(context) ? (await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()).results?.map((row) => row.id) || [] : allowed.map((company) => company.id);
+  const ids = context.companies
+    .filter((company) => (!companyId || company.id === companyId) &&
+      hasPermission(context, 'expense.approve', 'approve', company.id))
+    .map((company) => company.id);
+  if (companyId && !ids.length) return error('Expense approval company scope is not assigned.', 403);
   if (!ids.length) return json({ approvals: [] });
   const placeholders = ids.map(() => '?').join(',');
   const rows = await env.DB.prepare(`
@@ -941,9 +972,9 @@ async function approvals(request: Request, env: SpendEnv, context: SessionContex
     LEFT JOIN spend_categories cat ON cat.id=r.category_id LEFT JOIN spend_suppliers sup ON sup.id=r.supplier_id
     WHERE a.status='pending' AND r.company_id IN (${placeholders}) ORDER BY r.updated_at DESC
   `).bind(...ids).all<Record<string, unknown>>();
-  const filtered = (rows.results || []).filter((row) => owner(context)
-    || (roleAssignedForCompany(context, String(row.approverRoleCode || ''), String(row.companyId || ''))
-      && approvalPermissionSatisfied(context, String(row.requiredPermission || 'expense.approve'), String(row.companyId || ''))));
+  const filtered = (rows.results || []).filter((row) =>
+    roleAssignedForCompany(context, String(row.approverRoleCode || ''), String(row.companyId || ''))
+      && approvalPermissionSatisfied(context, String(row.requiredPermission || 'expense.approve'), String(row.companyId || '')));
   return json({ serverTime: new Date().toISOString(), approvals: filtered.slice(0, 100) });
 }
 
@@ -953,10 +984,7 @@ async function bootstrap(request: Request, env: SpendEnv, context: SessionContex
   if (!companyId) return error('Company scope is required.', 400);
   if (!companyInScope(context, companyId)) return error('Company access is not assigned.', 403);
   if (!can(context, 'expense.requests', 'create', companyId) && !can(context, 'expense.own', 'view', companyId)) return error('Expense access is not assigned.', 403);
-  const costCenterScope = context.companies.map((company) => company.id);
-  const costCenterQuery = owner(context)
-    ? env.DB.prepare(`SELECT id,company_id AS companyId,code,name FROM spend_cost_centers WHERE company_id IN (SELECT id FROM companies WHERE active=1) AND active=1 ORDER BY company_id,name`)
-    : env.DB.prepare(`SELECT id,company_id AS companyId,code,name FROM spend_cost_centers WHERE company_id IN (${costCenterScope.map(() => '?').join(',')}) AND active=1 ORDER BY company_id,name`).bind(...costCenterScope);
+  const costCenterQuery = env.DB.prepare(`SELECT id,company_id AS companyId,code,name FROM spend_cost_centers WHERE company_id=? AND active=1 ORDER BY name`).bind(companyId);
   const [categories, costCenters, suppliers, templates, projects] = await Promise.all([
     env.DB.prepare(`SELECT id,code,name,accounting_treatment_id AS accountingTreatmentId,employee_request_allowed AS employeeRequestAllowed,evidence_required AS evidenceRequired,direct_shared_policy AS directSharedPolicy,default_cost_center_id AS defaultCostCenterId,allowed_erp_json AS allowedErpJson FROM spend_categories WHERE active=1 AND employee_request_allowed=1 AND (company_id IS NULL OR company_id=?) ORDER BY name`).bind(companyId).all<Record<string, unknown>>(),
     costCenterQuery.all<Record<string, unknown>>(),
