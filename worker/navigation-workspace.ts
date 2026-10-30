@@ -184,8 +184,10 @@ const navigationLiveGroupOwnerSql = `EXISTS (
  SELECT 1 FROM employee_roles assigned
  JOIN employees owner_actor ON owner_actor.id=assigned.employee_id
     AND owner_actor.employment_status='active'
+  -- Group Owner requires an actual Group-scoped role definition.
+  -- Company-scoped 'owner' cannot preserve privilege after Group Owner revocation.
   JOIN roles role ON role.id=assigned.role_id AND role.code='owner' AND role.active=1
-   AND (role.company_id IS NULL OR role.company_id=assigned.company_id)
+    AND role.company_id IS NULL
  JOIN employee_company_memberships membership
    ON membership.employee_id=assigned.employee_id
    AND membership.company_id=assigned.company_id AND membership.active=1

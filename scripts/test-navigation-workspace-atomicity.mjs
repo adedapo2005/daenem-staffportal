@@ -303,5 +303,52 @@ check(financeGate.includes("group_deny.company_id IS NULL") &&
 check(financeGate.includes("ORDER BY CASE WHEN o.access_level='none' THEN 0 ELSE 1 END"),
   'Finance journal at-write SQL honors legacy Group-wide denies');
 
+// A company-scoped role *named* owner must never replace Group Owner
+// authority after the original Group-scoped owner assignment is revoked.
+// Prove the actual D1 batch guard rejects stale Owner context for both policy
+// and protected privilege assignments, without changing any audit or settings.
+const ownerPolicyBefore = scalar("SELECT setting_value value FROM app_settings WHERE setting_key='navigation.default_style'").value;
+const ownerPolicyAuditBefore = scalar("SELECT COUNT(*) n FROM audit_logs WHERE action='update_group_policy'").n;
+const protectedBefore = snapshotOverride();
+const protectedHistoryBefore = scalar("SELECT COUNT(*) n FROM navigation_access_changes WHERE item_key='authorized-workspace'").n;
+const currentProtectedGrant = scalar("SELECT access_level level FROM role_permissions WHERE role_id='role-worker' AND permission_id='p-nav-assign'").level;
+beforeBatchHook = () => sqlite.exec(
+  "DELETE FROM employee_roles WHERE employee_id='employee-owner' AND role_id='role-owner';"+
+  "INSERT INTO roles(id,code,company_id,active) VALUES('role-local-owner','owner','company-printing',1);"+
+  "INSERT INTO employee_roles(employee_id,company_id,role_id) VALUES('employee-owner','company-printing','role-local-owner')",
+);
+response = await call('/api/navigation/policy', {defaultStyle:'guided-groups'});
+check(response.status===409,
+  'Company-scoped Owner cannot update Group policy after global Owner assignment revocation');
+check(scalar("SELECT setting_value value FROM app_settings WHERE setting_key='navigation.default_style'").value === ownerPolicyBefore
+  && scalar("SELECT COUNT(*) n FROM audit_logs WHERE action='update_group_policy'").n===ownerPolicyAuditBefore,
+  'Denied scoped Owner policy leaves setting and audit unchanged');
+
+response = await call('/api/navigation/assign', {
+  companyId:'company-printing',targetType:'role',targetId:'role-worker',
+  itemKey:'authorized-workspace',accessLevel:'edit',
+  reason:'QA company-scoped Owner cannot grant Group administration',
+});
+check(response.status===409,
+  'Company-scoped Owner cannot grant privileged Workspace access at write');
+check(sameSnapshot(protectedBefore,snapshotOverride())
+  && scalar("SELECT COUNT(*) n FROM navigation_access_changes WHERE item_key='authorized-workspace'").n===protectedHistoryBefore
+  && scalar("SELECT access_level level FROM role_permissions WHERE role_id='role-worker' AND permission_id='p-nav-assign'").level===currentProtectedGrant,
+  'Denied scoped Owner protected grant leaves permission, history and audit unchanged');
+
+sqlite.exec(
+  "DELETE FROM employee_roles WHERE employee_id='employee-owner' AND role_id='role-local-owner';"+
+  "DELETE FROM roles WHERE id='role-local-owner';"+
+  "INSERT INTO employee_roles(employee_id,company_id,role_id) VALUES('employee-owner','company-printing','role-owner')",
+);
+response = await call('/api/navigation/policy', {defaultStyle:'guided-groups'});
+check(response.status===200
+  && scalar("SELECT setting_value value FROM app_settings WHERE setting_key='navigation.default_style'").value==='guided-groups'
+  && scalar("SELECT COUNT(*) n FROM audit_logs WHERE action='update_group_policy'").n===ownerPolicyAuditBefore+1,
+  'Restored valid Group Owner can update Group policy with one audit');
+const authSource = fs.readFileSync(path.resolve('worker/auth.ts'),'utf8');
+check(authSource.includes("(r.code <> 'owner' OR r.company_id IS NULL)"),
+  'Canonical session owner authority excludes company-scoped owner roles');
+
 console.log(`PASS navigation workspace mutation/audit atomicity (${checks} assertions; actual Worker module + disposable SQLite)`);
 sqlite.close();
