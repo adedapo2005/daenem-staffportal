@@ -68,4 +68,57 @@
 .dsp-provisional-shell button:focus-visible{outline:3px solid #84dcaa;outline-offset:3px}
 @media(max-width:940px){.dsp-provisional-intro{align-items:stretch;flex-direction:column}.dsp-provisional-approval-status{width:100%}.dsp-provisional-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.dsp-provisional-header{padding:13px 16px}.dsp-provisional-header-actions{gap:8px}.dsp-provisional-session{font-size:12px}.dsp-provisional-main{padding:22px 14px}.dsp-provisional-card{padding:20px 16px}.dsp-provisional-field-grid{grid-template-columns:1fr}.dsp-provisional-intro h1{font-size:26px}.dsp-provisional-brandmark{width:38px;height:38px}.dsp-provisional-signout{padding:8px 10px;min-height:40px}}
+/* Full-size 32-inch / 4K desktops: scale readable workspace density, not a miniature 1080p card. */
+@media(min-width:2600px){
+  .dsp-provisional-shell{font-size:22px}
+  .dsp-provisional-header{padding:32px 90px}
+  .dsp-provisional-brandmark{width:66px;height:66px;border-radius:16px}
+  .dsp-provisional-brandmark svg{width:35px;height:35px}
+  .dsp-provisional-brand strong{font-size:29px}
+  .dsp-provisional-brand small{font-size:18px}
+  .dsp-provisional-session,.dsp-provisional-signout{font-size:19px}
+  .dsp-provisional-session>span{width:11px;height:11px}
+  .dsp-provisional-signout{min-height:62px;padding:14px 25px}
+  .dsp-provisional-signout svg{width:24px;height:24px}
+  .dsp-provisional-main{width:min(100%,3020px);padding:70px 75px}
+  .dsp-provisional-intro{margin-bottom:45px;gap:55px}
+  .dsp-provisional-eyebrow{font-size:19px}
+  .dsp-provisional-intro h1{font-size:64px;margin:17px 0}
+  .dsp-provisional-intro p{font-size:23px;max-width:1360px}
+  .dsp-provisional-approval-status{min-width:520px;padding:29px 32px;gap:18px}
+  .dsp-provisional-approval-status strong{font-size:21px}
+  .dsp-provisional-approval-status small{font-size:18px}
+  .dsp-provisional-approval-status>svg{width:32px;height:32px}
+  .dsp-provisional-grid{gap:34px}
+  .dsp-provisional-card{padding:47px;border-radius:23px}
+  .dsp-provisional-aside{gap:34px}
+  .dsp-provisional-card-heading{gap:21px;margin-bottom:36px}
+  .dsp-provisional-card-icon{width:65px;height:65px;border-radius:17px}
+  .dsp-provisional-card-icon svg{width:29px;height:29px}
+  .dsp-provisional-card h2{font-size:30px}
+  .dsp-provisional-card-heading p{font-size:19px;margin-top:8px}
+  .dsp-provisional-progress{margin-bottom:37px}
+  .dsp-provisional-progress>span{font-size:19px;margin-bottom:15px}
+  .dsp-provisional-progress b{font-size:22px}
+  .dsp-provisional-progress-track{height:14px}
+  .dsp-provisional-form{gap:24px}
+  .dsp-provisional-field-grid{gap:27px}
+  .dsp-provisional-form label{font-size:20px;gap:13px}
+  .dsp-provisional-form input{min-height:72px;padding:17px 20px;font-size:22px;border-radius:14px}
+  .dsp-provisional-field-icon{padding-left:20px;gap:15px}
+  .dsp-provisional-field-icon input{padding-left:0}
+  .dsp-provisional-field-icon svg{width:25px;height:25px}
+  .dsp-provisional-save{min-height:76px;font-size:23px;padding:22px 30px}
+  .dsp-provisional-save svg{width:25px;height:25px}
+  .dsp-provisional-status-row{font-size:21px;gap:18px;padding:23px 0}
+  .dsp-provisional-status-row strong{font-size:19px}
+  .dsp-provisional-status-row svg{width:25px;height:25px}
+  .dsp-provisional-refresh{font-size:20px;min-height:66px;margin-top:32px}
+  .dsp-provisional-refresh svg{width:23px;height:23px}
+  .dsp-provisional-assignment>div{padding:20px 0}
+  .dsp-provisional-assignment dt,.dsp-provisional-assignment dd{font-size:19px}
+  .dsp-provisional-helper{font-size:19px;margin-top:29px}
+  .dsp-provisional-feedback{font-size:19px}
+  .dsp-provisional-footer{font-size:17px;padding:20px}
+}
 @media(prefers-reduced-motion:reduce){.dsp-provisional-progress-track>span{transition:none}}

@@ -59,8 +59,14 @@ try{
         viewport:document.documentElement.clientWidth,
         scrollWidth:document.documentElement.scrollWidth,
         mainVisible:!!document.querySelector('.dsp-provisional-main'),
+        mainWidth:document.querySelector('.dsp-provisional-main')?.getBoundingClientRect().width || 0,
+        titleSize:parseFloat(getComputedStyle(document.querySelector('.dsp-provisional-intro h1')).fontSize),
       }));
       assert.equal(sizing.mainVisible,true);
+      if(vp.width>=3840){
+        assert.ok(sizing.mainWidth>=2600,'4K workspace width too small: '+JSON.stringify(sizing));
+        assert.ok(sizing.titleSize>=54,'4K headline unreadable: '+JSON.stringify(sizing));
+      }
       assert.ok(sizing.scrollWidth<=sizing.viewport+2,
         vp.name+' horizontal overflow '+JSON.stringify(sizing));
       assert.equal(await page.getByRole('textbox',{name:'First Name'}).inputValue(),'Ada');
