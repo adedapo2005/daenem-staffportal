@@ -1,0 +1,48 @@
+{
+  "review": "DAENEM Staff Portal Forms builder authorization-boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/forms.ts",
+    "scripts/check-forms-builder-boundaries.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Forms list, creation and review paths reused aggregate permission across companies and accepted unauthorized company filters.",
+      "correction": "Every company form operation now derives its scope from authoritative company-level forms permission; unauthorized targets fail closed."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Assignments could target foreign employees or roles and global group assignments accepted malformed company scope.",
+      "correction": "Employee membership and role company are validated before writes; global assignment is Owner-managed, global-form-only and company-null."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Personal assignments, review queues and offline idempotency replay could cross assignment or company boundaries.",
+      "correction": "Assignment reads repeat form and audience company scope; reviews require target-company approval; replay and updates repeat assignment and employee identity; denials are neutral."
+    }
+  ],
+  "verification": {
+    "typecheck": "PASS",
+    "formsBuilderBoundaries": "19/19 PASS",
+    "companyAccess": "26/26 PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun90": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Forms builder security change; Workflow, Report, Widget and Theme builders plus authenticated V45 browser acceptance remain pending."
+  },
+  "checkpoint": "90ce191c8a856023840807b0923469e0d32e6751",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

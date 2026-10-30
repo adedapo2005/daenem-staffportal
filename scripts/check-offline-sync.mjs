@@ -59,12 +59,19 @@ must(!serviceWorker.includes('cache.put(request, copy)'), 'service worker must n
 must(!read('src/signin-experience.tsx').includes('offline'), 'sign-in composition contains no offline UI');
 
 if (fs.existsSync(path.join(root, '.git'))) {
+  const legacyDiffBase = '40a96e1cbd89f5570197a8e7c0c5380ba4b2479b';
+  const diffBase = process.env.STAFFPORTAL_DIFF_BASE || legacyDiffBase;
   try {
-    const changed = execFileSync('git', ['diff', '--name-only', '40a96e1cbd89f5570197a8e7c0c5380ba4b2479b...HEAD'], { encoding: 'utf8' });
+    const changed = execFileSync('git', ['diff', '--name-only', `${diffBase}...HEAD`], { encoding: 'utf8' });
     must(!changed.split(/\r?\n/).some((file) => /signin-experience\.(tsx|css)$/.test(file)), 'accepted sign-in visual files changed');
   } catch (error) {
     const gitMessage = [error?.stderr, error?.stdout, ...(error?.output || [])].filter(Boolean).join('\n');
-    if (error?.status !== undefined && !/not a git repository/i.test(gitMessage)) throw error;
+    const missingHistoricalBase = /Invalid symmetric difference expression|bad object|unknown revision/.test(gitMessage);
+    if (missingHistoricalBase && diffBase === legacyDiffBase) {
+      console.warn('Dedicated repository has no legacy shared-repository diff base; sign-in diff gate is deferred to the PR base SHA.');
+    } else if (error?.status !== undefined && !/not a git repository/i.test(gitMessage)) {
+      throw error;
+    }
   }
 }
 

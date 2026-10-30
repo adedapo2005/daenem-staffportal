@@ -10,7 +10,7 @@ const sourceConfig = path.join(root, 'wrangler.jsonc');
 const testConfig = path.join(root, '.wrangler-spend-runtime-test.jsonc');
 const databaseName = 'daenem-spend-runtime-test';
 const pepper = 'spend-runtime-test-pepper';
-const wrangler = path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'wrangler.cmd' : 'wrangler');
+const wrangler = path.join(root, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function sha256(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
@@ -19,7 +19,7 @@ function uid(prefix) { return `${prefix}-${crypto.randomUUID()}`; }
 
 function runWrangler(args, label = 'wrangler') {
   return new Promise((resolve, reject) => {
-    const child = spawn(wrangler, args, { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [wrangler, ...args], { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'] });
     let output = '';
     child.stdout.on('data', (chunk) => { output += chunk; });
     child.stderr.on('data', (chunk) => { output += chunk; });
@@ -201,7 +201,7 @@ async function main() {
     await fs.writeFile(testConfig, JSON.stringify(config, null, 2) + '\n');
     await runWrangler(['d1', 'migrations', 'apply', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir], 'spend migration setup');
     await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', seed], 'spend fixture seed');
-    runtime = spawn(wrangler, ['dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
+    runtime = spawn(process.execPath, [wrangler, 'dev', '--local', '--config', testConfig, '--persist-to', persistDir, '--ip', '127.0.0.1', '--port', String(port)], { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     let output = '';
     runtime.stdout.on('data', (chunk) => { output += chunk; }); runtime.stderr.on('data', (chunk) => { output += chunk; });
     const deadline = Date.now() + 45_000;

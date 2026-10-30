@@ -1,0 +1,28 @@
+{
+  "scope": "HR free-text bounds and lifecycle task integrity",
+  "codeCheckpoint": "db3fac8be45570ab1312cd0c8cd4676f40b91d83",
+  "reviewedAt": "2026-09-22T15:00:00Z",
+  "findings": {
+    "p0": [],
+    "p1": [],
+    "p2": []
+  },
+  "verification": {
+    "nextPhase": "50/50 PASS",
+    "workflowBuilder": "15/15 PASS",
+    "typecheck": "PASS",
+    "zeroDisclosure": "PASS",
+    "fullBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun136": "PASS"
+  },
+  "corrections": [
+    "Bound and normalized HR leave, review, case, lifecycle and task free-text inputs.",
+    "Added a partial unique index preventing duplicate active lifecycle processes.",
+    "Added terminal-state and compare-and-set guards to lifecycle task mutation.",
+    "Derived lifecycle process status from authoritative task rows."
+  ],
+  "migration": "0073 is committed but not applied remotely; production migration remains unauthorized.",
+  "productionActions": false,
+  "farmsAccess": false
+}

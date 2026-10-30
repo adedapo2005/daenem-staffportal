@@ -107,6 +107,12 @@ AI-generated encouragement is always draft-first: Generate -> Preview -> Approve
 
 Emergency broadcasts can target the entire group, a company, location, department, role or selected employees. The sender explicitly chooses whether to send push notifications and whether acknowledgement is required.
 
+## Design references
+
+Durable UI/UX reference sources for implementation and review are maintained in [`docs/DESIGN-REFERENCES.md`](docs/DESIGN-REFERENCES.md).
+
+Material Design 3 (`https://m3.material.io/`) is an approved additional reference for component patterns, hierarchy, interaction states, iconography, motion, responsiveness, accessibility, and consistency. It informs quality; it does not replace DAENEM's established visual language or accepted no-regression requirements.
+
 ## Initial Cloudflare architecture
 
 - React + Vite

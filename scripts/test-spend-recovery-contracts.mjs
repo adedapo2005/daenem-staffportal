@@ -7,7 +7,7 @@ const must = (condition, message) => {
   if (!condition) throw new Error(`Spend recovery contract failed: ${message}`);
 };
 
-const workflow = read('../.github/workflows/qa-staffportal-spend-foundation.yml');
+const workflow = read('.github/workflows/qa-staffportal-spend-foundation.yml');
 const spend = read('worker/spend.ts');
 const offline = read('src/offline-platform.ts');
 const offlineServer = read('worker/offline.ts');

@@ -1,0 +1,55 @@
+{
+  "review": "DAENEM Staff Portal workforce Attendance and Payroll company-boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/attendance.ts",
+    "worker/payroll.ts",
+    "scripts/check-workforce-boundaries.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Attendance and Payroll permission checks could reuse authority granted for one assigned company when operating on another assigned company.",
+      "correction": "Attendance view/clock and every Payroll authority decision now evaluate the requested company explicitly against backend permission truth."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Payroll adjustments could reference an employee outside the target company and approval authority was not evaluated for that company.",
+      "correction": "Adjustment creation now requires an active target-company membership and target-company approval authority."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Unauthorized Payroll detail and status routes disclosed whether a run identifier existed.",
+      "correction": "Unauthorized run reads and status changes now return the same neutral not-found response as a missing record."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "Attendance location joins and photo objects did not repeat company scope.",
+      "correction": "Location joins, object keys, and R2 metadata now bind attendance evidence to the authoritative company."
+    }
+  ],
+  "verification": {
+    "workforceBoundaries": "12/12 PASS",
+    "companyAccess": "26/26 PASS",
+    "zeroDisclosure": "PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun112": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Attendance and Payroll company-isolation, neutral-denial, and evidence-scope change; broader Staff profile/self-service and authenticated V45 browser acceptance remain pending."
+  },
+  "checkpoint": "8fd18b7a3bf49e45786de3adaae28733544d4f88",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

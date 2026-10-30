@@ -16,7 +16,7 @@ function membership(context: SessionContext, companyId: string) {
 
 function allowed(context: SessionContext, companyId: string, minimum: Access = 'view') {
   if (!membership(context, companyId)) return false;
-  return hasPermission(context, 'inventory.access', minimum);
+  return hasPermission(context, 'inventory.access', minimum, companyId);
 }
 
 function koboFromNaira(value: unknown) {

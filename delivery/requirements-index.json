@@ -1,0 +1,95 @@
+{
+  "project": "DAENEM Staff Portal",
+  "policy": "delivery/AUTONOMOUS-DELIVERY-CONTROLLER.md",
+  "statusValues": ["VERIFIED COMPLETE","IMPLEMENTED — AWAITING QA","PARTIAL","MISSING","BLOCKED","SUPERSEDED","PRODUCTION-GATED"],
+  "priorityValues": ["P0","P1","P2","P3"],
+  "families": [
+    {
+      "id": "V44-CLOSURE",
+      "priority": "P0",
+      "status": "PARTIAL",
+      "description": "Close recovered V43 backend-truth, API, company projection, delegated admin and rendered acceptance blockers.",
+      "evidence": "Backend/static contracts pass; rendered owner/delegated-manager/unauthorized acceptance remains blocked by the absence of a supported non-production V45 Sites URL.",
+      "requirements": [
+        "canonical backend setting keys",
+        "backend truth before render",
+        "retained Sites API integration path",
+        "authorized company projection",
+        "delegated communications administration",
+        "rendered visual acceptance"
+      ]
+    },
+    {
+      "id": "SECURITY-ZERO-DISCLOSURE",
+      "priority": "P0",
+      "status": "IMPLEMENTED — AWAITING QA",
+      "description": "No permission means no disclosure across UI, API, search, AI, counts, routes, notifications, favorites, recents and breadcrumbs.",
+      "evidence": "Static acceptance PASS: zero-disclosure contract; dashboard permissions; post-auth layout; canonical data boundary; company access 26/26; Directory boundaries 14/14; Workforce boundaries 12/12; Staff self-service boundaries 37/37 with permission-composed My Day, notification revocation, neutral denials and target-company profile authority; Printing boundaries 29/29; Autos/Logistics boundaries 21/21; Forms builder boundaries 19/19 with company-scoped listing, creation, assignment, personal/review queues and assignment-scoped idempotency; Theme builder boundaries 15/15 with explicit Group authority and atomic audit evidence; Staff Directory boundaries 14/14 with target-company permission composition and no cross-company manage bypass; target-company permission enforcement for Inventory/Finance; neutral, company-scoped Procurement denial/idempotency behavior; owner support 15/15; Smart Help 22/22; Platform Center 31/31. Reviewed P1 authorization/disclosure defects were fixed and bounded re-review has no open P0/P1/P2. Authenticated browser leakage checks remain pending."
+    },
+    {
+      "id": "RELEASE-INTEGRITY",
+      "priority": "P0",
+      "status": "PARTIAL",
+      "description": "Global typecheck, build, migration validation, runtime integration, staging, rollback and release evidence.",
+      "evidence": "Global typecheck/build and staging probes PASS; offline Windows Wrangler D1 replay remains BLOCKED after migration start; no remote migration was run."
+    },
+    {
+      "id": "MASTER-V3",
+      "priority": "P1",
+      "status": "PARTIAL",
+      "range": "SP-V3-000..139",
+      "description": "Authoritative Master Product / Experience / Architecture Contract V3 requirements."
+    },
+    {
+      "id": "HOME",
+      "priority": "P1",
+      "status": "PARTIAL",
+      "range": "HOME-SECURITY-001, HOME-001..038",
+      "description": "Permission-composed personalized Home, My Day, Action Center, business widgets, Owner Command Center, Ask DAENEM and contextual work surfaces.",
+      "evidence": "Static permission-composed Home contract PASS for owner, manager, employee and My Day/data-boundary surfaces; Staff self-service 37/37 additionally verifies module-specific My Day company scopes, active workflow-form counts, notification scoping and suppressed unauthorized prompts. Authenticated browser rendering and the required viewport matrix remain pending."
+    },
+    {
+      "id": "SMART-INPUT",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "range": "SMART-INPUT-001..052",
+      "description": "DAENEM Smart Input Enhancement System with secure predictive typing, correction, smart compose and zero-disclosure context.",
+      "evidence": "BLOCKED: durable repository contains no SMART-INPUT-001..052 contract, detailed acceptance specification or fixture. Existing protected Smart Search/Smart Help cannot be repurposed by inference without risking unauthorized context disclosure."
+    },
+    {
+      "id": "ERP-COMPLETION",
+      "priority": "P1",
+      "status": "PARTIAL",
+      "description": "Complete Staff, Printing, Bakery, Autos, Logistics, Properties, Finance, Spend, Procurement, Inventory and supporting ERP workflows.",
+      "evidence": "Targeted contract evidence PASS: next-phase 57/57; business website catalogue 32/32; Properties owner/investment 17/17; Properties hostel 26/26; Bakery accountability 68/68; Spend foundation, commitment audit and recovery contracts PASS; company access 26/26; Directory boundaries 14/14; Autos/Logistics boundaries 21/21. Inventory and Finance enforce authoritative target-company permissions; Procurement conceals records outside approval scope and scopes idempotency evidence to the canonical company; Autos and Logistics now enforce permission-composed dashboard metrics, company-scoped references/mutations, and delegated-driver assignment/financial boundaries through checkpoint 85507ce. Spend runtime remains BLOCKED at the existing local D1 migration replay timeout; no remote migration was run. Staff Directory cross-company permission reuse is closed at 67c2f9f with CI run 104 PASS. Printing company relationships, finance disclosure, file binding, and approval transitions are closed at 2fea5b1 with 29/29 boundary assertions and CI run 108 PASS. Attendance and Payroll target-company authority, employee reference integrity, neutral denials, and company-scoped evidence are closed at 8fd18b7 with 12/12 boundary assertions and CI run 112 PASS. Staff profile and employee self-service target-company authority, permission-composed My Day, leave/payslip/review/document/notification/chat scope, neutral denials, stale-review protection, active-company validation, authoritative Payroll item schema, authoritative employment-field protection and workplace-coordinate minimization are closed at d2245c7 with 37/37 boundary assertions and CI run 120 PASS. HR lifecycle creation now requires an active target-company membership at b3d84eb with 38/38 next-phase assertions. HR leave and performance-review transitions are company/state guarded at 04cb08d with 42/42 next-phase assertions and 15/15 workflow governance assertions. Statutory Payroll saves require explicit modes and normalized boolean flags, bound text inputs, and preserve configuration-only PAYE truth at 2406bc6. HR leave/review/case/lifecycle free text is normalized and bounded; lifecycle creation has database-enforced active-process uniqueness; task mutations are terminal-state and compare-and-set guarded; process state is derived from authoritative task rows at db3fac8 with 50/50 next-phase assertions, 15/15 workflow-governance assertions and CI run 136 PASS. Migration 0073 is committed but not remotely applied. HR case updates now enforce explicit source-state transitions, durable resolution evidence for terminal states, company-and-state compare-and-set writes, and before-state audit evidence at ec17148 with 52/52 next-phase assertions, 17/17 workflow-governance assertions and CI run 140 PASS. HR case, lifecycle, leave and review list projections plus protected overview counts now require canonical subject-company membership through checkpoints 2df28fe, 1894412 and eafd10e; lifecycle listing is bounded to 300 rows; 57/57 next-phase and 22/22 workflow-governance assertions pass, with CI runs 144, 146 and 148 PASS. Bounded reviews have no open P0/P1/P2. Overall ERP remains PARTIAL pending authenticated rendered acceptance and other valid unfinished requirements."
+    },
+    {
+      "id": "ADMIN-BUILDERS",
+      "priority": "P2",
+      "status": "PARTIAL",
+      "description": "Complete governed Forms, Workflow, Report, Widget and Theme builders plus enterprise configuration.",
+      "evidence": "Forms builder security closure PASS at 90ce191: 19/19 boundary assertions and CI run 90 PASS. Theme/Sign-In Studio governance closure PASS at fb489f3: 15/15 boundaries, 107/107 sign-in configurability and CI run 94 PASS. Workflow governance closure PASS at 62545a3: 15/15 boundaries and CI run 98 PASS. Widget governance closure PASS at 379b905: 22/22 boundaries, a 20-instance safety ceiling at both trust boundaries, 107/107 sign-in configurability, dashboard permissions, TypeScript, zero-disclosure, full build and CI run 102 PASS; bounded re-review has no open P0/P1/P2. Family remains PARTIAL pending authenticated rendered acceptance and a generic Report Builder; Report Builder is BLOCKED because no detailed durable contract, fixture or implementation was recovered."
+    },
+    {
+      "id": "COMMUNICATIONS-META",
+      "priority": "P1",
+      "status": "PARTIAL",
+      "description": "Complete WhatsApp, AI drafting, Inbox, Meta vault, scoped governance, delegated administration and provider release readiness.",
+      "evidence": "Safety contracts PASS: communications 12/12; remediation 38/38; staging integration 10/10; zero-disclosure contract PASS. Dispatch scheduling is now fail-closed, provider-explicit, bounded to 25 due WhatsApp items, excludes provider-unknown ambiguity, and isolates communications release-check failures from unrelated scheduled services. The runtime intentionally supplies no provider adapter, so no live delivery path is attached. Checkpoint 6b60177 passed CI run 186; migration 0074 was not remotely applied and no live message was sent. The provider adapter remains BLOCKED because no authoritative approved-template component/variable mapping contract was recovered. Family remains PARTIAL pending that contract, broader non-production provider runtime acceptance and authenticated V45 rendering."
+    },
+    {
+      "id": "ACCESSIBILITY-RESPONSIVE",
+      "priority": "P1",
+      "status": "IMPLEMENTED — AWAITING QA",
+      "description": "Complete accessibility, reduced-motion and representative mobile/tablet/desktop/4K acceptance.",
+      "evidence": "Responsive/reduced-motion static contract PASS; required 390–3840 authenticated viewport matrix remains unverified until a supported V45 browser URL exists."
+    },
+    {
+      "id": "PRODUCTION-ACTIVATION",
+      "priority": "P0",
+      "status": "PRODUCTION-GATED",
+      "blockedBy": "Explicit Owner approval after all release gates pass.",
+      "description": "Production deployment, production migrations, public pointer, live Meta/WhatsApp and final merge."
+    }
+  ]
+}

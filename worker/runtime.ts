@@ -36,6 +36,10 @@ import { routeThemePreferences } from './theme-preferences';
 import { routeNavigationWorkspace } from './navigation-workspace';
 import { routeExperiencePreferences } from './experience-preferences';
 import { routeHrWorkflows } from './hr-workflows';
+import { routeCommunications } from './communications-service';
+import { dispatchDueCommunications } from './communications-dispatch-orchestrator';
+import { routeAdmin } from './admin';
+import { routeCommunicationsWebhook } from './communications-webhook';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
 import { routePlatformCenter, routePublicWebsite } from './platform-center';
@@ -136,6 +140,12 @@ export default {
       return secure(json({ error: 'WhatsApp webhook route not found.' }, 404));
     }
 
+    if (url.pathname === '/api/communications/webhooks/whatsapp') {
+      const response = await routeCommunicationsWebhook(request, env);
+      if (response) return secure(response);
+      return secure(json({ error: 'Communications webhook route not found.' }, 404));
+    }
+
     if (url.pathname === '/api/social/webhooks/meta' && request.method === 'POST') {
       const providerResponse = await routeSocialMetaCommunityWebhook(request, env);
       if (providerResponse) return secure(providerResponse);
@@ -180,6 +190,8 @@ export default {
       url.pathname.startsWith('/api/ai/') ||
       url.pathname.startsWith('/api/platform/') ||
       url.pathname.startsWith('/api/hr/workflows/') ||
+      url.pathname.startsWith('/api/communications/') ||
+      url.pathname.startsWith('/api/admin/') ||
       url.pathname.startsWith('/api/offline/') ||
       url.pathname.startsWith('/api/procurement/') ||
       url.pathname.startsWith('/api/spend/');
@@ -214,6 +226,16 @@ export default {
         const enhanced = await getEnhancedSessionContext(request, env);
         if (!enhanced) return secure(json({ error: 'Authentication required.' }, 401));
         const response = await routeHrWorkflows(request, env, enhanced);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/communications/')) {
+        const enhanced = await getEnhancedSessionContext(request, env);
+        if (!enhanced) return secure(json({ error: 'Authentication required.' }, 401));
+        const response = await routeCommunications(request, env, enhanced);
+        if (response) return secure(response);
+      }
+      if (url.pathname.startsWith('/api/admin/')) {
+        const response = await routeAdmin(request, env, context);
         if (response) return secure(response);
       }
       if (url.pathname.startsWith('/api/directory/')) {
@@ -316,17 +338,18 @@ export default {
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil((async () => {
       try {
-        const [socialDispatch, socialProviderSync, broadcastDispatch] = await Promise.all([
+        const [socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch] = await Promise.all([
           dispatchDueSocialJobs(env),
           scheduledSocialProviderSync(env),
           dispatchDueBroadcasts(env),
+          dispatchDueCommunications(env),
         ]);
         const minute = new Date(controller.scheduledTime).getUTCMinutes();
         const hourly = minute === 0;
         const [reminders, financeSales] = hourly
           ? await Promise.all([runSmartReminders(env), reconcileFulfilledSalesOrders(env, 75)])
           : [{ skipped: true, reason: 'hourly_cadence' }, { skipped: true, reason: 'hourly_cadence' }];
-        console.log('Daenem Workforce scheduled services', JSON.stringify({ reminders, financeSales, socialDispatch, socialProviderSync, broadcastDispatch }));
+        console.log('Daenem Workforce scheduled services', JSON.stringify({ reminders, financeSales, socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch }));
       } catch (error) {
         console.error('Daenem Workforce scheduled service failure', error);
       }

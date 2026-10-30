@@ -40,7 +40,7 @@ async function dashboard(env: AutosEnv, context: SessionContext) {
   const stock = await env.DB.prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(landed_cost_kobo),0) AS stockValueKobo, SUM(CASE WHEN status='ready' THEN 1 ELSE 0 END) AS ready, SUM(CASE WHEN status IN ('repair','inspection','detailing') THEN 1 ELSE 0 END) AS preparation, SUM(CASE WHEN status='reserved' THEN 1 ELSE 0 END) AS reserved FROM auto_vehicles WHERE company_id=? AND status NOT IN ('sold','delivered','retired')`).bind(COMPANY).first<Record<string, number>>();
   const leads = await env.DB.prepare(`SELECT COUNT(*) AS openLeads, SUM(CASE WHEN status='test_drive' THEN 1 ELSE 0 END) AS testDrive, SUM(CASE WHEN status='negotiation' THEN 1 ELSE 0 END) AS negotiation, SUM(CASE WHEN next_follow_up_at IS NOT NULL AND datetime(next_follow_up_at)<=datetime('now') AND status NOT IN ('won','lost') THEN 1 ELSE 0 END) AS followupDue FROM auto_leads WHERE company_id=? AND status NOT IN ('won','lost')`).bind(COMPANY).first<Record<string, number>>();
   const workshop = await env.DB.prepare(`SELECT COUNT(*) AS openJobs, SUM(CASE WHEN status='waiting_parts' THEN 1 ELSE 0 END) AS waitingParts, SUM(CASE WHEN priority='urgent' THEN 1 ELSE 0 END) AS urgent FROM auto_workshop_jobs WHERE company_id=? AND status NOT IN ('completed','delivered','cancelled')`).bind(COMPANY).first<Record<string, number>>();
-  const sales = await env.DB.prepare(`SELECT COUNT(*) AS salesCount, COALESCE(SUM(s.sale_price_kobo),0) AS revenueKobo, COALESCE(SUM(av.gross_profit_kobo),0) AS grossProfitKobo FROM auto_sales s JOIN auto_vehicles av ON av.id=s.vehicle_id WHERE s.company_id=? AND substr(s.sale_date,1,7)=substr(?,1,7) AND s.sale_status!='cancelled'`).bind(COMPANY, nigeriaDate()).first<Record<string, number>>();
+  const sales = await env.DB.prepare(`SELECT COUNT(*) AS salesCount, COALESCE(SUM(s.sale_price_kobo),0) AS revenueKobo, COALESCE(SUM(av.gross_profit_kobo),0) AS grossProfitKobo FROM auto_sales s JOIN auto_vehicles av ON av.id=s.vehicle_id AND av.company_id=s.company_id WHERE s.company_id=? AND substr(s.sale_date,1,7)=substr(?,1,7) AND s.sale_status!='cancelled'`).bind(COMPANY, nigeriaDate()).first<Record<string, number>>();
   return json({ metrics: { vehicles: Number(stock?.total || 0), stockValueKobo: Number(stock?.stockValueKobo || 0), ready: Number(stock?.ready || 0), preparation: Number(stock?.preparation || 0), reserved: Number(stock?.reserved || 0), openLeads: Number(leads?.openLeads || 0), testDrives: Number(leads?.testDrive || 0), negotiations: Number(leads?.negotiation || 0), followupsDue: Number(leads?.followupDue || 0), openWorkshopJobs: Number(workshop?.openJobs || 0), waitingParts: Number(workshop?.waitingParts || 0), urgentWorkshop: Number(workshop?.urgent || 0), monthlySales: Number(sales?.salesCount || 0), monthlyRevenueKobo: Number(sales?.revenueKobo || 0), monthlyGrossProfitKobo: Number(sales?.grossProfitKobo || 0) } });
 }
 
@@ -101,7 +101,7 @@ async function updateVehicleStatus(request: Request, env: AutosEnv, context: Ses
 
 async function listLeads(env: AutosEnv, context: SessionContext) {
   if (!can(context) && !canSales(context)) return json({ error: 'Autos sales access is required.' }, 403);
-  const rows = await env.DB.prepare(`SELECT l.id,l.lead_no AS leadNo,l.customer_name AS customerName,l.phone,l.email,l.interested_make AS interestedMake,l.interested_model AS interestedModel,l.budget_kobo AS budgetKobo,l.status,l.next_follow_up_at AS nextFollowUpAt,l.last_contact_at AS lastContactAt,l.vehicle_id AS vehicleId,av.stock_no AS stockNo,av.year,av.make,av.model,e.display_name AS assignedTo FROM auto_leads l LEFT JOIN auto_vehicles av ON av.id=l.vehicle_id LEFT JOIN employees e ON e.id=l.assigned_to WHERE l.company_id=? ORDER BY CASE WHEN l.status IN ('won','lost') THEN 1 ELSE 0 END,l.next_follow_up_at,l.updated_at DESC LIMIT 300`).bind(COMPANY).all<Record<string, unknown>>();
+  const rows = await env.DB.prepare(`SELECT l.id,l.lead_no AS leadNo,l.customer_name AS customerName,l.phone,l.email,l.interested_make AS interestedMake,l.interested_model AS interestedModel,l.budget_kobo AS budgetKobo,l.status,l.next_follow_up_at AS nextFollowUpAt,l.last_contact_at AS lastContactAt,l.vehicle_id AS vehicleId,av.stock_no AS stockNo,av.year,av.make,av.model,e.display_name AS assignedTo FROM auto_leads l LEFT JOIN auto_vehicles av ON av.id=l.vehicle_id AND av.company_id=l.company_id LEFT JOIN employees e ON e.id=l.assigned_to WHERE l.company_id=? ORDER BY CASE WHEN l.status IN ('won','lost') THEN 1 ELSE 0 END,l.next_follow_up_at,l.updated_at DESC LIMIT 300`).bind(COMPANY).all<Record<string, unknown>>();
   return json({ leads: rows.results || [] });
 }
 
@@ -110,6 +110,10 @@ async function createLead(request: Request, env: AutosEnv, context: SessionConte
   let body: { vehicleId?: string; source?: string; customerName?: string; phone?: string; email?: string; interestedMake?: string; interestedModel?: string; budgetNaira?: number; nextFollowUpAt?: string; notes?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid lead request.' }, 400); }
   if (!String(body.customerName || '').trim()) return json({ error: 'Customer/prospect name is required.' }, 400);
+  if (body.vehicleId) {
+    const vehicle = await env.DB.prepare(`SELECT id FROM auto_vehicles WHERE id=? AND company_id=?`).bind(body.vehicleId, COMPANY).first();
+    if (!vehicle) return json({ error: 'Vehicle not found.' }, 404);
+  }
   const id = uid('auto-lead');
   const leadNo = await nextNumber(env, 'LEAD', 'auto_leads', 'lead_no');
   await env.DB.prepare(`INSERT INTO auto_leads(id,company_id,vehicle_id,lead_no,source,customer_name,phone,email,interested_make,interested_model,budget_kobo,assigned_to,next_follow_up_at,notes,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id, COMPANY, body.vehicleId || null, leadNo, body.source || null, body.customerName, body.phone || null, body.email || null, body.interestedMake || null, body.interestedModel || null, body.budgetNaira == null ? null : kobo(body.budgetNaira), context.employee.id, body.nextFollowUpAt || null, body.notes || null, context.employee.id).run();
@@ -123,6 +127,8 @@ async function addLeadActivity(request: Request, env: AutosEnv, context: Session
   const activity = String(body.activityType || '');
   const types = ['call','whatsapp','email','visit','test_drive','quote','negotiation','deposit','note','follow_up','lost','won'];
   if (!body.leadId || !types.includes(activity)) return json({ error: 'Lead and activity type are required.' }, 400);
+  const lead = await env.DB.prepare(`SELECT id FROM auto_leads WHERE id=? AND company_id=?`).bind(body.leadId, COMPANY).first();
+  if (!lead) return json({ error: 'Lead not found.' }, 404);
   const status = activity === 'test_drive' ? 'test_drive' : ['quote','negotiation'].includes(activity) ? 'negotiation' : activity === 'deposit' ? 'deposit' : activity === 'won' ? 'won' : activity === 'lost' ? 'lost' : 'contacted';
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO auto_lead_activities(id,lead_id,activity_type,note,amount_kobo,next_follow_up_at,recorded_by) VALUES(?,?,?,?,?,?,?)`).bind(uid('lead-activity'), body.leadId, activity, body.note || null, body.amountNaira == null ? null : kobo(body.amountNaira), body.nextFollowUpAt || null, context.employee.id),
@@ -133,7 +139,7 @@ async function addLeadActivity(request: Request, env: AutosEnv, context: Session
 
 async function listWorkshop(env: AutosEnv, context: SessionContext) {
   if (!can(context)) return json({ error: 'Autos access is required.' }, 403);
-  const rows = await env.DB.prepare(`SELECT w.id,w.job_no AS jobNo,w.job_type AS jobType,w.vehicle_id AS vehicleId,av.stock_no AS stockNo,av.year,av.make,av.model,w.complaint,w.diagnosis,w.estimate_kobo AS estimateKobo,w.actual_cost_kobo AS actualCostKobo,w.status,w.priority,advisor.display_name AS advisorName,tech.display_name AS technicianName FROM auto_workshop_jobs w JOIN auto_vehicles av ON av.id=w.vehicle_id LEFT JOIN employees advisor ON advisor.id=w.advisor_id LEFT JOIN employees tech ON tech.id=w.technician_id WHERE w.company_id=? ORDER BY CASE w.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,w.updated_at DESC LIMIT 300`).bind(COMPANY).all<Record<string, unknown>>();
+  const rows = await env.DB.prepare(`SELECT w.id,w.job_no AS jobNo,w.job_type AS jobType,w.vehicle_id AS vehicleId,av.stock_no AS stockNo,av.year,av.make,av.model,w.complaint,w.diagnosis,w.estimate_kobo AS estimateKobo,w.actual_cost_kobo AS actualCostKobo,w.status,w.priority,advisor.display_name AS advisorName,tech.display_name AS technicianName FROM auto_workshop_jobs w JOIN auto_vehicles av ON av.id=w.vehicle_id AND av.company_id=w.company_id LEFT JOIN employees advisor ON advisor.id=w.advisor_id LEFT JOIN employees tech ON tech.id=w.technician_id WHERE w.company_id=? ORDER BY CASE w.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,w.updated_at DESC LIMIT 300`).bind(COMPANY).all<Record<string, unknown>>();
   return json({ jobs: rows.results || [] });
 }
 
@@ -152,7 +158,7 @@ async function createWorkshopJob(request: Request, env: AutosEnv, context: Sessi
   const status = needsApproval ? 'awaiting_approval' : 'requested';
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO auto_workshop_jobs(id,company_id,location_id,vehicle_id,job_no,job_type,complaint,diagnosis,estimate_kobo,status,priority,promised_at,odometer_km,notes,created_by) VALUES(?,?,'location-autos-hq',?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id, COMPANY, body.vehicleId, jobNo, body.jobType || 'internal', body.complaint || null, body.diagnosis || null, estimate, status, body.priority || 'normal', body.promisedAt || null, body.odometerKm ?? null, body.notes || null, context.employee.id),
-    env.DB.prepare(`UPDATE auto_vehicles SET status=CASE WHEN status IN ('acquired','inspection','ready','detailing') THEN 'repair' ELSE status END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.vehicleId),
+    env.DB.prepare(`UPDATE auto_vehicles SET status=CASE WHEN status IN ('acquired','inspection','ready','detailing') THEN 'repair' ELSE status END,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.vehicleId, COMPANY),
   ]);
   return json({ ok: true, job: { id, jobNo, status, approvalRequired: needsApproval } }, 201);
 }
@@ -166,12 +172,12 @@ async function updateWorkshop(request: Request, env: AutosEnv, context: SessionC
   const job = await env.DB.prepare(`SELECT id,vehicle_id AS vehicleId,status FROM auto_workshop_jobs WHERE id=? AND company_id=?`).bind(body.jobId, COMPANY).first<{ id: string; vehicleId: string; status: string }>();
   if (!job) return json({ error: 'Workshop job not found.' }, 404);
   if (['approved','completed','cancelled'].includes(String(body.status)) && body.status !== job.status && !hasPermission(context, 'autos.access', 'approve', COMPANY)) return json({ error: 'Approve Autos permission is required for this status.' }, 403);
-  await env.DB.prepare(`UPDATE auto_workshop_jobs SET status=?,diagnosis=COALESCE(?,diagnosis),actual_cost_kobo=COALESCE(?,actual_cost_kobo),notes=COALESCE(?,notes),approved_by=CASE WHEN ?='approved' THEN ? ELSE approved_by END,approved_at=CASE WHEN ?='approved' THEN CURRENT_TIMESTAMP ELSE approved_at END,started_at=CASE WHEN ?='in_progress' THEN COALESCE(started_at,CURRENT_TIMESTAMP) ELSE started_at END,completed_at=CASE WHEN ?='completed' THEN CURRENT_TIMESTAMP ELSE completed_at END,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.status, body.diagnosis || null, body.actualCostNaira == null ? null : kobo(body.actualCostNaira), body.notes || null, body.status, context.employee.id, body.status, body.status, body.status, body.jobId).run();
+  await env.DB.prepare(`UPDATE auto_workshop_jobs SET status=?,diagnosis=COALESCE(?,diagnosis),actual_cost_kobo=COALESCE(?,actual_cost_kobo),notes=COALESCE(?,notes),approved_by=CASE WHEN ?='approved' THEN ? ELSE approved_by END,approved_at=CASE WHEN ?='approved' THEN CURRENT_TIMESTAMP ELSE approved_at END,started_at=CASE WHEN ?='in_progress' THEN COALESCE(started_at,CURRENT_TIMESTAMP) ELSE started_at END,completed_at=CASE WHEN ?='completed' THEN CURRENT_TIMESTAMP ELSE completed_at END,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.status, body.diagnosis || null, body.actualCostNaira == null ? null : kobo(body.actualCostNaira), body.notes || null, body.status, context.employee.id, body.status, body.status, body.status, body.jobId, COMPANY).run();
   if (body.actualCostNaira != null) {
     await env.DB.prepare(`INSERT INTO auto_vehicle_costs(id,vehicle_id,company_id,cost_type,description,amount_kobo,cost_date,approved_by,approved_at,recorded_by) VALUES(?,?,?,'mechanical','Workshop job cost',?,?,?,?,?)`).bind(uid('vehicle-cost'), job.vehicleId, COMPANY, kobo(body.actualCostNaira), nigeriaDate(), context.employee.id, new Date().toISOString(), context.employee.id).run();
     await recalculateVehicle(env, job.vehicleId);
   }
-  if (body.status === 'completed') await env.DB.prepare(`UPDATE auto_vehicles SET status='detailing',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='repair'`).bind(job.vehicleId).run();
+  if (body.status === 'completed') await env.DB.prepare(`UPDATE auto_vehicles SET status='detailing',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=? AND status='repair'`).bind(job.vehicleId, COMPANY).run();
   return json({ ok: true, status: body.status });
 }
 
@@ -182,6 +188,14 @@ async function sellVehicle(request: Request, env: AutosEnv, context: SessionCont
   if (!body.vehicleId || Number(body.salePriceNaira) <= 0) return json({ error: 'Vehicle and sale price are required.' }, 400);
   const vehicle = await env.DB.prepare(`SELECT id,status,minimum_price_kobo AS minimumPriceKobo,landed_cost_kobo AS landedCostKobo FROM auto_vehicles WHERE id=? AND company_id=?`).bind(body.vehicleId, COMPANY).first<{ id: string; status: string; minimumPriceKobo?: number; landedCostKobo: number }>();
   if (!vehicle || ['sold','delivered','retired'].includes(vehicle.status)) return json({ error: 'Vehicle is not available for sale.' }, 409);
+  if (body.leadId) {
+    const lead = await env.DB.prepare(`SELECT id FROM auto_leads WHERE id=? AND company_id=?`).bind(body.leadId, COMPANY).first();
+    if (!lead) return json({ error: 'Sale reference not found.' }, 404);
+  }
+  if (body.customerId) {
+    const customer = await env.DB.prepare(`SELECT id FROM customers WHERE id=? AND company_id=?`).bind(body.customerId, COMPANY).first();
+    if (!customer) return json({ error: 'Sale reference not found.' }, 404);
+  }
   const salePrice = kobo(body.salePriceNaira);
   if (vehicle.minimumPriceKobo && salePrice < vehicle.minimumPriceKobo && !hasPermission(context, 'autos.access', 'approve', COMPANY)) return json({ error: 'Sale price is below the configured minimum and requires approval.' }, 403);
   const paid = Math.min(salePrice, kobo(body.amountPaidNaira ?? body.depositNaira ?? 0));
@@ -192,9 +206,9 @@ async function sellVehicle(request: Request, env: AutosEnv, context: SessionCont
   const id = uid('auto-sale');
   const statements: D1PreparedStatement[] = [
     env.DB.prepare(`INSERT INTO auto_sales(id,company_id,vehicle_id,lead_id,customer_id,sale_no,sale_price_kobo,deposit_kobo,amount_paid_kobo,balance_kobo,payment_status,sale_status,payment_terms,sold_by,approved_by,approved_at,sale_date) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id, COMPANY, body.vehicleId, body.leadId || null, body.customerId || null, saleNo, salePrice, kobo(body.depositNaira), paid, balance, paymentStatus, saleStatus, body.paymentTerms || null, context.employee.id, context.employee.id, new Date().toISOString(), nigeriaDate()),
-    env.DB.prepare(`UPDATE auto_vehicles SET sale_price_kobo=?,gross_profit_kobo=?-landed_cost_kobo,status='reserved',customer_id=?,sold_by=?,sold_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(salePrice, salePrice, body.customerId || null, context.employee.id, body.vehicleId),
+    env.DB.prepare(`UPDATE auto_vehicles SET sale_price_kobo=?,gross_profit_kobo=?-landed_cost_kobo,status='reserved',customer_id=?,sold_by=?,sold_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(salePrice, salePrice, body.customerId || null, context.employee.id, body.vehicleId, COMPANY),
   ];
-  if (body.leadId) statements.push(env.DB.prepare(`UPDATE auto_leads SET status='won',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.leadId));
+  if (body.leadId) statements.push(env.DB.prepare(`UPDATE auto_leads SET status='won',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.leadId, COMPANY));
   await env.DB.batch(statements);
   return json({ ok: true, sale: { id, saleNo, salePriceKobo: salePrice, amountPaidKobo: paid, balanceKobo: balance, paymentStatus, saleStatus, grossProfitKobo: salePrice - Number(vehicle.landedCostKobo || 0) } }, 201);
 }
@@ -206,6 +220,12 @@ async function recordMovement(request: Request, env: AutosEnv, context: SessionC
   const movementType = String(body.movementType || '');
   const types = ['yard_in','yard_out','workshop','wash','test_drive','fuel','inspection','delivery','transfer','other'];
   if (!body.vehicleId || !types.includes(movementType) || !String(body.reason || '').trim()) return json({ error: 'Vehicle, movement type and reason are required.' }, 400);
+  const vehicle = await env.DB.prepare(`SELECT id FROM auto_vehicles WHERE id=? AND company_id=?`).bind(body.vehicleId, COMPANY).first();
+  if (!vehicle) return json({ error: 'Vehicle not found.' }, 404);
+  if (body.driverEmployeeId) {
+    const driver = await env.DB.prepare(`SELECT 1 AS ok FROM employee_company_memberships WHERE employee_id=? AND company_id=? AND active=1`).bind(body.driverEmployeeId, COMPANY).first();
+    if (!driver) return json({ error: 'Driver not found.' }, 404);
+  }
   const requiresPass = (await setting(env, 'autos.require_gate_pass_for_vehicle_exit', 'true')) === 'true' && ['yard_out','test_drive','delivery','transfer','workshop'].includes(movementType);
   let gatePassNo: string | null = null;
   if (requiresPass) {

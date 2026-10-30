@@ -1,0 +1,83 @@
+{
+  "review": "DAENEM Staff Portal profile and employee self-service boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/profile-management.ts",
+    "worker/employee-self-service.ts",
+    "worker/payroll.ts",
+    "scripts/check-staff-self-service-boundaries.mjs",
+    "scripts/check-owner-support-access.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Profile administration, reminder, and login-access actions could reuse users.access authority from a different assigned company.",
+      "correction": "Manager actions now resolve an active target-company membership and require users.access manage authority for that exact company; notifications and audit records carry the resolved company."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Leave, payslip, review, document, chat, and notification reads or writes could retain cross-company visibility after company permission or membership changed.",
+      "correction": "Every affected self-service read and mutation now derives current permitted company IDs, repeats target-company authority in SQL, and uses neutral denials where record existence is sensitive."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "My Day counts and prompts aggregated attendance, forms, notices, leave, documents, and reviews without permission-composed company filters.",
+      "correction": "My Day now composes module-specific company scopes, suppresses unauthorized counts and prompts, and counts active workflow-form assignments rather than the retired form-submission surface."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Payroll draft and detail SQL referenced columns that do not exist in the authoritative payroll_items schema.",
+      "correction": "Payroll writes and reads now use base_kobo, allowance_kobo, overtime_kobo, bonus_kobo, commission_kobo, deduction_kobo, statutory_kobo, gross_kobo, net_kobo, and attendance_days_counted."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "A concurrent leave review could emit a decision notification after its guarded status update lost the race.",
+      "correction": "The update result is now checked before notification creation; a stale review returns conflict without a misleading notification."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "Provisional employee creation accepted inactive or missing company references.",
+      "correction": "Employee creation now validates the selected company is active before membership, role, signup, and audit writes."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Self-service profile updates accepted authoritative job title and department changes from the employee client.",
+      "correction": "Self-service updates now accept only name and phone fields; job title and department remain authoritative server-side employment data."
+    },
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "The self-profile response disclosed assigned workplace latitude and longitude metadata that the client did not require.",
+      "correction": "The response now exposes only the workplace display fields while coordinates remain server-side inputs for weather resolution."
+    }
+  ],
+  "verification": {
+    "staffSelfServiceBoundaries": "37/37 PASS",
+    "companyAccess": "26/26 PASS",
+    "ownerSupport": "15/15 PASS",
+    "zeroDisclosure": "PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun116": "PASS",
+    "githubCiRun120": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded Staff profile, employee self-service, My Day, notification, chat, and Payroll-schema change; authenticated rendered V45 browser acceptance remains pending because the retained public Sites project has no non-production preview URL."
+  },
+  "checkpoint": "d2245c70f895f362a6601d7cf7f2b68cfff8ab9c",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

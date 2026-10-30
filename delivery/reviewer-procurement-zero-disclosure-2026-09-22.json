@@ -1,0 +1,33 @@
+{
+  "review": "DAENEM Staff Portal Procurement zero-disclosure review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/procurement.ts",
+    "scripts/check-company-scoped-access.mjs"
+  ],
+  "finding": {
+    "severity": "P1",
+    "status": "FIXED",
+    "summary": "A company member without Procurement approval could distinguish an existing purchase order from a missing one, and idempotency evidence lookup was not company scoped.",
+    "correction": "Purchase-order existence and approval checks now fail closed with the same neutral 404 response. Idempotency evidence is constrained by the authoritative purchase-order company."
+  },
+  "verification": {
+    "typecheck": "PASS",
+    "companyAccess": "26/26 PASS",
+    "zeroDisclosure": "PASS",
+    "spendCommitmentAudit": "PASS",
+    "spendRecovery": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for this bounded Procurement security change; authenticated V45 browser acceptance remains separately pending."
+  },
+  "checkpoint": "804a395f03a258899ca3c48f06256f12ed53081b",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

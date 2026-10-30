@@ -1,6 +1,7 @@
 import{readFileSync}from'node:fs';
 const read=(path)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const migration=read('migrations/0037_navigation_hr_workflows.sql');
+const lifecycleIntegrityMigration=read('migrations/0073_hr_lifecycle_active_uniqueness.sql');
 const navigation=read('worker/navigation-workspace.ts');
 const workflows=read('worker/hr-workflows.ts');
 const runtime=read('worker/runtime.ts');
@@ -22,11 +23,32 @@ check('owner role protected',navigation.includes("role.code === 'owner'")&&navig
 check('employee owner protected',navigation.includes('if (employee.isOwner)'));
 check('company-scoped menu enforcement',navigation.includes('companyPermissions')&&navigation.includes('hasAnyCompanyPermission'));
 check('company-scoped HR enforcement',workflows.includes('EnhancedSessionContext')&&workflows.includes('hasCompanyPermission'));
+check('HR overview protected counts require canonical subject-company membership',['lr','r','h','p'].every((alias)=>workflows.includes(`m.employee_id=${alias}.employee_id AND m.company_id=${alias}.company_id`)));
+check('lifecycle creation requires active target-company membership',workflows.includes("if(!await activeCompanyMember(env,employeeId,companyId))return json({error:'Employee is not assigned to this company.'},404)"));
+check('lifecycle active process uniqueness is database enforced',lifecycleIntegrityMigration.includes('CREATE UNIQUE INDEX IF NOT EXISTS uq_hr_lifecycle_active_process')&&lifecycleIntegrityMigration.includes("WHERE status IN ('planned', 'in_progress', 'blocked')"));
+check('lifecycle task mutation is compare-and-set and terminal guarded',workflows.includes("t.status taskStatus")&&workflows.includes("['completed','cancelled'].includes(row.processStatus)")&&workflows.includes("WHERE id=? AND process_id=? AND status=? AND EXISTS"));
+check('lifecycle process status derives from authoritative task state',workflows.includes("WHEN EXISTS (SELECT 1 FROM hr_lifecycle_tasks t WHERE t.process_id=? AND t.status='blocked')")&&workflows.includes("WHEN NOT EXISTS (SELECT 1 FROM hr_lifecycle_tasks t WHERE t.process_id=? AND t.status NOT IN ('completed','not_applicable'))"));
+check('HR free-text inputs are normalized and bounded',workflows.includes("notes.length>2000")&&workflows.includes("value.length>4000")&&workflows.includes("title.length>160||summary.length>4000")&&workflows.includes("reason.length>1000||notes.length>4000")&&workflows.includes("completionNote.length>2000"));
+check('leave list requires canonical subject-company membership',workflows.includes("subject_scope.employee_id=lr.employee_id AND subject_scope.company_id=lr.company_id"));
+check('review list requires canonical subject-company membership',workflows.includes("subject_scope.employee_id=r.employee_id AND subject_scope.company_id=r.company_id"));
+check('leave decisions guard company and pending state before notification',workflows.includes("WHERE id=? AND company_id=? AND status='pending'")&&workflows.includes("if(!update.meta.changes)return json({error:'Only pending leave can be reviewed.'},409)"));
+check('review edits cannot race past terminal state',workflows.includes("WHERE id=? AND company_id=? AND status NOT IN ('acknowledged','closed')")&&workflows.includes("if(!update.meta.changes)return json({error:'Acknowledged or closed reviews cannot be rewritten.'},409)"));
+check('review share and close actions guard company and source state',workflows.includes("WHERE id=? AND company_id=? AND status='draft'")&&workflows.includes("WHERE id=? AND company_id=? AND status IN ('shared','acknowledged')"));
+check('HR case and lifecycle lists require canonical subject-company membership',workflows.includes("subject_scope.employee_id=h.employee_id AND subject_scope.company_id=h.company_id")&&workflows.includes("subject_scope.employee_id=p.employee_id AND subject_scope.company_id=p.company_id"));
+check('lifecycle list result is bounded',workflows.includes("p.start_date DESC LIMIT 300"));
+check('HR case mutations bind company, source state and active assignees',workflows.includes("WHERE id=? AND company_id=? AND status=?")&&workflows.includes("activeCompanyMember(env,assignedTo,existing.companyId)")&&workflows.includes("HR case changed before this update could be applied."));
+check('HR case transitions are explicit and terminal guarded',workflows.includes("resolved:['closed'],closed:[]")&&workflows.includes("That case transition is not available for the current status."));
+check('HR case resolution evidence is required for terminal states',workflows.includes("['resolved','closed'].includes(status)&&!nextResolution"));
 check('legacy shell override compatibility',migration.includes('INSERT INTO employee_permission_overrides(')&&navigation.includes("DELETE FROM employee_permission_overrides WHERE"));
 check('Worker routes wired',runtime.includes('routeNavigationWorkspace')&&runtime.includes('routeHrWorkflows'));
 check('client entries wired on demand',moduleHub.includes("import('./navigation-studio-entry')")&&moduleHub.includes("import('./hr-workflows-entry')")&&!html.includes('/src/navigation-studio-entry.tsx')&&!html.includes('/src/hr-workflows-entry.tsx'));
 check('authorization refresh is light',interfaceCode.includes('120000')&&hrInterface.includes('120000'));
 check('PAYE remains honest',workflows.includes("calculationStatus:'configuration_only'")&&hrInterface.includes('not a tax advice engine'));
+check('statutory save requires an explicit valid mode',workflows.includes("mode=String(body.mode||'')")&&!workflows.includes("mode=String(body.mode||'draft')"));
+check('statutory flags reject ambiguous truthy values',workflows.includes("const flag=(key:string)=>body[key]===true||body[key]===1?1:body[key]===false||body[key]===0?0:null")&&workflows.includes("Statutory enablement values must be explicit booleans."));
+check('statutory text inputs are bounded',workflows.includes('payeRuleVersion.length>120||notes.length>2000'));
+check('statutory persistence uses normalized flags',workflows.includes('payeEnabled,pensionEnabled,pensionEmployee,pensionEmployer,nhfEnabled,nhf,nsitfEnabled,nsitf,itfEnabled,itf,payeRuleVersion'));
+
 check('no credential literals',![navigation,workflows,interfaceCode,hrInterface].some((source)=>/BEGIN (RSA|OPENSSH) PRIVATE KEY|api[_-]?key\s*[:=]\s*['\"][^'\"]+/i.test(source)));
 
 for(const result of assertions)console.log(`${result.ok?'✓':'✗'} ${result.name}`);

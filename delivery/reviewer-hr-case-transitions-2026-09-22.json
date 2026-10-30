@@ -1,0 +1,27 @@
+{
+  "scope": "HR case terminal-state authority, transition concurrency and resolution integrity",
+  "codeCheckpoint": "ec17148bea387c3fa9415dccc53efab9d5b95466",
+  "reviewedAt": "2026-09-22T15:43:00Z",
+  "findings": {
+    "p0": [],
+    "p1": [],
+    "p2": []
+  },
+  "verification": {
+    "nextPhase": "52/52 PASS",
+    "workflowBuilder": "17/17 PASS",
+    "typecheck": "PASS",
+    "zeroDisclosure": "PASS",
+    "fullBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun140": "PASS"
+  },
+  "corrections": [
+    "Restricted HR case updates to explicit source-state transitions.",
+    "Required durable resolution evidence before resolved or closed states.",
+    "Added company-and-source-state compare-and-set mutation guards.",
+    "Recorded before-state and durable resolution presence in audit evidence."
+  ],
+  "productionActions": false,
+  "farmsAccess": false
+}

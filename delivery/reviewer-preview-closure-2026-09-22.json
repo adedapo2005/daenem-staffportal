@@ -1,0 +1,47 @@
+{
+  "run": "DAENEM-STAFFPORTAL-PREVIEW-AND-REVIEWER-CLOSURE-01",
+  "reviewedOn": "2026-09-22",
+  "scope": "NON-PRODUCTION ONLY",
+  "repository": "adedapo2005/daenem-staffportal",
+  "branch": "feature/staffportal-whatsapp-ai-communications-01",
+  "branchHead": "457a83cb4f48f0bbc0ca40ac5e02ee6bb3866bd4",
+  "sites": {
+    "projectId": "appgprj_6aa35d8149408191b710e092ed0137f2",
+    "retainedVersion": "V45",
+    "versionId": "appgprj_6aa35d8149408191b710e092ed0137f2~appgver_f6cd1eda03408191bad82ea5f779dd0b",
+    "deploymentId": null,
+    "accessMode": "public",
+    "currentPreviewUrl": null,
+    "currentLiveUrl": "https://daenem-staffportal-premium-lab.daenem-group-9873.chatgpt.site",
+    "browserObservedLiveBuild": "V15"
+  },
+  "routeResolution": {
+    "privateV45Deployment": "REJECTED_BEFORE_START: Sites private deployment requires owner-only access; project is public",
+    "publicV45Deployment": "NOT_ATTEMPTED: deployment URL is production-gated",
+    "stagingWorkerDeployment": "0bb85b93-329d-48ae-b25f-9f2d811df78e",
+    "stagingWorkerUrl": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev"
+  },
+  "browserEvidence": {
+    "publicSitesBaseline": "PASS: sign-in shell only; no protected navigation, records, search, AI, favorites, recents or notifications exposed",
+    "timeFormat": "PASS: visible clocks use 12-hour format with AM/PM",
+    "providerTruth": "PASS: Google flow states configured provider required; no account connection or production action performed",
+    "v45AuthenticatedRendering": "BLOCKED: browser-accessible route is V15 public build, not retained V45; no credentials or fabricated fixture used",
+    "responsiveAccessibilityMatrix": "PENDING for V45; static responsive/reduced-motion/accessibility contracts remain PASS"
+  },
+  "backendEvidence": {
+    "health": "PASS 200 staging",
+    "unauthenticatedSession": "PASS 401",
+    "unauthenticatedAdmin": "PASS 401",
+    "unauthenticatedCommunications": "PASS 401",
+    "allowedOriginCors": "PASS GET 401 with exact allow-origin; OPTIONS 204",
+    "rejectedOriginCors": "PASS GET 401 without allow-origin; OPTIONS 403",
+    "publicCompanySelector": "PASS intended authentication bootstrap response only"
+  },
+  "reviewer": {
+    "reviewed": ["requested_vs_delivered", "zero_disclosure", "backend_frontend_boundary", "staging_truth", "production_safety", "responsive_static_evidence", "accessibility_static_evidence", "fabricated_data"],
+    "p0p1p2Findings": "No newly discovered P0/P1/P2 defect in available evidence",
+    "closure": "PARTIAL: V45 authenticated owner/delegated-manager/unauthorized browser acceptance still unavailable",
+    "remaining": ["V44-CLOSURE", "SECURITY-ZERO-DISCLOSURE", "RELEASE-INTEGRITY", "HOME", "SMART-INPUT", "ERP-COMPLETION", "ADMIN-BUILDERS", "COMMUNICATIONS-META", "ACCESSIBILITY-RESPONSIVE"]
+  },
+  "nextSafeWorkstream": "SMART-INPUT-001..052 is blocked pending a durable contract; continue safe ERP-COMPLETION inspection and targeted permission/runtime evidence without changing Sites audience or production."
+}

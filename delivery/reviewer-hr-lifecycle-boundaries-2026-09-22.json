@@ -1,0 +1,33 @@
+{
+  "review": "DAENEM Staff Portal HR lifecycle active-membership review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/hr-workflows.ts",
+    "scripts/check-next-phase.mjs"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Lifecycle creation accepted an inactive employee-company membership as a valid target assignment.",
+      "correction": "Lifecycle creation now reuses the authoritative activeCompanyMember guard for the target employee, matching lifecycle-owner and task-assignee validation."
+    }
+  ],
+  "verification": {
+    "nextPhaseContracts": "38/38 PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun124": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded HR lifecycle active-membership change; authenticated rendered V45 browser acceptance remains pending because the retained public Sites project has no non-production preview URL."
+  },
+  "checkpoint": "b3d84eb78b0259cf10684e15995ac0806ad57f8d",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

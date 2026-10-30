@@ -1,0 +1,48 @@
+{
+  "review": "DAENEM Staff Portal Workflow governance boundary review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/hr-workflows.ts",
+    "scripts/check-workflow-builder-boundaries.mjs",
+    "package.json"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "A performance-review edit could reuse authority from one company while targeting an existing review in another assigned company.",
+      "correction": "Existing review lookup and mutation now both bind the authorized company, and the target employee must be active in that company."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "HR case and lifecycle owner or task assignment accepted employee identifiers without enforcing active membership in the authoritative company.",
+      "correction": "All explicit workflow assignees are now validated against active company membership with neutral not-found denials."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "A case status-only update cleared its existing assignee, and a shared review could be reverted, reassigned or repeatedly notify the employee.",
+      "correction": "Case assignment is preserved when omitted; shared review status and employee identity are preserved; notifications occur only on the first share transition."
+    }
+  ],
+  "verification": {
+    "typecheck": "PASS",
+    "workflowBuilderBoundaries": "15/15 PASS",
+    "companyAccess": "26/26 PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun98": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded HR Workflow governance change; a generic Report Builder has no recovered durable specification or implementation and authenticated V45 browser acceptance remains pending."
+  },
+  "checkpoint": "62545a39c3ce4e5d15df1491af8f39708535306f",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

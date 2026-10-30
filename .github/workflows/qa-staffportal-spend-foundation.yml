@@ -1,0 +1,31 @@
+name: Staff Portal Spend Foundation QA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  spend-foundation:
+    name: Spend foundation non-production verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Spend foundation contract
+        run: npm run check:spend-foundation
+      - name: Spend commitment audit contract
+        run: npm run test:spend-commitment-audit
+      - name: Spend recovery contracts
+        run: npm run test:spend-recovery
+      - name: Spend Worker runtime
+        run: npm run test:spend-worker-runtime

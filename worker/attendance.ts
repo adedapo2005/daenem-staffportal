@@ -58,7 +58,7 @@ async function policyFor(env: AttendanceEnv, employeeId: string, companyId: stri
            ap.scheduled_start_local AS scheduledStart,
            ap.scheduled_end_local AS scheduledEnd
     FROM employee_company_memberships m
-    LEFT JOIN company_locations cl ON cl.id = m.location_id
+    LEFT JOIN company_locations cl ON cl.id = m.location_id AND cl.company_id = m.company_id
     LEFT JOIN attendance_policies ap
       ON ap.company_id = m.company_id AND ap.active = 1
       AND (ap.location_id IS NULL OR ap.location_id = m.location_id)
@@ -134,13 +134,13 @@ function decodeImage(dataUrl: string) {
   return { contentType: match[1], bytes };
 }
 
-async function savePhoto(env: AttendanceEnv, employeeId: string, workDate: string, action: ClockAction, dataUrl: string) {
+async function savePhoto(env: AttendanceEnv, companyId: string, employeeId: string, workDate: string, action: ClockAction, dataUrl: string) {
   const image = decodeImage(dataUrl);
   const extension = image.contentType === 'image/png' ? 'png' : image.contentType === 'image/webp' ? 'webp' : 'jpg';
-  const key = `attendance/${employeeId}/${workDate}/${action}-${crypto.randomUUID()}.${extension}`;
+  const key = `attendance/${companyId}/${employeeId}/${workDate}/${action}-${crypto.randomUUID()}.${extension}`;
   await env.FILES.put(key, image.bytes, {
     httpMetadata: { contentType: image.contentType },
-    customMetadata: { employeeId, workDate, action },
+    customMetadata: { companyId, employeeId, workDate, action },
   });
   return key;
 }
@@ -156,10 +156,10 @@ function eventTime(policy: AttendancePolicyRow, offlineCreatedAt?: string) {
 }
 
 async function today(request: Request, env: AttendanceEnv, context: SessionContext) {
-  if (!hasPermission(context, 'attendance.access', 'view')) return json({ error: 'Attendance access is not assigned.' }, 403);
   const url = new URL(request.url);
   const companyId = url.searchParams.get('companyId') || context.companies.find((company) => company.primary)?.id || context.companies[0]?.id;
   if (!companyId || !context.companies.some((company) => company.id === companyId)) return json({ error: 'Select an assigned company.' }, 400);
+  if (!hasPermission(context, 'attendance.access', 'view', companyId)) return json({ error: 'Attendance access is not assigned for this company.' }, 403);
   const policy = await policyFor(env, context.employee.id, companyId);
   if (!policy) return json({ error: 'No attendance policy is assigned for this company.' }, 404);
   const workDate = nigeriaDate();
@@ -185,7 +185,6 @@ async function today(request: Request, env: AttendanceEnv, context: SessionConte
 }
 
 async function clock(request: Request, env: AttendanceEnv, context: SessionContext) {
-  if (!hasPermission(context, 'attendance.access', 'create')) return json({ error: 'Clock-in/out permission is not assigned.' }, 403);
   let body: {
     action?: ClockAction; companyId?: string; latitude?: number; longitude?: number; accuracy?: number;
     photoDataUrl?: string; offlineCreatedAt?: string;
@@ -195,6 +194,7 @@ async function clock(request: Request, env: AttendanceEnv, context: SessionConte
   const action = body.action as ClockAction;
   const companyId = String(body.companyId || context.companies.find((company) => company.primary)?.id || context.companies[0]?.id || '');
   if (!companyId || !context.companies.some((company) => company.id === companyId)) return json({ error: 'You are not assigned to this company.' }, 403);
+  if (!hasPermission(context, 'attendance.access', 'create', companyId)) return json({ error: 'Clock-in/out permission is not assigned for this company.' }, 403);
   const policy = await policyFor(env, context.employee.id, companyId);
   if (!policy) return json({ error: 'No attendance policy is assigned for this company.' }, 409);
 
@@ -221,7 +221,7 @@ async function clock(request: Request, env: AttendanceEnv, context: SessionConte
 
   let photoKey: string | null = null;
   if (body.photoDataUrl) {
-    try { photoKey = await savePhoto(env, context.employee.id, workDate, action, body.photoDataUrl); }
+    try { photoKey = await savePhoto(env, companyId, context.employee.id, workDate, action, body.photoDataUrl); }
     catch (error) { return json({ error: (error as Error).message }, 400); }
   }
 

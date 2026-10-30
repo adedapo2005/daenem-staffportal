@@ -109,6 +109,13 @@ export function clearPortalAuthCache() {
   authMeRequest = null;
 }
 
+function WhatsAppMark({ size = 20 }: { size?: number }) {
+  return <svg viewBox="0 0 32 32" width={size} height={size} fill="none" aria-hidden="true" focusable="false">
+    <path d="M16 3.2c-7 0-12.7 5.6-12.7 12.6 0 2.2.6 4.4 1.7 6.2l-1.8 6.8 7-1.8c1.8 1 3.8 1.5 5.8 1.5 7 0 12.7-5.6 12.7-12.6S23 3.2 16 3.2Z" fill="#25D366" />
+    <path d="M22.2 18.6c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.8.2-.2.3-.9 1-1.1 1.2-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-1-1.6-2.1-1.8-2.4-.2-.3 0-.5.1-.7.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2.1-.4 0-.6-.1-.2-.8-1.8-1-2.5-.2-.6-.5-.5-.8-.5h-.7c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7 0 1.6 1.2 3.2 1.3 3.4.2.2 2.3 3.5 5.6 4.8.8.3 1.4.5 1.9.6.8.3 1.6.2 2.2.1.7-.1 1.9-.8 2.1-1.6.3-.8.3-1.5.2-1.6-.1-.1-.3-.2-.6-.4Z" fill="white" />
+  </svg>;
+}
+
 export function isNetworkTransportFailure(error: unknown) {
   const status = typeof error === 'object' && error !== null && 'status' in error
     ? (error as { status?: unknown }).status
@@ -417,6 +424,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [whatsAppSignInChallenge, setWhatsAppSignInChallenge] = useState('');
+  const [whatsAppSignInDestination, setWhatsAppSignInDestination] = useState('');
+  const [whatsAppSignInCode, setWhatsAppSignInCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [themeId] = useState<ThemeId>(() => readThemeId());
@@ -441,6 +451,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
   const [recoveryStep, setRecoveryStep] = useState<'identity' | 'verify' | 'reset'>('identity');
   const [recoveryIdentity, setRecoveryIdentity] = useState('');
+  const [recoveryCompanies, setRecoveryCompanies] = useState<Array<{code:string;name:string}>>([]);
+  const [recoveryCompanyCode, setRecoveryCompanyCode] = useState('');
+  const [recoveryMethods, setRecoveryMethods] = useState<Array<'email'|'whatsapp'>>([]);
+  const [recoveryMethod, setRecoveryMethod] = useState<'email'|'whatsapp'>('email');
   const [recoveryChallenge, setRecoveryChallenge] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryBootstrapCode, setRecoveryBootstrapCode] = useState('');
@@ -476,6 +490,31 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }).catch(() => undefined);
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active=true;
+    api<{companies:Array<{code:string;name:string}>}>('/api/auth/companies').then((result)=>{
+      if(!active)return;
+      const companies=(result.companies||[]).filter(company=>!/farm/i.test(`${company.code} ${company.name}`));
+      setRecoveryCompanies(companies);
+      setRecoveryCompanyCode(current=>current&&companies.some(company=>company.code===current)?current:(companies[0]?.code||''));
+    }).catch(()=>undefined);
+    return()=>{active=false};
+  },[]);
+
+  useEffect(()=>{
+    if(mode!=='forgot'||!recoveryCompanyCode){setRecoveryMethods([]);return}
+    let active=true;
+    api<{methods:Array<'email'|'whatsapp'>}>(`/api/auth/password/recovery-options?company=${encodeURIComponent(recoveryCompanyCode)}`)
+      .then((result)=>{
+        if(!active)return;
+        const methods=result.methods||[];
+        setRecoveryMethods(methods);
+        setRecoveryMethod(current=>methods.includes(current)?current:(methods[0]||'email'));
+      })
+      .catch(()=>{if(active)setRecoveryMethods([])});
+    return()=>{active=false};
+  },[mode,recoveryCompanyCode]);
 
   useEffect(() => {
     const onSignInPreferences = (event: Event) => {
@@ -554,6 +593,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setPassword('');
     setShowPassword(false);
     setRemember(false);
+    setWhatsAppSignInChallenge('');
+    setWhatsAppSignInDestination('');
+    setWhatsAppSignInCode('');
     setSignup((current) => ({ ...current, password: '', confirmPassword: '' }));
     if (next === 'signup') { setIdentity(''); setIdentityTouched(false); setSignupStep('identity'); setSignupCode(''); }
     if (next === 'forgot') {
@@ -626,6 +668,46 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     }
   }
 
+  async function startWhatsAppSignIn() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await api<{stepUpRequired:boolean;challengeId:string;destination:string;message:string}>('/api/auth/login', {
+        method: 'POST', body: JSON.stringify({ identifier: identity, password, verificationChannel: 'whatsapp', ...deviceIdentity() }),
+      });
+      if (!result.stepUpRequired || !result.challengeId) throw new Error('WhatsApp verification could not be started.');
+      setWhatsAppSignInChallenge(result.challengeId);
+      setWhatsAppSignInDestination(result.destination || 'your enrolled WhatsApp contact');
+      setWhatsAppSignInCode('');
+      setMessage({ type: 'info', text: result.message });
+    } catch (error) {
+      setMessage({ type: 'error', text: (error as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyWhatsAppSignIn() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await api('/api/auth/login/verify-whatsapp', {
+        method: 'POST', body: JSON.stringify({ challengeId: whatsAppSignInChallenge, code: whatsAppSignInCode }),
+      });
+      const me = await api<{ authenticated: boolean; context?: WorkforceContext }>('/api/auth/me');
+      if (!me.authenticated || !me.context) throw new Error('Your sign-in session could not be established. Please try again.');
+      setPassword('');
+      setWhatsAppSignInChallenge('');
+      setWhatsAppSignInDestination('');
+      setWhatsAppSignInCode('');
+      onAuthenticated(me.context);
+    } catch (error) {
+      setMessage({ type: 'error', text: (error as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function startSignup(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
@@ -682,8 +764,10 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setBusy(true);
     setMessage(null);
     try {
-      const result = await api<{ challengeId: string; bootstrapCode?: string; message: string }>('/api/auth/password/forgot', {
-        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity }),
+      if (!recoveryCompanyCode || !recoveryMethods.includes(recoveryMethod)) throw new Error('Select an available recovery method.');
+      const endpoint=recoveryMethod==='whatsapp'?'/api/auth/password/forgot-whatsapp':'/api/auth/password/forgot';
+      const result = await api<{ challengeId: string; bootstrapCode?: string; message: string }>(endpoint, {
+        method: 'POST', body: JSON.stringify({ identifier: recoveryIdentity, companyCode: recoveryCompanyCode }),
       });
       setRecoveryChallenge(result.challengeId);
       setRecoveryBootstrapCode(result.bootstrapCode || '');
@@ -702,7 +786,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
     setBusy(true);
     setMessage(null);
     try {
-      const result = await api<{ resetToken: string; message: string }>('/api/auth/password/verify-reset', {
+      const endpoint=recoveryMethod==='whatsapp'?'/api/auth/password/verify-reset-whatsapp':'/api/auth/password/verify-reset';
+      const result = await api<{ resetToken: string; message: string }>(endpoint, {
         method: 'POST', body: JSON.stringify({ challengeId: recoveryChallenge, code: recoveryCode }),
       });
       setResetToken(result.resetToken);
@@ -815,6 +900,18 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
         <button className="usp-primary-button" disabled={busy} type="submit">
           {busy ? authLabels.signingIn : authLabels.signIn}<ArrowRight size={17} />
         </button>
+        <button className="usp-whatsapp-button" disabled={busy || !identity.trim() || !password} type="button" onClick={() => void startWhatsAppSignIn()}>
+          <span className="usp-whatsapp-button-icon"><WhatsAppMark size={20} /></span>
+          <span className="usp-whatsapp-button-copy"><strong>Verify sign-in with WhatsApp</strong><small>Use your enrolled WhatsApp contact for secure step-up verification</small></span>
+        </button>
+        <small className="usp-whatsapp-auth-note">Your password is still required. WhatsApp verification is available only for an enrolled and previously verified contact.</small>
+        {whatsAppSignInChallenge && <div className="usp-whatsapp-stepup">
+          <div className="usp-auth-destination usp-whatsapp-destination"><span className="usp-whatsapp-button-icon compact"><WhatsAppMark size={17} /></span><span>Verification sent to <b>{whatsAppSignInDestination}</b></span></div>
+          <TextField label="WhatsApp verification code" value={whatsAppSignInCode} onChange={(value) => setWhatsAppSignInCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
+          <button className="usp-primary-button" disabled={busy || whatsAppSignInCode.length !== 6} type="button" onClick={() => void verifyWhatsAppSignIn()}>
+            {busy ? 'Verifying…' : 'Verify WhatsApp code'}<ArrowRight size={17} />
+          </button>
+        </div>}
       </form>}
 
       {mode === 'signup' && compactDesktop && signupStep === 'identity' && <form className="usp-auth-form usp-signup-form" autoComplete="off" onSubmit={continueSignupIdentity}>
@@ -863,12 +960,17 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (context: Wor
 
       {mode === 'forgot' && recoveryStep === 'identity' && <form className="usp-auth-form" autoComplete="off" onSubmit={startRecovery}>
         <TextField label={authLabels.emailOrUsername} value={recoveryIdentity} onChange={setRecoveryIdentity} required autoComplete="off" />
-        <div className="usp-positive-note"><Mail size={16} /><span>{authLabels.recoveryIdentityNote}</span></div>
-        <button className="usp-primary-button" disabled={busy} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
+        <label className="usp-recovery-company"><span>Company</span><select value={recoveryCompanyCode} onChange={(event)=>setRecoveryCompanyCode(event.target.value)} required><option value="">Select company</option>{recoveryCompanies.map(company=><option key={company.code} value={company.code}>{company.name}</option>)}</select><small>Recovery methods follow the selected company's administrator policy.</small></label>
+        {recoveryMethods.length > 0 && <div className="usp-recovery-methods" role="radiogroup" aria-label="Password recovery method">
+          {recoveryMethods.includes('email') && <button type="button" className={recoveryMethod==='email'?'active':''} aria-pressed={recoveryMethod==='email'} onClick={()=>setRecoveryMethod('email')}><Mail size={17}/><span><b>Email</b><small>Send the verification code to your email on file.</small></span></button>}
+          {recoveryMethods.includes('whatsapp') && <button type="button" className={recoveryMethod==='whatsapp'?'active':''} aria-pressed={recoveryMethod==='whatsapp'} onClick={()=>setRecoveryMethod('whatsapp')}><WhatsAppMark size={18}/><span><b>WhatsApp</b><small>Send the code to your enrolled verified WhatsApp contact.</small></span></button>}
+        </div>}
+        <div className="usp-positive-note">{recoveryMethod==='whatsapp'?<WhatsAppMark size={16}/>:<Mail size={16} />}<span>{authLabels.recoveryIdentityNote}</span></div>
+        <button className="usp-primary-button" disabled={busy||!recoveryCompanyCode||!recoveryMethods.includes(recoveryMethod)} type="submit">{busy ? authLabels.preparingRecovery : authLabels.sendRecoveryCode}<ArrowRight size={17} /></button>
       </form>}
 
       {mode === 'forgot' && recoveryStep === 'verify' && <form className="usp-auth-form" autoComplete="off" onSubmit={verifyRecovery}>
-        <div className="usp-auth-destination"><Mail size={18} /><span>{authLabels.verificationCodeSent}</span></div>
+        <div className="usp-auth-destination">{recoveryMethod==='whatsapp'?<WhatsAppMark size={18}/>:<Mail size={18} />}<span>{recoveryMethod==='whatsapp'?'Verification code sent to your enrolled WhatsApp contact.':authLabels.verificationCodeSent}</span></div>
         {recoveryBootstrapCode && <div className="usp-bootstrap-code"><span>{authLabels.privateBootstrapCode}</span><strong>{recoveryBootstrapCode}</strong><small>{authLabels.bootstrapNote}</small></div>}
         <TextField label={authLabels.verificationCode} value={recoveryCode} onChange={(value) => setRecoveryCode(value.replace(/\D/g, '').slice(0, 6))} required autoComplete="one-time-code" />
         <button className="usp-primary-button" disabled={busy || recoveryCode.length !== 6} type="submit">{busy ? authLabels.verifying : authLabels.verifyIdentity}<CheckCircle2 size={17} /></button>

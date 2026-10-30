@@ -1,0 +1,46 @@
+{
+  "review": "DAENEM Staff Portal statutory Payroll configuration review",
+  "date": "2026-09-22",
+  "scope": [
+    "worker/hr-workflows.ts",
+    "scripts/check-next-phase.mjs"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED",
+      "summary": "Truthy non-boolean JSON values such as the string false could silently enable statutory Payroll settings.",
+      "correction": "Enablement fields now accept only explicit boolean or 0/1 values, normalize them once, and use the normalized values for persistence, activation checks, and audit evidence."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "Omitting mode defaulted a statutory profile mutation to draft and could unintentionally change an existing profile.",
+      "correction": "Statutory saves now require an explicit valid draft, active, or paused mode."
+    },
+    {
+      "severity": "P2",
+      "status": "FIXED",
+      "summary": "PAYE rule-version and review-note fields were unbounded at the API trust boundary.",
+      "correction": "The Worker now enforces a 120-character rule-version limit and a 2,000-character review-note limit before persistence."
+    }
+  ],
+  "verification": {
+    "nextPhaseContracts": "46/46 PASS",
+    "typecheck": "PASS",
+    "zeroDisclosure": "PASS",
+    "globalBuild": "PASS",
+    "diffCheck": "PASS",
+    "githubCiRun132": "PASS"
+  },
+  "reviewer": {
+    "p0Open": 0,
+    "p1Open": 0,
+    "p2Open": 0,
+    "result": "PASS for the bounded statutory Payroll configuration change; authenticated rendered V45 browser acceptance remains pending because the retained public Sites project has no non-production preview URL."
+  },
+  "checkpoint": "2406bc624eb6529ff51b38575ff83d5724abed65",
+  "productionChanges": false,
+  "sitesChanges": false,
+  "remoteMigrations": false
+}

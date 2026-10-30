@@ -1,0 +1,28 @@
+{
+  "review": "Communications AI draft failure, language and governance projection closure",
+  "date": "2026-09-22",
+  "scope": "Non-production backend contracts only; no live provider send",
+  "codeCheckpoint": "f745cdb7286f32d3f4cb33ad3a5b2daf6f2d62db",
+  "correctedFindings": [
+    {"severity":"P1","finding":"Generic Settings view authority exposed Communications governance metadata","resolution":"Governance reads and writes now require module-specific Communications manage authority; unknown events are neutralized"},
+    {"severity":"P1","finding":"AI provider internals and retry semantics were not normalized","resolution":"Provider failures now return neutral AI_PROVIDER_UNAVAILABLE with HTTP 503 before draft persistence"},
+    {"severity":"P2","finding":"Instruction-profile activation crossed language boundaries","resolution":"Draft selection and profile activation are language-specific"},
+    {"severity":"P2","finding":"Governance list projections were unbounded","resolution":"Templates, profiles, restrictions and triggers are capped at 200 rows"},
+    {"severity":"P2","finding":"Draft language was unconstrained","resolution":"Caller language is normalized to a bounded BCP-47 subset and exact-language approved profiles"}
+  ],
+  "verification": {
+    "communicationsContracts": "12/12 PASS",
+    "communicationsRemediation": "25/25 PASS",
+    "typecheck": "PASS",
+    "globalBuild": "PASS",
+    "zeroDisclosure": "PASS",
+    "deliveryController": "PASS",
+    "diffHygiene": "PASS",
+    "githubCiRun164": "PASS"
+  },
+  "reviewerResult": "No open P0/P1/P2 in the bounded change",
+  "productionActions": false,
+  "remoteMigrationApplied": false,
+  "liveMessaging": false,
+  "farmsAccess": false
+}

@@ -6,6 +6,9 @@ const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.
   status,
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
 });
+const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+const isGroupAdmin = (context: SessionContext) => context.roles.some((role) => ['owner', 'group_admin'].includes(role.code));
+const canManageGroupTheme = (context: SessionContext) => isGroupAdmin(context) && hasPermission(context, 'settings.access', 'manage');
 
 const themes = [
   'lagos-sunrise', 'print-neon-grid', 'digital-indigo', 'auto-showroom-night',
@@ -21,6 +24,7 @@ const aliases: Record<string, string> = {
 };
 
 const SIGNIN_WIDGET_KINDS = ['weather', 'inspiration', 'motivation', 'news', 'status'] as const;
+const MAX_SIGNIN_WIDGET_INSTANCES = 20;
 const SIGNIN_ZONES = ['workspace-spotlight', 'live-context', 'today', 'auxiliary'] as const;
 const SIGNIN_BACKGROUND_IDS = ['unified-daylight', 'global-executive-atrium', 'future-technology-campus', 'daylight-glass-skyline', 'premium-connected-workspace', 'bright-executive-global-atrium', 'daylight-technology-campus'] as const;
 const CLOCK_ZONES = [
@@ -230,7 +234,7 @@ function variant(kind: string, value: unknown) {
   return available.includes(String(value)) ? String(value) : available[0] || 'standard';
 }
 function cleanInstances(value: unknown, hidden: string[], labels: ReturnType<typeof normalizeLabels>, legacyOrder: string[]) {
-  const source = Array.isArray(value) ? value : legacyOrder.map((kind) => ({ kind }));
+  const source = (Array.isArray(value) ? value : legacyOrder.map((kind) => ({ kind }))).slice(0, MAX_SIGNIN_WIDGET_INSTANCES);
   const result: Array<Record<string, unknown>> = [];
   source.forEach((item, index) => {
     const raw = record(item);
@@ -345,7 +349,7 @@ async function policy(env: Env, context: SessionContext) {
   const allowEmployeeChoice = (await setting(env, 'ui.allow_employee_theme_choice', 'true')) === 'true';
   const preference = await env.DB.prepare('SELECT COALESCE(ep.theme,e.preferred_theme) AS theme FROM employees e LEFT JOIN employee_preferences ep ON ep.employee_id=e.id WHERE e.id=?').bind(context.employee.id).first<{ theme?: string }>();
   const preferredTheme = normalize(preference?.theme || '');
-  return { forcedTheme, defaultTheme, allowEmployeeChoice, preferredTheme, effectiveTheme: forcedTheme || preferredTheme || defaultTheme, canManage: hasPermission(context, 'settings.access', 'manage'), themes };
+  return { forcedTheme, defaultTheme, allowEmployeeChoice, preferredTheme, effectiveTheme: forcedTheme || preferredTheme || defaultTheme, canManage: canManageGroupTheme(context), themes };
 }
 const normalize = (value: unknown, allowBlank = false) => {
   const id = String(value || '');
@@ -380,7 +384,7 @@ async function generateAiOptions(env: Env, kind: 'inspiration' | 'motivation') {
 export async function routeThemePreferences(request: Request, env: Env, context: SessionContext): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/theme/')) return null;
-  const canManage = hasPermission(context, 'settings.access', 'manage');
+  const canManage = canManageGroupTheme(context);
   if (url.pathname === '/api/theme/policy' && request.method === 'GET') return json(await policy(env, context));
   if (url.pathname === '/api/theme/preference' && request.method === 'POST') {
     let body: { theme?: string };
@@ -393,6 +397,8 @@ export async function routeThemePreferences(request: Request, env: Env, context:
     await env.DB.batch([
       env.DB.prepare('INSERT INTO employee_preferences(employee_id,theme,updated_at) VALUES(?,?,CURRENT_TIMESTAMP) ON CONFLICT(employee_id) DO UPDATE SET theme=excluded.theme,updated_at=CURRENT_TIMESTAMP').bind(context.employee.id, theme),
       env.DB.prepare('UPDATE employees SET preferred_theme=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(theme, context.employee.id),
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+        VALUES(?,?,'theme','update_personal_preference','employee',?,?,'web')`).bind(uid('audit'), context.employee.id, context.employee.id, JSON.stringify({ theme })),
     ]);
     return json({ ok: true, theme });
   }
@@ -404,8 +410,12 @@ export async function routeThemePreferences(request: Request, env: Env, context:
     let body: { config?: unknown };
     try { body = await request.json(); } catch { return json({ error: 'Invalid sign-in configuration request.' }, 400); }
     const config = cleanSignInConfig(body.config);
-    await env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.signin_config_v3\',?,\'json\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP')
-      .bind(JSON.stringify(config), context.employee.id).run();
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.signin_config_v3\',?,\'json\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP')
+        .bind(JSON.stringify(config), context.employee.id),
+      env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+        VALUES(?,?,'theme','update_signin_config','app_setting','ui.signin_config_v3',?,'web')`).bind(uid('audit'), context.employee.id, JSON.stringify({ schemaVersion: config.schemaVersion, backgroundId: config.backgroundId, themeMode: config.themeMode })),
+    ]);
     return json({ ok: true, config });
   }
   if (url.pathname === '/api/theme/signin/ai/generate' && request.method === 'POST') {
@@ -413,7 +423,11 @@ export async function routeThemePreferences(request: Request, env: Env, context:
     let body: { kind?: string };
     try { body = await request.json(); } catch { return json({ error: 'Invalid AI content request.' }, 400); }
     if (body.kind !== 'inspiration' && body.kind !== 'motivation') return json({ error: 'Only inspiration and motivation can use AI options.' }, 400);
-    return json({ kind: body.kind, ...await generateAiOptions(env, body.kind) });
+    const result = await generateAiOptions(env, body.kind);
+    await env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+      VALUES(?,?,'theme','generate_signin_copy_options','signin_widget',?,?,'web')`)
+      .bind(uid('audit'), context.employee.id, body.kind, JSON.stringify({ source: result.source, candidateCount: result.candidates.length })).run();
+    return json({ kind: body.kind, ...result });
   }
   if (url.pathname === '/api/theme/policy' && request.method === 'POST') {
     if (!canManage) return json({ error: 'Manage Settings permission is required.' }, 403);
@@ -421,11 +435,20 @@ export async function routeThemePreferences(request: Request, env: Env, context:
     try { body = await request.json(); } catch { return json({ error: 'Invalid theme policy request.' }, 400); }
     if (body.defaultTheme !== undefined && !validTheme(body.defaultTheme)) return json({ error: 'Invalid default theme.' }, 400);
     if (body.forcedTheme !== undefined && !validTheme(body.forcedTheme, true)) return json({ error: 'Invalid forced theme.' }, 400);
+    const current = await policy(env, context);
+    const planned = {
+      defaultTheme: body.defaultTheme === undefined ? current.defaultTheme : normalize(body.defaultTheme),
+      forcedTheme: body.forcedTheme === undefined ? current.forcedTheme : normalize(body.forcedTheme, true),
+      allowEmployeeChoice: body.allowEmployeeChoice === undefined ? current.allowEmployeeChoice : body.allowEmployeeChoice,
+    };
     const statements: D1PreparedStatement[] = [];
     if (body.defaultTheme !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.default_theme\',?,\'string\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(normalize(body.defaultTheme), context.employee.id));
     if (body.forcedTheme !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.forced_theme\',?,\'string\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(normalize(body.forcedTheme, true), context.employee.id));
     if (body.allowEmployeeChoice !== undefined) statements.push(env.DB.prepare('INSERT INTO app_settings(setting_key,setting_value,value_type,updated_by,updated_at) VALUES(\'ui.allow_employee_theme_choice\',?,\'boolean\',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP').bind(body.allowEmployeeChoice ? 'true' : 'false', context.employee.id));
     if (!statements.length) return json({ error: 'No theme policy changes supplied.' }, 400);
+    statements.push(env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+      VALUES(?,?,'theme','update_group_policy','app_setting','ui.theme_policy',?,'web')`)
+      .bind(uid('audit'), context.employee.id, JSON.stringify(planned)));
     await env.DB.batch(statements);
     return json({ ok: true, ...await policy(env, context) });
   }

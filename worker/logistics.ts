@@ -24,10 +24,10 @@ async function nextNo(env: LogisticsEnv, prefix: string, table: 'logistics_shipm
 async function recalcTrip(env: LogisticsEnv, tripId: string) {
   const trip = await env.DB.prepare(`SELECT revenue_kobo AS revenueKobo FROM logistics_trips WHERE id=? AND company_id=?`).bind(tripId, COMPANY).first<{ revenueKobo: number }>();
   if (!trip) return;
-  const expenses = await env.DB.prepare(`SELECT COALESCE(SUM(amount_kobo),0) AS amount FROM logistics_trip_expenses WHERE trip_id=?`).bind(tripId).first<{ amount: number }>();
-  const fuel = await env.DB.prepare(`SELECT COALESCE(SUM(amount_kobo),0) AS amount FROM logistics_fuel_logs WHERE trip_id=?`).bind(tripId).first<{ amount: number }>();
+  const expenses = await env.DB.prepare(`SELECT COALESCE(SUM(amount_kobo),0) AS amount FROM logistics_trip_expenses WHERE trip_id=? AND company_id=?`).bind(tripId, COMPANY).first<{ amount: number }>();
+  const fuel = await env.DB.prepare(`SELECT COALESCE(SUM(amount_kobo),0) AS amount FROM logistics_fuel_logs WHERE trip_id=? AND company_id=?`).bind(tripId, COMPANY).first<{ amount: number }>();
   const total = Number(expenses?.amount || 0) + Number(fuel?.amount || 0);
-  await env.DB.prepare(`UPDATE logistics_trips SET total_expense_kobo=?,gross_profit_kobo=?-?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(total, Number(trip.revenueKobo || 0), total, tripId).run();
+  await env.DB.prepare(`UPDATE logistics_trips SET total_expense_kobo=?,gross_profit_kobo=?-?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(total, Number(trip.revenueKobo || 0), total, tripId, COMPANY).run();
 }
 
 async function dashboard(env: LogisticsEnv, context: SessionContext) {
@@ -77,7 +77,7 @@ async function createShipment(request: Request, env: LogisticsEnv, context: Sess
 
 async function trips(env: LogisticsEnv, context: SessionContext) {
   if (!can(context)) return json({ error: 'Logistics access is required.' }, 403);
-  const rows = await env.DB.prepare(`SELECT t.id,t.trip_no AS tripNo,t.vehicle_id AS vehicleId,v.fleet_no AS fleetNo,v.registration_no AS registrationNo,t.driver_employee_id AS driverEmployeeId,d.display_name AS driverName,t.route_name AS routeName,t.origin,t.destination,t.planned_distance_km AS plannedDistanceKm,t.actual_distance_km AS actualDistanceKm,t.start_odometer_km AS startOdometerKm,t.end_odometer_km AS endOdometerKm,t.planned_departure_at AS plannedDepartureAt,t.departed_at AS departedAt,t.returned_at AS returnedAt,t.status,t.revenue_kobo AS revenueKobo,t.total_expense_kobo AS totalExpenseKobo,t.gross_profit_kobo AS grossProfitKobo,(SELECT COUNT(*) FROM logistics_trip_shipments ts WHERE ts.trip_id=t.id) AS shipmentCount FROM logistics_trips t JOIN logistics_vehicles v ON v.id=t.vehicle_id JOIN employees d ON d.id=t.driver_employee_id WHERE t.company_id=? ORDER BY t.updated_at DESC LIMIT 200`).bind(COMPANY).all<Record<string, unknown>>();
+  const rows = await env.DB.prepare(`SELECT t.id,t.trip_no AS tripNo,t.vehicle_id AS vehicleId,v.fleet_no AS fleetNo,v.registration_no AS registrationNo,t.driver_employee_id AS driverEmployeeId,d.display_name AS driverName,t.route_name AS routeName,t.origin,t.destination,t.planned_distance_km AS plannedDistanceKm,t.actual_distance_km AS actualDistanceKm,t.start_odometer_km AS startOdometerKm,t.end_odometer_km AS endOdometerKm,t.planned_departure_at AS plannedDepartureAt,t.departed_at AS departedAt,t.returned_at AS returnedAt,t.status,t.revenue_kobo AS revenueKobo,t.total_expense_kobo AS totalExpenseKobo,t.gross_profit_kobo AS grossProfitKobo,(SELECT COUNT(*) FROM logistics_trip_shipments ts WHERE ts.trip_id=t.id) AS shipmentCount FROM logistics_trips t JOIN logistics_vehicles v ON v.id=t.vehicle_id AND v.company_id=t.company_id JOIN employees d ON d.id=t.driver_employee_id WHERE t.company_id=? ORDER BY t.updated_at DESC LIMIT 200`).bind(COMPANY).all<Record<string, unknown>>();
   return json({ trips: rows.results || [] });
 }
 
@@ -94,14 +94,14 @@ async function createTrip(request: Request, env: LogisticsEnv, context: SessionC
   const tripNo = await nextNo(env, 'TRIP', 'logistics_trips', 'trip_no');
   const statements: D1PreparedStatement[] = [
     env.DB.prepare(`INSERT INTO logistics_trips(id,company_id,trip_no,vehicle_id,driver_employee_id,dispatcher_employee_id,route_name,origin,destination,planned_distance_km,start_odometer_km,planned_departure_at,planned_return_at,status,fuel_budget_kobo,expense_budget_kobo,revenue_kobo,notes,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,'assigned',?,?,?,?,?)`).bind(id, COMPANY, tripNo, body.vehicleId, body.driverEmployeeId, context.employee.id, body.routeName || null, body.origin || null, body.destination || null, body.plannedDistanceKm ?? null, body.startOdometerKm ?? vehicle.odometerKm, body.plannedDepartureAt || null, body.plannedReturnAt || null, kobo(body.fuelBudgetNaira), kobo(body.expenseBudgetNaira), kobo(body.revenueNaira), body.notes || null, context.employee.id),
-    env.DB.prepare(`UPDATE logistics_vehicles SET status='assigned',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.vehicleId),
+    env.DB.prepare(`UPDATE logistics_vehicles SET status='assigned',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.vehicleId, COMPANY),
   ];
   let sequence = 1;
   for (const shipmentId of [...new Set(body.shipmentIds || [])]) {
     const shipment = await env.DB.prepare(`SELECT id FROM logistics_shipments WHERE id=? AND company_id=? AND status IN ('requested','quoted','approved','scheduled')`).bind(shipmentId, COMPANY).first();
     if (!shipment) continue;
     statements.push(env.DB.prepare(`INSERT INTO logistics_trip_shipments(id,trip_id,shipment_id,stop_sequence,stop_type) VALUES(?,?,?,?,'delivery')`).bind(uid('trip-shipment'), id, shipmentId, sequence++));
-    statements.push(env.DB.prepare(`UPDATE logistics_shipments SET status='scheduled',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(shipmentId));
+    statements.push(env.DB.prepare(`UPDATE logistics_shipments SET status='scheduled',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(shipmentId, COMPANY));
   }
   await env.DB.batch(statements);
   return json({ ok: true, trip: { id, tripNo, status: 'assigned' } }, 201);
@@ -114,25 +114,25 @@ async function updateTrip(request: Request, env: LogisticsEnv, context: SessionC
   const trip = await env.DB.prepare(`SELECT id,vehicle_id AS vehicleId,driver_employee_id AS driverEmployeeId,start_odometer_km AS startOdometerKm,status FROM logistics_trips WHERE id=? AND company_id=?`).bind(body.tripId || '', COMPANY).first<{ id: string; vehicleId: string; driverEmployeeId: string; startOdometerKm?: number; status: string }>();
   if (!trip) return json({ error: 'Trip not found.' }, 404);
   const ownerLike = can(context, 'edit');
-  if (!ownerLike && trip.driverEmployeeId !== context.employee.id) return json({ error: 'Only the assigned driver or dispatcher/fleet manager can update this trip.' }, 403);
+  if (!ownerLike && trip.driverEmployeeId !== context.employee.id) return json({ error: 'Trip not found.' }, 404);
   if (body.action === 'start') {
     if (!['assigned','planned'].includes(trip.status)) return json({ error: 'Trip is not ready to start.' }, 409);
     await env.DB.batch([
-      env.DB.prepare(`UPDATE logistics_trips SET status='in_progress',departed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(trip.id),
-      env.DB.prepare(`UPDATE logistics_vehicles SET status='in_trip',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(trip.vehicleId),
-      env.DB.prepare(`UPDATE logistics_shipments SET status='in_transit',updated_at=CURRENT_TIMESTAMP WHERE id IN (SELECT shipment_id FROM logistics_trip_shipments WHERE trip_id=?)`).bind(trip.id),
+      env.DB.prepare(`UPDATE logistics_trips SET status='in_progress',departed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(trip.id, COMPANY),
+      env.DB.prepare(`UPDATE logistics_vehicles SET status='in_trip',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(trip.vehicleId, COMPANY),
+      env.DB.prepare(`UPDATE logistics_shipments SET status='in_transit',updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND id IN (SELECT shipment_id FROM logistics_trip_shipments WHERE trip_id=?)`).bind(COMPANY, trip.id),
     ]);
     return json({ ok: true, status: 'in_progress' });
   }
   if (body.action === 'complete') {
     if (trip.status !== 'in_progress') return json({ error: 'Only an in-progress trip can be completed.' }, 409);
     if (body.endOdometerKm == null || Number(body.endOdometerKm) < Number(trip.startOdometerKm || 0)) return json({ error: 'Valid end odometer is required.' }, 400);
-    const pendingPod = await env.DB.prepare(`SELECT COUNT(*) AS count FROM logistics_trip_shipments ts JOIN logistics_shipments s ON s.id=ts.shipment_id WHERE ts.trip_id=? AND s.proof_of_delivery_required=1 AND NOT EXISTS(SELECT 1 FROM logistics_pod p WHERE p.shipment_id=s.id)`).bind(trip.id).first<{ count: number }>();
+    const pendingPod = await env.DB.prepare(`SELECT COUNT(*) AS count FROM logistics_trip_shipments ts JOIN logistics_shipments s ON s.id=ts.shipment_id WHERE ts.trip_id=? AND s.company_id=? AND s.proof_of_delivery_required=1 AND NOT EXISTS(SELECT 1 FROM logistics_pod p WHERE p.shipment_id=s.id)`).bind(trip.id, COMPANY).first<{ count: number }>();
     if (Number(pendingPod?.count || 0) > 0) return json({ error: `${pendingPod?.count} shipment(s) still require proof of delivery before trip closeout.` }, 409);
     const distance = Math.max(0, Number(body.endOdometerKm) - Number(trip.startOdometerKm || 0));
     await env.DB.batch([
-      env.DB.prepare(`UPDATE logistics_trips SET status='completed',end_odometer_km=?,actual_distance_km=?,returned_at=CURRENT_TIMESTAMP,notes=COALESCE(?,notes),updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.endOdometerKm, distance, body.note || null, trip.id),
-      env.DB.prepare(`UPDATE logistics_vehicles SET status='available',odometer_km=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.endOdometerKm, trip.vehicleId),
+      env.DB.prepare(`UPDATE logistics_trips SET status='completed',end_odometer_km=?,actual_distance_km=?,returned_at=CURRENT_TIMESTAMP,notes=COALESCE(?,notes),updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.endOdometerKm, distance, body.note || null, trip.id, COMPANY),
+      env.DB.prepare(`UPDATE logistics_vehicles SET status='available',odometer_km=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.endOdometerKm, trip.vehicleId, COMPANY),
     ]);
     await recalcTrip(env, trip.id);
     return json({ ok: true, status: 'completed', actualDistanceKm: distance });
@@ -146,6 +146,9 @@ async function addExpense(request: Request, env: LogisticsEnv, context: SessionC
   try { body = await request.json(); } catch { return json({ error: 'Invalid trip expense.' }, 400); }
   const types = ['fuel','toll','parking','loading','offloading','repair','allowance','accommodation','fine','other'];
   if (!body.tripId || !types.includes(String(body.expenseType)) || !String(body.description || '').trim()) return json({ error: 'Trip, expense type and description are required.' }, 400);
+  const trip = await env.DB.prepare(`SELECT id,driver_employee_id AS driverEmployeeId FROM logistics_trips WHERE id=? AND company_id=?`).bind(body.tripId, COMPANY).first<{ id: string; driverEmployeeId: string }>();
+  const dispatchEdit = hasCompany(context) && hasPermission(context, 'logistics.dispatch', 'edit', COMPANY);
+  if (!trip || (!dispatchEdit && trip.driverEmployeeId !== context.employee.id)) return json({ error: 'Trip not found.' }, 404);
   await env.DB.prepare(`INSERT INTO logistics_trip_expenses(id,trip_id,company_id,expense_type,description,amount_kobo,latitude,longitude,occurred_at,recorded_by) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(uid('trip-expense'), body.tripId, COMPANY, body.expenseType, body.description, kobo(body.amountNaira), body.latitude ?? null, body.longitude ?? null, body.occurredAt || new Date().toISOString(), context.employee.id).run();
   await recalcTrip(env, body.tripId);
   return json({ ok: true });
@@ -156,6 +159,15 @@ async function fuel(request: Request, env: LogisticsEnv, context: SessionContext
   let body: { vehicleId?: string; tripId?: string; odometerKm?: number; litres?: number; amountNaira?: number; stationName?: string; reference?: string; latitude?: number; longitude?: number; fueledAt?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid fuel log.' }, 400); }
   if (!body.vehicleId || Number(body.litres) <= 0) return json({ error: 'Vehicle and positive fuel litres are required.' }, 400);
+  const vehicle = await env.DB.prepare(`SELECT id FROM logistics_vehicles WHERE id=? AND company_id=?`).bind(body.vehicleId, COMPANY).first();
+  if (!vehicle) return json({ error: 'Vehicle not found.' }, 404);
+  const dispatchEdit = hasCompany(context) && hasPermission(context, 'logistics.dispatch', 'edit', COMPANY);
+  if (!body.tripId && !dispatchEdit) return json({ error: 'Trip not found.' }, 404);
+  if (body.tripId) {
+    const trip = await env.DB.prepare(`SELECT id,vehicle_id AS vehicleId,driver_employee_id AS driverEmployeeId FROM logistics_trips WHERE id=? AND company_id=?`).bind(body.tripId, COMPANY).first<{ id: string; vehicleId: string; driverEmployeeId: string }>();
+    if (!trip || (!dispatchEdit && trip.driverEmployeeId !== context.employee.id)) return json({ error: 'Trip not found.' }, 404);
+    if (trip.vehicleId !== body.vehicleId) return json({ error: 'Fuel log vehicle must match the assigned trip vehicle.' }, 409);
+  }
   await env.DB.prepare(`INSERT INTO logistics_fuel_logs(id,company_id,vehicle_id,trip_id,driver_employee_id,odometer_km,litres,amount_kobo,station_name,reference,latitude,longitude,fueled_at,recorded_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(uid('fuel-log'), COMPANY, body.vehicleId, body.tripId || null, context.employee.id, body.odometerKm ?? null, body.litres, kobo(body.amountNaira), body.stationName || null, body.reference || null, body.latitude ?? null, body.longitude ?? null, body.fueledAt || new Date().toISOString(), context.employee.id).run();
   if (body.tripId) await recalcTrip(env, body.tripId);
   return json({ ok: true });
@@ -172,7 +184,7 @@ async function pod(request: Request, env: LogisticsEnv, context: SessionContext)
   if (requireGps && (body.latitude == null || body.longitude == null)) return json({ error: 'GPS location is required for this proof of delivery.' }, 400);
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO logistics_pod(id,shipment_id,trip_id,recipient_name,recipient_phone,latitude,longitude,note,delivered_by,delivered_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(uid('pod'), body.shipmentId, body.tripId || null, body.recipientName, body.recipientPhone || null, body.latitude ?? null, body.longitude ?? null, body.note || null, context.employee.id, body.deliveredAt || new Date().toISOString()),
-    env.DB.prepare(`UPDATE logistics_shipments SET status='delivered',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(body.shipmentId),
+    env.DB.prepare(`UPDATE logistics_shipments SET status='delivered',updated_at=CURRENT_TIMESTAMP WHERE id=? AND company_id=?`).bind(body.shipmentId, COMPANY),
     ...(body.tripId ? [env.DB.prepare(`UPDATE logistics_trip_shipments SET stop_status='completed',arrived_at=COALESCE(arrived_at,CURRENT_TIMESTAMP),departed_at=CURRENT_TIMESTAMP WHERE trip_id=? AND shipment_id=?`).bind(body.tripId, body.shipmentId)] : []),
   ]);
   return json({ ok: true, status: 'delivered' });

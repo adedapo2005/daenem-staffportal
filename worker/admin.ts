@@ -1,4 +1,5 @@
-import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { hasPermission, type AccessLevel, type AuthEnv, type SessionContext } from './auth';
+import { RECOVERY_SETTING_KEY, SCOPED_SETTING_DEFINITIONS, decodeScopedValue, encodeScopedValue, resolveScopedSetting, type ScopedSettingKey } from './scoped-settings';
 
 interface AdminEnv extends AuthEnv {}
 
@@ -70,6 +71,11 @@ const allowedSettings: Record<string, { type: 'string' | 'number' | 'boolean'; v
   'notifications.role_data_reminders': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
   'notifications.escalate_overdue_to_manager': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
   'ai.smart_exception_detection': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.kill_switch': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.whatsapp_enabled': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.ai_enabled': { type: 'boolean', validate: (value) => typeof value === 'boolean' },
+  'communications.ai_daily_limit': { type: 'number', validate: (value) => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 10000 },
+  'communications.provider_daily_limit': { type: 'number', validate: (value) => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 100000 },
 };
 
 async function getSettings(env: AdminEnv, context: SessionContext) {
@@ -116,6 +122,103 @@ async function updateSettings(request: Request, env: AdminEnv, context: SessionC
   `).bind(uid('audit'), context.employee.id, JSON.stringify(changed)));
   await env.DB.batch(statements);
   return json({ ok: true, settings: changed });
+}
+
+function isGroupAdmin(context:SessionContext){
+  return context.roles.some(role=>['owner','group_admin'].includes(role.code));
+}
+
+function hasDelegatedCommunicationsAccess(context:SessionContext,companyId:string,minimum:AccessLevel='view'){
+  return hasPermission(context,'communications.hr.manage',minimum,companyId);
+}
+
+function canViewScopedSettings(context:SessionContext){
+  return canView(context)||context.companies.some(company=>hasDelegatedCommunicationsAccess(context,company.id,'view'));
+}
+
+function canManageScopedCompany(context:SessionContext,companyId:string){
+  return canManage(context)||hasDelegatedCommunicationsAccess(context,companyId,'manage');
+}
+
+function allowedCompanies(context:SessionContext){
+  return context.companies.filter(company=>
+    !/farm/i.test(`${company.id} ${company.code} ${company.name}`)&&
+    (canView(context)||hasDelegatedCommunicationsAccess(context,company.id,'view')),
+  );
+}
+
+async function getScopedSettings(request:Request,env:AdminEnv,context:SessionContext){
+  if(!canViewScopedSettings(context))return json({error:'Scoped communications administration access is not assigned.'},403);
+  const requested=String(new URL(request.url).searchParams.get('settingKey')||RECOVERY_SETTING_KEY) as ScopedSettingKey;
+  const definition=SCOPED_SETTING_DEFINITIONS[requested];
+  if(!definition)return json({error:'Unsupported scoped setting.'},400);
+  const companies=allowedCompanies(context);
+  const global=await resolveScopedSetting(env,requested,null,encodeScopedValue(definition.fallback,definition.type));
+  const rows=await env.DB.prepare(`
+    SELECT scope_id AS companyId,setting_value AS value,value_type AS type
+    FROM admin_scoped_settings
+    WHERE setting_key=? AND scope_type='company'
+  `).bind(requested).all<{companyId:string;value:string;type:'string'|'boolean'|'number'}>();
+  const overrides=new Map((rows.results||[]).map(row=>[row.companyId,decodeScopedValue(row.value,row.type)]));
+  const globalValue=decodeScopedValue(global.value,global.type);
+  return json({
+    settingKey:requested,
+    valueType:definition.type,
+    global:{value:globalValue,source:'global'},
+    companies:companies.map(company=>({
+      id:company.id,code:company.code,name:company.name,
+      value:overrides.has(company.id)?overrides.get(company.id):globalValue,
+      source:overrides.has(company.id)?'company':'inherited',
+    })),
+    canSetGlobal:isGroupAdmin(context),
+    canManage:canManage(context)||companies.some(company=>hasDelegatedCommunicationsAccess(context,company.id,'manage')),
+    canManageCompanyIds:companies.filter(company=>canManageScopedCompany(context,company.id)).map(company=>company.id),
+  });
+}
+
+async function saveScopedSettings(request:Request,env:AdminEnv,context:SessionContext){
+  let body:{settingKey?:string;value?:unknown;scope?:'global'|'companies';companyIds?:string[];inherit?:boolean};
+  try{body=await request.json()}catch{return json({error:'Invalid scoped settings request.'},400)}
+  const requestedCompanyIds=[...new Set((body.companyIds||[]).map(String).filter(Boolean))];
+  if(body.scope!=='global'&&body.scope!=='companies')return json({error:'A valid scoped settings target is required.'},400);
+  if(body.scope==='global'&&!canManage(context))return json({error:'Global policy administration access is required.'},403);
+  const settingKey=String(body.settingKey||'') as ScopedSettingKey;
+  const definition=SCOPED_SETTING_DEFINITIONS[settingKey];
+  if(!definition||!definition.validate(body.value))return json({error:'Invalid scoped setting value.'},400);
+  const encoded=encodeScopedValue(body.value,definition.type);
+  if(body.scope==='global'){
+    if(!isGroupAdmin(context))return json({error:'Group Owner or Group Admin access is required for global policy.'},403);
+    await env.DB.prepare(`
+      INSERT INTO admin_scoped_settings(id,setting_key,scope_type,scope_id,setting_value,value_type,updated_by,updated_at)
+      VALUES(?,?,'global','__global__',?,?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(setting_key,scope_type,scope_id) DO UPDATE SET
+        setting_value=excluded.setting_value,value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+    `).bind(uid('scoped-setting'),settingKey,encoded,definition.type,context.employee.id).run();
+  }else{
+    const allowed=new Set(allowedCompanies(context).map(company=>company.id));
+    const companyIds=requestedCompanyIds.filter(id=>allowed.has(id));
+    if(!companyIds.length)return json({error:'Select at least one authorized company.'},400);
+    if(companyIds.length!==requestedCompanyIds.length)return json({error:'One or more selected companies are not in your authorized scope.'},403);
+    if(!canManage(context)&&companyIds.some(companyId=>!canManageScopedCompany(context,companyId)))return json({error:'Company-scoped communications administration access is not assigned.'},403);
+    if(body.inherit){
+      const marks=companyIds.map(()=>'?').join(',');
+      await env.DB.prepare(`DELETE FROM admin_scoped_settings WHERE setting_key=? AND scope_type='company' AND scope_id IN (${marks})`)
+        .bind(settingKey,...companyIds).run();
+    }else{
+      await env.DB.batch(companyIds.map(companyId=>env.DB.prepare(`
+        INSERT INTO admin_scoped_settings(id,setting_key,scope_type,scope_id,setting_value,value_type,updated_by,updated_at)
+        VALUES(?,?,'company',?,?,?, ?,CURRENT_TIMESTAMP)
+        ON CONFLICT(setting_key,scope_type,scope_id) DO UPDATE SET
+          setting_value=excluded.setting_value,value_type=excluded.value_type,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP
+      `).bind(uid('scoped-setting'),settingKey,companyId,encoded,definition.type,context.employee.id)));
+    }
+  }
+  await env.DB.prepare(`
+    INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
+    VALUES(?,?,'settings','update_scoped_setting','admin_scoped_setting',?,?, 'web')
+  `).bind(uid('audit'),context.employee.id,settingKey,JSON.stringify(body)).run();
+  const nextUrl=new URL(request.url);nextUrl.searchParams.set('settingKey',settingKey);
+  return getScopedSettings(new Request(nextUrl.toString(),{method:'GET'}),env,context);
 }
 
 async function listLocations(env: AdminEnv, context: SessionContext) {
@@ -224,6 +327,8 @@ export async function routeAdmin(request: Request, env: AdminEnv, context: Sessi
   const url = new URL(request.url);
   if (url.pathname === '/api/admin/settings' && request.method === 'GET') return getSettings(env, context);
   if (url.pathname === '/api/admin/settings' && request.method === 'POST') return updateSettings(request, env, context);
+  if (url.pathname === '/api/admin/scoped-settings' && request.method === 'GET') return getScopedSettings(request, env, context);
+  if (url.pathname === '/api/admin/scoped-settings' && request.method === 'POST') return saveScopedSettings(request, env, context);
   if (url.pathname === '/api/admin/locations' && request.method === 'GET') return listLocations(env, context);
   if (url.pathname === '/api/admin/locations/configure' && request.method === 'POST') return configureLocation(request, env, context);
   return null;
