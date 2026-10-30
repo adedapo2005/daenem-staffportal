@@ -1,0 +1,103 @@
+/* Stage 0 Pre-Production acceptance: targeted 390px reflow only.
+   Loaded by the approved post-login runtime; Sign-In is intentionally unaffected. */
+@media (max-width: 480px) {
+  .eo-finance,
+  .eo-finance > *,
+  .eo-finance .eo-grid,
+  .eo-finance .eo-grid > *,
+  .eo-finance .p-panel,
+  .eo-finance .eo-template,
+  .eo-finance .v14-finance-command,
+  .eo-finance .v14-finance-overview {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .eo-finance .eo-tabs {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .eo-finance .eo-tabs > button {
+    flex: 0 0 auto;
+  }
+
+  .eo-finance .v14-bank-health button {
+    min-width: 0;
+    max-width: 100%;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .eo-finance .v14-bank-health button > :nth-child(2) {
+    min-width: 0;
+  }
+
+  .eo-finance .v14-bank-health button > :last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .eo-finance .v14-bank-health strong,
+  .eo-finance .v14-bank-health small,
+  .eo-finance .eo-template strong,
+  .eo-finance .eo-template small,
+  .eo-finance .eo-template p {
+    overflow-wrap: anywhere;
+  }
+
+  .eo-finance .eo-template header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .eo-finance .eo-template header > :last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .eo-finance .p-panel-head {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .p-access-layout,
+  .p-access-layout > *,
+  .p-access-table {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .p-access-table > div,
+  .p-access-table > button {
+    min-width: 0;
+    grid-template-columns: minmax(6.5rem, 1.8fr) repeat(5, minmax(2.45rem, 0.65fr));
+    gap: 0.2rem;
+    padding: 0.7rem 0.3rem;
+  }
+
+  .p-access-table > div {
+    font-size: 0.625rem;
+  }
+
+  .p-access-table > div > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.15;
+  }
+
+  .p-access-table strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 0.75rem;
+  }
+
+  .p-access-table > button > span {
+    min-width: 0;
+  }
+}
