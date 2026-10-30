@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Real local Workerd + D1 regression for the StaffPortal application-status guard.
+ * Real Workerd + D1 regression for the merged provisional-workspace policy.
+ * Pending Google, Microsoft and local applicants retain restricted workspace
+ * access; rejected/cancelled/expired applications must not issue usable logins.
  * Intended repository path: scripts/test-auth-application-status-workerd.mjs
  *
  * Usage:
@@ -42,7 +44,7 @@ const requireDependency = createRequire(path.join(depsRoot, 'package.json'));
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 const startedAt = new Date().toISOString();
 const report = {
-  kind: 'staffportal-auth-application-status-real-workerd-d1',
+  kind: 'staffportal-auth-application-status-provisional-v2-real-workerd-d1',
   startedAt, ok: false, repo, runtime: {}, source: {}, migrations: [],
   checks: [], outboundRequests: [],
   boundaries: {
@@ -162,6 +164,21 @@ export default { async fetch(request, env) {
   const tables = new Set(tableRows.results.map(row => row.name));
   for (const table of requiredTables) assert(tables.has(table), `Actual migrations did not create ${table}`);
 
+  // Consume the real migration-defined Provisional role and Profile grant.
+  // Never fabricate replacement role/permission definitions for this control.
+  const provisionalProfile = await db.prepare(`
+    SELECT p.id AS permissionId,rp.access_level AS accessLevel
+    FROM roles r JOIN role_permissions rp ON rp.role_id=r.id
+    JOIN permissions p ON p.id=rp.permission_id
+    WHERE r.id='role-provisional' AND r.active=1 AND p.code='profile.access'
+  `).first();
+  assert(provisionalProfile, 'Actual migrations must define the Provisional Profile grant');
+  assert.equal(provisionalProfile.accessLevel, 'edit', 'Use the actual migration-defined Profile Edit grant');
+  report.provisionalPolicy = {
+    roleId: 'role-provisional', profileAccess: provisionalProfile.accessLevel,
+    pendingOrigins: ['google', 'microsoft', 'local'],
+  };
+
   const runKey = randomUUID().replaceAll('-', '').slice(0, 12);
   const companyId = `qa-auth-company-${runKey}`;
   const roleId = `qa-auth-role-${runKey}`;
@@ -175,7 +192,7 @@ export default { async fetch(request, env) {
     db.prepare('INSERT INTO permissions(id,code,module,action) VALUES(?,?,?,?)')
       .bind(permissionId, permissionCode, 'qa-auth', 'probe'),
     db.prepare('INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES(?,?,?,?)')
-      .bind(`qa-auth-grant-${runKey}`, roleId, permissionId, 'view'),
+      .bind(`qa-auth-grant-${runKey}`, roleId, permissionId, 'manage'),
     db.prepare("INSERT INTO app_settings(setting_key,setting_value,value_type) VALUES('security.login_location_mode','record','string') ON CONFLICT(setting_key) DO UPDATE SET setting_value='record'"),
   ]);
   let fixtureNumber = 0;
@@ -198,8 +215,20 @@ export default { async fetch(request, env) {
     if (requestId) statements.push(db.prepare(
       'INSERT INTO signup_requests(id,employee_id,requested_company_id,requested_role_text,status) VALUES(?,?,?,?,?)',
     ).bind(requestId, employeeId, companyId, requestedRole, status));
+    if (employeeStatus === 'provisional') statements.push(
+      db.prepare('INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES(?,?,?,?)')
+        .bind(`qa-auth-provisional-role-${key}`, employeeId, companyId, 'role-provisional'),
+      // These deliberately over-privileged assignments must never escape the
+      // Provisional-role boundary, even when present in the actual database.
+      db.prepare('INSERT INTO employee_permission_overrides(id,employee_id,company_id,permission_id,access_level,reason,granted_by) VALUES(?,?,?,?,?,?,?)')
+        .bind(`qa-auth-legacy-override-${key}`, employeeId, companyId, permissionId, 'manage', 'Synthetic positive override boundary', employeeId),
+      db.prepare('INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by) VALUES(?,?,?,?,?,?,?)')
+        .bind(`qa-auth-scoped-override-${key}`, employeeId, companyId, permissionId, 'manage', 'Synthetic positive override boundary', employeeId),
+      db.prepare('INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by) VALUES(?,?,?,?,?,?,?)')
+        .bind(`qa-auth-profile-override-${key}`, employeeId, companyId, provisionalProfile.permissionId, 'manage', 'Must not elevate seeded Profile Edit', employeeId),
+    );
     await db.batch(statements);
-    return { employeeId, email, requestId };
+    return { employeeId, email, requestId, employeeStatus };
   }
   async function statusOf(person, status) {
     assert(person.requestId, 'Cannot change status for an employee without a signup request');
@@ -247,21 +276,35 @@ export default { async fetch(request, env) {
     assert.equal(response.body.delivered, false, 'No email service should be involved');
     return { challengeId: response.body.challengeId, code: response.body.bootstrapCode };
   }
+  function assertContext(context, person) {
+    assert.equal(context?.employee?.id, person.employeeId);
+    assert.equal(context?.employee?.status, person.employeeStatus);
+    if (person.employeeStatus === 'provisional') {
+      assert.deepEqual(context.roles.map(role => role.id), ['role-provisional'],
+        'Pending workspace must ignore the separately assigned privileged role');
+      assert.equal(context.permissions['profile.access'], provisionalProfile.accessLevel);
+      assert.equal(context.companyPermissions[companyId]['profile.access'], provisionalProfile.accessLevel);
+      assert.equal(context.permissions[permissionCode] || 'none', 'none',
+        'Privileged role and positive global/scoped overrides must not add access');
+      assert.equal(context.companyPermissions[companyId][permissionCode] || 'none', 'none');
+    } else {
+      assert.equal(context?.permissions?.[permissionCode], 'manage');
+      assert.equal(context?.companyPermissions?.[companyId]?.[permissionCode], 'manage');
+    }
+  }
   async function signIn(person) {
     const challenge = await requestCode(person);
     const response = await http('/api/auth/verify', challenge);
     assert.equal(response.status, 200, `Positive-control OTP verify: ${JSON.stringify(response.body)}`);
     assert.equal(response.body.ok, true);
-    assert.equal(response.body.context?.employee?.id, person.employeeId);
-    assert.equal(response.body.context?.permissions?.[permissionCode], 'view');
+    assertContext(response.body.context, person);
     assert.match(response.cookie || '', /daenem_workforce_session=/);
     assert.match(response.cookie || '', /HttpOnly/i);
     const cookie = response.cookie.split(';')[0];
     const me = await http('/api/auth/me', undefined, cookie);
     assert.equal(me.status, 200);
     assert.equal(me.body.authenticated, true);
-    assert.equal(me.body.context?.employee?.id, person.employeeId);
-    assert.equal(me.body.context?.permissions?.[permissionCode], 'view');
+    assertContext(me.body.context, person);
     return cookie;
   }
   async function check(name, fn) {
@@ -272,9 +315,8 @@ export default { async fetch(request, env) {
   }
 
   const denialCases = [
-    ...['google', 'microsoft'].flatMap(origin =>
-      ['pending', 'rejected', 'cancelled', 'expired'].map(status => ({ origin, status }))),
-    ...['rejected', 'cancelled', 'expired'].map(status => ({ origin: 'local', status })),
+    ...['google', 'microsoft', 'local'].flatMap(origin =>
+      ['rejected', 'cancelled', 'expired'].map(status => ({ origin, status }))),
   ];
   for (const { origin, status } of denialCases) {
     await check(`${origin} ${status}: OTP request denied without challenge/session mutation`, async () => {
@@ -287,8 +329,8 @@ export default { async fetch(request, env) {
       assert.equal(Object.hasOwn(response.body, 'challengeId'), false);
       assert.deepEqual(await snapshot(person), before);
     });
-    await check(`${origin} ${status}: earlier valid OTP denied without consumption/session mutation`, async () => {
-      const person = await fixture(origin, 'approved');
+    await check(`${origin} pending to ${status}: earlier valid OTP denied without consumption/session mutation`, async () => {
+      const person = await fixture(origin, 'pending');
       const challenge = await requestCode(person);
       await statusOf(person, status);
       const before = await snapshot(person);
@@ -297,10 +339,8 @@ export default { async fetch(request, env) {
       assert.equal(response.cookie, null);
       assert.deepEqual(await snapshot(person), before);
     });
-    await check(`${origin} ${status}: existing cookie denied on next request`, async () => {
-      // Retain active employee status to prove denial follows the signup status,
-      // even when an administrator has not changed the employee row itself.
-      const person = await fixture(origin, 'approved', 'active');
+    await check(`${origin} pending to ${status}: existing restricted cookie denied on next request`, async () => {
+      const person = await fixture(origin, 'pending');
       const cookie = await signIn(person);
       await statusOf(person, status);
       const before = await snapshot(person, true);
@@ -316,6 +356,8 @@ export default { async fetch(request, env) {
     { origin: 'google', status: 'approved', employeeStatus: 'active', name: 'approved Google employee' },
     { origin: 'microsoft', status: 'approved', employeeStatus: 'active', name: 'approved Microsoft employee' },
     { origin: 'local', status: 'approved', employeeStatus: 'active', name: 'approved local employee' },
+    { origin: 'google', status: 'pending', employeeStatus: 'provisional', name: 'pending Google applicant with restricted workspace' },
+    { origin: 'microsoft', status: 'pending', employeeStatus: 'provisional', name: 'pending Microsoft applicant with restricted workspace' },
     { origin: 'local', status: 'pending', employeeStatus: 'provisional', name: 'pending local applicant' },
     { origin: null, status: null, employeeStatus: 'active', name: 'active employee without signup request' },
   ];
@@ -324,7 +366,40 @@ export default { async fetch(request, env) {
       await signIn(await fixture(origin, status, employeeStatus));
     });
   }
-  assert.equal(report.checks.length, 38);
+  for (const origin of ['google', 'microsoft', 'local']) {
+    await check(`${origin} approved active employee: existing cookie denied after rejection`, async () => {
+      const person = await fixture(origin, 'approved', 'active');
+      const cookie = await signIn(person);
+      await statusOf(person, 'rejected');
+      const before = await snapshot(person, true);
+      const response = await http('/api/auth/me', undefined, cookie);
+      assert.equal(response.status, 401, JSON.stringify(response.body));
+      assert.equal(response.body.authenticated, false);
+      assert.equal(Object.hasOwn(response.body, 'context'), false);
+      assert.deepEqual(await snapshot(person, true), before);
+    });
+    await check(`${origin} pending to approved: same cookie re-evaluates authorized employee role`, async () => {
+      const person = await fixture(origin, 'pending');
+      const cookie = await signIn(person);
+      // Model the existing management approval state transition using real D1.
+      // This tests the next session read, not the management approval endpoint.
+      await db.batch([
+        db.prepare("UPDATE signup_requests SET status='approved',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(person.requestId),
+        db.prepare("UPDATE employees SET employment_status='active',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(person.employeeId),
+        db.prepare("DELETE FROM employee_roles WHERE employee_id=? AND role_id='role-provisional'").bind(person.employeeId),
+      ]);
+      person.employeeStatus = 'active';
+      const before = await snapshot(person, true);
+      const response = await http('/api/auth/me', undefined, cookie);
+      assert.equal(response.status, 200);
+      assert.equal(response.body.authenticated, true);
+      assertContext(response.body.context, person);
+      assert.equal(response.body.context.roles.some(role => role.id === 'role-provisional'), false);
+      assert.equal(response.body.context.roles.some(role => role.id === roleId), true);
+      assert.deepEqual(await snapshot(person, true), before);
+    });
+  }
+  assert.equal(report.checks.length, 40);
   assert.equal(report.outboundRequests.length, 0);
   report.ok = true;
 }
@@ -355,7 +430,7 @@ try {
   report.finishedAt = new Date().toISOString();
   report.elapsedMs = Date.parse(report.finishedAt) - Date.parse(startedAt);
   report.passed = report.checks.length;
-  report.expectedChecks = 38;
+  report.expectedChecks = 40;
   if (timedOut) report.ok = false;
   if (reportPath) {
     const destination = path.resolve(reportPath);

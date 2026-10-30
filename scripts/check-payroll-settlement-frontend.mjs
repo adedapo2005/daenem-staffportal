@@ -16,7 +16,7 @@ const checks = [
   [payroll.includes('approve and prepare payment instructions.'), 'Payroll header no longer claims it records payment'],
   [css.includes('.payroll-settlement-truth'), 'truth notice has dedicated styling'],
   [!css.includes('font-size:8px') && !css.includes('font-size:7px'), 'Payroll visible typography has a 9px floor'],
-  [backend.includes("if(body.toStatus==='paid')return json({error:'Payroll cannot be marked paid until authoritative payment acknowledgement and reconciliation evidence is available.'},409)"), 'frontend remains aligned to committed backend settlement guard'],
+  [backend.includes("if(body.toStatus==='paid')return json({error:'Payroll cannot be marked paid until authoritative payment acknowledgement and reconciliation evidence is available.',code:'PAYMENT_RECONCILIATION_REQUIRED'},409)"), 'frontend remains aligned to committed backend settlement guard and structured error code'],
 ];
 
 let passed = 0;

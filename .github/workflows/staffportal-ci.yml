@@ -61,6 +61,11 @@ jobs:
           node scripts/test-ess-explicit-company-binding.mjs
           node scripts/test-ess-notification-review-audit.mjs
 
+      - name: Spend approval atomicity and bootstrap scope regressions
+        run: |
+          node scripts/test-spend-approval-transition-atomicity.mjs
+          node scripts/test-spend-explicit-bootstrap-scope.mjs
+
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
 
@@ -112,6 +117,12 @@ jobs:
           node --no-warnings scripts/test-signin-create-account-runtime.mjs
           node --no-warnings scripts/test-signin-create-account-sqlite.mjs
           node --no-warnings scripts/test-auth-application-status-workerd.mjs
+
+      - name: Provisional workspace onboarding and permission boundaries
+        run: |
+          node --no-warnings scripts/test-provisional-workspace-access.mjs
+          node --no-warnings scripts/test-auth-session-role-projection.mjs
+          node --no-warnings scripts/test-provisional-signup-handoff.mjs
 
       - name: TypeScript
         if: always()

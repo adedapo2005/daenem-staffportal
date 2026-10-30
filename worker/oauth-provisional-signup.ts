@@ -36,6 +36,41 @@ export async function oauthApplicantApproval(
   return 'not_approved';
 }
 
+/**
+ * Resolve a newly verified applicant only from a pending request. Microsoft
+ * must match its immutable tenant/object pair as well as the verified email.
+ */
+export async function pendingOAuthApplicantId(
+  db: D1Database, applicant: OAuthApplicant,
+): Promise<string | null> {
+  const email = normalizedEmail(applicant.email);
+  if (!validEmail(email)) return null;
+  if (applicant.provider === 'microsoft') {
+    if (!applicant.microsoftTenantId || !applicant.microsoftObjectId) return null;
+    const row = await db.prepare(`
+      SELECT e.id
+      FROM staffportal_external_identity_links link
+      JOIN employees e ON e.id=link.employee_id
+      JOIN signup_requests sr ON sr.employee_id=e.id
+      WHERE link.provider='microsoft' AND link.tenant_id=?
+        AND link.object_id=? AND link.revoked_at IS NULL
+        AND lower(e.email)=? AND e.employment_status='provisional'
+        AND sr.status='pending' AND sr.requested_role_text='Social Applicant: microsoft'
+      LIMIT 1
+    `).bind(applicant.microsoftTenantId,applicant.microsoftObjectId,email)
+      .first<{ id: string }>();
+    return row?.id || null;
+  }
+  const row = await db.prepare(`
+    SELECT e.id FROM employees e
+    JOIN signup_requests sr ON sr.employee_id=e.id
+    WHERE lower(e.email)=? AND e.employment_status='provisional'
+      AND sr.status='pending' AND sr.requested_role_text='Social Applicant: google'
+    LIMIT 1
+  `).bind(email).first<{ id: string }>();
+  return row?.id || null;
+}
+
 export async function provisionOAuthApplicant(
   env: SignupEnv, applicant: OAuthApplicant, request: Request,
 ): Promise<ApplicantResult> {

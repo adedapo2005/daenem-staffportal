@@ -284,19 +284,13 @@ async function findEmployee(env: AuthEnv, identity: string) {
   }>();
 }
 
-// Keep all sign-in methods aligned with the same management approval status.
-// Pending local registrations retain their existing policy, but a pending
-// social application must never gain access through the local OTP fallback.
+// Keep legacy OTP entry points aligned with the current session policy.
+// Pending applicants retain the administrator-defined provisional workspace.
 async function signupSessionBlocked(env: AuthEnv, employeeId: string): Promise<boolean> {
   const latest = await env.DB.prepare(
-    "SELECT status, requested_role_text AS requestedRole FROM signup_requests " +
-    "WHERE employee_id=? ORDER BY created_at DESC,id DESC LIMIT 1"
-  ).bind(employeeId).first<{ status: string; requestedRole: string | null }>();
-  if (!latest) return false;
-  if (latest.status !== 'approved' && latest.status !== 'pending') return true;
-  const social = latest.requestedRole === 'Social Applicant: google' ||
-    latest.requestedRole === 'Social Applicant: microsoft';
-  return social && latest.status !== 'approved';
+    "SELECT status FROM signup_requests WHERE employee_id=? ORDER BY created_at DESC,id DESC LIMIT 1"
+  ).bind(employeeId).first<{ status: string }>();
+  return Boolean(latest && ['rejected', 'cancelled', 'expired'].includes(latest.status));
 }
 
 async function requestSignIn(request: Request, env: AuthEnv) {
@@ -313,7 +307,7 @@ async function requestSignIn(request: Request, env: AuthEnv) {
     return responseJson({ error: 'No active or provisional employee account matches those details.' }, 404);
   }
   if (await signupSessionBlocked(env, employee.id)) {
-    return responseJson({ error: 'Your application is awaiting management approval or is not eligible for sign-in.' }, 403);
+    return responseJson({ error: 'Your application is not eligible for sign-in.' }, 403);
   }
 
   const location = await evaluateLoginLocation(env, employee.id, body.latitude, body.longitude, body.accuracy);
@@ -406,7 +400,7 @@ async function verifySignIn(request: Request, env: AuthEnv) {
   if (!['active', 'provisional'].includes(String(row.employeeStatus))) {
     return responseJson({ error: 'This employee account is not allowed to sign in.' }, 403);
   }
-  // Recheck after OTP verification; approval may have changed since code issue.
+  // Management status can change after this OTP was issued.
   if (await signupSessionBlocked(env, String(row.employee_id))) {
     return responseJson({ error: 'Your application is not eligible for sign-in.' }, 403);
   }
@@ -474,8 +468,9 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
   if (!base) return null;
 
   const employeeId = String(base.id);
-  // Re-evaluate management status on every authenticated request, including
-  // cookies issued before rejection/cancellation/expiry.
+  const provisional = String(base.status) === 'provisional';
+  // Existing sessions immediately lose access after an application is rejected,
+  // cancelled or expired, irrespective of authentication provider.
   if (await signupSessionBlocked(env, employeeId)) return null;
   const companiesResult = await env.DB.prepare(`
     SELECT c.id, c.code, c.name, m.location_id AS locationId, m.is_primary AS isPrimary
@@ -488,6 +483,7 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
     SELECT r.id, r.code, r.name, er.company_id AS companyId
     FROM employee_roles er JOIN roles r ON r.id = er.role_id
     WHERE er.employee_id = ? AND r.active = 1
+      AND (? <> 'provisional' OR er.role_id = 'role-provisional')
       AND (r.company_id IS NULL OR r.company_id = er.company_id)
       AND (r.code <> 'owner' OR r.company_id IS NULL)
       AND (r.company_id IS NULL OR EXISTS (
@@ -497,7 +493,11 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
           AND m.active = 1 AND c.active = 1
       ))
     ORDER BY r.is_system DESC, r.name
-  `).bind(employeeId).all<Record<string, unknown>>();
+  `).bind(employeeId, String(base.status)).all<Record<string, unknown>>();
+
+  if (provisional && !(rolesResult.results || []).some(role => role.id === 'role-provisional')) {
+    return null;
+  }
 
   const permissionRows = await env.DB.prepare(`
     SELECT er.company_id AS companyId, p.code, rp.access_level AS accessLevel
@@ -506,8 +506,9 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
     JOIN role_permissions rp ON rp.role_id = er.role_id
     JOIN permissions p ON p.id = rp.permission_id
     WHERE er.employee_id = ?
+      AND (? <> 'provisional' OR er.role_id = 'role-provisional')
       AND (r.company_id IS NULL OR r.company_id = er.company_id)
-  `).bind(employeeId).all<{ companyId?: string; code: string; accessLevel: AccessLevel }>();
+  `).bind(employeeId, String(base.status)).all<{ companyId?: string; code: string; accessLevel: AccessLevel }>();
 
   const legacyOverrides = await env.DB.prepare(`
     SELECT p.code, o.access_level AS accessLevel
@@ -542,17 +543,27 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
   // Legacy overrides were group-wide. Preserve them while applying them to every
   // assigned business so the client never has to infer cross-business access.
   for (const row of legacyOverrides.results || []) {
+    // Individual overrides may revoke provisional permissions but must never
+    // elevate them beyond the administrator-defined Provisional role.
+    if (provisional && row.accessLevel !== 'none') continue;
     for (const companyId of companyIds) companyPermissions[companyId][row.code] = row.accessLevel;
   }
 
   // Scoped overrides are applied last. An explicit "none" therefore wins for
   // the selected business even when another role grants the same permission.
   for (const row of scopedOverrides.results || []) {
+    if (provisional && row.accessLevel !== 'none') continue;
     const targets = row.companyId ? [String(row.companyId)] : companyIds;
     for (const companyId of targets) {
       if (companyPermissions[companyId]) companyPermissions[companyId][row.code] = row.accessLevel;
     }
   }
+
+  // Provisional workspace access exists for employee profile setup; if an
+  // administrator removes Profile Edit, an existing session loses access.
+  if (provisional && !companyIds.some(companyId =>
+    levels.indexOf(companyPermissions[companyId]?.['profile.access'] || 'none') >= levels.indexOf('edit')
+  )) return null;
 
   const permissions: Record<string, AccessLevel> = {};
   for (const companyAccess of Object.values(companyPermissions)) {

@@ -40,7 +40,7 @@ function database({ membershipActive = 1, companyActive = 1, roleCompany = 'comp
 }
 
 function roles(db) {
-  return db.prepare(query).all('actor-a');
+  return db.prepare(query).all('actor-a', 'active');
 }
 
 const cases = [
