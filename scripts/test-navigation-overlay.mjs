@@ -90,12 +90,22 @@ test('overlapping replacement spans are rejected', () => {
   assert.throws(() => recoverApprovedPortalBytes(portalBytes, descriptor), /Overlapping replacement spans/);
 });
 
+test('Owner shell is organization-wide rather than selected-company Group workspace', () => {
+  const { descriptor } = fixture();
+  const ownerShell = descriptor.replacements.find((replacement) => replacement.id === 'owner-workspace-shell');
+  assert.ok(ownerShell, 'Owner workspace replacement must remain pinned');
+  assert.match(ownerShell.after, /\? "DAENEM"/);
+  assert.match(ownerShell.after, /"Owner Workspace"/);
+  assert.doesNotMatch(ownerShell.after, /Group workspace/);
+  assert.doesNotMatch(ownerShell.after, /session\.role === "Owner" \? setDev/);
+});
+
 test('replacement identities, order, and count cannot be changed', () => {
   const { descriptor } = fixture();
   descriptor.replacements.reverse();
   assert.throws(() => validateNavigationOverlayDescriptor(descriptor), /Replacement identities or ordering changed/);
   descriptor.replacements.pop();
-  assert.throws(() => validateNavigationOverlayDescriptor(descriptor), /Exactly three approved literal replacement boundaries/);
+  assert.throws(() => validateNavigationOverlayDescriptor(descriptor), /Exactly four approved literal replacement boundaries/);
 });
 
 test('the source checksum check reads all three fixed allowed paths', () => {

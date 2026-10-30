@@ -1,4 +1,5 @@
 import {
+  authorizedCompaniesForModule,
   companies,
   modules,
   type ModuleDef,
@@ -44,6 +45,30 @@ export interface CommandCenterModelOptions {
 
 const definitions = new Map(modules.map((module) => [module.id, module]));
 const globals = new Map(GLOBAL_NAVIGATION.map((item) => [item.id, item]));
+export function canViewCommandNavigationModule(
+  definition: ModuleDef | undefined,
+  session: Session,
+  canView: CommandCenterPermissionCheck,
+): boolean {
+  if (!definition) return false;
+  if (session.role !== "Owner") return canView(definition, session);
+  return authorizedCompaniesForModule(session, definition).length > 0;
+}
+
+export function commandNavigationTargetSession(
+  definition: ModuleDef | undefined,
+  session: Session,
+  canView: CommandCenterPermissionCheck,
+): Session {
+  if (!definition || session.role !== "Owner" || canView(definition, session)) return session;
+  const authorized = authorizedCompaniesForModule(session, definition);
+  const company = definition.company && authorized.includes(definition.company)
+    ? definition.company
+    : authorized.find((candidate) => candidate !== "group")
+      || (authorized.includes("group") ? "group" : undefined);
+  return company ? { ...session, company } : session;
+}
+
 const personalWork = new Set(["files", "saved-views"]);
 const businessFamilies = new Set([
   "Jobs ERP", "Printing & Technology", "Bakery ERP", "Autos ERP",

@@ -170,7 +170,11 @@ import {
   type GlobalNavigationItem,
 } from "./navigation-adapter";
 import { EnterpriseCommandCenterNavigation } from "../../../../src/enterprise-command-center-navigation";
-import { resolveGlobalNavigationOwner } from "../../../../src/enterprise-command-center-model";
+import {
+  canViewCommandNavigationModule,
+  commandNavigationTargetSession,
+  resolveGlobalNavigationOwner,
+} from "../../../../src/enterprise-command-center-model";
 import "../../../../src/enterprise-command-center-navigation.css";
 export interface Preferences {
   radius?: number;
@@ -1180,13 +1184,40 @@ export default function Portal() {
       : entry.id === "cloud-storage"
         ? cloudStorageAccess
       : canView(byId(entry.permissionModuleId), session);
+  const navigationContextVisible = (
+    entry: (typeof GLOBAL_NAVIGATION)[number]["context"][number],
+  ) =>
+    entry.id === "experience"
+      ? session.role === "Owner"
+        ? canViewCommandNavigationModule(byId("signin-design"), session, canView)
+        : contextVisible(entry)
+      : entry.id === "cloud-storage"
+        ? session.role === "Owner"
+          ? Boolean(
+              byId("admin") &&
+              canAct(
+                byId("admin")!,
+                commandNavigationTargetSession(byId("admin"), session, canView),
+                "manage",
+              ),
+            )
+          : contextVisible(entry)
+        : canViewCommandNavigationModule(
+            byId(entry.permissionModuleId),
+            session,
+            canView,
+          );
   const canonicalDestinationForGlobalItem = (item: GlobalNavigationItem) =>
-    allowed.find((definition) => resolveGlobalNavigationOwner(definition.id)?.id === item.id);
+    (session.role === "Owner" ? modules : allowed).find(
+      (definition) =>
+        canViewCommandNavigationModule(definition, session, canView) &&
+        resolveGlobalNavigationOwner(definition.id)?.id === item.id,
+    );
   const visibleGlobal = (item: GlobalNavigationItem) =>
     (item.id === "admin"
-      ? canView(byId("admin"), session) || studioAccess
-      : canView(byId(item.permissionModuleId), session) ||
-        item.context.some((entry) => contextVisible(entry))) ||
+      ? canViewCommandNavigationModule(byId("admin"), session, canView) || studioAccess
+      : canViewCommandNavigationModule(byId(item.permissionModuleId), session, canView) ||
+        item.context.some((entry) => navigationContextVisible(entry))) ||
     Boolean(canonicalDestinationForGlobalItem(item));
   const visibleGlobalItems = GLOBAL_NAVIGATION.filter(visibleGlobal);
   const pinnedGlobalItems = visibleGlobalItems.filter((item) => item.pinned);
@@ -1200,10 +1231,10 @@ export default function Portal() {
   const destinationForGlobalItem = (item: GlobalNavigationItem) => {
     const rootVisible =
       item.id === "admin"
-        ? canView(byId("admin"), session)
-        : canView(byId(item.permissionModuleId), session);
+        ? canViewCommandNavigationModule(byId("admin"), session, canView)
+        : canViewCommandNavigationModule(byId(item.permissionModuleId), session, canView);
     const studioFallback = item.id === "admin" && !rootVisible && studioAccess;
-    const contextFallback = item.context.find((entry) => contextVisible(entry));
+    const contextFallback = item.context.find((entry) => navigationContextVisible(entry));
     const canonicalFallback = canonicalDestinationForGlobalItem(item);
     return {
       route: studioFallback
@@ -1397,20 +1428,23 @@ export default function Portal() {
       </div>
       <button
         className="p-company"
-        onClick={() => (session.role === "Owner" ? setDev(true) : go("hub"))}
+        onClick={() => go("hub")}
+        aria-label={
+          session.role === "Owner" ? "Open Owner Workspace" : "Open Assigned Workspace"
+        }
       >
         <span className="p-company-symbol">D</span>
         <span>
           <strong>
-            {companies.find((c) => c.id === session.company)?.name}
+            {session.role === "Owner"
+              ? "DAENEM"
+              : companies.find((c) => c.id === session.company)?.name}
           </strong>
           <small>
-            {session.role === "Owner"
-              ? "Group workspace"
-              : "Assigned workspace"}
+            {session.role === "Owner" ? "Owner Workspace" : "Assigned Workspace"}
           </small>
         </span>
-        <ChevronDown size={14} />
+        {session.role !== "Owner" && <ChevronDown size={14} />}
       </button>
       <EnterpriseCommandCenterNavigation
         session={session}
@@ -1419,10 +1453,41 @@ export default function Portal() {
         activeGlobalId={activeGlobal?.id}
         activeContext={activeContext}
         contextualRouteActive={isGlobalShellPath}
-        canView={canView}
-        contextVisible={contextVisible}
+        canView={(definition, navigationSession) =>
+          canViewCommandNavigationModule(definition, navigationSession, canView)
+        }
+        contextVisible={navigationContextVisible}
         destinationForGlobalItem={destinationForGlobalItem}
-        goRoute={goRoute}
+        goRoute={(route, capabilityModuleId) => {
+          const targetId =
+            capabilityModuleId ||
+            (route.startsWith(SIGNIN_STUDIO_ROUTE)
+              ? "signin-design"
+              : route.split("/").filter(Boolean)[0]);
+          const target = byId(targetId);
+          const targetSession = commandNavigationTargetSession(target, session, canView);
+          if (targetSession === session) {
+            goRoute(route, capabilityModuleId);
+            return;
+          }
+          if (!target || !canView(target, targetSession)) {
+            goRoute(route, capabilityModuleId);
+            return;
+          }
+          purgePrivilegedProjectionState();
+          setRecentRefs([]);
+          setNotificationAcknowledged(false);
+          setSensitiveAction(null);
+          setMode("Demo Data");
+          setEditing(null);
+          setDrawer(null);
+          setSession(targetSession);
+          setCommand(false);
+          setCommandQuery("");
+          setAiSearchState("idle");
+          setMobile(false);
+          router.push(route);
+        }}
         collapsed={shellNavCollapsed}
         onExpand={() => {
           if (window.matchMedia("(max-width: 1024px)").matches && !mobile) {

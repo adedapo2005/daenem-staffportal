@@ -19,14 +19,16 @@ try {
   const fixtures = await server.ssrLoadModule(`${source}security-contract.ts`);
   const nav = await server.ssrLoadModule('/src/enterprise-command-center-model.ts');
   const { EnterpriseCommandCenterNavigation } = await server.ssrLoadModule('/src/enterprise-command-center-navigation.tsx');
+  const navigationCanView = (module, session) =>
+    nav.canViewCommandNavigationModule(module, session, canonical.canView);
   const optionsFor = (session) => ({
     session,
-    canView: canonical.canView,
+    canView: (module, checkedSession) => navigationCanView(module, checkedSession),
     contextVisible: (entry) => entry.id === 'experience'
       ? adapter.canViewStudioNavigationItem('Home', session)
       : entry.id === 'cloud-storage'
         ? canonical.canAct(canonical.byId('admin'), session, 'manage')
-        : canonical.canView(canonical.byId(entry.permissionModuleId), session),
+        : navigationCanView(canonical.byId(entry.permissionModuleId), session),
   });
 
   for (const profile of fixtures.testProfiles) {
@@ -35,14 +37,14 @@ try {
       const pages = nav.flattenCommandNavigation(nav.buildEnterpriseCommandNavigation(options));
       assert.equal(new Set(pages.map((page) => page.id)).size, pages.length, 'duplicate page identity');
       for (const definition of canonical.modules) {
-        const expected = canonical.canView(definition, options.session)
+        const expected = options.canView(definition, options.session)
           && (definition.id !== 'signin-design' || adapter.canViewStudioNavigationItem('Home', options.session));
         const reachable = pages.filter((page) => page.moduleId === definition.id && page.route === definition.canonicalPath);
         assert.equal(reachable.length, expected ? 1 : 0, `${profile}: ${definition.id} canonical route`);
       }
       for (const page of pages) {
         assert.ok(page.route.startsWith('/') && !page.route.includes('#'), 'canonical local route required');
-        assert.ok(page.context ? options.contextVisible(page.context) : canonical.canView(canonical.byId(page.permissionModuleId), options.session), `unauthorized page: ${page.id}`);
+        assert.ok(page.context ? options.contextVisible(page.context) : options.canView(canonical.byId(page.permissionModuleId), options.session), `unauthorized page: ${page.id}`);
       }
       for (const area of adapter.GLOBAL_NAVIGATION) for (const entry of area.context) {
         if (options.contextVisible(entry)) assert.ok(pages.some((page) => page.context?.id === entry.id && page.globalId === area.id && page.route === entry.route), `lost original context: ${entry.id}`);
@@ -54,6 +56,44 @@ try {
   const ownerOptions = optionsFor(owner);
   const areas = nav.buildEnterpriseCommandNavigation(ownerOptions);
   const pages = nav.flattenCommandNavigation(areas);
+
+  check('Owner navigation is a cross-company union while employee navigation remains company-scoped', () => {
+    const baseCapabilities = ['export', 'print', 'publish', 'assign'];
+    const ownerScoped = {
+      ...owner,
+      company: 'printing',
+      assignments: [
+        { module: 'printing', level: 'Manage', companies: ['printing'], scope: 'COMPANY', capabilities: baseCapabilities },
+        { module: 'bakery', level: 'Manage', companies: ['bakery'], scope: 'COMPANY', capabilities: baseCapabilities },
+        { module: 'autos', level: 'Manage', companies: ['autos'], scope: 'COMPANY', capabilities: baseCapabilities },
+        { module: 'properties', level: 'Manage', companies: ['properties'], scope: 'COMPANY', capabilities: baseCapabilities },
+        { module: 'logistics', level: 'Manage', companies: ['logistics'], scope: 'COMPANY', capabilities: baseCapabilities },
+      ],
+      overrides: {},
+    };
+    assert.equal(canonical.canView(canonical.byId('bakery'), ownerScoped), false, 'current-company runtime authorization stays scoped');
+    const ownerPages = nav.flattenCommandNavigation(nav.buildEnterpriseCommandNavigation(optionsFor(ownerScoped)));
+    for (const id of ['printing', 'bakery', 'autos', 'properties', 'logistics']) {
+      assert.ok(ownerPages.some((page) => page.moduleId === id), `Owner navigation lost ${id}`);
+    }
+    const bakerySession = nav.commandNavigationTargetSession(canonical.byId('bakery'), ownerScoped, canonical.canView);
+    assert.equal(bakerySession.company, 'bakery', 'opening Bakery resolves its authorized company context internally');
+    assert.equal(canonical.canView(canonical.byId('bakery'), bakerySession), true);
+
+    const employeeScoped = {
+      ...ownerScoped,
+      role: 'Employee',
+      personId: 'stage0-employee-nav-scope',
+      assignments: [
+        { module: 'printing', level: 'View', companies: ['printing'], scope: 'COMPANY', capabilities: [] },
+        { module: 'bakery', level: 'View', companies: ['bakery'], scope: 'COMPANY', capabilities: [] },
+      ],
+    };
+    const employeePages = nav.flattenCommandNavigation(nav.buildEnterpriseCommandNavigation(optionsFor(employeeScoped)));
+    assert.ok(employeePages.some((page) => page.moduleId === 'printing'));
+    assert.ok(!employeePages.some((page) => page.moduleId === 'bakery'), 'employee navigation must not union another company into the current context');
+    assert.equal(nav.commandNavigationTargetSession(canonical.byId('bakery'), employeeScoped, canonical.canView), employeeScoped, 'employee navigation cannot auto-elevate company context');
+  });
 
   check('Construction keeps its five approved sections and every existing route', () => {
     const construction = areas.find((area) => area.globalId === 'businesses').children.find((group) => group.id === 'area:businesses/construction');
