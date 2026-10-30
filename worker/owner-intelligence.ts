@@ -1,4 +1,4 @@
-import { hasPermission, type AuthEnv, type SessionContext } from './auth';
+import { hasPermission, sessionContextFromId, type AuthEnv, type SessionContext } from './auth';
 
 interface OwnerEnv extends AuthEnv { AI: Ai }
 type PeriodKey = 'current_month' | 'previous_month' | 'current_quarter' | 'year_to_date' | 'last_12_months';
@@ -35,6 +35,26 @@ const domainPermission: Record<Domain,string> = {
   security:'security.access',requirements:'forms.access',forms:'forms.access',construction:'construction.access',
 };
 const denied = () => new Error('Owner intelligence scope is unavailable.');
+// Private authorization seal: never serialized into API responses or AI prompts.
+const scopedIntelligenceEvidence = new WeakMap<object,string>();
+
+// Owner/Group Admin is an identity gate, NOT a domain or company entitlement.
+// Rebuild the current session from authoritative D1 for sensitive reads, because
+// a request-time SessionContext may already be stale when a grant is revoked.
+async function liveOwnerContext(env: OwnerEnv, original: SessionContext) {
+  const live = await sessionContextFromId(env, original.sessionId);
+  if (!live || live.employee.id !== original.employee.id || !await groupAuthority(env, live)) throw denied();
+  return live;
+}
+
+const intelligenceDomainCode=(d:Domain,id:string)=>d==='sales'
+  ? (id==='company-bakery'?'bakery.access':id==='company-autos'?'autos.sales_pipeline':id==='company-logistics'?'logistics.access':id==='company-properties'?'properties.rent':'sales.access')
+  : domainPermission[d];
+const intelligenceDomains=Object.keys(domainPermission) as Domain[];
+const grantedDomain=(live:SessionContext,d:Domain,id:string)=>
+  live.companies.some(c=>c.id===id)&&hasPermission(live,intelligenceDomainCode(d,id),'view',id);
+const exposedGrantSignature=(live:SessionContext,companyIds:string[])=>
+  JSON.stringify(companyIds.map(id=>[id,...intelligenceDomains.map(d=>grantedDomain(live,d,id))]));
 
 function isoDate(year: number, monthIndex: number, day = 1) {
   return new Date(Date.UTC(year, monthIndex, day)).toISOString().slice(0, 10);
@@ -127,15 +147,17 @@ async function financeFor(env: OwnerEnv, companyIds: string[], range: PeriodRang
 
 export async function collectOwnerIntelligence(env: OwnerEnv, context: SessionContext, periodValue = 'current_month', companyId = '') {
   const period = periodRange(periodValue), comparison = { start: period.comparisonStart, end: period.comparisonEnd }, date = workDate();
-  const authority=await groupAuthority(env,context);
-  const ids=new Set(context.companies.map(c=>c.id));
-  const domainCode=(d:Domain,id:string)=>d==='sales' ? (id==='company-bakery'?'bakery.access':id==='company-autos'?'autos.sales_pipeline':id==='company-logistics'?'logistics.access':id==='company-properties'?'properties.rent':'sales.access') : domainPermission[d];
-  const allow=(d:Domain,id:string)=>authority==='owner'||(ids.has(id)&&hasPermission(context,domainCode(d,id),'view',id));
-  if(!companyId && !authority) throw denied();
-  const available=supportedCompanies.filter(c=>authority ? true : ids.has(c.id));
+  const live=await liveOwnerContext(env,context);
+  const allow=(d:Domain,id:string)=>grantedDomain(live,d,id);
+
+
+
+  const available=supportedCompanies.filter(c=>intelligenceDomains.some(d=>allow(d,c.id)));
   const selected=companyId?available.find(c=>c.id===companyId):undefined;
-  if(companyId && (!selected || (authority!=='owner' && !Object.keys(domainPermission).some(d=>allow(d as Domain,companyId)))))throw denied();
+  if(companyId && !selected)throw denied();
   const scope=selected?[selected]:available, scopeIds=scope.map(c=>c.id);
+  if(!scopeIds.length)throw denied();
+  const permittedAtStart=exposedGrantSignature(live,scopeIds);
   const authorized=(d:Domain)=>scopeIds.filter(id=>allow(d,id));
   const can=(d:Domain,id:string)=>scopeIds.includes(id)&&allow(d,id);
   const shared=Object.fromEntries(await Promise.all(scope.map(async c=>[c.id,await sharedCompany(env,c.id,period,date,allow)] as const)));
@@ -145,7 +167,7 @@ export async function collectOwnerIntelligence(env: OwnerEnv, context: SessionCo
   const securityIds=authorized('security');
   const requirementIds=authorized('requirements');
   const formIds=authorized('forms');
-  const securityQuery = securityIds.length ? env.DB.prepare(`SELECT COUNT(*) AS highRisk FROM security_logs WHERE reviewed_at IS NULL AND severity IN ('high','critical') AND (company_id IN (${scopePlaceholders})${companyId ? '' : ' OR company_id IS NULL'})`).bind(...securityIds).first<{ highRisk: number }>() : Promise.resolve({ highRisk: 0 });
+  const securityQuery = securityIds.length ? env.DB.prepare(`SELECT COUNT(*) AS highRisk FROM security_logs WHERE reviewed_at IS NULL AND severity IN ('high','critical') AND company_id IN (${scopePlaceholders})`).bind(...securityIds).first<{ highRisk: number }>() : Promise.resolve({ highRisk: 0 });
   const requirementQuery=requirementIds.length ? env.DB.prepare(`SELECT COUNT(*) AS count FROM requirement_completions WHERE company_id IN (${requirementIds.map(()=>'?').join(',')}) AND status='overdue'`).bind(...requirementIds).first<{count:number}>() : Promise.resolve({count:0});
   const formQuery=formIds.length ? env.DB.prepare(`SELECT COUNT(*) AS count FROM form_submissions WHERE company_id IN (${formIds.map(()=>'?').join(',')}) AND status IN ('not_started','in_progress')`).bind(...formIds).first<{count:number}>() : Promise.resolve({count:0});
   const [printingSales, printingPrevious, bakerySales, bakeryPrevious, bakeryWaste, autos, autosPrevious, logistics, logisticsPrevious, propertiesRent, propertiesPrevious, propertiesArrears, security, overdueRequirements, pendingForms, construction, finance] = await Promise.all([
@@ -188,7 +210,12 @@ export async function collectOwnerIntelligence(env: OwnerEnv, context: SessionCo
   if (construction && construction.overdueMilestones > 0) alerts.push({ severity: 'high', code: 'construction_overdue', title: 'Construction milestones overdue', detail: `${construction.overdueMilestones} project milestone(s) are overdue.`, action: 'construction' });
   if (finance && finance.overdueReceivables > 0) alerts.push({ severity: 'high', code: 'receivables_overdue', title: 'Receivables need collection', detail: `${finance.overdueReceivables} receivable(s) are overdue or past their due date.`, action: 'finance' });
 
-  return {
+  // A revocation during any asynchronous D1 read must suppress the entire
+  // response, not disclose data from a stale permission snapshot.
+  const stillCurrent=await liveOwnerContext(env,context);
+  if(permittedAtStart!==exposedGrantSignature(stillCurrent,scopeIds))throw denied();
+
+  const result = {
     generatedAt: new Date().toISOString(), workDate: date, month: period.label, previousMonth: period.comparisonLabel, period,
     scope: { companyId: selected?.id || null, companyName: selected?.name || 'Daenem Group', companyIds: scopeIds },
     group: {
@@ -210,6 +237,8 @@ export async function collectOwnerIntelligence(env: OwnerEnv, context: SessionCo
       ...(scope.some(c=>c.id==='company-properties')?{properties:{...(can('sales','company-properties')?{rentCollectedKobo:Number(propertiesRent?.collectedKobo||0),previousRentCollectedKobo:Number(propertiesPrevious?.collectedKobo||0),rentReceipts:Number(propertiesRent?.receipts||0),arrearsKobo:Number(propertiesArrears?.arrearsKobo||0),overdueCharges:Number(propertiesArrears?.overdueCharges||0)}:{}),...shared['company-properties']}}:{}),
     }, alerts,
   };
+  scopedIntelligenceEvidence.set(result,permittedAtStart);
+  return result;
 }
 
 async function intelligence(request: Request, env: OwnerEnv, context: SessionContext) {
@@ -219,13 +248,75 @@ async function intelligence(request: Request, env: OwnerEnv, context: SessionCon
   catch (error) { if(error instanceof Error && error.message==='Owner intelligence scope is unavailable.') return json({error:error.message},403); return json({error:'Unable to build Owner intelligence.'},400); }
 }
 
+// The final AI activity write must be conditional on the *same* authorization
+// source rows that were checked after the provider returned. A request-time
+// permission snapshot cannot authorize an INSERT after session/grant revocation.
+// This compact, deterministic D1 fingerprint is intentionally stricter than a
+// permission snapshot: ANY intervening change fails closed and requires retry.
+const ownerAiAuthorityFenceSql = `
+ SELECT json_object(
+   -- Do not fingerprint the bare clock second: legitimate D1 scheduling can
+   -- cross that second even with unchanged rights. Expiring override validity
+   -- is fingerprinted individually below, while sessions are checked at write.
+   'session',(SELECT json_array(s.employee_id,s.expires_at,s.revoked_at)
+     FROM auth_sessions s WHERE s.id=?),
+   'employee',(SELECT json_array(e.employment_status) FROM employees e WHERE e.id=?),
+   'latestApplication',(SELECT json_array(sr.id,sr.status,sr.created_at)
+     FROM signup_requests sr WHERE sr.employee_id=?
+     ORDER BY sr.created_at DESC,sr.id DESC LIMIT 1),
+   'memberships',(SELECT json_group_array(json(t.j)) FROM (
+     SELECT json_array(m.id,m.company_id,m.active,m.is_primary,c.active) AS j
+     FROM employee_company_memberships m LEFT JOIN companies c ON c.id=m.company_id
+     WHERE m.employee_id=? ORDER BY m.id
+   ) t),
+   'assignedRoles',(SELECT json_group_array(json(t.j)) FROM (
+     SELECT json_array(er.id,er.company_id,er.role_id,r.company_id,r.code,r.active) AS j
+     FROM employee_roles er JOIN roles r ON r.id=er.role_id
+     WHERE er.employee_id=? ORDER BY er.id
+   ) t),
+   'rolePermissions',(SELECT json_group_array(json(t.j)) FROM (
+     SELECT json_array(er.id,er.company_id,r.id,r.active,r.company_id,r.code,
+                       rp.id,rp.access_level,p.code) AS j
+     FROM employee_roles er JOIN roles r ON r.id=er.role_id
+     LEFT JOIN role_permissions rp ON rp.role_id=er.role_id
+     LEFT JOIN permissions p ON p.id=rp.permission_id
+     WHERE er.employee_id=? ORDER BY er.id,rp.id
+   ) t),
+   'legacyOverrides',(SELECT json_group_array(json(t.j)) FROM (
+     SELECT json_array(o.id,p.code,o.access_level,o.expires_at,
+       CASE WHEN o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now')
+       THEN 1 ELSE 0 END) AS j
+     FROM employee_permission_overrides o JOIN permissions p ON p.id=o.permission_id
+     WHERE o.employee_id=? ORDER BY o.id
+   ) t),
+   'scopedOverrides',(SELECT json_group_array(json(t.j)) FROM (
+     SELECT json_array(o.id,o.company_id,p.code,o.access_level,o.expires_at,
+       CASE WHEN o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now')
+       THEN 1 ELSE 0 END) AS j
+     FROM employee_permission_overrides_v2 o JOIN permissions p ON p.id=o.permission_id
+     WHERE o.employee_id=? ORDER BY o.id
+   ) t)
+ ) AS fingerprint
+`;
+const ownerAiAuthorityFenceArgs=(ctx:SessionContext)=>[
+  ctx.sessionId,ctx.employee.id,ctx.employee.id,ctx.employee.id,
+  ctx.employee.id,ctx.employee.id,ctx.employee.id,ctx.employee.id
+];
+
 async function aiBrief(request: Request, env: OwnerEnv, context: SessionContext) {
-  if (!hasPermission(context, 'ai_guide.access', 'view')) return json({ error: 'Owner AI access is required.' }, 403);
+  // Aggregate AI permission is not enough: every company in the requested
+  // brief must have an explicit current company-scoped AI entitlement.
   let body: { question?: string; mode?: 'brief' | 'question'; period?: PeriodKey; companyId?: string };
   try { body = await request.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
   let data: Awaited<ReturnType<typeof collectOwnerIntelligence>>;
   try { data = await collectOwnerIntelligence(env, context, body.period, String(body.companyId || '')); }
   catch (error) { if(error instanceof Error && error.message==='Owner intelligence scope is unavailable.') return json({error:error.message},403); return json({error:'Unable to build Owner intelligence.'},400); }
+  let currentAi:SessionContext;
+  try { currentAi=await liveOwnerContext(env,context); } catch { return json({error:'Owner intelligence scope is unavailable.'},403); }
+  if(!data.scope.companyIds.length || data.scope.companyIds.some(id=>!hasPermission(currentAi,'ai_guide.access','view',id)))
+    return json({error:'Owner AI access is required.'},403);
+  if(scopedIntelligenceEvidence.get(data)!==exposedGrantSignature(currentAi,data.scope.companyIds))
+    return json({error:'Owner intelligence scope is unavailable.'},403);
   const question = String(body.question || '').trim();
   const prompt = question || 'Prepare my concise Daenem Group owner brief for today. Tell me what matters most, which company needs attention, and what I should review next.';
   const system = [
@@ -240,7 +331,40 @@ async function aiBrief(request: Request, env: OwnerEnv, context: SessionContext)
   ].join('\n');
   const answer = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', { messages: [{ role: 'system', content: system }, { role: 'user', content: `ERP intelligence:\n${JSON.stringify(data)}\n\nOwner request:\n${prompt}` }], max_tokens: 1000 }) as { response?: string };
   const text = String(answer.response || 'No AI brief was generated.');
-  await env.DB.prepare(`INSERT INTO ai_activity_logs(id,employee_id,company_id,feature,prompt_category,input_redacted,output_redacted,approval_required) VALUES(?,?,?,'owner_intelligence',?,?,?,0)`).bind(uid('ai'), context.employee.id, body.companyId || null, body.mode || (question ? 'question' : 'brief'), prompt.slice(0, 700), text.slice(0, 1800)).run();
+  // Snapshot every canonical D1 input to effective company/Group authorization
+  // BEFORE re-validating the post-AI session. Any subsequent role, membership,
+  // override, application, session or company-state change invalidates the write atomically.
+  const fenceRow=await env.DB.prepare(ownerAiAuthorityFenceSql)
+    .bind(...ownerAiAuthorityFenceArgs(context)).first<{fingerprint:string}>();
+  const aiFence=String(fenceRow?.fingerprint||'');
+  if(!aiFence)return json({error:'Owner intelligence scope is unavailable.'},403);
+  // A role or AI grant revoked while the provider was responding must not
+  // yield a successful brief or activity event from this stale request.
+  let afterAi:SessionContext;
+  try { afterAi=await liveOwnerContext(env,context); } catch { return json({error:'Owner intelligence scope is unavailable.'},403); }
+  if(data.scope.companyIds.some(id=>!hasPermission(afterAi,'ai_guide.access','view',id)) || scopedIntelligenceEvidence.get(data)!==exposedGrantSignature(afterAi,data.scope.companyIds))
+    return json({error:'Owner intelligence scope is unavailable.'},403);
+  const audit=await env.DB.prepare(`
+    INSERT INTO ai_activity_logs(
+      id,employee_id,company_id,feature,prompt_category,
+      input_redacted,output_redacted,approval_required
+    )
+    SELECT ?,?,?,'owner_intelligence',?,?,?,0
+    FROM (${ownerAiAuthorityFenceSql}) currentState
+    WHERE currentState.fingerprint=?
+      AND EXISTS (
+        SELECT 1 FROM auth_sessions s JOIN employees e ON e.id=s.employee_id
+        WHERE s.id=? AND s.employee_id=?
+          AND s.revoked_at IS NULL AND datetime(s.expires_at)>datetime('now')
+          AND e.employment_status IN ('active','provisional')
+      )
+  `).bind(
+    uid('ai'),context.employee.id,body.companyId||null,
+    body.mode||(question?'question':'brief'),prompt.slice(0,700),text.slice(0,1800),
+    ...ownerAiAuthorityFenceArgs(context),aiFence,context.sessionId,context.employee.id
+  ).run();
+  if(Number(audit.meta?.changes||0)!==1)
+    return json({error:'Owner intelligence scope is unavailable.'},403);
   return json({ answer: text, generatedAt: data.generatedAt, alerts: data.alerts });
 }
 

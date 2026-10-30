@@ -49,7 +49,9 @@ const cases = [
   ['inactive company hides its role', { companyActive: 0 }, []],
   ['role assigned to another company is hidden', { roleCompany: 'company-b' }, []],
   ['company-scoped Owner role remains excluded', { code: 'owner' }, []],
-  ['global Owner identity survives membership revocation', { membershipActive: 0, roleCompany: null, code: 'owner' }, [{ code: 'owner', companyId: 'company-a' }]],
+  ['global Owner with active company membership remains visible', { roleCompany: null, code: 'owner' }, [{ code: 'owner', companyId: 'company-a' }]],
+  ['revoked company membership hides global Owner assignment', { membershipActive: 0, roleCompany: null, code: 'owner' }, []],
+  ['inactive company hides global Owner assignment', { companyActive: 0, roleCompany: null, code: 'owner' }, []],
 ];
 
 let passed = 0;

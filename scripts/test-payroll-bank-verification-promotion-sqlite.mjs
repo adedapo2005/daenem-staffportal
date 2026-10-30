@@ -92,6 +92,9 @@ function createDatabase({ revokeAfterPendingRead = false, revokeActorAfterPendin
   db.prepare('INSERT INTO employees(id) VALUES(?)').run('owner-a');
   db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('membership-a', 'employee-a', 'company-a');
   db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('actor-membership-a', 'actor-a', 'company-a');
+  // A global Owner role is projected only while its assigned company has an
+  // active backing membership. An orphaned Owner role must fail closed.
+  db.prepare('INSERT INTO employee_company_memberships(id,employee_id,company_id,active) VALUES(?,?,?,1)').run('owner-membership-a', 'owner-a', 'company-a');
   db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,?)').run('payroll-role-a', actorRoleCompanyId, 'payroll-manager', 'Payroll Manager', actorRoleActive);
   db.prepare('INSERT INTO roles(id,company_id,code,name,is_system,active) VALUES(?,?,?,?,1,1)').run('owner-role-a', ownerRoleCompanyId, 'owner', 'Owner');
   db.prepare('INSERT INTO permissions(id,code,module,action) VALUES(?,?,?,?)').run('payroll-access', 'payroll.access', 'payroll', 'access');
@@ -121,27 +124,29 @@ const input = { companyId: 'company-a', employeeId: 'employee-a', bankAccountId:
 
 {
   const { db } = createDatabase();
-  const rows = db.prepare(permissionQuery).all('actor-a');
+  const rows = db.prepare(permissionQuery).all('actor-a', 'active');
   assert.deepEqual(rows.map(row => [row.companyId, row.code, row.accessLevel]), [['company-a', 'payroll.access', 'edit']], 'active role scoped to its assigned company contributes its permission');
-  assert.deepEqual(db.prepare(roleQuery).all('owner-a').map(row => row.code), ['owner'], 'global Owner role remains available to group Owner authority');
+  assert.deepEqual(db.prepare(roleQuery).all('owner-a', 'active').map(row => row.code), ['owner'], 'global Owner role with active assigned membership remains available');
+  db.prepare('UPDATE employee_company_memberships SET active=0 WHERE employee_id=? AND company_id=?').run('owner-a', 'company-a');
+  assert.deepEqual(db.prepare(roleQuery).all('owner-a', 'active').map(row => row.code), [], 'revoked Owner membership must immediately remove the global Owner role');
   db.close();
 }
 
 {
   const { db } = createDatabase({ actorRoleActive: 0 });
-  assert.equal(db.prepare(permissionQuery).all('actor-a').length, 0, 'inactive role grants no session permission');
+  assert.equal(db.prepare(permissionQuery).all('actor-a', 'active').length, 0, 'inactive role grants no session permission');
   db.close();
 }
 
 {
   const { db } = createDatabase({ actorRoleCompanyId: 'company-b' });
-  assert.equal(db.prepare(permissionQuery).all('actor-a').length, 0, 'role scoped to another company grants no session permission');
+  assert.equal(db.prepare(permissionQuery).all('actor-a', 'active').length, 0, 'role scoped to another company grants no session permission');
   db.close();
 }
 
 {
   const { db } = createDatabase({ ownerRoleCompanyId: 'company-b' });
-  assert.equal(db.prepare(roleQuery).all('owner-a').length, 0, 'company-scoped Owner role cannot become group Owner authority');
+  assert.equal(db.prepare(roleQuery).all('owner-a', 'active').length, 0, 'company-scoped Owner role cannot become group Owner authority');
   db.close();
 }
 const request = new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-promotion-test' } });
