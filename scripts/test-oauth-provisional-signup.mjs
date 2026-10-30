@@ -9,7 +9,7 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const loaded = { exports: {} };
 new Function('module', 'exports', compiled)(loaded, loaded.exports);
-const { provisionOAuthApplicant, oauthApplicantPending } = loaded.exports;
+const { provisionOAuthApplicant, pendingOAuthApplicantId, oauthApplicantApproval } = loaded.exports;
 const request = new Request('https://staffportal.test/api/auth/oauth/google/callback', {
   headers: { 'cf-connecting-ip': '203.0.113.25', 'user-agent': 'Synthetic OAuth Fixture' },
 });
@@ -35,10 +35,10 @@ class D1 {
         company_id TEXT REFERENCES companies(id),role_id TEXT REFERENCES roles(id));
       CREATE TABLE signup_requests(id TEXT PRIMARY KEY,employee_id TEXT REFERENCES employees(id),
         requested_company_id TEXT REFERENCES companies(id),requested_role_text TEXT,
-        submitted_ip TEXT,submitted_user_agent TEXT,status TEXT NOT NULL DEFAULT 'pending');
+        submitted_ip TEXT,submitted_user_agent TEXT,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT DEFAULT CURRENT_TIMESTAMP);
       CREATE TABLE staffportal_external_identity_links(id TEXT PRIMARY KEY,provider TEXT,
         tenant_id TEXT,object_id TEXT,employee_id TEXT REFERENCES employees(id),
-        linked_by_employee_id TEXT REFERENCES employees(id),
+        linked_by_employee_id TEXT REFERENCES employees(id),revoked_at TEXT,
         UNIQUE(provider,tenant_id,object_id),UNIQUE(provider,employee_id));
       CREATE TABLE security_logs(id TEXT PRIMARY KEY,employee_id TEXT,event_type TEXT,
         severity TEXT,result TEXT,ip_address TEXT,user_agent TEXT,
@@ -98,9 +98,10 @@ await check('Google applicant creates only provisional request and atomic audit'
   assert.equal(db.count('staffportal_external_identity_links'),0);
   assert.equal(db.db.prepare('SELECT employment_status AS state FROM employees').get().state,'provisional');
   const employeeId=db.db.prepare('SELECT id FROM employees').get().id;
-  assert.equal(await oauthApplicantPending(db,employeeId),true);
+  assert.equal(await oauthApplicantApproval(db,employeeId),'pending');
+  assert.equal(await pendingOAuthApplicantId(db,google),employeeId);
   db.db.prepare("UPDATE signup_requests SET status='approved'").run();
-  assert.equal(await oauthApplicantPending(db,employeeId),false);
+  assert.equal(await oauthApplicantApproval(db,employeeId),'approved');
   assert.equal(await provisionOAuthApplicant(db.env,google,request),'existing');
   assert.equal(db.count('employees'),1);
   db.close();
@@ -111,6 +112,8 @@ await check('Microsoft applicant binds immutable tenant and object without grant
   const link=db.db.prepare('SELECT tenant_id AS tenant,object_id AS obj FROM staffportal_external_identity_links').get();
   assert.equal(link.tenant,'tenant-123');
   assert.equal(link.obj,'object-456');
+  assert.equal(await pendingOAuthApplicantId(db,microsoft),db.db.prepare('SELECT id FROM employees').get().id);
+  assert.equal(await pendingOAuthApplicantId(db,{...microsoft,microsoftObjectId:'wrong-object'}),null);
   assert.equal(db.count('auth_sessions'),0);
   assert.equal(db.count('security_logs'),1);
   assert.equal(await provisionOAuthApplicant(db.env,microsoft,request),'existing');
@@ -179,6 +182,25 @@ await check('Email normalization and approval company remain server controlled',
   assert.equal(employee.email,'new-google@example.test');
   const requestRow=db.db.prepare('SELECT requested_company_id AS company FROM signup_requests').get();
   assert.equal(requestRow.company,'company-printing');
+  db.close();
+});
+await check('Rejected, cancelled and expired social applicants cannot sign in',async()=>{
+  const db=new D1();
+  assert.equal(await provisionOAuthApplicant(db.env,google,request),'pending');
+  const id=db.db.prepare('SELECT id FROM employees').get().id;
+  for(const status of ['rejected','cancelled','expired']){
+    db.db.prepare('UPDATE signup_requests SET status=?').run(status);
+    assert.equal(await oauthApplicantApproval(db,id),'not_approved',status);
+  }
+  db.db.prepare("UPDATE signup_requests SET status='approved'").run();
+  assert.equal(await oauthApplicantApproval(db,id),'approved');
+  db.close();
+});
+await check('Local signup request does not masquerade as social applicant',async()=>{
+  const db=new D1();
+  db.db.prepare('INSERT INTO employees VALUES(?,?,?,?,?,?,?)').run('local-1','Local User','Local User','Local','User','local@example.test','provisional');
+  db.db.prepare('INSERT INTO signup_requests(id,employee_id,requested_company_id,requested_role_text,status) VALUES(?,?,?,?,?)').run('local-request','local-1','company-printing','Local Registration','pending');
+  assert.equal(await oauthApplicantApproval(db,'local-1'),'not_applicant');
   db.close();
 });
 console.log(JSON.stringify({ok:true,passed:passed.length,tests:passed}));
