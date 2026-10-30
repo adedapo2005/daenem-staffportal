@@ -4,6 +4,7 @@ import React, { lazy, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthScreen, useAuth, clearPortalAuthCache } from './auth';
 import { observeProvisionalSignupHandoff } from './provisional-signup-handoff';
+import { TermsConsentGate } from './terms-consent-gate';
 import { OfflinePlatformProvider } from './offline-sync';
 import './signin-experience.css';
 
@@ -69,10 +70,13 @@ function Root() {
   if (auth.loading) return <LoadingScreen />;
   const studioReview = new URLSearchParams(window.location.search).get('studioReview');
   if (studioReview === 'signin-v180') return <AuthScreen onAuthenticated={() => undefined} />;
-  if (!auth.context) return <AuthScreen onAuthenticated={(context) => {
-    auth.setContext(context);
-    window.dispatchEvent(new Event('daenem-auth-changed'));
-  }} />;
+  if (!auth.context) return <>
+    <AuthScreen onAuthenticated={(context) => {
+      auth.setContext(context);
+      window.dispatchEvent(new Event('daenem-auth-changed'));
+    }} />
+    <TermsConsentGate />
+  </>;
   if (auth.context.employee.status === 'provisional') {
     return <Suspense fallback={<LoadingScreen />}>
       <ProvisionalProfileWorkspace context={auth.context}
