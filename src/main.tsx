@@ -59,9 +59,11 @@ function Root() {
   useEffect(() => {
     if (auth.loading || auth.context ||
       new URLSearchParams(window.location.search).get('studioReview') === 'signin-v180') return;
-    return observeProvisionalSignupHandoff(() => {
+    return observeProvisionalSignupHandoff((context) => {
       clearPortalAuthCache();
-      window.location.assign('/workspace/');
+      auth.setContext(context);
+      window.history.replaceState(window.history.state, '', '/workspace/');
+      window.dispatchEvent(new Event('daenem-auth-changed'));
     });
   }, [auth.loading, auth.context]);
   if (auth.loading) return <LoadingScreen />;

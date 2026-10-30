@@ -46,7 +46,10 @@ try{
     assert.match(lockedSignIn,/className="usp-auth-destination"/);
     assert.match(lockedSignIn,/autoComplete="one-time-code"/);
     assert.match(appEntry,/observeProvisionalSignupHandoff/);
-    assert.match(appEntry,/window.location.assign\('\/workspace\/'\)/);
+    assert.match(appEntry,/auth\.setContext\(context\)/);
+    assert.match(appEntry,/window\.history\.replaceState\(window\.history\.state, '', '\/workspace\/'\)/);
+    assert.match(appEntry,/window\.dispatchEvent\(new Event\('daenem-auth-changed'\)\)/);
+    assert.doesNotMatch(appEntry,/window\.location\.assign\('\/workspace\/'\)/);
   });
   await check('Ordinary Sign-In and non-OTP forms never trigger a session probe',async()=>{
     let calls=0;
