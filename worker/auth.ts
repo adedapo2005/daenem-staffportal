@@ -284,6 +284,21 @@ async function findEmployee(env: AuthEnv, identity: string) {
   }>();
 }
 
+// Keep all sign-in methods aligned with the same management approval status.
+// Pending local registrations retain their existing policy, but a pending
+// social application must never gain access through the local OTP fallback.
+async function signupSessionBlocked(env: AuthEnv, employeeId: string): Promise<boolean> {
+  const latest = await env.DB.prepare(
+    "SELECT status, requested_role_text AS requestedRole FROM signup_requests " +
+    "WHERE employee_id=? ORDER BY created_at DESC,id DESC LIMIT 1"
+  ).bind(employeeId).first<{ status: string; requestedRole: string | null }>();
+  if (!latest) return false;
+  if (latest.status !== 'approved' && latest.status !== 'pending') return true;
+  const social = latest.requestedRole === 'Social Applicant: google' ||
+    latest.requestedRole === 'Social Applicant: microsoft';
+  return social && latest.status !== 'approved';
+}
+
 async function requestSignIn(request: Request, env: AuthEnv) {
   let body: { identity?: string; channel?: 'email' | 'sms'; latitude?: number; longitude?: number; accuracy?: number };
   try { body = await request.json(); } catch { return responseJson({ error: 'Invalid request body.' }, 400); }
@@ -296,6 +311,9 @@ async function requestSignIn(request: Request, env: AuthEnv) {
   if (!employee || !['active', 'provisional'].includes(employee.status)) {
     await logSecurity(env, request, 'signin_unknown_identity', { severity: 'low', result: 'denied' });
     return responseJson({ error: 'No active or provisional employee account matches those details.' }, 404);
+  }
+  if (await signupSessionBlocked(env, employee.id)) {
+    return responseJson({ error: 'Your application is awaiting management approval or is not eligible for sign-in.' }, 403);
   }
 
   const location = await evaluateLoginLocation(env, employee.id, body.latitude, body.longitude, body.accuracy);
@@ -388,6 +406,10 @@ async function verifySignIn(request: Request, env: AuthEnv) {
   if (!['active', 'provisional'].includes(String(row.employeeStatus))) {
     return responseJson({ error: 'This employee account is not allowed to sign in.' }, 403);
   }
+  // Recheck after OTP verification; approval may have changed since code issue.
+  if (await signupSessionBlocked(env, String(row.employee_id))) {
+    return responseJson({ error: 'Your application is not eligible for sign-in.' }, 403);
+  }
 
   const token = randomToken();
   const tokenHash = await hashSession(env, token);
@@ -452,6 +474,9 @@ async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<Se
   if (!base) return null;
 
   const employeeId = String(base.id);
+  // Re-evaluate management status on every authenticated request, including
+  // cookies issued before rejection/cancellation/expiry.
+  if (await signupSessionBlocked(env, employeeId)) return null;
   const companiesResult = await env.DB.prepare(`
     SELECT c.id, c.code, c.name, m.location_id AS locationId, m.is_primary AS isPrimary
     FROM employee_company_memberships m JOIN companies c ON c.id = m.company_id

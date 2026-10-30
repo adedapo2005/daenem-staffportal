@@ -111,6 +111,7 @@ jobs:
           node --no-warnings scripts/test-oauth-callback-registration.mjs
           node --no-warnings scripts/test-signin-create-account-runtime.mjs
           node --no-warnings scripts/test-signin-create-account-sqlite.mjs
+          node --no-warnings scripts/test-auth-application-status-workerd.mjs
 
       - name: TypeScript
         if: always()
