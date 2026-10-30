@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 
-const source = await readFile(new URL('../worker/spend.ts', import.meta.url), 'utf8');
+// Keep synthetic import substitution portable across LF (GitHub CI) and CRLF (Windows checkout).
+const source = (await readFile(new URL('../worker/spend.ts', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
 const authImport = `import {\n  hasPermission,\n  logSecurity,\n  requestIp,\n  requestLocationLabel,\n  type AuthEnv,\n  type SessionContext,\n} from './auth';`;
 const executableSource = source.replace(authImport, `const hasPermission=()=>true; const logSecurity=async()=>{}; const requestIp=()=>''; const requestLocationLabel=()=>'';`);
 assert.notEqual(executableSource, source, 'runtime fixture replaces only the authorization dependency');
