@@ -11,6 +11,8 @@ import Stage1SearchResults from './stage1-live-search';
 import Stage1AccessibleMetrics from './stage1-accessible-metrics';
 import Stage1WorkflowFocus from './stage1-workflow-focus';
 import Stage1AppearanceStudio from './stage1-appearance-studio';
+import Stage1SignInStudioAuthority, { isSignInStudioRoutePathname } from './stage1-signin-studio-authority';
+import { usePathname, useRouter } from './next-navigation-shim';
 import Stage1LiveErpRouteBridge from './stage1-live-erp-route-bridge';
 import {
   POSTLOGIN_DEFAULT_PALETTE,
@@ -127,6 +129,9 @@ function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
 }
 
 export default function ApprovedPostLoginV115({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const standaloneStudio = isSignInStudioRoutePathname(pathname);
   const session = useMemo(() => sessionFor(context), [context]);
   const [stage1Enabled, setStage1Enabled] = useState(true);
   const [postLoginPalette, setPostLoginPalette] = useState<PostLoginPaletteId>(() =>
@@ -275,7 +280,8 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
   }, [stage1Enabled]);
 
   if (typeof window !== 'undefined') {
-    sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
+    // Never persist a fictional demo-role projection for the real-authority Studio route.
+    if (!standaloneStudio) sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
     if (window.location.pathname === '/' || window.location.pathname.startsWith('/workspace')) {
       window.history.replaceState({}, '', '/home');
     }
@@ -302,17 +308,37 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
         void onLogout();
       }}
     >
-      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
-        <Portal />
-      </Stage1RuntimeContext.Provider>
-      <Stage1LiveErpRouteBridge context={context} />
-      <LivePostLoginEnhancementsV116 />
-      <Stage1SearchResults enabled={stage1Enabled} />
-      <Stage1AccessibleMetrics enabled={stage1Enabled} />
-      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
-        <Stage1WorkflowFocus />
-      </Stage1RuntimeContext.Provider>
-      <Stage1AppearanceStudio enabled={stage1Enabled} />
+      {standaloneStudio ? (
+        <div className="stage1-studio-isolated-shell" data-studio-authority-route="workforce-permission-v1">
+          <a className="stage1-studio-shell-skip" href="#staffportal-studio-main">Skip to Studio content</a>
+          <header className="stage1-studio-shell-header">
+            <div className="stage1-studio-shell-brand">
+              <span className="stage1-studio-shell-kicker">DAENEM · STAFFPORTAL</span>
+              <h1>Sign-In Studio</h1>
+              <p>Cloudflare Pre-Production · approved Sign-In controls</p>
+            </div>
+            <button type="button" className="stage1-studio-shell-return" onClick={() => router.push('/home')}>Return to Workspace</button>
+          </header>
+          <main id="staffportal-studio-main" className="stage1-studio-shell-content" tabIndex={-1}>
+            <Stage1SignInStudioAuthority context={context} standalone />
+          </main>
+          <footer className="stage1-studio-shell-footer">Approved V180 public Sign-In protected · Draft review does not publish</footer>
+        </div>
+      ) : (
+        <>
+          <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+            <Portal />
+          </Stage1RuntimeContext.Provider>
+          <Stage1LiveErpRouteBridge context={context} />
+          <LivePostLoginEnhancementsV116 />
+          <Stage1SearchResults enabled={stage1Enabled} />
+          <Stage1AccessibleMetrics enabled={stage1Enabled} />
+          <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+            <Stage1WorkflowFocus />
+          </Stage1RuntimeContext.Provider>
+          <Stage1AppearanceStudio enabled={stage1Enabled} />
+        </>
+      )}
     </div>
   );
 }
