@@ -284,6 +284,15 @@ async function findEmployee(env: AuthEnv, identity: string) {
   }>();
 }
 
+// Keep legacy OTP entry points aligned with the current session policy.
+// Pending applicants retain the administrator-defined provisional workspace.
+async function signupSessionBlocked(env: AuthEnv, employeeId: string): Promise<boolean> {
+  const latest = await env.DB.prepare(
+    "SELECT status FROM signup_requests WHERE employee_id=? ORDER BY created_at DESC,id DESC LIMIT 1"
+  ).bind(employeeId).first<{ status: string }>();
+  return Boolean(latest && ['rejected', 'cancelled', 'expired'].includes(latest.status));
+}
+
 async function requestSignIn(request: Request, env: AuthEnv) {
   let body: { identity?: string; channel?: 'email' | 'sms'; latitude?: number; longitude?: number; accuracy?: number };
   try { body = await request.json(); } catch { return responseJson({ error: 'Invalid request body.' }, 400); }
@@ -296,6 +305,9 @@ async function requestSignIn(request: Request, env: AuthEnv) {
   if (!employee || !['active', 'provisional'].includes(employee.status)) {
     await logSecurity(env, request, 'signin_unknown_identity', { severity: 'low', result: 'denied' });
     return responseJson({ error: 'No active or provisional employee account matches those details.' }, 404);
+  }
+  if (await signupSessionBlocked(env, employee.id)) {
+    return responseJson({ error: 'Your application is not eligible for sign-in.' }, 403);
   }
 
   const location = await evaluateLoginLocation(env, employee.id, body.latitude, body.longitude, body.accuracy);
@@ -388,6 +400,10 @@ async function verifySignIn(request: Request, env: AuthEnv) {
   if (!['active', 'provisional'].includes(String(row.employeeStatus))) {
     return responseJson({ error: 'This employee account is not allowed to sign in.' }, 403);
   }
+  // Management status can change after this OTP was issued.
+  if (await signupSessionBlocked(env, String(row.employee_id))) {
+    return responseJson({ error: 'Your application is not eligible for sign-in.' }, 403);
+  }
 
   const token = randomToken();
   const tokenHash = await hashSession(env, token);
@@ -455,12 +471,7 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
   const provisional = String(base.status) === 'provisional';
   // Existing sessions immediately lose access after an application is rejected,
   // cancelled or expired, irrespective of authentication provider.
-  const latestApplication = await env.DB.prepare(
-    "SELECT status FROM signup_requests WHERE employee_id=? ORDER BY created_at DESC,id DESC LIMIT 1"
-  ).bind(employeeId).first<{ status: string }>();
-  if (latestApplication && ['rejected','cancelled','expired'].includes(latestApplication.status)) {
-    return null;
-  }
+  if (await signupSessionBlocked(env, employeeId)) return null;
   const companiesResult = await env.DB.prepare(`
     SELECT c.id, c.code, c.name, m.location_id AS locationId, m.is_primary AS isPrimary
     FROM employee_company_memberships m JOIN companies c ON c.id = m.company_id
