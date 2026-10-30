@@ -4,6 +4,11 @@ import{api,hasWorkforcePermission,type AccessLevel,type WorkforceContext}from'./
 import'./centers.css';
 import { useOfflinePlatform } from './offline-sync';
 import { FORM_PRESETS, FORM_OPTION_SETS, prepareFormSchema } from './guided-form-fields';
+import { guidedVisibleFields, guidedCompletion, guidedInvalidAnswers, pruneHiddenGuidedAnswers, validGuidedFormSchema, guidedFormEvidenceBlocker } from './guided-form-dependencies';
+import { assignedFormDraftCompany } from './forms-assignment-draft-scope';
+import { createFormSubmissionAttemptTokens } from './forms-submission-attempt';
+import { createLatestFormsDraftWriter, createFormsDraftWriterLifecycle, createScopedFormsDraftCallbacks } from './forms-draft-autosave';
+import type { FormsDraftInput } from './offline-platform';
 import { SmartMasterSelect } from './smart-master-select';
 import { assetsForSelectedFacility, recommendedWorkPriority, suggestedWorkTitle, suggestedAssetName, ASSET_READING_TYPES, STANDARD_READING_UNITS, recommendedReadingUnit, validFacilitySelection } from './facility-guided-entry';
 import './facility-guided-entry.css';
@@ -13,7 +18,7 @@ const rank:Record<AccessLevel,number>={none:0,view:1,create:2,edit:3,approve:4,m
 const can=(c:WorkforceContext,p:string,m:AccessLevel='view')=>rank[c.permissions[p]||'none']>=rank[m];
 const money=(kobo?:number)=>new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(Number(kobo||0)/100);
 const Notice=({message}:{message:string})=><div className="center-notice">{message}</div>;
-type FormField={key:string;label:string;type:string;required?:boolean;options?:string[]};
+type FormField={key:string;label:string;type:string;required?:boolean;options?:string[];showWhen?:{fieldKey:string;equals:string|boolean}};
 type WorkflowForm={id:string;companyName?:string;title:string;formType:string;schemaJson:string;assignmentCount:number};
 type FormAssignment={assignmentId:string;companyId?:string;title:string;formType:string;schemaJson:string;blocking:number;dueAt?:string;status:string;requireLocation:number;requirePhoto?:number;requireSignature?:number;submissionUpdatedAt?:string};
 type DirectoryEmployee={id:string;displayName:string;jobTitle?:string;department?:string;companyName:string};
@@ -30,53 +35,211 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
  const[descriptionEdited,setDescriptionEdited]=useState(false);
  const[assign,setAssign]=useState({audienceType:'employee',employeeIds:[]as string[],roleId:'',dueAt:'',blocking:false,required:true});
  const[responses,setResponses]=useState<Record<string,Record<string,unknown>>>({});
+ const[queuedAssignments,setQueuedAssignments]=useState<Set<string>>(()=>new Set());
+ const responsesRef=useRef<Record<string,Record<string,unknown>>>({});
+ const editRevision=useRef<Record<string,number>>({});
+ const loadGeneration=useRef(0);
+ const offlineRef=useRef(offline);offlineRef.current=offline;
+ // A grant/session change immediately abandons pending writes from the previous scope.
+ const autosaveScope=JSON.stringify([context.sessionId,context.employee.id,context.companies.map(c=>c.id),context.roles,context.permissions,context.companyPermissions]);
+ const currentAutosaveScope=useRef(autosaveScope);currentAutosaveScope.current=autosaveScope;
+ const submissionAttempts=useMemo(()=>createFormSubmissionAttemptTokens(()=>crypto.randomUUID()),[autosaveScope]);
+ const draftWriter=useMemo(()=>{
+  const scoped=createScopedFormsDraftCallbacks<FormsDraftInput>(
+   autosaveScope,()=>currentAutosaveScope.current,
+   async (_id,input)=>{await offlineRef.current.queueFormsDraft(input,input.companyId)},
+   (_id,error)=>setMessage('Draft not saved securely. Keep this page open and retry: '+(error instanceof Error?error.message:'Storage unavailable.'))
+  );
+  return createLatestFormsDraftWriter<FormsDraftInput>(scoped.persist,scoped.reportFailure,350);
+ },[autosaveScope]);
+ const writerLifecycle=useMemo(()=>createFormsDraftWriterLifecycle(draftWriter),[draftWriter]);
+ useEffect(()=>{
+  const setupId=writerLifecycle.setup();
+  return()=>writerLifecycle.cleanup(setupId,currentAutosaveScope.current!==autosaveScope);
+ },[writerLifecycle,autosaveScope]);
+ useEffect(()=>{
+  const guard=(event:BeforeUnloadEvent)=>{if(!draftWriter.hasUnsaved())return;event.preventDefault();event.returnValue=''};
+  window.addEventListener('beforeunload',guard);
+  return()=>window.removeEventListener('beforeunload',guard);
+ },[draftWriter]);
  const canForms=(minimum:AccessLevel='view')=>hasWorkforcePermission(context,'forms.access',minimum,companyId);
- function schemaFor(item:FormAssignment){try{return JSON.parse(item.schemaJson)as FormField[]}catch{return[]}}
- function offlineSafe(item:FormAssignment,schema=formSchema(item)){return item.requireLocation!==1&&item.requirePhoto!==1&&item.requireSignature!==1&&!schema.some((field)=>['file','photo','signature','location'].includes(field.type))}
+ function schemaFor(item:FormAssignment){try{const parsed:unknown=JSON.parse(item.schemaJson);return Array.isArray(parsed)?parsed as FormField[]:[]}catch{return[]}}
+ function offlineSafe(item:FormAssignment,schema=formSchema(item)){return Boolean(assignedFormDraftCompany(item))&&item.requireLocation!==1&&item.requirePhoto!==1&&item.requireSignature!==1&&!schema.some((field)=>['file','photo','signature','location'].includes(field.type))}
  function formSchema(item:FormAssignment){return schemaFor(item)}
- async function saveDraft(item:FormAssignment,next:Record<string,unknown>){
-  try{await offline.queueFormsDraft({assignmentId:item.assignmentId,companyId:companyId||context.companies[0]?.id||'group',responses:next,supportedForOfflineSubmit:offlineSafe(item),formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},companyId||undefined)}catch(error){if(!navigator.onLine)setMessage(error instanceof Error?error.message:'This draft could not be saved securely on this device.')}
+ function draftInput(item:FormAssignment,next:Record<string,unknown>):FormsDraftInput|null{
+  const company=assignedFormDraftCompany(item);
+  return company?{assignmentId:item.assignmentId,companyId:company,responses:next,
+   supportedForOfflineSubmit:offlineSafe(item),formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt}:null
  }
  function updateResponse(item:FormAssignment,key:string,value:unknown){
-  const next={...(responses[item.assignmentId]||{}),[key]:value};
-  setResponses((current)=>({...current,[item.assignmentId]:next}));
-  void saveDraft(item,next);
+  if(queuedAssignments.has(item.assignmentId)||busy||draftWriter.isSuspended(item.assignmentId))return;
+  const next=pruneHiddenGuidedAnswers(formSchema(item),{...(responsesRef.current[item.assignmentId]||{}),[key]:value});
+  responsesRef.current={...responsesRef.current,[item.assignmentId]:next};
+  editRevision.current[item.assignmentId]=(editRevision.current[item.assignmentId]||0)+1;
+  setResponses(current=>({...current,[item.assignmentId]:next}));
+  const input=draftInput(item,next);
+  if(input)draftWriter.schedule(item.assignmentId,input);
  }
  async function load(preserveMessage=false){
+  const generation=++loadGeneration.current;
+  const revisionsAtStart={...editRevision.current};
   setBusy(true);if(!preserveMessage)setMessage('');
   try{
    const suffix=companyId?'?companyId='+encodeURIComponent(companyId):'';
    const[formResult,mineResult]=await Promise.all([api<{forms:WorkflowForm[]}>('/api/forms'+suffix),api<{assignments:FormAssignment[]}>('/api/forms/mine')]);
+   if(generation!==loadGeneration.current)return;
    const assignments=mineResult.assignments||[];
    setForms(formResult.forms||[]);setMine(assignments);
-   const drafts=await Promise.all(assignments.map(async(item)=>[item.assignmentId,await offline.readFormsDraft(item.assignmentId,companyId||undefined)]as const));
-   setResponses((current)=>({...current,...Object.fromEntries(drafts.filter((entry)=>entry[1]).map(([id,draft])=>[id,draft?.responses||{}]))}));
-   if(canForms('edit')){const[employeeResult,roleResult]=await Promise.all([api<{employees:DirectoryEmployee[]}>('/api/directory/employees'+suffix),api<{roles:DirectoryRole[]}>('/api/directory/roles'+suffix)]);setEmployees(employeeResult.employees||[]);setRoles(roleResult.roles||[])}else{setEmployees([]);setRoles([])}
-  }catch(e){setMessage((e as Error).message)}finally{setBusy(false)}
+   const drafts=await Promise.all(assignments.map(async item=>[
+    item.assignmentId,assignedFormDraftCompany(item)
+     ?await offlineRef.current.readFormsDraft(item.assignmentId,assignedFormDraftCompany(item)!):null
+   ]as const));
+   if(generation!==loadGeneration.current)return;
+   const restored=Object.fromEntries(drafts.filter(([id,draft])=>draft&&
+    (editRevision.current[id]||0)===(revisionsAtStart[id]||0))
+    .map(([id,draft])=>[id,draft!.responses||{}]));
+   responsesRef.current={...responsesRef.current,...restored};
+   setResponses(current=>({...current,...restored}));
+   const queued=new Set(drafts.filter(([,draft])=>draft&&
+    ['waiting-to-sync','syncing'].includes(draft.state)).map(([id])=>id));
+   setQueuedAssignments(queued);
+   for(const item of assignments){
+    if(queued.has(item.assignmentId))void draftWriter.suspend(item.assignmentId);
+    else if(!['submitted','reviewed','approved'].includes(item.status))draftWriter.resume(item.assignmentId);
+   }
+   if(canForms('edit')){
+    const[employeeResult,roleResult]=await Promise.all([
+     api<{employees:DirectoryEmployee[]}>('/api/directory/employees'+suffix),
+     api<{roles:DirectoryRole[]}>('/api/directory/roles'+suffix)
+    ]);
+    if(generation!==loadGeneration.current)return;
+    setEmployees(employeeResult.employees||[]);setRoles(roleResult.roles||[]);
+   }else{setEmployees([]);setRoles([])}
+  }catch(e){if(generation===loadGeneration.current)setMessage((e as Error).message)}
+  finally{if(generation===loadGeneration.current)setBusy(false)}
  }
- useEffect(()=>{void load()},[companyId]);
+ useEffect(()=>{
+  loadGeneration.current+=1;
+  editRevision.current={};
+  responsesRef.current={};
+  setResponses({});setQueuedAssignments(new Set());setForms([]);setMine([]);
+  void load();
+ },[companyId,autosaveScope]);
  async function createForm(e:React.FormEvent){e.preventDefault();setBusy(true);try{const schema=prepareFormSchema(fields,optionDrafts);await api('/api/forms',{method:'POST',body:JSON.stringify({companyId:companyId||undefined,...newForm,schema})});setNewForm({title:'',description:'',formType:'custom',requireLocation:false});setFields([{key:'activity',label:'Activity / response',type:'textarea',required:true}]);setOptionDrafts({});setTitleEdited(false);setDescriptionEdited(false);setMessage('Form created successfully.');await load(true)}catch(err){setMessage((err as Error).message)}finally{setBusy(false)}}
  async function assignForm(e:React.FormEvent){e.preventDefault();if(!selectedForm){setMessage('Select a form first.');return}setBusy(true);try{await api('/api/forms/assign',{method:'POST',body:JSON.stringify({formId:selectedForm,companyId:companyId||undefined,...assign})});setMessage('Form assigned successfully.');await load(true)}catch(err){setMessage((err as Error).message)}finally{setBusy(false)}}
  async function submit(item:FormAssignment){
-  const schema=formSchema(item),supported=offlineSafe(item,schema),payload=responses[item.assignmentId]||{};
+  if(busy||queuedAssignments.has(item.assignmentId))return;
+  const schema=formSchema(item);
+  if(!validGuidedFormSchema(schema)){setMessage('This form cannot be submitted because its field configuration is invalid. Ask an administrator to review it.');return}
+  const assignmentCompanyId=assignedFormDraftCompany(item),supported=offlineSafe(item,schema);
+  const payload=pruneHiddenGuidedAnswers(schema,responsesRef.current[item.assignmentId]||responses[item.assignmentId]||{});
+  const evidenceBlocker=guidedFormEvidenceBlocker(schema,payload,{requirePhoto:item.requirePhoto===1,requireSignature:item.requireSignature===1});
+  if(evidenceBlocker){setMessage(evidenceBlocker);return}
+  // Keep one attempt identity accessible to both the online request and
+  // a catch-block fallback after a lost HTTP acknowledgement.
+  const idempotencyKey=submissionAttempts.get(item.assignmentId,assignmentCompanyId,payload,item.submissionUpdatedAt);
+  let heldForSubmission=false,storedDraft=false;
+  const markQueued=()=>{
+   heldForSubmission=true;
+   submissionAttempts.forget(item.assignmentId);
+   setQueuedAssignments(current=>new Set([...current,item.assignmentId]));
+  };
   setBusy(true);
   try{
-   if(!navigator.onLine&&!supported){await offline.queueFormsDraft({assignmentId:item.assignmentId,companyId:companyId||context.companies[0]?.id||'group',responses:payload,supportedForOfflineSubmit:false,formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},companyId||undefined);setMessage(item.title+' saved as a local draft. A live connection is required for this form.');return}
-   if(!navigator.onLine){await offline.queueFormsSubmission({assignmentId:item.assignmentId,companyId:companyId||context.companies[0]?.id||'group',responses:payload,supportedForOfflineSubmit:true,formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},companyId||undefined);setMessage(item.title+' saved offline · Waiting to sync.');return}
+   // Wait for any active encrypted autosave, then prevent stale trailing edits.
+   await draftWriter.suspend(item.assignmentId);
+   try{await draftWriter.flushAll()}catch{/* The failing draft is reported separately by the writer. */}
+   const completeness=guidedCompletion(schema,payload),invalid=guidedInvalidAnswers(schema,payload);
+   if(completeness.missingLabels.length||invalid.length){
+    const details=[...new Set([...completeness.missingLabels,...invalid])].join(', ');
+    if(!assignmentCompanyId){
+     setMessage(item.title+' is incomplete and has not been saved offline. Group-wide forms require a live connection. Review: '+details);
+     return;
+    }
+    try{
+     await offlineRef.current.queueFormsDraft({assignmentId:item.assignmentId,companyId:assignmentCompanyId,
+      responses:payload,supportedForOfflineSubmit:supported,formTitle:item.title,
+      baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId);
+     storedDraft=true;
+     setMessage(item.title+' saved as a local draft, not submitted. Review: '+details);
+    }catch(error){
+     setMessage(item.title+' is incomplete and was not submitted. Draft could not be saved securely: '+
+      (error instanceof Error?error.message:'Please try again.'));
+    }
+    return;
+   }
+   if(!navigator.onLine&&!assignmentCompanyId){
+    setMessage(item.title+' is not saved offline. Group-wide forms need a live connection. Keep this page open until you can submit.');
+    return;
+   }
+   if(!navigator.onLine&&!supported){
+    await offlineRef.current.queueFormsDraft({assignmentId:item.assignmentId,companyId:assignmentCompanyId!,
+     responses:payload,supportedForOfflineSubmit:false,formTitle:item.title,
+     baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId!);
+    storedDraft=true;
+    setMessage(item.title+' saved as a local draft. A live connection is required for this form.');
+    return;
+   }
+   if(!navigator.onLine){
+    await offlineRef.current.queueFormsSubmission({assignmentId:item.assignmentId,companyId:assignmentCompanyId!,
+     responses:payload,supportedForOfflineSubmit:true,formTitle:item.title,
+     idempotencyKey,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId!);
+    markQueued();
+    setMessage(item.title+' saved offline · Waiting to sync.');
+    return;
+   }
    let location:Record<string,number>={};
-   if(item.requireLocation){const p=await new Promise<GeolocationPosition>((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:12000}));location={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy}}
-   await api('/api/forms/submit',{method:'POST',body:JSON.stringify({assignmentId:item.assignmentId,responses:payload,baseUpdatedAt:item.submissionUpdatedAt,...location})});
-   setMessage(item.title+' submitted.');await load(true)
+   if(item.requireLocation){
+    const p=await new Promise<GeolocationPosition>((resolve,reject)=>
+     navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:12000}));
+    location={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy};
+   }
+   await api('/api/forms/submit',{method:'POST',headers:{'idempotency-key':idempotencyKey},body:JSON.stringify({
+    assignmentId:item.assignmentId,responses:payload,baseUpdatedAt:item.submissionUpdatedAt,...location
+   })});
+   markQueued(); // Prevent edits between authoritative success and refreshed server status.
+   setMessage(item.title+' submitted.');
+   await load(true);
   }catch(err){
    const status=(err as{status?:number}).status;
    if(status===undefined||!navigator.onLine){
-    if(supported){await offline.queueFormsSubmission({assignmentId:item.assignmentId,companyId:companyId||context.companies[0]?.id||'group',responses:payload,supportedForOfflineSubmit:true,formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},companyId||undefined);setMessage(item.title+' saved offline · Waiting to sync.')}
-    else{await offline.queueFormsDraft({assignmentId:item.assignmentId,companyId:companyId||context.companies[0]?.id||'group',responses:payload,supportedForOfflineSubmit:false,formTitle:item.title,baseUpdatedAt:item.submissionUpdatedAt},companyId||undefined);setMessage(item.title+' saved as a local draft. A live connection is required for this form.')}
-   }else setMessage((err as Error).message)
-  }finally{setBusy(false)}
+    if(!assignmentCompanyId){
+     setMessage(item.title+' has not been saved or submitted. Group-wide forms need a live connection. Keep this page open and retry.');
+    }else{
+     try{
+      if(supported){
+       await offlineRef.current.queueFormsSubmission({assignmentId:item.assignmentId,companyId:assignmentCompanyId,
+        responses:payload,supportedForOfflineSubmit:true,formTitle:item.title,
+        idempotencyKey,baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId);
+       markQueued();
+       setMessage(item.title+' saved offline · Waiting to sync.');
+      }else{
+       await offlineRef.current.queueFormsDraft({assignmentId:item.assignmentId,companyId:assignmentCompanyId,
+        responses:payload,supportedForOfflineSubmit:false,formTitle:item.title,
+        baseUpdatedAt:item.submissionUpdatedAt},assignmentCompanyId);
+       storedDraft=true;
+       setMessage(item.title+' saved as a local draft. A live connection is required for this form.');
+      }
+     }catch(queueError){
+      setMessage(item.title+' was not submitted or securely queued. Keep this page open and retry: '+
+       (queueError instanceof Error?queueError.message:'Storage unavailable.'));
+     }
+    }
+   }else setMessage((err as Error).message);
+  }finally{
+   // Only queued/server-submitted forms stay frozen. Failed attempts remain editable.
+   if(!heldForSubmission){
+    draftWriter.resume(item.assignmentId);
+    if(assignmentCompanyId&&!storedDraft){
+     const input=draftInput(item,payload);
+     if(input)draftWriter.schedule(item.assignmentId,input);
+    }
+   }
+   setBusy(false);
+  }
  }
  const selected=useMemo(()=>new Set(assign.employeeIds),[assign.employeeIds]);
- return <div className="center-stack" data-forms-center="true"><div className="view-heading"><div><span className="eyebrow">SMART FORMS & ACCOUNTABILITY</span><h2>Assigned forms & submissions</h2><p>Create application, review, inspection, incident and daily-report forms; assign them to the exact employees, roles or organizations you choose.</p></div><button className="text-action" onClick={()=>void load()}><RefreshCw size={15}/> Refresh</button></div>{message&&<Notice message={message}/>}<section className="center-grid two"><article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">MY WORK</span><h3>Assigned forms</h3></div><ClipboardCheck size={20}/></div>{mine.length===0?<div className="empty-state"><CheckCircle2 size={27}/><strong>No assigned forms pending</strong></div>:<div className="assignment-list">{mine.map(item=>{const schema=formSchema(item),supported=offlineSafe(item,schema);return <div className={'assignment-card '+(item.blocking?'blocking':'')} key={item.assignmentId} data-form-assignment={item.assignmentId}><div className="assignment-head"><div><strong>{item.title}</strong><span>{item.formType.replaceAll('_',' ')}{item.dueAt?' · Due '+new Date(item.dueAt).toLocaleString():''}</span></div><b>{item.status.replaceAll('_',' ')}</b></div>{!['submitted','reviewed','approved'].includes(item.status)&&<div className="dynamic-form">{schema.map(f=><label key={f.key}><span>{f.label}{f.required?' *':''}</span>{f.type==='textarea'?<textarea rows={2} value={String(responses[item.assignmentId]?.[f.key]||'')} onChange={e=>updateResponse(item,f.key,e.target.value)}/>:f.type==='checkbox'?<input type="checkbox" checked={Boolean(responses[item.assignmentId]?.[f.key])} onChange={e=>updateResponse(item,f.key,e.target.checked)}/>:f.type==='select'?<select required={Boolean(f.required)} value={String(responses[item.assignmentId]?.[f.key]??'')} onChange={e=>updateResponse(item,f.key,e.target.value)}><option value="">Select an approved answer…</option>{(Array.isArray(f.options)?f.options:[]).map(option=><option key={option} value={option}>{option}</option>)}</select>:<input type={f.type==='date'?'date':f.type==='number'?'number':'text'} value={String(responses[item.assignmentId]?.[f.key]||'')} onChange={e=>updateResponse(item,f.key,e.target.value)}/>}</label>)}{!supported&&<small className="offline-form-draft-note">This form stays draft-only offline because it needs a live connection or an attachment/location.</small>}<button className="primary-action small" data-offline-form-submit={supported?'supported':'draft-only'} disabled={busy} onClick={()=>void submit(item)}><Send size={15}/> Submit</button></div>}</div>})}</div>}</article><article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">FORM LIBRARY</span><h3>Available forms</h3></div><FilePlus2 size={20}/></div><div className="compact-list">{forms.map(f=><button key={f.id} onClick={()=>setSelectedForm(f.id)} className={selectedForm===f.id?'selected':''}><div><strong>{f.title}</strong><span>{f.companyName||'Daenem Group'} · {f.formType.replaceAll('_',' ')}</span></div><b>{f.assignmentCount||0} assigned</b></button>)}{!forms.length&&<div className="empty-state"><FilePlus2 size={27}/><strong>No forms yet</strong></div>}</div></article></section>{canForms('create')&&<section className="center-grid two admin-zone"><article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">FORM BUILDER</span><h3>Create a form</h3></div><Plus size={20}/></div><form className="center-form" onSubmit={createForm}><label><span>Title</span><input required value={newForm.title} onChange={e=>{setTitleEdited(true);setNewForm({...newForm,title:e.target.value})}}/></label><label><span>Description</span><textarea rows={2} value={newForm.description} onChange={e=>{setDescriptionEdited(true);setNewForm({...newForm,description:e.target.value})}}/></label><div className="form-row"><label><span>Type</span><select value={newForm.formType} onChange={e=>{const preset=FORM_PRESETS[e.target.value];setNewForm(current=>({...current,formType:e.target.value,title:titleEdited?current.title:preset?.title||current.title,description:descriptionEdited?current.description:preset?.description||current.description}));if(preset){setFields(preset.fields.map(f=>({...f,options:f.options?[...f.options]:undefined})));setOptionDrafts(Object.fromEntries(preset.fields.filter(f=>f.type==='select').map(f=>[f.key,(f.options||[]).join('\n')])))} }}><option value="application">Application</option><option value="daily_report">Daily report</option><option value="inspection">Inspection</option><option value="incident">Incident</option><option value="review">Review</option><option value="handover">Handover</option><option value="acknowledgement">Acknowledgement</option><option value="custom">Custom</option></select></label><label className="switch-label"><input type="checkbox" checked={newForm.requireLocation} onChange={e=>setNewForm({...newForm,requireLocation:e.target.checked})}/><span>Require GPS</span></label></div><div className="field-builder">{fields.map((f,i)=><div className="field-row" key={f.key}><input value={f.label} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,label:e.target.value}:x))}/><select value={f.type} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,type:e.target.value}:x))}><option value="text">Text</option><option value="textarea">Long text</option><option value="number">Number</option><option value="date">Date</option><option value="checkbox">Yes / No</option><option value="select">Approved Dropdown</option></select>{f.type==='select'&&<div className="guided-form-choices"><label><span>Approved choices · one per line</span><textarea rows={4} value={optionDrafts[f.key]??(f.options||[]).join('\n')} onChange={e=>setOptionDrafts(current=>({...current,[f.key]:e.target.value}))} placeholder="Enter 2–30 approved options" /></label><select aria-label={'Use standard options for '+f.label} value="" onChange={e=>{const preset=FORM_OPTION_SETS.find(p=>p.key===e.target.value);if(preset)setOptionDrafts(current=>({...current,[f.key]:preset.choices.join('\n')}))}}><option value="">Insert Standard Choices…</option>{FORM_OPTION_SETS.map(p=><option key={p.key} value={p.key}>{p.label}</option>)}</select></div>}<label><input type="checkbox" checked={!!f.required} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,required:e.target.checked}:x))}/>Required</label></div>)}<button type="button" className="text-action" onClick={()=>setFields(a=>[...a,{key:'field_'+(a.length+1),label:'New field',type:'text'}])}><Plus size={14}/> Add field</button></div><button className="primary-action" disabled={busy}><FilePlus2 size={16}/> Create form</button></form></article>{canForms('edit')&&<article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">ASSIGNMENT</span><h3>Assign selected form</h3></div><Users size={20}/></div><form className="center-form" onSubmit={assignForm}><label><span>Form</span><select required value={selectedForm} onChange={e=>setSelectedForm(e.target.value)}><option value="">Select form…</option>{forms.map(f=><option key={f.id} value={f.id}>{f.title}</option>)}</select></label><label><span>Audience</span><select value={assign.audienceType} onChange={e=>setAssign({...assign,audienceType:e.target.value})}><option value="employee">Selected employees</option><option value="role">Role</option><option value="company">Current company</option><option value="group">All Daenem Group</option></select></label>{assign.audienceType==='employee'&&<div className="employee-picker"><label className="guided-employee-search"><span>Find an assigned employee</span><input type="search" value={employeeFilter} onChange={e=>setEmployeeFilter(e.target.value)} placeholder="Search approved employee list" /></label>{employees.filter(e=>[e.displayName,e.jobTitle,e.department,e.companyName].some(value=>(value||'').toLocaleLowerCase().includes(employeeFilter.trim().toLocaleLowerCase()))||selected.has(e.id)).map(e=><label key={e.id}><input type="checkbox" value={e.id} checked={selected.has(e.id)} onChange={x=>setAssign(a=>({...a,employeeIds:x.target.checked?[...a.employeeIds.filter(id=>id!==e.id),e.id]:a.employeeIds.filter(id=>id!==e.id)}))}/><span><b>{e.displayName}</b><small>{e.jobTitle||e.department||e.companyName}</small></span></label>)}</div>}{assign.audienceType==='role'&&<label><span>Role</span><select value={assign.roleId} onChange={e=>setAssign({...assign,roleId:e.target.value})}><option value="">Select role…</option>{roles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></label>}<label><span>Due date/time</span><input type="datetime-local" value={assign.dueAt} onChange={e=>setAssign({...assign,dueAt:e.target.value})}/></label><div className="toggle-row"><label><input type="checkbox" checked={assign.required} onChange={e=>setAssign({...assign,required:e.target.checked})}/> Required</label><label><input type="checkbox" checked={assign.blocking} onChange={e=>setAssign({...assign,blocking:e.target.checked})}/> Blocking</label></div><button className="primary-action" disabled={busy}><Send size={16}/> Assign</button></form></article>}</section>}</div>
+ return <div className="center-stack" data-forms-center="true"><div className="view-heading"><div><span className="eyebrow">SMART FORMS & ACCOUNTABILITY</span><h2>Assigned forms & submissions</h2><p>Create application, review, inspection, incident and daily-report forms; assign them to the exact employees, roles or organizations you choose.</p></div><button className="text-action" onClick={()=>void load()}><RefreshCw size={15}/> Refresh</button></div>{message&&<Notice message={message}/>}<section className="center-grid two"><article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">MY WORK</span><h3>Assigned forms</h3></div><ClipboardCheck size={20}/></div>{mine.length===0?<div className="empty-state"><CheckCircle2 size={27}/><strong>No assigned forms pending</strong></div>:<div className="assignment-list">{mine.map(item=>{const schema=formSchema(item),configured=validGuidedFormSchema(schema),supported=configured&&offlineSafe(item,schema),draft=responses[item.assignmentId]||{},completion=configured?guidedCompletion(schema,draft):{completed:0,total:0,missingLabels:[],percent:0},invalid=configured?guidedInvalidAnswers(schema,draft):[],evidenceBlocker=configured?guidedFormEvidenceBlocker(schema,draft,{requirePhoto:item.requirePhoto===1,requireSignature:item.requireSignature===1}):null;return <div className={'assignment-card '+(item.blocking?'blocking':'')} key={item.assignmentId} data-form-assignment={item.assignmentId}><div className="assignment-head"><div><strong>{item.title}</strong><span>{item.formType.replaceAll('_',' ')}{item.dueAt?' · Due '+new Date(item.dueAt).toLocaleString():''}</span></div><b>{item.status.replaceAll('_',' ')}</b></div>{!['submitted','reviewed','approved'].includes(item.status)&&(!configured?<div className="form-configuration-error" role="alert">This form has invalid field rules or an unreadable configuration. Ask an administrator to review it. Other assigned forms remain available.</div>:<fieldset className="dynamic-form" disabled={busy||queuedAssignments.has(item.assignmentId)} onBlurCapture={()=>{void draftWriter.flush(item.assignmentId).catch(()=>undefined)}}><legend className="form-answers-legend">{item.title} answers</legend>{queuedAssignments.has(item.assignmentId)&&<small className="offline-form-draft-note" role="status">Submission is queued for sync. Editing is paused to protect the saved answers.</small>}<div className="form-completeness" role="status" aria-live="polite"><strong>{completion.completed} of {completion.total} required answers complete</strong><progress value={completion.completed} max={Math.max(1,completion.total)} aria-label="Required form answers completed" />{completion.missingLabels.length>0&&<small>Still needed: {completion.missingLabels.join(', ')}</small>}{invalid.length>0&&<small className="form-completeness-warning" role="alert">Review invalid answers: {invalid.join(', ')}</small>}</div>{evidenceBlocker&&<div className="form-evidence-warning" role="alert">{evidenceBlocker}</div>}{guidedVisibleFields(schema,draft).map(f=><label key={f.key}><span>{f.label}{f.required?' *':''}</span>{['file','photo','signature','location'].includes(f.type)?<small className="form-evidence-warning">Verified {f.type} evidence cannot be captured as ordinary text. Ask an administrator for the approved evidence workflow.</small>:f.type==='textarea'?<textarea rows={2} value={String(responses[item.assignmentId]?.[f.key]??'')} onChange={e=>updateResponse(item,f.key,e.target.value)}/>:f.type==='checkbox'?<input type="checkbox" checked={responses[item.assignmentId]?.[f.key]===true} onChange={e=>updateResponse(item,f.key,e.target.checked)}/>:f.type==='select'?<select required={Boolean(f.required)} value={String(responses[item.assignmentId]?.[f.key]??'')} onChange={e=>updateResponse(item,f.key,e.target.value)}><option value="">Select an approved answer…</option>{(Array.isArray(f.options)?f.options:[]).map(option=><option key={option} value={option}>{option}</option>)}</select>:<input type={f.type==='date'?'date':f.type==='number'?'number':'text'} value={String(responses[item.assignmentId]?.[f.key]??'')} onChange={e=>updateResponse(item,f.key,e.target.value)}/>}</label>)}{!assignedFormDraftCompany(item)?<small className="offline-form-draft-note">This group-wide form requires a live connection. Answers are not saved offline.</small>:!supported&&<small className="offline-form-draft-note">This form stays draft-only offline because it requires live location or verified evidence.</small>}<button className="primary-action small" data-offline-form-submit={supported?'supported':'draft-only'} disabled={busy||queuedAssignments.has(item.assignmentId)||Boolean(evidenceBlocker)} onClick={()=>void submit(item)}><Send size={15}/> Submit</button></fieldset>)}</div>})}</div>}</article><article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">FORM LIBRARY</span><h3>Available forms</h3></div><FilePlus2 size={20}/></div><div className="compact-list">{forms.map(f=><button key={f.id} onClick={()=>setSelectedForm(f.id)} className={selectedForm===f.id?'selected':''}><div><strong>{f.title}</strong><span>{f.companyName||'Daenem Group'} · {f.formType.replaceAll('_',' ')}</span></div><b>{f.assignmentCount||0} assigned</b></button>)}{!forms.length&&<div className="empty-state"><FilePlus2 size={27}/><strong>No forms yet</strong></div>}</div></article></section>{canForms('create')&&<section className="center-grid two admin-zone"><article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">FORM BUILDER</span><h3>Create a form</h3></div><Plus size={20}/></div><form className="center-form" onSubmit={createForm}><label><span>Title</span><input required value={newForm.title} onChange={e=>{setTitleEdited(true);setNewForm({...newForm,title:e.target.value})}}/></label><label><span>Description</span><textarea rows={2} value={newForm.description} onChange={e=>{setDescriptionEdited(true);setNewForm({...newForm,description:e.target.value})}}/></label><div className="form-row"><label><span>Type</span><select value={newForm.formType} onChange={e=>{const preset=FORM_PRESETS[e.target.value];setNewForm(current=>({...current,formType:e.target.value,title:titleEdited?current.title:preset?.title||current.title,description:descriptionEdited?current.description:preset?.description||current.description}));if(preset){setFields(preset.fields.map(f=>({...f,options:f.options?[...f.options]:undefined})));setOptionDrafts(Object.fromEntries(preset.fields.filter(f=>f.type==='select').map(f=>[f.key,(f.options||[]).join('\n')])))} }}><option value="application">Application</option><option value="daily_report">Daily report</option><option value="inspection">Inspection</option><option value="incident">Incident</option><option value="review">Review</option><option value="handover">Handover</option><option value="acknowledgement">Acknowledgement</option><option value="custom">Custom</option></select></label><label className="switch-label"><input type="checkbox" checked={newForm.requireLocation} onChange={e=>setNewForm({...newForm,requireLocation:e.target.checked})}/><span>Require GPS</span></label></div><div className="field-builder">{fields.map((f,i)=>{const parents=fields.slice(0,i).filter(parent=>parent.type==='select'||parent.type==='checkbox');const parent=parents.find(candidate=>candidate.key===f.showWhen?.fieldKey);const choices=parent?.type==='checkbox'?[{value:'true',label:'Yes'},{value:'false',label:'No'}]:parent?.type==='select'?(optionDrafts[parent.key]??(parent.options||[]).join('\n')).split(/\r?\n/).map(value=>value.trim()).filter(Boolean).map(value=>({value,label:value})):[];return <div className="field-row" key={f.key}><input value={f.label} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,label:e.target.value}:x))}/><select value={f.type} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,type:e.target.value}:x))}><option value="text">Text</option><option value="textarea">Long text</option><option value="number">Number</option><option value="date">Date</option><option value="checkbox">Yes / No</option><option value="select">Approved Dropdown</option></select>{f.type==='select'&&<div className="guided-form-choices"><label><span>Approved choices · one per line</span><textarea rows={4} value={optionDrafts[f.key]??(f.options||[]).join('\n')} onChange={e=>setOptionDrafts(current=>({...current,[f.key]:e.target.value}))} placeholder="Enter 2–30 approved options" /></label><select aria-label={'Use standard options for '+f.label} value="" onChange={e=>{const preset=FORM_OPTION_SETS.find(p=>p.key===e.target.value);if(preset)setOptionDrafts(current=>({...current,[f.key]:preset.choices.join('\n')}))}}><option value="">Insert Standard Choices…</option>{FORM_OPTION_SETS.map(p=><option key={p.key} value={p.key}>{p.label}</option>)}</select></div>}<label><input type="checkbox" checked={!!f.required} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,required:e.target.checked}:x))}/>Required</label><div className="form-rule-editor"><label><span>Show this question</span><select aria-label={'When to show '+f.label} value={f.showWhen?.fieldKey||''} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,showWhen:e.target.value?{fieldKey:e.target.value,equals:a.find(parent=>parent.key===e.target.value)?.type==='checkbox'?true:''}:undefined}:x))}><option value="">Always</option>{parents.map(candidate=><option key={candidate.key} value={candidate.key}>When {candidate.label} is…</option>)}</select></label>{f.showWhen&&<label><span>Required answer</span><select aria-label={'Show '+f.label+' when answer is'} value={String(f.showWhen.equals)} onChange={e=>setFields(a=>a.map((x,n)=>n===i?{...x,showWhen:{...f.showWhen!,equals:parent?.type==='checkbox'?e.target.value==='true':e.target.value}}:x))}><option value="" disabled>Select answer</option>{choices.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label>}</div></div>})}<button type="button" className="text-action" onClick={()=>setFields(a=>[...a,{key:'field_'+(a.length+1),label:'New field',type:'text'}])}><Plus size={14}/> Add field</button></div><button className="primary-action" disabled={busy}><FilePlus2 size={16}/> Create form</button></form></article>{canForms('edit')&&<article className="panel center-panel"><div className="card-heading"><div><span className="eyebrow">ASSIGNMENT</span><h3>Assign selected form</h3></div><Users size={20}/></div><form className="center-form" onSubmit={assignForm}><label><span>Form</span><select required value={selectedForm} onChange={e=>setSelectedForm(e.target.value)}><option value="">Select form…</option>{forms.map(f=><option key={f.id} value={f.id}>{f.title}</option>)}</select></label><label><span>Audience</span><select value={assign.audienceType} onChange={e=>setAssign({...assign,audienceType:e.target.value})}><option value="employee">Selected employees</option><option value="role">Role</option><option value="company">Current company</option><option value="group">All Daenem Group</option></select></label>{assign.audienceType==='employee'&&<div className="employee-picker"><label className="guided-employee-search"><span>Find an assigned employee</span><input type="search" value={employeeFilter} onChange={e=>setEmployeeFilter(e.target.value)} placeholder="Search approved employee list" /></label>{employees.filter(e=>[e.displayName,e.jobTitle,e.department,e.companyName].some(value=>(value||'').toLocaleLowerCase().includes(employeeFilter.trim().toLocaleLowerCase()))||selected.has(e.id)).map(e=><label key={e.id}><input type="checkbox" value={e.id} checked={selected.has(e.id)} onChange={x=>setAssign(a=>({...a,employeeIds:x.target.checked?[...a.employeeIds.filter(id=>id!==e.id),e.id]:a.employeeIds.filter(id=>id!==e.id)}))}/><span><b>{e.displayName}</b><small>{e.jobTitle||e.department||e.companyName}</small></span></label>)}</div>}{assign.audienceType==='role'&&<label><span>Role</span><select value={assign.roleId} onChange={e=>setAssign({...assign,roleId:e.target.value})}><option value="">Select role…</option>{roles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></label>}<label><span>Due date/time</span><input type="datetime-local" value={assign.dueAt} onChange={e=>setAssign({...assign,dueAt:e.target.value})}/></label><div className="toggle-row"><label><input type="checkbox" checked={assign.required} onChange={e=>setAssign({...assign,required:e.target.checked})}/> Required</label><label><input type="checkbox" checked={assign.blocking} onChange={e=>setAssign({...assign,blocking:e.target.checked})}/> Blocking</label></div><button className="primary-action" disabled={busy}><Send size={16}/> Assign</button></form></article>}</section>}</div>
 }
 
 
