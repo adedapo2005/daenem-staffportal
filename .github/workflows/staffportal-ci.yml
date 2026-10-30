@@ -66,6 +66,9 @@ jobs:
           node scripts/test-spend-approval-transition-atomicity.mjs
           node scripts/test-spend-explicit-bootstrap-scope.mjs
 
+      - name: Forms typed-answer and verified-evidence completeness regression
+        run: node scripts/test-form-answer-completeness.mjs
+
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs
 
