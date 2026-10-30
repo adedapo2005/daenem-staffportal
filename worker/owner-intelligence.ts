@@ -261,6 +261,9 @@ const ownerAiAuthorityFenceSql = `
    'session',(SELECT json_array(s.employee_id,s.expires_at,s.revoked_at)
      FROM auth_sessions s WHERE s.id=?),
    'employee',(SELECT json_array(e.employment_status) FROM employees e WHERE e.id=?),
+   'latestApplication',(SELECT json_array(sr.id,sr.status,sr.created_at)
+     FROM signup_requests sr WHERE sr.employee_id=?
+     ORDER BY sr.created_at DESC,sr.id DESC LIMIT 1),
    'memberships',(SELECT json_group_array(json(t.j)) FROM (
      SELECT json_array(m.id,m.company_id,m.active,m.is_primary,c.active) AS j
      FROM employee_company_memberships m LEFT JOIN companies c ON c.id=m.company_id
@@ -297,7 +300,7 @@ const ownerAiAuthorityFenceSql = `
 `;
 const ownerAiAuthorityFenceArgs=(ctx:SessionContext)=>[
   ctx.sessionId,ctx.employee.id,ctx.employee.id,ctx.employee.id,
-  ctx.employee.id,ctx.employee.id,ctx.employee.id
+  ctx.employee.id,ctx.employee.id,ctx.employee.id,ctx.employee.id
 ];
 
 async function aiBrief(request: Request, env: OwnerEnv, context: SessionContext) {
@@ -330,7 +333,7 @@ async function aiBrief(request: Request, env: OwnerEnv, context: SessionContext)
   const text = String(answer.response || 'No AI brief was generated.');
   // Snapshot every canonical D1 input to effective company/Group authorization
   // BEFORE re-validating the post-AI session. Any subsequent role, membership,
-  // override, session or company-state change invalidates the write atomically.
+  // override, application, session or company-state change invalidates the write atomically.
   const fenceRow=await env.DB.prepare(ownerAiAuthorityFenceSql)
     .bind(...ownerAiAuthorityFenceArgs(context)).first<{fingerprint:string}>();
   const aiFence=String(fenceRow?.fingerprint||'');

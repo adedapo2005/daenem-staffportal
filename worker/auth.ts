@@ -452,6 +452,15 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
   if (!base) return null;
 
   const employeeId = String(base.id);
+  const provisional = String(base.status) === 'provisional';
+  // Existing sessions immediately lose access after an application is rejected,
+  // cancelled or expired, irrespective of authentication provider.
+  const latestApplication = await env.DB.prepare(
+    "SELECT status FROM signup_requests WHERE employee_id=? ORDER BY created_at DESC,id DESC LIMIT 1"
+  ).bind(employeeId).first<{ status: string }>();
+  if (latestApplication && ['rejected','cancelled','expired'].includes(latestApplication.status)) {
+    return null;
+  }
   const companiesResult = await env.DB.prepare(`
     SELECT c.id, c.code, c.name, m.location_id AS locationId, m.is_primary AS isPrimary
     FROM employee_company_memberships m JOIN companies c ON c.id = m.company_id
@@ -463,6 +472,7 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
     SELECT r.id, r.code, r.name, er.company_id AS companyId
     FROM employee_roles er JOIN roles r ON r.id = er.role_id
     WHERE er.employee_id = ? AND r.active = 1
+      AND (? <> 'provisional' OR er.role_id = 'role-provisional')
       AND (r.company_id IS NULL OR r.company_id = er.company_id)
       AND (r.code <> 'owner' OR r.company_id IS NULL)
       -- A group-level role remains assigned *through* er.company_id. Even
@@ -475,7 +485,11 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
           AND m.active = 1 AND c.active = 1
       )
     ORDER BY r.is_system DESC, r.name
-  `).bind(employeeId).all<Record<string, unknown>>();
+  `).bind(employeeId, String(base.status)).all<Record<string, unknown>>();
+
+  if (provisional && !(rolesResult.results || []).some(role => role.id === 'role-provisional')) {
+    return null;
+  }
 
   const permissionRows = await env.DB.prepare(`
     SELECT er.company_id AS companyId, p.code, rp.access_level AS accessLevel
@@ -484,8 +498,9 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
     JOIN role_permissions rp ON rp.role_id = er.role_id
     JOIN permissions p ON p.id = rp.permission_id
     WHERE er.employee_id = ?
+      AND (? <> 'provisional' OR er.role_id = 'role-provisional')
       AND (r.company_id IS NULL OR r.company_id = er.company_id)
-  `).bind(employeeId).all<{ companyId?: string; code: string; accessLevel: AccessLevel }>();
+  `).bind(employeeId, String(base.status)).all<{ companyId?: string; code: string; accessLevel: AccessLevel }>();
 
   const legacyOverrides = await env.DB.prepare(`
     SELECT p.code, o.access_level AS accessLevel
@@ -520,17 +535,27 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
   // Legacy overrides were group-wide. Preserve them while applying them to every
   // assigned business so the client never has to infer cross-business access.
   for (const row of legacyOverrides.results || []) {
+    // Individual overrides may revoke provisional permissions but must never
+    // elevate them beyond the administrator-defined Provisional role.
+    if (provisional && row.accessLevel !== 'none') continue;
     for (const companyId of companyIds) companyPermissions[companyId][row.code] = row.accessLevel;
   }
 
   // Scoped overrides are applied last. An explicit "none" therefore wins for
   // the selected business even when another role grants the same permission.
   for (const row of scopedOverrides.results || []) {
+    if (provisional && row.accessLevel !== 'none') continue;
     const targets = row.companyId ? [String(row.companyId)] : companyIds;
     for (const companyId of targets) {
       if (companyPermissions[companyId]) companyPermissions[companyId][row.code] = row.accessLevel;
     }
   }
+
+  // Provisional workspace access exists for employee profile setup; if an
+  // administrator removes Profile Edit, an existing session loses access.
+  if (provisional && !companyIds.some(companyId =>
+    levels.indexOf(companyPermissions[companyId]?.['profile.access'] || 'none') >= levels.indexOf('edit')
+  )) return null;
 
   const permissions: Record<string, AccessLevel> = {};
   for (const companyAccess of Object.values(companyPermissions)) {

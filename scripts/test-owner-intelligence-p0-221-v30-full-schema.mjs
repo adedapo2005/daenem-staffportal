@@ -493,6 +493,29 @@ await expectCase('V31 restored Group Owner role AND explicit Printing Spend perm
  }
 });
 
+
+// Onboarding decisions are canonical authorization inputs even after the final AI refresh.
+run("INSERT INTO signup_requests(id,employee_id,requested_company_id,requested_role_text,status) VALUES('qa-owner-ai-onboarding','emp-owner','company-printing','Synthetic AI onboarding gate','pending')");
+for(const status of ['rejected','cancelled','expired']){
+ await expectCase('ATWRITE latest '+status+' application prevents Owner AI output and activity',async()=>{
+  const {response,activityDelta,injected}=await aiAtWriteWindow(
+   'application-'+status,
+   ()=>run("UPDATE signup_requests SET status=? WHERE id='qa-owner-ai-onboarding'",status),
+   ()=>run("UPDATE signup_requests SET status='pending' WHERE id='qa-owner-ai-onboarding'")
+  );
+  assert.equal(injected,1,'The actual AI activity write boundary must be reached');
+  isNeutral(response);assert.equal(activityDelta,0);
+ });
+}
+await expectCase('ATWRITE active-to-provisional change remains covered by the Owner AI fence',async()=>{
+ const {response,activityDelta,injected}=await aiAtWriteWindow(
+  'employment-provisional',
+  ()=>run("UPDATE employees SET employment_status='provisional' WHERE id='emp-owner'"),
+  ()=>run("UPDATE employees SET employment_status='active' WHERE id='emp-owner'")
+ );
+ assert.equal(injected,1);isNeutral(response);assert.equal(activityDelta,0);
+});
+
 const failed=cases.filter(x=>!x.pass);
 for(const c of cases)console.log((c.pass?'PASS':'FAIL')+' '+c.name+(c.pass?'':' -> '+c.error));
 console.log('V30 P0 #221 Actual Auth + Real-Schema SQLite D1: '+(cases.length-failed.length)+'/'+cases.length+' PASS');

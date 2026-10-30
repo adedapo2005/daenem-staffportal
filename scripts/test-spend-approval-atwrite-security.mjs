@@ -294,6 +294,58 @@ await check('Assigned approver may reject a submitted expense with an audit and 
  assert.equal(after.status,'rejected');assert.equal(after.approval,'rejected');
  assert.equal(after.audit,before.audit+1);assert.equal(after.events,before.events+1);
 });
+
+// Onboarding eligibility must be checked inside the approval transaction too.
+run("INSERT INTO signup_requests(id,employee_id,requested_company_id,requested_role_text,status) VALUES('qa-approval-onboarding','emp-owner','company-printing','Synthetic approval onboarding gate','pending')");
+for(const status of ['rejected','cancelled','expired']){
+ await check('Onboarding: latest '+status+' application at write blocks approval and audit',async()=>{
+  const id=seedApproval(),before=snapshot(id);
+  try{
+   const {response,hit}=await preBatchMutation(id,()=>run("UPDATE signup_requests SET status=? WHERE id='qa-approval-onboarding'",status));
+   assert.equal(hit,1);denied(response);noTransition(id,before);
+  }finally{run("UPDATE signup_requests SET status='pending' WHERE id='qa-approval-onboarding'");}
+ });
+}
+await check('Onboarding: active-to-ineligible-provisional at write blocks approval and audit',async()=>{
+ const id=seedApproval(),before=snapshot(id);
+ try{
+  const {response,hit}=await preBatchMutation(id,()=>run("UPDATE employees SET employment_status='provisional' WHERE id='emp-owner'"));
+  assert.equal(hit,1);denied(response);noTransition(id,before);
+ }finally{run("UPDATE employees SET employment_status='active' WHERE id='emp-owner'");}
+});
+const setApprovalProvisionalPermission=(code,level)=>{
+ const changed=run("UPDATE role_permissions SET access_level=? WHERE role_id='role-provisional' AND permission_id=(SELECT id FROM permissions WHERE code=?)",level,code);
+ if(!Number(changed.changes))grantPermission('qa-approval-prov-'+code,'role-provisional',code,level);
+};
+grant('qa-approval-provisional-role','emp-owner','company-printing','role-provisional');
+setApprovalProvisionalPermission('profile.access','edit');
+setApprovalProvisionalPermission('expense.review','view');
+setApprovalProvisionalPermission('expense.approve','approve');
+await check('Onboarding: eligible administrator-defined provisional approver remains authorized',async()=>{
+ run("UPDATE employees SET employment_status='provisional' WHERE id='emp-owner'");
+ try{
+  const context=await auth.sessionContextFromId(env,'s-emp-owner');
+  assert.ok(context);assert.deepEqual(context.roles.map(role=>role.id),['role-provisional']);
+  const id=seedApproval('provisional'),response=await actionAsOwner(id);
+  assert.equal(response.status,200,JSON.stringify(response.body));
+  const after=snapshot(id);
+  assert.equal(after.status,'approved');assert.equal(after.approval,'approved');
+  assert.equal(after.audit,1);assert.equal(after.events,1);
+ }finally{run("UPDATE employees SET employment_status='active' WHERE id='emp-owner'");}
+});
+await check('Onboarding: other-role approval grant cannot rescue a revoked provisional role at write',async()=>{
+ run("UPDATE employees SET employment_status='provisional' WHERE id='emp-owner'");
+ const id=seedApproval('provisional'),before=snapshot(id);
+ try{
+  const {response,hit}=await preBatchMutation(id,()=>setApprovalProvisionalPermission('expense.approve','none'));
+  assert.equal(hit,1);denied(response);noTransition(id,before);
+ }finally{
+  setApprovalProvisionalPermission('expense.approve','approve');
+  run("UPDATE employees SET employment_status='active' WHERE id='emp-owner'");
+ }
+});
+run("DELETE FROM employee_roles WHERE id='qa-approval-provisional-role'");
+
 const failed=results.filter(c=>!c.pass);
 console.log('SPEND_APPROVAL_ATWRITE_SECURITY '+(results.length-failed.length)+'/'+results.length+' PASS');
 for(const x of failed)console.log('CASE_FAIL '+x.name+' '+x.error);

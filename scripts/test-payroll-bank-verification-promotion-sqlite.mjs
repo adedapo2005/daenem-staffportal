@@ -124,29 +124,29 @@ const input = { companyId: 'company-a', employeeId: 'employee-a', bankAccountId:
 
 {
   const { db } = createDatabase();
-  const rows = db.prepare(permissionQuery).all('actor-a');
+  const rows = db.prepare(permissionQuery).all('actor-a', 'active');
   assert.deepEqual(rows.map(row => [row.companyId, row.code, row.accessLevel]), [['company-a', 'payroll.access', 'edit']], 'active role scoped to its assigned company contributes its permission');
-  assert.deepEqual(db.prepare(roleQuery).all('owner-a').map(row => row.code), ['owner'], 'global Owner role with active assigned membership remains available');
+  assert.deepEqual(db.prepare(roleQuery).all('owner-a', 'active').map(row => row.code), ['owner'], 'global Owner role with active assigned membership remains available');
   db.prepare('UPDATE employee_company_memberships SET active=0 WHERE employee_id=? AND company_id=?').run('owner-a', 'company-a');
-  assert.deepEqual(db.prepare(roleQuery).all('owner-a').map(row => row.code), [], 'revoked Owner membership must immediately remove the global Owner role');
+  assert.deepEqual(db.prepare(roleQuery).all('owner-a', 'active').map(row => row.code), [], 'revoked Owner membership must immediately remove the global Owner role');
   db.close();
 }
 
 {
   const { db } = createDatabase({ actorRoleActive: 0 });
-  assert.equal(db.prepare(permissionQuery).all('actor-a').length, 0, 'inactive role grants no session permission');
+  assert.equal(db.prepare(permissionQuery).all('actor-a', 'active').length, 0, 'inactive role grants no session permission');
   db.close();
 }
 
 {
   const { db } = createDatabase({ actorRoleCompanyId: 'company-b' });
-  assert.equal(db.prepare(permissionQuery).all('actor-a').length, 0, 'role scoped to another company grants no session permission');
+  assert.equal(db.prepare(permissionQuery).all('actor-a', 'active').length, 0, 'role scoped to another company grants no session permission');
   db.close();
 }
 
 {
   const { db } = createDatabase({ ownerRoleCompanyId: 'company-b' });
-  assert.equal(db.prepare(roleQuery).all('owner-a').length, 0, 'company-scoped Owner role cannot become group Owner authority');
+  assert.equal(db.prepare(roleQuery).all('owner-a', 'active').length, 0, 'company-scoped Owner role cannot become group Owner authority');
   db.close();
 }
 const request = new Request('https://staffportal.test/api/payroll/employee-bank/verify', { headers: { 'x-request-id': 'sqlite-promotion-test' } });

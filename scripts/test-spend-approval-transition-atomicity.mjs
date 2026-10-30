@@ -22,6 +22,7 @@ function fixture({ ignoreAudit = false, ignoreEvent = false, synchronizeReads = 
     CREATE TABLE spend_expense_events(id TEXT PRIMARY KEY,expense_request_id TEXT,actor_employee_id TEXT,company_id TEXT,action TEXT,previous_status TEXT,next_status TEXT,reason TEXT,request_id TEXT,source TEXT,captured_at TEXT,metadata_json TEXT,server_received_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE auth_sessions(id TEXT PRIMARY KEY,employee_id TEXT,expires_at TEXT,revoked_at TEXT);
     CREATE TABLE employees(id TEXT PRIMARY KEY,employment_status TEXT);
+    CREATE TABLE signup_requests(id TEXT PRIMARY KEY,employee_id TEXT,status TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE employee_company_memberships(employee_id TEXT,company_id TEXT,active INTEGER);
     CREATE TABLE companies(id TEXT PRIMARY KEY,active INTEGER);
     CREATE TABLE employee_roles(id TEXT PRIMARY KEY,employee_id TEXT,company_id TEXT,role_id TEXT);

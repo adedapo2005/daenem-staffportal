@@ -734,6 +734,102 @@ await check('Independent approved-template source allocation revocation at write
   assertNoIndependentExpenseWrites(id);
  }finally{env.DB.batch=originalBatch;run("UPDATE role_permissions SET access_level='manage' WHERE id='qa-owner-expense-alloc'");}
 });
+
+// Integration with provisional onboarding: canonical eligibility must hold at the D1 write.
+run("INSERT INTO signup_requests(id,employee_id,requested_company_id,requested_role_text,status) VALUES('qa-spend-onboarding-owner','emp-owner','company-printing','Synthetic onboarding gate','pending')");
+const onboardingExpense=(id)=>({...implicitDirect(id),purpose:'Synthetic onboarding write boundary'});
+async function onboardingDeniedAtWrite(id,actor,mutate,restore){
+ const original=env.DB.batch;let hit=0;
+ env.DB.batch=async function(statements){hit++;mutate();return original(statements);};
+ try{
+  const response=await post('/api/spend/requests',onboardingExpense(id),actor);
+  assert.equal(hit,1,'The real D1 write boundary must be reached');
+  assert.equal(response.status,403,JSON.stringify(response.body));
+  assertNoIndependentExpenseWrites(id);
+ }finally{env.DB.batch=original;restore();}
+}
+for(const status of ['rejected','cancelled','expired']){
+ await check('Onboarding: latest '+status+' application at write blocks Spend and audit',async()=>{
+  await onboardingDeniedAtWrite('qa-onboarding-'+status,'owner',
+   ()=>run("UPDATE signup_requests SET status=? WHERE id='qa-spend-onboarding-owner'",status),
+   ()=>run("UPDATE signup_requests SET status='pending' WHERE id='qa-spend-onboarding-owner'"));
+ });
+}
+await check('Onboarding: active actor demoted to ineligible provisional at write cannot save Spend',async()=>{
+ await onboardingDeniedAtWrite('qa-onboarding-active-to-provisional','owner',
+  ()=>run("UPDATE employees SET employment_status='provisional' WHERE id='emp-owner'"),
+  ()=>run("UPDATE employees SET employment_status='active' WHERE id='emp-owner'"));
+});
+
+// An administrator may explicitly grant this capability to the Provisional role.
+const onboardingActor='onboardingProvisional',onboardingEmployee='qa-onboarding-provisional';
+tokens[onboardingActor]='qa-onboarding-provisional-token';
+run("INSERT INTO employees(id,employee_no,display_name,email,employment_status) VALUES(?,'QA-ONBOARD-PROV','QA Onboarding Provisional','qa-onboarding-provisional@example.test','provisional')",onboardingEmployee);
+run("INSERT INTO employee_company_memberships(id,employee_id,company_id,is_primary,active) VALUES('qa-onboarding-prov-member',?,'company-printing',1,1)",onboardingEmployee);
+grant('qa-onboarding-prov-role',onboardingEmployee,'company-printing','role-provisional');
+run("INSERT INTO auth_sessions(id,employee_id,token_hash,expires_at) VALUES('qa-onboarding-prov-session',?,?,datetime('now','+1 day'))",
+ onboardingEmployee,createHash('sha256').update(tokens[onboardingActor]+':'+pepper).digest('hex'));
+run("INSERT INTO signup_requests(id,employee_id,requested_company_id,requested_role_text,status) VALUES('qa-onboarding-prov-application',?,'company-printing','Synthetic provisional permission','pending')",onboardingEmployee);
+const setOnboardingProvisionalPermission=(code,level)=>{
+ const changed=run("UPDATE role_permissions SET access_level=? WHERE role_id='role-provisional' AND permission_id=(SELECT id FROM permissions WHERE code=?)",level,code);
+ if(!Number(changed.changes))grantPermission('qa-onboarding-prov-'+code,'role-provisional',code,level);
+};
+setOnboardingProvisionalPermission('profile.access','edit');
+setOnboardingProvisionalPermission('expense.requests','create');
+await check('Onboarding: eligible provisional role grant permits legitimate Spend creation',async()=>{
+ const context=await auth.sessionContextFromId(env,'qa-onboarding-prov-session');
+ assert.ok(context);assert.deepEqual(context.roles.map(role=>role.id),['role-provisional']);
+ assert.equal(auth.hasPermission(context,'expense.requests','create','company-printing'),true);
+ const id='qa-onboarding-provisional-valid',response=await post('/api/spend/requests',onboardingExpense(id),onboardingActor);
+ assert.equal(response.status,201,JSON.stringify(response.body));assert.equal(expenseCount(id),1);
+});
+await check('Onboarding: another role cannot rescue a revoked provisional grant at write',async()=>{
+ run("INSERT INTO roles(id,company_id,code,name) VALUES('qa-onboarding-extra-role','company-printing','qa_onboarding_extra','QA Non-Provisional Role')");
+ grantPermission('qa-onboarding-extra-create','qa-onboarding-extra-role','expense.requests','manage');
+ grant('qa-onboarding-extra-bind',onboardingEmployee,'company-printing','qa-onboarding-extra-role');
+ setOnboardingProvisionalPermission('expense.requests','create');
+ try{
+  const context=await auth.sessionContextFromId(env,'qa-onboarding-prov-session');
+  assert.ok(context);assert.equal(auth.hasPermission(context,'expense.requests','create','company-printing'),true);
+  await onboardingDeniedAtWrite('qa-onboarding-other-role-denied',onboardingActor,
+   ()=>setOnboardingProvisionalPermission('expense.requests','none'),
+   ()=>setOnboardingProvisionalPermission('expense.requests','create'));
+ }finally{
+  run("DELETE FROM employee_roles WHERE id='qa-onboarding-extra-bind'");
+  run("DELETE FROM role_permissions WHERE role_id='qa-onboarding-extra-role'");
+  run("DELETE FROM roles WHERE id='qa-onboarding-extra-role'");
+  setOnboardingProvisionalPermission('expense.requests','create');
+ }
+});
+for(const overrideKind of ['legacy','scoped']){
+ await check('Onboarding: positive '+overrideKind+' override cannot rescue a revoked provisional role grant at write',async()=>{
+  const overrideId='qa-onboarding-positive-'+overrideKind;
+  if(overrideKind==='legacy')run(
+   "INSERT INTO employee_permission_overrides(id,employee_id,company_id,permission_id,access_level,reason,granted_by,expires_at) SELECT ?,?,'company-printing',id,'manage','Synthetic ignored escalation','emp-owner',datetime('now','+1 day') FROM permissions WHERE code='expense.requests'",
+   overrideId,onboardingEmployee);
+  else run(
+   "INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by,expires_at) SELECT ?,?,'company-printing',id,'manage','Synthetic ignored escalation','emp-owner',datetime('now','+1 day') FROM permissions WHERE code='expense.requests'",
+   overrideId,onboardingEmployee);
+  try{
+   await onboardingDeniedAtWrite('qa-onboarding-override-'+overrideKind,onboardingActor,
+    ()=>setOnboardingProvisionalPermission('expense.requests','none'),
+    ()=>setOnboardingProvisionalPermission('expense.requests','create'));
+  }finally{
+   run('DELETE FROM '+(overrideKind==='legacy'?'employee_permission_overrides':'employee_permission_overrides_v2')+' WHERE id=?',overrideId);
+  }
+ });
+}
+await check('Onboarding: provisional Profile Edit revocation at write blocks Spend',async()=>{
+ await onboardingDeniedAtWrite('qa-onboarding-profile-role-revoked',onboardingActor,
+  ()=>setOnboardingProvisionalPermission('profile.access','none'),
+  ()=>setOnboardingProvisionalPermission('profile.access','edit'));
+});
+await check('Onboarding: scoped Profile Edit deny at write blocks provisional Spend',async()=>{
+ await onboardingDeniedAtWrite('qa-onboarding-profile-scoped-denied',onboardingActor,
+  ()=>run("INSERT INTO employee_permission_overrides_v2(id,employee_id,company_id,permission_id,access_level,reason,assigned_by,expires_at) SELECT 'qa-onboarding-profile-deny',?,'company-printing',id,'none','Synthetic Profile Edit revocation','emp-owner',datetime('now','+1 day') FROM permissions WHERE code='profile.access'",onboardingEmployee),
+  ()=>run("DELETE FROM employee_permission_overrides_v2 WHERE id='qa-onboarding-profile-deny'"));
+});
+
 const failed=results.filter(x=>!x.pass);
 console.log('SPEND_MASTER_ALLOCATION_SCOPE '+(results.length-failed.length)+'/'+results.length+' PASS');
 for(const f of failed) console.log('CASE_FAILURE '+f.name+' '+f.error);

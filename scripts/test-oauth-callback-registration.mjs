@@ -7,6 +7,10 @@ const compiled = ts.transpileModule(source,{
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},
 }).outputText;
 const applications=[];
+const issuedMethods=[];
+let existingGoogle=false;
+let existingMicrosoft=false;
+let approvalState='pending';
 const loaded={exports:{}};
 new Function('module','exports','require',compiled)(loaded,loaded.exports,(name)=>{
   if(name==='./auth')return{
@@ -25,7 +29,7 @@ new Function('module','exports','require',compiled)(loaded,loaded.exports,(name)
       issuer:'https://login.microsoftonline.com/'+p.tid+'/v2.0',
     }:null,
     organizationSigningKeyIssuerMatches:()=>true,
-    linkedMicrosoftEmployee:async()=>null,
+    linkedMicrosoftEmployee:async()=>existingMicrosoft?'existing-employee':null,
     organizationsLinkStorageReady:async()=>true,
     linkedMicrosoftIdentityForEmployee:async()=>null,
     bindMicrosoftEmployeeIdentity:()=>{throw new Error('Cannot auto-link existing employee');},
@@ -34,7 +38,14 @@ new Function('module','exports','require',compiled)(loaded,loaded.exports,(name)
     provisionOAuthApplicant:async (_env,applicant)=>{
       applications.push(applicant);return 'pending';
     },
-    oauthApplicantPending:async()=>true,
+    oauthApplicantApproval:async()=>approvalState,
+    pendingOAuthApplicantId:async()=> 'new-applicant-id',
+  };
+  if(name==='./provisional-workspace-session')return{
+    createProvisionalWorkspaceSession:async (_request,_env,employeeId,method)=>{
+      issuedMethods.push({employeeId,method});
+      return { cookie:'daenem_workforce_session=synthetic-session; Path=/; Secure; HttpOnly; SameSite=Lax',next:'/workspace/',access:'provisional' };
+    },
   };
   throw new Error('Unexpected dependency '+name);
 });
@@ -63,7 +74,7 @@ const env={
     async put(key,value){cache.set(key,value);},
     async delete(key){cache.delete(key);},
   },
-  DB:{ prepare(sql){return{bind(){return this;},async first(){return null;}};} },
+  DB:{ prepare(sql){return{bind(){return this;},async first(){if(existingGoogle && sql.includes('employment_status AS status FROM employees')) return {id:'existing-employee',status:'active'};return null;}};} },
 };
 const oldFetch=globalThis.fetch;
 let context=null;
@@ -104,28 +115,32 @@ try{
   }
   let result=await oauth('google',{email:'new-google@example.test',
     email_verified:true,name:'New Google'});
-  assert.equal(result.status,303);
-  assert.match(result.headers.get('location'),/registration-status.*result=pending/);
+  assert.equal(result.status,302);
+  assert.match(result.headers.get('location'),/\/workspace\/$/);
+  assert.match(result.headers.get('set-cookie'),/daenem_workforce_session/);
+  assert.equal(issuedMethods[0].method,'google');
   assert.equal(applications.length,1);
   assert.equal(applications[0].provider,'google');
   assert.equal(applications[0].email,'new-google@example.test');
-  console.log('PASS: signed Google callback registers applicant without session');passed++;
+  console.log('PASS: signed Google callback registers applicant with provisional workspace session');passed++;
 
   const status=await routeProviderAuth(new Request(
     'https://staffportal.test/api/auth/oauth/registration-status?result=pending&provider=google'
   ),env);
   assert.equal(status.status,200);
-  assert.match(await status.text(),/management approval/);
+  assert.match(await status.text(),/provisional StaffPortal workspace/);
   console.log('PASS: pending registration confirmation is accessible without Sign-In changes');passed++;
 
   result=await oauth('microsoft',{tid:'tenant-synthetic',oid:'object-synthetic',
     preferred_username:'new-microsoft@example.test',name:'New Microsoft'});
-  assert.equal(result.status,303);
-  assert.match(result.headers.get('location'),/registration-status.*result=pending/);
+  assert.equal(result.status,302);
+  assert.match(result.headers.get('location'),/\/workspace\/$/);
+  assert.match(result.headers.get('set-cookie'),/daenem_workforce_session/);
+  assert.equal(issuedMethods[1].method,'microsoft');
   assert.equal(applications.length,2);
   assert.equal(applications[1].microsoftTenantId,'tenant-synthetic');
   assert.equal(applications[1].microsoftObjectId,'object-synthetic');
-  console.log('PASS: signed Microsoft callback registers immutable tenant-object identity');passed++;
+  console.log('PASS: signed Microsoft callback registers identity with provisional workspace session');passed++;
 
   result=await oauth('google',{email:'unverified@example.test',email_verified:false});
   assert.equal(result.status,302);
@@ -140,5 +155,33 @@ try{
   assert.equal(applications.length,2);
   console.log('PASS: Microsoft unusable email cannot register');passed++;
 
+  // A returning, still-pending OAuth applicant uses the same restricted session.
+  existingGoogle=true;
+  result=await oauth('google',{email:'pending-google@example.test',email_verified:true});
+  assert.equal(result.status,302);
+  assert.match(result.headers.get('location'),/\/workspace\/$/);
+  assert.equal(issuedMethods.at(-1).method,'google');
+  existingGoogle=false;
+  console.log('PASS: returning pending Google applicant enters restricted workspace');passed++;
+  existingMicrosoft=true;
+  result=await oauth('microsoft',{tid:'tenant-synthetic',oid:'pending-object',preferred_username:'pending-microsoft@example.test'});
+  assert.equal(result.status,302);
+  assert.equal(issuedMethods.at(-1).method,'microsoft');
+  existingMicrosoft=false;
+  console.log('PASS: returning pending Microsoft applicant enters restricted workspace');passed++;
+
+  approvalState='not_approved';
+  existingGoogle=true;
+  result=await oauth('google',{email:'rejected-google@example.test',email_verified:true});
+  assert.equal(result.status,303);
+  assert.match(result.headers.get('location'),/result=not_approved/);
+  assert.equal(applications.length,2);
+  console.log('PASS: rejected Google applicant denied after pending ends');passed++;
+  existingMicrosoft=true;
+  result=await oauth('microsoft',{tid:'tenant-synthetic',oid:'object-rejected',preferred_username:'rejected-microsoft@example.test'});
+  assert.equal(result.status,303);
+  assert.match(result.headers.get('location'),/result=not_approved/);
+  assert.equal(applications.length,2);
+  console.log('PASS: rejected Microsoft applicant denied after pending ends');passed++;
   console.log(JSON.stringify({ok:true,tests:passed}));
 }finally{globalThis.fetch=oldFetch;}

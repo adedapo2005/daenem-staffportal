@@ -16,6 +16,12 @@ new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (
   if (specifier === './staffportal-account-scope') return {
     staffPortalCompanyPredicate: () => '1=1', isStaffPortalCompanyId: () => true,
   };
+  if (specifier === './provisional-workspace-session') return {
+    createProvisionalWorkspaceSession: async () => ({
+      cookie: 'daenem_workforce_session=synthetic; Path=/; Secure; HttpOnly; SameSite=Lax',
+      next: '/workspace/', access: 'provisional',
+    }),
+  };
   throw new Error('Unexpected authentication dependency: ' + specifier);
 });
 const { routeAuthRefinement } = loaded.exports;
@@ -193,7 +199,11 @@ await check('unverified username challenge cannot reserve username from verified
     'company-print','attacker-hash','attacker-salt',1000,'unverified-code',datetime('now','+10 minutes'))`).run(base.username);
   const response = await verify(db, legitimate);
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), neutral);
+  const claimant = await response.json();
+  assert.equal(claimant.authenticated, true);
+  assert.equal(claimant.status, 'provisional');
+  assert.equal(claimant.next, '/workspace/');
+  assert.match(response.headers.get('set-cookie'), /daenem_workforce_session/);
   assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM employee_credentials WHERE username=?').get(base.username).n, 1);
   assert.equal(db.db.prepare(`SELECT COUNT(*) AS n FROM security_logs WHERE event_type='signup_verified'`).get().n, 1);
   assert.equal(db.db.prepare(`SELECT consumed_at FROM signup_verifications WHERE id='unverified-attacker'`).get().consumed_at, null);
@@ -206,7 +216,12 @@ await check('two verified claimants for one username produce one account and neu
   const second = await start(db, { ...base, firstName: 'Bea', email: 'bea@example.test' });
   const responses = await Promise.all([verify(db, first), verify(db, second)]);
   assert.deepEqual(responses.map((response) => response.status), [200, 200]);
-  assert.deepEqual(await Promise.all(responses.map((response) => response.json())), [neutral, neutral]);
+  const results = await Promise.all(responses.map((response) => response.json()));
+  assert.equal(results.filter(row => row.authenticated === true).length, 1);
+  assert.equal(results.filter(row => row.authenticated !== true).length, 1);
+  assert.ok(results.some(row => row.authenticated && row.status === 'provisional'));
+  assert.ok(results.some(row => JSON.stringify(row) === JSON.stringify(neutral)));
+  assert.equal(responses.filter(response => response.headers.has('set-cookie')).length, 1);
   assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM employee_credentials WHERE username=?').get(base.username).n, 1);
   assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM employees').get().n, 1);
   assert.equal(db.db.prepare(`SELECT COUNT(*) AS n FROM security_logs WHERE event_type='signup_verified'`).get().n, 1);

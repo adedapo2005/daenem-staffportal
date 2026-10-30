@@ -622,6 +622,42 @@ async function listRequests(request: Request, env: SpendEnv, context: SessionCon
 // using current D1 state in the SAME atomic batch as the financial write.
 // Preflight SessionContext permissions alone are insufficient if a grant is
 // revoked after request parsing but before the batch starts.
+// Match canonical session eligibility inside the transaction, including the
+// latest onboarding decision and the administrator-defined Provisional role.
+// Positive employee overrides never elevate a provisional employee.
+const spendSessionEligibilityAtWrite = `
+      AND COALESCE((
+        SELECT sr.status FROM signup_requests sr WHERE sr.employee_id=e.id
+        ORDER BY sr.created_at DESC,sr.id DESC LIMIT 1
+      ),'') NOT IN ('rejected','cancelled','expired')
+      AND (e.employment_status <> 'provisional' OR EXISTS (
+        SELECT 1 FROM employee_company_memberships pm
+        JOIN companies pc ON pc.id=pm.company_id AND pc.active=1
+        JOIN employee_roles per ON per.employee_id=e.id
+          AND per.company_id=pm.company_id AND per.role_id='role-provisional'
+        JOIN roles pr ON pr.id=per.role_id AND pr.active=1
+          AND (pr.company_id IS NULL OR pr.company_id=per.company_id)
+          AND (pr.code <> 'owner' OR pr.company_id IS NULL)
+        JOIN role_permissions prp ON prp.role_id=pr.id
+          AND prp.access_level IN ('edit','approve','manage')
+        JOIN permissions pp ON pp.id=prp.permission_id AND pp.code='profile.access'
+        WHERE pm.employee_id=e.id AND pm.active=1
+          AND NOT EXISTS (
+            SELECT 1 FROM employee_permission_overrides po
+            JOIN permissions p ON p.id=po.permission_id AND p.code='profile.access'
+            WHERE po.employee_id=e.id AND po.access_level='none'
+              AND (po.expires_at IS NULL OR datetime(po.expires_at)>datetime('now'))
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM employee_permission_overrides_v2 po
+            JOIN permissions p ON p.id=po.permission_id AND p.code='profile.access'
+            WHERE po.employee_id=e.id AND po.access_level='none'
+              AND (po.company_id IS NULL OR po.company_id=pm.company_id)
+              AND (po.expires_at IS NULL OR datetime(po.expires_at)>datetime('now'))
+          )
+      ))
+`;
+
 type SpendWriteGrant = { companyId: string; permissionCode: string; threshold: number };
 function spendScopedWriteAuthorityGate(
   env: SpendEnv, context: SessionContext, requirements: SpendWriteGrant[],
@@ -642,11 +678,13 @@ function spendScopedWriteAuthorityGate(
       JOIN companies c ON c.id=m.company_id AND c.active=1
       WHERE s.id=? AND e.id=? AND s.revoked_at IS NULL
         AND datetime(s.expires_at)>datetime('now')
+        ${spendSessionEligibilityAtWrite}
         AND COALESCE(
           (SELECT ${rank('o.access_level')}
              FROM employee_permission_overrides_v2 o
              JOIN permissions p ON p.id=o.permission_id
              WHERE o.employee_id=e.id AND p.code=?
+               AND (e.employment_status <> 'provisional' OR o.access_level='none')
                AND (o.company_id=m.company_id OR o.company_id IS NULL)
                AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
              ORDER BY CASE WHEN o.company_id IS NOT NULL THEN 0 ELSE 1 END LIMIT 1),
@@ -654,6 +692,7 @@ function spendScopedWriteAuthorityGate(
              FROM employee_permission_overrides o
              JOIN permissions p ON p.id=o.permission_id
              WHERE o.employee_id=e.id AND p.code=?
+               AND (e.employment_status <> 'provisional' OR o.access_level='none')
                AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
              LIMIT 1),
           (SELECT MAX(${rank('rp.access_level')})
@@ -663,6 +702,7 @@ function spendScopedWriteAuthorityGate(
              JOIN role_permissions rp ON rp.role_id=er.role_id
              JOIN permissions p ON p.id=rp.permission_id
              WHERE er.employee_id=e.id AND er.company_id=m.company_id
+               AND (e.employment_status <> 'provisional' OR er.role_id='role-provisional')
                AND p.code=?),
           0
         ) >= ?
@@ -847,11 +887,13 @@ const spendApprovalAtWriteAuthority = `
     JOIN companies c ON c.id=m.company_id AND c.active=1
     WHERE s.id=? AND s.employee_id=?
       AND s.revoked_at IS NULL AND datetime(s.expires_at)>datetime('now')
+      ${spendSessionEligibilityAtWrite}
       AND EXISTS (
         SELECT 1 FROM employee_roles er
         JOIN roles r ON r.id=er.role_id AND r.active=1
           AND (r.company_id IS NULL OR r.company_id=er.company_id)
         WHERE er.employee_id=e.id AND er.company_id=m.company_id
+          AND (e.employment_status <> 'provisional' OR er.role_id='role-provisional')
           AND r.code=?
       )
       AND COALESCE(
@@ -861,6 +903,7 @@ const spendApprovalAtWriteAuthority = `
          FROM employee_permission_overrides_v2 o
          JOIN permissions p ON p.id=o.permission_id
          WHERE o.employee_id=e.id AND p.code=?
+           AND (e.employment_status <> 'provisional' OR o.access_level='none')
            AND (o.company_id=m.company_id OR o.company_id IS NULL)
            AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
          ORDER BY CASE WHEN o.company_id IS NOT NULL THEN 0 ELSE 1 END LIMIT 1),
@@ -869,6 +912,7 @@ const spendApprovalAtWriteAuthority = `
             WHEN 'edit' THEN 3 WHEN 'create' THEN 2 WHEN 'view' THEN 1 ELSE 0 END
          FROM employee_permission_overrides o JOIN permissions p ON p.id=o.permission_id
          WHERE o.employee_id=e.id AND p.code=?
+           AND (e.employment_status <> 'provisional' OR o.access_level='none')
            AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
          LIMIT 1),
         (SELECT MAX(CASE rp.access_level
@@ -879,7 +923,8 @@ const spendApprovalAtWriteAuthority = `
            AND (r2.company_id IS NULL OR r2.company_id=er2.company_id)
          JOIN role_permissions rp ON rp.role_id=er2.role_id
          JOIN permissions p ON p.id=rp.permission_id
-         WHERE er2.employee_id=e.id AND er2.company_id=m.company_id AND p.code=?),
+         WHERE er2.employee_id=e.id AND er2.company_id=m.company_id AND p.code=?
+           AND (e.employment_status <> 'provisional' OR er2.role_id='role-provisional')),
         0
       ) >= 4
   )
