@@ -3,6 +3,7 @@ import { startPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 import { recoveryMethods } from './scoped-settings';
 import { WORKER_SAFE_PASSWORD_ITERATIONS } from './credential-security';
 import { createProvisionalWorkspaceSession } from './provisional-workspace-session';
+import { provisionalEnrollmentReady } from './provisional-enrollment-readiness';
 import { staffPortalCompanyPredicate } from './staffportal-account-scope';
 
 interface Env extends PasswordAuthEnv {}
@@ -56,6 +57,9 @@ async function refinedSignupStart(request:Request,env:Env){
  const emailMatchedExisting=Boolean(existing&&String(existing.email||'').trim().toLowerCase()===email);
  let company=await env.DB.prepare(`SELECT c.id,c.code FROM employee_company_memberships m JOIN companies c ON c.id=m.company_id WHERE m.employee_id=? AND m.active=1 ORDER BY m.is_primary DESC LIMIT 1`).bind(emailMatchedExisting&&existing?existing.id:'').first<{id:string;code:string}>();
  if(!company)company=requestedCompany;
+ // Validate restricted Profile Edit before sending an email OTP or reserving a
+ // new account. A disabled Provisional role is an administrator release gate.
+ if(!(await provisionalEnrollmentReady(env.DB,company.id)))return json({error:'Provisional profile access is temporarily unavailable. Please contact your administrator.',code:'PROVISIONAL_PROFILE_ACCESS_UNAVAILABLE'},503);
  await env.DB.prepare(`DELETE FROM signup_verifications WHERE lower(email)=lower(?) AND consumed_at IS NULL`).bind(email).run();
  const iterations=Number(await setting(env,'security.password_pbkdf2_iterations','310000'))||310000,salt=hex(randomBytes(16)),challengeId=uid('signup-verify'),otp=code();let derived:string,digest:string;try{derived=await passwordHash(env,password,salt,iterations);digest=await challengeHash(env,'signup',challengeId,otp)}catch(error){console.error('signup_password_preparation_failed',error instanceof Error?error.message:'unknown');return json({error:'Secure password preparation is temporarily unavailable. Please try again shortly.',code:'SIGNUP_PASSWORD_PREPARATION_FAILED'},503)}const minutes=Number(await setting(env,'security.signup_code_minutes','10'))||10,expiresAt=new Date(Date.now()+minutes*60000).toISOString();
  try{await env.DB.prepare(`INSERT INTO signup_verifications(id,existing_employee_id,display_name,first_name,last_name,email,phone,username,company_id,job_title,department,requested_role_text,password_hash,password_salt,password_iterations,code_hash,submitted_ip,submitted_user_agent,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(challengeId,emailMatchedExisting?existing?.id||null:null,displayName,firstName,lastName,email,phone||'',user,company.id,b.jobTitle||null,b.department||null,b.requestedRole||null,derived,salt,iterations,digest,ip(request),request.headers.get('user-agent'),expiresAt).run()}catch(error){console.error('signup_verification_insert_failed',error instanceof Error?error.message:'unknown');return json({error:'We could not prepare email verification. Please try again shortly.',code:'SIGNUP_VERIFICATION_INSERT_FAILED'},503)}

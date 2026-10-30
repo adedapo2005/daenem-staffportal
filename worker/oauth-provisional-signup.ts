@@ -1,3 +1,5 @@
+import { provisionalEnrollmentReady } from './provisional-enrollment-readiness';
+
 /**
  * StaffPortal-only OAuth applicant enrollment. A verified provider identity may
  * request provisional onboarding, but must never create an authenticated session
@@ -106,6 +108,9 @@ export async function provisionOAuthApplicant(
     'SELECT id FROM companies WHERE code=? AND active=1 LIMIT 1'
   ).bind(companyCode).first<{ id: string }>();
   if (!company) return 'unavailable';
+  // Never create a pending applicant that cannot open Profile Setup.
+  // Role grants are administrator-owned; this check does not elevate them.
+  if (!(await provisionalEnrollmentReady(env.DB, company.id))) return 'unavailable';
 
   if (applicant.provider === 'microsoft') {
     const linked = await env.DB.prepare(
