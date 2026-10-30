@@ -8,6 +8,7 @@ import { OfflinePlatformProvider } from './offline-sync';
 import './signin-experience.css';
 
 const ApprovedPostLoginV115 = lazy(() => import('./qa-review-v115-runtime'));
+const ProvisionalProfileWorkspace = lazy(() => import('./provisional-profile-workspace'));
 
 const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v18-live-signin-restoration';
 
@@ -70,6 +71,12 @@ function Root() {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
   }} />;
+  if (auth.context.employee.status === 'provisional') {
+    return <Suspense fallback={<LoadingScreen />}>
+      <ProvisionalProfileWorkspace context={auth.context}
+        onLogout={auth.logout} onRefresh={auth.refresh} />
+    </Suspense>;
+  }
   return (
     <OfflinePlatformProvider context={auth.context}>
       <Suspense fallback={<LoadingScreen />}>

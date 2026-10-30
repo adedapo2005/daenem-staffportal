@@ -17,6 +17,7 @@ try{
     const page=await context.newPage();
     const errors=[],traffic=[];
     let verified=false;
+    let savedProfile=null;
     page.on('pageerror',error=>errors.push(error.message));
     await page.route('**/api/**',async route=>{
       const request=route.request();
@@ -50,6 +51,17 @@ try{
       else if(pathname==='/api/auth/signup/whatsapp/verify')payload={
         ok:true,phoneVerified:true,next:'email_verification_required',
       };
+      else if(pathname==='/api/profile/mine' && request.method()==='GET'){
+        payload={profile:{
+          id:'synthetic-provisional',displayName:'Ada Okon',firstName:'Ada',lastName:'Okon',
+          email:'ada@example.test',phone:'',jobTitle:'',department:'',
+          status:'provisional',completionPercent:60,
+        },workplace:{locationName:'Synthetic Workplace'}};
+      }
+      else if(pathname==='/api/profile/mine' && request.method()==='POST'){
+        savedProfile=body;
+        payload={ok:true,completionPercent:75,completed:false};
+      }
       else if(pathname==='/api/auth/signup/verify'){
         if(body.code!=='123456'){
           status=401;payload={error:'Incorrect email verification code'};
@@ -105,7 +117,19 @@ try{
       await emailCode.fill('123456');
       await page.locator('.usp-auth-form button[type="submit"]').last().click();
       await page.waitForURL(url=>url.pathname==='/workspace/',{timeout:15000});
+      await page.getByRole('heading',{name:'Your Profile Setup'}).waitFor({timeout:15000});
       assert.equal(verified,true);
+      assert.ok((await page.locator('body').innerText()).includes('Pending Management Approval'));
+      assert.equal(await page.getByText('Full Employee Access').count(),1);
+      assert.equal(await page.getByText('Awaiting Approval').count(),1);
+      await page.getByRole('textbox',{name:'First Name'}).fill('Adaeze');
+      await page.getByRole('textbox',{name:'Last Name'}).fill('Okon');
+      await page.getByRole('button',{name:/Save Profile/i}).click();
+      await page.getByText(/Your profile was saved/i).waitFor({timeout:10000});
+      assert.equal(savedProfile.firstName,'Adaeze');
+      assert.equal(savedProfile.lastName,'Okon');
+      assert.equal(await page.getByRole('progressbar',{name:'Profile Completion'}).getAttribute('aria-valuenow'),'75');
+      console.log('PASS: Authenticated Provisional Workspace renders and saves profile without management approval');
       assert.equal(traffic.filter(t=>t.path==='/api/auth/signup/verify').length,2);
       assert.equal(errors.length,0,'browser page errors '+errors.join('; '));
       console.log('PASS: '+(assistedByWhatsApp?'WhatsApp-assisted':'Local')+
