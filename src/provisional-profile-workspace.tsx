@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ArrowRight, BadgeCheck, Building2, CheckCircle2, Clock3,
   LockKeyhole, LogOut, Mail, Phone, RefreshCcw, Save, ShieldCheck, UserRound,
@@ -45,35 +45,41 @@ export default function ProvisionalProfileWorkspace({
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const profileLoadRequest = useRef(0);
 
   const profilePermission = context.permissions['profile.access'] || 'none';
   const canEdit = ['edit', 'approve', 'manage'].includes(profilePermission) &&
     context.roles.some(role => role.code === 'provisional');
   const company = context.companies.find(item => item.primary) || context.companies[0];
 
-  useEffect(() => {
-    let active = true;
+  const loadProfile = useCallback(async () => {
+    const request = ++profileLoadRequest.current;
     setLoading(true);
     setFeedback(null);
-    void api<ProfileResponse>('/api/profile/mine')
-      .then(data => {
-        if (!active) return;
-        setRecord(data.profile);
-        setFirstName(data.profile.firstName || '');
-        setLastName(data.profile.lastName || '');
-        setPhone(data.profile.phone || '');
-        setWorkplace(data.workplace);
-      })
-      .catch(error => {
-        if (!active) return;
-        setFeedback({
-          kind: 'error',
-          text: error instanceof Error ? error.message : 'Your profile could not be loaded.',
-        });
-      })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    try {
+      const data = await api<ProfileResponse>('/api/profile/mine');
+      if (request !== profileLoadRequest.current) return;
+      setRecord(data.profile);
+      setFirstName(data.profile.firstName || '');
+      setLastName(data.profile.lastName || '');
+      setPhone(data.profile.phone || '');
+      setWorkplace(data.workplace);
+    } catch (error) {
+      if (request !== profileLoadRequest.current) return;
+      setRecord(null);
+      setFeedback({
+        kind: 'error',
+        text: error instanceof Error ? error.message : 'Your profile could not be loaded.',
+      });
+    } finally {
+      if (request === profileLoadRequest.current) setLoading(false);
+    }
   }, [context.employee.id]);
+
+  useEffect(() => {
+    void loadProfile();
+    return () => { profileLoadRequest.current += 1; };
+  }, [loadProfile]);
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -219,8 +225,17 @@ export default function ProvisionalProfileWorkspace({
                 </form>
               </>
             ) : (
-              <p className="dsp-provisional-helper">Profile setup is currently unavailable.
-                You can refresh your access or contact your administrator.</p>
+              <div className="dsp-provisional-load-failure">
+                {feedback && <p className="dsp-provisional-feedback is-error" role="alert">
+                  <ShieldCheck size={18} /> {feedback.text}
+                </p>}
+                <p className="dsp-provisional-helper">Profile setup is currently unavailable.
+                  Retry loading your profile before contacting your administrator.</p>
+                <button className="dsp-provisional-refresh" type="button"
+                  onClick={() => void loadProfile()} disabled={loading}>
+                  <RefreshCcw size={16} /> Retry Profile Load
+                </button>
+              </div>
             )}
           </section>
 
