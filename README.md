@@ -1,16 +1,12 @@
-# Daenem Workforce Hub
+# Daenem Staff Portal
 
 Private, multi-company employee ERP for Daenem Group.
-
-Target domain: `staffportal.daenem.com`
-
-> Temporary staging note: this subtree is isolated on the `workforce-hub-bootstrap` branch because the currently connected GitHub action does not expose repository creation. It must not be merged into Farms production. When the dedicated private repository `daenem-workforce-hub` is created, this subtree should be migrated there and this staging branch can be removed.
 
 ## Product principles
 
 - One workforce platform, many Daenem companies.
 - Company + role + permission + individual override controls access.
-- Preserve useful non-farm capabilities from `portal.farms.daenem.com`; remove farm operations and farm terminology.
+- Keep the Staff Portal repository strictly separate from Farms and exclude all farm operations, farm data, and farm infrastructure.
 - Mobile-first, tablet-aware, desktop-optimized.
 - Offline-first PWA with automatic sync and conflict/audit records.
 - Distinctive UI that does not look like the Farms portal.
@@ -110,12 +106,33 @@ Emergency broadcasts can target the entire group, a company, location, departmen
 ## Initial Cloudflare architecture
 
 - React + Vite
-- Cloudflare Workers + official Cloudflare Vite plugin
+- Cloudflare Pages frontend + dedicated Cloudflare API Worker
 - Cloudflare D1 migrations
 - Cloudflare R2 for documents/photos/evidence
 - Workers AI binding
 - PWA/offline queue
 - Later native Android layer for approved background location/geofencing
+
+## Dedicated infrastructure (Phase 1)
+
+This repository is now the authoritative private source for Staff Portal. It
+does not deploy through the legacy shared repository.
+
+- GitHub: `adedapo2005/daenem-staffportal`
+- Cloudflare Pages: `daenem-staffportal-pages`
+- Pages build command: `npm ci && npm run build`
+- Pages output: `dist/client`
+- Dedicated API Worker: `daenem-staffportal-api`
+- API route: `staffportal.daenem.com/api/*`
+- API requests use same-origin `/api/...` paths.
+- Pages and Worker deployment workflows are manual and production-gated.
+- No production DNS, route, resource, or database migration is performed by
+  this source-preparation phase.
+
+The current Worker data bindings remain traceability placeholders until direct
+Cloudflare inventory proves Staff-Portal exclusivity or dedicated resources
+are provisioned. Database migrations are not applied by CI or deployment
+workflows.
 
 ## Bootstrap milestone
 
@@ -127,4 +144,4 @@ This first milestone establishes:
 4. D1 core data model for tenancy, RBAC, security, audit, attendance, tracking, payroll, forms, broadcasts and facilities.
 5. Worker API bootstrap and AI help endpoint foundation.
 
-No Farms production files are modified by this subtree.
+Farms is permanently excluded from this repository and its deployment infrastructure.

@@ -111,3 +111,24 @@ export function weatherConditionLabel(condition: WeatherCondition): string {
 export function weatherMotionEnabled(condition: WeatherCondition): boolean {
   return condition !== 'UNKNOWN' && condition !== 'UNAVAILABLE';
 }
+
+
+export type WeatherTruthState = 'READY' | 'UNKNOWN' | 'UNAVAILABLE';
+
+export function normalizeWeatherTruthState(value?: string | null): WeatherTruthState {
+  const condition = normalizeWeatherCondition(value);
+  if (condition === 'UNAVAILABLE') return 'UNAVAILABLE';
+  if (condition === 'UNKNOWN') return 'UNKNOWN';
+  return 'READY';
+}
+
+export function resolveWeatherVisualState(
+  value?: string | null,
+  truthState?: WeatherTruthState,
+): { condition: WeatherCondition; state: WeatherTruthState } {
+  const condition = normalizeWeatherCondition(value);
+  const state = truthState ?? normalizeWeatherTruthState(value);
+  if (state === 'UNAVAILABLE') return { condition: 'UNAVAILABLE', state };
+  if (state === 'UNKNOWN') return { condition: 'UNKNOWN', state };
+  return { condition, state: 'READY' };
+}

@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -15,8 +19,18 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["@cloudflare/workers-types"]
+    "types": [
+      "@cloudflare/workers-types"
+    ]
   },
-  "include": ["src", "worker", "vite.config.ts"],
-  "exclude": ["src/bakery.tsx", "src/bakery-entry.tsx"]
+  "include": [
+    "src",
+    "worker",
+    "vite.config.ts",
+    "vite.pages.config.ts"
+  ],
+  "exclude": [
+    "src/bakery.tsx",
+    "src/bakery-entry.tsx"
+  ]
 }

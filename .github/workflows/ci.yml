@@ -1,0 +1,52 @@
+name: Staff Portal CI
+env:
+  STAFFPORTAL_DIFF_BASE: ${{ github.event.pull_request.base.sha || github.sha }}
+
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staffportal-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Typecheck, Pages build, and API dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Staff Portal
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate active infrastructure boundary
+        run: npm run check:infrastructure-boundary
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build Pages artifact
+        run: npm run build
+
+      - name: Verify Pages output
+        shell: bash
+        run: test -f dist/client/index.html
+
+      - name: Validate API Worker without deployment
+        run: npx wrangler deploy --dry-run --outdir=/tmp/daenem-staffportal-worker-dry-run --config wrangler.jsonc

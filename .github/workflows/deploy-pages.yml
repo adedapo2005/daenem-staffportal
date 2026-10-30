@@ -1,0 +1,51 @@
+name: Staff Portal Pages Deployment
+env:
+  STAFFPORTAL_DIFF_BASE: ${{ github.event.pull_request.base.sha || github.sha }}
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type DEPLOY_STAFFPORTAL_PAGES to authorize this manual Pages deployment
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-pages:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY_STAFFPORTAL_PAGES'
+    runs-on: ubuntu-latest
+    environment: staffportal-pages-production
+    steps:
+      - name: Checkout Staff Portal
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate active infrastructure boundary
+        run: npm run check:infrastructure-boundary
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build Pages artifact
+        run: npm run build
+
+      - name: Deploy only Staff Portal Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/client --project-name=daenem-staffportal-pages --branch=main
