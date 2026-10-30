@@ -19,7 +19,7 @@ const financeJournalWriteGate=(context:SessionContext,companyId:string,minimum:'
     JOIN companies business ON business.id=m.company_id AND business.active=1
     WHERE s.id=? AND s.employee_id=? AND s.revoked_at IS NULL
       AND datetime(s.expires_at)>datetime('now')
-      AND actor.employment_status IN ('active','provisional')
+      AND actor.employment_status='active'
       AND COALESCE(
         (SELECT ${financeJournalLevelSql('o.access_level')}
          FROM employee_permission_overrides_v2 o

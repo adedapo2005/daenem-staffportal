@@ -189,5 +189,45 @@ check(scalar("SELECT COUNT(*) n FROM navigation_access_changes WHERE item_key='a
   && scalar("SELECT COUNT(*) n FROM audit_logs WHERE action='workspace_assignment'").n === oldAdminAudit + 1,
   'authorized Owner administration history and audit commit atomically');
 
+// Regression: a cached, previously privileged actor must lose finance /
+// navigation write authority immediately upon Active -> Provisional demotion.
+const demotionHistory = scalar("SELECT COUNT(*) n FROM navigation_access_changes").n;
+const demotionAudit = scalar("SELECT COUNT(*) n FROM audit_logs").n;
+const demotionGrant = scalar("SELECT access_level FROM role_permissions WHERE role_id='role-worker' AND permission_id='p-printing'").access_level;
+beforeBatchHook = () => sqlite.exec("UPDATE employees SET employment_status='provisional' WHERE id='employee-owner'");
+response = await call('/api/navigation/assign', {
+  companyId:'company-printing',targetType:'role',targetId:'role-worker',
+  itemKey:'printing',accessLevel:'edit',reason:'Provisional demotion before grant write',
+});
+check(response.status === 409, 'Provisional demotion blocks cached Owner role assignment at write');
+check(scalar("SELECT COUNT(*) n FROM navigation_access_changes").n === demotionHistory
+  && scalar("SELECT COUNT(*) n FROM audit_logs").n === demotionAudit
+  && scalar("SELECT access_level FROM role_permissions WHERE role_id='role-worker' AND permission_id='p-printing'").access_level === demotionGrant,
+  'Demoted role actor leaves grant, change history and audit unchanged');
+sqlite.exec("UPDATE employees SET employment_status='active' WHERE id='employee-owner'");
+
+const demotionPolicy = scalar("SELECT setting_value FROM app_settings WHERE setting_key='navigation.default_style'").value;
+beforeBatchHook = () => sqlite.exec("UPDATE employees SET employment_status='provisional' WHERE id='employee-owner'");
+response = await call('/api/navigation/policy', { defaultStyle:'guided-groups' });
+check(response.status === 409, 'Provisional demotion blocks cached Group Owner policy at write');
+check(scalar("SELECT setting_value FROM app_settings WHERE setting_key='navigation.default_style'").value === demotionPolicy
+  && scalar("SELECT COUNT(*) n FROM audit_logs").n === demotionAudit,
+  'Demoted Group Owner cannot change policy or write an audit');
+sqlite.exec("UPDATE employees SET employment_status='active' WHERE id='employee-owner'");
+
+// Nonprivileged personal navigation preference remains available to provisional staff.
+beforeBatchHook = () => sqlite.exec("UPDATE employees SET employment_status='provisional' WHERE id='employee-owner'");
+response = await call('/api/navigation/preference', { itemOrder:['printing'] });
+check(response.status === 200, 'Provisional self-service navigation preference remains permitted');
+sqlite.exec("UPDATE employees SET employment_status='active' WHERE id='employee-owner'");
+
+// Finance journal create/post uses the same active-only live write authority.
+// Actual Finance Workerd/D1 demotion cases are verified in the isolated QA receipt.
+const financeCode = fs.readFileSync(path.resolve('worker/finance.ts'),'utf8');
+const financeGate = financeCode.slice(financeCode.indexOf('const financeJournalWriteGate='),financeCode.indexOf('const cents='));
+check(financeGate.includes("actor.employment_status='active'")
+  && !financeGate.includes("actor.employment_status IN ('active','provisional')"),
+  'Finance Journal at-write grant excludes Provisional employment status');
+
 console.log(`PASS navigation workspace mutation/audit atomicity (${checks} assertions; actual Worker module + disposable SQLite)`);
 sqlite.close();

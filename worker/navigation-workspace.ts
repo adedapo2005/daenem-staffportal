@@ -182,7 +182,9 @@ const navigationLiveActorSql = `EXISTS (
 
 const navigationLiveGroupOwnerSql = `EXISTS (
  SELECT 1 FROM employee_roles assigned
- JOIN roles role ON role.id=assigned.role_id AND role.code='owner' AND role.active=1
+ JOIN employees owner_actor ON owner_actor.id=assigned.employee_id
+    AND owner_actor.employment_status='active'
+  JOIN roles role ON role.id=assigned.role_id AND role.code='owner' AND role.active=1
    AND (role.company_id IS NULL OR role.company_id=assigned.company_id)
  JOIN employee_company_memberships membership
    ON membership.employee_id=assigned.employee_id
@@ -360,7 +362,7 @@ function navigationAssignmentAtWriteGuard(
       AND member.company_id=business.id AND member.active=1
     WHERE session.id=? AND session.employee_id=?
       AND session.revoked_at IS NULL AND datetime(session.expires_at)>datetime('now')
-      AND actor.employment_status IN ('active','provisional')
+      AND actor.employment_status='active'
       AND EXISTS(
         SELECT 1 FROM permissions permission
         WHERE permission.code IN ('navigation.assign','roles.access','users.access')
