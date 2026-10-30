@@ -69,15 +69,35 @@ try {
         ['/terms-and-conditions.html', '/privacy-policy.html']);
       assert.ok(links.every(link => link.target === '_blank' &&
         link.rel.includes('noopener')));
+      if (viewport.name === 'Desktop-1366') {
+        for (const [href,heading] of [
+          ['/terms-and-conditions.html','Terms & Conditions'],
+          ['/privacy-policy.html','Privacy Policy'],
+        ]) {
+          const popupPromise = context.waitForEvent('page', { timeout: 12000 });
+          await page.locator('.sp-terms-consent a[href="'+href+'"]:visible').click();
+          const policyTab = await popupPromise;
+          await policyTab.waitForLoadState('domcontentloaded');
+          assert.equal(new URL(policyTab.url()).pathname, href,
+            'Legal link must open the correct document');
+          assert.equal(await policyTab.getByRole('heading',{name:heading}).count(), 1);
+          assert.equal(await checkbox.isChecked(), false,
+            'Opening the legal text must not silently imply acceptance');
+          await policyTab.close();
+        }
+      }
 
-            await page.locator('.sp-auth-form input[type="text"]').fill('staff@example.test');
+      await page.locator('.sp-auth-form input[type="text"]').fill('staff@example.test');
       await page.locator('.sp-auth-form input[type="password"]').fill('SomePassword123!');
       await page.locator('.sp-auth-form button[type="submit"]').click();
       assert.equal(loginAttempts, 0, 'Unchecked Terms must block password authentication');
       assert.ok((await page.locator('.sp-terms-consent-error').innerText()).includes('Accept'));
 
       await page.locator('.sp-social-button').filter({ hasText: 'Google' }).click();
-      assert.equal(oauthAttempts, 0, 'Unchecked Terms must block provider authentication');
+      await page.locator('.sp-social-button').filter({ hasText: 'Microsoft' }).click();
+      await page.locator('.sp-social-button').filter({ hasText: 'WhatsApp' }).click();
+      assert.equal(oauthAttempts, 0, 'Unchecked Terms must block Google and Microsoft OAuth');
+      assert.equal(loginAttempts, 0, 'Unchecked Terms must block WhatsApp login requests');
       assert.equal(new URL(page.url()).pathname, '/');
 
       const signinGeometry = await page.evaluate(() => {
