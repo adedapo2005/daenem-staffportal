@@ -21,6 +21,11 @@ const enhanced=load('../worker/auth-context-v2.ts',name=>{
   assert.equal(name,'./auth');
   return auth;
 });
+const profile=load('../worker/profile-management.ts',name=>{
+  if(name==='./auth')return auth;
+  if(name==='./weather-provider')return {readGoogleWeather:async()=>({providerStatus:'unavailable',data:null})};
+  throw Error('Unexpected profile dependency '+name);
+});
 const core=readFileSync(new URL('../migrations/0001_core.sql',import.meta.url),'utf8');
 const identity=readFileSync(new URL('../migrations/0002_identity_auth.sql',import.meta.url),'utf8');
 function ddl(source,name){
@@ -43,6 +48,14 @@ class D1{
     this.db.exec(`CREATE TABLE employee_permission_overrides_v2(
       id TEXT PRIMARY KEY,employee_id TEXT,company_id TEXT,permission_id TEXT,
       access_level TEXT,expires_at TEXT);
+      ALTER TABLE employees ADD COLUMN first_name TEXT;
+      ALTER TABLE employees ADD COLUMN last_name TEXT;
+      ALTER TABLE employees ADD COLUMN profile_completion_percent INTEGER DEFAULT 0;
+      ALTER TABLE employees ADD COLUMN profile_completed_at TEXT;
+      CREATE TABLE profile_completion_events(
+        id TEXT PRIMARY KEY,employee_id TEXT,actor_employee_id TEXT,
+        event_type TEXT,completion_percent INTEGER,message TEXT
+      );
     `);
     this.db.exec(`
       INSERT INTO companies(id,code,name,business_type,active)
@@ -134,6 +147,31 @@ await check('Verified local applicant receives authenticated provisional session
   const enhancedCtx=await enhanced.getEnhancedSessionContext(request(limited.cookie.split(';')[0]),db.env);
   assert.ok(enhancedCtx);
   assert.equal(enhanced.hasCompanyPermission(enhancedCtx,'company-printing','payroll.access'),false);
+  db.close();
+});
+await check('Provisional applicant can submit real profile details without employee promotion',async()=>{
+  const db=new D1();
+  const limited=await issue.createProvisionalWorkspaceSession(request(),db.env,'employee-new','local');
+  assert.ok(limited);
+  const context=await auth.getSessionContext(request(limited.cookie.split(';')[0]),db.env);
+  assert.ok(context);
+  const response=await profile.routeProfileManagement(new Request('https://staffportal.test/api/profile/mine',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({firstName:'Ada',lastName:'Okon',phone:'+2348012345678'}),
+  }),db.env,context);
+  assert.equal(response.status,200);
+  const body=await response.json();
+  assert.equal(body.ok,true);
+  assert.equal(body.completionPercent,75);
+  const row=db.db.prepare('SELECT first_name,last_name,phone,employment_status FROM employees WHERE id=?')
+    .get('employee-new');
+  assert.equal(row.first_name,'Ada');
+  assert.equal(row.last_name,'Okon');
+  assert.equal(row.phone,'+2348012345678');
+  assert.equal(row.employment_status,'provisional');
+  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM profile_completion_events').get().n,1);
+  assert.equal(await auth.getSessionContext(request(limited.cookie.split(';')[0]),db.env)
+    .then(ctx=>auth.hasPermission(ctx,'payroll.access','view')),false);
   db.close();
 });
 await check('Verified WhatsApp-assisted applicant receives the same provisional role',async()=>{
