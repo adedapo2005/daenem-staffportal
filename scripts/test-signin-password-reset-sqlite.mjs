@@ -148,6 +148,54 @@ await check('Owner recovery stays eligible through the shared route and cannot r
   assert.equal(offboarded.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
 });
 
+await check('Owner recovery requires an active canonical role assigned inside Account A at preflight and write', async () => {
+  const outside = "INSERT INTO companies(id,code,name,business_type) VALUES('company-external','EXT','External','other')";
+  const cases = [
+    ['external assignment', (database) => {
+      database.prepare(outside).run();
+      database.prepare("UPDATE employee_roles SET company_id='company-external' WHERE employee_id='employee-a'").run();
+    }],
+    ['inactive assignment company', (database) => database.prepare("UPDATE companies SET active=0 WHERE id='company-printing'").run()],
+    ['inactive canonical role', (database) => database.prepare("UPDATE roles SET active=0 WHERE id='role-owner'").run()],
+  ];
+  for (const [name, revoke] of cases) {
+    const before = new SqliteD1({ owner: true });
+    revoke(before.database);
+    assert.equal((await invoke(before)).status, 401, `${name} preflight`);
+    assert.equal(before.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
+
+    const during = new SqliteD1({ owner: true, beforeBatch: revoke });
+    assert.notEqual((await invoke(during)).status, 200, `${name} at write`);
+    assert.equal(during.scalar("SELECT consumed_at FROM password_reset_challenges WHERE id='reset-a'").consumed_at, null);
+    assert.equal(during.scalar("SELECT password_hash FROM employee_credentials WHERE employee_id='employee-a'").password_hash, 'old-hash');
+    assert.equal(during.scalar("SELECT COUNT(*) AS count FROM security_logs WHERE employee_id='employee-a' AND result='success'").count, 0);
+  }
+});
+
+await check('credentialless Owner recovery initiation rejects an external or inactive role assignment', async () => {
+  const forgot = () => new Request('https://staffportal.test/api/auth/password/forgot', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ identifier: 'ada@example.test' }),
+  });
+  const valid = new SqliteD1({ credential: false, owner: true });
+  valid.env.APP_STAGE = 'bootstrap';
+  assert.equal((await routeAuthRefinement(forgot(), valid.env)).status, 200);
+  assert.equal(valid.scalar("SELECT COUNT(*) AS count FROM password_reset_challenges WHERE employee_id='employee-a'").count, 2);
+
+  for (const revoke of [
+    (database) => {
+      database.prepare("INSERT INTO companies(id,code,name,business_type) VALUES('company-external','EXT','External','other')").run();
+      database.prepare("UPDATE employee_roles SET company_id='company-external' WHERE employee_id='employee-a'").run();
+    },
+    (database) => database.prepare("UPDATE roles SET active=0 WHERE id='role-owner'").run(),
+  ]) {
+    const denied = new SqliteD1({ credential: false, owner: true });
+    denied.env.APP_STAGE = 'bootstrap';
+    revoke(denied.database);
+    assert.equal(await routeAuthRefinement(forgot(), denied.env), null);
+    assert.equal(denied.scalar("SELECT COUNT(*) AS count FROM password_reset_challenges WHERE employee_id='employee-a'").count, 1);
+  }
+});
+
 await check('credentialless employee reset activates the current grant and writes audit in the same SQLite transaction', async () => {
   const fixture = new SqliteD1({ credential: false });
   assert.equal((await invoke(fixture)).status, 200);
