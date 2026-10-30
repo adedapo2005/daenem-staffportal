@@ -890,7 +890,7 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
 
 async function recoveryPolicyForCompany(env:PasswordAuthEnv,companyCode:string){
   const company=await env.DB.prepare(
-    "SELECT id,code,name FROM companies WHERE active=1 AND lower(code)=lower(?) AND lower(name) NOT LIKE '%farm%' LIMIT 1",
+    `SELECT co.id,co.code,co.name FROM companies co WHERE co.active=1 AND lower(co.code)=lower(?) AND ${staffPortalCompanyPredicate('co.id')} LIMIT 1`,
   ).bind(companyCode).first<{id:string;code:string;name:string}>();
   if(!company)return null;
   const resolved=await resolveScopedSetting(env,RECOVERY_SETTING_KEY,company.id,'email');
