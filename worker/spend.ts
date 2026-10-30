@@ -86,11 +86,12 @@ function roleAssignedForCompany(context: SessionContext, roleCode: string, compa
 }
 
 function approvalPermissionSatisfied(context: SessionContext, requiredPermission: string, companyId: string) {
-  return owner(context) || hasPermission(context, requiredPermission, 'approve', companyId);
+  return hasPermission(context, requiredPermission, 'approve', companyId);
 }
 
 function can(context: SessionContext, code: string, level: 'view' | 'create' | 'edit' | 'approve' | 'manage', companyId?: string) {
-  return owner(context) || hasPermission(context, code, level, companyId);
+  // Owner identity is not an implicit company-specific Spend entitlement.
+  return hasPermission(context, code, level, companyId);
 }
 
 function error(message: string, status = 400, extra: Record<string, unknown> = {}) {
@@ -389,11 +390,15 @@ async function allocationRows(env: SpendEnv, context: SessionContext, companyId:
     if (safeText(body.allocationOverrideReason, 1000).length < 3) return { error: 'Explain why the approved allocation template is being overridden.' };
   }
   const destinations = supplied.map((row) => safeText(row.companyId, 160));
-  const destinationAllowed = owner(context) || can(context, 'expense.allocations', 'manage');
-  const activeCompanies = destinationAllowed
-    ? await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()
-    : { results: context.companies.map((company) => ({ id: company.id })) };
-  const allowed = new Set((activeCompanies.results || []).map((row) => row.id));
+  // Cross-company allocation is not implicitly authorized by Group Owner
+  // identity or by a grant restricted to the source company. Each beneficiary
+  // needs a currently assigned membership AND its own allocation management
+  // permission. Unapproved Group allocation rights are never inferred.
+  if (!can(context, 'expense.allocations', 'manage', companyId))
+    return { error: 'The source company allocation permission is not assigned.' };
+  const allowed = new Set(context.companies
+    .filter((company) => can(context, 'expense.allocations', 'manage', company.id))
+    .map((company) => company.id));
   if (destinations.some((destination) => !allowed.has(destination))) return { error: 'One or more beneficiary companies are outside your authorized scope.' };
   if (new Set(destinations).size !== destinations.length) return { error: 'Each beneficiary company may appear only once.' };
   const calculated = allocationAmounts(method, amount, supplied);
@@ -461,7 +466,7 @@ async function requestById(env: SpendEnv, id: string) {
 }
 
 async function pendingApprovalForViewer(env: SpendEnv, context: SessionContext, requestIdValue: string, companyId: string) {
-  if (owner(context) || !companyInScope(context, companyId)) return false;
+  if (!companyInScope(context, companyId)) return false;
   const pending = await env.DB.prepare(`
     SELECT a.approver_role_code AS approverRoleCode,COALESCE(r.required_permission,'expense.approve') AS requiredPermission
     FROM spend_expense_approvals a
@@ -477,10 +482,14 @@ async function pendingApprovalForViewer(env: SpendEnv, context: SessionContext, 
 async function visibleRequest(env: SpendEnv, context: SessionContext, row: Record<string, unknown>) {
   const companyId = String(row.companyId || '');
   if (!companyInScope(context, companyId)) return false;
-  if (owner(context)) return true;
-  if (String(row.requesterEmployeeId) === context.employee.id && can(context, 'expense.own', 'view', companyId)) return true;
-  if (['submitted', 'reviewed'].includes(String(row.status || ''))) return pendingApprovalForViewer(env, context, String(row.id), companyId);
-  return can(context, 'expense.review', 'view', companyId);
+  if (hasPermission(context, 'expense.review', 'view', companyId)) return true;
+  if (String(row.requesterEmployeeId) === context.employee.id &&
+      (hasPermission(context, 'expense.own', 'view', companyId) ||
+       hasPermission(context, 'expense.requests', 'view', companyId) ||
+       hasPermission(context, 'expense.requests', 'create', companyId))) return true;
+  if (['submitted', 'reviewed'].includes(String(row.status || '')))
+    return pendingApprovalForViewer(env, context, String(row.id), companyId);
+  return false;
 }
 
 function safeOwnerAuditDetails(value: unknown) {
@@ -534,32 +543,56 @@ async function serializeRequest(env: SpendEnv, context: SessionContext, row: Rec
 async function listRequests(request: Request, env: SpendEnv, context: SessionContext) {
   const url = new URL(request.url);
   const companyId = safeText(url.searchParams.get('companyId'), 160);
-  const scopedCompanyIds = owner(context)
-    ? ((await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()).results || []).map((row) => row.id)
-    : context.companies.map((company) => company.id);
+  // Ordinary Spend listings require both live company membership and a
+  // domain entitlement. Owner status never supplies either implicitly.
+  const scopedCompanyIds = context.companies
+    .filter((company) =>
+      hasPermission(context, 'expense.own', 'view', company.id) ||
+      hasPermission(context, 'expense.requests', 'view', company.id) ||
+      hasPermission(context, 'expense.requests', 'create', company.id) ||
+      hasPermission(context, 'expense.review', 'view', company.id) ||
+      hasPermission(context, 'expense.approve', 'approve', company.id))
+    .map((company) => company.id);
   if (companyId && !scopedCompanyIds.includes(companyId)) return error('Company access is not assigned.', 403);
-  const reviewCompanyIds = owner(context)
-    ? scopedCompanyIds
-    : context.companies.filter((company) => can(context, 'expense.review', 'view', company.id)).map((company) => company.id);
+  const reviewCompanyIds = context.companies
+    .filter((company) => hasPermission(context, 'expense.review', 'view', company.id))
+    .map((company) => company.id);
+  // Approval-only actors can discover a currently pending, role-matched
+  // request without gaining all company expenses or the review permission.
+  const approvalCompanyIds = context.companies
+    .filter((company) => hasPermission(context, 'expense.approve', 'approve', company.id))
+    .map((company) => company.id);
   const bindings: unknown[] = [];
   const conditions: string[] = [];
   if (companyId) {
     conditions.push('r.company_id=?');
     bindings.push(companyId);
     if (!reviewCompanyIds.includes(companyId)) {
-      conditions.push('r.requester_employee_id=?');
+      if (approvalCompanyIds.includes(companyId)) {
+        conditions.push(`(r.requester_employee_id=? OR (r.status IN ('submitted','reviewed') AND EXISTS
+          (SELECT 1 FROM spend_expense_approvals a WHERE a.expense_request_id=r.id AND a.status='pending')))`);
+      } else {
+        conditions.push('r.requester_employee_id=?');
+      }
       bindings.push(context.employee.id);
     }
   } else if (scopedCompanyIds.length) {
     conditions.push(`r.company_id IN (${scopedCompanyIds.map(() => '?').join(',')})`);
     bindings.push(...scopedCompanyIds);
-    if (reviewCompanyIds.length && !owner(context)) {
-      conditions.push(`(r.company_id IN (${reviewCompanyIds.map(() => '?').join(',')}) OR r.requester_employee_id=?)`);
-      bindings.push(...reviewCompanyIds, context.employee.id);
-    } else if (!owner(context)) {
-      conditions.push('r.requester_employee_id=?');
-      bindings.push(context.employee.id);
+    const visibleConditions = ['r.requester_employee_id=?'];
+    const visibleBindings: unknown[] = [context.employee.id];
+    if (reviewCompanyIds.length) {
+      visibleConditions.push(`r.company_id IN (${reviewCompanyIds.map(() => '?').join(',')})`);
+      visibleBindings.push(...reviewCompanyIds);
     }
+    if (approvalCompanyIds.length) {
+      visibleConditions.push(`(r.company_id IN (${approvalCompanyIds.map(() => '?').join(',')})
+        AND r.status IN ('submitted','reviewed') AND EXISTS
+        (SELECT 1 FROM spend_expense_approvals a WHERE a.expense_request_id=r.id AND a.status='pending'))`);
+      visibleBindings.push(...approvalCompanyIds);
+    }
+    conditions.push(`(${visibleConditions.join(' OR ')})`);
+    bindings.push(...visibleBindings);
   } else return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), requests: [] });
   const rows = await env.DB.prepare(`
     SELECT r.id,r.request_no AS requestNo,r.requester_employee_id AS requesterEmployeeId,e.display_name AS requesterName,
@@ -575,10 +608,105 @@ async function listRequests(request: Request, env: SpendEnv, context: SessionCon
     ORDER BY r.updated_at DESC LIMIT 100
   `).bind(...bindings).all<Record<string, unknown>>();
   const visibleRows = await Promise.all((rows.results || []).map(async (row) => {
-    if (owner(context) || String(row.requesterEmployeeId) === context.employee.id || !['submitted', 'reviewed'].includes(String(row.status || ''))) return row;
-    return await pendingApprovalForViewer(env, context, String(row.id), String(row.companyId || '')) ? row : null;
+    const rowCompanyId = String(row.companyId || '');
+    if (reviewCompanyIds.includes(rowCompanyId) ||
+        String(row.requesterEmployeeId) === context.employee.id) return row;
+    if (['submitted', 'reviewed'].includes(String(row.status || '')) &&
+        await pendingApprovalForViewer(env, context, String(row.id), rowCompanyId)) return row;
+    return null;
   }));
   return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), requests: visibleRows.filter((row): row is Record<string, unknown> => Boolean(row)) });
+}
+
+// Source request creation AND every shared allocation destination are checked
+// using current D1 state in the SAME atomic batch as the financial write.
+// Preflight SessionContext permissions alone are insufficient if a grant is
+// revoked after request parsing but before the batch starts.
+type SpendWriteGrant = { companyId: string; permissionCode: string; threshold: number };
+function spendScopedWriteAuthorityGate(
+  env: SpendEnv, context: SessionContext, requirements: SpendWriteGrant[],
+): D1PreparedStatement {
+  const clauses: string[] = [];
+  const bindings: unknown[] = [];
+  const rank = (field: string) =>
+    `(CASE ${field}
+      WHEN 'manage' THEN 5 WHEN 'approve' THEN 4 WHEN 'edit' THEN 3
+      WHEN 'create' THEN 2 WHEN 'view' THEN 1 ELSE 0 END)`;
+  const add = (companyId: string, permissionCode: string, threshold: number) => {
+    clauses.push(`EXISTS (
+      SELECT 1 FROM auth_sessions s
+      JOIN employees e ON e.id=s.employee_id
+        AND e.employment_status IN ('active','provisional')
+      JOIN employee_company_memberships m ON m.employee_id=e.id
+        AND m.company_id=? AND m.active=1
+      JOIN companies c ON c.id=m.company_id AND c.active=1
+      WHERE s.id=? AND e.id=? AND s.revoked_at IS NULL
+        AND datetime(s.expires_at)>datetime('now')
+        AND COALESCE(
+          (SELECT ${rank('o.access_level')}
+             FROM employee_permission_overrides_v2 o
+             JOIN permissions p ON p.id=o.permission_id
+             WHERE o.employee_id=e.id AND p.code=?
+               AND (o.company_id=m.company_id OR o.company_id IS NULL)
+               AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
+             ORDER BY CASE WHEN o.company_id IS NOT NULL THEN 0 ELSE 1 END LIMIT 1),
+          (SELECT ${rank('o.access_level')}
+             FROM employee_permission_overrides o
+             JOIN permissions p ON p.id=o.permission_id
+             WHERE o.employee_id=e.id AND p.code=?
+               AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
+             LIMIT 1),
+          (SELECT MAX(${rank('rp.access_level')})
+             FROM employee_roles er
+             JOIN roles r ON r.id=er.role_id AND r.active=1
+               AND (r.company_id IS NULL OR r.company_id=er.company_id)
+             JOIN role_permissions rp ON rp.role_id=er.role_id
+             JOIN permissions p ON p.id=rp.permission_id
+             WHERE er.employee_id=e.id AND er.company_id=m.company_id
+               AND p.code=?),
+          0
+        ) >= ?
+    )`);
+    bindings.push(companyId, context.sessionId, context.employee.id,
+      permissionCode, permissionCode, permissionCode, threshold);
+  };
+  for (const { companyId, permissionCode, threshold } of requirements)
+    add(companyId, permissionCode, threshold);
+  // Invalid JSON aborts the complete D1 transaction BEFORE any financial row.
+  // This is a checked fail-closed sentinel, not an application-level callback
+  // separated from the write by another asynchronous boundary.
+  return env.DB.prepare(
+    `SELECT json_extract(CASE WHEN (${clauses.join(' AND ')})
+      THEN '{"authorized":1}' ELSE '{' END,'$.authorized') AS authorized`
+  ).bind(...bindings);
+}
+
+function spendWriteAuthorityGate(
+  env: SpendEnv, context: SessionContext, sourceCompanyId: string,
+  allocations: AllocationRow[], directShared: string,
+): D1PreparedStatement {
+  const required: SpendWriteGrant[] = [
+    { companyId: sourceCompanyId, permissionCode: 'expense.requests', threshold: 2 },
+  ];
+  if (directShared !== 'direct' || allocations.some((row) => row.companyId !== sourceCompanyId)) {
+    for (const companyId of new Set(allocations.map((row) => row.companyId))) {
+      required.push({ companyId, permissionCode: 'expense.allocations', threshold: 5 });
+    }
+  }
+  return spendScopedWriteAuthorityGate(env, context, required);
+}
+
+function spendMasterWriteAuthorityGate(
+  env: SpendEnv, context: SessionContext, companyId: string,
+  beneficiaries: string[] = [],
+): D1PreparedStatement {
+  const required: SpendWriteGrant[] = [
+    { companyId, permissionCode: 'expense.master', threshold: 5 },
+  ];
+  for (const id of new Set(beneficiaries)) {
+    required.push({ companyId: id, permissionCode: 'expense.allocations', threshold: 5 });
+  }
+  return spendScopedWriteAuthorityGate(env, context, required);
 }
 
 async function createExpense(request: Request, env: SpendEnv, context: SessionContext, body: Record<string, unknown>, submit: boolean) {
@@ -682,7 +810,15 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
     const rules = await matchingApprovalRules(env, context, companyId, body, categoryId, costCenterId, amount);
     for (const rule of rules) statements.push(env.DB.prepare(`INSERT OR IGNORE INTO spend_expense_approvals(id,expense_request_id,rule_id,step_no,approver_role_code,status) VALUES(?,?,?,?,?,'pending')`).bind(uid('expense-approval'), id, rule.id || null, Number(rule.stepNo || 1), safeText(rule.approverRoleCode, 80) || 'manager'));
   }
-  await env.DB.batch(statements);
+  // Check exact current authority within this write transaction.
+  statements.unshift(spendWriteAuthorityGate(env, context, companyId, allocationsResult, directShared));
+  try {
+    await env.DB.batch(statements);
+  } catch (cause) {
+    if (/malformed JSON/i.test(String(cause)))
+      return error('Spend authorization changed before this financial write. Refresh and try again.', 403);
+    throw cause;
+  }
   const next = await requestById(env, id);
   if (!next) return error('The expense request could not be saved.', 500);
   const missingEvidenceReason = safeText(body.missingEvidenceReason, 300) || undefined;
@@ -693,6 +829,60 @@ async function createExpense(request: Request, env: SpendEnv, context: SessionCo
   return json({ ok: true, request: await serializeRequest(env, context, next, false), deduplicated: Boolean(existing && safeText(request.headers.get('idempotency-key'), 200)) }, existing ? 200 : 201);
 }
 
+// Executed in the FIRST atomic D1 audit insert, before any approval, expense,
+// or event write. The snapshot SessionContext is not adequate after revocation.
+// Unlike an Owner-role shortcut, the DB gate verifies the exact live session,
+// active assigned company, live approver role and effective permission including
+// explicit "none" overrides (which take precedence over role grants).
+const spendApprovalAtWriteAuthority = `
+  AND EXISTS (
+    SELECT 1 FROM auth_sessions s
+    JOIN employees e ON e.id=s.employee_id AND e.employment_status IN ('active','provisional')
+    JOIN employee_company_memberships m ON m.employee_id=e.id AND m.company_id=? AND m.active=1
+    JOIN companies c ON c.id=m.company_id AND c.active=1
+    WHERE s.id=? AND s.employee_id=?
+      AND s.revoked_at IS NULL AND datetime(s.expires_at)>datetime('now')
+      AND EXISTS (
+        SELECT 1 FROM employee_roles er
+        JOIN roles r ON r.id=er.role_id AND r.active=1
+          AND (r.company_id IS NULL OR r.company_id=er.company_id)
+        WHERE er.employee_id=e.id AND er.company_id=m.company_id
+          AND r.code=?
+      )
+      AND COALESCE(
+        (SELECT CASE o.access_level
+            WHEN 'manage' THEN 5 WHEN 'approve' THEN 4
+            WHEN 'edit' THEN 3 WHEN 'create' THEN 2 WHEN 'view' THEN 1 ELSE 0 END
+         FROM employee_permission_overrides_v2 o
+         JOIN permissions p ON p.id=o.permission_id
+         WHERE o.employee_id=e.id AND p.code=?
+           AND (o.company_id=m.company_id OR o.company_id IS NULL)
+           AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
+         ORDER BY CASE WHEN o.company_id IS NOT NULL THEN 0 ELSE 1 END LIMIT 1),
+        (SELECT CASE o.access_level
+            WHEN 'manage' THEN 5 WHEN 'approve' THEN 4
+            WHEN 'edit' THEN 3 WHEN 'create' THEN 2 WHEN 'view' THEN 1 ELSE 0 END
+         FROM employee_permission_overrides o JOIN permissions p ON p.id=o.permission_id
+         WHERE o.employee_id=e.id AND p.code=?
+           AND (o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now'))
+         LIMIT 1),
+        (SELECT MAX(CASE rp.access_level
+            WHEN 'manage' THEN 5 WHEN 'approve' THEN 4
+            WHEN 'edit' THEN 3 WHEN 'create' THEN 2 WHEN 'view' THEN 1 ELSE 0 END)
+         FROM employee_roles er2
+         JOIN roles r2 ON r2.id=er2.role_id AND r2.active=1
+           AND (r2.company_id IS NULL OR r2.company_id=er2.company_id)
+         JOIN role_permissions rp ON rp.role_id=er2.role_id
+         JOIN permissions p ON p.id=rp.permission_id
+         WHERE er2.employee_id=e.id AND er2.company_id=m.company_id AND p.code=?),
+        0
+      ) >= 4
+  )
+  AND EXISTS (
+    SELECT 1 FROM spend_expense_requests r
+    WHERE r.id=? AND r.company_id=? AND r.requester_employee_id<>?
+  )
+`;
 async function commitApprovalAction(
   request: Request,
   env: SpendEnv,
@@ -703,6 +893,8 @@ async function commitApprovalAction(
   nextStatus: string,
   approvalStatus: string,
   approvalId: string,
+  approverRoleCode: string,
+  requiredPermission: string,
   action: string,
   reason: string | undefined,
   details: Record<string, unknown>,
@@ -721,9 +913,13 @@ async function commitApprovalAction(
     env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,reason,source,request_id)
       SELECT ?,?,?, 'spend',?,'expense_request',?,?,?, 'web',?
       WHERE EXISTS(SELECT 1 FROM spend_expense_approvals WHERE id=? AND expense_request_id=? AND status='pending')
-        AND EXISTS(SELECT 1 FROM spend_expense_requests WHERE id=? AND status=?)`).bind(
+        AND EXISTS(SELECT 1 FROM spend_expense_requests WHERE id=? AND status=?)
+        ${spendApprovalAtWriteAuthority}`).bind(
       auditId, context.employee.id, companyId, auditAction, expenseRequestId, JSON.stringify(auditMetadata), reason || null,
       requestId(request) || null, approvalId, expenseRequestId, expenseRequestId, currentStatus,
+      companyId, context.sessionId, context.employee.id, approverRoleCode,
+      requiredPermission, requiredPermission, requiredPermission,
+      expenseRequestId, companyId, context.employee.id,
     ),
     env.DB.prepare(`UPDATE spend_expense_approvals SET status=?,approver_employee_id=?,reason=?,acted_at=CURRENT_TIMESTAMP
       WHERE id=? AND expense_request_id=? AND status='pending' AND EXISTS(SELECT 1 FROM audit_logs WHERE id=?)`).bind(
@@ -840,22 +1036,24 @@ async function actionExpense(request: Request, env: SpendEnv, context: SessionCo
     WHERE a.expense_request_id=? AND a.status='pending' ORDER BY a.step_no LIMIT 1
   `).bind(id).first<{ id: string; stepNo: number; approverRoleCode: string; requiredPermission: string }>();
   if (!pending) return error('This request has no pending approval step.', 409, { errorCategory: 'approval-state' });
-  if (!owner(context) && (!roleAssignedForCompany(context, String(pending.approverRoleCode), companyId)
-    || !approvalPermissionSatisfied(context, String(pending.requiredPermission || 'expense.approve'), companyId))) {
+  // Owner identity never bypasses a pending approval's role and specific
+  // expense permission. Both are checked again inside the atomic D1 write.
+  if (!roleAssignedForCompany(context, String(pending.approverRoleCode), companyId)
+    || !approvalPermissionSatisfied(context, String(pending.requiredPermission || 'expense.approve'), companyId)) {
     return deny(env, request, context, companyId, 'This approval step is assigned to another role or permission scope.', 'approval_role_denied');
   }
   if (action === 'approve') {
     if (!['submitted', 'reviewed'].includes(String(current.status))) return error('This request is not awaiting approval.', 409);
     const pendingCount = await env.DB.prepare(`SELECT COUNT(*) AS count FROM spend_expense_approvals WHERE expense_request_id=? AND status='pending'`).bind(id).first<{ count: number }>();
     const nextStatus = Number(pendingCount?.count || 0) <= 1 ? 'approved' : 'reviewed';
-    const changed = await commitApprovalAction(request, env, context, id, companyId, String(current.status), nextStatus, 'approved', pending.id, 'approve', undefined, { outcome: nextStatus, action: 'approve', stepNo: pending.stepNo });
+    const changed = await commitApprovalAction(request, env, context, id, companyId, String(current.status), nextStatus, 'approved', pending.id, String(pending.approverRoleCode), String(pending.requiredPermission || 'expense.approve'), 'approve', undefined, { outcome: nextStatus, action: 'approve', stepNo: pending.stepNo });
     if (!changed) return error('This approval step has already changed. Refresh the request and review its current status.', 409, { errorCategory: 'approval-state' });
     return json({ ok: true, request: await serializeRequest(env, context, (await requestById(env, id))!, true) });
   }
   const reason = safeText(body.reason, 1000);
   if (reason.length < 3) return error('A reason is required for return or rejection.', 422);
   const nextStatus = action === 'return' ? 'returned' : 'rejected';
-  const changed = await commitApprovalAction(request, env, context, id, companyId, String(current.status), nextStatus, nextStatus, pending.id, action, reason, { outcome: nextStatus, action, reason });
+  const changed = await commitApprovalAction(request, env, context, id, companyId, String(current.status), nextStatus, nextStatus, pending.id, String(pending.approverRoleCode), String(pending.requiredPermission || 'expense.approve'), action, reason, { outcome: nextStatus, action, reason });
   if (!changed) return error('This approval step has already changed. Refresh the request and review its current status.', 409, { errorCategory: 'approval-state' });
   return json({ ok: true, request: await serializeRequest(env, context, (await requestById(env, id))!, true) });
 }
@@ -924,8 +1122,8 @@ async function approvals(request: Request, env: SpendEnv, context: SessionContex
   // matching role/permission must receive zero rows rather than a broader
   // company queue.
   const allowed = context.companies.filter((company) => !companyId || company.id === companyId);
-  if (!allowed.length && !owner(context)) return error('Expense approval company scope is not assigned.', 403);
-  const ids = owner(context) ? (await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()).results?.map((row) => row.id) || [] : allowed.map((company) => company.id);
+  if (!allowed.length) return error('Expense approval company scope is not assigned.', 403);
+  const ids = allowed.map((company) => company.id);
   if (!ids.length) return json({ approvals: [] });
   const placeholders = ids.map(() => '?').join(',');
   const rows = await env.DB.prepare(`
@@ -941,9 +1139,9 @@ async function approvals(request: Request, env: SpendEnv, context: SessionContex
     LEFT JOIN spend_categories cat ON cat.id=r.category_id LEFT JOIN spend_suppliers sup ON sup.id=r.supplier_id
     WHERE a.status='pending' AND r.company_id IN (${placeholders}) ORDER BY r.updated_at DESC
   `).bind(...ids).all<Record<string, unknown>>();
-  const filtered = (rows.results || []).filter((row) => owner(context)
-    || (roleAssignedForCompany(context, String(row.approverRoleCode || ''), String(row.companyId || ''))
-      && approvalPermissionSatisfied(context, String(row.requiredPermission || 'expense.approve'), String(row.companyId || ''))));
+  const filtered = (rows.results || []).filter((row) =>
+    roleAssignedForCompany(context, String(row.approverRoleCode || ''), String(row.companyId || '')) &&
+    approvalPermissionSatisfied(context, String(row.requiredPermission || 'expense.approve'), String(row.companyId || '')));
   return json({ serverTime: new Date().toISOString(), approvals: filtered.slice(0, 100) });
 }
 
@@ -953,10 +1151,10 @@ async function bootstrap(request: Request, env: SpendEnv, context: SessionContex
   if (!companyId) return error('Company scope is required.', 400);
   if (!companyInScope(context, companyId)) return error('Company access is not assigned.', 403);
   if (!can(context, 'expense.requests', 'create', companyId) && !can(context, 'expense.own', 'view', companyId)) return error('Expense access is not assigned.', 403);
-  const costCenterScope = context.companies.map((company) => company.id);
-  const costCenterQuery = owner(context)
-    ? env.DB.prepare(`SELECT id,company_id AS companyId,code,name FROM spend_cost_centers WHERE company_id IN (SELECT id FROM companies WHERE active=1) AND active=1 ORDER BY company_id,name`)
-    : env.DB.prepare(`SELECT id,company_id AS companyId,code,name FROM spend_cost_centers WHERE company_id IN (${costCenterScope.map(() => '?').join(',')}) AND active=1 ORDER BY company_id,name`).bind(...costCenterScope);
+  // Cost centres on a company bootstrap are never a Group-wide directory.
+  const costCenterQuery = env.DB.prepare(
+    `SELECT id,company_id AS companyId,code,name FROM spend_cost_centers WHERE company_id=? AND active=1 ORDER BY company_id,name`
+  ).bind(companyId);
   const [categories, costCenters, suppliers, templates, projects] = await Promise.all([
     env.DB.prepare(`SELECT id,code,name,accounting_treatment_id AS accountingTreatmentId,employee_request_allowed AS employeeRequestAllowed,evidence_required AS evidenceRequired,direct_shared_policy AS directSharedPolicy,default_cost_center_id AS defaultCostCenterId,allowed_erp_json AS allowedErpJson FROM spend_categories WHERE active=1 AND employee_request_allowed=1 AND (company_id IS NULL OR company_id=?) ORDER BY name`).bind(companyId).all<Record<string, unknown>>(),
     costCenterQuery.all<Record<string, unknown>>(),
@@ -979,14 +1177,65 @@ async function bootstrap(request: Request, env: SpendEnv, context: SessionContex
   return json({
     serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), company,
     version: new Date().toISOString(), lastVerifiedAt: new Date().toISOString(),
-    permissions: { create: can(context, 'expense.requests', 'create', companyId), approve: can(context, 'expense.approve', 'approve', companyId), post: can(context, 'expense.post', 'manage', companyId), master: can(context, 'expense.master', 'manage', companyId), allocations: can(context, 'expense.allocations', 'manage', companyId) },
+    permissions: { create: hasPermission(context, 'expense.requests', 'create', companyId), approve: hasPermission(context, 'expense.approve', 'approve', companyId), post: hasPermission(context, 'expense.post', 'manage', companyId), master: hasPermission(context, 'expense.master', 'manage', companyId), allocations: hasPermission(context, 'expense.allocations', 'manage', companyId) },
     masterData: { categories: categories.results || [], costCenters: costCenters.results || [], suppliers: suppliers.results || [], allocationTemplates: safeTemplates, projects: projects.results || [] },
     offline: { supportedKinds: ['expense.draft.save', 'expense.request.submit'], revalidateBeforeSubmit: true, evidenceSequence: ['draft_ack', 'evidence_ack_hash', 'final_submit'] },
   });
 }
 
+// Group-wide financial data requires an independently reviewed, live Group
+// reporting grant. Group Owner role identity alone is not authorization.
+// Group grants remain held/unnumbered: no table means fail closed.
+async function hasCurrentGroupSpendReportGrant(
+  env: SpendEnv, context: SessionContext, minimum: 'view' | 'manage',
+): Promise<boolean> {
+  if (!owner(context)) return false;
+  const schema = await env.DB.prepare(
+    "SELECT 1 AS present FROM sqlite_master WHERE type='table' AND name='employee_group_permission_grants' LIMIT 1"
+  ).first<{ present: number }>();
+  if (!schema) return false;
+  const grant = await env.DB.prepare(`
+    SELECT g.access_level AS accessLevel
+    FROM employee_group_permission_grants g
+    JOIN permissions p ON p.id = g.permission_id AND p.code = 'expense.group.report'
+    JOIN employees beneficiary ON beneficiary.id = g.employee_id
+      AND beneficiary.employment_status IN ('active','provisional')
+    JOIN employees issuer ON issuer.id = g.granted_by
+      AND issuer.employment_status IN ('active','provisional')
+    JOIN employees reviewer ON reviewer.id = g.reviewed_by
+      AND reviewer.employment_status IN ('active','provisional')
+    WHERE g.employee_id = ? AND g.active = 1
+      AND g.revoked_at IS NULL AND g.revoked_by IS NULL
+      AND g.reviewed_at IS NOT NULL AND datetime(g.reviewed_at) <= datetime('now')
+      AND g.reviewed_by <> g.granted_by AND g.reviewed_by <> g.employee_id
+      AND g.granted_by <> g.employee_id
+      AND datetime(g.expires_at) > datetime('now')
+      AND EXISTS (
+        SELECT 1 FROM auth_sessions s
+        WHERE s.id = ? AND s.employee_id = g.employee_id
+          AND s.revoked_at IS NULL AND datetime(s.expires_at) > datetime('now')
+      )
+      AND EXISTS (
+        SELECT 1 FROM employee_roles er
+        JOIN roles r ON r.id=er.role_id AND r.active=1
+        JOIN employee_company_memberships m ON m.employee_id=er.employee_id
+          AND m.company_id=er.company_id AND m.active=1
+        JOIN companies c ON c.id=m.company_id AND c.active=1
+        WHERE er.employee_id=g.employee_id AND r.code='owner'
+          AND r.company_id IS NULL
+      )
+    ORDER BY CASE g.access_level WHEN 'manage' THEN 1 ELSE 2 END
+    LIMIT 1
+  `).bind(context.employee.id, context.sessionId)
+    .first<{ accessLevel: string }>();
+  if (!grant) return false;
+  return minimum === 'manage'
+    ? grant.accessLevel === 'manage'
+    : ['view','create','edit','approve','manage'].includes(grant.accessLevel);
+}
+
 async function ownerOverview(request: Request, env: SpendEnv, context: SessionContext) {
-  if (!owner(context)) return error('Owner access is required.', 403);
+  if (!(await hasCurrentGroupSpendReportGrant(env, context, 'view'))) return error('An independently reviewed Group financial reporting grant is required.', 403);
   const [metrics, treatments] = await Promise.all([
     env.DB.prepare(`
       SELECT
@@ -1016,6 +1265,8 @@ async function ownerOverview(request: Request, env: SpendEnv, context: SessionCo
   ]);
   const byTreatment = Object.fromEntries((treatments.results || []).map((row) => [String(row.profitEffect), { amountKobo: Number(row.amountKobo || 0), recognizedKobo: Number(row.recognizedKobo || 0) }]));
   const missingEvidence = await env.DB.prepare(`SELECT COUNT(*) AS count FROM spend_expense_requests r LEFT JOIN spend_expense_evidence e ON e.expense_request_id=r.id WHERE r.status NOT IN ('draft','rejected','cancelled','voided') GROUP BY r.id HAVING COUNT(e.id)=0`).all<{ count: number }>();
+  // Recheck grant and live authority after D1 reads to block mid-read revocation.
+  if (!(await hasCurrentGroupSpendReportGrant(env, context, 'view'))) return error('Group financial reporting access is no longer active.', 403);
   return json({
     serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env),
     metrics: {
@@ -1027,7 +1278,7 @@ async function ownerOverview(request: Request, env: SpendEnv, context: SessionCo
 }
 
 async function ownerDetail(request: Request, env: SpendEnv, context: SessionContext) {
-  if (!owner(context)) return error('Owner access is required.', 403);
+  if (!(await hasCurrentGroupSpendReportGrant(env, context, 'manage'))) return error('An independently reviewed Group financial detail grant is required.', 403);
   const params = new URL(request.url).searchParams;
   const employeeId = safeText(params.get('employeeId'), 180);
   const companyId = safeText(params.get('companyId'), 180);
@@ -1066,6 +1317,8 @@ async function ownerDetail(request: Request, env: SpendEnv, context: SessionCont
   const requests = await Promise.all(selected.map((row) => serializeRequest(env, context, row, true)));
   const filteredRequests = eventAction ? requests.filter((row) => Array.isArray(row.events) && (row.events as Array<Record<string, unknown>>).some((item) => String(item.action || '') === eventAction)) : requests;
   const events = filteredRequests.flatMap((row) => (row.events || []).map((item) => ({ ...item, requestNo: row.requestNo, employeeName: row.requesterName, companyName: row.companyName })));
+  // Revoked or expired Group authority cannot publish previously read details.
+  if (!(await hasCurrentGroupSpendReportGrant(env, context, 'manage'))) return error('Group financial detail access is no longer active.', 403);
   return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), filters: { employeeId, companyId, status, categoryId, supplierId, erpModule, directShared, eventAction, from, to }, requests: filteredRequests, events });
 }
 
@@ -1093,6 +1346,43 @@ function masterTable(kind: string) {
             : 'spend_evidence_policies';
 }
 
+// Serialize the persisted AFTER row inside the very same D1 batch as the
+// protected master change. A standalone audit() call after the batch can fail
+// and leave an untraceable financial master mutation. The table is selected by
+// masterTable() from a fixed allowlist, columns from SQLite's own schema.
+async function masterAuditAfterWriteStatement(
+  env: SpendEnv, request: Request, context: SessionContext,
+  table: string, kind: string, entityId: string, companyId: string,
+  action: string, outcome: string, before: Record<string, unknown> | null,
+  reason?: string, replacementId?: string,
+): Promise<D1PreparedStatement> {
+  const columns = await env.DB.prepare(`PRAGMA table_info(${table})`)
+    .all<{ name: string }>();
+  const names = (columns.results || []).map((row) => row.name);
+  if (!names.includes('id') || !names.includes('company_id')
+      || !names.every((name) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)))
+    throw new Error('Unsafe or unavailable Spend master audit schema.');
+  const afterFields = names.map((name) =>
+    `'${name}',"${name}"`).join(',');
+  const details: Record<string, unknown> = { masterKind: kind, outcome, before };
+  if (reason) details.reason = reason;
+  if (replacementId) details.replacementId = replacementId;
+  const metadata = safeMetadata(request, context, details);
+  return env.DB.prepare(`
+    INSERT INTO audit_logs(
+      id,actor_employee_id,company_id,module,action,entity_type,entity_id,
+      after_json,reason,source,request_id
+    )
+    SELECT ?,?,?,'spend',?,?,?,
+      json_set(?, '$.after', json_object(${afterFields})),?,'web',?
+    FROM ${table} WHERE id=? AND company_id=?
+  `).bind(
+    uid('audit'), context.employee.id, companyId,
+    action, kind, entityId, JSON.stringify(metadata), reason || null,
+    requestId(request) || null, entityId, companyId,
+  );
+}
+
 async function adminMasterMutation(request: Request, env: SpendEnv, context: SessionContext, allowedCompanies: string[]) {
   let body: Record<string, unknown>;
   try { body = parseObject(await request.json()); } catch { return error('Invalid master-data action.', 400); }
@@ -1102,10 +1392,40 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
   if (!['category', 'supplier', 'cost_center', 'template', 'approval_rule', 'evidence_policy'].includes(kind)) return error('This master-data type is not available in Batch 1.', 400);
   if (!['create', 'edit', 'activate', 'deactivate', 'merge'].includes(action)) return error('This master-data action is not available in Batch 1.', 400);
   if (targetCompanyId && !allowedCompanies.includes(targetCompanyId)) return error('Master-data access is not assigned for this company.', 403);
-  if (!targetCompanyId && !owner(context) && ['approval_rule', 'evidence_policy'].includes(kind)) return error('Global policy mutation requires Owner access.', 403);
+  // Global Spend policy requires a separately approved and reviewed Group
+  // privilege. Its migration has NOT been approved; fail closed for all such
+  // writes instead of treating Owner identity or any company grant as global.
+  if (!targetCompanyId) return error('Global Spend master policy changes require a separately approved Group grant.', 403);
   const table = masterTable(kind);
   const reason = safeText(body.reason, 1000);
   if (['edit', 'deactivate', 'merge'].includes(action) && reason.length < 3) return error('A reason is required for this controlled mutation.', 422, { errorCategory: 'audit' });
+  const masterStatements: D1PreparedStatement[] = [];
+  let templateBeneficiaries: string[] = [];
+  const commitMasterWrites = async (
+    companyId: string, auditAction: string, outcome: string,
+    entityId: string, before: Record<string, unknown> | null,
+    replacementId?: string,
+  ): Promise<Response | null> => {
+    if (!masterStatements.length) return error('No controlled master changes were prepared.', 500);
+    const auditWrite = await masterAuditAfterWriteStatement(
+      env, request, context, table, kind, entityId, companyId,
+      auditAction, outcome, before, reason, replacementId,
+    );
+    try {
+      // Both the master mutation AND its auditable after-state commit together
+      // inside the same D1 transaction, or neither persists.
+      await env.DB.batch([
+        spendMasterWriteAuthorityGate(env, context, companyId, templateBeneficiaries),
+        ...masterStatements,
+        auditWrite,
+      ]);
+      return null;
+    } catch (cause) {
+      if (/malformed JSON/i.test(String(cause)))
+        return error('Spend master-data authorization changed before the write.', 403);
+      throw cause;
+    }
+  };
 
   if (action === 'create') {
     const name = safeText(body.name, 180);
@@ -1122,6 +1442,9 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
       if (templateItems.length < 2) return error('An allocation template needs at least two controlled beneficiary companies.', 422, { errorCategory: 'allocation' });
       const beneficiaryIds = templateItems.map((item) => safeText(item.companyId, 180));
       if (beneficiaryIds.some((beneficiaryId) => !beneficiaryId || !companyInScope(context, beneficiaryId)) || new Set(beneficiaryIds).size !== beneficiaryIds.length) return error('Every template participant must be a distinct authorized company.', 403, { errorCategory: 'allocation' });
+      templateBeneficiaries = [...new Set([targetCompanyId, ...beneficiaryIds])];
+      if (templateBeneficiaries.some((companyId) => !can(context, 'expense.allocations', 'manage', companyId)))
+        return error('Allocation management permission is required in every participating company.', 403, { errorCategory: 'allocation' });
       const templateMethod = ['percentage', 'fixed_amount', 'equal_split'].includes(String(body.method)) ? String(body.method) : 'equal_split';
       if (templateMethod === 'percentage') {
         const total = templateItems.reduce((sum, item) => sum + Number(item.percentage || 0), 0);
@@ -1140,11 +1463,11 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
       const treatment = await env.DB.prepare(`SELECT id,profit_effect AS profitEffect,active FROM spend_accounting_treatments WHERE id=?`).bind(treatmentId).first<Record<string, unknown>>();
       if (!treatment || Number(treatment.active) === 0) return error('Select an active controlled accounting treatment.', 422, { errorCategory: 'finance-setup' });
       if (String(treatment.profitEffect) === 'payroll_canonical') return error('Payroll categories are sourced from the canonical payroll ledger and cannot be manually created.', 422, { errorCategory: 'accounting' });
-      await env.DB.prepare(`INSERT INTO spend_categories(id,company_id,code,name,normalized_name,accounting_treatment_id,employee_request_allowed,evidence_required,direct_shared_policy,allowed_erp_json,source,created_by) VALUES(?,?,?,?,?,?,1,?,?,?, 'admin',?)`).bind(id, targetCompanyId, safeText(body.code || normalised(name).replaceAll(' ', '_').toUpperCase(), 50), name, normalised(name), treatmentId, body.evidenceRequired === false ? 0 : 1, ['direct', 'shared'].includes(String(body.directSharedPolicy)) ? body.directSharedPolicy : 'either', JSON.stringify(Array.isArray(body.allowedErp) ? body.allowedErp.map(String).slice(0, 10) : []), context.employee.id).run();
+      masterStatements.push(env.DB.prepare(`INSERT INTO spend_categories(id,company_id,code,name,normalized_name,accounting_treatment_id,employee_request_allowed,evidence_required,direct_shared_policy,allowed_erp_json,source,created_by) VALUES(?,?,?,?,?,?,1,?,?,?, 'admin',?)`).bind(id, targetCompanyId, safeText(body.code || normalised(name).replaceAll(' ', '_').toUpperCase(), 50), name, normalised(name), treatmentId, body.evidenceRequired === false ? 0 : 1, ['direct', 'shared'].includes(String(body.directSharedPolicy)) ? body.directSharedPolicy : 'either', JSON.stringify(Array.isArray(body.allowedErp) ? body.allowedErp.map(String).slice(0, 10) : []), context.employee.id));
     } else if (kind === 'supplier') {
-      await env.DB.prepare(`INSERT INTO spend_suppliers(id,company_id,name,normalized_name,phone,email,source,created_by) VALUES(?,?,?,?,?,?, 'admin',?)`).bind(id, targetCompanyId, name, normalised(name), safeText(body.phone, 60) || null, safeText(body.email, 160) || null, context.employee.id).run();
+      masterStatements.push(env.DB.prepare(`INSERT INTO spend_suppliers(id,company_id,name,normalized_name,phone,email,source,created_by) VALUES(?,?,?,?,?,?, 'admin',?)`).bind(id, targetCompanyId, name, normalised(name), safeText(body.phone, 60) || null, safeText(body.email, 160) || null, context.employee.id));
     } else if (kind === 'cost_center') {
-      await env.DB.prepare(`INSERT INTO spend_cost_centers(id,company_id,code,name,source) VALUES(?,?,?,?, 'admin')`).bind(id, targetCompanyId, safeText(body.code || normalised(name).replaceAll(' ', '_').toUpperCase(), 50), name).run();
+      masterStatements.push(env.DB.prepare(`INSERT INTO spend_cost_centers(id,company_id,code,name,source) VALUES(?,?,?,?, 'admin')`).bind(id, targetCompanyId, safeText(body.code || normalised(name).replaceAll(' ', '_').toUpperCase(), 50), name));
     } else if (kind === 'template') {
       const templateMethod = ['percentage', 'fixed_amount', 'equal_split'].includes(String(body.method)) ? String(body.method) : 'equal_split';
       const defaultTreatmentId = safeText(body.defaultTreatmentId, 180) || null;
@@ -1152,10 +1475,10 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
         const treatment = await env.DB.prepare(`SELECT profit_effect AS profitEffect,active FROM spend_accounting_treatments WHERE id=?`).bind(defaultTreatmentId).first<Record<string, unknown>>();
         if (!treatment || Number(treatment.active) === 0 || String(treatment.profitEffect) === 'payroll_canonical') return error('Allocation templates cannot use an unavailable or canonical-payroll treatment.', 422, { errorCategory: 'accounting' });
       }
-      await env.DB.prepare(`INSERT INTO spend_allocation_templates(id,company_id,name,normalized_name,method,default_treatment_id,active,created_by) VALUES(?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId, name, normalised(name), templateMethod, defaultTreatmentId, context.employee.id).run();
+      masterStatements.push(env.DB.prepare(`INSERT INTO spend_allocation_templates(id,company_id,name,normalized_name,method,default_treatment_id,active,created_by) VALUES(?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId, name, normalised(name), templateMethod, defaultTreatmentId, context.employee.id));
       for (let index = 0; index < templateItems.length; index += 1) {
         const item = templateItems[index];
-        await env.DB.prepare(`INSERT INTO spend_allocation_template_items(id,template_id,company_id,department,cost_center_id,percentage,fixed_amount_kobo,basis,sort_order) VALUES(?,?,?,?,?,?,?,?,?)`).bind(uid('spend-template-item'), id, safeText(item.companyId, 180), safeText(item.department, 160) || null, safeText(item.costCenterId, 180) || null, Number.isFinite(Number(item.percentage)) ? Number(item.percentage) : null, positiveInteger(item.fixedAmountKobo) || null, safeText(item.basis || 'admin-approved-template', 160), index).run();
+        masterStatements.push(env.DB.prepare(`INSERT INTO spend_allocation_template_items(id,template_id,company_id,department,cost_center_id,percentage,fixed_amount_kobo,basis,sort_order) VALUES(?,?,?,?,?,?,?,?,?)`).bind(uid('spend-template-item'), id, safeText(item.companyId, 180), safeText(item.department, 160) || null, safeText(item.costCenterId, 180) || null, Number.isFinite(Number(item.percentage)) ? Number(item.percentage) : null, positiveInteger(item.fixedAmountKobo) || null, safeText(item.basis || 'admin-approved-template', 160), index));
       }
     } else if (kind === 'approval_rule') {
       const minAmount = Math.max(0, Math.floor(Number(body.minAmountKobo || 0)));
@@ -1164,15 +1487,16 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
       const approverRoleCode = safeText(body.approverRoleCode || 'manager', 80);
       const requiredPermission = safeText(body.requiredPermission || 'expense.approve', 100);
       if (!approverRoleCode || !requiredPermission || (maxAmount !== null && maxAmount < minAmount)) return error('Approval threshold values are invalid.', 422);
-      await env.DB.prepare(`INSERT INTO spend_approval_rules(id,company_id,department,category_id,cost_center_id,project_id,requester_role_code,min_amount_kobo,max_amount_kobo,step_no,approver_role_code,required_permission,active,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId || null, safeText(body.department, 160) || null, safeText(body.categoryId, 180) || null, safeText(body.costCenterId, 180) || null, safeText(body.projectId, 180) || null, safeText(body.requesterRoleCode, 80) || null, minAmount, maxAmount, stepNo, approverRoleCode, requiredPermission, context.employee.id).run();
+      masterStatements.push(env.DB.prepare(`INSERT INTO spend_approval_rules(id,company_id,department,category_id,cost_center_id,project_id,requester_role_code,min_amount_kobo,max_amount_kobo,step_no,approver_role_code,required_permission,active,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId || null, safeText(body.department, 160) || null, safeText(body.categoryId, 180) || null, safeText(body.costCenterId, 180) || null, safeText(body.projectId, 180) || null, safeText(body.requesterRoleCode, 80) || null, minAmount, maxAmount, stepNo, approverRoleCode, requiredPermission, context.employee.id));
     } else {
       const minAmount = Math.max(0, Math.floor(Number(body.minAmountKobo || 0)));
       const evidenceType = ['receipt', 'invoice', 'quote', 'delivery_note', 'payment_evidence', 'other'].includes(String(body.evidenceType)) ? String(body.evidenceType) : 'receipt';
       const minimumCount = Math.max(0, Math.floor(Number(body.minimumCount || 1)));
-      await env.DB.prepare(`INSERT INTO spend_evidence_policies(id,company_id,category_id,min_amount_kobo,evidence_type,required,minimum_count,requires_reason_if_missing,active,created_by) VALUES(?,?,?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId || null, safeText(body.categoryId, 180) || null, minAmount, evidenceType, body.required === false ? 0 : 1, minimumCount, body.requiresReasonIfMissing === false ? 0 : 1, context.employee.id).run();
+      masterStatements.push(env.DB.prepare(`INSERT INTO spend_evidence_policies(id,company_id,category_id,min_amount_kobo,evidence_type,required,minimum_count,requires_reason_if_missing,active,created_by) VALUES(?,?,?,?,?,?,?,?,1,?)`).bind(id, targetCompanyId || null, safeText(body.categoryId, 180) || null, minAmount, evidenceType, body.required === false ? 0 : 1, minimumCount, body.requiresReasonIfMissing === false ? 0 : 1, context.employee.id));
     }
+    const changed = await commitMasterWrites(targetCompanyId, 'master_value_created', 'created', id, null);
+    if (changed) return changed;
     const after = await env.DB.prepare(`SELECT * FROM ${table} WHERE id=?`).bind(id).first<Record<string, unknown>>();
-    await audit(env, request, context, 'master_value_created', kind, id, targetCompanyId || undefined, { masterKind: kind, outcome: 'created', before: null, after });
     return json({ ok: true, id, status: 'active', before: null, after }, 201);
   }
 
@@ -1183,8 +1507,19 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
   if (!before) return error('The controlled master value was not found in your permitted scope.', 404);
   const beforeCompany = safeText(before.company_id, 180);
   if (targetCompanyId && beforeCompany && targetCompanyId !== beforeCompany) return error('The master value belongs to another company scope.', 403);
-  if (!beforeCompany && !owner(context)) return error('System master values are read-only outside Owner policy.', 403);
+  if (!beforeCompany) return error('Global Spend master values require separately approved Group policy authority.', 403);
   const effectiveCompanyId = beforeCompany || targetCompanyId || allowedCompanies[0];
+  if (kind === 'template') {
+    const rows = await env.DB.prepare(
+      'SELECT DISTINCT company_id AS companyId FROM spend_allocation_template_items WHERE template_id=?'
+    ).bind(id).all<{ companyId: string }>();
+    templateBeneficiaries = [...new Set([
+      effectiveCompanyId, ...(rows.results || []).map((row) => String(row.companyId)),
+    ])];
+    if (templateBeneficiaries.some((companyId) =>
+      !companyInScope(context, companyId) || !can(context, 'expense.allocations', 'manage', companyId)))
+      return error('Allocation template changes need current permission for all beneficiary companies.', 403);
+  }
 
   if (action === 'edit') {
     const name = safeText(body.name, 180) || safeText(before.name, 180);
@@ -1200,11 +1535,11 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
       if (String(treatment.profitEffect) === 'payroll_canonical') return error('Payroll categories cannot be manually maintained in Spend.', 422, { errorCategory: 'accounting' });
       const directPolicy = ['direct', 'shared', 'either'].includes(String(body.directSharedPolicy)) ? String(body.directSharedPolicy) : String(before.direct_shared_policy || 'either');
       const allowedErp = body.allowedErp === undefined ? String(before.allowed_erp_json || '[]') : JSON.stringify(Array.isArray(body.allowedErp) ? body.allowedErp.map(String).slice(0, 10) : []);
-      await env.DB.prepare(`UPDATE spend_categories SET code=?,name=?,normalized_name=?,accounting_treatment_id=?,employee_request_allowed=?,evidence_required=?,direct_shared_policy=?,allowed_erp_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.code, 50) || String(before.code || ''), name, normalised(name), treatmentId, body.employeeRequestAllowed === undefined ? Number(before.employee_request_allowed || 0) : body.employeeRequestAllowed === false ? 0 : 1, body.evidenceRequired === undefined ? Number(before.evidence_required || 0) : body.evidenceRequired === false ? 0 : 1, directPolicy, allowedErp, id).run();
+      masterStatements.push(env.DB.prepare(`UPDATE spend_categories SET code=?,name=?,normalized_name=?,accounting_treatment_id=?,employee_request_allowed=?,evidence_required=?,direct_shared_policy=?,allowed_erp_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.code, 50) || String(before.code || ''), name, normalised(name), treatmentId, body.employeeRequestAllowed === undefined ? Number(before.employee_request_allowed || 0) : body.employeeRequestAllowed === false ? 0 : 1, body.evidenceRequired === undefined ? Number(before.evidence_required || 0) : body.evidenceRequired === false ? 0 : 1, directPolicy, allowedErp, id));
     } else if (kind === 'supplier') {
-      await env.DB.prepare(`UPDATE spend_suppliers SET name=?,normalized_name=?,phone=?,email=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(name, normalised(name), body.phone === undefined ? before.phone || null : safeText(body.phone, 60) || null, body.email === undefined ? before.email || null : safeText(body.email, 160) || null, id).run();
+      masterStatements.push(env.DB.prepare(`UPDATE spend_suppliers SET name=?,normalized_name=?,phone=?,email=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(name, normalised(name), body.phone === undefined ? before.phone || null : safeText(body.phone, 60) || null, body.email === undefined ? before.email || null : safeText(body.email, 160) || null, id));
     } else if (kind === 'cost_center') {
-      await env.DB.prepare(`UPDATE spend_cost_centers SET code=?,name=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.code, 50) || String(before.code || ''), name, id).run();
+      masterStatements.push(env.DB.prepare(`UPDATE spend_cost_centers SET code=?,name=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.code, 50) || String(before.code || ''), name, id));
     } else if (kind === 'template') {
       const method = ['percentage', 'fixed_amount', 'equal_split'].includes(String(body.method)) ? String(body.method) : String(before.method || 'equal_split');
       const defaultTreatmentId = body.defaultTreatmentId === undefined ? String(before.default_treatment_id || '') : safeText(body.defaultTreatmentId, 180);
@@ -1212,20 +1547,20 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
         const treatment = await env.DB.prepare(`SELECT profit_effect AS profitEffect,active FROM spend_accounting_treatments WHERE id=?`).bind(defaultTreatmentId).first<Record<string, unknown>>();
         if (!treatment || Number(treatment.active) === 0 || String(treatment.profitEffect) === 'payroll_canonical') return error('Allocation templates cannot use an unavailable or canonical-payroll treatment.', 422, { errorCategory: 'accounting' });
       }
-      await env.DB.prepare(`UPDATE spend_allocation_templates SET name=?,normalized_name=?,method=?,default_treatment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(name, normalised(name), method, defaultTreatmentId || null, id).run();
+      masterStatements.push(env.DB.prepare(`UPDATE spend_allocation_templates SET name=?,normalized_name=?,method=?,default_treatment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(name, normalised(name), method, defaultTreatmentId || null, id));
     } else if (kind === 'approval_rule') {
       const minAmount = Math.max(0, Math.floor(Number(body.minAmountKobo ?? before.min_amount_kobo ?? 0)));
       const maxAmount = body.maxAmountKobo === undefined ? (before.max_amount_kobo == null ? null : Number(before.max_amount_kobo)) : body.maxAmountKobo === '' ? null : Math.max(0, Math.floor(Number(body.maxAmountKobo)));
       if (maxAmount !== null && maxAmount < minAmount) return error('Approval threshold values are invalid.', 422);
-      await env.DB.prepare(`UPDATE spend_approval_rules SET department=?,category_id=?,cost_center_id=?,project_id=?,requester_role_code=?,min_amount_kobo=?,max_amount_kobo=?,step_no=?,approver_role_code=?,required_permission=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.department, 160) || before.department || null, safeText(body.categoryId, 180) || before.category_id || null, safeText(body.costCenterId, 180) || before.cost_center_id || null, safeText(body.projectId, 180) || before.project_id || null, safeText(body.requesterRoleCode, 80) || before.requester_role_code || null, minAmount, maxAmount, Math.max(1, Math.floor(Number(body.stepNo ?? before.step_no ?? 1))), safeText(body.approverRoleCode, 80) || before.approver_role_code, safeText(body.requiredPermission, 100) || before.required_permission || 'expense.approve', id).run();
+      masterStatements.push(env.DB.prepare(`UPDATE spend_approval_rules SET department=?,category_id=?,cost_center_id=?,project_id=?,requester_role_code=?,min_amount_kobo=?,max_amount_kobo=?,step_no=?,approver_role_code=?,required_permission=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.department, 160) || before.department || null, safeText(body.categoryId, 180) || before.category_id || null, safeText(body.costCenterId, 180) || before.cost_center_id || null, safeText(body.projectId, 180) || before.project_id || null, safeText(body.requesterRoleCode, 80) || before.requester_role_code || null, minAmount, maxAmount, Math.max(1, Math.floor(Number(body.stepNo ?? before.step_no ?? 1))), safeText(body.approverRoleCode, 80) || before.approver_role_code, safeText(body.requiredPermission, 100) || before.required_permission || 'expense.approve', id));
     } else {
       const minAmount = Math.max(0, Math.floor(Number(body.minAmountKobo ?? before.min_amount_kobo ?? 0)));
       const evidenceType = ['receipt', 'invoice', 'quote', 'delivery_note', 'payment_evidence', 'other'].includes(String(body.evidenceType)) ? String(body.evidenceType) : String(before.evidence_type || 'receipt');
-      await env.DB.prepare(`UPDATE spend_evidence_policies SET category_id=?,min_amount_kobo=?,evidence_type=?,required=?,minimum_count=?,requires_reason_if_missing=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.categoryId, 180) || before.category_id || null, minAmount, evidenceType, body.required === undefined ? Number(before.required || 0) : body.required === false ? 0 : 1, Math.max(0, Math.floor(Number(body.minimumCount ?? before.minimum_count ?? 1))), body.requiresReasonIfMissing === undefined ? Number(before.requires_reason_if_missing || 0) : body.requiresReasonIfMissing === false ? 0 : 1, id).run();
+      masterStatements.push(env.DB.prepare(`UPDATE spend_evidence_policies SET category_id=?,min_amount_kobo=?,evidence_type=?,required=?,minimum_count=?,requires_reason_if_missing=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(safeText(body.categoryId, 180) || before.category_id || null, minAmount, evidenceType, body.required === undefined ? Number(before.required || 0) : body.required === false ? 0 : 1, Math.max(0, Math.floor(Number(body.minimumCount ?? before.minimum_count ?? 1))), body.requiresReasonIfMissing === undefined ? Number(before.requires_reason_if_missing || 0) : body.requiresReasonIfMissing === false ? 0 : 1, id));
     }
   } else if (action === 'activate' || action === 'deactivate') {
     if (action === 'activate' && before.superseded_by) return error('A superseded master value cannot become canonical again.', 409, { errorCategory: 'master-state' });
-    await env.DB.prepare(`UPDATE ${table} SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(action === 'activate' ? 1 : 0, id).run();
+    masterStatements.push(env.DB.prepare(`UPDATE ${table} SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(action === 'activate' ? 1 : 0, id));
   } else {
     if (!['category', 'supplier', 'cost_center'].includes(kind)) return error('This master type uses deactivate/activate rather than merge in Batch 1.', 400);
     const replacementId = safeText(body.replacementId, 180);
@@ -1233,17 +1568,26 @@ async function adminMasterMutation(request: Request, env: SpendEnv, context: Ses
     const replacement = await env.DB.prepare(`SELECT * FROM ${table} WHERE id=? AND active=1 AND (company_id IS NULL OR company_id IN (${scopePlaceholders}))`).bind(replacementId, ...allowedCompanies).first<Record<string, unknown>>();
     if (!replacement) return error('The replacement must be an active controlled value in your permitted scope.', 422);
     if (safeText(replacement.company_id, 180) !== beforeCompany) return error('Old and replacement values must share the same company scope.', 422);
-    await env.DB.prepare(`UPDATE ${table} SET superseded_by=?,active=0,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(replacementId, id).run();
+    masterStatements.push(env.DB.prepare(`UPDATE ${table} SET superseded_by=?,active=0,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(replacementId, id));
   }
+  const auditAction = action === 'merge' ? 'master_value_merged'
+    : action === 'edit' ? 'master_value_edited'
+      : action === 'activate' ? 'master_value_activated' : 'master_value_deactivated';
+  const replacementId = action === 'merge' ? safeText(body.replacementId, 180) : undefined;
+  const changed = await commitMasterWrites(effectiveCompanyId, auditAction, action, id, before, replacementId);
+  if (changed) return changed;
   const after = await env.DB.prepare(`SELECT * FROM ${table} WHERE id=?`).bind(id).first<Record<string, unknown>>();
-  await audit(env, request, context, action === 'merge' ? 'master_value_merged' : action === 'edit' ? 'master_value_edited' : action === 'activate' ? 'master_value_activated' : 'master_value_deactivated', kind, id, effectiveCompanyId, { masterKind: kind, outcome: action, reason, before, after, replacementId: action === 'merge' ? safeText(body.replacementId, 180) : undefined });
-  return json({ ok: true, id, status: action === 'merge' ? 'merged' : action === 'activate' ? 'active' : action === 'deactivate' ? 'inactive' : 'updated', before, after, replacementId: action === 'merge' ? safeText(body.replacementId, 180) : undefined });
+  return json({ ok: true, id, status: action === 'merge' ? 'merged' : action === 'activate' ? 'active' : action === 'deactivate' ? 'inactive' : 'updated', before, after, replacementId });
 }
 
 async function adminMaster(request: Request, env: SpendEnv, context: SessionContext) {
   const url = new URL(request.url);
   const companyId = safeText(url.searchParams.get('companyId'), 180);
-  const allowedCompanies = owner(context) ? (await env.DB.prepare(`SELECT id FROM companies WHERE active=1`).all<{ id: string }>()).results?.map((row) => row.id) || [] : context.companies.filter((company) => can(context, 'expense.master', 'manage', company.id)).map((company) => company.id);
+  // A Group Owner role is not an automatic financial master-data permission.
+  // Both current company membership and explicit company grant are required.
+  const allowedCompanies = context.companies
+    .filter((company) => can(context, 'expense.master', 'manage', company.id))
+    .map((company) => company.id);
   if (companyId && !allowedCompanies.includes(companyId)) return error('Master-data access is not assigned for this company.', 403);
   if (!allowedCompanies.length) return error('Master-data management permission is required.', 403);
   if (request.method === 'POST') return adminMasterMutation(request, env, context, allowedCompanies);
@@ -1260,6 +1604,18 @@ async function adminMaster(request: Request, env: SpendEnv, context: SessionCont
       env.DB.prepare(`SELECT id,company_id AS companyId,category_id AS categoryId,min_amount_kobo AS minAmountKobo,evidence_type AS evidenceType,required,minimum_count AS minimumCount,requires_reason_if_missing AS requiresReason,active FROM spend_evidence_policies WHERE company_id IS NULL OR company_id IN (${placeholders})`).bind(...ids).all<Record<string, unknown>>(),
       env.DB.prepare(`SELECT p.id,p.company_id AS companyId,p.kind,p.proposed_name AS proposedName,p.status,p.review_reason AS reviewReason,p.created_at AS createdAt,e.display_name AS submittedByName FROM spend_master_proposals p JOIN employees e ON e.id=p.submitted_by WHERE p.company_id IN (${placeholders}) ORDER BY p.created_at DESC LIMIT 100`).bind(...ids).all<Record<string, unknown>>(),
     ]);
+    // The permission snapshot used to enter GET may have been revoked during
+    // the queries above. Revalidate every returned company against current D1
+    // session, membership and scoped override state immediately before output.
+    try {
+      await spendScopedWriteAuthorityGate(
+        env, context, ids.map((id) => ({
+          companyId: id, permissionCode: 'expense.master', threshold: 5,
+        })),
+      ).first();
+    } catch {
+      return error('Spend master-data access changed while the records were being read.', 403);
+    }
     return json({ serverTime: new Date().toISOString(), businessTimezone: businessTimezone(env), categories: categories.results || [], costCenters: costCenters.results || [], suppliers: suppliers.results || [], treatments: treatments.results || [], allocationTemplates: templates.results || [], approvalRules: rules.results || [], evidencePolicies: policies.results || [], proposals: proposals.results || [] });
   }
   return error('Method not allowed.', 405);

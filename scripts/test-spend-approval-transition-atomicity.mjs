@@ -12,15 +12,39 @@ const loaded = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, () => ({}));
 const { routeSpend } = loaded.exports;
 
-function fixture({ ignoreAudit = false, ignoreEvent = false, synchronizeReads = false, synchronizeSubmitReads = false, initialStatus = 'submitted' } = {}) {
+function fixture({ ignoreAudit = false, ignoreEvent = false, synchronizeReads = false, synchronizeSubmitReads = false, initialStatus = 'submitted', ownerOnlyRole = false } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec(`
-    CREATE TABLE spend_expense_requests(id TEXT PRIMARY KEY,company_id TEXT,status TEXT,approved_at TEXT,submitted_at TEXT,updated_at TEXT);
+    CREATE TABLE spend_expense_requests(id TEXT PRIMARY KEY,company_id TEXT,status TEXT,requester_employee_id TEXT,approved_at TEXT,submitted_at TEXT,updated_at TEXT);
     CREATE TABLE spend_expense_approvals(id TEXT PRIMARY KEY,expense_request_id TEXT,rule_id TEXT,step_no INTEGER,approver_role_code TEXT,status TEXT,approver_employee_id TEXT,reason TEXT,acted_at TEXT);
     CREATE TABLE audit_logs(id TEXT PRIMARY KEY,actor_employee_id TEXT,company_id TEXT,module TEXT,action TEXT,entity_type TEXT,entity_id TEXT,after_json TEXT,reason TEXT,source TEXT,request_id TEXT,occurred_at TEXT DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE spend_expense_events(id TEXT PRIMARY KEY,expense_request_id TEXT,actor_employee_id TEXT,company_id TEXT,action TEXT,previous_status TEXT,next_status TEXT,reason TEXT,request_id TEXT,source TEXT,captured_at TEXT,metadata_json TEXT,server_received_at TEXT DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE auth_sessions(id TEXT PRIMARY KEY,employee_id TEXT,expires_at TEXT,revoked_at TEXT);
+    CREATE TABLE employees(id TEXT PRIMARY KEY,employment_status TEXT);
+    CREATE TABLE employee_company_memberships(employee_id TEXT,company_id TEXT,active INTEGER);
+    CREATE TABLE companies(id TEXT PRIMARY KEY,active INTEGER);
+    CREATE TABLE employee_roles(id TEXT PRIMARY KEY,employee_id TEXT,company_id TEXT,role_id TEXT);
+    CREATE TABLE roles(id TEXT PRIMARY KEY,company_id TEXT,code TEXT,active INTEGER);
+    CREATE TABLE permissions(id TEXT PRIMARY KEY,code TEXT);
+    CREATE TABLE role_permissions(id TEXT PRIMARY KEY,role_id TEXT,permission_id TEXT,access_level TEXT);
+    CREATE TABLE employee_permission_overrides(id TEXT PRIMARY KEY,employee_id TEXT,permission_id TEXT,access_level TEXT,expires_at TEXT);
+    CREATE TABLE employee_permission_overrides_v2(id TEXT PRIMARY KEY,employee_id TEXT,permission_id TEXT,company_id TEXT,access_level TEXT,expires_at TEXT);
   `);
-  db.prepare('INSERT INTO spend_expense_requests(id,company_id,status) VALUES(?,?,?)').run('expense-a', 'company-a', initialStatus);
+  db.prepare('INSERT INTO spend_expense_requests(id,company_id,status,requester_employee_id) VALUES(?,?,?,?)').run('expense-a', 'company-a', initialStatus, 'requester-a');
+  // Authorize the synthetic Manager using the SAME persisted D1 rows checked
+  // inside the atomic approval/submit batch. Owner role alone grants nothing.
+  db.exec(`
+    INSERT INTO employees(id,employment_status) VALUES('manager-a','active');
+    INSERT INTO companies(id,active) VALUES('company-a',1);
+    INSERT INTO employee_company_memberships(employee_id,company_id,active) VALUES('manager-a','company-a',1);
+    INSERT INTO auth_sessions(id,employee_id,expires_at,revoked_at) VALUES('session-manager-a','manager-a','2099-12-31T23:59:59Z',NULL);
+    INSERT INTO roles(id,company_id,code,active) VALUES('role-manager',NULL,'manager',1);
+    INSERT INTO employee_roles(id,employee_id,company_id,role_id) VALUES('er-manager-a','manager-a','company-a','role-manager');
+    INSERT INTO permissions(id,code) VALUES('perm-approve','expense.approve'),('perm-request','expense.requests');
+    INSERT INTO role_permissions(id,role_id,permission_id,access_level) VALUES
+      ('grant-approve','role-manager','perm-approve','approve'),
+      ('grant-request','role-manager','perm-request','create');
+  `);
   if (initialStatus === 'submitted') db.prepare('INSERT INTO spend_expense_approvals(id,expense_request_id,status) VALUES(?,?,?)').run('approval-a', 'expense-a', 'pending');
   if (ignoreAudit) db.exec(`CREATE TRIGGER ignore_action_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(IGNORE); END;`);
   if (ignoreEvent) db.exec(`CREATE TRIGGER ignore_action_event BEFORE INSERT ON spend_expense_events BEGIN SELECT RAISE(IGNORE); END;`);
@@ -68,9 +92,23 @@ function fixture({ ignoreAudit = false, ignoreEvent = false, synchronizeReads = 
       } catch (error) { db.exec('ROLLBACK'); throw error; }
     },
   } };
-  const context = { employee: { id: 'manager-a', department: 'Finance' }, roles: [{ code: 'owner' }], companies: [{ id: 'company-a' }], companyPermissions: {} };
+  const context = { employee: { id: 'manager-a', department: 'Finance' }, sessionId: 'session-manager-a', roles: ownerOnlyRole ? [{ code: 'owner' }] : [{ code: 'manager', companyId: 'company-a' }], companies: [{ id: 'company-a' }], companyPermissions: {} };
   const request = action => new Request('https://staffportal.test/api/spend/requests/expense-a/action', { method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': `request-${action}` }, body: JSON.stringify({ action, reason: action === 'approve' ? undefined : 'Reviewed and recorded.', missingEvidenceReason: action === 'submit' ? 'Receipt restoration is pending.' : undefined }) });
   return { db, env, context, request };
+}
+
+// Even with a request-time permission stub, Owner identity cannot bypass the
+// assigned Manager approval step. A denial audit is required, but no business write may occur.
+{
+  const { db, env, context, request } = fixture({ ownerOnlyRole: true });
+  const response = await routeSpend(request('approve'), env, context);
+  assert.equal(response.status, 403, 'Owner role cannot bypass the Manager approval step');
+  assert.equal(db.prepare("SELECT status FROM spend_expense_requests WHERE id='expense-a'").get().status, 'submitted');
+  const rejectedAudit = db.prepare('SELECT action,after_json FROM audit_logs').get();
+  assert.equal(rejectedAudit?.action, 'approval_role_denied', 'the denial itself must be audited');
+  assert.equal(JSON.parse(rejectedAudit.after_json).outcome, 'rejected');
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM spend_expense_events').get().count, 0);
+  db.close();
 }
 
 for (const action of ['approve', 'return', 'reject']) {

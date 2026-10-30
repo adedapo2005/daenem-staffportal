@@ -93,6 +93,17 @@ jobs:
           node --test scripts/test-stage1-accessibility.mjs
           node scripts/check-stage1-appearance-integration.mjs
 
+      - name: Stage 0 Owner Intelligence, Group Role and Spend Company Scope
+        run: |
+          node --disable-warning=ExperimentalWarning scripts/test-owner-intelligence-p0-221-v30-full-schema.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-spend-owner-company-scope.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-spend-group-report-grants.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-spend-approval-atwrite-security.mjs
+          node --disable-warning=ExperimentalWarning scripts/test-spend-master-allocation-scope.mjs
+
+      - name: Payroll Bank Role Projection Compatibility
+        run: node --disable-warning=ExperimentalWarning scripts/test-payroll-bank-verification-promotion-sqlite.mjs
+
       - name: V44 scoped settings contract
         run: node scripts/check-v44-scoped-settings.mjs
 
