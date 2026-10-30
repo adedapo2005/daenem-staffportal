@@ -27,6 +27,7 @@ import './stage1-a11y-contrast.css';
 import './stage1-large-text-reflow.css';
 import './stage1-premium-interactions.css';
 import './stage1-home-widget-premium.css';
+import './stage0-mobile-acceptance.css';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
