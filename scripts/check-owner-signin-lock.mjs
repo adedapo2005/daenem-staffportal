@@ -1,4 +1,4 @@
-// OWNER-LOCKED DAENEM StaffPortal Sign-In — October 24, 2026.
+// OWNER-LOCKED DAENEM StaffPortal Sign-In — Owner-authorized mobile-dock baseline, October 29, 2026.
 // Runs in preproduction PR CI and before every protected Cloudflare staging deploy.
 // No bypass token, time-based expiration, environment override, or automatic unlock.
 // Other workstreams and all non-Sign-In paths remain free to evolve.
@@ -9,10 +9,10 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const manifestPath = path.join(root, 'delivery/owner-lock/staffportal-signin-2026-10-24.manifest.json');
-const expectedManifestDigest = '92be22f7b5b45d68aa72b91851841c50991b8cbfc7fe5d9b3e82ac4a1c6fa04b';
-const expectedTag = 'staffportal-signin-locked-2026-10-24';
-const expectedCommit = 'd7907f0102e7bcf79f90a60bdc5fdc542975dd04';
+const manifestPath = path.join(root, 'delivery/owner-lock/staffportal-signin-2026-10-29-mobile-dock.manifest.json');
+const expectedManifestDigest = 'f7185e3e2c4f23cfbc9a46590f70f7aa71e5496ce03b49cfd70203f8def9aa94';
+const expectedTag = 'staffportal-signin-locked-2026-10-29-mobile-dock';
+const expectedCommit = 'f60a87c69d1c4ba90510740219363d98acb9dad0';
 const expectedCount = 128;
 const digest = content => crypto.createHash('sha256').update(content).digest('hex');
 const fail = why => {
