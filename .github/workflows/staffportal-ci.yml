@@ -86,6 +86,17 @@ jobs:
           node scripts/test-navigation-overlay.mjs
           node scripts/check-command-center-navigation.mjs
 
+      - name: Reject Legacy Client Shell And Auth Bridge
+        shell: bash
+        run: |
+          if grep -R -nE 'v180-staging-auth-bridge|vinext.navigationRuntime|/_next/static/|location[.]assign[(][^)]*/workspace/' src worker public index.html vite*.ts; then
+            echo "::error::Legacy Next/Vinext or hard-redirect auth bridge detected in the deploy source."
+            exit 1
+          fi
+
+      - name: Navigation Workspace At-Write Authorization And Audit Regression
+        run: node --disable-warning=ExperimentalWarning scripts/test-navigation-workspace-atomicity.mjs
+
       - name: Stage 1 palette catalogue and governed Appearance policy
         run: |
           node --test scripts/test-postlogin-palette-system.mjs

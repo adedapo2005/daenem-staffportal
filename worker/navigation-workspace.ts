@@ -163,16 +163,94 @@ async function effective(env: Env, context: EnhancedSessionContext) {
   });
 }
 
+
+// Fail closed within the same D1 batch as each preference or Group policy
+// mutation and its audit record, instead of trusting a cached SessionContext.
+const navigationLiveActorSql = `EXISTS (
+ SELECT 1 FROM auth_sessions current_session
+ JOIN employees actor ON actor.id=current_session.employee_id
+ WHERE current_session.id=? AND current_session.employee_id=?
+   AND current_session.revoked_at IS NULL
+   AND datetime(current_session.expires_at)>datetime('now')
+   AND actor.employment_status IN ('active','provisional')
+   AND EXISTS (
+     SELECT 1 FROM employee_company_memberships membership
+     JOIN companies company ON company.id=membership.company_id AND company.active=1
+     WHERE membership.employee_id=actor.id AND membership.active=1
+   )
+)`;
+
+const navigationLiveGroupOwnerSql = `EXISTS (
+ SELECT 1 FROM employee_roles assigned
+ JOIN roles role ON role.id=assigned.role_id AND role.code='owner' AND role.active=1
+   AND (role.company_id IS NULL OR role.company_id=assigned.company_id)
+ JOIN employee_company_memberships membership
+   ON membership.employee_id=assigned.employee_id
+   AND membership.company_id=assigned.company_id AND membership.active=1
+ JOIN companies company ON company.id=membership.company_id AND company.active=1
+ WHERE assigned.employee_id=?
+)`;
+
+function navigationPreferenceAtWriteGuard(
+ env:Env, context:EnhancedSessionContext, targetEmployeeId:string,
+ existing:Record<string,string>|null, styleRequested:boolean,
+) {
+ const before=existing
+  ? JSON.stringify([existing.styleId ?? null,existing.groupOrderJson ?? null,
+      existing.itemOrderJson ?? null,existing.pinnedItemsJson ?? null])
+  : 'null';
+ return env.DB.prepare(`SELECT CASE WHEN ${navigationLiveActorSql}
+     AND ?=?
+     AND COALESCE((
+       SELECT json_array(style_id,group_order_json,item_order_json,pinned_items_json)
+       FROM employee_navigation_preferences WHERE employee_id=?
+     ),'null')=?
+     AND (
+       ?=0 OR ${navigationLiveGroupOwnerSql} OR (
+         COALESCE((SELECT setting_value FROM app_settings
+           WHERE setting_key='navigation.forced_style'),'')=''
+         AND COALESCE((SELECT setting_value FROM app_settings
+           WHERE setting_key='navigation.allow_employee_choice'),'true')='true'
+       )
+     )
+   THEN 1 ELSE json_extract('stale or unauthorized navigation preference','$')
+   END AS write_guard`).bind(
+   context.sessionId,context.employee.id,
+   targetEmployeeId,context.employee.id,targetEmployeeId,before,
+   styleRequested?1:0,context.employee.id,
+ );
+}
+
+function navigationGroupPolicyAtWriteGuard(
+ env:Env,context:EnhancedSessionContext,
+ currentDefault:string,currentForced:string,currentAllowChoice:string,
+) {
+ const before=JSON.stringify([currentDefault,currentForced,currentAllowChoice]);
+ return env.DB.prepare(`SELECT CASE WHEN ${navigationLiveActorSql}
+     AND ${navigationLiveGroupOwnerSql}
+     AND json_array(
+       COALESCE((SELECT setting_value FROM app_settings
+         WHERE setting_key='navigation.default_style'),'guided-groups'),
+       COALESCE((SELECT setting_value FROM app_settings
+         WHERE setting_key='navigation.forced_style'),''),
+       COALESCE((SELECT setting_value FROM app_settings
+         WHERE setting_key='navigation.allow_employee_choice'),'true')
+     )=?
+   THEN 1 ELSE json_extract('stale or unauthorized navigation policy','$')
+   END AS write_guard`).bind(context.sessionId,context.employee.id,
+     context.employee.id,before);
+}
+
 async function savePreference(request: Request, env: Env, context: EnhancedSessionContext) {
   let body:{ styleId?:string; employeeId?:string; groupOrder?:string[]; itemOrder?:string[]; pinnedItems?:string[] };
   try { body = await request.json(); } catch { return json({error:'Invalid navigation preference.'},400); }
   const targetEmployeeId = String(body.employeeId || context.employee.id);
-  if (targetEmployeeId !== context.employee.id && !canAssign(context)) return json({error:'Workspace assignment permission is required.'},403);
+  if (targetEmployeeId !== context.employee.id) return json({error:'Personal navigation preferences can only be changed by the signed-in employee.'},403);
   const forced = await setting(env,'navigation.forced_style','');
   const allowChoice = await setting(env,'navigation.allow_employee_choice','true');
   if (body.styleId && !styleIds.includes(body.styleId as typeof styleIds[number])) return json({error:'Select an available navigation style.'},400);
-  if (body.styleId && forced && !canManageStudio(context)) return json({error:'The Owner has selected a Group-wide navigation style.',forcedStyle:forced},409);
-  if (body.styleId && allowChoice !== 'true' && !canManageStudio(context)) return json({error:'Personal navigation style choice is disabled by Group policy.'},403);
+  if (body.styleId && forced && !isOwner(context)) return json({error:'The Owner has selected a Group-wide navigation style.',forcedStyle:forced},409);
+  if (body.styleId && allowChoice !== 'true' && !isOwner(context)) return json({error:'Personal navigation style choice is disabled by Group policy.'},403);
   const validKeys = new Set(navigationItems.map((item) => item.key));
   const validGroups = new Set(navigationItems.map((item) => item.group));
   const groupOrder = (body.groupOrder || []).filter((value,index,array) => validGroups.has(value) && array.indexOf(value) === index);
@@ -180,7 +258,10 @@ async function savePreference(request: Request, env: Env, context: EnhancedSessi
   const pinnedItems = (body.pinnedItems || []).filter((value,index,array) => validKeys.has(value) && array.indexOf(value) === index);
   const existing = await env.DB.prepare('SELECT style_id styleId,group_order_json groupOrderJson,item_order_json itemOrderJson,pinned_items_json pinnedItemsJson FROM employee_navigation_preferences WHERE employee_id=?').bind(targetEmployeeId).first<Record<string,string>>();
   const auditId=uid('audit');
+  const livePreferenceGuard=navigationPreferenceAtWriteGuard(
+    env,context,targetEmployeeId,existing,Boolean(body.styleId));
   try { await env.DB.batch([
+    livePreferenceGuard,
     env.DB.prepare(`INSERT INTO employee_navigation_preferences(employee_id,style_id,group_order_json,item_order_json,pinned_items_json,updated_by,updated_at)
     VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)
     ON CONFLICT(employee_id) DO UPDATE SET style_id=excluded.style_id,group_order_json=excluded.group_order_json,item_order_json=excluded.item_order_json,pinned_items_json=excluded.pinned_items_json,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP`)
@@ -193,7 +274,7 @@ async function savePreference(request: Request, env: Env, context: EnhancedSessi
 }
 
 async function savePolicy(request: Request, env: Env, context: EnhancedSessionContext) {
-  if (!canManageStudio(context)) return json({error:'Manage Navigation Studio permission is required.'},403);
+  if (!isOwner(context)) return json({error:'Only the Group Owner can change Group-wide navigation policy.'},403);
   let body:{ defaultStyle?:string; forcedStyle?:string | null; allowEmployeeChoice?:boolean };
   try { body = await request.json(); } catch { return json({error:'Invalid navigation policy.'},400); }
   if (body.defaultStyle !== undefined && !styleIds.includes(body.defaultStyle as typeof styleIds[number])) return json({error:'Select an available default style.'},400);
@@ -213,6 +294,8 @@ async function savePolicy(request: Request, env: Env, context: EnhancedSessionCo
   if (body.forcedStyle !== undefined) writes.push(settingWrite(env,'navigation.forced_style',body.forcedStyle || ''));
   if (body.allowEmployeeChoice !== undefined) writes.push(settingWrite(env,'navigation.allow_employee_choice',String(body.allowEmployeeChoice),'boolean'));
   const auditId=uid('audit');
+  writes.unshift(navigationGroupPolicyAtWriteGuard(
+    env,context,currentDefault,currentForced,currentAllowChoice));
   writes.push(env.DB.prepare(`INSERT INTO audit_logs(id,actor_employee_id,module,action,entity_type,entity_id,after_json,source)
     VALUES(?,?,'navigation','update_group_policy','policy','group',?,'web')`).bind(auditId,context.employee.id,JSON.stringify(policy)));
   writes.push(requireAudit(env,auditId));
@@ -256,13 +339,113 @@ async function accessOverview(request: Request, env: Env, context: EnhancedSessi
   });
 }
 
+
+// Release-owner review: evaluate live session, membership and effective company
+// permission INSIDE the same D1 batch that changes access grants and audit.
+const navigationAssignmentLevelSql = (column:string) => `CASE ${column}
+  WHEN 'view' THEN 1 WHEN 'create' THEN 2 WHEN 'edit' THEN 3
+  WHEN 'approve' THEN 4 WHEN 'manage' THEN 5 ELSE 0 END`;
+
+function navigationAssignmentAtWriteGuard(
+  env:Env,context:EnhancedSessionContext,
+  companyId:string,targetType:'employee'|'role',
+  targetId:string,permissionId:string,itemKey:string,
+  oldLevel:AccessLevel,expectedRevision:number,
+) {
+  const liveActorSql = `EXISTS(
+    SELECT 1 FROM auth_sessions session
+    JOIN employees actor ON actor.id=session.employee_id
+    JOIN companies business ON business.id=? AND business.active=1
+    JOIN employee_company_memberships member ON member.employee_id=actor.id
+      AND member.company_id=business.id AND member.active=1
+    WHERE session.id=? AND session.employee_id=?
+      AND session.revoked_at IS NULL AND datetime(session.expires_at)>datetime('now')
+      AND actor.employment_status IN ('active','provisional')
+      AND EXISTS(
+        SELECT 1 FROM permissions permission
+        WHERE permission.code IN ('navigation.assign','roles.access','users.access')
+          AND COALESCE(
+            (SELECT ${navigationAssignmentLevelSql('override.access_level')}
+             FROM employee_permission_overrides_v2 override
+             WHERE override.employee_id=actor.id
+               AND override.company_id=business.id
+               AND override.permission_id=permission.id
+               AND (override.expires_at IS NULL OR datetime(override.expires_at)>datetime('now'))
+             LIMIT 1),
+            (SELECT ${navigationAssignmentLevelSql('legacy.access_level')}
+             FROM employee_permission_overrides legacy
+             WHERE legacy.employee_id=actor.id AND legacy.company_id=business.id
+               AND legacy.permission_id=permission.id
+               AND (legacy.expires_at IS NULL OR datetime(legacy.expires_at)>datetime('now'))
+             LIMIT 1),
+            (SELECT MAX(${navigationAssignmentLevelSql('grant.access_level')})
+             FROM employee_roles assigned
+             JOIN roles role ON role.id=assigned.role_id AND role.active=1
+               AND (role.company_id IS NULL OR role.company_id=assigned.company_id)
+             JOIN role_permissions grant ON grant.role_id=role.id
+               AND grant.permission_id=permission.id
+             WHERE assigned.employee_id=actor.id AND assigned.company_id=business.id),
+            0
+          )>=5
+      )
+  )`;
+  const actorParams = [companyId,context.sessionId,context.employee.id];
+  const targetSql = targetType === 'role' ? `EXISTS(
+    SELECT 1 FROM roles target
+    WHERE target.id=? AND target.active=1 AND target.code<>'owner'
+      AND (target.company_id=? OR (
+        target.company_id IS NULL AND EXISTS(
+          SELECT 1 FROM employee_roles assigned
+          JOIN roles role ON role.id=assigned.role_id
+          WHERE assigned.employee_id=? AND assigned.company_id=?
+            AND role.code='owner' AND role.company_id IS NULL AND role.active=1
+        )
+      ))
+  )` : `EXISTS(
+    SELECT 1 FROM employees target
+    JOIN employee_company_memberships member ON member.employee_id=target.id
+      AND member.company_id=? AND member.active=1
+    WHERE target.id=? AND target.employment_status IN ('active','provisional')
+      AND NOT EXISTS(
+        SELECT 1 FROM employee_roles assigned
+        JOIN roles role ON role.id=assigned.role_id
+        WHERE assigned.employee_id=target.id AND assigned.company_id=member.company_id
+          AND role.code='owner' AND role.active=1
+      )
+  )`;
+  const targetParams = targetType === 'role'
+    ? [targetId,companyId,context.employee.id,companyId] : [companyId,targetId];
+  const levelSql = targetType === 'role'
+    ? `SELECT access_level FROM role_permissions WHERE role_id=? AND permission_id=?`
+    : `SELECT access_level FROM employee_permission_overrides_v2
+         WHERE employee_id=? AND company_id=? AND permission_id=?`;
+  const levelParams = targetType === 'role'
+    ? [targetId,permissionId] : [targetId,companyId,permissionId];
+  // An Owner-only grant must still have live Owner authority at the atomic
+  // write boundary, even if the request's cached roles showed Owner earlier.
+  const ownerOnlyItem = ['access-control','navigation-studio','authorized-workspace'].includes(itemKey);
+  const check = `SELECT CASE WHEN ${liveActorSql} AND ${targetSql}
+    AND (?=0 OR ${navigationLiveGroupOwnerSql})
+    AND (SELECT COUNT(*) FROM navigation_access_changes
+      WHERE company_id=? AND target_type=? AND target_id=? AND item_key=?)=?
+    AND COALESCE((${levelSql}),'none')=?
+    THEN 1 ELSE json_extract('stale navigation assignment or missing authority','$') END AS integrity_guard`;
+  return env.DB.prepare(check).bind(
+    ...actorParams,...targetParams,
+    ownerOnlyItem?1:0,context.employee.id,
+    companyId,targetType,targetId,itemKey,expectedRevision,
+    ...levelParams,oldLevel,
+  );
+}
+
 async function assign(request: Request, env: Env, context: EnhancedSessionContext) {
-  let body:{ companyId?:string; targetType?:'employee'|'role'; targetId?:string; itemKey?:string; accessLevel?:AccessLevel; reason?:string; expiresAt?:string | null; clear?:boolean };
+  let body:{ companyId?:string; targetType?:'employee'|'role'; targetId?:string; itemKey?:string; accessLevel?:AccessLevel; reason?:string; expiresAt?:string | null; clear?:boolean; expectedRevision?:number };
   try { body = await request.json(); } catch { return json({error:'Invalid workspace assignment.'},400); }
   const companyId = String(body.companyId || ''), targetType = body.targetType, targetId = String(body.targetId || ''), level = body.accessLevel as AccessLevel;
   const item = navigationItems.find((candidate) => candidate.key === body.itemKey && candidate.permissionCode);
   if (!companyId || !companyAllowed(context,companyId) || !['employee','role'].includes(String(targetType)) || !targetId || !item || !levels.includes(level) || (body.clear !== undefined && typeof body.clear !== 'boolean')) return json({error:'Company, target, workspace item and access level are required.'},400);
   if (!canAssign(context,companyId)) return json({error:'Authorized Workspace management permission is required for this company.'},403);
+  if (body.expectedRevision !== undefined && (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 0)) return json({error:'Expected revision must be a non-negative integer.'},400);
   const reason = String(body.reason || '').trim();
   if (reason.length < 3) return json({error:'Provide a short reason for this access assignment.'},400);
   if (!isOwner(context) && ['access-control','navigation-studio','authorized-workspace'].includes(item.key)) return json({error:'Only the Owner can assign administration access.'},403);
@@ -270,6 +453,12 @@ async function assign(request: Request, env: Env, context: EnhancedSessionContex
   if (!permission) return json({error:`The ${item.label} permission is not configured.`},409);
   let oldLevel: AccessLevel = 'none';
   const writes=[];
+  const revisionRow = await env.DB.prepare(
+    'SELECT COUNT(*) AS revision FROM navigation_access_changes WHERE company_id=? AND target_type=? AND target_id=? AND item_key=?'
+  ).bind(companyId,targetType,targetId,item.key).first<{revision:number}>();
+  const revision = Number(revisionRow?.revision || 0);
+  if (body.expectedRevision !== undefined && body.expectedRevision !== revision)
+    return json({error:'The assignment was changed. Refresh before submitting again.'},409);
   const changeId=uid('nav-change'),auditId=uid('audit');
   if (targetType === 'role') {
     const role = await env.DB.prepare(`SELECT id,code,company_id companyId FROM roles WHERE id=? AND active=1 AND (company_id=? OR company_id IS NULL)`).bind(targetId,companyId).first<{id:string;code:string;companyId?:string|null}>();
@@ -304,8 +493,14 @@ async function assign(request: Request, env: Env, context: EnhancedSessionContex
       VALUES(?,?,?,'navigation','workspace_assignment',?,?,?,?,'web')`).bind(auditId,context.employee.id,companyId,targetType,targetId,JSON.stringify({itemKey:item.key,permissionCode:permission.code,accessLevel:oldLevel}),JSON.stringify({itemKey:item.key,permissionCode:permission.code,accessLevel:level,reason})),
     requireAudit(env,auditId),
   );
-  try { await env.DB.batch(writes); } catch { return json({error:'Workspace assignment was not saved or audited.'},409); }
-  return json({ok:true,targetType,targetId,itemKey:item.key,permissionCode:permission.code,oldAccessLevel:oldLevel,accessLevel:body.clear?null:level,cleared:Boolean(body.clear)});
+  // A D1 batch is a single transaction. The first SELECT denies stale,
+  // revoked or unauthorized writes before any grant/audit mutation.
+  writes.unshift(navigationAssignmentAtWriteGuard(
+    env,context,companyId,targetType as 'employee'|'role',targetId,
+    permission.id,item.key,oldLevel,revision,
+  ));
+  try { await env.DB.batch(writes); } catch { return json({error:'Workspace assignment was stale, denied or not audited. Reload and try again.'},409); }
+  return json({ok:true,targetType,targetId,itemKey:item.key,permissionCode:permission.code,oldAccessLevel:oldLevel,accessLevel:body.clear?null:level,cleared:Boolean(body.clear),revision:revision+1});
 }
 
 export async function routeNavigationWorkspace(request: Request, env: Env, context: EnhancedSessionContext): Promise<Response | null> {
