@@ -392,19 +392,17 @@ await expectCase('ATWRITE scoped AI deny overrides Owner role grant and prevents
  );
  assert.equal(injected,1);isNeutral(response);assert.equal(activityDelta,0);
 });
-await expectCase('Fence second rollover denies stale write; fresh authorized retry succeeds once',async()=>{
+await expectCase('Fence second rollover preserves authorized write and audit',async()=>{
  const previousClock=fenceClock;
+ const before=aiLogs(),prompts=aiPrompts.length;
  const {response,activityDelta,injected}=await aiAtWriteWindow(
   'clock-second-rollover',
   ()=>{fenceClock=one('SELECT datetime(?,\'+1 second\') AS value',previousClock).value;},
   ()=>{}
  );
- assert.equal(injected,1);isNeutral(response);assert.equal(activityDelta,0);
- const before=aiLogs(),prompts=aiPrompts.length;
- const retry=await ai('owner',{companyId:'company-printing',question:'Retry authorized brief'});
- assert.equal(retry.status,200);
- assert.equal(aiLogs()-before,1);
- assert.equal(aiPrompts.length-prompts,1);
+ assert.equal(injected,1);assert.equal(response.status,200);
+ assert.equal(activityDelta,1,'legitimate clock rollover must not suppress the authorized audit');
+ assert.equal(aiPrompts.length-prompts,1,'legitimate clock rollover must not suppress the authorized brief');
 });
 const failed=cases.filter(x=>!x.pass);
 for(const c of cases)console.log((c.pass?'PASS':'FAIL')+' '+c.name+(c.pass?'':' -> '+c.error));

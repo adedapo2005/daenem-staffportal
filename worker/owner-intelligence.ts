@@ -255,10 +255,15 @@ async function intelligence(request: Request, env: OwnerEnv, context: SessionCon
 // permission snapshot: ANY intervening change fails closed and requires retry.
 const ownerAiAuthorityFenceSql = `
  SELECT json_object(
-   'now',strftime('%Y-%m-%d %H:%M:%S','now'),
+   -- Do not fingerprint the bare clock second: legitimate D1 scheduling can
+   -- cross that second even with unchanged rights. Expiring override validity
+   -- is fingerprinted individually below, while sessions are checked at write.
    'session',(SELECT json_array(s.employee_id,s.expires_at,s.revoked_at)
      FROM auth_sessions s WHERE s.id=?),
    'employee',(SELECT json_array(e.employment_status) FROM employees e WHERE e.id=?),
+   'latestApplication',(SELECT json_array(sr.id,sr.status,sr.created_at)
+     FROM signup_requests sr WHERE sr.employee_id=?
+     ORDER BY sr.created_at DESC,sr.id DESC LIMIT 1),
    'memberships',(SELECT json_group_array(json(t.j)) FROM (
      SELECT json_array(m.id,m.company_id,m.active,m.is_primary,c.active) AS j
      FROM employee_company_memberships m LEFT JOIN companies c ON c.id=m.company_id
@@ -278,12 +283,16 @@ const ownerAiAuthorityFenceSql = `
      WHERE er.employee_id=? ORDER BY er.id,rp.id
    ) t),
    'legacyOverrides',(SELECT json_group_array(json(t.j)) FROM (
-     SELECT json_array(o.id,p.code,o.access_level,o.expires_at) AS j
+     SELECT json_array(o.id,p.code,o.access_level,o.expires_at,
+       CASE WHEN o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now')
+       THEN 1 ELSE 0 END) AS j
      FROM employee_permission_overrides o JOIN permissions p ON p.id=o.permission_id
      WHERE o.employee_id=? ORDER BY o.id
    ) t),
    'scopedOverrides',(SELECT json_group_array(json(t.j)) FROM (
-     SELECT json_array(o.id,o.company_id,p.code,o.access_level,o.expires_at) AS j
+     SELECT json_array(o.id,o.company_id,p.code,o.access_level,o.expires_at,
+       CASE WHEN o.expires_at IS NULL OR datetime(o.expires_at)>datetime('now')
+       THEN 1 ELSE 0 END) AS j
      FROM employee_permission_overrides_v2 o JOIN permissions p ON p.id=o.permission_id
      WHERE o.employee_id=? ORDER BY o.id
    ) t)
@@ -291,7 +300,7 @@ const ownerAiAuthorityFenceSql = `
 `;
 const ownerAiAuthorityFenceArgs=(ctx:SessionContext)=>[
   ctx.sessionId,ctx.employee.id,ctx.employee.id,ctx.employee.id,
-  ctx.employee.id,ctx.employee.id,ctx.employee.id
+  ctx.employee.id,ctx.employee.id,ctx.employee.id,ctx.employee.id
 ];
 
 async function aiBrief(request: Request, env: OwnerEnv, context: SessionContext) {
