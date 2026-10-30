@@ -88,7 +88,10 @@ export function FormsCenter({context,companyId}:{context:WorkforceContext;compan
    const suffix=companyId?'?companyId='+encodeURIComponent(companyId):'';
    const[formResult,mineResult]=await Promise.all([api<{forms:WorkflowForm[]}>('/api/forms'+suffix),api<{assignments:FormAssignment[]}>('/api/forms/mine')]);
    if(generation!==loadGeneration.current)return;
-   const assignments=mineResult.assignments||[];
+   // Each automatically displayed company page shows only its own assigned records.
+   // Group-wide assignments appear once under the dedicated Group page.
+   const assignments=(mineResult.assignments||[]).filter((item)=>companyId
+    ? item.companyId===companyId : !item.companyId);
    setForms(formResult.forms||[]);setMine(assignments);
    const drafts=await Promise.all(assignments.map(async item=>[
     item.assignmentId,assignedFormDraftCompany(item)
