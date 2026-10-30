@@ -76,6 +76,13 @@ try {
     for (const id of ['printing', 'bakery', 'autos', 'properties', 'logistics']) {
       assert.ok(ownerPages.some((page) => page.moduleId === id), `Owner navigation lost ${id}`);
     }
+    const ownerBakeryContext = { ...ownerScoped, company: 'bakery' };
+    const ownerBakeryPages = nav.flattenCommandNavigation(nav.buildEnterpriseCommandNavigation(optionsFor(ownerBakeryContext)));
+    assert.deepEqual(
+      ownerBakeryPages.map((page) => page.moduleId).sort(),
+      ownerPages.map((page) => page.moduleId).sort(),
+      'Owner navigation module union must not change with selected company context',
+    );
     const bakerySession = nav.commandNavigationTargetSession(canonical.byId('bakery'), ownerScoped, canonical.canView);
     assert.equal(bakerySession.company, 'bakery', 'opening Bakery resolves its authorized company context internally');
     assert.equal(canonical.canView(canonical.byId('bakery'), bakerySession), true);
