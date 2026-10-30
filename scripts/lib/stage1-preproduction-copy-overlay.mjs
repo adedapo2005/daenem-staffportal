@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const portal = fileURLToPath(new URL('../../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal.tsx', import.meta.url)).replaceAll('\\','/').toLowerCase();
-const approved = '07af5ed6ff4a9e82a3984558738200c566456bd5ab48692420c7c78c3dc2d572';
+const approved = 'c47d7c4700453bb3fda1e0b98b41d2e23cd6b77080152402a8489fee9c30f34a';
 const replacements = [
   ['Development preview controls','Pre-Production review controls',2],
   ['DEVELOPMENT PREVIEW ONLY','PRE-PRODUCTION REVIEW',1],
