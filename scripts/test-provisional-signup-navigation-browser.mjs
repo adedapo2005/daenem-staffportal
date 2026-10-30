@@ -16,6 +16,10 @@ try{
     const context=await browser.newContext({viewport:{width:1366,height:768},serviceWorkers:'block'});
     const page=await context.newPage();
     const errors=[],traffic=[];
+    let documentNavigations=0;
+    page.on('request',request=>{
+      if(request.isNavigationRequest() && request.frame()===page.mainFrame())documentNavigations++;
+    });
     let verified=false;
     let savedProfile=null;
     page.on('pageerror',error=>errors.push(error.message));
@@ -83,6 +87,7 @@ try{
       const tabs=page.locator('.sp-auth-tabs button');
       await tabs.nth(1).waitFor({timeout:20000});
       await tabs.nth(1).click();
+      const initialDocumentNavigations=documentNavigations;
       if(assistedByWhatsApp){
         await page.locator('.usp-social-whatsapp').click();
         assert.equal(await page.locator('.usp-social-whatsapp').getAttribute('aria-pressed'),'true');
@@ -114,10 +119,15 @@ try{
       await page.waitForTimeout(1350);
       assert.equal(verified,false);
       assert.equal(new URL(page.url()).pathname,'/','incorrect OTP cannot navigate');
+      assert.equal(documentNavigations,initialDocumentNavigations,'incorrect OTP cannot reload the document');
+      assert.equal(await page.getByRole('heading',{name:'Your Profile Setup'}).count(),0);
+      const signupUrl=page.url();
+      const navigationsBeforeHandoff=documentNavigations;
       await emailCode.fill('123456');
       await page.locator('.usp-auth-form button[type="submit"]').last().click();
-      await page.waitForURL(url=>url.pathname==='/workspace/',{timeout:15000});
       await page.getByRole('heading',{name:'Your Profile Setup'}).waitFor({timeout:15000});
+      assert.equal(documentNavigations,navigationsBeforeHandoff,'verified signup must not reload the document');
+      assert.equal(page.url(),signupUrl,'verified signup retains the current route like password sign-in');
       assert.equal(verified,true);
       assert.ok((await page.locator('body').innerText()).includes('Pending Management Approval'));
       assert.equal(await page.getByText('Full Employee Access').count(),1);
@@ -133,7 +143,7 @@ try{
       assert.equal(traffic.filter(t=>t.path==='/api/auth/signup/verify').length,2);
       assert.equal(errors.length,0,'browser page errors '+errors.join('; '));
       console.log('PASS: '+(assistedByWhatsApp?'WhatsApp-assisted':'Local')+
-        ' completed email OTP redirects to authenticated provisional workspace, invalid OTP denied');
+        ' completed email OTP opens authenticated provisional workspace without reloading, invalid OTP denied');
     }finally{
       await context.close();
     }

@@ -54,14 +54,15 @@ function LoadingScreen() {
 function Root() {
   const auth = useAuth();
   useEffect(() => registerFreshServiceWorker(), []);
-  // V180 signup screen is frozen. Listen only for its final email-OTP form
-  // submission and follow the server-issued restricted session into workspace.
+  // V180 signup screen is frozen. Adopt the server-verified restricted
+  // session after its final email-OTP submission.
   useEffect(() => {
     if (auth.loading || auth.context ||
       new URLSearchParams(window.location.search).get('studioReview') === 'signin-v180') return;
-    return observeProvisionalSignupHandoff(() => {
+    return observeProvisionalSignupHandoff((context) => {
       clearPortalAuthCache();
-      window.location.assign('/workspace/');
+      auth.setContext(context);
+      window.dispatchEvent(new Event('daenem-auth-changed'));
     });
   }, [auth.loading, auth.context]);
   if (auth.loading) return <LoadingScreen />;
