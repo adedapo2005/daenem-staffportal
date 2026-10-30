@@ -1,4 +1,4 @@
-import { sessionCookie, type AuthEnv } from './auth';
+import { sessionCookie, signupSessionBlocked, type AuthEnv } from './auth';
 import { startWhatsAppChallenge, verifyWhatsAppChallenge } from './whatsapp-auth';
 import { startPasswordRecoveryWhatsApp, verifyPasswordRecoveryWhatsApp } from './whatsapp-recovery';
 import { RECOVERY_SETTING_KEY, recoveryMethods, resolveScopedSetting, type RecoveryMethodPolicy } from './scoped-settings';
@@ -612,7 +612,8 @@ async function login(request: Request, env: PasswordAuthEnv) {
       WHERE LOWER(c.username) = LOWER(?) OR LOWER(e.email) = LOWER(?)
       LIMIT 1
     `).bind(identifier, identifier).first<PasswordCredentialRow>();
-
+    // Reuse the session policy before issuing a cookie or updating login state.
+    if (row && await signupSessionBlocked(env, row.employeeId)) row = null;
   } catch (error) {
     return controlledAuthFailure(env, request, 'credential_lookup', error);
   }
@@ -824,6 +825,14 @@ async function verifySigninWhatsApp(request: Request, env: PasswordAuthEnv) {
   }>();
   if (!employee || !['active','provisional'].includes(employee.status)) {
     return json({ error:'This employee login is not available.' }, 403);
+  }
+  try {
+    // An application may have been rejected after the step-up was issued.
+    if (await signupSessionBlocked(env, verified.employeeId)) {
+      return json({ error:'This employee login is not available.' }, 403);
+    }
+  } catch (error) {
+    return controlledAuthFailure(env, request, 'application_status', error);
   }
   const tx = verified.transactionContext;
   const text = (key:string) => typeof tx[key] === 'string' ? String(tx[key]) : undefined;

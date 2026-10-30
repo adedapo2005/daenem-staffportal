@@ -42,24 +42,31 @@ export function observeProvisionalSignupHandoff(
   const intervalMs = Math.max(0, Math.min(2500, options.intervalMs ?? 700));
   let disposed = false;
   let checking = false;
+  let handedOff = false;
+  let attemptsRemaining = 0;
   let controller: AbortController | null = null;
   let delay: ReturnType<typeof setTimeout> | undefined;
 
   const onSubmit = (event: Event) => {
     const form = event.target;
-    if (disposed || checking || !(form instanceof HTMLFormElement)) return;
+    if (disposed || handedOff || !(form instanceof HTMLFormElement)) return;
     // Only the V180 email-OTP completion form qualifies. Password sign-in,
     // recovery, and optional WhatsApp phone-OTP actions must not trigger this.
     if (!form.classList.contains('usp-auth-form') ||
         !form.querySelector('.usp-auth-destination') ||
         !form.querySelector('input[autocomplete="one-time-code"]')) return;
 
+    // A corrected OTP may be submitted while the previous attempt is still
+    // being checked. Give that submission a fresh budget within the same loop.
+    attemptsRemaining = attempts;
+    if (checking) return;
     checking = true;
     controller = new AbortController();
     const signal = controller.signal;
     void (async () => {
       try {
-        for (let i = 0; i < attempts && !disposed && !signal.aborted; i++) {
+        while (attemptsRemaining > 0 && !disposed && !signal.aborted) {
+          attemptsRemaining--;
           await new Promise<void>(resolve => { delay = setTimeout(resolve, intervalMs); });
           if (disposed || signal.aborted) break;
           let context: ProvisionalWorkspaceContext | null = null;
@@ -69,6 +76,7 @@ export function observeProvisionalSignupHandoff(
           const profileLevel = context.permissions?.['profile.access'];
           if (!hasProvisionalRole || !['edit', 'approve', 'manage'].includes(profileLevel)) continue;
           if (disposed || signal.aborted) break;
+          handedOff = true;
           openWorkspace(context);
           break;
         }
