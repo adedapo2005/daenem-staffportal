@@ -42,6 +42,11 @@ export function applyPermissionOverrides(
 export async function getEnhancedSessionContext(request: Request, env: AuthEnv): Promise<EnhancedSessionContext | null> {
   const base = await getSessionContext(request, env);
   if (!base) return null;
+  // Core session-context already scopes provisional users to the admin-defined
+  // Provisional role. Never recompute broader roles or positive overrides here.
+  if (base.employee.status === 'provisional') {
+    return { ...base, companyPermissions: base.companyPermissions };
+  }
   const employeeId = base.employee.id;
   const roleRows = await env.DB.prepare(`
     SELECT er.company_id AS companyId,p.code,rp.access_level AS accessLevel

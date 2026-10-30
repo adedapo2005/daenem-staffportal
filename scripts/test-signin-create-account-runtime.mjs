@@ -7,6 +7,7 @@ const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const module = { exports: {} };
+const provisionalSessions = [];
 new Function('module', 'exports', 'require', compiled)(module, module.exports, (specifier) => {
   if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
   if (specifier === './password-auth') return { recoveryPolicyForEmployee: async () => ({}) };
@@ -14,6 +15,15 @@ new Function('module', 'exports', 'require', compiled)(module, module.exports, (
   if (specifier === './scoped-settings') return { recoveryMethods: () => [] };
   if (specifier === './staffportal-account-scope') return {
     staffPortalCompanyPredicate: () => '1=1', isStaffPortalCompanyId: () => true,
+  };
+  if (specifier === './provisional-workspace-session') return {
+    createProvisionalWorkspaceSession: async (_request,_env,employeeId,method) => {
+      provisionalSessions.push({ employeeId, method });
+      return {
+        cookie: 'daenem_workforce_session=synthetic; Path=/; Secure; HttpOnly; SameSite=Lax',
+        next: '/workspace/', access: 'provisional',
+      };
+    },
   };
   throw new Error('Unexpected authentication dependency: ' + specifier);
 });
@@ -261,7 +271,11 @@ await check('credentialed username fails neutrally while a pending unverified re
     headers: { 'content-type': 'application/json' }, body: JSON.stringify({ challengeId: pending.body.challengeId, code: pendingFixture.deliveryCode }) });
   const pendingResponse = await routeAuthRefinement(verifyPending, pendingFixture.env);
   assert.equal(pendingResponse.status, 200);
-  assert.deepEqual(await pendingResponse.json(), { ok: true, message: 'Verification is complete. If your request is eligible, the next steps will be provided through the approved onboarding process.' });
+  const verifiedApplicant = await pendingResponse.json();
+  assert.equal(verifiedApplicant.authenticated, true);
+  assert.equal(verifiedApplicant.status, 'provisional');
+  assert.equal(verifiedApplicant.next, '/workspace/');
+  assert.match(pendingResponse.headers.get('set-cookie'), /daenem_workforce_session/);
   assert.ok(pendingFixture.employee);
   assert.equal(pendingFixture.credentialWrites, 1);
   assert.equal(pendingFixture.membershipWrites, 1);
@@ -426,4 +440,35 @@ await check('concurrent username claim cannot commit a second applicant identity
   assert.equal(fixture.securityEvents.some((event) => event.type === 'signup_verified'), false);
 });
 
+await check('verified WhatsApp plus email applicant receives provisional session', async () => {
+  const fixture = new SignupFixture();
+  const started = await start(fixture);
+  const challenge = fixture.verifications.get(started.body.challengeId);
+  challenge.phone_verified_at = new Date().toISOString();
+  const response = await routeAuthRefinement(new Request(
+    'https://staffportal.test/api/auth/signup/verify',
+    { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ challengeId: started.body.challengeId, code: fixture.deliveryCode }) },
+  ), fixture.env);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).authenticated, true);
+  assert.equal(provisionalSessions.at(-1).method, 'whatsapp');
+  assert.match(response.headers.get('set-cookie'), /daenem_workforce_session/);
+  assert.equal(fixture.signupRequestWrites, 1);
+});
+
+await check('WhatsApp phone verification never bypasses required email OTP', async () => {
+  const fixture = new SignupFixture();
+  const started = await start(fixture);
+  fixture.verifications.get(started.body.challengeId).phone_verified_at = new Date().toISOString();
+  const before = provisionalSessions.length;
+  const response = await routeAuthRefinement(new Request(
+    'https://staffportal.test/api/auth/signup/verify',
+    { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ challengeId: started.body.challengeId, code: '000000' }) },
+  ), fixture.env);
+  assert.equal(response.status, 401);
+  assert.equal(provisionalSessions.length, before);
+  assert.equal(fixture.signupRequestWrites, 0);
+});
 console.log(`${passed.length}/${passed.length} PASS`);

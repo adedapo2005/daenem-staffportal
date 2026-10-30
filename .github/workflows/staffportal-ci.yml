@@ -112,6 +112,11 @@ jobs:
           node --no-warnings scripts/test-signin-create-account-runtime.mjs
           node --no-warnings scripts/test-signin-create-account-sqlite.mjs
 
+      - name: Provisional workspace onboarding and permission boundaries
+        run: |
+          node --no-warnings scripts/test-provisional-workspace-access.mjs
+          node --no-warnings scripts/test-auth-session-role-projection.mjs
+
       - name: TypeScript
         if: always()
         run: npm run typecheck

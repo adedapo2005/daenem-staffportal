@@ -9,7 +9,7 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const loaded = { exports: {} };
 new Function('module', 'exports', compiled)(loaded, loaded.exports);
-const { provisionOAuthApplicant, oauthApplicantApproval } = loaded.exports;
+const { provisionOAuthApplicant, pendingOAuthApplicantId, oauthApplicantApproval } = loaded.exports;
 const request = new Request('https://staffportal.test/api/auth/oauth/google/callback', {
   headers: { 'cf-connecting-ip': '203.0.113.25', 'user-agent': 'Synthetic OAuth Fixture' },
 });
@@ -38,7 +38,7 @@ class D1 {
         submitted_ip TEXT,submitted_user_agent TEXT,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT DEFAULT CURRENT_TIMESTAMP);
       CREATE TABLE staffportal_external_identity_links(id TEXT PRIMARY KEY,provider TEXT,
         tenant_id TEXT,object_id TEXT,employee_id TEXT REFERENCES employees(id),
-        linked_by_employee_id TEXT REFERENCES employees(id),
+        linked_by_employee_id TEXT REFERENCES employees(id),revoked_at TEXT,
         UNIQUE(provider,tenant_id,object_id),UNIQUE(provider,employee_id));
       CREATE TABLE security_logs(id TEXT PRIMARY KEY,employee_id TEXT,event_type TEXT,
         severity TEXT,result TEXT,ip_address TEXT,user_agent TEXT,
@@ -99,6 +99,7 @@ await check('Google applicant creates only provisional request and atomic audit'
   assert.equal(db.db.prepare('SELECT employment_status AS state FROM employees').get().state,'provisional');
   const employeeId=db.db.prepare('SELECT id FROM employees').get().id;
   assert.equal(await oauthApplicantApproval(db,employeeId),'pending');
+  assert.equal(await pendingOAuthApplicantId(db,google),employeeId);
   db.db.prepare("UPDATE signup_requests SET status='approved'").run();
   assert.equal(await oauthApplicantApproval(db,employeeId),'approved');
   assert.equal(await provisionOAuthApplicant(db.env,google,request),'existing');
@@ -111,6 +112,8 @@ await check('Microsoft applicant binds immutable tenant and object without grant
   const link=db.db.prepare('SELECT tenant_id AS tenant,object_id AS obj FROM staffportal_external_identity_links').get();
   assert.equal(link.tenant,'tenant-123');
   assert.equal(link.obj,'object-456');
+  assert.equal(await pendingOAuthApplicantId(db,microsoft),db.db.prepare('SELECT id FROM employees').get().id);
+  assert.equal(await pendingOAuthApplicantId(db,{...microsoft,microsoftObjectId:'wrong-object'}),null);
   assert.equal(db.count('auth_sessions'),0);
   assert.equal(db.count('security_logs'),1);
   assert.equal(await provisionOAuthApplicant(db.env,microsoft,request),'existing');

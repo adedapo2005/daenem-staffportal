@@ -7,7 +7,8 @@ import {
   linkedMicrosoftEmployee, linkedMicrosoftIdentityForEmployee, bindMicrosoftEmployeeIdentity,
   organizationsLinkStorageReady,
 } from './microsoft-organizations';
-import { provisionOAuthApplicant, oauthApplicantApproval, type ApplicantResult } from './oauth-provisional-signup';
+import { provisionOAuthApplicant, pendingOAuthApplicantId, oauthApplicantApproval, type ApplicantResult } from './oauth-provisional-signup';
+import { createProvisionalWorkspaceSession } from './provisional-workspace-session';
 
 type Provider = 'google' | 'microsoft';
 
@@ -156,7 +157,7 @@ function applicantStatusPage(request: Request) {
     : outcome === 'email_required' ? 'Email Address Required'
     : 'Account Registration Could Not Be Completed';
   const message = pending
-    ? 'Your ' + provider + ' identity was verified and your StaffPortal application is pending management approval. No employee access has been granted yet.'
+    ? 'Your ' + provider + ' identity is verified. You may use the provisional StaffPortal workspace to complete your profile while management reviews your request. Full permissions are not granted yet.'
     : outcome === 'email_required'
     ? 'Your identity provider did not supply a usable email address. Complete Create Account with your email address instead.'
     : outcome === 'disabled'
@@ -342,7 +343,7 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
     if (!accessToken || !identityToken) return failure(request, provider, 'provider_token_missing');
     const identity = await verifyIdentityToken(identityToken, current, state.nonce);
     if (!identity || typeof identity.sub !== 'string') return failure(request, provider, 'invalid_provider_identity');
-    let employeeId: string;
+    let employeeId: string | undefined;
     if (provider === 'microsoft' && current.organizations) {
       const organization = organizationIdentity(identity);
       if (!organization) return failure(request, provider, 'invalid_provider_identity');
@@ -365,24 +366,31 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
       const linkedId = await linkedMicrosoftEmployee(env.DB, organization);
       if (!linkedId) {
         // A Microsoft UPN/email is not authority to link an existing employee.
-        // New identities may request provisional onboarding only; no session
-        // or permissions are issued before management approves the request.
+        // New identities receive only the administrator-defined provisional
+        // workspace role until management approves a full employee role.
         const email = String(identity.email || identity.preferred_username || '').trim().toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           return applicantRedirect(request, provider, 'email_required');
         }
-        const outcome = await provisionOAuthApplicant(env, {
+        const applicant = {
           provider, email, name: String(identity.name || email.split('@')[0]),
           firstName: String(identity.given_name || ''),
           lastName: String(identity.family_name || ''),
           microsoftTenantId: organization.tenantId,
           microsoftObjectId: organization.objectId,
-        }, request);
-        return outcome === 'existing'
-          ? failure(request, provider, 'microsoft_link_required')
-          : applicantRedirect(request, provider, outcome);
+        } as const;
+        const outcome = await provisionOAuthApplicant(env, applicant, request);
+        if (outcome !== 'pending') {
+          return outcome === 'existing'
+            ? failure(request, provider, 'microsoft_link_required')
+            : applicantRedirect(request, provider, outcome);
+        }
+        const provisionalId = await pendingOAuthApplicantId(env.DB, applicant);
+        if (!provisionalId) return failure(request, provider, 'provisional_access_unavailable');
+        employeeId = provisionalId;
+      } else {
+        employeeId = linkedId;
       }
-      employeeId = linkedId;
     } else {
       if (state.intent === 'link') return failure(request, provider, 'invalid_oauth_state');
       const profile = await providerJson(await fetch(current.userInfoEndpoint, {
@@ -404,25 +412,43 @@ async function callback(request: Request, env: ProviderAuthEnv, provider: Provid
       ).bind(email).first<{ id: string; status: string }>();
       if (!employee) {
         if (provider !== 'google') return failure(request, provider, 'employee_not_authorized');
-        const outcome = await provisionOAuthApplicant(env, {
-          provider, email, name: String(identity.name || profile.name || email.split('@')[0]),
+        const applicant = {
+          provider: 'google' as const, email,
+          name: String(identity.name || profile.name || email.split('@')[0]),
           firstName: String(identity.given_name || profile.given_name || ''),
           lastName: String(identity.family_name || profile.family_name || ''),
-        }, request);
-        return outcome === 'existing'
-          ? failure(request, provider, 'employee_not_authorized')
-          : applicantRedirect(request, provider, outcome);
+        };
+        const outcome = await provisionOAuthApplicant(env, applicant, request);
+        if (outcome !== 'pending') {
+          return outcome === 'existing'
+            ? failure(request, provider, 'employee_not_authorized')
+            : applicantRedirect(request, provider, outcome);
+        }
+        const provisionalId = await pendingOAuthApplicantId(env.DB, applicant);
+        if (!provisionalId) return failure(request, provider, 'provisional_access_unavailable');
+        employeeId = provisionalId;
       }
-      if (!['active', 'provisional'].includes(employee.status)) {
-        return failure(request, provider, 'employee_not_authorized');
+      if (employee) {
+        if (!['active', 'provisional'].includes(employee.status)) {
+          return failure(request, provider, 'employee_not_authorized');
+        }
+        employeeId = employee.id;
       }
-      employeeId = employee.id;
     }
     // Rejected, cancelled or expired applications must never become eligible
     // merely because they are no longer pending.
+    if (!employeeId) return failure(request, provider, 'employee_not_authorized');
     const applicantApproval = await oauthApplicantApproval(env.DB, employeeId);
     if (applicantApproval === 'pending') {
-      return applicantRedirect(request, provider, 'pending');
+      const limited = await createProvisionalWorkspaceSession(request, env, employeeId, provider);
+      if (!limited) return failure(request, provider, 'provisional_access_unavailable');
+      const headers = new Headers({
+        location: new URL(limited.next, request.url).toString(),
+        'cache-control': 'no-store',
+      });
+      headers.append('set-cookie', limited.cookie);
+      headers.append('set-cookie', stateCookie(request, '', 0));
+      return new Response(null, { status: 302, headers });
     }
     if (applicantApproval === 'not_approved') {
       return applicantRedirect(request, provider, 'not_approved');
