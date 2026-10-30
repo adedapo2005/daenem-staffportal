@@ -63,7 +63,8 @@ try{
     assert.match(appEntry,/auth\.setContext\(context\)/);
     assert.match(appEntry,/window\.history\.replaceState\(window\.history\.state, '', '\/workspace\/'\)/);
     assert.match(appEntry,/window\.dispatchEvent\(new Event\('daenem-auth-changed'\)\)/);
-    assert.doesNotMatch(appEntry,/window\.location\.assign\('\/workspace\/'\)/);
+    assert.doesNotMatch(appEntry,/location[.]assign[(][^)]*\/workspace\//,
+      'signup handoff must satisfy the unchanged deployment navigation guard');
   });
   await check('Ordinary Sign-In and non-OTP forms never trigger a session probe',async()=>{
     let calls=0;
@@ -87,10 +88,11 @@ try{
   });
   await check('Verified provisional applicant opens workspace exactly once',async()=>{
     let calls=0,opened=0;
+    const verifiedContext=context();
     const dispose=observeProvisionalSignupHandoff(value=>{
-      opened++;assert.equal(value.employee.status,'provisional');
+      opened++;assert.strictEqual(value,verifiedContext);
     },{
-      probe:async()=>++calls===1?null:context(),
+      probe:async()=>++calls===1?null:verifiedContext,
       attempts:4,intervalMs:0,
     });
     submit(new FakeForm());
