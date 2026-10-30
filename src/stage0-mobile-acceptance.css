@@ -14,16 +14,32 @@
     box-sizing: border-box;
   }
 
-  .eo-finance .eo-tabs {
+  .eo-finance .eo-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eo-finance .eo-hero > * {
     min-width: 0;
     max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
+  }
+
+  .eo-finance .eo-hero-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 100%;
+  }
+
+  .eo-finance .eo-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
   }
 
   .eo-finance .eo-tabs > button {
-    flex: 0 0 auto;
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
   }
 
   .eo-finance .v14-bank-health button {
