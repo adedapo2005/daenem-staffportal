@@ -286,7 +286,7 @@ async function findEmployee(env: AuthEnv, identity: string) {
 
 // Keep legacy OTP entry points aligned with the current session policy.
 // Pending applicants retain the administrator-defined provisional workspace.
-async function signupSessionBlocked(env: AuthEnv, employeeId: string): Promise<boolean> {
+export async function signupSessionBlocked(env: AuthEnv, employeeId: string): Promise<boolean> {
   const latest = await env.DB.prepare(
     "SELECT status FROM signup_requests WHERE employee_id=? ORDER BY created_at DESC,id DESC LIMIT 1"
   ).bind(employeeId).first<{ status: string }>();
