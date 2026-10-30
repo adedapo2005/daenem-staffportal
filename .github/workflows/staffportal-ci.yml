@@ -116,6 +116,7 @@ jobs:
         run: |
           node --no-warnings scripts/test-provisional-workspace-access.mjs
           node --no-warnings scripts/test-auth-session-role-projection.mjs
+          node --no-warnings scripts/test-provisional-signup-handoff.mjs
 
       - name: TypeScript
         if: always()

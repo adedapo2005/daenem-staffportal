@@ -2,7 +2,8 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/manrope';
 import React, { lazy, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AuthScreen, useAuth } from './auth';
+import { AuthScreen, useAuth, clearPortalAuthCache } from './auth';
+import { observeProvisionalSignupHandoff } from './provisional-signup-handoff';
 import { OfflinePlatformProvider } from './offline-sync';
 import './signin-experience.css';
 
@@ -52,6 +53,16 @@ function LoadingScreen() {
 function Root() {
   const auth = useAuth();
   useEffect(() => registerFreshServiceWorker(), []);
+  // V180 signup screen is frozen. Listen only for its final email-OTP form
+  // submission and follow the server-issued restricted session into workspace.
+  useEffect(() => {
+    if (auth.loading || auth.context ||
+      new URLSearchParams(window.location.search).get('studioReview') === 'signin-v180') return;
+    return observeProvisionalSignupHandoff(() => {
+      clearPortalAuthCache();
+      window.location.assign('/workspace/');
+    });
+  }, [auth.loading, auth.context]);
   if (auth.loading) return <LoadingScreen />;
   const studioReview = new URLSearchParams(window.location.search).get('studioReview');
   if (studioReview === 'signin-v180') return <AuthScreen onAuthenticated={() => undefined} />;
