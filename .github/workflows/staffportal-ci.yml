@@ -110,6 +110,19 @@ jobs:
       - name: Communications remediation contracts
         run: node scripts/test-communications-remediation.mjs
 
+      - name: StaffPortal authentication provisioning and registration regressions
+        run: |
+          node --no-warnings scripts/test-oauth-provisional-signup.mjs
+          node --no-warnings scripts/test-oauth-callback-registration.mjs
+          node --no-warnings scripts/test-signin-create-account-runtime.mjs
+          node --no-warnings scripts/test-signin-create-account-sqlite.mjs
+
+      - name: Provisional workspace onboarding and permission boundaries
+        run: |
+          node --no-warnings scripts/test-provisional-workspace-access.mjs
+          node --no-warnings scripts/test-auth-session-role-projection.mjs
+          node --no-warnings scripts/test-provisional-signup-handoff.mjs
+
       - name: TypeScript
         if: always()
         run: npm run typecheck

@@ -19,11 +19,56 @@ const uid = (prefix: string) => prefix + '-' + crypto.randomUUID();
 const normalizedEmail = (value: string) => value.trim().toLowerCase();
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-export async function oauthApplicantPending(db: D1Database, employeeId: string): Promise<boolean> {
+export type OAuthApplicantApproval = 'not_applicant' | 'pending' | 'not_approved' | 'approved';
+
+/** Only explicit management approval may unlock a social applicant. */
+export async function oauthApplicantApproval(
+  db: D1Database, employeeId: string,
+): Promise<OAuthApplicantApproval> {
   const row = await db.prepare(
-    "SELECT id FROM signup_requests WHERE employee_id=? AND status='pending' LIMIT 1"
-  ).bind(employeeId).first<{ id: string }>();
-  return Boolean(row);
+    "SELECT status FROM signup_requests WHERE employee_id=? " +
+    "AND requested_role_text IN ('Social Applicant: google','Social Applicant: microsoft') " +
+    "ORDER BY created_at DESC, id DESC LIMIT 1"
+  ).bind(employeeId).first<{ status: string }>();
+  if (!row) return 'not_applicant';
+  if (row.status === 'approved') return 'approved';
+  if (row.status === 'pending') return 'pending';
+  return 'not_approved';
+}
+
+/**
+ * Resolve a newly verified applicant only from a pending request. Microsoft
+ * must match its immutable tenant/object pair as well as the verified email.
+ */
+export async function pendingOAuthApplicantId(
+  db: D1Database, applicant: OAuthApplicant,
+): Promise<string | null> {
+  const email = normalizedEmail(applicant.email);
+  if (!validEmail(email)) return null;
+  if (applicant.provider === 'microsoft') {
+    if (!applicant.microsoftTenantId || !applicant.microsoftObjectId) return null;
+    const row = await db.prepare(`
+      SELECT e.id
+      FROM staffportal_external_identity_links link
+      JOIN employees e ON e.id=link.employee_id
+      JOIN signup_requests sr ON sr.employee_id=e.id
+      WHERE link.provider='microsoft' AND link.tenant_id=?
+        AND link.object_id=? AND link.revoked_at IS NULL
+        AND lower(e.email)=? AND e.employment_status='provisional'
+        AND sr.status='pending' AND sr.requested_role_text='Social Applicant: microsoft'
+      LIMIT 1
+    `).bind(applicant.microsoftTenantId,applicant.microsoftObjectId,email)
+      .first<{ id: string }>();
+    return row?.id || null;
+  }
+  const row = await db.prepare(`
+    SELECT e.id FROM employees e
+    JOIN signup_requests sr ON sr.employee_id=e.id
+    WHERE lower(e.email)=? AND e.employment_status='provisional'
+      AND sr.status='pending' AND sr.requested_role_text='Social Applicant: google'
+    LIMIT 1
+  `).bind(email).first<{ id: string }>();
+  return row?.id || null;
 }
 
 export async function provisionOAuthApplicant(
