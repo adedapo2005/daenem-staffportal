@@ -61,11 +61,12 @@ async function main() {
   const worker = load('worker/staffportal-staging.ts').default;
   const auth = load('worker/auth.ts');
   const migrations = Object.keys(baseline.files).filter(name => name.startsWith('migrations/') && name.endsWith('.sql')).sort();
-  check(migrations.length === 109 &&
+  check(migrations.length === 110 &&
     migrations.includes('migrations/0102_staffportal_v180_media_publication.sql') &&
     migrations.includes('migrations/0103_staffportal_v180_media_approved_seed.sql') &&
-    migrations.includes('migrations/0104_staffportal_staff_content_publication.sql'),
-    'All 109 migrations, including approved media and Cloudflare-only Staff Content');
+    migrations.includes('migrations/0104_staffportal_staff_content_publication.sql') &&
+    migrations.includes('migrations/0105_offline_attachment_cleanup_queue.sql'),
+    'All 110 migrations, including approved media, Cloudflare-only Staff Content, and offline attachment cleanup');
   const db = new DatabaseSync(':memory:');
   for (const migration of migrations) { lastCheck = `Schema: ${migration}`; db.exec(baseline.files[migration]); }
   check(db.prepare("SELECT COUNT(*) AS n FROM staffportal_staff_content_publication").get().n===0,
@@ -770,7 +771,7 @@ async function main() {
   check(externalCalls === 0, 'Zero provider delivery logging or external calls');
   check(rows('PRAGMA foreign_key_check').length === 0, 'Canonical foreign keys intact');
   db.close();
-  console.log(`PASS staging QA composed runtime: ${assertions} checks; seed ${seedBatchLength}/50; reset ${resetBatchLength}/50; 109 migrations; zero external calls.`);
+  console.log(`PASS staging QA composed runtime: ${assertions} checks; seed ${seedBatchLength}/50; reset ${resetBatchLength}/50; ${migrations.length} migrations; zero external calls.`);
 }
 
 main().catch(() => {

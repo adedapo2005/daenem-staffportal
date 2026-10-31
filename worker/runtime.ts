@@ -44,7 +44,7 @@ import { routeCommunicationsWebhook } from './communications-webhook';
 import { dispatchDueBroadcasts } from './broadcasts';
 import { routeAiGuide } from './ai-guide';
 import { routePlatformCenter, routePublicWebsite } from './platform-center';
-import { routeOffline } from './offline';
+import { processOfflineAttachmentCleanup, routeOffline } from './offline';
 import { routeSpend } from './spend';
 import { routeProcurement } from './procurement';
 import { routeAlerting } from './alerting';
@@ -381,18 +381,19 @@ export default {
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil((async () => {
       try {
-        const [socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch] = await Promise.all([
+        const [socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch, offlineAttachmentCleanup] = await Promise.all([
           dispatchDueSocialJobs(env),
           scheduledSocialProviderSync(env),
           dispatchDueBroadcasts(env),
           dispatchDueCommunications(env),
+          processOfflineAttachmentCleanup(env),
         ]);
         const minute = new Date(controller.scheduledTime).getUTCMinutes();
         const hourly = minute === 0;
         const [reminders, financeSales] = hourly
           ? await Promise.all([runSmartReminders(env), reconcileFulfilledSalesOrders(env, 75)])
           : [{ skipped: true, reason: 'hourly_cadence' }, { skipped: true, reason: 'hourly_cadence' }];
-        console.log('Daenem Workforce scheduled services', JSON.stringify({ reminders, financeSales, socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch }));
+        console.log('Daenem Workforce scheduled services', JSON.stringify({ reminders, financeSales, socialDispatch, socialProviderSync, broadcastDispatch, communicationsDispatch, offlineAttachmentCleanup }));
       } catch (error) {
         console.error('Daenem Workforce scheduled service failure', error);
       }
