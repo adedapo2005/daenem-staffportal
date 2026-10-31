@@ -256,7 +256,7 @@ function Launcher() {
   </>;
 }
 
-function SyncCenter({ context, onClose }: { context: WorkforceContext; onClose: () => void }) {
+export function SyncCenter({ context, onClose }: { context: WorkforceContext; onClose: () => void }) {
   const [data, setData] = useState<OwnerOverview | null>(null);
   const [detail, setDetail] = useState<OwnerDetail | null>(null);
   const [busy, setBusy] = useState(false);
