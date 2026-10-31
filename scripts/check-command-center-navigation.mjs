@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -19,6 +20,8 @@ try {
   const fixtures = await server.ssrLoadModule(`${source}security-contract.ts`);
   const nav = await server.ssrLoadModule('/src/enterprise-command-center-model.ts');
   const { EnterpriseCommandCenterNavigation } = await server.ssrLoadModule('/src/enterprise-command-center-navigation.tsx');
+  const navigationCss = await readFile(new URL('../src/enterprise-command-center-navigation.css', import.meta.url), 'utf8');
+  const navigationSource = await readFile(new URL('../src/enterprise-command-center-navigation.tsx', import.meta.url), 'utf8');
   const navigationCanView = (module, session) =>
     nav.canViewCommandNavigationModule(module, session, canonical.canView);
   const optionsFor = (session) => ({
@@ -29,6 +32,24 @@ try {
       : entry.id === 'cloud-storage'
         ? canonical.canAct(canonical.byId('admin'), session, 'manage')
         : navigationCanView(canonical.byId(entry.permissionModuleId), session),
+  });
+
+  check('navigation labels use readable Title Case rather than all-caps styling', () => {
+    assert.ok(navigationSource.includes('Command Center'));
+    assert.ok(navigationSource.includes('Recently Visited'));
+    assert.match(navigationCss, /text-transform: none;/);
+    assert.doesNotMatch(navigationCss, /text-transform: uppercase/);
+  });
+  check('navigation supporting labels and metadata meet the 13px baseline', () => {
+    assert.match(navigationCss, /font-size: \.8125rem;/);
+  });
+  check('large-display navigation uses a dedicated readable type ramp', () => {
+    assert.match(navigationCss, /@media \(min-width: 1920px\)/);
+    assert.match(navigationCss, /@media \(min-width: 3000px\)/);
+    assert.match(navigationCss, /font-size: 1\.125rem;/);
+  });
+  check('navigation keeps solid surfaces and no glass overlays', () => {
+    assert.doesNotMatch(navigationCss, /backdrop-filter:/);
   });
 
   for (const profile of fixtures.testProfiles) {
