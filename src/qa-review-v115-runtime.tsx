@@ -338,7 +338,7 @@ export default function ApprovedPostLoginV115({ context, onLogout, onRefresh }: 
   // bytes unchanged and render a permission-gated, read-only workbench instead.
   if (provisionalRouteBlocked) return <div role="status" className="sp-entry-loading"><span /><strong>Opening your profile…</strong></div>;
 
-  if (!isProvisional && (routePathname === '/review/viewports' || routePathname === '/review/viewports/'))
+  if (routePathname === '/review/viewports' || routePathname === '/review/viewports/')
     return <Stage1ResponsiveReview context={context} />;
 
   return (

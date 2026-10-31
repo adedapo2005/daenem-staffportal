@@ -70,7 +70,7 @@ assert.match(runtime, /createPortal\([\s\S]*ProvisionalProfileWorkspace[\s\S]*ta
 assert.match(runtime, /isProvisional \? 'Employee' : companyNavigationRole/);
 assert.match(runtime, /const provisionalRouteBlocked = isProvisional && routePathname !== '\/profile'/);
 assert.match(runtime, /if \(provisionalRouteBlocked\) return/);
-assert.match(runtime, /if \(!isProvisional && \(routePathname === '\/review\/viewports'/);
+assert.match(runtime, /if \(routePathname === '\/review\/viewports'/);
 assert.match(runtime, /\.p-app\[data-workspace="profile"\]/);
 assert.match(main, /replaceState\(window\.history\.state, '', '\/profile'\)/);
 assert.doesNotMatch(main, /<ProvisionalProfileWorkspace/);
