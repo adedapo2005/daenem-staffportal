@@ -16,7 +16,20 @@ const wrangler = process.platform === 'win32' ? process.execPath : path.join(roo
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const requestTimeoutMs = 10_000;
 const readinessTimeoutMs = 1_000;
-const wranglerTimeoutMs = 120_000;
+const wranglerTimeoutMs = 300_000;
+const schemaFiles = [
+  'migrations/0001_core.sql',
+  'migrations/0002_identity_auth.sql',
+  'migrations/0008_forms_broadcasts_smart.sql',
+  'migrations/0010_password_credentials.sql',
+  'migrations/0019_employee_permission_overrides_v2.sql',
+  'migrations/0033_auth_profile_refinement.sql',
+  'migrations/0034_temporary_password_recovery.sql',
+  'migrations/0039_owner_support_access.sql',
+  'migrations/0054_offline_sync_audit.sql',
+  'migrations/0077_storage_mirror_queue.sql',
+  'migrations/0105_offline_attachment_cleanup_queue.sql',
+];
 
 function quote(value) {
   return "'" + String(value).replaceAll("'", "''") + "'";
@@ -205,6 +218,7 @@ async function main() {
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-runtime-manager-bakery-role','qa-runtime-manager','company-bakery','role-bakery-manager');",
     "INSERT OR IGNORE INTO employee_roles(id,employee_id,company_id,role_id) VALUES ('qa-runtime-employee-role','qa-runtime-employee','company-printing','role-print-designer');",
     "INSERT OR IGNORE INTO role_permissions(id,role_id,permission_id,access_level) SELECT 'qa-runtime-print-forms','role-print-manager',id,'manage' FROM permissions WHERE code='forms.access';",
+    "INSERT OR IGNORE INTO role_permissions(id,role_id,permission_id,access_level) SELECT 'qa-runtime-employee-forms','role-print-designer',id,'view' FROM permissions WHERE code='forms.access';",
     "INSERT OR IGNORE INTO role_permissions(id,role_id,permission_id,access_level) SELECT 'qa-runtime-bakery-forms','role-bakery-manager',id,'manage' FROM permissions WHERE code='forms.access';",
     "INSERT OR IGNORE INTO auth_sessions(id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,created_at,last_seen_at,expires_at) VALUES ('qa-runtime-owner-session','employee-owner-bootstrap'," + quote(ownerHash) + ",'qa-runtime-owner-device','QA Owner Browser','offline-runtime-test','198.51.100.10','2026-09-05T08:00:00.000Z','2026-09-05T14:40:00.000Z','2999-01-01T00:00:00.000Z');",
     "INSERT OR IGNORE INTO auth_sessions(id,employee_id,token_hash,device_id,device_name,user_agent,ip_address,created_at,last_seen_at,expires_at) VALUES ('qa-runtime-manager-session','qa-runtime-manager'," + quote(managerHash) + ",'qa-runtime-manager-device','QA Manager Browser','offline-runtime-test','198.51.100.11','2026-09-05T08:00:00.000Z','2026-09-05T14:40:00.000Z','2999-01-01T00:00:00.000Z');",
@@ -215,6 +229,7 @@ async function main() {
     "INSERT OR IGNORE INTO workflow_form_submissions(id,assignment_id,form_id,employee_id,company_id,status,response_json,offline_idempotency_key,submitted_at) VALUES ('qa-runtime-reconciled-submission','qa-runtime-reconcile-assignment','qa-runtime-form','qa-runtime-manager','company-printing','submitted','{\"handover\":\"already written before response loss\"}','qa-runtime-loss-key','2026-09-05T14:48:00.000Z');",
     "INSERT OR IGNORE INTO offline_sync_receipts(id,operation_id,idempotency_key,employee_id,company_id,session_id,operation_kind,entity_type,entity_id,state,attempt_count,result_json,server_received_at,started_at) VALUES ('qa-runtime-processing-receipt','qa-runtime-loss-op','qa-runtime-loss-key','qa-runtime-manager','company-printing','qa-runtime-manager-session','forms.submit','workflow_form_assignment','qa-runtime-reconcile-assignment','processing',1,NULL,'2026-09-05T14:48:00.000Z','2026-09-05T14:47:00.000Z');",
     "INSERT OR IGNORE INTO offline_sync_receipts(id,operation_id,idempotency_key,employee_id,company_id,session_id,operation_kind,entity_type,entity_id,state,attempt_count,result_json,server_received_at,started_at,completed_at) VALUES ('qa-runtime-detail-receipt','qa-runtime-detail-op','qa-runtime-detail-key','qa-runtime-manager','company-printing','qa-runtime-manager-session','forms.submit','workflow_form_assignment','qa-runtime-assignment','completed',2,'{\"outcome\":\"accepted\",\"submissionId\":\"qa-runtime-detail-submission\",\"status\":\"submitted\"}','2026-09-05T14:48:00.000Z','2026-09-05T14:47:00.000Z','2026-09-05T14:48:04.000Z');",
+    "INSERT OR IGNORE INTO offline_sync_receipts(id,operation_id,idempotency_key,employee_id,company_id,session_id,operation_kind,entity_type,entity_id,state,attempt_count,result_json,server_received_at,started_at,completed_at) VALUES ('qa-runtime-employee-attachment-receipt','qa-runtime-employee-attachment-op','qa-runtime-employee-attachment-key','qa-runtime-employee','company-printing','qa-runtime-employee-session','forms.submit','workflow_form_assignment','qa-runtime-assignment','completed',1,'{\"outcome\":\"accepted\"}','2026-09-05T14:49:00.000Z','2026-09-05T14:48:59.000Z','2026-09-05T14:49:01.000Z');",
     "INSERT OR IGNORE INTO offline_client_telemetry(id,employee_id,company_id,session_id,device_id,device_name,platform,app_version,client_timezone,pending_count,sync_status,last_successful_sync_at,last_reported_at,ip_address,network_location) VALUES ('qa-runtime-telemetry','qa-runtime-manager','company-printing','qa-runtime-manager-session','qa-runtime-manager-device','QA Manager Browser','Linux','offline-runtime-test','Africa/Lagos',0,'synced','2026-09-05T14:48:04.000Z','2026-09-05T14:48:10.000Z','198.51.100.11','Lagos, NG');",
     "INSERT OR IGNORE INTO offline_attachments(id,employee_id,company_id,operation_id,r2_key,original_name,mime_type,size_bytes,sha256,status,created_at,uploaded_at) VALUES ('qa-runtime-attachment','qa-runtime-manager','company-printing','qa-runtime-detail-op','offline/qa-runtime-manager/qa-runtime-detail-op/qa-runtime-attachment-hash','handover.pdf','application/pdf',2048,'" + "a".repeat(64) + "','uploaded','2026-09-05T14:47:30.000Z','2026-09-05T14:48:02.000Z');",
     "INSERT OR IGNORE INTO audit_logs(id,actor_employee_id,company_id,module,action,entity_type,entity_id,after_json,source,request_id,occurred_at) VALUES ('qa-runtime-audit-start','qa-runtime-manager','company-printing','offline_sync','sync_started','offline_sync_receipt','qa-runtime-detail-receipt','{\"operationId\":\"qa-runtime-detail-op\",\"idempotencyKey\":\"qa-runtime-detail-key\",\"operationKind\":\"forms.submit\",\"sessionId\":\"qa-runtime-manager-session\",\"deviceId\":\"qa-runtime-manager-device\",\"clientTimezone\":\"Africa/Lagos\",\"capturedAt\":\"2026-09-05T14:01:00.000Z\",\"serverReceivedAt\":\"2026-09-05T14:48:00.000Z\",\"applicationVersion\":\"offline-runtime-test\"}','offline-runtime-test','qa-runtime-request-1','2026-09-05T14:48:01.000Z');",
@@ -227,9 +242,15 @@ async function main() {
   const baseUrl = 'http://127.0.0.1:' + port;
   try {
     persistDir = await fs.mkdtemp(path.join(os.tmpdir(), 'daenem-offline-runtime-'));
+    const assetsDir = path.join(persistDir, 'assets');
+    await fs.mkdir(assetsDir);
+    config.assets = { directory: assetsDir };
+    const schemaFile = path.join(persistDir, 'offline-runtime-schema.sql');
+    const schema = (await Promise.all(schemaFiles.map((file) => fs.readFile(path.join(root, file), 'utf8')))).join('\n\n');
+    await fs.writeFile(schemaFile, schema);
     await fs.writeFile(testConfig, JSON.stringify(config, null, 2) + '\n');
-    console.log('offline runtime test: applying D1 migrations');
-    await runWrangler(['d1', 'migrations', 'apply', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir]);
+    console.log('offline runtime test: applying scoped Workerd D1 schema');
+    await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--file', schemaFile]);
     console.log('offline runtime test: seeding D1 fixtures');
     await runWrangler(['d1', 'execute', databaseName, '--local', '--config', testConfig, '--persist-to', persistDir, '--command', seed]);
     console.log('offline runtime test: starting actual Worker runtime');
@@ -313,6 +334,59 @@ async function main() {
     expect('attachment route', invalidAttachment, 415);
     matrix.push(['PUT /api/offline/attachments/:id', 'owner invalid MIME', invalidAttachment.status]);
 
+    const attachmentBytes = new TextEncoder().encode('runtime attachment durability proof');
+    const attachmentDigest = sha256(attachmentBytes);
+    const attachmentHeaders = {
+      'content-type': 'application/pdf',
+      'content-length': String(attachmentBytes.byteLength),
+      'x-offline-company-id': 'company-printing',
+      'x-offline-file-name': 'handover-proof.pdf',
+      'x-offline-sha256': attachmentDigest,
+    };
+    const missingParentAttachment = await request(baseUrl, managerToken, '/api/offline/attachments/qa-runtime-missing-parent', {
+      method: 'PUT',
+      headers: { ...attachmentHeaders, 'x-offline-operation-id': 'qa-runtime-no-parent-op' },
+      body: attachmentBytes,
+    });
+    expect('attachment missing parent receipt', missingParentAttachment, 409);
+    expectBody('attachment missing parent receipt explanation', /completed parent Forms receipt/i.test(String(missingParentAttachment.body.error || '')), missingParentAttachment);
+    matrix.push(['PUT /api/offline/attachments/:id', 'missing completed parent', missingParentAttachment.status]);
+
+    const acceptedAttachment = await request(baseUrl, managerToken, '/api/offline/attachments/qa-runtime-durable-attachment', {
+      method: 'PUT',
+      headers: { ...attachmentHeaders, 'x-offline-operation-id': 'qa-runtime-detail-op' },
+      body: attachmentBytes,
+    });
+    expect('attachment accepted with completed parent receipt', acceptedAttachment, 201);
+    expectBody('attachment accepted exact hash', acceptedAttachment.body.attachment?.sha256 === attachmentDigest, acceptedAttachment);
+    const crossEmployeeAttachment = await request(baseUrl, employeeToken, '/api/offline/attachments/qa-runtime-durable-attachment', {
+      method: 'PUT',
+      headers: { ...attachmentHeaders, 'x-offline-operation-id': 'qa-runtime-employee-attachment-op' },
+      body: attachmentBytes,
+    });
+    expect('attachment identity cannot cross employees', crossEmployeeAttachment, 409);
+    expectBody('attachment cross-employee explanation', /different content or scope/i.test(String(crossEmployeeAttachment.body.error || '')), crossEmployeeAttachment);
+    const replayedAttachment = await request(baseUrl, managerToken, '/api/offline/attachments/qa-runtime-durable-attachment', {
+      method: 'PUT',
+      headers: { ...attachmentHeaders, 'x-offline-operation-id': 'qa-runtime-detail-op' },
+      body: attachmentBytes,
+    });
+    expect('attachment exact replay', replayedAttachment, 200);
+    expectBody('attachment exact replay deduplicated', replayedAttachment.body.deduplicated === true, replayedAttachment);
+    const conflictingBytes = new TextEncoder().encode('different bytes for the same attachment identity');
+    const conflictingAttachment = await request(baseUrl, managerToken, '/api/offline/attachments/qa-runtime-durable-attachment', {
+      method: 'PUT',
+      headers: {
+        ...attachmentHeaders,
+        'content-length': String(conflictingBytes.byteLength),
+        'x-offline-operation-id': 'qa-runtime-detail-op',
+        'x-offline-sha256': sha256(conflictingBytes),
+      },
+      body: conflictingBytes,
+    });
+    expect('attachment identity conflict', conflictingAttachment, 409);
+    matrix.push(['PUT /api/offline/attachments/:id', 'completed parent / replay / identity conflict', '201/200/409']);
+
     const managerOwner = await request(baseUrl, managerToken, '/api/offline/owner/overview');
     expect('manager owner overview denial', managerOwner, 403);
     const managerDetail = await request(baseUrl, managerToken, '/api/offline/owner/detail?employeeId=qa-runtime-manager');
@@ -360,6 +434,13 @@ async function main() {
     });
     expect('owner revoke route', revoked, 200);
     matrix.push(['POST /api/offline/owner/revoke', 'owner', revoked.status]);
+    const revokedSessionAttachment = await request(baseUrl, managerToken, '/api/offline/attachments/qa-runtime-revoked-session', {
+      method: 'PUT',
+      headers: { ...attachmentHeaders, 'x-offline-operation-id': 'qa-runtime-detail-op' },
+      body: attachmentBytes,
+    });
+    expect('revoked session attachment denial', revokedSessionAttachment, 401);
+    matrix.push(['PUT /api/offline/attachments/:id', 'revoked session', revokedSessionAttachment.status]);
 
     console.log(JSON.stringify({
       runtimeEntrypoint: 'worker/runtime.ts',
@@ -386,7 +467,7 @@ async function main() {
       await stopProcess(runtime);
     }
     await fs.rm(testConfig, { force: true });
-    if (persistDir) await fs.rm(persistDir, { recursive: true, force: true });
+    if (persistDir) await fs.rm(persistDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
   }
 }
 

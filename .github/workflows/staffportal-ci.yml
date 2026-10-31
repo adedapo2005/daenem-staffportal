@@ -75,6 +75,7 @@ jobs:
           node scripts/check-forms-builder-boundaries.mjs
           node scripts/check-guided-forms.mjs
           node scripts/check-offline-sync-auth-scope.mjs
+          node --test scripts/test-offline-attachment-durability.mjs
           node scripts/test-forms-isolated-d1.mjs
 
       - name: Permission-scoped company navigation and responsive review

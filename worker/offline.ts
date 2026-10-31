@@ -3,6 +3,7 @@ import {
   logSecurity,
   requestIp,
   requestLocationLabel,
+  sessionContextFromId,
   type AuthEnv,
   type SessionContext,
 } from './auth';
@@ -114,7 +115,7 @@ async function readPolicy(env: OfflineEnv): Promise<Policy> {
   };
 }
 
-async function writeAudit(
+function auditStatement(
   env: OfflineEnv,
   request: Request,
   context: SessionContext,
@@ -148,7 +149,7 @@ async function writeAudit(
     serverReceivedAt: new Date().toISOString(),
     applicationVersion: safeText(details.applicationVersion || env.APP_VERSION, 80) || undefined,
   };
-  await env.DB.prepare(`
+  return env.DB.prepare(`
     INSERT INTO audit_logs(
       id,actor_employee_id,company_id,module,action,entity_type,entity_id,
       after_json,reason,source,request_id
@@ -163,7 +164,21 @@ async function writeAudit(
     JSON.stringify(safeDetails),
     reason || null,
     requestId(request) || null,
-  ).run();
+  );
+}
+
+async function writeAudit(
+  env: OfflineEnv,
+  request: Request,
+  context: SessionContext,
+  action: string,
+  entityType: string,
+  entityId: string | undefined,
+  details: Record<string, unknown>,
+  companyId?: string,
+  reason?: string,
+) {
+  await auditStatement(env, request, context, action, entityType, entityId, details, companyId, reason).run();
 }
 
 async function sessionRecord(env: OfflineEnv, context: SessionContext) {
@@ -1011,6 +1026,199 @@ async function ownerRevoke(request: Request, env: OfflineEnv, context: SessionCo
   return routeOwnerSupport(delegated, env, context);
 }
 
+type AttachmentCleanupReservation = {
+  id: string;
+  attachmentId: string;
+  employeeId: string;
+  companyId: string;
+  operationId: string;
+  r2Key: string;
+  sha256: string;
+  status: string;
+  leaseToken?: string;
+  leaseExpiresAt?: string;
+};
+
+type AttachmentCleanupCandidate = AttachmentCleanupReservation & {
+  attemptCount: number;
+};
+
+async function attachmentAuthorization(
+  env: OfflineEnv,
+  context: SessionContext,
+  companyId: string,
+  operationId: string,
+) {
+  const freshContext = await sessionContextFromId(env, context.sessionId);
+  if (!freshContext || freshContext.employee.id !== context.employee.id) {
+    return { response: json({ error: 'Sign in to continue uploading this attachment.', state: 'authentication-required' }, 401) };
+  }
+  const policy = await readPolicy(env);
+  if (!policy.enabled || !policy.allowedOperations.includes('forms.submit')) {
+    return { response: json({ error: 'Forms attachment upload is not enabled by the current offline policy.', state: 'needs-review' }, 403) };
+  }
+  if (!companyInScope(freshContext, companyId) || !hasPermission(freshContext, 'forms.access', 'view', companyId)) {
+    return { response: json({ error: 'Your current Forms permission does not allow this attachment upload.', state: 'needs-review' }, 403) };
+  }
+  const parent = await env.DB.prepare(`
+    SELECT id FROM offline_sync_receipts
+    WHERE operation_id=? AND employee_id=? AND company_id=?
+      AND operation_kind='forms.submit' AND state='completed'
+    LIMIT 1
+  `).bind(operationId, freshContext.employee.id, companyId).first<{ id: string }>();
+  if (!parent) {
+    return { response: json({ error: 'The completed parent Forms receipt is required before attachment upload.', state: 'needs-review' }, 409) };
+  }
+  return { context: freshContext, policy };
+}
+
+async function reserveAttachmentCleanup(
+  env: OfflineEnv,
+  attachmentId: string,
+  employeeId: string,
+  companyId: string,
+  operationId: string,
+  r2Key: string,
+  digest: string,
+): Promise<{ reservation?: AttachmentCleanupReservation; conflict?: 'identity' | 'busy' }> {
+  const candidateId = uid('offline-cleanup');
+  const candidateToken = crypto.randomUUID();
+  await env.DB.prepare(`
+    INSERT OR IGNORE INTO offline_attachment_cleanup_jobs(
+      id,attachment_id,employee_id,company_id,operation_id,r2_key,sha256,
+      status,reason,next_attempt_at,lease_token,lease_expires_at
+    ) VALUES(?,?,?,?,?,?,?,'reserved','upload_in_progress',CURRENT_TIMESTAMP,?,datetime('now','+10 minutes'))
+  `).bind(candidateId, attachmentId, employeeId, companyId, operationId, r2Key, digest, candidateToken).run();
+  const reservation = await env.DB.prepare(`
+    SELECT id,attachment_id AS attachmentId,employee_id AS employeeId,company_id AS companyId,
+      operation_id AS operationId,r2_key AS r2Key,sha256,status,lease_token AS leaseToken,lease_expires_at AS leaseExpiresAt
+    FROM offline_attachment_cleanup_jobs WHERE attachment_id=?
+  `).bind(attachmentId).first<AttachmentCleanupReservation>();
+  if (!reservation
+    || reservation.employeeId !== employeeId
+    || reservation.companyId !== companyId
+    || reservation.operationId !== operationId
+    || reservation.r2Key !== r2Key
+    || reservation.sha256 !== digest) return { conflict: 'identity' };
+  if (reservation.id === candidateId && reservation.leaseToken === candidateToken) {
+    return { reservation };
+  }
+  const refreshed = await env.DB.prepare(`
+    UPDATE offline_attachment_cleanup_jobs
+    SET status='reserved',reason='upload_in_progress',next_attempt_at=CURRENT_TIMESTAMP,
+      lease_token=?,lease_expires_at=datetime('now','+10 minutes'),
+      last_error_category=NULL,completed_at=NULL,updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND (
+      status NOT IN ('reserved','leased') OR lease_expires_at IS NULL
+      OR datetime(lease_expires_at)<=datetime('now')
+    )
+  `).bind(candidateToken, reservation.id).run();
+  if (Number(refreshed.meta?.changes || 0) !== 1) return { conflict: 'busy' };
+  return { reservation: { ...reservation, status: 'reserved', leaseToken: candidateToken } };
+}
+
+async function recoverAttachmentObject(
+  env: OfflineEnv,
+  reservation: AttachmentCleanupReservation,
+  reason: 'r2_put_uncertain' | 'authorization_changed' | 'metadata_commit_failed',
+) {
+  let deleted = false;
+  try {
+    await env.FILES.delete(reservation.r2Key);
+    deleted = true;
+  } catch {
+    deleted = false;
+  }
+  if (deleted) {
+    try {
+      await env.DB.prepare('DELETE FROM offline_attachment_cleanup_jobs WHERE id=? AND lease_token=?')
+        .bind(reservation.id, reservation.leaseToken || '').run();
+    } catch (error) {
+      console.error('Offline attachment cleanup receipt removal failed', { cleanupJobId: reservation.id, reason, errorCategory: 'database' });
+    }
+    return;
+  }
+  try {
+    await env.DB.prepare(`
+      UPDATE offline_attachment_cleanup_jobs
+      SET status='retry',reason=?,next_attempt_at=datetime('now','+1 minute'),
+        lease_token=NULL,lease_expires_at=NULL,last_error_category='r2_delete_failed',
+        updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND lease_token=?
+    `).bind(reason, reservation.id, reservation.leaseToken || '').run();
+  } catch (error) {
+    console.error('Offline attachment cleanup retry persistence failed', { cleanupJobId: reservation.id, reason, errorCategory: 'database' });
+  }
+}
+
+export async function processOfflineAttachmentCleanup(
+  env: Pick<OfflineEnv, 'DB' | 'FILES'>,
+  requestedLimit = 25,
+) {
+  const limit = Math.max(1, Math.min(50, Math.floor(requestedLimit)));
+  const rows = await env.DB.prepare(`
+    SELECT id,attachment_id AS attachmentId,employee_id AS employeeId,company_id AS companyId,
+      operation_id AS operationId,r2_key AS r2Key,sha256,status,
+      attempt_count AS attemptCount,lease_expires_at AS leaseExpiresAt
+    FROM offline_attachment_cleanup_jobs
+    WHERE (
+      status IN ('pending','retry') AND datetime(next_attempt_at)<=datetime('now')
+    ) OR (
+      status IN ('reserved','leased') AND lease_expires_at IS NOT NULL
+      AND datetime(lease_expires_at)<=datetime('now')
+    )
+    ORDER BY created_at,id
+    LIMIT ?
+  `).bind(limit).all<AttachmentCleanupCandidate>();
+  let claimed = 0;
+  let completed = 0;
+  let retried = 0;
+  let quarantined = 0;
+  for (const row of rows.results || []) {
+    const leaseToken = crypto.randomUUID();
+    const lease = await env.DB.prepare(`
+      UPDATE offline_attachment_cleanup_jobs
+      SET status='leased',lease_token=?,lease_expires_at=datetime('now','+5 minutes'),
+        attempt_count=attempt_count+1,updated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND (
+        (status IN ('pending','retry') AND datetime(next_attempt_at)<=datetime('now'))
+        OR (status IN ('reserved','leased') AND lease_expires_at IS NOT NULL
+          AND datetime(lease_expires_at)<=datetime('now'))
+      )
+    `).bind(leaseToken, row.id).run();
+    if (Number(lease.meta?.changes || 0) !== 1) continue;
+    claimed += 1;
+    try {
+      await env.FILES.delete(row.r2Key);
+      const finished = await env.DB.prepare(`
+        UPDATE offline_attachment_cleanup_jobs
+        SET status='completed',lease_token=NULL,lease_expires_at=NULL,
+          last_error_category=NULL,completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
+        WHERE id=? AND lease_token=? AND status='leased'
+      `).bind(row.id, leaseToken).run();
+      if (Number(finished.meta?.changes || 0) === 1) completed += 1;
+    } catch {
+      const attempts = Number(row.attemptCount || 0) + 1;
+      const terminal = attempts >= 8;
+      const delaySeconds = Math.min(3600, Math.max(60, 30 * Math.pow(2, Math.min(attempts, 7))));
+      const failed = await env.DB.prepare(`
+        UPDATE offline_attachment_cleanup_jobs
+        SET status=?,lease_token=NULL,lease_expires_at=NULL,last_error_category='r2_delete_failed',
+          next_attempt_at=datetime('now',?),updated_at=CURRENT_TIMESTAMP
+        WHERE id=? AND lease_token=? AND status='leased'
+      `).bind(terminal ? 'quarantined' : 'retry', '+' + delaySeconds + ' seconds', row.id, leaseToken).run();
+      if (Number(failed.meta?.changes || 0) !== 1) continue;
+      if (terminal) {
+        quarantined += 1;
+        console.error('Offline attachment cleanup quarantined', { cleanupJobId: row.id, attachmentId: row.attachmentId, attemptCount: attempts });
+      } else {
+        retried += 1;
+      }
+    }
+  }
+  return { scanned: (rows.results || []).length, claimed, completed, retried, quarantined };
+}
+
 function safeFileName(value: string) {
   return value.replace(/[^A-Za-z0-9._-]+/g, '-').slice(0, 120) || 'offline-attachment';
 }
@@ -1027,64 +1235,131 @@ async function uploadAttachment(request: Request, env: OfflineEnv, context: Sess
   const name = safeFileName(safeText(request.headers.get('x-offline-file-name'), 160));
   const claimedSha = safeText(request.headers.get('x-offline-sha256'), 80).toLowerCase();
   const mimeType = safeText(request.headers.get('content-type'), 80).split(';')[0].toLowerCase();
-  if (!validId(attachmentId) || !validId(operationId) || !companyId || !companyInScope(context, companyId)) return json({ error: 'Attachment scope is invalid.' }, 400);
+  if (!validId(attachmentId) || !validId(operationId) || !companyId || !companyInScope(context, companyId)) {
+    return json({ error: 'Attachment scope is invalid.' }, 400);
+  }
   if (!allowedMimeTypes.has(mimeType)) return json({ error: 'This attachment MIME type is not allowed.' }, 415);
-  const policy = await readPolicy(env);
+  const initialPolicy = await readPolicy(env);
+  if (!initialPolicy.enabled || !initialPolicy.allowedOperations.includes('forms.submit')) {
+    return json({ error: 'Forms attachment upload is not enabled by the current offline policy.', state: 'needs-review' }, 403);
+  }
   const declaredSize = Number(request.headers.get('content-length') || 0);
-  if (declaredSize > policy.attachmentMaxBytes) return json({ error: 'This attachment is larger than the configured limit.' }, 413);
+  if (declaredSize > initialPolicy.attachmentMaxBytes) return json({ error: 'This attachment is larger than the configured limit.' }, 413);
   const bytes = new Uint8Array(await request.arrayBuffer());
-  if (!bytes.byteLength || bytes.byteLength > policy.attachmentMaxBytes) return json({ error: 'This attachment is larger than the configured limit.' }, 413);
+  if (!bytes.byteLength || bytes.byteLength > initialPolicy.attachmentMaxBytes) return json({ error: 'This attachment is larger than the configured limit.' }, 413);
   const digest = await sha256(bytes);
-  if (claimedSha && (!/^[a-f0-9]{64}$/.test(claimedSha) || claimedSha !== digest)) return json({ error: 'This attachment failed its integrity check.' }, 400);
-  const existing = await env.DB.prepare(`SELECT id,r2_key AS r2Key,sha256,mime_type AS mimeType,size_bytes AS sizeBytes,status,company_id AS companyId FROM offline_attachments WHERE id=? AND employee_id=?`).bind(attachmentId, context.employee.id).first<Record<string, unknown>>();
-  if(existing&&existing.companyId!==companyId)return json({error:'Attachment scope conflicts with its existing record.'},409);
-  if (existing && existing.sha256 === digest && existing.mimeType === mimeType && Number(existing.sizeBytes) === bytes.byteLength) {
+  if (claimedSha && (!/^[a-f0-9]{64}$/.test(claimedSha) || claimedSha !== digest)) {
+    return json({ error: 'This attachment failed its integrity check.' }, 400);
+  }
+
+  const authorized = await attachmentAuthorization(env, context, companyId, operationId);
+  if (authorized.response) return authorized.response;
+  const currentContext = authorized.context as SessionContext;
+  const existing = await env.DB.prepare(`
+    SELECT id,employee_id AS employeeId,r2_key AS r2Key,operation_id AS operationId,
+      original_name AS originalName,sha256,mime_type AS mimeType,size_bytes AS sizeBytes,
+      status,company_id AS companyId
+    FROM offline_attachments WHERE id=?
+  `).bind(attachmentId).first<Record<string, unknown>>();
+  if (existing && (
+    existing.employeeId !== currentContext.employee.id
+    || existing.companyId !== companyId
+    || existing.operationId !== operationId
+    || existing.originalName !== name
+    || existing.sha256 !== digest
+    || existing.mimeType !== mimeType
+    || Number(existing.sizeBytes) !== bytes.byteLength
+  )) {
+    return json({ error: 'This attachment identifier is already bound to different content or scope.', state: 'needs-review' }, 409);
+  }
+  if (existing) {
     await env.DB.prepare(`INSERT OR IGNORE INTO storage_mirror_jobs(
       id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,idempotency_key,status
     ) SELECT ?, 'microsoft_onedrive','offline',id,company_id,r2_key,original_name,mime_type,size_bytes,sha256,?,'provider_required'
-      FROM offline_attachments WHERE id=? AND employee_id=? AND company_id=? AND sha256=?`)
+      FROM offline_attachments WHERE id=? AND employee_id=? AND company_id=? AND operation_id=? AND sha256=?`)
       .bind('storage-mirror-offline-' + attachmentId + '-' + digest,
         'microsoft_onedrive:offline:' + attachmentId + ':' + digest,
-        attachmentId,context.employee.id,companyId,digest).run();
-    const mirror = await env.DB.prepare(`SELECT status FROM storage_mirror_jobs WHERE provider='microsoft_onedrive' AND source_module='offline' AND source_id=? AND sha256=? LIMIT 1`).bind(attachmentId,digest).first<{status:string}>();
-    return json({ ok: true, attachment: { id: existing.id, status: existing.status, backupStatus: mirror?.status||'provider_required', sha256: existing.sha256, sizeBytes: existing.sizeBytes }, deduplicated: true });
+        attachmentId, currentContext.employee.id, companyId, operationId, digest).run();
+    const mirror = await env.DB.prepare(`
+      SELECT status FROM storage_mirror_jobs
+      WHERE provider='microsoft_onedrive' AND source_module='offline' AND source_id=? AND sha256=? LIMIT 1
+    `).bind(attachmentId, digest).first<{ status: string }>();
+    return json({ ok: true, attachment: { id: existing.id, status: existing.status, backupStatus: mirror?.status || 'provider_required', sha256: existing.sha256, sizeBytes: existing.sizeBytes }, deduplicated: true });
   }
-  const key = 'offline/' + context.employee.id + '/' + operationId + '/' + attachmentId + '-' + digest;
-  await env.FILES.put(key, bytes, {
-    httpMetadata: { contentType: mimeType, cacheControl: 'private, no-store' },
-    customMetadata: { employeeId: context.employee.id, companyId, operationId, sha256: digest },
-  });
+
+  const key = 'offline/' + currentContext.employee.id + '/' + operationId + '/' + attachmentId + '-' + digest;
+  const reserved = await reserveAttachmentCleanup(
+    env, attachmentId, currentContext.employee.id, companyId, operationId, key, digest,
+  );
+  if (!reserved.reservation) {
+    const busy = reserved.conflict === 'busy';
+    return json({
+      error: busy
+        ? 'This attachment upload is already being recovered. Try again shortly.'
+        : 'This attachment identifier is already reserved for different content.',
+      state: busy ? 'retry' : 'needs-review',
+    }, busy ? 503 : 409);
+  }
+  const reservation = reserved.reservation;
   try {
-    await env.DB.batch([env.DB.prepare(`
-      INSERT INTO offline_attachments(id,employee_id,company_id,operation_id,r2_key,original_name,mime_type,size_bytes,sha256)
-      VALUES(?,?,?,?,?,?,?,?,?)
-      ON CONFLICT(id) DO UPDATE SET r2_key=excluded.r2_key,original_name=excluded.original_name,
-        mime_type=excluded.mime_type,size_bytes=excluded.size_bytes,sha256=excluded.sha256,
-        company_id=excluded.company_id,operation_id=excluded.operation_id,
-        status='uploaded',uploaded_at=CURRENT_TIMESTAMP
-    `).bind(attachmentId, context.employee.id, companyId, operationId, key, name, mimeType, bytes.byteLength, digest), env.DB.prepare(`
-      INSERT OR IGNORE INTO storage_mirror_jobs(
-        id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,
-        size_bytes,sha256,idempotency_key,status
-      ) SELECT ?, 'microsoft_onedrive','offline',id,company_id,r2_key,original_name,mime_type,
-        size_bytes,sha256,?,'provider_required'
-        FROM offline_attachments WHERE id=? AND employee_id=? AND sha256=?
-    `).bind('storage-mirror-offline-' + attachmentId + '-' + digest,
-      'microsoft_onedrive:offline:' + attachmentId + ':' + digest,
-      attachmentId, context.employee.id, digest)]);
-  } catch (error) {
-    await env.FILES.delete(key);
-    throw error;
+    await env.FILES.put(key, bytes, {
+      httpMetadata: { contentType: mimeType, cacheControl: 'private, no-store' },
+      customMetadata: { employeeId: currentContext.employee.id, companyId, operationId, sha256: digest },
+    });
+  } catch {
+    await recoverAttachmentObject(env, reservation, 'r2_put_uncertain');
+    return json({ error: 'Secure attachment storage is temporarily unavailable.', state: 'retry' }, 503);
   }
-  await writeAudit(env, request, context, 'attachment_accepted', 'offline_attachment', attachmentId, {
-    outcome: 'uploaded',
-    attachmentId,
-    mimeType,
-    sizeBytes: bytes.byteLength,
-    sha256: digest,
-    operationId,
-  }, companyId);
-  return json({ ok: true, attachment: { id: attachmentId, operationId, originalName: name, mimeType, sizeBytes: bytes.byteLength, sha256: digest, status: 'uploaded', backupStatus:'provider_required' } }, 201);
+
+  const commitAuthorization = await attachmentAuthorization(env, currentContext, companyId, operationId);
+  if (commitAuthorization.response) {
+    await recoverAttachmentObject(env, reservation, 'authorization_changed');
+    return commitAuthorization.response;
+  }
+  if (bytes.byteLength > Number(commitAuthorization.policy?.attachmentMaxBytes || 0)) {
+    await recoverAttachmentObject(env, reservation, 'authorization_changed');
+    return json({ error: 'This attachment is larger than the current configured limit.', state: 'needs-review' }, 413);
+  }
+  const commitContext = commitAuthorization.context as SessionContext;
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO offline_attachments(id,employee_id,company_id,operation_id,r2_key,original_name,mime_type,size_bytes,sha256)
+        VALUES(?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET
+          employee_id=excluded.employee_id,company_id=excluded.company_id,operation_id=excluded.operation_id,
+          r2_key=excluded.r2_key,original_name=excluded.original_name,mime_type=excluded.mime_type,
+          size_bytes=excluded.size_bytes,sha256=excluded.sha256,
+          status='uploaded',uploaded_at=CURRENT_TIMESTAMP
+      `).bind(attachmentId, commitContext.employee.id, companyId, operationId, key, name, mimeType, bytes.byteLength, digest),
+      env.DB.prepare(`
+        INSERT OR IGNORE INTO storage_mirror_jobs(
+          id,provider,source_module,source_id,company_id,r2_key,original_name,mime_type,
+          size_bytes,sha256,idempotency_key,status
+        ) SELECT ?, 'microsoft_onedrive','offline',id,company_id,r2_key,original_name,mime_type,
+          size_bytes,sha256,?,'provider_required'
+          FROM offline_attachments
+          WHERE id=? AND employee_id=? AND company_id=? AND operation_id=? AND sha256=?
+      `).bind('storage-mirror-offline-' + attachmentId + '-' + digest,
+        'microsoft_onedrive:offline:' + attachmentId + ':' + digest,
+        attachmentId, commitContext.employee.id, companyId, operationId, digest),
+      auditStatement(env, request, commitContext, 'attachment_accepted', 'offline_attachment', attachmentId, {
+        outcome: 'uploaded',
+        attachmentId,
+        mimeType,
+        sizeBytes: bytes.byteLength,
+        sha256: digest,
+        operationId,
+      }, companyId),
+      env.DB.prepare('DELETE FROM offline_attachment_cleanup_jobs WHERE id=? AND status=\'reserved\' AND lease_token=?')
+        .bind(reservation.id, reservation.leaseToken || ''),
+    ]);
+  } catch (error) {
+    console.error('Offline attachment metadata commit failed', { attachmentId, operationId, errorCategory: 'database' });
+    await recoverAttachmentObject(env, reservation, 'metadata_commit_failed');
+    return json({ error: 'The attachment could not be committed safely. It will be retried.', state: 'retry' }, 503);
+  }
+  return json({ ok: true, attachment: { id: attachmentId, operationId, originalName: name, mimeType, sizeBytes: bytes.byteLength, sha256: digest, status: 'uploaded', backupStatus: 'provider_required' } }, 201);
 }
 
 export async function routeOffline(request: Request, env: OfflineEnv, context: SessionContext): Promise<Response | null> {

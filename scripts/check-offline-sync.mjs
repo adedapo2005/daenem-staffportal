@@ -35,7 +35,7 @@ must(platform.includes('idempotency-key') && platform.includes('retryDelay') && 
 must(!platform.includes('geolocation'), 'offline platform must never silently collect GPS');
 must(server.includes("kind !== 'forms.submit'") && server.includes("hasPermission(context, 'forms.access'") && server.includes('sessionRecord') && server.includes("state: 'needs-review'") && server.includes("'conflict'"), 'server allowlist, live authorization and conflict handling are missing');
 
-must(runtime.includes("import { routeOffline }") && runtime.includes("url.pathname.startsWith('/api/offline/')") && runtime.includes('await routeOffline(request, env, context)'), 'the production Worker runtime does not dispatch authenticated offline requests');
+must(/import \{[^}]*routeOffline[^}]*\} from '\.\/offline'/.test(runtime) && runtime.includes("url.pathname.startsWith('/api/offline/')") && runtime.includes('await routeOffline(request, env, context)'), 'the production Worker runtime does not dispatch authenticated offline requests');
 must(auth.includes('isNetworkTransportFailure') && auth.includes('NETWORK_TRANSPORT') && auth.includes('status = 0'), 'network transport failures are not classified independently from HTTP denial responses');
 must(authWorker.includes('ep.timezone AS timezone') && authWorker.includes('timezone: base.timezone'), 'viewer profile timezone is not carried through authenticated context');
 must(server.includes('existingForKey') && server.includes('mismatchDimensions') && server.includes('String(existingForKey.companyId)') && server.includes('String(existingForKey.operationKind)'), 'idempotency receipt identity binding is incomplete');
