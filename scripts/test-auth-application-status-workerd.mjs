@@ -461,12 +461,14 @@ export default { async fetch(request, env) {
   }
   await check('Explicit Profile Edit denial: real Workerd D1 creates no provisional session', async () => {
     const person = await fixture('google', 'pending');
-    await db.prepare(`
-      INSERT INTO employee_permission_overrides_v2(
-        id,employee_id,company_id,permission_id,access_level,reason,assigned_by
-      ) VALUES(?,?,?,?,?,?,?)
-    `).bind(`qa-auth-deny-${runKey}`,person.employeeId,companyId,
-      provisionalProfile.permissionId,'none','Synthetic denial',person.employeeId).run();
+    // The fixture already has a scoped Profile override. Update that row
+    // instead of violating the real D1 unique (employee,company,permission) key.
+    const denial = await db.prepare(`
+      UPDATE employee_permission_overrides_v2 SET access_level='none'
+      WHERE employee_id=? AND company_id=? AND permission_id=?
+    `).bind(person.employeeId,companyId,provisionalProfile.permissionId).run();
+    assert.equal(Number(denial.meta.changes),1,
+      'Existing synthetic Profile override must be updated exactly once');
     const issued = await issueProvisional(person, 'google');
     assert.equal(issued.status, 403);
     assert.equal(issued.cookie, null);
