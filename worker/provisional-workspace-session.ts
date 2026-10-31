@@ -131,7 +131,8 @@ export async function createProvisionalWorkspaceSession(
     // Cloudflare D1 can report zero/aggregate meta.changes for a committed
     // batch. Authorize the cookie only from the final SQL invariant result,
     // never from per-statement write metadata.
-    if (Number(results?.[2]?.results?.[0]?.audit_required) !== 1) {
+    const auditCheck = results?.[2]?.results?.[0] as { audit_required?: number } | undefined;
+    if (Number(auditCheck?.audit_required) !== 1) {
       return null;
     }
     return { cookie: sessionCookie(request,token,hours * 3600), next: '/workspace/', access: 'provisional' };
