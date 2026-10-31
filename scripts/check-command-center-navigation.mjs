@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -19,6 +20,9 @@ try {
   const fixtures = await server.ssrLoadModule(`${source}security-contract.ts`);
   const nav = await server.ssrLoadModule('/src/enterprise-command-center-model.ts');
   const { EnterpriseCommandCenterNavigation } = await server.ssrLoadModule('/src/enterprise-command-center-navigation.tsx');
+  const navigationCss = await readFile(new URL('../src/enterprise-command-center-navigation.css', import.meta.url), 'utf8');
+  const stage1Palette = await readFile(new URL('../src/staffportal-stage1-palette.css', import.meta.url), 'utf8');
+  const navigationSource = await readFile(new URL('../src/enterprise-command-center-navigation.tsx', import.meta.url), 'utf8');
   const navigationCanView = (module, session) =>
     nav.canViewCommandNavigationModule(module, session, canonical.canView);
   const optionsFor = (session) => ({
@@ -29,6 +33,45 @@ try {
       : entry.id === 'cloud-storage'
         ? canonical.canAct(canonical.byId('admin'), session, 'manage')
         : navigationCanView(canonical.byId(entry.permissionModuleId), session),
+  });
+
+  check('navigation labels use readable Title Case rather than all-caps styling', () => {
+    assert.ok(navigationSource.includes('Command Center'));
+    assert.ok(navigationSource.includes('Recently Visited'));
+    assert.match(navigationCss, /text-transform: none;/);
+    assert.doesNotMatch(navigationCss, /text-transform: uppercase/);
+  });
+  check('navigation supporting labels and metadata meet the 13px baseline', () => {
+    assert.match(navigationCss, /font-size: \.8125rem;/);
+  });
+  check('large-display navigation uses a dedicated readable type ramp', () => {
+    assert.match(navigationCss, /@media \(min-width: 1920px\)/);
+    assert.match(navigationCss, /@media \(min-width: 3000px\)/);
+    assert.match(navigationCss, /font-size: 1\.125rem;/);
+  });
+  check('navigation keeps solid surfaces and no glass overlays', () => {
+    assert.doesNotMatch(navigationCss, /backdrop-filter:/);
+  });
+  check('navigation uses the approved StaffPortal Ocean Sapphire, Azure and Cyan identity', () => {
+    assert.match(stage1Palette, /--stage1-anchor: #173a63;/);
+    assert.match(stage1Palette, /--stage1-primary: #2563eb;/);
+    assert.match(stage1Palette, /--stage1-accent: #06b6d4;/);
+    assert.match(navigationCss, /background: #173a63 !important;/);
+    assert.match(navigationCss, /--ecc-active: #2563eb;/);
+    assert.match(navigationCss, /--ecc-teal: #06b6d4;/);
+    assert.doesNotMatch(navigationCss, /#087f5b|#25b783|#eaf6ef|#f3f8f5/i);
+  });
+  check('navigation uses complementary accents only for semantic highlights', () => {
+    assert.match(stage1Palette, /--stage1-support-violet:/);
+    assert.match(stage1Palette, /--stage1-support-coral:/);
+    assert.match(stage1Palette, /--stage1-support-gold:/);
+    assert.match(stage1Palette, /--stage1-gradient-spectrum:/);
+    assert.match(navigationCss, /--ecc-favorite-active: #f59e0b;/);
+    assert.match(navigationCss, /var\(--stage1-highlight, #f59e0b\)/);
+  });
+  check('mobile navigation sheet matches the approved sapphire shell and keeps 13px metadata', () => {
+    assert.match(navigationCss, /\.p-mobile-nav:has\(\[data-approved-postlogin\]\.ecc-navigation\) \{\s*background: #173a63 !important;/);
+    assert.match(navigationCss, /\.ecc-page-path \{ font-size: \.8125rem; \}/);
   });
 
   for (const profile of fixtures.testProfiles) {
@@ -83,6 +126,15 @@ try {
       ownerPages.map((page) => page.moduleId).sort(),
       'Owner navigation module union must not change with selected company context',
     );
+    const ownerGroupWide = { ...owner, company: 'printing' };
+    const groupWidePages = nav.flattenCommandNavigation(nav.buildEnterpriseCommandNavigation(optionsFor(ownerGroupWide)));
+    for (const id of ['printing', 'bakery', 'autos', 'properties', 'logistics']) {
+      assert.ok(groupWidePages.some((page) => page.moduleId === id), `group-wide Owner navigation lost ${id}`);
+    }
+    const groupWideBakerySession = nav.commandNavigationTargetSession(canonical.byId('bakery'), ownerGroupWide, canonical.canView);
+    assert.equal(groupWideBakerySession.company, 'bakery', 'group-wide Owner opens Bakery in Bakery context without manual workspace switching');
+    assert.equal(canonical.canView(canonical.byId('bakery'), groupWideBakerySession), true);
+
     const bakerySession = nav.commandNavigationTargetSession(canonical.byId('bakery'), ownerScoped, canonical.canView);
     assert.equal(bakerySession.company, 'bakery', 'opening Bakery resolves its authorized company context internally');
     assert.equal(canonical.canView(canonical.byId('bakery'), bakerySession), true);

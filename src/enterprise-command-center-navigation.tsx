@@ -288,7 +288,7 @@ function CommandCenterSession({
       </div>
       <div className="ecc-full">
         <div className="ecc-search-section">
-          <span className="ecc-eyebrow">Command center</span>
+          <span className="ecc-eyebrow">Command Center</span>
           <div className="ecc-search-box">
             <Search size={16} aria-hidden="true" />
             <label className="ecc-sr-only" htmlFor={searchId}>Find a module</label>
@@ -316,7 +316,7 @@ function CommandCenterSession({
             <span className="ecc-section-label">Workspaces</span>
             <ul className="ecc-area-list">{areas.map((area) => renderGroup(area, 0))}</ul>
             {contextualTools && <section className="ecc-contextual-tools" aria-label="Current workspace tools">{contextualTools}</section>}
-            {renderShortcuts("Recently visited", "recent-pages", recentPages, History)}
+            {renderShortcuts("Recently Visited", "recent-pages", recentPages, History)}
             {contextualRecents && <section className="ecc-contextual-recents" aria-label="Recent records">{contextualRecents}</section>}
           </>}
         </div>

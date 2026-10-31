@@ -60,12 +60,19 @@ export function commandNavigationTargetSession(
   session: Session,
   canView: CommandCenterPermissionCheck,
 ): Session {
-  if (!definition || session.role !== "Owner" || canView(definition, session)) return session;
+  if (!definition || session.role !== "Owner") return session;
   const authorized = authorizedCompaniesForModule(session, definition);
-  const company = definition.company && authorized.includes(definition.company)
-    ? definition.company
-    : authorized.find((candidate) => candidate !== "group")
-      || (authorized.includes("group") ? "group" : undefined);
+  if (
+    definition.company &&
+    definition.company !== "group" &&
+    definition.company !== session.company &&
+    authorized.includes(definition.company)
+  ) {
+    return { ...session, company: definition.company };
+  }
+  if (canView(definition, session)) return session;
+  const company = authorized.find((candidate) => candidate !== "group")
+    || (authorized.includes("group") ? "group" : undefined);
   return company ? { ...session, company } : session;
 }
 
