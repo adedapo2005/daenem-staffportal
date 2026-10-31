@@ -54,6 +54,7 @@ import { routeWorkspaceShell } from './workspace-route';
 import { routeFinancialGateway } from './financial-gateway';
 import { routePrinting } from './printing';
 import { routePrintingProduction } from './printing-production';
+import { routeIndependentGroupGrants } from './independent-group-grant-routes';
 
 interface Env extends SocialOAuthEnv, ProviderAuthEnv {
   ASSETS: Fetcher;
@@ -352,6 +353,8 @@ export default {
           if (response) return secure(response);
         }
         if (url.pathname.startsWith('/api/access-control/')) {
+          const groupGrantResponse = await routeIndependentGroupGrants(request, env, enhanced);
+          if (groupGrantResponse) return secure(groupGrantResponse);
           const response = await routeAccessControl(request, env, enhanced);
           if (response) return secure(response);
         }

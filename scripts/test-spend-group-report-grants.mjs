@@ -201,13 +201,44 @@ await check('No Group grant table denies unfiltered Group Detail',async()=>{
  assert.equal(r.status,403,JSON.stringify(r.body));
 });
 database.exec(`
-CREATE TABLE employee_group_permission_grants(
+CREATE TABLE IF NOT EXISTS employee_group_permission_grants(
  id TEXT PRIMARY KEY, employee_id TEXT, permission_id TEXT, access_level TEXT,
  active INTEGER, granted_by TEXT, reviewed_by TEXT, reviewed_at TEXT,
  expires_at TEXT, revoked_by TEXT, revoked_at TEXT);
 `);
-run("INSERT INTO permissions(id,code,module,action,description,sensitive) VALUES('qa-expense-group-report','expense.group.report','spend','group_report','Synthetic local test',1)");
-run("INSERT INTO employee_group_permission_grants(id,employee_id,permission_id,access_level,active,granted_by,reviewed_by,reviewed_at,expires_at) VALUES('qa-group-grant','emp-owner','qa-expense-group-report','view',1,'emp-group-admin','emp-payroll',datetime('now'),datetime('now','+1 day'))");
+let groupReportPermission=database.prepare("SELECT id FROM permissions WHERE code='expense.group.report'").get()?.id;
+if(!groupReportPermission){
+ groupReportPermission='qa-expense-group-report';
+ run("INSERT INTO permissions(id,code,module,action,description,sensitive) VALUES('qa-expense-group-report','expense.group.report','spend','group_report','Synthetic local test',1)");
+}
+const groupGrantColumns=database.prepare("PRAGMA table_info(employee_group_permission_grants)").all().map(row=>row.name);
+if(groupGrantColumns.includes('reason')){
+ run("INSERT INTO employee_group_permission_grants(id,employee_id,permission_id,access_level,active,granted_by,reviewed_by,reviewed_at,reason,expires_at) VALUES(?,?,?,?,1,?,?,datetime('now'),?,datetime('now','+1 day'))",'qa-group-grant','emp-owner',groupReportPermission,'view','emp-group-admin','emp-payroll','Synthetic verified Group report grant');
+}else{
+ run("INSERT INTO employee_group_permission_grants(id,employee_id,permission_id,access_level,active,granted_by,reviewed_by,reviewed_at,expires_at) VALUES(?,?,?,?,1,?,?,datetime('now'),datetime('now','+1 day'))",'qa-group-grant','emp-owner',groupReportPermission,'view','emp-group-admin','emp-payroll');
+}
+let activeGroupGrantId='qa-group-grant',grantRevision=0;
+const insertGroupGrant=(id,employeeId='emp-owner',accessLevel='manage',grantedBy='emp-group-admin',reviewedBy='emp-payroll',expiresModifier='+1 day')=>{
+ if(groupGrantColumns.includes('reason'))
+  run("INSERT INTO employee_group_permission_grants(id,employee_id,permission_id,access_level,active,granted_by,reviewed_by,reviewed_at,reason,expires_at) VALUES(?,?,?,?,1,?,?,datetime('now'),?,datetime('now',?))",id,employeeId,groupReportPermission,accessLevel,grantedBy,reviewedBy,'Synthetic verified Group report grant',expiresModifier);
+ else
+  run("INSERT INTO employee_group_permission_grants(id,employee_id,permission_id,access_level,active,granted_by,reviewed_by,reviewed_at,expires_at) VALUES(?,?,?,?,1,?,?,datetime('now'),datetime('now',?))",id,employeeId,groupReportPermission,accessLevel,grantedBy,reviewedBy,expiresModifier);
+};
+const revokeGroupGrant=(id)=>{
+ if(groupGrantColumns.includes('reason')) run("UPDATE employee_group_permission_grants SET active=0,revoked_by='emp-payroll',revoked_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=?",id);
+ else run("UPDATE employee_group_permission_grants SET active=0,revoked_by='emp-payroll',revoked_at=CURRENT_TIMESTAMP WHERE id=?",id);
+};
+const rotateGroupGrant=({accessLevel='manage',reviewedBy='emp-payroll',expiresModifier='+1 day'}={})=>{
+ if(groupGrantColumns.includes('reason')){
+  const current=database.prepare("SELECT active FROM employee_group_permission_grants WHERE id=?").get(activeGroupGrantId);
+  if(current?.active===1)revokeGroupGrant(activeGroupGrantId);
+  activeGroupGrantId=`qa-group-grant-r${++grantRevision}`;
+  insertGroupGrant(activeGroupGrantId,'emp-owner',accessLevel,'emp-group-admin',reviewedBy,expiresModifier);
+ }else{
+  run("UPDATE employee_group_permission_grants SET access_level=?,reviewed_by=?,expires_at=datetime('now',?) WHERE id=?",accessLevel,reviewedBy,expiresModifier,activeGroupGrantId);
+ }
+ return activeGroupGrantId;
+};
 await check('Reviewed view Group report grant allows Overview',async()=>{
  const r=await spendCall('/api/spend/owner/overview');
  assert.equal(r.status,200,JSON.stringify(r.body));
@@ -217,26 +248,30 @@ await check('View-level grant does not authorize Group Detail',async()=>{
  const r=await spendCall('/api/spend/owner/detail?companyId=company-bakery');
  assert.equal(r.status,403,JSON.stringify(r.body));
 });
-run("UPDATE employee_group_permission_grants SET access_level='manage' WHERE id='qa-group-grant'");
+rotateGroupGrant({accessLevel:'manage'});
 await check('Explicit managed Group grant permits Bakery Detail',async()=>{
  const r=await spendCall('/api/spend/owner/detail?companyId=company-bakery');
  assert.equal(r.status,200,JSON.stringify(r.body));
  assert.ok(r.body.requests.some(x=>x.id==='qa-bakery-foreign'));
 });
 await check('Expired Group report grant fails closed',async()=>{
- run("UPDATE employee_group_permission_grants SET expires_at=datetime('now','-1 minute') WHERE id='qa-group-grant'");
+ rotateGroupGrant({expiresModifier:'-1 minute'});
  try{assert.equal((await spendCall('/api/spend/owner/overview')).status,403);}
- finally{run("UPDATE employee_group_permission_grants SET expires_at=datetime('now','+1 day') WHERE id='qa-group-grant'");}
+ finally{rotateGroupGrant({expiresModifier:'+1 day'});}
 });
 await check('Grant issuer and reviewer must be different',async()=>{
- run("UPDATE employee_group_permission_grants SET reviewed_by='emp-group-admin' WHERE id='qa-group-grant'");
- try{assert.equal((await spendCall('/api/spend/owner/overview')).status,403);}
- finally{run("UPDATE employee_group_permission_grants SET reviewed_by='emp-payroll' WHERE id='qa-group-grant'");}
+ if(groupGrantColumns.includes('reason')){
+  assert.throws(()=>insertGroupGrant('qa-invalid-reviewer','emp-owner','manage','emp-group-admin','emp-group-admin'),/constraint|reviewer|review/i);
+ }else{
+  run(`UPDATE employee_group_permission_grants SET reviewed_by='emp-group-admin' WHERE id='${activeGroupGrantId}'`);
+  try{assert.equal((await spendCall('/api/spend/owner/overview')).status,403);}
+  finally{run(`UPDATE employee_group_permission_grants SET reviewed_by='emp-payroll' WHERE id='${activeGroupGrantId}'`);}
+ }
 });
 await check('Revoked Group report grant fails closed',async()=>{
- run("UPDATE employee_group_permission_grants SET active=0,revoked_by='emp-payroll',revoked_at=CURRENT_TIMESTAMP WHERE id='qa-group-grant'");
+ revokeGroupGrant(activeGroupGrantId);
  try{assert.equal((await spendCall('/api/spend/owner/overview')).status,403);}
- finally{run("UPDATE employee_group_permission_grants SET active=1,revoked_by=NULL,revoked_at=NULL WHERE id='qa-group-grant'");}
+ finally{rotateGroupGrant({});}
 });
 await check('Revoked Owner membership rejects stale request context',async()=>{
  const req=new Request('https://staffportal.test/api/spend/owner/overview',{headers:{cookie:COOKIE+'='+tokens.owner}});
@@ -267,7 +302,7 @@ await check('Revocation during Group Overview DB read suppresses financial data'
    statement.first=async function(...args){
     const value=await baseFirst.apply(this,args);
     injected++;
-    run("UPDATE employee_group_permission_grants SET active=0,revoked_by='emp-payroll',revoked_at=CURRENT_TIMESTAMP WHERE id='qa-group-grant'");
+    revokeGroupGrant(activeGroupGrantId);
     return value;
    };
   }
@@ -280,7 +315,7 @@ await check('Revocation during Group Overview DB read suppresses financial data'
   assert.ok(!JSON.stringify(body).includes('991003'));
  }finally{
   env.DB.prepare=prior;
-  run("UPDATE employee_group_permission_grants SET active=1,revoked_by=NULL,revoked_at=NULL WHERE id='qa-group-grant'");
+  rotateGroupGrant({});
  }
 });
 await check('Inactive independent Group grant reviewer cannot authorize financial reports',async()=>{
@@ -303,14 +338,14 @@ await check('Group Owner role removed mid-session cannot authorize Group reporti
  }finally{grant('er-owner','emp-owner','company-printing','role-owner');}
 });
 await check('Company-scoped role pretending to be Owner cannot use an explicit Group grant',async()=>{
- run("INSERT INTO employee_group_permission_grants(id,employee_id,permission_id,access_level,active,granted_by,reviewed_by,reviewed_at,expires_at) VALUES('qa-fake-owner-group','emp-fake-owner','qa-expense-group-report','manage',1,'emp-group-admin','emp-payroll',datetime('now'),datetime('now','+1 day'))");
+ insertGroupGrant('qa-fake-owner-group','emp-fake-owner','manage','emp-group-admin','emp-payroll');
  try{assert.equal((await spendCall('/api/spend/owner/overview','fakeOwner')).status,403);}
- finally{run("DELETE FROM employee_group_permission_grants WHERE id='qa-fake-owner-group'");}
+ finally{if(groupGrantColumns.includes('reason'))revokeGroupGrant('qa-fake-owner-group');else run("DELETE FROM employee_group_permission_grants WHERE id='qa-fake-owner-group'");}
 });
 await check('Group Admin without Group Owner role cannot use a standalone Group Spend grant',async()=>{
- run("INSERT INTO employee_group_permission_grants(id,employee_id,permission_id,access_level,active,granted_by,reviewed_by,reviewed_at,expires_at) VALUES('qa-admin-group','emp-group-admin','qa-expense-group-report','manage',1,'emp-payroll','emp-owner',datetime('now'),datetime('now','+1 day'))");
+ insertGroupGrant('qa-admin-group','emp-group-admin','manage','emp-payroll','emp-owner');
  try{assert.equal((await spendCall('/api/spend/owner/overview','groupAdmin')).status,403);}
- finally{run("DELETE FROM employee_group_permission_grants WHERE id='qa-admin-group'");}
+ finally{if(groupGrantColumns.includes('reason'))revokeGroupGrant('qa-admin-group');else run("DELETE FROM employee_group_permission_grants WHERE id='qa-admin-group'");}
 });
 await check('Revocation during detailed financial D1 read suppresses foreign expense rows',async()=>{
  const req=new Request('https://staffportal.test/api/spend/owner/detail?companyId=company-bakery',{headers:{cookie:COOKIE+'='+tokens.owner}});
@@ -323,7 +358,7 @@ await check('Revocation during detailed financial D1 read suppresses foreign exp
    statement.all=async function(...args){
     const value=await actualAll.apply(this,args);
     injected++;
-    run("UPDATE employee_group_permission_grants SET active=0,revoked_by='emp-payroll',revoked_at=CURRENT_TIMESTAMP WHERE id='qa-group-grant'");
+    revokeGroupGrant(activeGroupGrantId);
     return value;
    };
   }
@@ -336,7 +371,7 @@ await check('Revocation during detailed financial D1 read suppresses foreign exp
   assert.ok(!JSON.stringify(body).includes('qa-bakery-foreign'));
  }finally{
   env.DB.prepare=prior;
-  run("UPDATE employee_group_permission_grants SET active=1,revoked_by=NULL,revoked_at=NULL WHERE id='qa-group-grant'");
+  rotateGroupGrant({});
  }
 });
 const failed=results.filter(x=>!x.pass);

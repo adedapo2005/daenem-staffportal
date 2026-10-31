@@ -27,6 +27,7 @@ export interface SessionContext {
   roles: Array<{ id: string; code: string; name: string; companyId: string }>;
   permissions: Record<string, AccessLevel>;
   companyPermissions: Record<string, Record<string, AccessLevel>>;
+  groupPermissions?: Record<string, AccessLevel>;
 }
 
 const SESSION_COOKIE = 'daenem_workforce_session';
@@ -453,6 +454,27 @@ async function verifySignIn(request: Request, env: AuthEnv) {
   return responseJson({ ok: true, context }, 200, { 'set-cookie': cookie });
 }
 
+// Group authority is independent of role names and company-permission unions.
+// Missing schema is intentionally surfaced as an error; it is never bypassed.
+export async function loadGroupPermissions(env: AuthEnv, employeeId: string): Promise<Record<string, AccessLevel>> {
+  const rows = await env.DB.prepare(`
+    SELECT p.code, g.access_level AS accessLevel
+    FROM employee_group_permission_grants g
+    JOIN permissions p ON p.id = g.permission_id AND p.sensitive = 1
+    JOIN employees e ON e.id = g.employee_id
+    WHERE g.employee_id = ? AND g.active = 1 AND g.revoked_at IS NULL
+      AND e.employment_status IN ('active','provisional')
+      AND (g.expires_at IS NULL OR datetime(g.expires_at) > datetime('now'))
+      AND (p.code = 'forms.group.receive' OR (g.reviewed_by IS NOT NULL AND g.reviewed_at IS NOT NULL))
+      AND p.code IN ('forms.group.admin','forms.group.receive',
+        'expense.group.report','expense.group.policy','expense.group.master',
+        'expense.group.allocations','access_control.group.grant')
+  `).bind(employeeId).all<{ code: string; accessLevel: AccessLevel }>();
+  const result: Record<string, AccessLevel> = {};
+  for (const row of rows.results || []) result[row.code] = row.accessLevel;
+  return result;
+}
+
 export async function sessionContextFromId(env: AuthEnv, sessionId: string): Promise<SessionContext | null> {
   const base = await env.DB.prepare(`
     SELECT s.id AS sessionId, e.id, e.employee_no AS employeeNo, e.display_name AS displayName,
@@ -576,6 +598,8 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
     }
   }
 
+  const groupPermissions = await loadGroupPermissions(env, employeeId);
+
   return {
     sessionId: String(base.sessionId),
     employee: {
@@ -600,6 +624,7 @@ export async function sessionContextFromId(env: AuthEnv, sessionId: string): Pro
     })),
     permissions,
     companyPermissions,
+    groupPermissions,
   };
 }
 

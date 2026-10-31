@@ -61,12 +61,14 @@ async function main() {
   const worker = load('worker/staffportal-staging.ts').default;
   const auth = load('worker/auth.ts');
   const migrations = Object.keys(baseline.files).filter(name => name.startsWith('migrations/') && name.endsWith('.sql')).sort();
-  check(migrations.length === 110 &&
+  check(migrations.length >= 110 &&
     migrations.includes('migrations/0102_staffportal_v180_media_publication.sql') &&
     migrations.includes('migrations/0103_staffportal_v180_media_approved_seed.sql') &&
     migrations.includes('migrations/0104_staffportal_staff_content_publication.sql') &&
-    migrations.includes('migrations/0105_offline_attachment_cleanup_queue.sql'),
-    'All 110 migrations, including approved media, Cloudflare-only Staff Content, and offline attachment cleanup');
+    migrations.includes('migrations/0105_offline_attachment_cleanup_queue.sql') &&
+    migrations.includes('migrations/0106_staffportal_group_permission_grants.sql') &&
+    migrations.includes('migrations/0107_staffportal_group_permission_requests.sql'),
+    'All current migrations, including approved media, Cloudflare-only Staff Content, offline attachment cleanup, and ordered Group permission schema');
   const db = new DatabaseSync(':memory:');
   for (const migration of migrations) { lastCheck = `Schema: ${migration}`; db.exec(baseline.files[migration]); }
   check(db.prepare("SELECT COUNT(*) AS n FROM staffportal_staff_content_publication").get().n===0,
