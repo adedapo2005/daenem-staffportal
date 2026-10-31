@@ -31,10 +31,11 @@ type ProvisionalWorkspaceProps = {
   context: WorkforceContext;
   onLogout: () => Promise<void> | void;
   onRefresh: () => Promise<void> | void;
+  embedded?: boolean;
 };
 
 export default function ProvisionalProfileWorkspace({
-  context, onLogout, onRefresh,
+  context, onLogout, onRefresh, embedded = false,
 }: ProvisionalWorkspaceProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -137,9 +138,11 @@ export default function ProvisionalProfileWorkspace({
     }
   }
 
+  const Main = embedded ? 'div' : 'main';
+
   return (
-    <div className="dsp-provisional-shell">
-      <header className="dsp-provisional-header">
+    <div className={'dsp-provisional-shell' + (embedded ? ' is-embedded' : '')}>
+      {!embedded && <header className="dsp-provisional-header">
         <div className="dsp-provisional-brand" aria-label="DAENEM StaffPortal">
           <span className="dsp-provisional-brandmark" aria-hidden="true"><ShieldCheck size={24} /></span>
           <span><strong>DAENEM</strong><small>StaffPortal</small></span>
@@ -150,19 +153,25 @@ export default function ProvisionalProfileWorkspace({
             <LogOut size={16} /> Sign Out
           </button>
         </div>
-      </header>
+      </header>}
 
-      <main className="dsp-provisional-main">
+      <Main className="dsp-provisional-main">
         <div className="dsp-provisional-intro">
           <div>
             <span className="dsp-provisional-eyebrow"><BadgeCheck size={16} /> Identity Verified</span>
-            <h1>Welcome To Your Workspace</h1>
-            <p>Complete your employee profile while management reviews your application.
-              Your workspace is protected by the Provisional role and administrator-defined permissions.</p>
+            <h1>{embedded ? 'Your Profile Setup' : 'Welcome To Your Workspace'}</h1>
+            <p>{embedded
+              ? 'Your account is limited to your own profile while an administrator reviews your application.'
+              : 'Complete your employee profile while management reviews your application. Your workspace is protected by the Provisional role and administrator-defined permissions.'}</p>
           </div>
           <div className="dsp-provisional-approval-status">
             <Clock3 size={22} aria-hidden="true" />
-            <span><strong>Pending Management Approval</strong><small>Full employee permissions are not yet enabled.</small></span>
+            <span><strong>Pending Management Approval</strong><small>Full employee permissions are not yet enabled.</small>
+              {embedded && <button className="dsp-provisional-refresh dsp-provisional-approval-refresh" type="button"
+                onClick={() => void refreshApproval()} disabled={refreshing}>
+                <RefreshCcw size={16} /> {refreshing ? 'Checking Approval…' : 'Check Approval Status'}
+              </button>}
+            </span>
           </div>
         </div>
 
@@ -239,7 +248,7 @@ export default function ProvisionalProfileWorkspace({
             )}
           </section>
 
-          <aside className="dsp-provisional-aside">
+          {!embedded && <aside className="dsp-provisional-aside">
             <section className="dsp-provisional-card" aria-labelledby="dsp-access-heading">
               <div className="dsp-provisional-card-heading">
                 <span className="dsp-provisional-card-icon"><ShieldCheck size={21} /></span>
@@ -270,10 +279,10 @@ export default function ProvisionalProfileWorkspace({
               <p className="dsp-provisional-helper">Management controls your official role,
                 department and work assignment. Completing your profile does not grant additional permissions.</p>
             </section>
-          </aside>
+          </aside>}
         </div>
-      </main>
-      <footer className="dsp-provisional-footer">DAENEM StaffPortal · Secure Employee Onboarding</footer>
+      </Main>
+      {!embedded && <footer className="dsp-provisional-footer">DAENEM StaffPortal · Secure Employee Onboarding</footer>}
     </div>
   );
 }

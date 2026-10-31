@@ -158,11 +158,12 @@ jobs:
           node --no-warnings scripts/test-auth-application-status-workerd.mjs
           node --no-warnings scripts/test-password-application-status-workerd.mjs
 
-      - name: Provisional workspace onboarding and permission boundaries
+      - name: Provisional shell onboarding and permission boundaries
         run: |
           node --no-warnings scripts/test-provisional-workspace-access.mjs
           node --no-warnings scripts/test-auth-session-role-projection.mjs
           node --no-warnings scripts/test-provisional-signup-handoff.mjs
+          node --no-warnings scripts/test-provisional-shell-projection.mjs
 
       - name: TypeScript
         if: always()

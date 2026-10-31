@@ -55,7 +55,7 @@ const sourceFingerprint = createHash('sha256').update(sourceFiles.map((file) => 
 }).join('')).digest('hex');
 
 requireText(main, "lazy(() => import('./qa-review-v115-runtime'))", 'Authenticated Root is not wired directly to the complete approved QA Review V115 runtime.');
-requireText(main, '<ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} />', 'Authenticated Root does not pass the real Worker session to approved QA Review V115.');
+requireText(main, '<ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} onRefresh={auth.refresh} />', 'Authenticated Root does not pass the real Worker session and approval refresh to approved QA Review V115.');
 rejectText(main, '<PostLoginRemoved', 'Rejected PostLoginRemoved shell is still rendered.');
 rejectText(main, '<ZipDashboard', 'Rejected ZipDashboard shell is still rendered.');
 requireText(auth, "from './signin-experience'", 'Authentication no longer uses the controlled Sign-In adapter.');

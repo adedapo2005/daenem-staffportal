@@ -125,3 +125,28 @@
   .dsp-provisional-footer{font-size:17px;padding:20px}
 }
 @media(prefers-reduced-motion:reduce){.dsp-provisional-progress-track>span{transition:none}}
+
+
+/* Embedded mode keeps the approved StaffPortal shell and uses its sapphire identity. */
+.dsp-provisional-shell.is-embedded{min-height:0;background:transparent;color:inherit;font-family:inherit;display:block;font-size:inherit}
+.dsp-provisional-shell.is-embedded .dsp-provisional-main{width:100%;margin:0;padding:0;flex:initial}
+.dsp-provisional-shell.is-embedded .dsp-provisional-intro{align-items:stretch;margin-bottom:20px;gap:18px}
+.dsp-provisional-shell.is-embedded .dsp-provisional-eyebrow{color:#2563eb}
+.dsp-provisional-shell.is-embedded .dsp-provisional-intro h1{color:#173a63;font-size:clamp(22px,1.55vw,30px);margin:6px 0}
+.dsp-provisional-shell.is-embedded .dsp-provisional-intro p{color:#526578;font-size:14px;line-height:1.55}
+.dsp-provisional-shell.is-embedded .dsp-provisional-approval-status{background:#eff6ff;color:#173a63;border-color:#bfdbfe;border-radius:12px;padding:14px 18px;min-width:min(100%,280px)}
+.dsp-provisional-shell.is-embedded .dsp-provisional-approval-status strong{color:#173a63}
+.dsp-provisional-shell.is-embedded .dsp-provisional-approval-status small{color:#526578}
+.dsp-provisional-shell.is-embedded .dsp-provisional-grid{grid-template-columns:minmax(0,1fr);gap:16px}
+.dsp-provisional-shell.is-embedded .dsp-provisional-card{border-color:#d9e3f0;border-radius:14px;box-shadow:0 8px 28px rgba(23,58,99,.06);padding:clamp(18px,1.8vw,28px)}
+.dsp-provisional-shell.is-embedded .dsp-provisional-card-icon{background:#eff6ff;color:#2563eb}
+.dsp-provisional-shell.is-embedded .dsp-provisional-card h2{color:#173a63}
+.dsp-provisional-shell.is-embedded .dsp-provisional-card-heading p{color:#526578}
+.dsp-provisional-shell.is-embedded .dsp-provisional-form label{color:#263b52}
+.dsp-provisional-shell.is-embedded .dsp-provisional-form input{border-color:#cbd5e1;color:#172b43}
+.dsp-provisional-shell.is-embedded .dsp-provisional-form input:focus-visible{outline:3px solid #bfdbfe;border-color:#2563eb}
+.dsp-provisional-shell.is-embedded .dsp-provisional-save{background:#2563eb;border-color:#1d4ed8}
+.dsp-provisional-shell.is-embedded .dsp-provisional-save:hover:not(:disabled){background:#1d4ed8}
+.dsp-provisional-shell.is-embedded button:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.dsp-provisional-approval-refresh{width:auto;min-height:36px;margin-top:8px;padding:7px 11px}
+#main-content[data-provisional-profile-only="true"]>:not(.dsp-provisional-shell.is-embedded){display:none!important}

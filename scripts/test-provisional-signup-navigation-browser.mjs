@@ -21,6 +21,7 @@ try{
       if(request.isNavigationRequest() && request.frame()===page.mainFrame())documentNavigations++;
     });
     let verified=false;
+    let approved=false;
     let savedProfile=null;
     page.on('pageerror',error=>errors.push(error.message));
     await page.route('**/api/**',async route=>{
@@ -38,12 +39,12 @@ try{
       else if(pathname==='/api/auth/me')payload=verified
         ? {authenticated:true,context:{
           sessionId:'synthetic-session',employee:{
-            id:'synthetic-provisional',displayName:'Ada Okon',status:'provisional',email:'ada@example.test',
+            id:'synthetic-provisional',displayName:'Ada Okon',status:approved?'active':'provisional',email:'ada@example.test',
           },
           companies:[{id:'company-print',code:'PRINT',name:'Printing',primary:true}],
-          roles:[{id:'role-provisional',code:'provisional',name:'Provisional',companyId:'company-print'}],
-          permissions:{'profile.access':'edit'},
-          companyPermissions:{'company-print':{'profile.access':'edit'}},
+          roles:[{id:approved?'role-manager':'role-provisional',code:approved?'manager':'provisional',name:approved?'Manager':'Provisional',companyId:'company-print'}],
+          permissions:approved?{'profile.access':'edit','people.access':'manage'}:{'profile.access':'edit'},
+          companyPermissions:{'company-print':approved?{'profile.access':'edit','people.access':'manage'}:{'profile.access':'edit'}},
         }}
         : {authenticated:false};
       else if(pathname==='/api/auth/signup/start')payload={
@@ -126,11 +127,16 @@ try{
       await page.locator('.usp-auth-form button[type="submit"]').last().click();
       await page.getByRole('heading',{name:'Your Profile Setup'}).waitFor({timeout:15000});
       assert.equal(documentNavigations,navigationsBeforeHandoff,'verified signup must not reload the document');
-      assert.equal(new URL(page.url()).pathname,'/workspace/','verified signup retains the approved same-document workspace route');
+      assert.equal(new URL(page.url()).pathname,'/profile','verified signup lands on My Profile inside the standard shell');
       assert.equal(verified,true);
-      assert.ok((await page.locator('body').innerText()).includes('Pending Management Approval'));
-      assert.equal(await page.getByText('Full Employee Access').count(),1);
-      assert.equal(await page.getByText('Awaiting Approval').count(),1);
+      const shellText=await page.locator('body').innerText();
+      assert.ok(shellText.includes('Pending Management Approval'));
+      assert.equal(await page.locator('[data-approved-postlogin="qa-review-v115"]').count(),1);
+      assert.equal(await page.locator('.dsp-provisional-header').count(),0,'profile must not render a second application header');
+      assert.doesNotMatch(shellText,/Payroll Control|Finance Command Center|Owner Controls|Full Employee Access/,'provisional users must see profile-only content');
+      const projectedSession=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('daenem-demo-session-v3')||'null'));
+      assert.equal(projectedSession.role,'Employee');
+      assert.deepEqual(projectedSession.assignments.map(({module})=>module),['profile'],'provisional shell session must grant only My Profile');
       await page.getByRole('textbox',{name:'First Name'}).fill('Adaeze');
       await page.getByRole('textbox',{name:'Last Name'}).fill('Okon');
       await page.getByRole('button',{name:/Save Profile/i}).click();
@@ -138,11 +144,27 @@ try{
       assert.equal(savedProfile.firstName,'Adaeze');
       assert.equal(savedProfile.lastName,'Okon');
       assert.equal(await page.getByRole('progressbar',{name:'Profile Completion'}).getAttribute('aria-valuenow'),'75');
-      console.log('PASS: Authenticated Provisional Workspace renders and saves profile without management approval');
+      const navigationsBeforeGuard=documentNavigations;
+      await page.evaluate(()=>{
+        window.history.pushState({},'', '/finance');
+        window.dispatchEvent(new Event('daenem:v115-navigation'));
+      });
+      await page.waitForFunction(()=>window.location.pathname==='/profile');
+      assert.equal(documentNavigations,navigationsBeforeGuard,'provisional route guard must stay in the same document');
+      approved=true;
+      await page.getByRole('button',{name:/Check Approval Status/i}).click();
+      await page.waitForFunction(()=>{
+        try{return JSON.parse(sessionStorage.getItem('daenem-demo-session-v3')||'null')?.role==='Manager';}
+        catch{return false;}
+      },null,{timeout:10000});
+      const expandedSession=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('daenem-demo-session-v3')||'null'));
+      assert.ok(expandedSession.assignments.some(({module})=>module==='people'),'approved administrator role regains its normal shell grants');
+      assert.ok(expandedSession.assignments.length>1,'approval restores role-based shell permissions');
+      console.log('PASS: Profile-only onboarding renders and saves inside the authenticated StaffPortal shell');
       assert.equal(traffic.filter(t=>t.path==='/api/auth/signup/verify').length,2);
       assert.equal(errors.length,0,'browser page errors '+errors.join('; '));
       console.log('PASS: '+(assistedByWhatsApp?'WhatsApp-assisted':'Local')+
-        ' completed email OTP opens authenticated provisional workspace without reloading, invalid OTP denied');
+        ' completed email OTP opens the profile-only StaffPortal shell without reloading, invalid OTP denied');
     }finally{
       await context.close();
     }
