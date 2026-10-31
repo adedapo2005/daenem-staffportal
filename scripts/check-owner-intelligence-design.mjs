@@ -33,18 +33,33 @@ check('Supporting violet, cyan, coral and gold accents enrich analytics without 
   assert.match(stage1Palette, /--stage1-support-gold:/);
   assert.match(stage1Palette, /--stage1-gradient-spectrum:/);
   assert.match(css, /--owner-brand-gradient:[^;]*var\(--owner-violet\)/);
-  assert.match(css, /company-intel-bakery \{ --company-accent: var\(--owner-gold\); \}/);
-  assert.match(css, /company-intel-autos \{ --company-accent: var\(--owner-violet\); \}/);
-  assert.match(css, /company-intel-properties \{ --company-accent: var\(--owner-coral\); \}/);
+  assert.match(css, /company-intel-bakery \{ --company-accent: var\(--owner-gold\); --company-icon: var\(--owner-icon-gold\); \}/);
+  assert.match(css, /company-intel-autos \{ --company-accent: var\(--owner-violet\); --company-icon: var\(--owner-icon-violet\); \}/);
+  assert.match(css, /company-intel-properties \{ --company-accent: var\(--owner-coral\); --company-icon: var\(--owner-icon-coral\); \}/);
   assert.match(css, /\.ai-panel \.owner-panel-head > svg \{ color: var\(--owner-violet\); \}/);
 });
 check('Primary, secondary and action colours meet WCAG AA text contrast on their surfaces', () => {
   assert.ok(contrast('#1f2b3c','#ffffff') >= 7);
   assert.ok(contrast('#526578','#ffffff') >= 4.5);
   assert.ok(contrast('#2563eb','#ffffff') >= 4.5);
+  assert.ok(contrast('#ffffff','#0e7490') >= 4.5);
+  assert.ok(contrast('#526578','#ffffff') >= 4.5);
   assert.ok(contrast('#80510f','#fff8e9') >= 4.5);
   assert.ok(contrast('#b83b4b','#fffafa') >= 4.5);
   assert.ok(contrast('#126b4d','#ffffff') >= 4.5);
+});
+check('Complementary accent icons, action gradients and focus rings retain accessible contrast', () => {
+  assert.ok(contrast('#ffffff','#0e7490') >= 4.5);
+  assert.ok(contrast('#1d4ed8','#e5ecfd') >= 3);
+  assert.ok(contrast('#6d28d9','#efe7fd') >= 3);
+  assert.ok(contrast('#0e7490','#e1f6fa') >= 3);
+  assert.ok(contrast('#80510f','#fef3e2') >= 3);
+  assert.ok(contrast('#b83b4b','#fdeef0') >= 3);
+  assert.match(css, /--owner-icon-accent: #0e7490;/);
+  assert.ok(css.includes('background: linear-gradient(135deg, var(--owner-primary), var(--owner-icon-accent));'));
+  assert.ok(css.includes('background: linear-gradient(140deg, var(--owner-primary), var(--owner-icon-accent));'));
+  assert.ok(css.includes('outline: 3px solid var(--owner-icon-accent);'));
+  assert.match(entryCss, /outline: 3px solid #0e7490;/);
 });
 check('No glassmorphism, blur overlays or hidden-content clipping are used', () => {
   assert.doesNotMatch(css, /backdrop-filter\s*:/i);
@@ -99,13 +114,14 @@ check('Shared analytics labels use readable Title Case', () => {
 });
 check('Company cards use restrained business-specific complementary accents', () => {
   assert.match(ui, /company-intel-card company-intel-/);
-  assert.match(css, /company-intel-printing \{ --company-accent: var\(--owner-primary\); \}/);
-  assert.match(css, /company-intel-bakery \{ --company-accent: var\(--owner-gold\); \}/);
-  assert.match(css, /company-intel-autos \{ --company-accent: var\(--owner-violet\); \}/);
-  assert.match(css, /company-intel-logistics \{ --company-accent: var\(--owner-accent\); \}/);
-  assert.match(css, /company-intel-properties \{ --company-accent: var\(--owner-coral\); \}/);
-  assert.match(css, /owner-kpis article:nth-child\(5\) \{ --kpi-accent: var\(--owner-coral\); \}/);
-  assert.match(css, /\.owner-kpis \.owner-kpi-icon \{ color: var\(--kpi-accent, var\(--owner-primary\)\); \}/);
+  assert.match(css, /company-intel-printing \{ --company-accent: var\(--owner-primary\); --company-icon: var\(--owner-icon-primary\); \}/);
+  assert.match(css, /company-intel-bakery \{ --company-accent: var\(--owner-gold\); --company-icon: var\(--owner-icon-gold\); \}/);
+  assert.match(css, /company-intel-autos \{ --company-accent: var\(--owner-violet\); --company-icon: var\(--owner-icon-violet\); \}/);
+  assert.match(css, /company-intel-logistics \{ --company-accent: var\(--owner-accent\); --company-icon: var\(--owner-icon-accent\); \}/);
+  assert.match(css, /company-intel-properties \{ --company-accent: var\(--owner-coral\); --company-icon: var\(--owner-icon-coral\); \}/);
+  assert.match(css, /owner-kpis article:nth-child\(5\) \{ --kpi-accent: var\(--owner-coral\); --kpi-icon: var\(--owner-icon-coral\); \}/);
+  assert.match(css, /\.owner-kpi-icon \{[\s\S]*color: var\(--kpi-icon, var\(--owner-primary\)\);/);
+  assert.match(css, /\.owner-kpis \.owner-kpi-icon \{ color: var\(--kpi-icon, var\(--owner-primary\)\); \}/);
 });
 check('Analytics charts use the StaffPortal blue/cyan spectrum and semantic status colours', () => {
   assert.match(widgets, /fill="#94a3b8"/);
@@ -116,7 +132,7 @@ check('Analytics charts use the StaffPortal blue/cyan spectrum and semantic stat
   assert.match(chartWidgets, /\.acw-change span\{font-size:13px/);
   assert.match(chartWidgets, /\.acw-signal span\{font-size:13px/);
   assert.doesNotMatch(chartWidgets, /font-size:(?:[0-9]|1[0-2])px/);
-  assert.match(chartWidgets, /state-attention:before\{background:#f59e0b\}/);
+  assert.match(chartWidgets, /state-attention:before\{background:#80510f\}/);
   assert.match(chartWidgets, /state-critical:before\{background:#b83b4b\}/);
   assert.match(chartWidgets, /state-healthy:before\{background:#126b4d\}/);
 });
@@ -135,4 +151,4 @@ check('Permission-safe missing-data behaviour remains explicit', () => {
   assert.match(ui, /No Company Intelligence Is Available For This View/);
   assert.match(ui, /data\.companies\[key\]/);
 });
-console.log('Owner Intelligence design checks passed: ' + passed + '/16');
+console.log('Owner Intelligence design checks passed: ' + passed + '/17');

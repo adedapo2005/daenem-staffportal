@@ -27,7 +27,7 @@
   box-shadow: 0 12px 28px rgba(23, 58, 99, .18);
 }
 .owner-intelligence-launcher:focus-visible {
-  outline: 3px solid rgba(6, 182, 212, .48);
+  outline: 3px solid #0e7490;
   outline-offset: 3px;
 }
 @media (max-width: 720px) {
