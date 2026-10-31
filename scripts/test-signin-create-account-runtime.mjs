@@ -9,6 +9,11 @@ const compiled = ts.transpileModule(source, {
 const module = { exports: {} };
 const provisionalSessions = [];
 new Function('module', 'exports', 'require', compiled)(module, module.exports, (specifier) => {
+  // Role configuration readiness is separately exercised against real SQLite
+  // schema in test-signin-create-account-sqlite.mjs and OAuth tests.
+  if (specifier === './provisional-enrollment-readiness') return {
+    provisionalEnrollmentReady: async (_db, companyId) => Boolean(companyId),
+  };
   if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
   if (specifier === './password-auth') return { recoveryPolicyForEmployee: async () => ({}) };
   if (specifier === './whatsapp-recovery') return { startPasswordRecoveryWhatsApp: async () => null };

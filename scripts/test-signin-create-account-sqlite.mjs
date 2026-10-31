@@ -7,8 +7,13 @@ const source = await readFile(new URL('../worker/auth-refinement.ts', import.met
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
+const readinessSource=await readFile(new URL('../worker/provisional-enrollment-readiness.ts',import.meta.url),'utf8');
+const readinessCompiled=ts.transpileModule(readinessSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const readiness={exports:{}};
+new Function('module','exports',readinessCompiled)(readiness,readiness.exports);
 const loaded = { exports: {} };
 new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier) => {
+  if (specifier === './provisional-enrollment-readiness') return readiness.exports;
   if (specifier === './credential-security') return { WORKER_SAFE_PASSWORD_ITERATIONS: 8000 };
   if (specifier === './password-auth') return { recoveryPolicyForEmployee: async () => ({}) };
   if (specifier === './whatsapp-recovery') return { startPasswordRecoveryWhatsApp: async () => null };
@@ -38,6 +43,9 @@ class SqliteD1 {
         profile_completion_percent INTEGER, profile_completed_at TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
       CREATE TABLE employee_company_memberships(id TEXT PRIMARY KEY, employee_id TEXT REFERENCES employees(id),
         company_id TEXT REFERENCES companies(id), is_primary INTEGER, active INTEGER);
+      CREATE TABLE roles(id TEXT PRIMARY KEY, code TEXT, active INTEGER, company_id TEXT);
+      CREATE TABLE permissions(id TEXT PRIMARY KEY,code TEXT);
+      CREATE TABLE role_permissions(id TEXT PRIMARY KEY,role_id TEXT,permission_id TEXT,access_level TEXT);
       CREATE TABLE employee_roles(id TEXT PRIMARY KEY, employee_id TEXT REFERENCES employees(id),
         company_id TEXT REFERENCES companies(id), role_id TEXT);
       CREATE TABLE employee_credentials(employee_id TEXT PRIMARY KEY REFERENCES employees(id),
@@ -55,6 +63,9 @@ class SqliteD1 {
       CREATE TABLE security_logs(id TEXT PRIMARY KEY, employee_id TEXT, event_type TEXT, severity TEXT,
         result TEXT, ip_address TEXT, user_agent TEXT, details_json TEXT);
       INSERT INTO companies VALUES('company-print','PRINT',1);
+      INSERT INTO roles VALUES('role-provisional','provisional',1,NULL);
+      INSERT INTO permissions VALUES('perm-profile','profile.access');
+      INSERT INTO role_permissions VALUES('rp-profile','role-provisional','perm-profile','edit');
       INSERT INTO app_settings VALUES('security.password_pbkdf2_iterations','1000');
       INSERT INTO app_settings VALUES('security.password_min_length','10');
       INSERT INTO app_settings VALUES('security.password_max_length','128');
@@ -105,6 +116,35 @@ const neutral = { ok: true, message: 'Verification is complete. If your request 
 const passed = [];
 const check = async (name, fn) => { await fn(); passed.push(name); console.log(`PASS: ${name}`); };
 
+await check('disabled provisional role fails before any local email challenge',async()=>{
+  const db=new SqliteD1();
+  db.db.exec("UPDATE roles SET active=0 WHERE id='role-provisional'");
+  const response=await start(db,base);
+  assert.equal(response.response.status,503);
+  assert.equal(response.body.code,'PROVISIONAL_PROFILE_ACCESS_UNAVAILABLE');
+  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM signup_verifications').get().n,0);
+  db.close();
+});
+await check('missing Provisional Profile Edit fails before local challenge',async()=>{
+  const db=new SqliteD1();
+  db.db.exec("DELETE FROM role_permissions WHERE role_id='role-provisional'");
+  const response=await start(db,base);
+  assert.equal(response.response.status,503);
+  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM signup_verifications').get().n,0);
+  db.close();
+});
+await check('pre-verification signup responses cannot enumerate existing employee company membership', async () => {
+  const db = new SqliteD1();
+  db.db.exec("INSERT INTO companies VALUES('company-other','OTHER',1); UPDATE roles SET company_id='company-print' WHERE id='role-provisional'; INSERT INTO employees(id,email,employment_status) VALUES('other-company-employee','known@example.test','active'); INSERT INTO employee_company_memberships VALUES('other-company-membership','other-company-employee','company-other',1,1);");
+  const known = await start(db, { ...base, email:'known@example.test', username:'staff.known' });
+  const unknown = await start(db, { ...base, email:'knight@example.test', username:'staff.knight' });
+  const publicShape = ({response,body}) => ({ status:response.status,
+    keys:Object.keys(body).sort(),destination:body.destination,message:body.message });
+  assert.deepEqual(publicShape(known),publicShape(unknown),
+    'Unauthenticated enrollment cannot reveal the company of an existing employee');
+  assert.equal(known.response.status,200);
+  db.close();
+});
 await check('legacy client company code is ignored; backend onboarding company is authoritative', async () => {
   const db = new SqliteD1();
   db.db.exec(`INSERT INTO employees(id,email,employment_status) VALUES('known','known@example.test','active');
@@ -228,6 +268,57 @@ await check('two verified claimants for one username produce one account and neu
   db.close();
 });
 
+await check('missing mandatory pending application rolls back provisional employee, role, and verified OTP', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec(`CREATE TRIGGER suppress_signup_application BEFORE INSERT ON signup_requests
+    BEGIN SELECT RAISE(IGNORE); END;`);
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503, 'a missing pending application must abort the whole enrollment transaction');
+  for (const table of ['employees', 'employee_credentials', 'employee_company_memberships', 'employee_roles', 'signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table + ' must roll back');
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM security_logs WHERE event_type='signup_verified'").get().n, 0);
+  db.close();
+});
+await check('role disabled after OTP issuance rolls back provisional enrollment', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec("UPDATE roles SET active=0 WHERE id='role-provisional'");
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503);
+  for (const table of ['employees','employee_credentials','employee_roles','employee_company_memberships','signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table);
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  db.close();
+});
+await check('silently ignored mandatory signup audit rolls back account and provisional role', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec("CREATE TRIGGER ignore_signup_audit BEFORE INSERT ON security_logs WHEN NEW.event_type='signup_verified' BEGIN SELECT RAISE(IGNORE); END;");
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503);
+  for (const table of ['employees','employee_credentials','employee_roles','employee_company_memberships','signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table);
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM security_logs WHERE event_type='signup_verified'").get().n, 0);
+  db.close();
+});
+await check('silently ignored provisional role insert rolls back pending signup application', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec("CREATE TRIGGER ignore_role BEFORE INSERT ON employee_roles WHEN NEW.role_id='role-provisional' BEGIN SELECT RAISE(IGNORE); END;");
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503);
+  for (const table of ['employees','employee_credentials','employee_roles','employee_company_memberships','signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table);
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  db.close();
+});
 await check('required success-audit SQL failure rolls back account and challenge consumption', async () => {
   const db = new SqliteD1();
   const challenge = await start(db, base);

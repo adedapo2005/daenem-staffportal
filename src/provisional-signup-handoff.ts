@@ -38,8 +38,10 @@ export function observeProvisionalSignupHandoff(
   options: ProvisionalHandoffOptions = {},
 ): () => void {
   const probe = options.probe || currentProvisionalContext;
-  const attempts = Math.max(1, Math.min(40, options.attempts ?? 20));
-  const intervalMs = Math.max(0, Math.min(2500, options.intervalMs ?? 700));
+  const attempts = Math.max(1, Math.min(80, options.attempts ?? 40));
+  // Open the profile workspace promptly after verified OTP while tolerating
+  // a slow D1/session read. Poll only this authenticated, permission-gated flow.
+  const intervalMs = Math.max(0, Math.min(2500, options.intervalMs ?? 250));
   let disposed = false;
   let checking = false;
   let handedOff = false;

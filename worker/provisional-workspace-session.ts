@@ -20,6 +20,7 @@ export async function createProvisionalWorkspaceSession(
     JOIN employee_roles er ON er.employee_id=e.id AND er.company_id=c.id
       AND er.role_id='role-provisional'
     JOIN roles r ON r.id=er.role_id AND r.active=1
+      AND (r.company_id IS NULL OR r.company_id=c.id)
     JOIN role_permissions rp ON rp.role_id=r.id AND rp.access_level IN ('edit','manage')
     JOIN permissions p ON p.id=rp.permission_id AND p.code='profile.access'
     WHERE e.id=? AND e.employment_status='provisional'
@@ -88,6 +89,7 @@ export async function createProvisionalWorkspaceSession(
             JOIN employee_roles er ON er.employee_id=e.id
               AND er.company_id=m.company_id AND er.role_id='role-provisional'
             JOIN roles r ON r.id=er.role_id AND r.active=1
+              AND (r.company_id IS NULL OR r.company_id=c.id)
             JOIN role_permissions rp ON rp.role_id=r.id
               AND rp.access_level IN ('edit','manage')
             JOIN permissions p ON p.id=rp.permission_id AND p.code='profile.access'

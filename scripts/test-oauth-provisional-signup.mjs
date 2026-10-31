@@ -7,8 +7,15 @@ const source = readFileSync(new URL('../worker/oauth-provisional-signup.ts', imp
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
+const readinessSource=readFileSync(new URL('../worker/provisional-enrollment-readiness.ts',import.meta.url),'utf8');
+const readinessCompiled=ts.transpileModule(readinessSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const readiness={exports:{}};
+new Function('module','exports',readinessCompiled)(readiness,readiness.exports);
 const loaded = { exports: {} };
-new Function('module', 'exports', compiled)(loaded, loaded.exports);
+new Function('module', 'exports', 'require', compiled)(loaded, loaded.exports, (specifier)=>{
+  if(specifier==='./provisional-enrollment-readiness')return readiness.exports;
+  throw Error('Unexpected OAuth dependency '+specifier);
+});
 const { provisionOAuthApplicant, pendingOAuthApplicantId, oauthApplicantApproval } = loaded.exports;
 const request = new Request('https://staffportal.test/api/auth/oauth/google/callback', {
   headers: { 'cf-connecting-ip': '203.0.113.25', 'user-agent': 'Synthetic OAuth Fixture' },
@@ -30,7 +37,9 @@ class D1 {
       CREATE TABLE employee_company_memberships(id TEXT PRIMARY KEY,
         employee_id TEXT REFERENCES employees(id),company_id TEXT REFERENCES companies(id),
         is_primary INTEGER,active INTEGER);
-      CREATE TABLE roles(id TEXT PRIMARY KEY);
+      CREATE TABLE roles(id TEXT PRIMARY KEY,code TEXT,active INTEGER,company_id TEXT);
+      CREATE TABLE permissions(id TEXT PRIMARY KEY,code TEXT);
+      CREATE TABLE role_permissions(id TEXT PRIMARY KEY,role_id TEXT,permission_id TEXT,access_level TEXT);
       CREATE TABLE employee_roles(id TEXT PRIMARY KEY,employee_id TEXT REFERENCES employees(id),
         company_id TEXT REFERENCES companies(id),role_id TEXT REFERENCES roles(id));
       CREATE TABLE signup_requests(id TEXT PRIMARY KEY,employee_id TEXT REFERENCES employees(id),
@@ -47,7 +56,9 @@ class D1 {
       INSERT INTO app_settings VALUES('portal.allow_self_signup','true');
       INSERT INTO app_settings VALUES('portal.default_signup_company_code','PRINT');
       INSERT INTO companies VALUES('company-printing','PRINT',1);
-      INSERT INTO roles VALUES('role-provisional');
+      INSERT INTO roles VALUES('role-provisional','provisional',1,NULL);
+      INSERT INTO permissions VALUES('perm-profile','profile.access');
+      INSERT INTO role_permissions VALUES('rp-profile','role-provisional','perm-profile','edit');
     `);
     this.env = { DB: this };
   }
@@ -144,6 +155,23 @@ await check('Inactive default company blocks social provisioning', async()=>{
   assert.equal(db.count('employees'),0);
   db.close();
 });
+await check('Disabled provisional role cannot strand new social applicants',async()=>{
+  const db=new D1();
+  db.db.exec("UPDATE roles SET active=0 WHERE id='role-provisional'");
+  for(const provider of [google,microsoft]){
+    assert.equal(await provisionOAuthApplicant(db.env,provider,request),'unavailable');
+  }
+  assert.equal(db.count('employees'),0);
+  assert.equal(db.count('signup_requests'),0);
+  db.close();
+});
+await check('Missing Provisional Profile Edit cannot create social applicants',async()=>{
+  const db=new D1();
+  db.db.exec("DELETE FROM role_permissions WHERE role_id='role-provisional'");
+  assert.equal(await provisionOAuthApplicant(db.env,google,request),'unavailable');
+  assert.equal(db.count('employees'),0);
+  db.close();
+});
 await check('Missing Microsoft immutable identity rejected', async()=>{
   const db=new D1();
   assert.equal(await provisionOAuthApplicant(db.env,{...microsoft,microsoftObjectId:''},request),'unavailable');
@@ -165,6 +193,24 @@ await check('Silently suppressed audit rolls back every Microsoft provisional ro
   for(const table of ['employees','employee_company_memberships','employee_roles','signup_requests',
     'staffportal_external_identity_links','security_logs']) assert.equal(db.count(table),0,table);
   db.close();
+});
+await check('silently ignored social provisional role or application must roll back all applicant records', async()=>{
+  for (const [label, provider, table] of [
+    ['Google membership',google,'employee_company_memberships'],
+    ['Google role',google,'employee_roles'],
+    ['Google application',google,'signup_requests'],
+    ['Microsoft application',microsoft,'signup_requests'],
+    ['Microsoft identity binding',microsoft,'staffportal_external_identity_links'],
+  ]) {
+    const db=new D1();
+    db.db.exec('CREATE TRIGGER ignore_required BEFORE INSERT ON '+table+' BEGIN SELECT RAISE(IGNORE); END;');
+    const outcome=await provisionOAuthApplicant(db.env,provider,request);
+    assert.equal(outcome,'unavailable',label+' must fail closed');
+    for (const t of ['employees','employee_company_memberships','employee_roles','signup_requests','staffportal_external_identity_links','security_logs']) {
+      assert.equal(db.count(t),0,label+': '+t+' must roll back');
+    }
+    db.close();
+  }
 });
 await check('Known IP rate limit blocks bulk account creation', async()=>{
   const db=new D1();

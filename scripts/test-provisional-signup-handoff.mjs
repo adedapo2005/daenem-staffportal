@@ -179,6 +179,13 @@ try{
     });
     submit(new FakeForm());await tick();assert.equal(opened,0);dispose();
   });
+  await check('Effective approval-level Profile Access preserves existing Edit-capable handoff',async()=>{
+    let opened=0;
+    const dispose=observeProvisionalSignupHandoff(()=>opened++,{
+      probe:async()=>context({profile:'approve'}),attempts:2,intervalMs:0,
+    });
+    submit(new FakeForm());await tick();assert.equal(opened,1);dispose();
+  });
   await check('Extra role cannot masquerade as provisional workspace grant',async()=>{
     let opened=0;
     const dispose=observeProvisionalSignupHandoff(()=>opened++,{
