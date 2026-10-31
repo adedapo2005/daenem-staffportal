@@ -194,6 +194,24 @@ await check('Silently suppressed audit rolls back every Microsoft provisional ro
     'staffportal_external_identity_links','security_logs']) assert.equal(db.count(table),0,table);
   db.close();
 });
+await check('silently ignored social provisional role or application must roll back all applicant records', async()=>{
+  for (const [label, provider, table] of [
+    ['Google membership',google,'employee_company_memberships'],
+    ['Google role',google,'employee_roles'],
+    ['Google application',google,'signup_requests'],
+    ['Microsoft application',microsoft,'signup_requests'],
+    ['Microsoft identity binding',microsoft,'staffportal_external_identity_links'],
+  ]) {
+    const db=new D1();
+    db.db.exec('CREATE TRIGGER ignore_required BEFORE INSERT ON '+table+' BEGIN SELECT RAISE(IGNORE); END;');
+    const outcome=await provisionOAuthApplicant(db.env,provider,request);
+    assert.equal(outcome,'unavailable',label+' must fail closed');
+    for (const t of ['employees','employee_company_memberships','employee_roles','signup_requests','staffportal_external_identity_links','security_logs']) {
+      assert.equal(db.count(t),0,label+': '+t+' must roll back');
+    }
+    db.close();
+  }
+});
 await check('Known IP rate limit blocks bulk account creation', async()=>{
   const db=new D1();
   for(let i=0;i<5;i++) db.db.prepare(

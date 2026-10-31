@@ -158,12 +158,36 @@ export async function provisionOAuthApplicant(
   ).bind(uid('security'), employeeId, sourceIp, request.headers.get('user-agent'),
     JSON.stringify({ provider: applicant.provider, companyId: company.id,
       verifiedBy: 'signed_provider_identity', approvalRequired: true })));
-  // A trigger may silently ignore the mandatory audit insert. Keep the check
-  // inside the batch so an ignored audit rolls back every provisional row.
-  statements.push(env.DB.prepare(
-    "SELECT CASE WHEN changes()=1 THEN 1 " +
-    "ELSE json_extract('oauth signup security audit required','$') END AS audit_required"
-  ));
+  // Enforce a complete restricted applicant inside the same D1 transaction.
+  // A trigger can silently ignore a membership, role, request, identity link,
+  // or audit INSERT: checking only post-commit meta.changes is too late.
+  // changes() observes the immediately preceding mandatory audit INSERT.
+  statements.push(env.DB.prepare(`
+    SELECT CASE WHEN changes()=1
+      AND EXISTS(SELECT 1 FROM employees e
+        WHERE e.id=? AND lower(e.email)=? AND e.employment_status='provisional')
+      AND EXISTS(SELECT 1 FROM employee_company_memberships m
+        JOIN companies c ON c.id=m.company_id AND c.active=1
+        WHERE m.employee_id=? AND m.company_id=? AND m.active=1)
+      AND EXISTS(SELECT 1 FROM employee_roles er
+        JOIN roles r ON r.id=er.role_id AND r.code='provisional' AND r.active=1
+          AND (r.company_id IS NULL OR r.company_id=er.company_id)
+        JOIN role_permissions rp ON rp.role_id=r.id
+          AND rp.access_level IN ('edit','manage')
+        JOIN permissions p ON p.id=rp.permission_id AND p.code='profile.access'
+        WHERE er.employee_id=? AND er.company_id=? AND er.role_id='role-provisional')
+      AND EXISTS(SELECT 1 FROM signup_requests sr
+        WHERE sr.id=? AND sr.employee_id=? AND sr.requested_company_id=?
+          AND sr.status='pending' AND sr.requested_role_text=?)
+      AND (?<>'microsoft' OR EXISTS(
+        SELECT 1 FROM staffportal_external_identity_links link
+        WHERE link.provider='microsoft' AND link.tenant_id=?
+          AND link.object_id=? AND link.employee_id=? AND link.revoked_at IS NULL))
+      THEN 1 ELSE json_extract('required social provisional enrollment incomplete','$')
+      END AS enrollment_required
+  `).bind(employeeId,email,employeeId,company.id,employeeId,company.id,
+    requestId,employeeId,company.id,'Social Applicant: ' + applicant.provider,
+    applicant.provider,applicant.microsoftTenantId||'',applicant.microsoftObjectId||'',employeeId));
 
   try {
     // D1.batch commits all writes or rolls all of them back on SQL failure.
