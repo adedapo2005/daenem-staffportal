@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// These are the approved export and the three reviewed navigation boundaries.
+// These are the approved export and the four reviewed navigation boundaries.
 // Verification never writes hashes, updates a manifest, or accepts an override.
 export const APPROVED_NAVIGATION_OVERLAY = Object.freeze({
   id: 'enterprise-command-center-v1',
@@ -16,6 +16,7 @@ export const APPROVED_NAVIGATION_OVERLAY = Object.freeze({
   replacements: Object.freeze([
     Object.freeze({ id: 'navigation-import', beforeSha256: '02b658d1b2478e458427c7cd3d29091eb72af11b0f58984cd618641977f2337e' }),
     Object.freeze({ id: 'route-owner', beforeSha256: 'c09114569ad54edd862a703c73ca792873400b1910240ec4a21b632ccd7e2f89' }),
+    Object.freeze({ id: 'owner-workspace-shell', beforeSha256: 'dddd70735cceb9c53d33e5b57a8c62c1e0ffeb33f6191396a111903f2a1583b0' }),
     Object.freeze({ id: 'navigation-body', beforeSha256: '5c4e399540d1521afd6fc0b6c642b84854a071b0d021265d9ac7faf1b784423c' }),
   ]),
   files: Object.freeze([
@@ -56,7 +57,7 @@ export function validateNavigationOverlayDescriptor(descriptor) {
   if (descriptor.patchedSha256 === policy.baseSha256) fail('The authorized navigation implementation is missing.');
 
   if (!Array.isArray(descriptor.replacements) || descriptor.replacements.length !== policy.replacements.length) {
-    fail('Exactly three approved literal replacement boundaries are required.');
+    fail('Exactly four approved literal replacement boundaries are required.');
   }
   descriptor.replacements.forEach((replacement, index) => {
     exactKeys(replacement, ['id', 'before', 'after'], 'Replacement');
