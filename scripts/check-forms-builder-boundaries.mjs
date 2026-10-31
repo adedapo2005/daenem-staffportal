@@ -11,7 +11,7 @@ function check(name, condition) {
 
 check('Forms company scope derives from company permission truth', source.includes("hasPermission(context,'forms.access',level,company.id)"));
 check('Form listing rejects an unauthorized requested company', source.includes("requested&&!allowed.includes(requested)") && source.includes("Forms access is not assigned for this business."));
-check('Form and assignment listing counts stay in authorized scope', source.includes("a.company_id IS NULL OR a.company_id IN (") && source.includes("wf.company_id IS NULL OR wf.company_id IN ("));
+check('Form and assignment listing counts stay in authorized scope', source.includes("(?=1 AND a.company_id IS NULL) OR a.company_id IN (") && source.includes("(?=1 AND wf.company_id IS NULL) OR wf.company_id IN ("));
 check('Company form creation uses company-scoped authority', source.includes("hasPermission(context,'forms.access','create',companyId)"));
 check('Global form creation is Owner-managed', source.includes("companyId?!hasPermission") && source.includes(":!canGroup(context,'manage')"));
 check('Assignment authority is validated against the target company', source.includes("hasPermission(context,'forms.access','edit',targetCompanyId)") && source.includes("return json({error:'Form not found.'},404)"));
@@ -19,7 +19,7 @@ check('Employee assignment requires active target-company membership', source.in
 check('Role assignment requires a target-company role', source.includes("SELECT 1 AS ok FROM roles WHERE id=? AND company_id=?"));
 check('Global assignment is restricted to global forms, empty company scope, and Owner management', source.includes("form.companyId||targetCompanyId||!canGroup(context,'manage')"));
 check('Personal assignment roles are filtered to authorized companies', source.includes("context.roles.filter(role=>companyIds.includes(role.companyId))"));
-check('Global assigned forms require active Forms view authority', source.includes("group=companyIds.length>0||canGroup(context,'view')"));
+check('Global assigned forms require active recipient authority', source.includes("group=canReceiveGroupForms(context)"));
 check('Personal assignments repeat company scope for forms and audiences', source.includes("wf.company_id IS NULL OR wf.company_id IN") && source.includes("a.audience_type='employee' AND a.employee_id=? AND a.company_id IN"));
 check('Submission denies unassigned forms without disclosure', source.includes("if(!minePayload.assignments?.some") && source.includes("Assigned form not found."));
 check('Submission replay is assignment and employee scoped', source.includes("WHERE assignment_id=? AND employee_id=? AND offline_idempotency_key=?"));
