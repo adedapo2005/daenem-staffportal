@@ -69,8 +69,10 @@ try {
   const companyScope=(ctx,level='view')=>ctx.companies
     .filter(c=>hasPermission(ctx,'forms.access',level,c.id)).map(c=>c.id);
   const canGroup=(ctx,level='view')=>ctx.roles.some(r=>r.code==='owner')&&can(ctx,level);
-  const myAssignments=new Function('json','companyScope','canGroup',
-    compile('myAssignments')+'\nreturn myAssignments;')(json,companyScope,canGroup);
+  // This isolated D1 harness has no independent Group grant rows; keep Group recipient authority closed.
+  const canReceiveGroupForms=()=>false;
+  const myAssignments=new Function('json','companyScope','canGroup','canReceiveGroupForms',
+    compile('myAssignments')+'\nreturn myAssignments;')(json,companyScope,canGroup,canReceiveGroupForms);
   const submit=new Function('json','can','myAssignments','uid','validGuidedDependencies',
     'guidedFieldVisible','validSubmittedSelectAnswer','checkFormAnswerCompleteness',
     compile('submitForm')+'\nreturn submitForm;')(
@@ -81,7 +83,8 @@ try {
   const ctx={
     employee:{id:'staff',department:''},
     sessionId:'synthetic-session',
-    companies:[{id:'printing'},{id:'bakery'}],
+    // The authenticated session is scoped to Printing; Bakery is an active membership in D1 but not in this session.
+    companies:[{id:'printing'}],
     roles:[],
     permissions:{'forms.access':'view'},
     companyPermissions:{printing:{'forms.access':'view'},bakery:{'forms.access':'none'}},
