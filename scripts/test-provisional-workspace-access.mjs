@@ -56,6 +56,22 @@ class D1{
         id TEXT PRIMARY KEY,employee_id TEXT,actor_employee_id TEXT,
         event_type TEXT,completion_percent INTEGER,message TEXT
       );
+      -- Group authority is independent from role/company permissions. Keep this
+      -- fixture empty so provisional users receive no Group grants.
+      CREATE TABLE employee_group_permission_grants(
+        id TEXT PRIMARY KEY,
+        employee_id TEXT NOT NULL,
+        permission_id TEXT NOT NULL,
+        access_level TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        granted_by TEXT,
+        reviewed_by TEXT,
+        reviewed_at TEXT,
+        reason TEXT,
+        expires_at TEXT,
+        revoked_by TEXT,
+        revoked_at TEXT
+      );
     `);
     this.db.exec(`
       INSERT INTO companies(id,code,name,business_type,active)
