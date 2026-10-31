@@ -7,7 +7,10 @@ assert.equal(liveRouteForPath('/forms/'), 'forms');
 assert.equal(liveRouteForPath('/facilities'), 'facilities');
 assert.equal(liveRouteForPath('/spend'), 'spend');
 assert.equal(liveRouteForPath('/spend?tab=create'), 'spend');
-for (const path of ['/home','/signin','/admin','/owner-studio','/payroll','/attendance','/','/workspace','/form', '/facility']) {
+assert.equal(liveRouteForPath('/forms/group'), 'forms');
+assert.equal(liveRouteForPath('/forms/company/company-printing'), 'forms');
+assert.equal(liveRouteForPath('/facilities/company/company-printing/'), 'facilities');
+for (const path of ['/home','/signin','/admin','/owner-studio','/payroll','/attendance','/','/workspace','/form','/facility','/forms/FOR-2048','/forms/company','/forms/company/company-printing/detail','/spend/REQ-2048']) {
   assert.equal(liveRouteForPath(path),null, `Must preserve approved reference for ${path}`);
 }
 const base = (path) => readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -20,16 +23,18 @@ const sourcePortal=base('source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/ap
 assert.match(entry,/ApprovedPostLoginV115/);
 assert.match(shell,/Stage1LiveErpRouteBridge context=\{context\}/);
 assert.match(shell,/<Portal \/>/);
-assert.match(bridge,/hasWorkforcePermission\(context, 'forms\.access', 'view', companyId\)/);
-assert.match(bridge,/hasWorkforcePermission\(context, 'facilities\.access', 'view', companyId\)/);
-assert.match(bridge,/\['expense\.requests', 'expense\.own', 'expense\.approve', 'expense\.master'\]/);
-assert.match(bridge,/\.\.\.context,[\s\S]{0,260}companies: companyChoices/);
+assert.match(bridge,/authorisedLiveWorkspaces\(context\)/);
+assert.match(bridge,/liveRouteCompanyScope\(pathname, route \|\| 'forms', authorisedWorkspaces\)/);
+assert.match(bridge,/companies: context\.companies\.filter\(\(item\) => item\.id === scopeId\)/);
+assert.match(bridge,/mount\.removeAttribute\('aria-labelledby'\)/);
+assert.match(bridge,/mount\.setAttribute\('aria-label', TITLES\[route\]\.title\)/);
 assert.match(bridge,/data-live-erp-source="authenticated-cloudflare-d1"/);
 assert.match(bridge,/import\('\.\/centers'\)/);
 assert.match(bridge,/import\('\.\/spend-entry'\)/);
 assert.match(bridge,/createPortal\(/);
 assert.match(bridge,/MutationObserver\(/);
 assert.match(css,/#main-content\[data-daenem-live-route\] > :not\(\.daenem-live-erp-root\)/);
+assert.match(css,/html\[data-daenem-live-route\] \.p-shell-workspace-context/);
 assert.match(css,/html\[data-daenem-live-route\] \.p-demo-strip/);
 assert.match(spend,/export function SpendCenter/);
 assert.match(spend,/if \(!document\.querySelector\('\[data-approved-postlogin="qa-review-v115"\]'\)\)/);
