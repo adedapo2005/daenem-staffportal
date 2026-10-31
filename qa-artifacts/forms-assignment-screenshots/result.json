@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-07T08:14:54.405Z",
-  "baseUrl": "http://127.0.0.1:4176",
+  "generatedAt": "2026-10-31T14:32:40.853Z",
+  "baseUrl": "http://127.0.0.1:5207",
   "results": [
     {
       "width": 390,
@@ -16,7 +16,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -33,7 +33,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -50,7 +50,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -67,7 +67,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -84,7 +84,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -101,7 +101,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -118,7 +118,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -135,7 +135,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     },
     {
@@ -152,7 +152,7 @@
         "employee-b",
         "employee-a"
       ],
-      "minFont": 9,
+      "minFont": 12,
       "overflow": false
     }
   ],

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, CheckCircle2, Database, LockKeyhole, RefreshCw, ChevronRight } from 'lucide-react';
+import { Building2, CheckCircle2, Database, LockKeyhole, RefreshCw, ChevronRight, ShieldCheck } from 'lucide-react';
 import type { WorkforceContext } from './auth';
 import { authorisedLiveWorkspaces, liveRouteCompanyScope } from './authorised-live-workspaces';
 import { usePathname, useRouter } from './next-navigation-shim';
@@ -113,8 +113,15 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
           <span className="daenem-live-erp-eyebrow"><Database size={15} aria-hidden="true" /> AUTHENTICATED PRE-PRODUCTION WORKSPACE</span>
           <h2>{title.title}</h2>
           <p>{title.detail}</p>
+          {route === 'forms' && (
+            <div className="daenem-live-erp-signal-rail" aria-label="Stage One Forms workspace guarantees">
+              <span><ShieldCheck size={17} aria-hidden="true" /><b>Permission Scoped</b><small>Company grants shape every view</small></span>
+              <span><RefreshCw size={17} aria-hidden="true" /><b>Offline Resilient</b><small>Encrypted drafts and safe replay</small></span>
+              <span><Database size={17} aria-hidden="true" /><b>Evidence Preserved</b><small>Receipts, conflicts and file integrity</small></span>
+            </div>
+          )}
         </div>
-        <span className="daenem-live-erp-authority"><CheckCircle2 size={17} aria-hidden="true" /> Permission-Scoped ERP</span>
+        <span className="daenem-live-erp-authority"><CheckCircle2 size={17} aria-hidden="true" /> Live Permission-Scoped ERP</span>
       </header>
       {moduleWorkspaces.length === 0 ? (
         <div className="daenem-live-erp-denied" role="status">

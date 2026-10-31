@@ -71,11 +71,10 @@ async function installRoutes(page,captures){
 }
 
 async function waitForShell(page){
- await page.waitForSelector('[data-offline-sync-indicator], [data-canonical-runtime]',{timeout:20000});
- await page.waitForSelector('[data-module-envelope]',{state:'attached',timeout:20000});
+ await page.waitForFunction(() => document.body.textContent?.includes('Find a module'),{timeout:20000});
 }
 async function launchForms(page){
- await page.evaluate(()=>window.dispatchEvent(new CustomEvent('daenem:canonical-navigation',{detail:{target:'forms'}})));
+ await page.goto(baseUrl+'/forms/company/company-printing',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-forms-center="true"]',{timeout:15000});
 }
 async function visibleAudit(page){
