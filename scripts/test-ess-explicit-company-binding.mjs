@@ -12,10 +12,15 @@ const exports = {};
 runInNewContext(js, {
   exports,
   require(id) {
-    assert.equal(id, './auth');
-    return { hasPermission(context, permission, level, companyId) {
-      return context.permissions?.[`${permission}:${level}:${companyId}`] === true;
-    } };
+    if (id === './auth') {
+      return { hasPermission(context, permission, level, companyId) {
+        return context.permissions?.[`${permission}:${level}:${companyId}`] === true;
+      } };
+    }
+    if (id === './group-form-authority') {
+      return { canReceiveGroupForms: () => false };
+    }
+    assert.fail(`Unexpected employee self-service dependency: ${id}`);
   },
   crypto: webcrypto,
   URL,
