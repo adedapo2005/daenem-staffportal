@@ -4,6 +4,7 @@
 #main-content[data-daenem-live-route] > :not(.daenem-live-erp-root) {
   display: none !important;
 }
+html[data-daenem-live-route] .p-shell-workspace-context,
 html[data-daenem-live-route] .p-demo-strip {
   display: none !important;
 }

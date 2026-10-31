@@ -63,11 +63,19 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
 
   useEffect(() => {
     if (!mount || !route) return;
+    const previousAriaLabel = mount.getAttribute('aria-label');
+    const previousAriaLabelledBy = mount.getAttribute('aria-labelledby');
     mount.dataset.daenemLiveRoute = route;
+    mount.removeAttribute('aria-labelledby');
+    mount.setAttribute('aria-label', TITLES[route].title);
     document.documentElement.dataset.daenemLiveRoute = route;
     return () => {
       delete mount.dataset.daenemLiveRoute;
       delete document.documentElement.dataset.daenemLiveRoute;
+      if (previousAriaLabel === null) mount.removeAttribute('aria-label');
+      else mount.setAttribute('aria-label', previousAriaLabel);
+      if (previousAriaLabelledBy === null) mount.removeAttribute('aria-labelledby');
+      else mount.setAttribute('aria-labelledby', previousAriaLabelledBy);
     };
   }, [mount, route]);
 
