@@ -51,6 +51,23 @@ try {
   check('navigation keeps solid surfaces and no glass overlays', () => {
     assert.doesNotMatch(navigationCss, /backdrop-filter:/);
   });
+  check('Owner navigation shell uses Mineral White and Signature Green instead of navy', () => {
+    assert.match(navigationCss, /\.p-sidebar:has\(\[data-approved-postlogin\]\.ecc-navigation\)/);
+    assert.match(navigationCss, /background: linear-gradient\(180deg, #ffffff 0%, #f3f8f5 100%\)/);
+    assert.match(navigationCss, /#087f5b/);
+    assert.doesNotMatch(navigationCss, /background: #061423/);
+  });
+  check('mobile navigation metadata remains at the 13px minimum', () => {
+    assert.match(navigationCss, /\.ecc-page-path \{ font-size: \.8125rem; \}/);
+  });
+  check('navigation overrides the shared Stage 1 navy anchor without changing shared palette files', () => {
+    assert.ok(navigationCss.includes('html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app:not(.theme-midnight):not(.theme-carbon):not(.theme-dark).premium-shell-reset > .p-sidebar:has([data-approved-postlogin].ecc-navigation)'));
+    assert.ok(navigationCss.includes('html[data-staffportal-postlogin="true"] .p-mobile-nav.p-responsive-navigation-sheet:has([data-approved-postlogin].ecc-navigation)'));
+    assert.ok(navigationCss.includes('--ecc-text: #173a2b !important;'));
+    assert.ok(navigationCss.includes('--ecc-muted: #526d61 !important;'));
+    assert.ok(navigationCss.includes('--ecc-green: #087f5b !important;'));
+    assert.ok(navigationCss.includes('color: #315a47 !important;'));
+  });
 
   for (const profile of fixtures.testProfiles) {
     check(`canonical reachability and access boundaries: ${profile}`, () => {
