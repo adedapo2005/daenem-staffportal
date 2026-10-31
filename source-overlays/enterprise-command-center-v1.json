@@ -34,11 +34,11 @@
     },
     {
       "path": "src/enterprise-command-center-navigation.tsx",
-      "sha256": "3887611f7819c8a573a09091a0a4442c7d9c6e219c9bd5648613935cd560e426"
+      "sha256": "5395930ce125f794651edf4992b34824e7aea4e99e9d43bca6f29adee0602829"
     },
     {
       "path": "src/enterprise-command-center-navigation.css",
-      "sha256": "0d49536ae2a35f8b8be79c165d146c30def464c5b6d77d78087225eee8a0a7c0"
+      "sha256": "4c72b967b2df1177dcdddd5d4c154f5c7c52e46ec9243bf0f51ab07652fec07c"
     }
   ]
 }
