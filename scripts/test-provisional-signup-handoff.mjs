@@ -61,7 +61,7 @@ try{
     assert.match(lockedSignIn,/autoComplete="one-time-code"/);
     assert.match(appEntry,/observeProvisionalSignupHandoff/);
     assert.match(appEntry,/auth\.setContext\(context\)/);
-    assert.match(appEntry,/window\.history\.replaceState\(window\.history\.state, '', '\/workspace\/'\)/);
+    assert.match(appEntry,/window\.history\.replaceState\(window\.history\.state, '', '\/profile'\)/);
     assert.match(appEntry,/window\.dispatchEvent\(new Event\('daenem-auth-changed'\)\)/);
     assert.doesNotMatch(appEntry,/location[.]assign[(][^)]*\/workspace\//,
       'signup handoff must satisfy the unchanged deployment navigation guard');

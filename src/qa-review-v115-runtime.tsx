@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { WorkforceContext } from './auth';
 import Portal from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/Portal';
 import { sessionForProfile } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/security-contract';
 import type { Company, Session } from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
+import ProvisionalProfileWorkspace from './provisional-profile-workspace';
+import { isProvisionalEmployee, projectProvisionalShellSession } from './provisional-shell-projection';
 import '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/globals.css';
 import './postlogin-premium-refinement-v1.css';
 import './staffportal-stage1-palette.css';
@@ -97,6 +100,9 @@ function sessionFor(context: WorkforceContext): Session {
       : 'Employee';
   const approved = sessionForProfile(profile);
   const company = companyFor(context);
+  if (isProvisionalEmployee(context)) {
+    return projectProvisionalShellSession(approved, context, company);
+  }
   return {
     ...approved,
     company,
@@ -129,8 +135,44 @@ function isConfirmedSignOut(event: ReactMouseEvent<HTMLDivElement>) {
   return button?.textContent?.trim() === 'Sign out' && Boolean(button.closest('[role="dialog"]'));
 }
 
-export default function ApprovedPostLoginV115({ context, onLogout }: { context: WorkforceContext; onLogout: () => Promise<void> }) {
+function ProvisionalProfileMount({ context, onLogout, onRefresh }: {
+  context: WorkforceContext;
+  onLogout: () => Promise<void>;
+  onRefresh: () => Promise<void>;
+}) {
+  const [target, setTarget] = useState<HTMLElement | null>(null);
+  const targetRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const syncTarget = () => {
+      const shell = document.querySelector<HTMLElement>('.p-app[data-workspace="profile"]');
+      const next = shell?.querySelector<HTMLElement>('#main-content.p-content') || null;
+      if (next === targetRef.current) return;
+      if (targetRef.current) delete targetRef.current.dataset.provisionalProfileOnly;
+      targetRef.current = next;
+      if (next) next.dataset.provisionalProfileOnly = 'true';
+      setTarget(next);
+    };
+    const observer = new MutationObserver(syncTarget);
+    observer.observe(document.body, { childList: true, subtree: true });
+    syncTarget();
+    return () => {
+      observer.disconnect();
+      if (targetRef.current) delete targetRef.current.dataset.provisionalProfileOnly;
+      targetRef.current = null;
+    };
+  }, []);
+
+  return target ? createPortal(
+    <ProvisionalProfileWorkspace context={context}
+      onLogout={onLogout} onRefresh={onRefresh} embedded />,
+    target,
+  ) : null;
+}
+
+export default function ApprovedPostLoginV115({ context, onLogout, onRefresh }: { context: WorkforceContext; onLogout: () => Promise<void>; onRefresh: () => Promise<void> }) {
   const routePathname = usePathname();
+  const isProvisional = isProvisionalEmployee(context);
   const session = useMemo(() => sessionFor(context), [context]);
   const [stage1Enabled, setStage1Enabled] = useState(true);
   const [postLoginPalette, setPostLoginPalette] = useState<PostLoginPaletteId>(() =>
@@ -139,7 +181,14 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       : normalizePostLoginPaletteId(window.sessionStorage.getItem('daenem-postlogin-palette')),
   );
   const paletteVariables = useMemo(() => postLoginPaletteVariables(postLoginPalette) as CSSProperties, [postLoginPalette]);
-  const navigationRole = useMemo(() => companyNavigationRole(context, session.role === 'Experience Admin' ? 'Manager' : session.role), [context, session.role]);
+  const navigationRole = useMemo(() => isProvisional ? 'Employee' : companyNavigationRole(context, session.role === 'Experience Admin' ? 'Manager' : session.role), [context, isProvisional, session.role]);
+  const provisionalRouteBlocked = isProvisional && routePathname !== '/profile';
+
+  useEffect(() => {
+    if (!provisionalRouteBlocked) return;
+    window.history.replaceState(window.history.state, '', '/profile');
+    window.dispatchEvent(new Event('daenem:v115-navigation'));
+  }, [provisionalRouteBlocked]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -280,14 +329,16 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
 
   if (typeof window !== 'undefined') {
     sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
-    if (window.location.pathname === '/' || window.location.pathname.startsWith('/workspace')) {
+    if (!isProvisional && (window.location.pathname === '/' || window.location.pathname.startsWith('/workspace'))) {
       window.history.replaceState({}, '', '/home');
     }
   }
 
   // The protected snapshot's Owner review link points here. Keep the snapshot
   // bytes unchanged and render a permission-gated, read-only workbench instead.
-  if (routePathname === '/review/viewports' || routePathname === '/review/viewports/')
+  if (provisionalRouteBlocked) return <div role="status" className="sp-entry-loading"><span /><strong>Opening your profile…</strong></div>;
+
+  if (!isProvisional && (routePathname === '/review/viewports' || routePathname === '/review/viewports/'))
     return <Stage1ResponsiveReview context={context} />;
 
   return (
@@ -312,16 +363,18 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
       }}
     >
       <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
-        <Portal />
+        <Portal key={isProvisional ? 'provisional-profile' : 'assigned-user'} />
       </Stage1RuntimeContext.Provider>
-      <Stage1LiveErpRouteBridge context={context} />
-      <LivePostLoginEnhancementsV116 />
-      <Stage1SearchResults enabled={stage1Enabled} />
-      <Stage1AccessibleMetrics enabled={stage1Enabled} />
-      <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
-        <Stage1WorkflowFocus />
-      </Stage1RuntimeContext.Provider>
-      <Stage1AppearanceStudio enabled={stage1Enabled} />
+      {isProvisional ? <ProvisionalProfileMount context={context} onLogout={onLogout} onRefresh={onRefresh} /> : <>
+        <Stage1LiveErpRouteBridge context={context} />
+        <LivePostLoginEnhancementsV116 />
+        <Stage1SearchResults enabled={stage1Enabled} />
+        <Stage1AccessibleMetrics enabled={stage1Enabled} />
+        <Stage1RuntimeContext.Provider value={{ enabled: stage1Enabled, companyRole: navigationRole }}>
+          <Stage1WorkflowFocus />
+        </Stage1RuntimeContext.Provider>
+        <Stage1AppearanceStudio enabled={stage1Enabled} />
+      </>}
     </div>
   );
 }

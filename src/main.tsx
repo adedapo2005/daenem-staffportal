@@ -8,7 +8,6 @@ import { OfflinePlatformProvider } from './offline-sync';
 import './signin-experience.css';
 
 const ApprovedPostLoginV115 = lazy(() => import('./qa-review-v115-runtime'));
-const ProvisionalProfileWorkspace = lazy(() => import('./provisional-profile-workspace'));
 
 const SERVICE_WORKER_CACHE = 'daenem-workforce-shell-v18-live-signin-restoration';
 
@@ -55,14 +54,14 @@ function Root() {
   const auth = useAuth();
   useEffect(() => registerFreshServiceWorker(), []);
   // V180 signup screen is frozen. Listen only for its final email-OTP form
-  // submission and follow the server-issued restricted session into workspace.
+  // submission and follow the server-issued restricted session to My Profile in the shell.
   useEffect(() => {
     if (auth.loading || auth.context ||
       new URLSearchParams(window.location.search).get('studioReview') === 'signin-v180') return;
     return observeProvisionalSignupHandoff((context) => {
       clearPortalAuthCache();
       auth.setContext(context);
-      window.history.replaceState(window.history.state, '', '/workspace/');
+      window.history.replaceState(window.history.state, '', '/profile');
       window.dispatchEvent(new Event('daenem-auth-changed'));
     });
   }, [auth.loading, auth.context]);
@@ -73,19 +72,11 @@ function Root() {
     auth.setContext(context);
     window.dispatchEvent(new Event('daenem-auth-changed'));
   }} />;
-  if (auth.context.employee.status === 'provisional') {
-    return <Suspense fallback={<LoadingScreen />}>
-      <ProvisionalProfileWorkspace context={auth.context}
-        onLogout={auth.logout} onRefresh={auth.refresh} />
-    </Suspense>;
-  }
-  return (
-    <OfflinePlatformProvider context={auth.context}>
-      <Suspense fallback={<LoadingScreen />}>
-        <ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} />
-      </Suspense>
-    </OfflinePlatformProvider>
-  );
+  const authenticatedShell = <Suspense fallback={<LoadingScreen />}>
+    <ApprovedPostLoginV115 context={auth.context} onLogout={auth.logout} onRefresh={auth.refresh} />
+  </Suspense>;
+  if (auth.context.employee.status.trim().toLowerCase() === 'provisional') return authenticatedShell;
+  return <OfflinePlatformProvider context={auth.context}>{authenticatedShell}</OfflinePlatformProvider>;
 }
 
 createRoot(document.getElementById('root')!).render(<React.StrictMode><Root /></React.StrictMode>);
