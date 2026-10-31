@@ -21,6 +21,7 @@ try {
   const nav = await server.ssrLoadModule('/src/enterprise-command-center-model.ts');
   const { EnterpriseCommandCenterNavigation } = await server.ssrLoadModule('/src/enterprise-command-center-navigation.tsx');
   const navigationCss = await readFile(new URL('../src/enterprise-command-center-navigation.css', import.meta.url), 'utf8');
+  const stage1Palette = await readFile(new URL('../src/staffportal-stage1-palette.css', import.meta.url), 'utf8');
   const navigationSource = await readFile(new URL('../src/enterprise-command-center-navigation.tsx', import.meta.url), 'utf8');
   const navigationCanView = (module, session) =>
     nav.canViewCommandNavigationModule(module, session, canonical.canView);
@@ -51,22 +52,26 @@ try {
   check('navigation keeps solid surfaces and no glass overlays', () => {
     assert.doesNotMatch(navigationCss, /backdrop-filter:/);
   });
-  check('Owner navigation shell uses Mineral White and Signature Green instead of navy', () => {
-    assert.match(navigationCss, /\.p-sidebar:has\(\[data-approved-postlogin\]\.ecc-navigation\)/);
-    assert.match(navigationCss, /background: linear-gradient\(180deg, #ffffff 0%, #f3f8f5 100%\)/);
-    assert.match(navigationCss, /#087f5b/);
-    assert.doesNotMatch(navigationCss, /background: #061423/);
+  check('navigation uses the approved StaffPortal Ocean Sapphire, Azure and Cyan identity', () => {
+    assert.match(stage1Palette, /--stage1-anchor: #173a63;/);
+    assert.match(stage1Palette, /--stage1-primary: #2563eb;/);
+    assert.match(stage1Palette, /--stage1-accent: #06b6d4;/);
+    assert.match(navigationCss, /background: #173a63 !important;/);
+    assert.match(navigationCss, /--ecc-active: #2563eb;/);
+    assert.match(navigationCss, /--ecc-teal: #06b6d4;/);
+    assert.doesNotMatch(navigationCss, /#087f5b|#25b783|#eaf6ef|#f3f8f5/i);
   });
-  check('mobile navigation metadata remains at the 13px minimum', () => {
+  check('navigation uses complementary accents only for semantic highlights', () => {
+    assert.match(stage1Palette, /--stage1-support-violet:/);
+    assert.match(stage1Palette, /--stage1-support-coral:/);
+    assert.match(stage1Palette, /--stage1-support-gold:/);
+    assert.match(stage1Palette, /--stage1-gradient-spectrum:/);
+    assert.match(navigationCss, /--ecc-favorite-active: #f59e0b;/);
+    assert.match(navigationCss, /var\(--stage1-highlight, #f59e0b\)/);
+  });
+  check('mobile navigation sheet matches the approved sapphire shell and keeps 13px metadata', () => {
+    assert.match(navigationCss, /\.p-mobile-nav:has\(\[data-approved-postlogin\]\.ecc-navigation\) \{\s*background: #173a63 !important;/);
     assert.match(navigationCss, /\.ecc-page-path \{ font-size: \.8125rem; \}/);
-  });
-  check('navigation overrides the shared Stage 1 navy anchor without changing shared palette files', () => {
-    assert.ok(navigationCss.includes('html[data-staffportal-postlogin="true"] [data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .p-app:not(.theme-midnight):not(.theme-carbon):not(.theme-dark).premium-shell-reset > .p-sidebar:has([data-approved-postlogin].ecc-navigation)'));
-    assert.ok(navigationCss.includes('html[data-staffportal-postlogin="true"] .p-mobile-nav.p-responsive-navigation-sheet:has([data-approved-postlogin].ecc-navigation)'));
-    assert.ok(navigationCss.includes('--ecc-text: #173a2b !important;'));
-    assert.ok(navigationCss.includes('--ecc-muted: #526d61 !important;'));
-    assert.ok(navigationCss.includes('--ecc-green: #087f5b !important;'));
-    assert.ok(navigationCss.includes('color: #315a47 !important;'));
   });
 
   for (const profile of fixtures.testProfiles) {
