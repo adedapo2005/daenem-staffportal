@@ -81,6 +81,7 @@ jobs:
       - name: Permission-scoped company navigation and responsive review
         run: |
           node --test scripts/test-authorised-live-workspaces.mjs scripts/test-stage1-responsive-workbench.mjs scripts/test-module-hub-explicit-grants.mjs scripts/test-stage1-all-company-navigation.mjs
+          node scripts/test-stage1-live-erp-route-bridge.mjs
 
       - name: Facilities company isolation regression
         run: node scripts/test-facilities-company-isolation.mjs

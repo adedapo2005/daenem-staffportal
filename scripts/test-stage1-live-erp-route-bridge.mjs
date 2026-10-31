@@ -1,16 +1,23 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { liveRouteForPath } from '../src/stage1-live-erp-route-contract.ts';
+import { isLiveFormDetailPath, liveRouteForPath } from '../src/stage1-live-erp-route-contract.ts';
 
 assert.equal(liveRouteForPath('/forms'), 'forms');
 assert.equal(liveRouteForPath('/forms/'), 'forms');
 assert.equal(liveRouteForPath('/facilities'), 'facilities');
 assert.equal(liveRouteForPath('/spend'), 'spend');
 assert.equal(liveRouteForPath('/spend?tab=create'), 'spend');
+assert.equal(liveRouteForPath('/sync'), 'sync');
+assert.equal(liveRouteForPath('/sync/'), 'sync');
+assert.equal(liveRouteForPath('/sync?tab=activity'), 'sync');
 assert.equal(liveRouteForPath('/forms/group'), 'forms');
 assert.equal(liveRouteForPath('/forms/company/company-printing'), 'forms');
 assert.equal(liveRouteForPath('/facilities/company/company-printing/'), 'facilities');
-for (const path of ['/home','/signin','/admin','/owner-studio','/payroll','/attendance','/','/workspace','/form','/facility','/forms/FOR-2048','/forms/company','/forms/company/company-printing/detail','/spend/REQ-2048']) {
+assert.equal(liveRouteForPath('/forms/FOR-2048'), 'forms');
+assert.equal(isLiveFormDetailPath('/forms/FOR-2048'), true);
+assert.equal(isLiveFormDetailPath('/forms/group'), false);
+assert.equal(isLiveFormDetailPath('/forms/company/company-printing'), false);
+for (const path of ['/home','/signin','/admin','/owner-studio','/payroll','/attendance','/','/workspace','/form','/facility','/forms/company','/forms/company/company-printing/detail','/spend/REQ-2048','/sync/sessions']) {
   assert.equal(liveRouteForPath(path),null, `Must preserve approved reference for ${path}`);
 }
 const base = (path) => readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -31,6 +38,13 @@ assert.match(bridge,/mount\.setAttribute\('aria-label', TITLES\[route\]\.title\)
 assert.match(bridge,/data-live-erp-source="authenticated-cloudflare-d1"/);
 assert.match(bridge,/import\('\.\/centers'\)/);
 assert.match(bridge,/import\('\.\/spend-entry'\)/);
+assert.match(bridge,/import\('\.\/offline-sync-center-entry'\)/);
+assert.match(bridge,/isLiveFormDetailPath\(pathname\)/);
+assert.match(bridge,/role\.code === 'owner'/);
+assert.match(bridge,/{owner \? <Suspense/);
+assert.match(bridge,/<SyncCenter context=\{context\}/);
+assert.match(bridge,/!formDetailLink && !scope\.denied && displayedWorkspaces\.map/);
+assert.match(bridge,/Direct form links are not available here/);
 assert.match(bridge,/createPortal\(/);
 assert.match(bridge,/MutationObserver\(/);
 assert.match(css,/#main-content\[data-daenem-live-route\] > :not\(\.daenem-live-erp-root\)/);
@@ -41,4 +55,4 @@ assert.match(spend,/if \(!document\.querySelector\('\[data-approved-postlogin="q
 assert.match(sourcePortal,/Fictional Records · Local Simulations/);
 assert.match(sourcePortal,/className="p-topbar"/);
 assert.doesNotMatch(shell,/sessionForProfile\(profile\)[\s\S]*hasWorkforcePermission/, 'Do not use preview permissions as real auth');
-console.log('V115 preserved-shell authenticated ERP bridge regression checks passed (37 cases).');
+console.log('V115 preserved-shell authenticated ERP route regression checks passed.');

@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, CheckCircle2, Database, LockKeyhole, RefreshCw, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Building2, CheckCircle2, Database, FileText, LockKeyhole, RefreshCw, ChevronRight, ShieldCheck } from 'lucide-react';
 import type { WorkforceContext } from './auth';
 import { authorisedLiveWorkspaces, liveRouteCompanyScope } from './authorised-live-workspaces';
 import { usePathname, useRouter } from './next-navigation-shim';
 import './stage1-live-erp-route-bridge.css';
 
-import { liveRouteForPath, type LiveErpRoute as LiveRoute } from './stage1-live-erp-route-contract';
+import { isLiveFormDetailPath, liveRouteForPath, type LiveErpRoute as LiveRoute } from './stage1-live-erp-route-contract';
 import { correctLiveErpShellLabels } from './stage1-live-erp-shell-labels';
 
 const Forms = lazy(() => import('./centers').then((module) => ({ default: module.FormsCenter })));
@@ -14,6 +14,7 @@ const Facilities = lazy(() => import('./centers').then((module) => ({ default: m
 // The existing SpendCenter is a genuine authenticated ERP workflow.
 // Its standalone-launcher entrypoint is not mounted inside V115.
 const Spend = lazy(() => import('./spend-entry').then((module) => ({ default: module.SpendCenter })));
+const SyncCenter = lazy(() => import('./offline-sync-center-entry').then((module) => ({ default: module.SyncCenter })));
 
 const TITLES: Record<LiveRoute, { title: string; detail: string }> = {
   forms: {
@@ -27,6 +28,10 @@ const TITLES: Record<LiveRoute, { title: string; detail: string }> = {
   spend: {
     title: 'Spend, Cost & Profit Intelligence',
     detail: 'Approved company masters, expense requests, evidence and follow-up',
+  },
+  sync: {
+    title: 'Sync & Sessions',
+    detail: 'Owner-only server evidence for sessions, offline activity, receipts and policy',
   },
 };
 
@@ -101,6 +106,25 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
 
   if (!route || !mount) return null;
   const title = TITLES[route];
+  if (route === 'sync') {
+    const owner = context.roles.some((role) => role.code === 'owner');
+    return createPortal(
+      <section className="daenem-live-erp-root" data-live-erp-source="authenticated-cloudflare-d1"
+        data-live-erp-module="sync" aria-label={title.title}>
+        {owner ? <Suspense fallback={<div className="daenem-live-erp-loading" role="status">
+          <RefreshCw size={18} aria-hidden="true" /> Loading owner session evidence…
+        </div>}>
+          <SyncCenter context={context} onClose={() => router.push('/home')} />
+        </Suspense> : <div className="daenem-live-erp-denied" role="alert">
+          <LockKeyhole size={25} aria-hidden="true" />
+          <strong>Owner access required</strong>
+          <p>Sync & Sessions contains private server evidence and is available to authorised owners only.</p>
+        </div>}
+      </section>,
+      mount,
+    );
+  }
+  const formDetailLink = route === 'forms' && isLiveFormDetailPath(pathname);
   return createPortal(
     <section
       className="daenem-live-erp-root"
@@ -150,20 +174,28 @@ export default function Stage1LiveErpRouteBridge({ context }: { context: Workfor
               </section>
             ))}
           </nav>
-          {scope.denied && (
+          {formDetailLink && (
+            <div className="daenem-live-erp-denied daenem-live-erp-detail-unavailable" role="status">
+              <FileText size={25} aria-hidden="true" />
+              <strong>Direct form link unavailable</strong>
+              <p>Direct form links are not available here. Open Forms Center to view the records currently assigned to your account.</p>
+              <button type="button" onClick={() => router.push('/forms')}>Open Forms Center</button>
+            </div>
+          )}
+          {!formDetailLink && scope.denied && (
             <div className="daenem-live-erp-denied" role="alert">
               <LockKeyhole size={23} aria-hidden="true" />
               <strong>This company page is not assigned to your account.</strong>
               <p>Use the automatically displayed authorised pages above. No company access is granted through the URL.</p>
             </div>
           )}
-          {!scope.denied && displayedWorkspaces.length === 0 && (
+          {!formDetailLink && !scope.denied && displayedWorkspaces.length === 0 && (
             <div className="daenem-live-erp-directory-hint" role="status">
               <strong>All authorised pages are shown above.</strong>
               <p>Open the permitted Spend page under its company; there is no separate company-selection step.</p>
             </div>
           )}
-          {!scope.denied && displayedWorkspaces.map((entry) => (
+          {!formDetailLink && !scope.denied && displayedWorkspaces.map((entry) => (
             <section className="daenem-live-erp-scoped-page" key={entry.scopeId || 'group'}
               data-authorised-company-workspace={entry.scopeId || 'group'}>
               <header><Building2 size={18} aria-hidden="true" />

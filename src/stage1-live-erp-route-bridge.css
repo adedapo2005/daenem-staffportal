@@ -175,6 +175,25 @@ html[data-daenem-live-route] .p-company { display: none !important; }
   border-radius:14px;padding:16px;color:#254b44;line-height:1.5;
 }
 .daenem-live-erp-directory-hint p {margin:4px 0 0}
+.daenem-live-erp-detail-unavailable {
+  width: min(100%, 780px);
+  border-color: #c8dcd5;
+  background: linear-gradient(135deg, #f4fbf7 0%, #ffffff 72%);
+  box-shadow: 0 14px 36px rgba(18, 70, 55, .08);
+}
+.daenem-live-erp-detail-unavailable > svg { color: #087a64; }
+.daenem-live-erp-detail-unavailable > button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #0c735a;
+  border-radius: 10px;
+  background: #0b765d;
+  color: #fff;
+  font: inherit;
+  font-weight: 740;
+  cursor: pointer;
+}
+.daenem-live-erp-detail-unavailable > button:hover { background: #075b47; }
 @media (max-width:720px) {
  .daenem-live-erp-company-directory {grid-template-columns:minmax(0,1fr)}
  .daenem-live-erp-scoped-page {padding:10px}
