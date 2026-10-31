@@ -96,7 +96,7 @@ function sessionFor(context: WorkforceContext): Session {
       ? 'Manager'
       : 'Employee';
   const approved = sessionForProfile(profile);
-  const company = companyFor(context);
+  const company = profile === 'Owner' ? 'group' : companyFor(context);
   return {
     ...approved,
     company,
@@ -106,7 +106,7 @@ function sessionFor(context: WorkforceContext): Session {
     profile,
     assignments: approved.assignments?.map((assignment) => ({
       ...assignment,
-      companies: profile === 'Owner' || company === 'group' ? assignment.companies : [company],
+      companies: profile === 'Owner' ? assignment.companies : company === 'group' ? [] : [company],
     })),
   };
 }
@@ -280,7 +280,7 @@ export default function ApprovedPostLoginV115({ context, onLogout }: { context: 
 
   if (typeof window !== 'undefined') {
     sessionStorage.setItem('daenem-demo-session-v3', JSON.stringify(session));
-    if (window.location.pathname === '/' || window.location.pathname.startsWith('/workspace')) {
+    if (window.location.pathname === '/' || window.location.pathname === '/workspace/') {
       window.history.replaceState({}, '', '/home');
     }
   }

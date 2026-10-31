@@ -34,7 +34,9 @@ check('server permission helper accepts a company', auth.includes("companyId?: s
 check('client permission helper accepts a company', clientAuth.includes('hasWorkforcePermission') && clientAuth.includes('context.companyPermissions?.[companyId]'));
 check('background tabs reuse cached identity', clientAuth.includes("document.visibilityState === 'hidden'") && clientAuth.includes('authMeCache.value'));
 check('approved Portal receives only an authenticated Worker context', approvedPostLogin.includes('WorkforceContext') && approvedPostLogin.includes('sessionForProfile'));
-check('Owner runtime preserves group-wide approved assignments', approvedPostLogin.includes("companies: profile === 'Owner' || company === 'group' ? assignment.companies : [company]"));
+check('Owner runtime presents the group workspace with approved assignments', approvedPostLogin.includes("const company = profile === 'Owner' ? 'group' : companyFor(context);") && approvedPostLogin.includes("companies: profile === 'Owner' ? assignment.companies : company === 'group' ? [] : [company]"));
+check('unknown company cannot grant non-Owner group scope', approvedPostLogin.includes("company === 'group' ? [] : [company]") && !approvedPostLogin.includes("profile === 'Owner' || company === 'group'"));
+check('workspace routes are not redirected away from My Work', approvedPostLogin.includes("window.location.pathname === '/' || window.location.pathname === '/workspace/'") && !approvedPostLogin.includes("startsWith('/workspace')"));
 check('approved sidebar and records are permission projected', approvedPortalModel.includes('effectiveLevel') && approvedPortalModel.includes('canView') && approvedPortalModel.includes('authorizedRecords'));
 check('employee approvals are constrained by business', auth.includes('requested_company_id IN (${placeholders})'));
 check('approval writes recheck business permission', auth.includes("hasPermission(context, 'users.access', 'manage', companyId)"));
