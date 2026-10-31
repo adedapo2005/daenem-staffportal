@@ -96,7 +96,7 @@ function sessionFor(context: WorkforceContext): Session {
       ? 'Manager'
       : 'Employee';
   const approved = sessionForProfile(profile);
-  const company = companyFor(context);
+  const company = profile === 'Owner' ? 'group' : companyFor(context);
   return {
     ...approved,
     company,
@@ -104,10 +104,12 @@ function sessionFor(context: WorkforceContext): Session {
     displayName: context.employee.displayName,
     displayTimeZone: context.employee.timezone || approved.displayTimeZone || 'Africa/Lagos',
     profile,
-    assignments: approved.assignments?.map((assignment) => ({
-      ...assignment,
-      companies: company === 'group' ? assignment.companies : [company],
-    })),
+    assignments: profile === 'Owner'
+      ? approved.assignments
+      : approved.assignments?.map((assignment) => ({
+          ...assignment,
+          companies: [company],
+        })),
   };
 }
 
