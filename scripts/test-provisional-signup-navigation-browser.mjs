@@ -21,6 +21,7 @@ try{
       if(request.isNavigationRequest() && request.frame()===page.mainFrame())documentNavigations++;
     });
     let verified=false;
+    let approved=false;
     let savedProfile=null;
     page.on('pageerror',error=>errors.push(error.message));
     await page.route('**/api/**',async route=>{
@@ -38,12 +39,12 @@ try{
       else if(pathname==='/api/auth/me')payload=verified
         ? {authenticated:true,context:{
           sessionId:'synthetic-session',employee:{
-            id:'synthetic-provisional',displayName:'Ada Okon',status:'provisional',email:'ada@example.test',
+            id:'synthetic-provisional',displayName:'Ada Okon',status:approved?'active':'provisional',email:'ada@example.test',
           },
           companies:[{id:'company-print',code:'PRINT',name:'Printing',primary:true}],
-          roles:[{id:'role-provisional',code:'provisional',name:'Provisional',companyId:'company-print'}],
-          permissions:{'profile.access':'edit'},
-          companyPermissions:{'company-print':{'profile.access':'edit'}},
+          roles:[{id:approved?'role-manager':'role-provisional',code:approved?'manager':'provisional',name:approved?'Manager':'Provisional',companyId:'company-print'}],
+          permissions:approved?{'profile.access':'edit','people.access':'manage'}:{'profile.access':'edit'},
+          companyPermissions:{'company-print':approved?{'profile.access':'edit','people.access':'manage'}:{'profile.access':'edit'}},
         }}
         : {authenticated:false};
       else if(pathname==='/api/auth/signup/start')payload={
@@ -143,6 +144,22 @@ try{
       assert.equal(savedProfile.firstName,'Adaeze');
       assert.equal(savedProfile.lastName,'Okon');
       assert.equal(await page.getByRole('progressbar',{name:'Profile Completion'}).getAttribute('aria-valuenow'),'75');
+      const navigationsBeforeGuard=documentNavigations;
+      await page.evaluate(()=>{
+        window.history.pushState({},'', '/finance');
+        window.dispatchEvent(new Event('daenem:v115-navigation'));
+      });
+      await page.waitForFunction(()=>window.location.pathname==='/profile');
+      assert.equal(documentNavigations,navigationsBeforeGuard,'provisional route guard must stay in the same document');
+      approved=true;
+      await page.getByRole('button',{name:/Check Approval Status/i}).click();
+      await page.waitForFunction(()=>{
+        try{return JSON.parse(sessionStorage.getItem('daenem-demo-session-v3')||'null')?.role==='Manager';}
+        catch{return false;}
+      },null,{timeout:10000});
+      const expandedSession=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('daenem-demo-session-v3')||'null'));
+      assert.ok(expandedSession.assignments.some(({module})=>module==='people'),'approved administrator role regains its normal shell grants');
+      assert.ok(expandedSession.assignments.length>1,'approval restores role-based shell permissions');
       console.log('PASS: Profile-only onboarding renders and saves inside the authenticated StaffPortal shell');
       assert.equal(traffic.filter(t=>t.path==='/api/auth/signup/verify').length,2);
       assert.equal(errors.length,0,'browser page errors '+errors.join('; '));
