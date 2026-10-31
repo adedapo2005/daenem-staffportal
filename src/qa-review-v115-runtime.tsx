@@ -106,7 +106,7 @@ function sessionFor(context: WorkforceContext): Session {
     profile,
     assignments: approved.assignments?.map((assignment) => ({
       ...assignment,
-      companies: company === 'group' ? assignment.companies : [company],
+      companies: profile === 'Owner' || company === 'group' ? assignment.companies : [company],
     })),
   };
 }

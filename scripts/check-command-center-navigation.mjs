@@ -83,6 +83,15 @@ try {
       ownerPages.map((page) => page.moduleId).sort(),
       'Owner navigation module union must not change with selected company context',
     );
+    const ownerGroupWide = { ...owner, company: 'printing' };
+    const groupWidePages = nav.flattenCommandNavigation(nav.buildEnterpriseCommandNavigation(optionsFor(ownerGroupWide)));
+    for (const id of ['printing', 'bakery', 'autos', 'properties', 'logistics']) {
+      assert.ok(groupWidePages.some((page) => page.moduleId === id), `group-wide Owner navigation lost ${id}`);
+    }
+    const groupWideBakerySession = nav.commandNavigationTargetSession(canonical.byId('bakery'), ownerGroupWide, canonical.canView);
+    assert.equal(groupWideBakerySession.company, 'bakery', 'group-wide Owner opens Bakery in Bakery context without manual workspace switching');
+    assert.equal(canonical.canView(canonical.byId('bakery'), groupWideBakerySession), true);
+
     const bakerySession = nav.commandNavigationTargetSession(canonical.byId('bakery'), ownerScoped, canonical.canView);
     assert.equal(bakerySession.company, 'bakery', 'opening Bakery resolves its authorized company context internally');
     assert.equal(canonical.canView(canonical.byId('bakery'), bakerySession), true);

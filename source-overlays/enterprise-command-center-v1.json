@@ -30,7 +30,7 @@
   "files": [
     {
       "path": "src/enterprise-command-center-model.ts",
-      "sha256": "e959b949ad24ba1d2388344a89e3899c3502641328a57cf74f7b36015f44b8d8"
+      "sha256": "65e953e5970bdabca85f405358b92d9b4e7043dd2950a6e26721acc24c6f78d6"
     },
     {
       "path": "src/enterprise-command-center-navigation.tsx",
