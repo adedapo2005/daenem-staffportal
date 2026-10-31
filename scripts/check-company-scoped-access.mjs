@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { ownerCompanyScopes } from '../src/owner-company-scope.ts';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const auth = read('worker/auth.ts');
@@ -34,7 +35,35 @@ check('server permission helper accepts a company', auth.includes("companyId?: s
 check('client permission helper accepts a company', clientAuth.includes('hasWorkforcePermission') && clientAuth.includes('context.companyPermissions?.[companyId]'));
 check('background tabs reuse cached identity', clientAuth.includes("document.visibilityState === 'hidden'") && clientAuth.includes('authMeCache.value'));
 check('approved Portal receives only an authenticated Worker context', approvedPostLogin.includes('WorkforceContext') && approvedPostLogin.includes('sessionForProfile'));
-check('Owner runtime presents the group workspace with approved assignments', approvedPostLogin.includes("const company = profile === 'Owner' ? 'group' : companyFor(context);") && approvedPostLogin.includes("companies: profile === 'Owner' ? assignment.companies : company === 'group' ? [] : [company]"));
+check('Owner runtime presents a Group workspace only when multiple authorized company scopes exist', approvedPostLogin.includes('ownerCompanyScopes(context)') && approvedPostLogin.includes("ownerCompanies.length > 1 ? 'group' : ownerCompanies[0] || 'group'"));
+check('Owner assignments are limited to company scopes from the authenticated context', approvedPostLogin.includes('companies: profile === \'Owner\' ? ownerCompanies : company === \'group\' ? [] : [company]') && !approvedPostLogin.includes("companies: profile === 'Owner' ? assignment.companies"));
+const fixtureCompanies = [
+  { id: 'company-printing', code: 'PRINT', name: 'Daenem Printing & Technology', primary: true },
+  { id: 'company-autos', code: 'AUTOS', name: 'Daenem Autos', primary: false },
+  { id: 'company-bakery', code: 'BAKERY', name: 'Daenem Bakery', primary: false },
+  { id: 'company-properties', code: 'PROPERTIES', name: 'Daenem Homes & Properties', primary: false },
+  { id: 'company-logistics', code: 'LOGISTICS', name: 'Daenem Logistics', primary: false },
+];
+const fixtureGrants = Object.fromEntries(['printing.access','bakery.access','autos.access','logistics.access','properties.access'].map((key) => [key, 'manage']));
+const ownerContext = (roleRows, grantCompanyIds = fixtureCompanies.map((company) => company.id), companyRows = fixtureCompanies) => ({
+  sessionId: 'synthetic-owner-scope',
+  employee: { id: 'synthetic-owner', displayName: 'Synthetic Owner', status: 'active' },
+  companies: companyRows,
+  roles: roleRows,
+  permissions: {},
+  companyPermissions: Object.fromEntries(grantCompanyIds.map((id) => [id, { ...fixtureGrants }])),
+
+});
+const ownerRoles = (companyIds) => companyIds.map((companyId) => ({ id: 'owner-' + companyId, code: 'owner', name: 'Owner / Super Admin', companyId }));
+check('five-company Owner receives all five memberships together', JSON.stringify(ownerCompanyScopes(ownerContext(ownerRoles(fixtureCompanies.map((company) => company.id))))) === JSON.stringify(['printing','autos','bakery','properties','logistics']));
+check('single-company Owner never receives other company navigation', JSON.stringify(ownerCompanyScopes(ownerContext(ownerRoles(['company-printing'])))) === JSON.stringify(['printing']));
+check('company membership without a non-none company permission fails closed', ownerCompanyScopes(ownerContext(ownerRoles(fixtureCompanies.map((company) => company.id)), [] )).length === 0);
+const invalidGrantContext = ownerContext(ownerRoles(['company-printing']), ['company-printing']);
+for (const key of Object.keys(invalidGrantContext.companyPermissions['company-printing'])) invalidGrantContext.companyPermissions['company-printing'][key] = 'unexpected';
+check('unknown permission levels do not create Owner company navigation', ownerCompanyScopes(invalidGrantContext).length === 0);
+check('permission maps for other companies do not create navigation without matching Owner memberships', JSON.stringify(ownerCompanyScopes(ownerContext(ownerRoles(['company-printing']), fixtureCompanies.map((company) => company.id)))) === JSON.stringify(['printing']));
+check('Manager company roles are not promoted into Owner-wide company navigation', ownerCompanyScopes(ownerContext(fixtureCompanies.map((company) => ({ id: 'manager-' + company.id, code: 'manager', name: 'Manager', companyId: company.id })))) .length === 0);
+check('unknown company identities fail closed rather than becoming Group scope', ownerCompanyScopes(ownerContext(ownerRoles(['unknown-company']), ['unknown-company'], [{ id: 'unknown-company', code: 'OTHER', name: 'Other Business', primary: true }])).length === 0);
 check('unknown company cannot grant non-Owner group scope', approvedPostLogin.includes("company === 'group' ? [] : [company]") && !approvedPostLogin.includes("profile === 'Owner' || company === 'group'"));
 check('workspace routes are not redirected away from My Work', approvedPostLogin.includes("window.location.pathname === '/' || window.location.pathname === '/workspace/'") && !approvedPostLogin.includes("startsWith('/workspace')"));
 check('approved sidebar and records are permission projected', approvedPortalModel.includes('effectiveLevel') && approvedPortalModel.includes('canView') && approvedPortalModel.includes('authorizedRecords'));

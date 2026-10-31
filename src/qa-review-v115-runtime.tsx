@@ -30,6 +30,7 @@ import './stage1-large-text-reflow.css';
 import './stage1-premium-interactions.css';
 import './stage1-home-widget-premium.css';
 import './stage0-mobile-acceptance.css';
+import { ownerCompanyScopes } from './owner-company-scope';
 
 const APPROVED_SOURCE = {
   project: 'appgprj_6ab43337da788191886fa3d18457bc30',
@@ -96,7 +97,10 @@ function sessionFor(context: WorkforceContext): Session {
       ? 'Manager'
       : 'Employee';
   const approved = sessionForProfile(profile);
-  const company = profile === 'Owner' ? 'group' : companyFor(context);
+  const ownerCompanies = profile === 'Owner' ? ownerCompanyScopes(context) : [];
+  const company = profile === 'Owner'
+    ? ownerCompanies.length > 1 ? 'group' : ownerCompanies[0] || 'group'
+    : companyFor(context);
   return {
     ...approved,
     company,
@@ -106,7 +110,7 @@ function sessionFor(context: WorkforceContext): Session {
     profile,
     assignments: approved.assignments?.map((assignment) => ({
       ...assignment,
-      companies: profile === 'Owner' ? assignment.companies : company === 'group' ? [] : [company],
+      companies: profile === 'Owner' ? ownerCompanies : company === 'group' ? [] : [company],
     })),
   };
 }
