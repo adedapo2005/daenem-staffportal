@@ -98,11 +98,11 @@ class D1{
     try {
       const result=items.map(item=>{
         const statement=this.db.prepare(item.sql);
-        if(statement.reader){
-          statement.get(...item.values);
-          return {meta:{changes:0}};
+        if(/^\s*SELECT\b/i.test(item.sql)){
+          return {results:[statement.get(...item.values)],meta:{changes:0}};
         }
-        return {meta:{changes:Number(statement.run(...item.values).changes)}};
+        const written=Number(statement.run(...item.values).changes);
+        return {meta:{changes:this.zeroWriteMetadata?0:written}};
       });
       this.db.exec('COMMIT');
       return result;
@@ -147,6 +147,23 @@ await check('Verified local applicant receives authenticated provisional session
   const enhancedCtx=await enhanced.getEnhancedSessionContext(request(limited.cookie.split(';')[0]),db.env);
   assert.ok(enhancedCtx);
   assert.equal(enhanced.hasCompanyPermission(enhancedCtx,'company-printing','payroll.access'),false);
+  db.close();
+});
+await check('Cloudflare-style zero write metadata still returns verified Google provisional cookie',async()=>{
+  const db=new D1();
+  // D1 can persist a batch while returning zero/aggregate meta.changes.
+  // A positive final SQL invariant is authoritative; metadata is not.
+  db.zeroWriteMetadata=true;
+  const limited=await issue.createProvisionalWorkspaceSession(request(),db.env,'employee-new','google');
+  assert.ok(limited,'verified session must not be rejected based on meta.changes');
+  assert.equal(limited.access,'provisional');
+  assert.equal(db.count('auth_sessions'),1);
+  assert.equal(db.count('security_logs'),1);
+  const ctx=await auth.getSessionContext(request(limited.cookie.split(';')[0]),db.env);
+  assert.ok(ctx);
+  assert.equal(ctx.employee.status,'provisional');
+  assert.equal(auth.hasPermission(ctx,'profile.access','edit'),true);
+  assert.equal(auth.hasPermission(ctx,'payroll.access','view'),false);
   db.close();
 });
 await check('Provisional applicant can submit real profile details without employee promotion',async()=>{
