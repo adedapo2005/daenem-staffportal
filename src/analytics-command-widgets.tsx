@@ -10,7 +10,7 @@ const percent=(current:number,previous:number)=>previous<=0?(current>0?100:0):(c
 export function PerformanceComparison({rows,title='Current Vs Previous Period',subtitle='Recorded performance by company',valueFormatter}:{rows:ComparisonRow[];title?:string;subtitle?:string;valueFormatter:(value:number)=>string}){
  const data=rows.map(row=>({...row,change:percent(row.current,row.previous)}));
  return <article className="acw-panel acw-comparison">
-  <header className="acw-panel-head"><div><span>PERFORMANCE MOVEMENT</span><h3>{title}</h3><p>{subtitle}</p></div><Activity size={19}/></header>
+  <header className="acw-panel-head"><div><span>Performance Movement</span><h3>{title}</h3><p>{subtitle}</p></div><Activity size={19}/></header>
   <div className="acw-chart-wrap" role="img" aria-label={title+' current and previous period comparison by company.'}>
    <ResponsiveContainer width="100%" height={250}><BarChart data={data} margin={{top:8,right:8,left:0,bottom:12}}>
     <CartesianGrid vertical={false} stroke="rgba(110,120,140,.14)" strokeDasharray="3 3"/>
@@ -26,5 +26,5 @@ export function PerformanceComparison({rows,title='Current Vs Previous Period',s
 }
 
 export function OperatingSignals({signals}:{signals:Signal[]}){
- return <article className="acw-panel acw-signals"><header className="acw-panel-head"><div><span>LIVE OPERATING SIGNALS</span><h3>What Needs Watching</h3><p>Current recorded exceptions and health signals.</p></div><ShieldAlert size={19}/></header><div className="acw-signal-grid">{signals.map(signal=><div className={'acw-signal state-'+(signal.state||'neutral')} key={signal.label}><small>{signal.label}</small><strong>{signal.value}</strong><span>{signal.detail}</span></div>)}</div></article>
+ return <article className="acw-panel acw-signals"><header className="acw-panel-head"><div><span>Live Operating Signals</span><h3>What Needs Watching</h3><p>Current recorded exceptions and health signals.</p></div><ShieldAlert size={19}/></header><div className="acw-signal-grid">{signals.map(signal=><div className={'acw-signal state-'+(signal.state||'neutral')} key={signal.label}><small>{signal.label}</small><strong>{signal.value}</strong><span>{signal.detail}</span></div>)}</div></article>
 }
