@@ -109,13 +109,30 @@ export async function createProvisionalWorkspaceSession(
         WHERE EXISTS (SELECT 1 FROM auth_sessions WHERE id=? AND employee_id=?)
       `).bind('security-' + crypto.randomUUID(),employeeId,id,
         JSON.stringify({ method, managementApprovalRequired: true }),id,employeeId),
-      // Do not issue a session if the mandatory security audit is silently
-      // ignored; D1.batch rolls back the whole transaction on this failure.
-      env.DB.prepare(
-        "SELECT CASE WHEN changes()=1 THEN 1 ELSE json_extract('required audit was not recorded','$') END AS audit_required",
-      ),
+      // Verify both durable records inside the same atomic D1 transaction.
+      // A missing or silently ignored audit must fail the entire batch closed.
+      env.DB.prepare(`
+        SELECT CASE WHEN changes()=1
+          AND EXISTS (
+            SELECT 1 FROM auth_sessions s
+            WHERE s.id=? AND s.employee_id=? AND s.token_hash=?
+              AND s.revoked_at IS NULL AND datetime(s.expires_at)>datetime('now')
+          )
+          AND EXISTS (
+            SELECT 1 FROM security_logs l
+            WHERE l.session_id=? AND l.employee_id=?
+              AND l.event_type='provisional_workspace_session' AND l.result='success'
+          )
+          THEN 1
+          ELSE json_extract('required provisional session or audit was not recorded','$')
+        END AS audit_required
+      `).bind(id,employeeId,tokenHash,id,employeeId),
     ]);
-    if (Number(results[0]?.meta?.changes) !== 1 || Number(results[1]?.meta?.changes) !== 1) {
+    // Cloudflare D1 can report zero/aggregate meta.changes for a committed
+    // batch. Authorize the cookie only from the final SQL invariant result,
+    // never from per-statement write metadata.
+    const auditCheck = results?.[2]?.results?.[0] as { audit_required?: number } | undefined;
+    if (Number(auditCheck?.audit_required) !== 1) {
       return null;
     }
     return { cookie: sessionCookie(request,token,hours * 3600), next: '/workspace/', access: 'provisional' };
