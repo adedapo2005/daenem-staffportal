@@ -101,7 +101,23 @@ async function main() {
   const compiled = await build({
     stdin: {
       contents: `import { routeAuth } from './worker/auth.ts';
+import { createProvisionalWorkspaceSession } from './worker/provisional-workspace-session.ts';
 export default { async fetch(request, env) {
+  // Test-only local Workerd endpoint; this wrapper is never deployed.
+  if (new URL(request.url).pathname === '/__probe__/provisional-issue') {
+    if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+    const employeeId = request.headers.get('x-probe-employee-id');
+    const method = request.headers.get('x-probe-method');
+    if (!employeeId || !['google', 'microsoft', 'local', 'whatsapp'].includes(method)) {
+      return new Response('Invalid local probe', { status: 400 });
+    }
+    const limited = await createProvisionalWorkspaceSession(request, env, employeeId, method);
+    return new Response(JSON.stringify({ ok: !!limited, access: limited?.access || null }), {
+      status: limited ? 200 : 403,
+      headers: { 'content-type': 'application/json',
+        ...(limited ? { 'set-cookie': limited.cookie } : {}) },
+    });
+  }
   return (await routeAuth(request, env)) ?? new Response('No auth route', { status: 404 });
 }};`,
       resolveDir: repo, sourcefile: 'auth-status-workerd-wrapper.ts', loader: 'ts',
@@ -399,7 +415,70 @@ export default { async fetch(request, env) {
       assert.deepEqual(await snapshot(person, true), before);
     });
   }
-  assert.equal(report.checks.length, 40);
+  // Run the repaired OAuth callback handoff against REAL local Workerd/D1,
+  // not just the SQLite batch simulator used by the faster unit tests.
+  async function issueProvisional(person, method) {
+    const response = await mf.dispatchFetch('https://staffportal-auth-status.invalid/__probe__/provisional-issue', {
+      method: 'POST',
+      headers: {
+        'x-probe-employee-id': person.employeeId,
+        'x-probe-method': method,
+        'user-agent': 'Disposable StaffPortal Provisional Workerd Test',
+      },
+    });
+    return {
+      status: response.status,
+      body: await response.json(),
+      cookie: response.headers.get('set-cookie'),
+    };
+  }
+  for (const method of ['google', 'microsoft', 'local', 'whatsapp']) {
+    await check(`${method} pending applicant: real Workerd D1 batch issues restricted audited cookie`, async () => {
+      const person = await fixture(method, 'pending');
+      const before = await db.prepare('SELECT COUNT(*) AS n FROM auth_sessions WHERE employee_id=?')
+        .bind(person.employeeId).first();
+      const issued = await issueProvisional(person, method);
+      assert.equal(issued.status, 200, 'Verified provisional issuance must not fail after D1 commits');
+      assert.equal(issued.body.ok, true);
+      assert.equal(issued.body.access, 'provisional');
+      assert.match(issued.cookie || '', /daenem_workforce_session=/);
+      assert.match(issued.cookie || '', /HttpOnly/);
+      assert.match(issued.cookie || '', /Secure/);
+      const sessionRows = await db.prepare('SELECT id,expires_at FROM auth_sessions WHERE employee_id=?')
+        .bind(person.employeeId).all();
+      assert.equal(sessionRows.results.length, Number(before.n) + 1);
+      const audits = await db.prepare(
+        "SELECT session_id,details_json FROM security_logs WHERE employee_id=? AND event_type='provisional_workspace_session'",
+      ).bind(person.employeeId).all();
+      assert.equal(audits.results.length, 1);
+      assert.equal(audits.results[0].session_id, sessionRows.results[0].id);
+      assert.equal(JSON.parse(audits.results[0].details_json).method, method);
+      const me = await http('/api/auth/me', undefined, issued.cookie.split(';')[0]);
+      assert.equal(me.status, 200, 'Real provisional cookie must resolve authenticated workspace');
+      assert.equal(me.body.authenticated, true);
+      assertContext(me.body.context, person);
+    });
+  }
+  await check('Explicit Profile Edit denial: real Workerd D1 creates no provisional session', async () => {
+    const person = await fixture('google', 'pending');
+    await db.prepare(`
+      INSERT INTO employee_permission_overrides_v2(
+        id,employee_id,company_id,permission_id,access_level,reason,assigned_by
+      ) VALUES(?,?,?,?,?,?,?)
+    `).bind(`qa-auth-deny-${runKey}`,person.employeeId,companyId,
+      provisionalProfile.permissionId,'none','Synthetic denial',person.employeeId).run();
+    const issued = await issueProvisional(person, 'google');
+    assert.equal(issued.status, 403);
+    assert.equal(issued.cookie, null);
+    const sessions = await db.prepare('SELECT COUNT(*) AS n FROM auth_sessions WHERE employee_id=?')
+      .bind(person.employeeId).first();
+    const audits = await db.prepare(
+      "SELECT COUNT(*) AS n FROM security_logs WHERE employee_id=? AND event_type='provisional_workspace_session'",
+    ).bind(person.employeeId).first();
+    assert.equal(Number(sessions.n), 0);
+    assert.equal(Number(audits.n), 0);
+  });
+  assert.equal(report.checks.length, 45);
   assert.equal(report.outboundRequests.length, 0);
   report.ok = true;
 }
@@ -430,7 +509,7 @@ try {
   report.finishedAt = new Date().toISOString();
   report.elapsedMs = Date.parse(report.finishedAt) - Date.parse(startedAt);
   report.passed = report.checks.length;
-  report.expectedChecks = 40;
+  report.expectedChecks = 45;
   if (timedOut) report.ok = false;
   if (reportPath) {
     const destination = path.resolve(reportPath);
