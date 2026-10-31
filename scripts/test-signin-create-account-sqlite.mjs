@@ -268,6 +268,57 @@ await check('two verified claimants for one username produce one account and neu
   db.close();
 });
 
+await check('missing mandatory pending application rolls back provisional employee, role, and verified OTP', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec(`CREATE TRIGGER suppress_signup_application BEFORE INSERT ON signup_requests
+    BEGIN SELECT RAISE(IGNORE); END;`);
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503, 'a missing pending application must abort the whole enrollment transaction');
+  for (const table of ['employees', 'employee_credentials', 'employee_company_memberships', 'employee_roles', 'signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table + ' must roll back');
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM security_logs WHERE event_type='signup_verified'").get().n, 0);
+  db.close();
+});
+await check('role disabled after OTP issuance rolls back provisional enrollment', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec("UPDATE roles SET active=0 WHERE id='role-provisional'");
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503);
+  for (const table of ['employees','employee_credentials','employee_roles','employee_company_memberships','signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table);
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  db.close();
+});
+await check('silently ignored mandatory signup audit rolls back account and provisional role', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec("CREATE TRIGGER ignore_signup_audit BEFORE INSERT ON security_logs WHEN NEW.event_type='signup_verified' BEGIN SELECT RAISE(IGNORE); END;");
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503);
+  for (const table of ['employees','employee_credentials','employee_roles','employee_company_memberships','signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table);
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM security_logs WHERE event_type='signup_verified'").get().n, 0);
+  db.close();
+});
+await check('silently ignored provisional role insert rolls back pending signup application', async () => {
+  const db = new SqliteD1();
+  const challenge = await start(db, base);
+  db.db.exec("CREATE TRIGGER ignore_role BEFORE INSERT ON employee_roles WHEN NEW.role_id='role-provisional' BEGIN SELECT RAISE(IGNORE); END;");
+  const response = await verify(db, challenge);
+  assert.equal(response.status, 503);
+  for (const table of ['employees','employee_credentials','employee_roles','employee_company_memberships','signup_requests']) {
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM ' + table).get().n, 0, table);
+  }
+  assert.equal(db.db.prepare('SELECT consumed_at FROM signup_verifications WHERE id=?').get(challenge.body.challengeId).consumed_at, null);
+  db.close();
+});
 await check('required success-audit SQL failure rolls back account and challenge consumption', async () => {
   const db = new SqliteD1();
   const challenge = await start(db, base);
