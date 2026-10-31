@@ -28,9 +28,11 @@ const unauthorisedSignal=(label:string,detail:string):Signal=>({label,value:NOT_
 const alertCompanies:Array<[CompanyKey,(company:Company)=>unknown]>=[['bakery',(c)=>c.wastePctOfSales],['autos',(c)=>c.followupsDue],['logistics',(c)=>c.expiringDocs],['properties',(c)=>c.arrearsKobo]];
 function alertsIncomplete(data:Intelligence){
   const group=data.group;
+  const companyIds=data.scope?.companyIds;
+  if(!Array.isArray(companyIds)||companyIds.length===0)return true;
   if(!hasValue(group.highRiskSecurity)||!hasValue(group.lowStock)||!hasValue(group.incompleteAttendance))return true;
   if(data.finance===undefined||data.construction===undefined)return true;
-  return alertCompanies.some(([key,pick])=>{if(!data.scope.companyIds.includes(`company-${key}`))return false;const company=data.companies[key];return company===undefined||pick(company)===undefined});
+  return alertCompanies.some(([key,pick])=>{if(!companyIds.includes(`company-${key}`))return false;const company=data.companies[key];return company===undefined||pick(company)===undefined});
 }
 
 // The headline revenue figure for each company, or undefined when the actor may not see it.
@@ -39,6 +41,12 @@ function revenueOf(company:Company|undefined,key:CompanyKey):number|undefined{
   if(key==='printing'||key==='bakery')return company.current?.revenueKobo;
   if(key==='properties')return company.rentCollectedKobo;
   return company.revenueKobo;
+}
+
+// Never render a company object unless the response explicitly grants that company scope.
+function scopedCompany(data:Intelligence|undefined,key:CompanyKey):Company|undefined{
+  if(!data?.scope?.companyIds?.includes(`company-${key}`))return undefined;
+  return data.companies[key];
 }
 
 // Metric cards for one company. Each card's value and sub-line come only from figures the response actually includes.
@@ -79,9 +87,9 @@ export function OwnerIntelligence({context,onClose}:{context:WorkforceContext;on
   return()=>{window.removeEventListener('keydown',onKeyDown);previous?.focus()};
  },[onClose]);
  async function ask(prompt?:string){const text=(prompt||question).trim();setBusy(true);setAnswer('');try{const r=await api<{answer:string}>('/api/owner/ai',{method:'POST',body:JSON.stringify({question:text,mode:text?'question':'brief'})});setAnswer(r.answer);if(prompt)setQuestion(prompt)}catch(e){setMessage((e as Error).message)}finally{setBusy(false)}}
- const maxRevenue=useMemo(()=>{if(!data)return 1;const values=companies.map(({key})=>revenueOf(data.companies[key],key)).filter(hasValue);return Math.max(1,...values)},[data]);
+ const maxRevenue=useMemo(()=>{if(!data)return 1;const values=companies.map(({key})=>revenueOf(scopedCompany(data,key),key)).filter(hasValue);return Math.max(1,...values)},[data]);
  const g=data?.group;
- const hasCompanyData=data?companies.some(({key})=>data.companies[key]!==undefined):false;
+ const hasCompanyData=data?companies.some(({key})=>scopedCompany(data,key)!==undefined):false;
  const incomplete=data?alertsIncomplete(data):false;
  const lowStock=g?.lowStock,incompleteAttendance=g?.incompleteAttendance,highRiskSecurity=g?.highRiskSecurity,overdueRequirements=g?.overdueRequirements;
  const groupSignals:Signal[]=data?[
@@ -166,8 +174,9 @@ export function OwnerIntelligence({context,onClose}:{context:WorkforceContext;on
                   <div className="revenue-bars">
                     {!hasCompanyData
                       ? <div className="owner-empty">No Company Revenue Data Is Available For This View.</div>
-                      : companies.filter(({key})=>data.companies[key]!==undefined).map(({key,name,icon:Icon})=>{
-                          const c=data.companies[key];
+                      : companies.filter(({key})=>scopedCompany(data,key)!==undefined).map(({key,name,icon:Icon})=>{
+                          const c=scopedCompany(data,key);
+                          if(!c)return null;
                           const value=revenueOf(c,key);
                           const detail=[
                             c?.workforce&&c.workforce.present+'/'+c.workforce.employees+' Present',
@@ -204,9 +213,9 @@ export function OwnerIntelligence({context,onClose}:{context:WorkforceContext;on
                 {!hasCompanyData
                   ? <div className="owner-empty company-intel-empty">No Company Intelligence Is Available For This View.</div>
                   : companies.flatMap(({key,name,icon:Icon})=>{
-                      const c=data.companies[key];
+                      const c=scopedCompany(data,key);
                       if(!c)return[];
-                      return [<article className="company-intel-card" key={key}>
+                      return [<article className={'company-intel-card company-intel-'+key} key={key}>
                         <div className="company-intel-head">
                           <span><Icon size={19}/></span>
                           <div><strong>{name}</strong><small>{c.workforce?c.workforce.employees+' Employees · '+c.workforce.incomplete+' Attendance Exception(s)':'Workforce '+NOT_AUTHORISED}</small></div>

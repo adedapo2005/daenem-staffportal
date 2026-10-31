@@ -8,26 +8,26 @@
   align-items: center;
   gap: 9px;
   padding: 0 16px;
-  border: 1px solid #b8d8c6;
-  border-left: 4px solid #087f5b;
+  border: 1px solid #c5d6ef;
+  border-left: 4px solid #2563eb;
   border-radius: 13px;
   background: #fff;
-  color: #15352a;
-  box-shadow: 0 8px 24px rgba(13, 54, 37, .14);
+  color: #1f2b3c;
+  box-shadow: 0 8px 24px rgba(23, 58, 99, .14);
   cursor: pointer;
   font-size: 14px;
   font-weight: 760;
   letter-spacing: -.01em;
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
 }
-.owner-intelligence-launcher svg { color: #087f5b; }
+.owner-intelligence-launcher svg { color: #2563eb; }
 .owner-intelligence-launcher:hover {
   transform: translateY(-2px);
-  border-color: #70b894;
-  box-shadow: 0 12px 28px rgba(13, 54, 37, .18);
+  border-color: #93b4f2;
+  box-shadow: 0 12px 28px rgba(23, 58, 99, .18);
 }
 .owner-intelligence-launcher:focus-visible {
-  outline: 3px solid rgba(37, 183, 131, .48);
+  outline: 3px solid rgba(6, 182, 212, .48);
   outline-offset: 3px;
 }
 @media (max-width: 720px) {
