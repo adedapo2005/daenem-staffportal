@@ -34,6 +34,7 @@ check('server permission helper accepts a company', auth.includes("companyId?: s
 check('client permission helper accepts a company', clientAuth.includes('hasWorkforcePermission') && clientAuth.includes('context.companyPermissions?.[companyId]'));
 check('background tabs reuse cached identity', clientAuth.includes("document.visibilityState === 'hidden'") && clientAuth.includes('authMeCache.value'));
 check('approved Portal receives only an authenticated Worker context', approvedPostLogin.includes('WorkforceContext') && approvedPostLogin.includes('sessionForProfile'));
+check('Owner runtime keeps approved group scope while non-Owners remain primary-company scoped', approvedPostLogin.includes("const company = profile === 'Owner' ? 'group' : companyFor(context);") && approvedPostLogin.includes("assignments: profile === 'Owner'") && approvedPostLogin.includes("? approved.assignments") && approvedPostLogin.includes("companies: [company]"));
 check('approved sidebar and records are permission projected', approvedPortalModel.includes('effectiveLevel') && approvedPortalModel.includes('canView') && approvedPortalModel.includes('authorizedRecords'));
 check('employee approvals are constrained by business', auth.includes('requested_company_id IN (${placeholders})'));
 check('approval writes recheck business permission', auth.includes("hasPermission(context, 'users.access', 'manage', companyId)"));
