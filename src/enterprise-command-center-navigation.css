@@ -64,11 +64,11 @@
 [data-approved-postlogin].ecc-navigation .ecc-section-label {
   display: block;
   color: var(--ecc-muted);
-  font-size: .75rem;
+  font-size: .8125rem;
   font-weight: 680;
-  letter-spacing: .09em;
-  line-height: 1.5;
-  text-transform: uppercase;
+  letter-spacing: .045em;
+  line-height: 1.45;
+  text-transform: none;
 }
 [data-approved-postlogin].ecc-navigation .ecc-eyebrow { margin: 0 .45rem .5rem; }
 [data-approved-postlogin].ecc-navigation .ecc-section-label { margin: .3rem .6rem .45rem; }
@@ -186,7 +186,7 @@
 }
 [data-approved-postlogin].ecc-navigation .ecc-page-copy { display: flex; flex: 1; flex-direction: column; gap: .18rem; min-width: 0; }
 [data-approved-postlogin].ecc-navigation .ecc-page-label { display: block; white-space: normal; overflow-wrap: anywhere; }
-[data-approved-postlogin].ecc-navigation .ecc-page-path { display: block; color: var(--ecc-muted); font-size: .75rem; font-weight: 450; white-space: normal; overflow-wrap: anywhere; }
+[data-approved-postlogin].ecc-navigation .ecc-page-path { display: block; color: var(--ecc-muted); font-size: .8125rem; font-weight: 450; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
 [data-approved-postlogin].ecc-navigation .ecc-page[data-current] > .ecc-page-row {
   background: var(--ecc-active);
   box-shadow: inset 3px 0 var(--ecc-teal);
@@ -217,7 +217,7 @@
 }
 [data-approved-postlogin].ecc-navigation .ecc-shortcuts-toggle > span { flex: 1; }
 [data-approved-postlogin].ecc-navigation .ecc-shortcut-list { padding-inline-start: .25rem; }
-[data-approved-postlogin].ecc-navigation .ecc-result-count { margin: .15rem .6rem .6rem; color: var(--ecc-muted); font-size: .75rem; }
+[data-approved-postlogin].ecc-navigation .ecc-result-count { margin: .15rem .6rem .6rem; color: var(--ecc-muted); font-size: .8125rem; }
 [data-approved-postlogin].ecc-navigation .ecc-no-results { margin: .5rem .6rem 1.2rem; color: var(--ecc-muted); font-size: .875rem; line-height: 1.6; }
 [data-approved-postlogin].ecc-navigation .ecc-result-list .ecc-page + .ecc-page { margin-top: .2rem; }
 
@@ -228,9 +228,10 @@
   display: block;
   margin: .3rem .4rem .45rem;
   color: var(--ecc-muted) !important;
-  font-size: .75rem;
+  font-size: .8125rem;
   font-weight: 650;
-  letter-spacing: .08em;
+  letter-spacing: .04em;
+  text-transform: none;
 }
 [data-approved-postlogin].ecc-navigation :is(.ecc-contextual-tools, .ecc-contextual-recents) button {
   display: flex;
@@ -297,10 +298,32 @@
   [data-approved-postlogin].ecc-navigation .ecc-rail { display: block; }
 }
 
-/* A Sheet is portaled outside the app wrapper. Its own approved ECC marker keeps
-   these rules isolated; no other Sheet or navigation inherits them. */
-.p-mobile-nav:has([data-approved-postlogin].ecc-navigation) { background: #061423 !important; color: #cad7e3 !important; }
-.p-mobile-nav [data-approved-postlogin].ecc-navigation { max-height: none; flex-shrink: 0; }
+/* A Sheet is portaled outside the app wrapper. Keep it on StaffPortal's
+   Ocean Sapphire palette; only this approved navigation Sheet receives these tokens. */
+.p-mobile-nav:has([data-approved-postlogin].ecc-navigation) {
+  background: #173a63 !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,.15) !important;
+}
+.p-mobile-nav [data-approved-postlogin].ecc-navigation {
+  --ecc-navy: color-mix(in srgb, #ffffff 8%, #173a63);
+  --ecc-surface: #173a63;
+  --ecc-hover: color-mix(in srgb, #ffffff 10%, #173a63);
+  --ecc-active: #2563eb;
+  --ecc-teal: #06b6d4;
+  --ecc-teal-soft: color-mix(in srgb, #06b6d4 62%, #ffffff);
+  --ecc-text: #ffffff;
+  --ecc-muted: color-mix(in srgb, #ffffff 68%, #173a63);
+  --ecc-favorite-active: #f59e0b;
+  max-height: none;
+  flex-shrink: 0;
+}
+[data-approved-postlogin].ecc-navigation .ecc-favorite-button[aria-pressed="true"] {
+  color: var(--ecc-favorite-active, var(--stage1-highlight, #f59e0b));
+}
+[data-approved-postlogin="qa-review-v115"][data-stage1-palette="bright"] .ecc-navigation .ecc-favorite-button[aria-pressed="true"] {
+  color: var(--stage1-highlight, #f59e0b) !important;
+}
 .p-mobile-nav [data-approved-postlogin].ecc-navigation .ecc-full { display: flex; }
 .p-mobile-nav [data-approved-postlogin].ecc-navigation .ecc-rail { display: none; }
 .p-mobile-nav [data-approved-postlogin].ecc-navigation .ecc-scroll-region { overflow: visible; }
@@ -312,7 +335,7 @@
   [data-approved-postlogin].ecc-navigation .ecc-page-link { font-size: .875rem; padding-block: .65rem; }
   [data-approved-postlogin].ecc-navigation .ecc-disclosure { font-size: .95rem; }
   [data-approved-postlogin].ecc-navigation .ecc-search-box input { font-size: 1rem; min-height: 3rem; }
-  [data-approved-postlogin].ecc-navigation .ecc-page-path { font-size: .75rem; }
+  [data-approved-postlogin].ecc-navigation .ecc-page-path { font-size: .8125rem; }
   [data-approved-postlogin].ecc-navigation :is(.ecc-contextual-tools, .ecc-contextual-recents) button { min-height: 3rem; font-size: .875rem; }
   [data-approved-postlogin].ecc-navigation :is(.ecc-rail-button, .ecc-rail-search) { min-height: 3rem; }
 }
@@ -324,6 +347,60 @@
   [data-approved-postlogin].ecc-navigation .ecc-children { padding-inline-start: .6rem; }
   [data-approved-postlogin].ecc-navigation .ecc-full { display: flex; }
   [data-approved-postlogin].ecc-navigation .ecc-rail { display: none; }
+}
+
+/* Large-display refinement: keep the command surface legible on 4K review screens. */
+@media (min-width: 1920px) {
+  [data-approved-postlogin].ecc-navigation .ecc-eyebrow,
+  [data-approved-postlogin].ecc-navigation .ecc-section-label,
+  [data-approved-postlogin].ecc-navigation .ecc-page-path,
+  [data-approved-postlogin].ecc-navigation .ecc-result-count,
+  [data-approved-postlogin].ecc-navigation :is(.ecc-contextual-tools, .ecc-contextual-recents) .p-nav-label {
+    font-size: .875rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-disclosure,
+  [data-approved-postlogin].ecc-navigation .ecc-page-link,
+  [data-approved-postlogin].ecc-navigation .ecc-shortcuts-toggle {
+    font-size: 1rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-subgroup > .ecc-group-row .ecc-disclosure {
+    font-size: .9375rem;
+  }
+}
+
+@media (min-width: 3000px) {
+  [data-approved-postlogin].ecc-navigation {
+    font-size: 1.125rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-eyebrow,
+  [data-approved-postlogin].ecc-navigation .ecc-section-label,
+  [data-approved-postlogin].ecc-navigation .ecc-page-path,
+  [data-approved-postlogin].ecc-navigation .ecc-result-count,
+  [data-approved-postlogin].ecc-navigation :is(.ecc-contextual-tools, .ecc-contextual-recents) .p-nav-label {
+    font-size: .9375rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-disclosure,
+  [data-approved-postlogin].ecc-navigation .ecc-page-link,
+  [data-approved-postlogin].ecc-navigation .ecc-shortcuts-toggle,
+  [data-approved-postlogin].ecc-navigation :is(.ecc-contextual-tools, .ecc-contextual-recents) button {
+    font-size: 1.125rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-subgroup > .ecc-group-row .ecc-disclosure {
+    font-size: 1rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-disclosure,
+  [data-approved-postlogin].ecc-navigation .ecc-page-link,
+  [data-approved-postlogin].ecc-navigation .ecc-shortcuts-toggle,
+  [data-approved-postlogin].ecc-navigation :is(.ecc-contextual-tools, .ecc-contextual-recents) button {
+    min-height: 3rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-search-box,
+  [data-approved-postlogin].ecc-navigation .ecc-search-box input {
+    min-height: 3.25rem;
+  }
+  [data-approved-postlogin].ecc-navigation .ecc-search-box input {
+    font-size: 1.125rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

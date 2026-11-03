@@ -30,15 +30,15 @@
   "files": [
     {
       "path": "src/enterprise-command-center-model.ts",
-      "sha256": "e959b949ad24ba1d2388344a89e3899c3502641328a57cf74f7b36015f44b8d8"
+      "sha256": "65e953e5970bdabca85f405358b92d9b4e7043dd2950a6e26721acc24c6f78d6"
     },
     {
       "path": "src/enterprise-command-center-navigation.tsx",
-      "sha256": "3887611f7819c8a573a09091a0a4442c7d9c6e219c9bd5648613935cd560e426"
+      "sha256": "5395930ce125f794651edf4992b34824e7aea4e99e9d43bca6f29adee0602829"
     },
     {
       "path": "src/enterprise-command-center-navigation.css",
-      "sha256": "0d49536ae2a35f8b8be79c165d146c30def464c5b6d77d78087225eee8a0a7c0"
+      "sha256": "2ee6f61626e6199bd159727bf31121a3f56bc17af9f8ada1c7545ffa16753255"
     }
   ]
 }
