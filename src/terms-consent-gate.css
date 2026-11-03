@@ -1,0 +1,177 @@
+/* Owner-requested legal acceptance only; preserves the frozen V180 source. */
+#root #staffportal-auth-mount .sp-auth-runtime .sp-install-card-v101,
+#root #staffportal-auth-mount .sp-auth-runtime .sp-auth-policy {
+  display: none !important;
+}
+/* First registration step displays the required consent instead of duplicate footer copy. */
+#root #staffportal-auth-mount .usp-auth-panel[data-auth-mode="signup-identity"] .usp-legal-copy {
+  display: none !important;
+}
+#root #staffportal-auth-mount .sp-terms-consent-host {
+  flex: 0 0 auto;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+#root #staffportal-auth-mount .sp-terms-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #b9d9c8;
+  border-radius: 10px;
+  background: #f1faf5;
+  color: #244d37;
+  font-size: clamp(13px, .78vw, 16px);
+  line-height: 1.4;
+}
+#root #staffportal-auth-mount .sp-terms-consent.is-required {
+  border-color: #bd6c42;
+  background: #fff6f0;
+}
+#root #staffportal-auth-mount input#sp-terms-accept {
+  appearance: auto !important;
+  display: block !important;
+  position: static !important;
+  flex: 0 0 19px;
+  width: 19px !important;
+  height: 19px !important;
+  min-width: 19px;
+  min-height: 19px;
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border: 1px solid #238357;
+  accent-color: #087f4f;
+  cursor: pointer;
+  opacity: 1 !important;
+}
+#root #staffportal-auth-mount input#sp-terms-accept:focus-visible {
+  outline: 3px solid #42b883 !important;
+  outline-offset: 3px;
+}
+#root #staffportal-auth-mount .sp-terms-consent-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #244d37;
+  font-size: inherit;
+  line-height: inherit;
+  overflow-wrap: anywhere;
+}
+#root #staffportal-auth-mount .sp-terms-consent-copy label {
+  display: inline !important;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  font-size: inherit;
+  line-height: inherit;
+}
+#root #staffportal-auth-mount .sp-terms-consent-copy a {
+  display: inline !important;
+  color: #005b9b !important;
+  font-weight: 800 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+  white-space: normal;
+}
+#root #staffportal-auth-mount .sp-terms-consent-copy a:focus-visible {
+  outline: 2px solid #005b9b !important;
+  outline-offset: 2px;
+}
+#root #staffportal-auth-mount .sp-terms-consent-compact {
+  display: none !important;
+}
+#root #staffportal-auth-mount .sp-terms-consent-required {
+  color: #a23c20;
+  font-weight: 850;
+}
+#root #staffportal-auth-mount .sp-terms-consent-error {
+  margin: 3px 0 0;
+  padding: 0;
+  color: #9a331e;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+/* Keep the checkbox within the original bottom Install button's footprint. */
+#root #staffportal-auth-mount .sp-auth-runtime .sp-terms-consent-host {
+  margin-top: 0 !important;
+}
+#root #staffportal-auth-mount .usp-auth-panel[data-auth-mode="signup-identity"]
+  .sp-terms-consent-host {
+  margin: 1px 0 0 !important;
+}
+/* The marked 4K 'Private Staff Access' chip must not overlap Welcome Back. */
+@media (min-width: 1680px) {
+  #root #staffportal-auth-mount .sp-auth-runtime .sp-auth-topline {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    height: auto !important;
+    min-height: 47px !important;
+  }
+  #root #staffportal-auth-mount .sp-auth-runtime .sp-auth-topline .sp-secure-chip {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap;
+  }
+}
+/* The fixed-footprint desktop card needs a single compact legal row. */
+@media (max-width: 1679px) {
+  #root #staffportal-auth-mount .sp-terms-consent-full {
+    display: none !important;
+  }
+  #root #staffportal-auth-mount .sp-terms-consent-compact {
+    display: inline !important;
+    white-space: nowrap;
+  }
+  #root #staffportal-auth-mount .sp-terms-consent {
+    padding: 4px 5px;
+    gap: 5px;
+    min-height: 30px;
+    align-items: center;
+    font-size: 13px;
+    line-height: 1.1;
+  }
+  #root #staffportal-auth-mount .sp-terms-consent-copy {
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+  #root #staffportal-auth-mount input#sp-terms-accept {
+    flex-basis: 16px;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0 !important;
+  }
+  /* Preserve the required error for assistive technology without pushing the
+     checkbox below the fixed compact Sign-In card after a blocked attempt. */
+  #root #staffportal-auth-mount .sp-terms-consent-error {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+  }
+}
+@media (max-width: 720px) {
+  #root #staffportal-auth-mount .sp-terms-consent {
+    padding: 6px;
+    font-size: 13px;
+  }
+}
