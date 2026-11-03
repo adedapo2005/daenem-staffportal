@@ -19,6 +19,7 @@ import { PostAuthHomeBanner, PostAuthLayoutRenderer } from './post-auth-experien
 import { PostAuthNavigation } from './postauth-navigation';
 import { OfflineSyncIndicator } from './offline-sync';
 import './qa-review-postauth.css';
+import './dashboard-integrity.css';
 
 export type ZipDashboardSummary = {
   workDate: string;
@@ -298,8 +299,8 @@ function KpiStrip({ summary, company, context }: Pick<ZipDashboardProps, 'summar
   const cards: Array<{ field: DashboardAggregateField; label: string; value: string; detail: string; icon: React.ComponentType<{ size?: number }>; tone: string }> = [
     { field: 'employees', label: 'Employees', value: numberValue(summary?.employees), detail: company.id ? company.code : 'All assigned companies', icon: Users, tone: 'blue' },
     { field: 'present', label: 'Present Today', value: numberValue(summary?.present), detail: summary?.workDate || 'Live Attendance', icon: CalendarCheck2, tone: 'green' },
-    { field: 'incompleteAttendance', label: 'Needs Review', value: numberValue((summary?.incompleteAttendance ?? 0) + (summary?.pendingApprovals ?? 0) + (summary?.overdueRequirements ?? 0)), detail: 'Authorized Follow-Up Items', icon: AlertTriangle, tone: 'amber' },
-    { field: 'securityAlerts', label: 'Security Health', value: summary ? (summary.securityAlerts ? 'Review' : 'Good') : '—', detail: summary ? `${summary.securityAlerts} High-Risk Event(s)` : 'Loading Scoped Status', icon: ShieldCheck, tone: summary?.securityAlerts ? 'red' : 'violet' },
+    { field: 'incompleteAttendance', label: 'Incomplete Attendance', value: numberValue(summary?.incompleteAttendance), detail: 'Recorded Attendance Exceptions', icon: AlertTriangle, tone: 'amber' },
+    { field: 'securityAlerts', label: 'Security Health', value: finiteNumber(summary?.securityAlerts) ? (summary!.securityAlerts > 0 ? 'Review' : 'Clear') : '—', detail: finiteNumber(summary?.securityAlerts) ? `${summary!.securityAlerts} High-Risk Event(s)` : 'Security Status Unavailable', icon: ShieldCheck, tone: summary?.securityAlerts ? 'red' : 'violet' },
   ];
   const visible = cards.filter((card) => canSeeDashboardField(context, card.field, company.id));
   if (!visible.length) return null;
@@ -312,29 +313,45 @@ function ChartHeader({ eyebrow, title, icon }: { eyebrow: string; title: string;
 }
 
 function TrendWidget({ summary, refreshSummary }: Pick<ZipDashboardProps, 'summary' | 'refreshSummary'>) {
-  const rate = attendanceRate(summary);
+  const present = finiteNumber(summary?.present) ? summary!.present : null;
+  const incomplete = finiteNumber(summary?.incompleteAttendance) ? summary!.incompleteAttendance : null;
+  const employees = finiteNumber(summary?.employees) ? summary!.employees : null;
+  const available = employees !== null && employees > 0 && present !== null && present >= 0 && incomplete !== null && incomplete >= 0 && present + incomplete <= employees;
+  const other = available ? employees - present - incomplete : 0;
+  const share = (count: number) => available ? Math.min(100, Math.max(0, count / employees * 100)) : 0;
   return <article className="chart-card trend-card">
-    <ChartHeader eyebrow="WORKFORCE PULSE" title="Attendance Trend" icon={Activity} />
-    <div className="chart-legend"><span><i style={{ background: 'var(--primary)' }} /> Present Today</span><span><i style={{ background: 'var(--accent)' }} /> Incomplete</span></div>
-    <div className="chart-canvas zip-chart-canvas" role="img" aria-label={summary ? `Attendance completion is ${percentage(rate)}` : 'Attendance trend is unavailable'}>
-      <div className="chart-grid-lines"><i /><i /><i /><i /></div>
-      <svg viewBox="0 0 600 180" preserveAspectRatio="none" aria-hidden="true">
-        <path d={`M0 ${150 - rate * .55} C 90 ${142 - rate * .45}, 130 ${122 - rate * .35}, 205 ${132 - rate * .4} S 330 ${102 - rate * .25}, 405 ${118 - rate * .28} S 520 ${78 - rate * .2}, 600 ${105 - rate * .25}`} />
-        <path className="secondary-line" d={`M0 ${164 - (100 - rate) * .18} C 100 ${158 - (100 - rate) * .2}, 180 ${155 - (100 - rate) * .15}, 260 ${160 - (100 - rate) * .18} S 430 ${141 - (100 - rate) * .12}, 600 ${150 - (100 - rate) * .14}`} />
-      </svg>
-      {!summary && <div className="chart-empty"><PackageSearch size={18} /><span>Trend Data Is Not Available For This Scope Yet.</span></div>}
-    </div>
-    <footer className="chart-footer"><span>{summary ? `${percentage(rate)} completion` : "Scoped Trend"}</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh</button></footer>
+    <ChartHeader eyebrow="WORKFORCE · VERIFIED TODAY" title="Attendance Snapshot" icon={Activity} />
+    {available ? <div className="zip-attendance-snapshot">
+      <div className="zip-attendance-snapshot-total"><strong>{percentage(share(present))}</strong><span>Present Today · {numberValue(present)} Of {numberValue(employees)} Employees</span></div>
+      <div className="zip-attendance-snapshot-track" role="img" aria-label={`Today: ${present} present, ${incomplete} incomplete, ${other} other attendance statuses out of ${employees} employees`}>
+        <span className="zip-attendance-present" style={{ width: `${share(present)}%` }} />
+        <span className="zip-attendance-incomplete" style={{ width: `${share(incomplete)}%` }} />
+        <span className="zip-attendance-other" style={{ width: `${share(other)}%` }} />
+      </div>
+      <div className="zip-attendance-snapshot-legend">
+        <span><i className="zip-attendance-present" /> Present <b>{numberValue(present)}</b></span>
+        <span><i className="zip-attendance-incomplete" /> Incomplete <b>{numberValue(incomplete)}</b></span>
+        <span><i className="zip-attendance-other" /> Other <b>{numberValue(other)}</b></span>
+      </div>
+    </div> : <div className="zip-analytics-unavailable"><PackageSearch size={22} /><strong>Verified Attendance Breakdown Unavailable</strong><span>{employees === 0 ? 'No Employees Recorded In This Scope.' : 'The Current Authorised Response Does Not Contain A Complete Attendance Breakdown.'}</span></div>}
+    <p className="widget-note">Current-day recorded totals only. A historical trend will appear when dated attendance records are available from the backend.</p>
+    <footer className="chart-footer"><span>{summary?.workDate ? `Work Date: ${summary.workDate} · Nigeria` : 'Live Authorised Records'}</span><button className="text-button" onClick={refreshSummary}><RefreshCw size={14} /> Refresh</button></footer>
   </article>;
 }
 
 function ComparisonWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
-  const metrics = [
-    ['Attendance', attendanceRate(summary)],
-    ['Requirements', summary && summary.employees > 0 ? ((summary.employees - summary.overdueRequirements) / summary.employees) * 100 : 0],
-    ['Security', summary ? (summary.securityAlerts === 0 ? 100 : Math.max(0, 100 - summary.securityAlerts * 10)) : 0],
-  ] as const;
-  return <article className="chart-card comparison-card"><ChartHeader eyebrow="SCOPED COMPARISON" title="Workspace Health" icon={ArrowRight} /><div className="comparison-list">{metrics.map(([label, value]) => <div key={label}><div><span>{label}</span><b>{summary ? percentage(value) : '—'}</b></div><i><em style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></i></div>)}</div><p className="widget-note">Values Are Calculated Only From Records Your Current Role Can Access.</p></article>;
+  const signals = [
+    { label: 'Incomplete Attendance', value: summary?.incompleteAttendance, note: 'Today · Workforce', tone: 'amber' },
+    { label: 'Overdue Requirements', value: summary?.overdueRequirements, note: 'Recorded Deadlines', tone: 'violet' },
+    { label: 'High-Risk Security', value: summary?.securityAlerts, note: 'Unreviewed Events', tone: 'red' },
+  ];
+  return <article className="chart-card comparison-card">
+    <ChartHeader eyebrow="PERMISSION-SCOPED EXCEPTIONS" title="Recorded Exceptions" icon={AlertTriangle} />
+    <div className="zip-exception-grid">{signals.map(signal=><div className={`zip-exception-metric tone-${signal.tone}`} key={signal.label}>
+      <span>{signal.label}</span><strong>{finiteNumber(signal.value) ? numberValue(signal.value) : '—'}</strong><small>{finiteNumber(signal.value) ? signal.note : 'Data Unavailable'}</small>
+    </div>)}</div>
+    <p className="widget-note">These are separate recorded exception counts, not a fabricated percentage-based health score. Company and role permissions still apply.</p>
+  </article>;
 }
 
 function CategoryWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
@@ -349,13 +366,18 @@ function CategoryWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
 }
 
 function ForecastWidget({ summary }: Pick<ZipDashboardProps, 'summary'>) {
-  const followUps = summary
-    ? summary.incompleteAttendance + summary.pendingApprovals + summary.overdueRequirements + summary.securityAlerts
-    : 0;
-  const readiness = summary && summary.employees > 0
-    ? Math.max(0, 100 - (followUps / summary.employees) * 25)
-    : 0;
-  return <article className="insight-card forecast-card"><span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">WORKSPACE INSIGHT</span><h3>Make The Next Action Obvious.</h3><p>Use The Authorized Queue To Open The Exact Record That Needs Attention. No Private Or Unauthorized Data Is Inferred Here.</p><div className="forecast-meter"><span style={{ width: `${readiness}%` }} /></div><div className="insight-foot"><span>{summary ? `${numberValue(followUps)} open follow-up${followUps === 1 ? '' : 's'}` : "Waiting For Live Records"}</span><ArrowRight size={15} /></div></article>;
+  const signals = [
+    { label: 'Incomplete Attendance', count: summary?.incompleteAttendance },
+    { label: 'Pending Approvals', count: summary?.pendingApprovals },
+    { label: 'Overdue Requirements', count: summary?.overdueRequirements },
+    { label: 'High-Risk Security Alerts', count: summary?.securityAlerts },
+  ];
+  return <article className="insight-card forecast-card">
+    <span className="insight-icon"><Sparkles size={17} /></span><span className="eyebrow">LIVE OPERATIONAL FOLLOW-UP</span>
+    <h3>Follow-Up Signals</h3><p>What needs attention in the records your current role may access.</p>
+    <div className="zip-followup-list">{signals.map(signal=><div key={signal.label}><span>{signal.label}</span><strong>{finiteNumber(signal.count) ? numberValue(signal.count) : '—'}</strong></div>)}</div>
+    <div className="insight-foot"><span>No predictive forecast is presented without verified historical data and a validated model.</span><ArrowRight size={15} /></div>
+  </article>;
 }
 
 function QueueWidget({ summary, context, company, onNavigate, onOpenModule }: Pick<ZipDashboardProps, 'summary' | 'context' | 'company' | 'onNavigate' | 'onOpenModule'>) {
@@ -597,10 +619,10 @@ function SmartLoadingCard({ pending }: { pending: boolean }) {
 }
 
 const widgetLabels: Record<WidgetId, string> = {
-  trend: 'Attendance trend',
-  comparison: 'Readiness comparison',
+  trend: 'Attendance snapshot',
+  comparison: 'Recorded exceptions',
   category: 'Workforce categories',
-  forecast: 'Workload forecast',
+  forecast: 'Follow-up signals',
   queue: 'Action queue',
   status: 'Platform status',
   news: 'Portal notes',
@@ -609,9 +631,9 @@ const widgetLabels: Record<WidgetId, string> = {
 
 const dashboardWidgetRegistry: Record<WidgetId, { requiredPermission?: string; fields?: DashboardAggregateField[] }> = {
   trend: { fields: ['present', 'employees', 'incompleteAttendance'] },
-  comparison: { fields: ['present', 'employees', 'incompleteAttendance', 'overdueRequirements', 'securityAlerts'] },
+  comparison: { fields: ['incompleteAttendance', 'overdueRequirements', 'securityAlerts'] },
   category: { fields: ['present', 'employees', 'incompleteAttendance'] },
-  forecast: { fields: ['present', 'employees', 'incompleteAttendance', 'pendingApprovals', 'securityAlerts'] },
+  forecast: { fields: ['incompleteAttendance', 'pendingApprovals', 'overdueRequirements', 'securityAlerts'] },
   queue: {},
   status: {},
   news: { requiredPermission: 'broadcasts.access' },

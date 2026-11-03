@@ -31,7 +31,7 @@ const NOT_AUTHORISED='Not authorised';
 const hasValue=(value?:number):value is number=>typeof value==='number'&&Number.isFinite(value);
 const money=(k?:number)=>hasValue(k)?new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',notation:'compact',maximumFractionDigits:1}).format(k/100):NOT_AUTHORISED;
 const moneyFull=(k?:number)=>hasValue(k)?new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(k/100):NOT_AUTHORISED;
-const percent=(current?:number,previous?:number):number|null=>hasValue(current)&&hasValue(previous)?(previous<=0?(current>0?100:0):(current-previous)/previous*100):null;
+const percent=(current?:number,previous?:number):number|null=>hasValue(current)&&hasValue(previous)&&previous>0?(current-previous)/previous*100:null;
 const signedPercent=(value:number)=>`${value>=0?'+':''}${value.toFixed(1)}%`;
 const labelled=(value:number|undefined,text:string)=>hasValue(value)?`${value} ${text}`:NOT_AUTHORISED;
 const unauthorisedSignal=(label:string,detail:string):Signal=>({label,value:NOT_AUTHORISED,detail,state:'neutral'});
