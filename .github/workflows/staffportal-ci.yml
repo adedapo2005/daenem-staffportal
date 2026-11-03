@@ -44,6 +44,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Isolated, offline-only release-blocking fixture checks for P0 #207.
+      # Does not request private media, change CI triggers or deploy the Site.
+      - name: StaffPortal Sites Zero Disclosure regression fixtures
+        run: node --test scripts/test-staffportal-sites-zero-disclosure.mjs
       - name: Validate delivery controller
         run: node scripts/check-delivery-controller.mjs
 
