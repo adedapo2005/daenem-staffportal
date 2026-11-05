@@ -81,14 +81,40 @@ class Journal:
             self.data['version_attempted']=True
         self.data['pending']={'kind':kind,'identity':identity}; self._save()
     def finish(self,version_id=None):
+        if self.data['pending'] is not None:
+            completed=self.data.setdefault('completed_writes',[])
+            if len(completed)>=4096: raise Stop('journal receipt bound reached')
+            completed.append(dict(self.data['pending']))
         if version_id is not None: self.data['version_id']=version_id
         self.data['pending']=None; self._save()
+
+    def transport_event(self,event):
+        """Only fixed labels and bounded numeric codes; never provider text.
+
+        Dispatch entry means the transport was entered, not that any bytes were
+        delivered. An HTTP response is an observation, not proof of commit.
+        """
+        if not isinstance(event,dict) or set(event)-{'phase','operation','httpStatus','resultShape','providerErrorCodes'}:
+            raise Stop('unsupported transport receipt')
+        if event.get('phase') not in ('DISPATCH_ENTERED','RESPONSE_RECEIVED','TRANSPORT_EXCEPTION') or event.get('operation') not in ('asset-session','asset-bucket','worker-version'):
+            raise Stop('unsupported transport receipt')
+        if 'httpStatus' in event and (type(event['httpStatus']) is not int or not 100<=event['httpStatus']<=599):
+            raise Stop('unsupported transport receipt')
+        if 'resultShape' in event and event['resultShape'] not in ('ABSENT','NULL','OBJECT','OTHER','MALFORMED'):
+            raise Stop('unsupported transport receipt')
+        codes=event.get('providerErrorCodes',[])
+        if not isinstance(codes,list) or len(codes)>16 or any(type(c) is not int or not 1000<=c<=999999 for c in codes):
+            raise Stop('unsupported transport receipt')
+        events=self.data.setdefault('transport_events',[])
+        if len(events)>=4096: raise Stop('journal receipt bound reached')
+        events.append(json.loads(json.dumps(event))); self._save()
 
 class Publisher:
     def __init__(self,transport,journal,expected):
         self.t=transport; self.j=journal; self.expected=expected
         if len(expected.get('bindings',{}))!=31: raise Stop('need 31 independently pinned binding identities')
         if expected.get('account')!=ACCOUNT or expected.get('worker')!=WORKER: raise Stop('wrong target')
+        if hasattr(self.t,'set_event_sink'): self.t.set_event_sink(self.j.transport_event)
     def _write(self,kind,identity,call):
         self.j.begin(kind,identity)
         try: result=call()

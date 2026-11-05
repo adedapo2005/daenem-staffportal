@@ -24,7 +24,7 @@ WORKFLOW='staffportal-approved-artifact-upload.yml'
 WORKFLOW_REF=REPO+'/.github/workflows/'+WORKFLOW+'@refs/heads/main'
 RELEASE_ID=434713012
 APP_SHA='a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080'
-RUNTIME_SHA='537f3dfacc4bbee7ccd79ae0bf748796224543933859c36a916e6aca2d256c2d'
+RUNTIME_SHA='65db834ee245a0902e422d6c65af27ad49d4e14105bac6c9d0331a18ef7da6c9'
 OPERATOR_MANIFEST='c15e06e6e62ddcda71d2009b7d6ab97ebb6e9d724bee4fe3e2b640e5ea334cc4'
 PREPARER_SHA='391e463f9d54d465df2e92b426c7bc78978943085f2f91c75be1b12641143bd5'
 HEX=re.compile(r'[0-9a-f]{64}\Z')
@@ -277,7 +277,10 @@ def safe_failure_code(error,runtime):
     if isinstance(error,publisher.Rejected):return 'CLOUDFLARE_REQUEST_REJECTED'
     if isinstance(error,publisher.Uncertain):return 'CLOUDFLARE_REQUEST_OUTCOME_UNKNOWN'
     if isinstance(error,publisher.Stop):
-        return {'binding resource, restriction or value drift':'BINDING_RESOURCE_OR_VALUE_DRIFT',
+        return {'provider rejected write; reconcile before proceeding':'CLOUDFLARE_WRITE_REJECTED_HELD',
+                'uncertain write; outcome not proven':'CLOUDFLARE_WRITE_OUTCOME_UNKNOWN',
+                'uncertain write; reconciliation unavailable':'WRITE_RECONCILIATION_UNAVAILABLE',
+                'binding resource, restriction or value drift':'BINDING_RESOURCE_OR_VALUE_DRIFT',
                 'AI project read metadata malformed':'AI_PROJECT_READ_METADATA_MALFORMED',
                 'AI project read metadata changed during execution':'AI_PROJECT_READ_METADATA_CHANGED',
                 'version runtime setting drift or missing value':'RUNTIME_SETTING_HELD',
