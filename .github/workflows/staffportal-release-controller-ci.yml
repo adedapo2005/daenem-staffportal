@@ -88,3 +88,34 @@ jobs:
           node scripts/check-staffportal-staging-integration.mjs
           node scripts/check-signin-release-blockers.mjs
           npm run check:postauth-live
+
+  release-input-read-diagnostic:
+    if: >-
+      github.repository == 'adedapo2005/daenem-staffportal' &&
+      github.actor == 'adedapo2005' &&
+      github.event_name == 'pull_request_review' &&
+      github.event.pull_request.head.ref == 'ops/staffportal-release-input-read-20261105'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout Fixed Read Diagnostic
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Inspect Only Approved Release Metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I .github/scripts/staffportal_release_read_diagnostic.py
+      - name: Preserve Sanitized Read Results
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: staffportal-input-read-diagnostic-${{ github.run_id }}
+          path: staffportal-input-read-diagnostic.json
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: false
+
