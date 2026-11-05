@@ -4,7 +4,7 @@
   "reviewedAdapterPatchSha256": "a8a6cf890f4e405db7e9ad1b39b5051e5754425148aecf8043be272f05c4f89a",
   "files": {
     "RUNTIME-PINS.json": "33b8903ebe37265deb8771f6e266bfdc88845ceeebda02623e049ef2fbae2c6f",
-    "release_executor.py": "0ecbd0d61b98a4718b45fef25aef1c1d1c435ab779131fd184716159462368cc",
+    "release_executor.py": "c3ffc3c682ce76f0cb3e1a28b4d234f9aaf80a9c36cfcf357224c9fcab07afce",
     "runtime/asset-manifest-normalized.json": "39ef9da6b5335308c76ce9d23e0d72f5cb712c941fa75fa3164e2c8eb2c53b37",
     "runtime/baseline.json": "e54462ae4e33d2e80a1eca23e65b297005946c768528de2fbca6b3e69d268046",
     "runtime/baseline_contract.py": "7db2e74a7139d463e3769af3df34c816c3fceab6b779f100fbe1cc98a7282827",
