@@ -138,15 +138,17 @@ def diagnose(token,plan,transport=send):
         if source.get('id')!=SOURCE:raise Held('SOURCE_VERSION_IDENTITY_HELD')
         result['sourceBindingCount']=len(source['bindings']) if isinstance(source.get('bindings'),list) else None
         if isinstance(source.get('bindings'),list):result['sourceBindingComparisons']=binding_comparisons(source['bindings'],plan.projection().get('bindings',[]))
-        source_raw,source_project,source_extra=ai_metadata_projection(source.get('bindings') or [])
+        ignored,source_project,source_extra=ai_metadata_projection(source.get('bindings') or [])
+        source_raw=source.get('bindings')
         result['aiProjectDiagnosticProbe']={'sourceExtraPresent':source_extra,'sourceProjectType':type(source_project).__name__ if source_extra else None,
             'productionGateChanged':False}
         source_bindings=check('source-bindings-diagnostic-projection',lambda:plan.binding_projection(source_raw))
         result['sourceRuntimeChecks']=runtime_shapes(source)
-        check('source-runtime',lambda:plan.version_settings(source))
+        check('source-runtime',lambda:plan.version_settings(source,version_read=True))
         result['failureStage']='settings-get';settings=get(PATHS[2])
         result['currentBindingCount']=len(settings['bindings']) if isinstance(settings.get('bindings'),list) else None
-        current_raw,current_project,current_extra=ai_metadata_projection(settings.get('bindings') or [])
+        ignored,current_project,current_extra=ai_metadata_projection(settings.get('bindings') or [])
+        current_raw=settings.get('bindings')
         result['aiProjectDiagnosticProbe'].update(currentExtraPresent=current_extra,
             currentProjectType=type(current_project).__name__ if current_extra else None,
             valuesEqualWhenBothPresent=(source_project==current_project if source_extra and current_extra else None))
@@ -167,7 +169,7 @@ def diagnose(token,plan,transport=send):
         if result['comparisonFailures']:
             first=result['comparisonFailures'][0];result['failureStage']=first['stage'];result['reasonCode']=first['reasonCode']
         else:
-            result.pop('failureStage',None);result['state']='READ_PROBE_MATCHED_WITH_AI_PROJECT_DIFFERENCE' if source_extra or current_extra else 'FIXED_READ_PREFLIGHT_MATCHED'
+            result.pop('failureStage',None);result['state']='READ_CANDIDATE_PREFLIGHT_MATCHED'
     except Held as error:result['reasonCode']=str(error)
     raw=json.dumps(result,indent=2)
     if token and token in raw:raise Held('SANITIZATION_HELD')
@@ -187,10 +189,14 @@ def main():
     for name,pin in json.loads(pins.read_text())['files'].items():
         if Path(name).name!=name or hashlib.sha256((root/'runtime'/name).read_bytes()).hexdigest()!=pin:raise Held('RUNTIME_SOURCE_HELD')
     sys.dont_write_bytecode=True;sys.path.insert(0,str(root/'runtime'))
-    from workers_api_plan import WorkersAPIPlan
-    # Only pure projection comparisons are called. No adapter or publisher is
-    # instantiated, and the only network function has a fixed GET-only scope.
-    result=diagnose(token,WorkersAPIPlan(None))
+    import importlib.util
+    helper=Path(__file__).with_name('staffportal_read_candidate_plan.py')
+    if hashlib.sha256(helper.read_bytes()).hexdigest()!='8eda702ae97d7273d8142a2fd6c5b611676480f560e4c97438e8e78906262ed1':raise Held('CANDIDATE_READ_SOURCE_HELD')
+    spec=importlib.util.spec_from_file_location('reviewed_read_candidate',helper)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    # Pure read comparisons only. No adapter or publisher is instantiated.
+    result=diagnose(token,module.CandidateReadPlan(None))
+    result['candidateComparisonOnly']=True
     raw=json.dumps(result,indent=2);Path('staffportal-upload-preflight-read.json').write_text(raw);print(raw)
 
 if __name__=='__main__':
