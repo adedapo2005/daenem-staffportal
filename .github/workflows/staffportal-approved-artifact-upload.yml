@@ -72,7 +72,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $manifest = Join-Path $env:SP_ROOT 'EXECUTOR-MANIFEST.json'
           $actualManifestHash = (Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actualManifestHash -ne '4a1edf573f2dd0a775d230fd98f40e2452f941d12f447b36e6fd8da7364daaf9') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
+          if ($actualManifestHash -ne 'da6fff767d8e72f1d7f95c43ddc974f07119ecbd1c88910e53029761a6b58bdf') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
           $pins = Get-Content -Raw -LiteralPath $manifest | ConvertFrom-Json
           foreach ($entry in $pins.files.PSObject.Properties) {
             if ($entry.Name -match '(^[\\/]|\.\.|:)') { throw 'UNSAFE_EXECUTOR_MEMBER' }
@@ -90,6 +90,12 @@ jobs:
         run: |
           python -I "$env:SP_ROOT\release_executor.py" guard --state-dir "$env:SP_PUBLIC"
           if ($LASTEXITCODE -ne 0) { throw 'EXECUTION_HISTORY_GATE_HELD' }
+      - name: Verify Exact Cloudflare Account Before Preparation
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python -I "$env:SP_ROOT\release_executor.py" account-check --state-dir "$env:SP_PUBLIC"
+          if ($LASTEXITCODE -ne 0) { throw 'ACCOUNT_IDENTITY_GATE_HELD' }
       - name: Download Only The Hash-Pinned Inputs
         env:
           GH_TOKEN: ${{ github.token }}

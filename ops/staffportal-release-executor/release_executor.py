@@ -219,12 +219,65 @@ def reconcile_input_read_failure(reader, row, workflow_id):
             'evidenceArtifactId':pin['id'],'evidenceArtifactDigest':pin['digest'],
             'disposition':'verified input-read failure before preparation, marker and Cloudflare step'}
 
+def reconcile_account_rejection(reader,row,workflow_id):
+    """Inspected exact account rejection before journal/adapter creation.
+
+    Local preparation and a GitHub marker exist for this run. Both retained
+    ZIPs were inspected: no publisher journal or remote-operation record is
+    present. The pinned source rejects the account before any adapter call.
+    """
+    rid=42075233917;source='47ac8e82b36ae92201ecbae4a035881b1f7c17d4'
+    expected={'id':rid,'run_attempt':1,'workflow_id':408290809,'head_sha':source,
+              'head_branch':'main','event':'workflow_dispatch','status':'completed',
+              'conclusion':'failure','path':'.github/workflows/'+WORKFLOW}
+    if workflow_id!=408290809 or any(row.get(k)!=v for k,v in expected.items()):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    prefix=f'repos/{REPO}/actions/runs/{rid}'
+    run=reader.json(prefix)
+    if any(run.get(k)!=v for k,v in expected.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/jobs?per_page=100');jobs=data.get('jobs')
+    if data.get('total_count')!=1 or not isinstance(jobs,list) or len(jobs)!=1:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    job=jobs[0]
+    if any(job.get(k)!=v for k,v in {'id':127413569396,'run_id':rid,'name':'upload',
+            'status':'completed','conclusion':'failure'}.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    steps=[('Set up job','success'),('Initialize Private Runner Paths','success'),
+           ('Check Out The Exact Workflow Commit','success'),('Verify Executor Inputs Before Running Python','success'),
+           ('Set Up Pinned Python','success'),('Reject Reruns And Earlier Attempts','success'),
+           ('Download Only The Hash-Pinned Inputs','success'),('Prepare The Approved Local Window','success'),
+           ('Preserve A Pre-Upload Attempt Marker','success'),('Upload And Verify Without Activation','failure'),
+           ('Preserve Sanitized Journal And Verification','success'),('Post Set Up Pinned Python','skipped'),
+           ('Post Check Out The Exact Workflow Commit','success'),('Complete job','success')]
+    actual=job.get('steps')
+    if not isinstance(actual,list) or [(s.get('name'),s.get('conclusion')) for s in actual]!=steps or any(s.get('status')!='completed' for s in actual):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/artifacts?per_page=100');artifacts=data.get('artifacts')
+    if data.get('total_count')!=2 or not isinstance(artifacts,list) or len(artifacts)!=2:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    pins={13439105131:('staffportal-pre-upload-42075233917',1189,'58806f628b1b517030b596b0528dc29b42bbcdee9139d2347af28b4f43845393'),
+          13438950239:('staffportal-upload-evidence-42075233917',1748,'5e86ceab46ce3b3959014f2d96186c23bb3b10d126df905ca5ca5c1aa45c3a96')}
+    seen=set()
+    for artifact in artifacts:
+        aid=artifact.get('id')
+        if aid not in pins or aid in seen:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+        seen.add(aid);name,size,digest=pins[aid]
+        identity={'id':rid,'repository_id':1363396851,'head_repository_id':1363396851,'head_sha':source,'head_branch':'main'}
+        if artifact.get('name')!=name or artifact.get('size_in_bytes')!=size or artifact.get('digest')!='sha256:'+digest or artifact.get('expired') is not False or any((artifact.get('workflow_run') or {}).get(k)!=v for k,v in identity.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    return {'runId':rid,'sourceSha':source,'jobId':job['id'],'evidenceArtifactIds':sorted(seen),
+            'disposition':'verified account rejection before publisher journal or adapter; local preparation and GitHub marker retained'}
+
+def verify_account_identity(env,expected):
+    # Match the established staging workflow's whitespace removal, then keep
+    # the exact pinned account comparison. Never print or persist the input.
+    raw=env.get('CLOUDFLARE_ACCOUNT_ID','')
+    if not isinstance(raw,str) or ''.join(raw.split())!=expected:
+        raise Held('CLOUDFLARE_ACCOUNT_MISMATCH')
+
 def reconcile_known_preupload_failure(reader, row, workflow_id):
-    """Three captured failures before preparation, marker or Cloudflare.
+    """Exact captured failures before Cloudflare adapter access.
 
     This is not a generic failed-run exception. Any changed attempt, metadata,
     step outcome or artifact makes the historical attempt unresolved again.
     """
+    if row.get('id')==42075233917:
+        return reconcile_account_rejection(reader,row,workflow_id)
     if row.get('id')==42064065206:
         return reconcile_input_read_failure(reader,row,workflow_id)
     profiles={
@@ -293,7 +346,7 @@ def workflow_guard(env,reader):
     if len(seen)!=declared or int(context['runId']) not in seen or len(seen)!=1+len(reconciled):raise Held('WORKFLOW_HISTORY_INCOMPLETE')
     return {**context,'workflowId':wf['id'],'guard':'FIRST_PUBLISHING_RUN_ONLY',
             'reconciledPreuploadRuns':reconciled,
-            'meaning':'administrative run-history guard; only the three exact captured preupload failures are reconciled; not a provider idempotency fence'}
+            'meaning':'administrative run-history guard; only four exact captured failures before Cloudflare adapter access are reconciled; not a provider idempotency fence'}
 
 def fetch_inputs(reader,application_id,operator_id,operator_sha,destination):
     if not re.fullmatch(r'[1-9][0-9]*',application_id) or not re.fullmatch(r'[1-9][0-9]*',operator_id) or application_id==operator_id or not HEX.fullmatch(operator_sha):raise Held('INPUT_IDENTIFIERS_INVALID')
@@ -345,6 +398,10 @@ def execute(args,env=None,deps=None,reader=None):
             result=package_operator(args.operator_package,args.output_zip);atomic_json(out/'operator-input.json',result);return result
         if args.command=='guard':
             result=workflow_guard(env,reader or GitHubReader(env));atomic_json(out/'github-guard.json',result);return result
+        if args.command=='account-check':
+            github_context(env);verify_account_identity(env,runtime['publisher'].ACCOUNT)
+            result={'state':'CLOUDFLARE_ACCOUNT_IDENTITY_VERIFIED','cloudflareCalls':0}
+            atomic_json(out/'account-check.json',result);return result
         if args.command=='fetch':
             github_context(env)
             result=fetch_inputs(reader or GitHubReader(env),args.application_asset_id,args.operator_asset_id,args.operator_archive_sha256,args.inputs_dir)
@@ -382,7 +439,7 @@ def execute(args,env=None,deps=None,reader=None):
             raise Held('PREWRITE_ARTIFACT_RECEIPT_MISMATCH')
         token=env.get('CLOUDFLARE_API_TOKEN','')
         if not token:raise Held('CLOUDFLARE_ENVIRONMENT_TOKEN_MISSING')
-        if env.get('CLOUDFLARE_ACCOUNT_ID')!=runtime['publisher'].ACCOUNT:raise Held('CLOUDFLARE_ACCOUNT_MISMATCH')
+        verify_account_identity(env,runtime['publisher'].ACCOUNT)
         forbidden=[token,env.get('GH_TOKEN',''),*window.values().values()]
         bind={**context,'archiveSha256':APP_SHA,'runtimePinsSha256':RUNTIME_SHA,'windowSha256':preparation['windowSha256'],'markerArtifactId':args.marker_artifact_id,'markerArtifactDigest':args.marker_artifact_digest}
         BaseJournal=runtime['publisher'].Journal
@@ -417,7 +474,7 @@ def execute(args,env=None,deps=None,reader=None):
 def parser():
     p=argparse.ArgumentParser(description=__doc__)
     sub=p.add_subparsers(dest='command',required=True)
-    for cmd in ('review','prepare','upload','status','guard','fetch','package-operator'):
+    for cmd in ('review','prepare','upload','status','guard','account-check','fetch','package-operator'):
         q=sub.add_parser(cmd);q.add_argument('--state-dir',required=True)
         if cmd in ('review','prepare','upload'):
             q.add_argument('--application-zip',required=True);q.add_argument('--operator-package',required=True);q.add_argument('--window-dir',required=True)
