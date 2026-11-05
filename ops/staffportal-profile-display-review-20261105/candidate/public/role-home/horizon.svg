@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700">
+  <title>StaffPortal Horizon</title>
+  <desc>Original abstract lines suggesting a connected architectural horizon.</desc>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="2" opacity=".22">
+      <path d="M90 610H1160M148 557H1100M220 503H1040M306 450H974"/>
+      <path d="M164 700L600 428M332 700L645 428M500 700L690 428M668 700L735 428M836 700L780 428M1004 700L825 428M1172 700L870 428"/>
+      <path d="M205 428C320 326 465 272 652 272s335 55 458 156"/>
+      <path d="M260 428C361 350 486 309 652 309s291 42 403 119"/>
+      <path d="M338 428C417 374 519 347 652 347s233 28 317 81"/>
+    </g>
+    <g stroke-width="3" opacity=".6">
+      <path d="M380 432V257l66-39 66 39v175M446 218v214M380 290l66-38 66 38M380 327l66-38 66 38M380 364l66-38 66 38"/>
+      <path d="M526 432V180l93-52 93 52v252M619 128v304M526 224l93-52 93 52M526 269l93-52 93 52M526 314l93-52 93 52M526 359l93-52 93 52"/>
+      <path d="M729 432V243l75-43 75 43v189M804 200v232M729 279l75-43 75 43M729 315l75-43 75 43M729 351l75-43 75 43"/>
+    </g>
+    <g stroke-width="3" opacity=".4">
+      <circle cx="620" cy="278" r="228"/>
+      <ellipse cx="620" cy="278" rx="318" ry="156" transform="rotate(-14 620 278)"/>
+      <path d="M243 367C326 161 504 58 696 78M914 145c75 58 117 126 127 206"/>
+      <path d="M315 115h76M353 77v76M939 405h58M968 376v58"/>
+    </g>
+  </g>
+  <g fill="#fff" opacity=".75">
+    <circle cx="311" cy="165" r="5"/><circle cx="947" cy="202" r="6"/>
+    <circle cx="1025" cy="321" r="4"/><circle cx="480" cy="76" r="4"/>
+    <circle cx="859" cy="80" r="3"/><circle cx="203" cy="319" r="3"/>
+    <circle cx="682" cy="59" r="3"/><circle cx="1092" cy="155" r="3"/>
+  </g>
+</svg>

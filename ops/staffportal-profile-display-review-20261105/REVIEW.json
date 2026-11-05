@@ -1,0 +1,45 @@
+{
+  "state": "ISOLATED_OFFLINE_CANDIDATE",
+  "baseSourceArchiveSha256": "6d733a6406314555ecc96d0066b98d3a1ed68a14e8e44606e9d9a890a8eae207",
+  "applicationBaseSha256": "a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080",
+  "historicalProfileBeforeSha256": "f2b0b3e811287d7caa697d9e95a89587e3b3d52b6950c1e13908981edc6ac82c",
+  "historicalProfileAfterSha256": "6a9366f64877db4159a1b659e839c11ce3e7ed19701673d7e0577e071d1d9bdf",
+  "sessionEmployeeAuthorityLoaderUnchanged": true,
+  "protectedSourcesUnchanged": true,
+  "noHostedOperation": true,
+  "liveRootCauseConfirmed": false,
+  "targetedChecks": {
+    "typescript": 0,
+    "vite-build": 0,
+    "static": 0,
+    "experience-lock": 0,
+    "signin-lock": 1,
+    "signin-lock-with-index": 1
+  },
+  "contractTest": {
+    "state": "PASS",
+    "assertions": 52,
+    "nullableServerValuesAccepted": 7,
+    "invalidDisplayTypesRejected": 28,
+    "invalidStatusRejected": true,
+    "inputUnchanged": true,
+    "liveRootCauseConfirmed": false
+  },
+  "unchangedProtectedFiles": 684,
+  "unchangedWorkerFiles": 158,
+  "loaderSha256": "ea0ac570e4b430a78cd23545f8926e468f58bc2095c6cebcd4959c40e587bab2",
+  "finalRelocationChecks": {
+    "signin-lock-relocated": 0,
+    "experience-lock-relocated": 0,
+    "vite-build-relocated": 0,
+    "static-relocated": 0
+  },
+  "signInLockFinal": "PASS",
+  "approvedSignInFileCount": 128,
+  "relocatedHomeAssetSha256": "79912774e60a27715de025b85d262a859fb259b15da6092a29fb6981e66146ab",
+  "deletePaths": [
+    "public/assets/role-home/horizon.svg"
+  ],
+  "readiness": "OFFLINE_CANDIDATE_NOT_HOSTED_VERIFIED",
+  "remaining": "Confirm the actual hosted Profile error and compose/review the exact successor application package before any new upload or activation."
+}
