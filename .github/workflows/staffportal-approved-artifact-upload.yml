@@ -47,10 +47,17 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: '1'
       SP_ROOT: ${{ github.workspace }}\ops\staffportal-release-executor
-      SP_PUBLIC: ${{ runner.temp }}\staffportal-artifact-upload\public
-      SP_INPUTS: ${{ runner.temp }}\staffportal-artifact-upload\inputs
-      SP_PRIVATE: ${{ runner.temp }}\staffportal-artifact-upload\private-window
     steps:
+      - name: Initialize Private Runner Paths
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:RUNNER_TEMP) -or [string]::IsNullOrWhiteSpace($env:GITHUB_ENV)) { throw 'RUNNER_PATH_CONTEXT_MISSING' }
+          $paths = @(
+            "SP_PUBLIC=$(Join-Path $env:RUNNER_TEMP 'staffportal-artifact-upload\public')"
+            "SP_INPUTS=$(Join-Path $env:RUNNER_TEMP 'staffportal-artifact-upload\inputs')"
+            "SP_PRIVATE=$(Join-Path $env:RUNNER_TEMP 'staffportal-artifact-upload\private-window')"
+          )
+          [IO.File]::AppendAllText($env:GITHUB_ENV, (($paths -join [Environment]::NewLine) + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
       - name: Check Out The Exact Workflow Commit
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
