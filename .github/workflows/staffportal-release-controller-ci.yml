@@ -98,15 +98,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: read
+      contents: write
       actions: read
     steps:
       - name: Checkout Fixed Read Diagnostic
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-          sparse-checkout: .github/scripts
-      - name: Inspect Only Approved Release Metadata
+          sparse-checkout: |
+            .github/scripts
+            ops/staffportal-release-executor
+      - name: Verify Approved Input Downloads Without Cloudflare
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 -I .github/scripts/staffportal_release_read_diagnostic.py
