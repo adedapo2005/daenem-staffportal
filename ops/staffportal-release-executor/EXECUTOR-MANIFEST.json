@@ -4,7 +4,7 @@
   "reviewedAdapterPatchSha256": "a8a6cf890f4e405db7e9ad1b39b5051e5754425148aecf8043be272f05c4f89a",
   "files": {
     "RUNTIME-PINS.json": "03d278600727236fd0ccb78a65df7e8e83c703d4b869a9c25e812fcca13ad7a1",
-    "release_executor.py": "c55713155c74e3799e97c50e417619d3c6aeb6670a8ee20d322b7bc27d7deb49",
+    "release_executor.py": "a4534bcaa714aecf6b9351d86667e6fb352cdb15dfea4a4e6482ee68b2806884",
     "runtime/asset-manifest-normalized.json": "39ef9da6b5335308c76ce9d23e0d72f5cb712c941fa75fa3164e2c8eb2c53b37",
     "runtime/baseline.json": "e54462ae4e33d2e80a1eca23e65b297005946c768528de2fbca6b3e69d268046",
     "runtime/baseline_contract.py": "7db2e74a7139d463e3769af3df34c816c3fceab6b779f100fbe1cc98a7282827",
@@ -14,6 +14,7 @@
     "runtime/reconciled-baseline.json": "70c90399a4125a274e151f8917dbb21ca241552a8502d68f9e5445ed7b853d9b",
     "runtime/workers_api_adapter.py": "4cb9fb987bc68460c27e807efd55d1fc633cfc9150bd53acf96d64c29715138d",
     "runtime/workers_api_plan.py": "1d22d87b31aaeb6f5984f9c0b8e91e78b2f18a43bcd2ce28797c691d348d510c",
-    "RECOVERY-42090422145.json": "b3d3c253ef83ce04058911cbec8015a13c0d87b87d0ebbdb17e1f7ce37394b03"
+    "RECOVERY-42090422145.json": "b3d3c253ef83ce04058911cbec8015a13c0d87b87d0ebbdb17e1f7ce37394b03",
+    "RECOVERY-42105277007.json": "7617cf9db2e040265284e82a954b009456ef4a4a5ac74f066f0eb507e72cdbd4"
   }
 }

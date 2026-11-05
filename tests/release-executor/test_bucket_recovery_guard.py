@@ -19,14 +19,14 @@ def env():
     return {'GITHUB_ACTIONS':'true','GITHUB_REPOSITORY':e.REPO,'GITHUB_ACTOR':'adedapo2005',
             'GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_REF':'refs/heads/main','GITHUB_RUN_ATTEMPT':'1',
             'GITHUB_WORKFLOW_REF':e.WORKFLOW_REF,'GITHUB_WORKFLOW_SHA':'d'*40,'GITHUB_SHA':'d'*40,
-            'GITHUB_RUN_ID':str(RID),'SP_FRESH_SESSION_REVIEW':'42078524520',e.BUCKET_RECOVERY_ENV:'42090422145'}
+            'GITHUB_RUN_ID':str(RID),'SP_FRESH_SESSION_REVIEW':'42078524520',e.BUCKET_RECOVERY_ENV:'42090422145',e.PROGRESS_RECOVERY_ENV:'42105277007'}
 
 class Reader:
     def __init__(self):
         self.data=copy.deepcopy(FIXTURE);self.calls=[]
         rows=[v for k,v in self.data.items() if '/actions/runs/' in k and k.count('/')==5]
         current={**PROFILE['run'],'id':RID,'head_sha':'d'*40,'status':'in_progress','conclusion':None}
-        self.data[LIST]={'total_count':7,'workflow_runs':[current]+rows}
+        self.data[LIST]={'total_count':8,'workflow_runs':[current]+rows}
     def json(self,path):self.calls.append(path);return copy.deepcopy(self.data[path])
 
 def call(reader=None,row=None,accept=True):
@@ -113,11 +113,11 @@ class RecoveryGuardTests(unittest.TestCase):
         with patch.object(e,'BUCKET_RECOVERY_PROFILE_SHA','0'*64),self.assertRaises(e.Held):call(r)
         self.assertEqual(r.calls,[])
 
-    def test_history_guard_accepts_exact_six_retained_runs_and_one_new_run(self):
+    def test_history_guard_accepts_exact_seven_retained_runs_and_one_new_run(self):
         r=Reader();result=e.workflow_guard(env(),r)
         self.assertEqual(result['ownerAcceptedUnknownBucketOutcomeRun'],42090422145)
         self.assertEqual(result['ownerAcceptedUnknownAssetStagingRun'],42078524520)
-        self.assertEqual(len(result['reconciledPreuploadRuns']),6)
+        self.assertEqual(len(result['reconciledPreuploadRuns']),7)
 
     def test_history_guard_requires_new_acknowledgement_before_reads(self):
         for v in (None,'','false','true',True,42090422145,'other'):
@@ -146,7 +146,7 @@ class RecoveryGuardTests(unittest.TestCase):
         with self.assertRaises(e.Held):e.workflow_guard(en,Reader())
 
     def test_each_upload_boundary_acknowledgement_and_receipt_is_required(self):
-        good={'ownerAcceptedUnknownAssetStagingRun':42078524520,'ownerAcceptedUnknownBucketOutcomeRun':42090422145}
+        good={'ownerAcceptedUnknownAssetStagingRun':42078524520,'ownerAcceptedUnknownBucketOutcomeRun':42090422145,'ownerAcceptedUnfinishedAssetProgressRun':42105277007}
         e.require_fresh_session_review(env(),good)
         for k in good:
             for v in (None,False,True,str(good[k]),1):
@@ -168,11 +168,11 @@ class RecoveryGuardTests(unittest.TestCase):
             with self.assertRaisesRegex(e.Held,'PRIOR_BUCKET_OUTCOME_OWNER_ACCEPTANCE_REQUIRED'):e.execute(args,env=en,deps=Deps())
             self.assertFalse((state/'journal.json').exists())
 
-    def test_workflow_both_booleans_default_false_and_job_condition_requires_both(self):
+    def test_workflow_all_three_booleans_default_false_and_job_condition_requires_all(self):
         import yaml
         w=yaml.load((ROOT/'.github/workflows/staffportal-approved-artifact-upload.yml').read_text(),Loader=yaml.BaseLoader)
         inputs=w['on']['workflow_dispatch']['inputs']
-        for name in ('accept_prior_asset_staging_unknown','accept_asset_bucket_outcome_unknown_42090422145'):
+        for name in ('accept_prior_asset_staging_unknown','accept_asset_bucket_outcome_unknown_42090422145','accept_asset_progress_outcome_unknown_42105277007'):
             self.assertEqual(inputs[name]['default'],'false');self.assertEqual(inputs[name]['type'],'boolean')
             self.assertEqual(inputs[name]['required'],'true');self.assertIn('inputs.'+name+' == true',w['jobs']['upload']['if'])
         self.assertEqual(set(w['on']),{'workflow_dispatch'});self.assertIn('42090422145',w['jobs']['upload']['env'][e.BUCKET_RECOVERY_ENV])

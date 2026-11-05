@@ -142,10 +142,8 @@ class AssetBucket202Tests(unittest.TestCase):
 
     def test_latest_42105277007_still_blocks_any_automatic_new_attempt(self):
         import test_bucket_recovery_guard as g
-        r=g.Reader();data=r.data[g.LIST]
-        data['workflow_runs'].append({**g.PROFILE['run'],'id':42105277007,
-            'head_sha':'2c159fe143d9d918d47ac5ca2836703600c04cf3'})
-        data['total_count']+=1
-        with self.assertRaises(g.e.Held):g.e.workflow_guard(g.env(),r)
+        r=g.Reader();env=g.env();del env[g.e.PROGRESS_RECOVERY_ENV]
+        with self.assertRaisesRegex(g.e.Held,'PRIOR_ASSET_PROGRESS_OWNER_ACCEPTANCE_REQUIRED'):g.e.workflow_guard(env,r)
+        self.assertEqual(r.calls,[])
 
 if __name__=='__main__':unittest.main(verbosity=2)
