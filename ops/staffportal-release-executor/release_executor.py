@@ -164,18 +164,22 @@ def github_context(env):
     return {'runId':env['GITHUB_RUN_ID'],'workflowSha':env['GITHUB_WORKFLOW_SHA'],'workflow':WORKFLOW,'repository':REPO}
 
 def reconcile_known_preupload_failure(reader, row, workflow_id):
-    """One captured failure before inputs, preparation, marker or Cloudflare.
+    """Two captured failures before inputs, preparation, marker or Cloudflare.
 
     This is not a generic failed-run exception. Any changed attempt, metadata,
     step outcome or artifact makes the historical attempt unresolved again.
     """
-    rid=42053174449
-    if row.get('id')!=rid or row.get('run_attempt')!=1 or workflow_id!=408290809:
+    profiles={
+        42053174449:('c65f9c01e528c5e737e1de512a9b225e8104467c',127334404887,'manifest'),
+        42060035942:('1a9d6092e7047d27921a43eb8b6c1b1e5f22195e',127358827488,'python')}
+    rid=row.get('id')
+    if rid not in profiles or row.get('run_attempt')!=1 or workflow_id!=408290809:
         raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    source_sha,job_id,failed_setup=profiles[rid]
     prefix=f'repos/{REPO}/actions/runs/{rid}'
     run=reader.json(prefix)
     expected={'id':rid,'run_attempt':1,'workflow_id':workflow_id,
-              'head_sha':'c65f9c01e528c5e737e1de512a9b225e8104467c',
+              'head_sha':source_sha,
               'head_branch':'main','event':'workflow_dispatch','status':'completed',
               'conclusion':'failure','path':'.github/workflows/'+WORKFLOW}
     if any(run.get(k)!=v for k,v in expected.items()):
@@ -185,19 +189,20 @@ def reconcile_known_preupload_failure(reader, row, workflow_id):
     if data.get('total_count')!=1 or not isinstance(jobs,list) or len(jobs)!=1:
         raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
     job=jobs[0]
-    if job.get('id')!=127334404887 or job.get('name')!='upload' or job.get('status')!='completed' or job.get('conclusion')!='failure':
+    if job.get('id')!=job_id or job.get('name')!='upload' or job.get('status')!='completed' or job.get('conclusion')!='failure':
         raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
     expected_steps=[
         ('Set up job','success'),('Initialize Private Runner Paths','success'),
         ('Check Out The Exact Workflow Commit','success'),
-        ('Verify Executor Inputs Before Running Python','failure'),
-        ('Set Up Pinned Python','skipped'),('Reject Reruns And Earlier Attempts','skipped'),
+        ('Verify Executor Inputs Before Running Python','failure' if failed_setup=='manifest' else 'success'),
+        ('Set Up Pinned Python','skipped' if failed_setup=='manifest' else 'failure'),('Reject Reruns And Earlier Attempts','skipped'),
         ('Download Only The Hash-Pinned Inputs','skipped'),
         ('Prepare The Approved Local Window','skipped'),
         ('Preserve A Pre-Upload Attempt Marker','skipped'),
         ('Upload And Verify Without Activation','skipped'),
         ('Preserve Sanitized Journal And Verification','success'),
         ('Post Check Out The Exact Workflow Commit','success'),('Complete job','success')]
+    if failed_setup=='python':expected_steps.insert(-2,('Post Set Up Pinned Python','skipped'))
     steps=job.get('steps')
     if not isinstance(steps,list) or [(s.get('name'),s.get('conclusion')) for s in steps]!=expected_steps or any(s.get('status')!='completed' for s in steps):
         raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
@@ -230,7 +235,7 @@ def workflow_guard(env,reader):
     if len(seen)!=declared or int(context['runId']) not in seen or len(seen)!=1+len(reconciled):raise Held('WORKFLOW_HISTORY_INCOMPLETE')
     return {**context,'workflowId':wf['id'],'guard':'FIRST_PUBLISHING_RUN_ONLY',
             'reconciledPreuploadRuns':reconciled,
-            'meaning':'administrative run-history guard; only the exact captured preupload failure is reconciled; not a provider idempotency fence'}
+            'meaning':'administrative run-history guard; only the two exact captured preupload failures are reconciled; not a provider idempotency fence'}
 
 def fetch_inputs(reader,application_id,operator_id,operator_sha,destination):
     if not re.fullmatch(r'[1-9][0-9]*',application_id) or not re.fullmatch(r'[1-9][0-9]*',operator_id) or application_id==operator_id or not HEX.fullmatch(operator_sha):raise Held('INPUT_IDENTIFIERS_INVALID')

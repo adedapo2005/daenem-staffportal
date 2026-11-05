@@ -70,7 +70,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $manifest = Join-Path $env:SP_ROOT 'EXECUTOR-MANIFEST.json'
           $actualManifestHash = (Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actualManifestHash -ne '5e7b1d38aba8c945fa2d35a6c8bf6efc89d4b5c7afc217ab57cc241db04c8d82') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
+          if ($actualManifestHash -ne 'cfb596c0e869aee145146d0a1cb419426d9345e73288e2097e2fc0cc0d91f472') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
           $pins = Get-Content -Raw -LiteralPath $manifest | ConvertFrom-Json
           foreach ($entry in $pins.files.PSObject.Properties) {
             if ($entry.Name -match '(^[\\/]|\.\.|:)') { throw 'UNSAFE_EXECUTOR_MEMBER' }
@@ -80,7 +80,7 @@ jobs:
       - name: Set Up Pinned Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.12.14'
+          python-version: '3.14.7'
           check-latest: false
       - name: Reject Reruns And Earlier Attempts
         env:
