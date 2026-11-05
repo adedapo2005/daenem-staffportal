@@ -93,7 +93,7 @@ def binding_comparisons(raw,expected):
 
 def diagnose(token,plan,transport=send):
     result={'scope':'fixed existing Worker GETs only; no upload, preparation or database access',
-            'state':'HELD','requests':[],'checks':[],'mutationMethodsPermitted':False}
+            'state':'HELD','requests':[],'checks':[],'comparisonFailures':[],'mutationMethodsPermitted':False}
     def get(path):
         row={'method':'GET','path':path};result['requests'].append(row)
         try:
@@ -111,10 +111,19 @@ def diagnose(token,plan,transport=send):
             raise Held('GET_TRANSPORT_OR_PARSE_HELD') from None
     def check(stage,call):
         result['failureStage']=stage
-        try:call()
-        except Held:raise
-        except Exception as error:raise Held(SAFE_REASONS.get(str(error),'PINNED_COMPARISON_HELD')) from None
+        try:value=call()
+        except Exception as error:
+            code=str(error) if isinstance(error,Held) else SAFE_REASONS.get(str(error),'PINNED_COMPARISON_HELD')
+            result['comparisonFailures'].append({'stage':stage,'reasonCode':code});return None
         result['checks'].append(stage)
+        return value
+    def require(condition,code):
+        if not condition:raise Held(code)
+    def runtime_shapes(value):
+        expected=plan.projection().get('settings',{})
+        return {key:{'present':key in value,'matchesPinned':key in value and value[key]==expected.get(key),
+                     'isNull':key in value and value[key] is None,'isEmptyObject':key in value and value[key]=={},
+                     'isEmptyList':key in value and value[key]==[]} for key in ('compatibility_date','compatibility_flags','limits','cache_options')}
     try:
         result['failureStage']='worker-get';worker=get(ROOT)
         expected=plan.projection()['access'];access=worker.get('subdomain')
@@ -132,8 +141,8 @@ def diagnose(token,plan,transport=send):
         source_raw,source_project,source_extra=ai_metadata_projection(source.get('bindings') or [])
         result['aiProjectDiagnosticProbe']={'sourceExtraPresent':source_extra,'sourceProjectType':type(source_project).__name__ if source_extra else None,
             'productionGateChanged':False}
-        check('source-bindings-diagnostic-projection',lambda:plan.binding_projection(source_raw))
-        source_bindings=plan.binding_projection(source_raw)
+        source_bindings=check('source-bindings-diagnostic-projection',lambda:plan.binding_projection(source_raw))
+        result['sourceRuntimeChecks']=runtime_shapes(source)
         check('source-runtime',lambda:plan.version_settings(source))
         result['failureStage']='settings-get';settings=get(PATHS[2])
         result['currentBindingCount']=len(settings['bindings']) if isinstance(settings.get('bindings'),list) else None
@@ -141,19 +150,24 @@ def diagnose(token,plan,transport=send):
         result['aiProjectDiagnosticProbe'].update(currentExtraPresent=current_extra,
             currentProjectType=type(current_project).__name__ if current_extra else None,
             valuesEqualWhenBothPresent=(source_project==current_project if source_extra and current_extra else None))
-        if source_extra and current_extra and source_project!=current_project:raise Held('AI_PROJECT_METADATA_DIFFERENT')
-        check('current-bindings-diagnostic-projection',lambda:plan.binding_projection(current_raw))
+        check('ai-project-equality',lambda:require(not(source_extra and current_extra) or source_project==current_project,'AI_PROJECT_METADATA_DIFFERENT'))
+        current_bindings=check('current-bindings-diagnostic-projection',lambda:plan.binding_projection(current_raw))
+        result['currentRuntimeChecks']=runtime_shapes(settings)
         check('current-runtime',lambda:plan.version_settings(settings))
-        if settings.get('placement')!={}:raise Held('CURRENT_PLACEMENT_HELD')
-        if plan.binding_projection(current_raw)!=source_bindings:raise Held('SOURCE_CURRENT_BINDINGS_DIFFER')
+        check('current-placement',lambda:require(settings.get('placement')=={},'CURRENT_PLACEMENT_HELD'))
+        if source_bindings is not None and current_bindings is not None:check('source-current-bindings',lambda:require(source_bindings==current_bindings,'SOURCE_CURRENT_BINDINGS_DIFFER'))
         result['failureStage']='script-settings-get';script=get(PATHS[3])
         check('shared-settings',lambda:plan.shared_settings(worker,script))
         result['failureStage']='deployment-get';deployments=get(PATHS[4]).get('deployments')
-        if not isinstance(deployments,list) or not deployments:raise Held('DEPLOYMENT_RESPONSE_HELD')
-        first=deployments[0];want=plan.expected_current()
-        if first.get('id')!=want['deployment'] or first.get('versions')!=want['versions']:raise Held('DEPLOYMENT_ALLOCATION_DRIFT')
-        result['checks'].append('deployment-allocation')
-        result.pop('failureStage',None);result['state']='READ_PROBE_MATCHED_WITH_AI_PROJECT_DIFFERENCE' if source_extra or current_extra else 'FIXED_READ_PREFLIGHT_MATCHED'
+        if not isinstance(deployments,list) or not deployments:
+            result['comparisonFailures'].append({'stage':'deployment-allocation','reasonCode':'DEPLOYMENT_RESPONSE_HELD'})
+        else:
+            first=deployments[0];want=plan.expected_current()
+            check('deployment-allocation',lambda:require(first.get('id')==want['deployment'] and first.get('versions')==want['versions'],'DEPLOYMENT_ALLOCATION_DRIFT'))
+        if result['comparisonFailures']:
+            first=result['comparisonFailures'][0];result['failureStage']=first['stage'];result['reasonCode']=first['reasonCode']
+        else:
+            result.pop('failureStage',None);result['state']='READ_PROBE_MATCHED_WITH_AI_PROJECT_DIFFERENCE' if source_extra or current_extra else 'FIXED_READ_PREFLIGHT_MATCHED'
     except Held as error:result['reasonCode']=str(error)
     raw=json.dumps(result,indent=2)
     if token and token in raw:raise Held('SANITIZATION_HELD')
