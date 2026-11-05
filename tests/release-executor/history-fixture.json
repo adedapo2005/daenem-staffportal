@@ -704,5 +704,138 @@
         }
       }
     ]
+  },
+  "repos/adedapo2005/daenem-staffportal/actions/runs/42105277007": {
+    "id": 42105277007,
+    "run_attempt": 1,
+    "workflow_id": 408290809,
+    "head_sha": "2c159fe143d9d918d47ac5ca2836703600c04cf3",
+    "head_branch": "main",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "failure",
+    "path": ".github/workflows/staffportal-approved-artifact-upload.yml"
+  },
+  "repos/adedapo2005/daenem-staffportal/actions/runs/42105277007/jobs?per_page=100": {
+    "total_count": 1,
+    "jobs": [
+      {
+        "id": 127518339002,
+        "run_id": 42105277007,
+        "name": "upload",
+        "status": "completed",
+        "conclusion": "failure",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Initialize Private Runner Paths",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check Out The Exact Workflow Commit",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify Executor Inputs Before Running Python",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set Up Pinned Python",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Reject Reruns And Earlier Attempts",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify Exact Cloudflare Account Before Preparation",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Download Only The Hash-Pinned Inputs",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Prepare The Approved Local Window",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Preserve A Pre-Upload Attempt Marker",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Upload And Verify Without Activation",
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          {
+            "name": "Preserve Sanitized Journal And Verification",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set Up Pinned Python",
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Post Check Out The Exact Workflow Commit",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ]
+  },
+  "repos/adedapo2005/daenem-staffportal/actions/runs/42105277007/artifacts?per_page=100": {
+    "total_count": 2,
+    "artifacts": [
+      {
+        "id": 13451661867,
+        "name": "staffportal-pre-upload-42105277007",
+        "size_in_bytes": 1748,
+        "digest": "sha256:a88e76ce24341ed52a85ab438b80f2cd8df84d48bd575b6a4871f2a42f01a96e",
+        "expired": false,
+        "workflow_run": {
+          "id": 42105277007,
+          "repository_id": 1363396851,
+          "head_repository_id": 1363396851,
+          "head_branch": "main",
+          "head_sha": "2c159fe143d9d918d47ac5ca2836703600c04cf3"
+        }
+      },
+      {
+        "id": 13452425819,
+        "name": "staffportal-upload-evidence-42105277007",
+        "size_in_bytes": 3383,
+        "digest": "sha256:b5ccdcf26247665a291dffebf799e26e92f764f892e1c74e309e31b732a7c9e4",
+        "expired": false,
+        "workflow_run": {
+          "id": 42105277007,
+          "repository_id": 1363396851,
+          "head_repository_id": 1363396851,
+          "head_branch": "main",
+          "head_sha": "2c159fe143d9d918d47ac5ca2836703600c04cf3"
+        }
+      }
+    ]
   }
 }

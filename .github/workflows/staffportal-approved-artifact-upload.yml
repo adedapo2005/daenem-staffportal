@@ -30,6 +30,11 @@ on:
         required: true
         default: false
         type: boolean
+      accept_asset_progress_outcome_unknown_42105277007:
+        description: Accept that run 42105277007 received HTTP 202 and may have stored files; ONE NEW upload-only session may repeat prior files; no old-journal retry or activation
+        required: true
+        default: false
+        type: boolean
 permissions: {}
 concurrency:
   group: staffportal-approved-artifact-a95c11fadb53
@@ -44,7 +49,8 @@ jobs:
       github.run_attempt == 1 &&
       inputs.confirm_archive_sha256 == 'a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080' &&
       inputs.accept_prior_asset_staging_unknown == true &&
-      inputs.accept_asset_bucket_outcome_unknown_42090422145 == true
+      inputs.accept_asset_bucket_outcome_unknown_42090422145 == true &&
+      inputs.accept_asset_progress_outcome_unknown_42105277007 == true
     runs-on: windows-2022
     timeout-minutes: 25
     environment:
@@ -62,6 +68,7 @@ jobs:
       PYTHONDONTWRITEBYTECODE: '1'
       SP_FRESH_SESSION_REVIEW: ${{ inputs.accept_prior_asset_staging_unknown && '42078524520' || '' }}
       SP_BUCKET_OUTCOME_UNKNOWN_REVIEW_42090422145: ${{ inputs.accept_asset_bucket_outcome_unknown_42090422145 && '42090422145' || '' }}
+      SP_ASSET_PROGRESS_REVIEW_42105277007: ${{ inputs.accept_asset_progress_outcome_unknown_42105277007 && '42105277007' || '' }}
       SP_ROOT: ${{ github.workspace }}\ops\staffportal-release-executor
     steps:
       - name: Initialize Private Runner Paths
@@ -86,7 +93,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $manifest = Join-Path $env:SP_ROOT 'EXECUTOR-MANIFEST.json'
           $actualManifestHash = (Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actualManifestHash -ne '9b6e86c1be3902212ec407a8bfacb3cf33d67fd5a2a81384266f27bdd5cf716c') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
+          if ($actualManifestHash -ne '96f3035dbbb00954e6b0f91933b9e885ca534b06dce578669a2d080e35708ff3') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
           $pins = Get-Content -Raw -LiteralPath $manifest | ConvertFrom-Json
           foreach ($entry in $pins.files.PSObject.Properties) {
             if ($entry.Name -match '(^[\\/]|\.\.|:)') { throw 'UNSAFE_EXECUTOR_MEMBER' }

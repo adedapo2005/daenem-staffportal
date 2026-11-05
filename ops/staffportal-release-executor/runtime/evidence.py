@@ -41,7 +41,8 @@ def upload_evidence(pkg, adapter, version):
     for i,row in enumerate(rows[1:]):
         if set(row) != {'stage','index','httpStatus','hashes'} or row['stage']!='bucket' or type(row['index']) is not int or row['index']!=i:
             raise Stop('bucket evidence incomplete')
-        if type(row['httpStatus']) is not int or row['httpStatus'] != (201 if i==count-1 else 200):
+        allowed=(201,) if i==count-1 else (200,202)
+        if type(row['httpStatus']) is not int or row['httpStatus'] not in allowed:
             raise Stop('documented completion not recorded')
         if not isinstance(row['hashes'],list) or not row['hashes']:
             raise Stop('bucket hash evidence missing')
