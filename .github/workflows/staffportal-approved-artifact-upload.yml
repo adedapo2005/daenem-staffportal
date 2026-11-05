@@ -79,7 +79,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $manifest = Join-Path $env:SP_ROOT 'EXECUTOR-MANIFEST.json'
           $actualManifestHash = (Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actualManifestHash -ne 'c919be00adb5b3b70b2648bf6509b8545dc29abafdc35b61e99fa05c0ee9883d') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
+          if ($actualManifestHash -ne '5a41bdcdb7403090311ca6e2ccc15e02764dd1a566b1f5589eb4f703626df2c1') { throw "EXECUTOR_MANIFEST_CHANGED actualSha256=$actualManifestHash" }
           $pins = Get-Content -Raw -LiteralPath $manifest | ConvertFrom-Json
           foreach ($entry in $pins.files.PSObject.Properties) {
             if ($entry.Name -match '(^[\\/]|\.\.|:)') { throw 'UNSAFE_EXECUTOR_MEMBER' }
