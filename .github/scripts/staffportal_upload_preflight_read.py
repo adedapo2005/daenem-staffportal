@@ -47,7 +47,8 @@ def binding_comparisons(raw,expected):
     known_fields={'name','type','id','database_id','bucket_name','namespace_id',
                   'queue_name','queue_id','allowed_sender_addresses','allowed_destination_addresses',
                   'destination_address','jurisdiction','staging','remote','text','asset_version',
-                  'version','service','environment','entrypoint'}
+                  'version','service','environment','entrypoint','account_id','api_token',
+                  'project_name','namespace','internal_env'}
     out={}
     for want in expected:
         rows=[row for row in raw if isinstance(row,dict) and row.get('name')==want['name']]
