@@ -27,6 +27,9 @@ APP_SHA='a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080'
 RUNTIME_SHA='65db834ee245a0902e422d6c65af27ad49d4e14105bac6c9d0331a18ef7da6c9'
 OPERATOR_MANIFEST='c15e06e6e62ddcda71d2009b7d6ab97ebb6e9d724bee4fe3e2b640e5ea334cc4'
 PREPARER_SHA='391e463f9d54d465df2e92b426c7bc78978943085f2f91c75be1b12641143bd5'
+BUCKET_RECOVERY_PROFILE_SHA='b3d3c253ef83ce04058911cbec8015a13c0d87b87d0ebbdb17e1f7ce37394b03'
+BUCKET_RECOVERY_RUN=42090422145
+BUCKET_RECOVERY_ENV='SP_BUCKET_OUTCOME_UNKNOWN_REVIEW_42090422145'
 HEX=re.compile(r'[0-9a-f]{64}\Z')
 OP_FILES={'maintenance/worker.mjs','maintenance/wrangler.json','migration/worker.mjs','migration/wrangler.template.json','tools/operation.ps1','tools/prepare-window.ps1'}
 
@@ -335,16 +338,60 @@ def review_prior_asset_staging(reader,row,workflow_id,owner_acceptance):
             'ownerDecision':'new Owner-approved session request; prior asset work may have committed',
             'automaticRetryAuthorized':False}
 
-def require_fresh_session_review(env,guard):
-    if env.get('SP_FRESH_SESSION_REVIEW')!='42078524520' or guard.get('ownerAcceptedUnknownAssetStagingRun')!=42078524520:
-        raise Held('PRIOR_ASSET_STAGING_OWNER_ACCEPTANCE_REQUIRED')
+def review_prior_bucket_outcome(reader,row,workflow_id,*,owner_acceptance=False):
+    """Exact failed run only. This does not resolve, resume or retry its journal."""
+    if owner_acceptance is not True:
+        raise Held('PRIOR_BUCKET_OUTCOME_OWNER_ACCEPTANCE_REQUIRED')
+    path=ROOT/'RECOVERY-42090422145.json'
+    if sha_file(path)!=BUCKET_RECOVERY_PROFILE_SHA:
+        raise Held('BUCKET_RECOVERY_PROFILE_CHANGED')
+    profile=read_json(path);expected=profile['run']
+    if profile['repository']!=REPO or profile['applicationSha256']!=APP_SHA or workflow_id!=expected['workflow_id']:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    def matches(actual,wanted):
+        # JSON booleans must not compare equal to numeric identifiers/attempts.
+        return isinstance(actual,dict) and all(type(actual.get(k)) is type(v) and actual[k]==v for k,v in wanted.items())
+    if not matches(row,expected):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    prefix=f'repos/{REPO}/actions/runs/{BUCKET_RECOVERY_RUN}'
+    if not matches(reader.json(prefix),expected):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/jobs?per_page=100');jobs=data.get('jobs')
+    if type(data.get('total_count')) is not int or data['total_count']!=1 or not isinstance(jobs,list) or len(jobs)!=1:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    job=jobs[0]
+    if not matches(job,profile['job']):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    steps=job.get('steps')
+    if not isinstance(steps,list) or len(steps)!=len(profile['steps']) or any(not matches(a,b) for a,b in zip(steps,profile['steps'])):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/artifacts?per_page=100');artifacts=data.get('artifacts')
+    if type(data.get('total_count')) is not int or data['total_count']!=2 or not isinstance(artifacts,list) or len(artifacts)!=2:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    wanted={a['id']:a for a in profile['artifacts']};seen=set()
+    for artifact in artifacts:
+        if not isinstance(artifact,dict) or type(artifact.get('id')) is not int or artifact['id'] not in wanted or artifact['id'] in seen:
+            raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+        aid=artifact['id'];seen.add(aid);want=wanted[aid]
+        if not matches(artifact,{k:v for k,v in want.items() if k!='workflow_run'}) or not matches(artifact.get('workflow_run'),want['workflow_run']):
+            raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    return {'runId':BUCKET_RECOVERY_RUN,'sourceSha':expected['head_sha'],'jobId':job['id'],
+            'evidenceArtifactIds':sorted(seen),'recoveryProfileSha256':BUCKET_RECOVERY_PROFILE_SHA,
+            'priorAssetStaging':'UNKNOWN','pendingBucketPostSent':'UNKNOWN','actualFailureCause':'UNCONFIRMED',
+            'priorVersionAttempted':False,'priorJournalRemainsHeld':True,'automaticRetryAuthorized':False,
+            'ownerDecision':'one NEW session may repeat files already received; old attempt is not resumed'}
 
-def reconcile_known_preupload_failure(reader, row, workflow_id, *, owner_acceptance=False):
+def require_fresh_session_review(env,guard):
+    if env.get('SP_FRESH_SESSION_REVIEW')!='42078524520' or type(guard.get('ownerAcceptedUnknownAssetStagingRun')) is not int or guard['ownerAcceptedUnknownAssetStagingRun']!=42078524520:
+        raise Held('PRIOR_ASSET_STAGING_OWNER_ACCEPTANCE_REQUIRED')
+    if env.get(BUCKET_RECOVERY_ENV)!='42090422145' or type(guard.get('ownerAcceptedUnknownBucketOutcomeRun')) is not int or guard['ownerAcceptedUnknownBucketOutcomeRun']!=BUCKET_RECOVERY_RUN:
+        raise Held('PRIOR_BUCKET_OUTCOME_OWNER_ACCEPTANCE_REQUIRED')
+
+def reconcile_known_preupload_failure(reader, row, workflow_id, *, owner_acceptance=False, bucket_owner_acceptance=False):
     """Exact captured failures before Cloudflare adapter access.
 
     This is not a generic failed-run exception. Any changed attempt, metadata,
     step outcome or artifact makes the historical attempt unresolved again.
     """
+    if row.get('id')==BUCKET_RECOVERY_RUN:
+        return review_prior_bucket_outcome(reader,row,workflow_id,owner_acceptance=bucket_owner_acceptance)
     if row.get('id')==42078524520:
         if owner_acceptance is not True:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
         return review_prior_asset_staging(reader,row,workflow_id,owner_acceptance)
@@ -397,6 +444,7 @@ def reconcile_known_preupload_failure(reader, row, workflow_id, *, owner_accepta
 
 def workflow_guard(env,reader):
     context=github_context(env)
+    if env.get(BUCKET_RECOVERY_ENV)!='42090422145':raise Held('PRIOR_BUCKET_OUTCOME_OWNER_ACCEPTANCE_REQUIRED')
     wf=reader.json(f'repos/{REPO}/actions/workflows/{WORKFLOW}')
     if type(wf.get('id')) is not int or wf.get('path')!='.github/workflows/'+WORKFLOW or wf.get('state')!='active':raise Held('WORKFLOW_IDENTITY_UNVERIFIED')
     seen=set();declared=None;reconciled=[]
@@ -410,16 +458,22 @@ def workflow_guard(env,reader):
             if type(rid) is not int or rid in seen:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
             seen.add(rid)
             if str(rid)==context['runId']:
-                if row.get('run_attempt')!=1:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+                current_expected={'id':int(context['runId']),'head_sha':context['workflowSha'],'run_attempt':1,'workflow_id':wf['id'],'head_branch':'main','event':'workflow_dispatch','path':'.github/workflows/'+WORKFLOW}
+                if any(type(row.get(k)) is not type(v) or row[k]!=v for k,v in current_expected.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
             else:
-                reconciled.append(reconcile_known_preupload_failure(reader,row,wf['id'],owner_acceptance=env.get('SP_FRESH_SESSION_REVIEW')=='42078524520'))
+                reconciled.append(reconcile_known_preupload_failure(reader,row,wf['id'],owner_acceptance=env.get('SP_FRESH_SESSION_REVIEW')=='42078524520',bucket_owner_acceptance=True))
         if len(rows)<100:break
     else:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
     if len(seen)!=declared or int(context['runId']) not in seen or len(seen)!=1+len(reconciled):raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+    historical={42053174449,42060035942,42064065206,42075233917,42078524520,BUCKET_RECOVERY_RUN}
+    if seen-{int(context['runId'])}!=historical:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+    bucket_accepted=BUCKET_RECOVERY_RUN if any(r.get('runId')==BUCKET_RECOVERY_RUN and r.get('priorJournalRemainsHeld') is True for r in reconciled) else None
+    if bucket_accepted is None:raise Held('PRIOR_BUCKET_REVIEW_NOT_IN_HISTORY')
     accepted=42078524520 if any(r.get('runId')==42078524520 and r.get('priorAssetStaging')=='UNKNOWN' for r in reconciled) else None
     if env.get('SP_FRESH_SESSION_REVIEW')=='42078524520' and accepted is None:raise Held('PRIOR_ASSET_STAGING_REVIEW_NOT_IN_HISTORY')
     return {**context,'workflowId':wf['id'],'guard':'FIRST_PUBLISHING_RUN_ONLY',
             'ownerAcceptedUnknownAssetStagingRun':accepted,
+            'ownerAcceptedUnknownBucketOutcomeRun':bucket_accepted,
             'reconciledPreuploadRuns':reconciled,
             'meaning':'exact captured history plus explicit Owner fresh-session acceptance of unknown asset staging; not a provider idempotency fence'}
 

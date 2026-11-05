@@ -1,0 +1,181 @@
+{
+  "applicationSha256": "a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080",
+  "artifacts": [
+    {
+      "digest": "sha256:30e2babbdddbf4c1ec37c47d1d61faa8819a75c30e00baee01608aaff53e7e7a",
+      "expired": false,
+      "id": 13444817915,
+      "name": "staffportal-pre-upload-42090422145",
+      "size_in_bytes": 1526,
+      "workflow_run": {
+        "head_branch": "main",
+        "head_repository_id": 1363396851,
+        "head_sha": "45409eaeaee87cbc97fe18188412ef4940114ae6",
+        "id": 42090422145,
+        "repository_id": 1363396851
+      }
+    },
+    {
+      "digest": "sha256:9beef77c3ffe93bb92aa802c45890367974a0595a890bfef95fd85201deb6163",
+      "expired": false,
+      "id": 13445376072,
+      "name": "staffportal-upload-evidence-42090422145",
+      "size_in_bytes": 2935,
+      "workflow_run": {
+        "head_branch": "main",
+        "head_repository_id": 1363396851,
+        "head_sha": "45409eaeaee87cbc97fe18188412ef4940114ae6",
+        "id": 42090422145,
+        "repository_id": 1363396851
+      }
+    }
+  ],
+  "job": {
+    "conclusion": "failure",
+    "id": 127466693008,
+    "name": "upload",
+    "run_id": 42090422145,
+    "status": "completed"
+  },
+  "mustRemainHeld": [
+    "wrong source",
+    "changed attempt or job/steps",
+    "expired/missing/changed/extra artifacts",
+    "different historical run",
+    "missing or nonboolean new acceptance",
+    "future attempt or rerun"
+  ],
+  "outcome": {
+    "actualFailureCause": "UNCONFIRMED",
+    "assetSessionResponseAcceptedByAdapter": true,
+    "automaticRetryAuthorized": false,
+    "bucketIndex": "UNKNOWN",
+    "partialAssetStaging": "UNKNOWN",
+    "pendingBucketPostSent": "UNKNOWN",
+    "priorJournalMustRemainHeld": true,
+    "versionAttempted": false
+  },
+  "proposedAcceptance": {
+    "allowedRunId": 42090422145,
+    "default": false,
+    "inputName": "accept_asset_bucket_outcome_unknown_42090422145",
+    "meaning": "Owner accepts possible repeated asset work for one NEW session; does not resolve or resume old attempt",
+    "required": true,
+    "requiredAt": [
+      "workflow-job-condition",
+      "history-guard",
+      "upload-boundary"
+    ],
+    "type": "boolean"
+  },
+  "repository": "adedapo2005/daenem-staffportal",
+  "retainedJournal": {
+    "context": {
+      "archiveSha256": "a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080",
+      "markerArtifactDigest": "30e2babbdddbf4c1ec37c47d1d61faa8819a75c30e00baee01608aaff53e7e7a",
+      "markerArtifactId": "13444817915",
+      "repository": "adedapo2005/daenem-staffportal",
+      "runId": "42090422145",
+      "runtimePinsSha256": "537f3dfacc4bbee7ccd79ae0bf748796224543933859c36a916e6aca2d256c2d",
+      "windowSha256": "af0b514f6d4bf37d8ab2e696f9e471bc3e98f9586f99a1b97e471b2cb115f036",
+      "workflow": "staffportal-approved-artifact-upload.yml",
+      "workflowSha": "45409eaeaee87cbc97fe18188412ef4940114ae6"
+    },
+    "execution_state": "HELD_NO_AUTOMATIC_RETRY",
+    "pending": {
+      "identity": "b03fee9de2ec7b90994b49a8e2de2d05288021ce636f960a0a4a6695c1685684",
+      "kind": "bucket"
+    },
+    "version_attempted": false,
+    "version_id": null
+  },
+  "run": {
+    "conclusion": "failure",
+    "event": "workflow_dispatch",
+    "head_branch": "main",
+    "head_sha": "45409eaeaee87cbc97fe18188412ef4940114ae6",
+    "id": 42090422145,
+    "path": ".github/workflows/staffportal-approved-artifact-upload.yml",
+    "run_attempt": 1,
+    "status": "completed",
+    "workflow_id": 408290809
+  },
+  "scope": "Review preparation only; no authorization for a fresh asset request",
+  "steps": [
+    {
+      "conclusion": "success",
+      "name": "Set up job",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Initialize Private Runner Paths",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Check Out The Exact Workflow Commit",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Verify Executor Inputs Before Running Python",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Set Up Pinned Python",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Reject Reruns And Earlier Attempts",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Verify Exact Cloudflare Account Before Preparation",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Download Only The Hash-Pinned Inputs",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Prepare The Approved Local Window",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Preserve A Pre-Upload Attempt Marker",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "name": "Upload And Verify Without Activation",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Preserve Sanitized Journal And Verification",
+      "status": "completed"
+    },
+    {
+      "conclusion": "skipped",
+      "name": "Post Set Up Pinned Python",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Post Check Out The Exact Workflow Commit",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "name": "Complete job",
+      "status": "completed"
+    }
+  ]
+}
