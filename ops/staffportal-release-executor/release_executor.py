@@ -163,12 +163,70 @@ def github_context(env):
         raise Held('GITHUB_RUN_IDENTITY_INVALID')
     return {'runId':env['GITHUB_RUN_ID'],'workflowSha':env['GITHUB_WORKFLOW_SHA'],'workflow':WORKFLOW,'repository':REPO}
 
+def reconcile_input_read_failure(reader, row, workflow_id):
+    """One inspected failure before preparation, attempt marker or Cloudflare.
+
+    The retained evidence ZIP was inspected offline and contains only the
+    prior history guard and GITHUB_READ_UNAVAILABLE hold. Its identity and
+    digest must still match. This exception never authorizes a write retry.
+    """
+    rid=42064065206
+    source_sha='bfd805f84ebdc46afa8c45da685ccdc9f52d0824'
+    expected={'id':rid,'run_attempt':1,'workflow_id':408290809,
+              'head_sha':source_sha,'head_branch':'main','event':'workflow_dispatch',
+              'status':'completed','conclusion':'failure',
+              'path':'.github/workflows/'+WORKFLOW}
+    if workflow_id!=408290809 or any(row.get(k)!=v for k,v in expected.items()):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    prefix=f'repos/{REPO}/actions/runs/{rid}'
+    run=reader.json(prefix)
+    if any(run.get(k)!=v for k,v in expected.items()):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/jobs?per_page=100');jobs=data.get('jobs')
+    if data.get('total_count')!=1 or not isinstance(jobs,list) or len(jobs)!=1:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    job=jobs[0]
+    if any(job.get(k)!=v for k,v in {'id':127373236128,'name':'upload',
+            'run_id':rid,'status':'completed','conclusion':'failure'}.items()):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    expected_steps=[
+        ('Set up job','success'),('Initialize Private Runner Paths','success'),
+        ('Check Out The Exact Workflow Commit','success'),
+        ('Verify Executor Inputs Before Running Python','success'),
+        ('Set Up Pinned Python','success'),('Reject Reruns And Earlier Attempts','success'),
+        ('Download Only The Hash-Pinned Inputs','failure'),
+        ('Prepare The Approved Local Window','skipped'),
+        ('Preserve A Pre-Upload Attempt Marker','skipped'),
+        ('Upload And Verify Without Activation','skipped'),
+        ('Preserve Sanitized Journal And Verification','success'),
+        ('Post Set Up Pinned Python','skipped'),
+        ('Post Check Out The Exact Workflow Commit','success'),('Complete job','success')]
+    steps=job.get('steps')
+    if not isinstance(steps,list) or [(s.get('name'),s.get('conclusion')) for s in steps]!=expected_steps or any(s.get('status')!='completed' for s in steps):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/artifacts?per_page=100');artifacts=data.get('artifacts')
+    if data.get('total_count')!=1 or not isinstance(artifacts,list) or len(artifacts)!=1:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    artifact=artifacts[0]
+    pin={'id':13433685525,'name':'staffportal-upload-evidence-42064065206',
+         'size_in_bytes':878,'expired':False,
+         'digest':'sha256:3ed0402974b137c3fc157f3bbf92bd93df9c78d1e22b1221620883bbb5db80e3'}
+    identity={'id':rid,'repository_id':1363396851,'head_repository_id':1363396851,
+              'head_sha':source_sha,'head_branch':'main'}
+    if any(artifact.get(k)!=v for k,v in pin.items()) or any((artifact.get('workflow_run') or {}).get(k)!=v for k,v in identity.items()):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    return {'runId':rid,'sourceSha':source_sha,'jobId':job['id'],
+            'evidenceArtifactId':pin['id'],'evidenceArtifactDigest':pin['digest'],
+            'disposition':'verified input-read failure before preparation, marker and Cloudflare step'}
+
 def reconcile_known_preupload_failure(reader, row, workflow_id):
-    """Two captured failures before inputs, preparation, marker or Cloudflare.
+    """Three captured failures before preparation, marker or Cloudflare.
 
     This is not a generic failed-run exception. Any changed attempt, metadata,
     step outcome or artifact makes the historical attempt unresolved again.
     """
+    if row.get('id')==42064065206:
+        return reconcile_input_read_failure(reader,row,workflow_id)
     profiles={
         42053174449:('c65f9c01e528c5e737e1de512a9b225e8104467c',127334404887,'manifest'),
         42060035942:('1a9d6092e7047d27921a43eb8b6c1b1e5f22195e',127358827488,'python')}
@@ -235,7 +293,7 @@ def workflow_guard(env,reader):
     if len(seen)!=declared or int(context['runId']) not in seen or len(seen)!=1+len(reconciled):raise Held('WORKFLOW_HISTORY_INCOMPLETE')
     return {**context,'workflowId':wf['id'],'guard':'FIRST_PUBLISHING_RUN_ONLY',
             'reconciledPreuploadRuns':reconciled,
-            'meaning':'administrative run-history guard; only the two exact captured preupload failures are reconciled; not a provider idempotency fence'}
+            'meaning':'administrative run-history guard; only the three exact captured preupload failures are reconciled; not a provider idempotency fence'}
 
 def fetch_inputs(reader,application_id,operator_id,operator_sha,destination):
     if not re.fullmatch(r'[1-9][0-9]*',application_id) or not re.fullmatch(r'[1-9][0-9]*',operator_id) or application_id==operator_id or not HEX.fullmatch(operator_sha):raise Held('INPUT_IDENTIFIERS_INVALID')
