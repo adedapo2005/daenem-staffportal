@@ -1,5 +1,5 @@
 """Fixed-target GET-only diagnosis. No uploader, preparation or mutation path."""
-import hashlib,json,os,re,sys,urllib.error,urllib.request
+import copy,hashlib,json,os,re,sys,urllib.error,urllib.request
 from pathlib import Path
 
 REPO='adedapo2005/daenem-staffportal'
@@ -41,6 +41,20 @@ def send(path,token):
     with response:return response.status,dict(response.headers),response.read(MAX+1)
 
 class Held(Exception):pass
+
+def ai_metadata_projection(raw):
+    """Diagnostic-only probe of the observed project representation.
+
+    The uploader and pinned production comparison remain unchanged/held.
+    Opaque project data never leaves memory. This probe checks the remaining
+    fixed reads after recording the original AI mismatch.
+    """
+    out=copy.deepcopy(raw);project=None;changed=False
+    for row in out:
+        if isinstance(row,dict) and row.get('name')=='AI' and row.get('type')=='ai' and 'project' in row:
+            if set(row)!={'name','type','project'}:raise Held('AI_PROJECT_SCHEMA_HELD')
+            project=row.pop('project');changed=True
+    return out,project,changed
 
 def binding_comparisons(raw,expected):
     """Fixed-name/field booleans only. Never export values, hashes or unknown keys."""
@@ -115,15 +129,23 @@ def diagnose(token,plan,transport=send):
         if source.get('id')!=SOURCE:raise Held('SOURCE_VERSION_IDENTITY_HELD')
         result['sourceBindingCount']=len(source['bindings']) if isinstance(source.get('bindings'),list) else None
         if isinstance(source.get('bindings'),list):result['sourceBindingComparisons']=binding_comparisons(source['bindings'],plan.projection().get('bindings',[]))
-        check('source-bindings',lambda:plan.binding_projection(source.get('bindings')))
-        source_bindings=plan.binding_projection(source.get('bindings'))
+        source_raw,source_project,source_extra=ai_metadata_projection(source.get('bindings') or [])
+        result['aiProjectDiagnosticProbe']={'sourceExtraPresent':source_extra,'sourceProjectType':type(source_project).__name__ if source_extra else None,
+            'productionGateChanged':False}
+        check('source-bindings-diagnostic-projection',lambda:plan.binding_projection(source_raw))
+        source_bindings=plan.binding_projection(source_raw)
         check('source-runtime',lambda:plan.version_settings(source))
         result['failureStage']='settings-get';settings=get(PATHS[2])
         result['currentBindingCount']=len(settings['bindings']) if isinstance(settings.get('bindings'),list) else None
-        check('current-bindings',lambda:plan.binding_projection(settings.get('bindings')))
+        current_raw,current_project,current_extra=ai_metadata_projection(settings.get('bindings') or [])
+        result['aiProjectDiagnosticProbe'].update(currentExtraPresent=current_extra,
+            currentProjectType=type(current_project).__name__ if current_extra else None,
+            valuesEqualWhenBothPresent=(source_project==current_project if source_extra and current_extra else None))
+        if source_extra and current_extra and source_project!=current_project:raise Held('AI_PROJECT_METADATA_DIFFERENT')
+        check('current-bindings-diagnostic-projection',lambda:plan.binding_projection(current_raw))
         check('current-runtime',lambda:plan.version_settings(settings))
         if settings.get('placement')!={}:raise Held('CURRENT_PLACEMENT_HELD')
-        if plan.binding_projection(settings.get('bindings'))!=source_bindings:raise Held('SOURCE_CURRENT_BINDINGS_DIFFER')
+        if plan.binding_projection(current_raw)!=source_bindings:raise Held('SOURCE_CURRENT_BINDINGS_DIFFER')
         result['failureStage']='script-settings-get';script=get(PATHS[3])
         check('shared-settings',lambda:plan.shared_settings(worker,script))
         result['failureStage']='deployment-get';deployments=get(PATHS[4]).get('deployments')
@@ -131,7 +153,7 @@ def diagnose(token,plan,transport=send):
         first=deployments[0];want=plan.expected_current()
         if first.get('id')!=want['deployment'] or first.get('versions')!=want['versions']:raise Held('DEPLOYMENT_ALLOCATION_DRIFT')
         result['checks'].append('deployment-allocation')
-        result.pop('failureStage',None);result['state']='FIXED_READ_PREFLIGHT_MATCHED'
+        result.pop('failureStage',None);result['state']='READ_PROBE_MATCHED_WITH_AI_PROJECT_DIFFERENCE' if source_extra or current_extra else 'FIXED_READ_PREFLIGHT_MATCHED'
     except Held as error:result['reasonCode']=str(error)
     raw=json.dumps(result,indent=2)
     if token and token in raw:raise Held('SANITIZATION_HELD')
