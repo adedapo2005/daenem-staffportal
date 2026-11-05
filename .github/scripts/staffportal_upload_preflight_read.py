@@ -67,6 +67,8 @@ def binding_comparisons(raw,expected):
                 expectedFieldsMatch={key:(key in item and item[key]==value) for key,value in want.items() if key!='name'},
                 additionalKnownFields=sorted(extra & known_fields),
                 unknownAdditionalFieldCount=len(extra-known_fields),
+                additionalSchemaFieldNames=sorted(k for k in extra if re.fullmatch('[a-z][a-z0-9_]{0,39}',k)
+                    and not re.fullmatch('[a-f0-9]{9,}',k) and not re.search('secret|token|password|authorization',k)),
                 additionalNullFieldCount=sum(item[k] is None for k in extra),
                 exactMatch=item==want)
             # Dynamic values have no pinned source hash. Report shape only.
