@@ -1,0 +1,170 @@
+{
+  "sourceCaptureSha256": "ce0cd5ae224d93e27e385af07a887960f30dd370355f7433512c954047d207ec",
+  "capturedAt": "2026-11-04T23:02:47.107176+00:00",
+  "account": "f322585f9882be1f55d8cf6dc7e77ee1",
+  "worker": "daenem-staffportal-api-staging",
+  "bindings": [
+    {
+      "name": "AI",
+      "type": "ai"
+    },
+    {
+      "name": "APP_NAME",
+      "type": "plain_text",
+      "valueSha256": "4a60ac4fdfdb08fae36d80097dc97e2d64f9bc9173c3ea91dcb71e733c57a57c"
+    },
+    {
+      "name": "APP_STAGE",
+      "type": "plain_text",
+      "valueSha256": "e919a75364398a449f860aeadddc57fa0502145a4e63959ddb33c417a48dc0da"
+    },
+    {
+      "name": "ASSETS",
+      "type": "assets"
+    },
+    {
+      "name": "AUTH_PEPPER",
+      "type": "secret_text"
+    },
+    {
+      "name": "COMMUNICATIONS_WEBHOOK_VERIFY_TOKEN",
+      "type": "secret_text"
+    },
+    {
+      "name": "DB",
+      "type": "d1",
+      "id": "87b3e0dd-76c9-4a29-8185-a5abc34c02f6",
+      "database_id": "87b3e0dd-76c9-4a29-8185-a5abc34c02f6"
+    },
+    {
+      "name": "EMAIL",
+      "type": "send_email"
+    },
+    {
+      "name": "FILES",
+      "type": "r2_bucket",
+      "bucket_name": "daenem-staffportal-files-staging"
+    },
+    {
+      "name": "GOOGLE_CLIENT_ID",
+      "type": "secret_text"
+    },
+    {
+      "name": "GOOGLE_CLIENT_SECRET",
+      "type": "secret_text"
+    },
+    {
+      "name": "KUDA_STAGE_API_KEY",
+      "type": "secret_text"
+    },
+    {
+      "name": "KUDA_STAGE_BUSINESS_EMAIL",
+      "type": "secret_text"
+    },
+    {
+      "name": "META_GRAPH_VERSION",
+      "type": "plain_text",
+      "valueSha256": "e46db0ebd65bfde76e4e8349ef3a798f554246ba0af588fd436e38fbdd13de9f"
+    },
+    {
+      "name": "MICROSOFT_AUTH_MODE",
+      "type": "plain_text",
+      "valueSha256": "f8a665a97769f1d2df5c69421cbcf7de2d1dfebfefd03b5a8c38773763ddc813"
+    },
+    {
+      "name": "MICROSOFT_CLIENT_ID",
+      "type": "secret_text"
+    },
+    {
+      "name": "MICROSOFT_CLIENT_SECRET",
+      "type": "secret_text"
+    },
+    {
+      "name": "SOCIAL_CACHE",
+      "type": "kv_namespace",
+      "namespace_id": "268478aaea794bafbf5fd8772e12a19b"
+    },
+    {
+      "name": "SOCIAL_QUEUE",
+      "type": "queue",
+      "queue_name": "daenem-staffportal-social-staging"
+    },
+    {
+      "name": "SOCIAL_TOKEN_KEY",
+      "type": "secret_text"
+    },
+    {
+      "name": "SP_EFFECT_OPERATOR_EXPIRES_AT",
+      "type": "plain_text"
+    },
+    {
+      "name": "SP_EFFECT_OPERATOR_SHA256",
+      "type": "plain_text"
+    },
+    {
+      "name": "STAFFPORTAL_DATABASE_NAME",
+      "type": "plain_text",
+      "valueSha256": "0682ca967c6237bf6894d98fd252cc3a6520d6d573e3ed0987038546b1c6474f"
+    },
+    {
+      "name": "STAFF_PORTAL_FRONTEND_ORIGIN",
+      "type": "plain_text",
+      "valueSha256": "41abf2a89c626f9c1a9ace17491d5dbb3756dd507c40640e5c3496dfa18eaa4e"
+    },
+    {
+      "name": "STAFFPORTAL_QA_ADMIN_SECRET",
+      "type": "secret_text"
+    },
+    {
+      "name": "STAFFPORTAL_QA_EMPLOYEE_PASSWORD",
+      "type": "secret_text"
+    },
+    {
+      "name": "STAFFPORTAL_QA_MANAGER_PASSWORD",
+      "type": "secret_text"
+    },
+    {
+      "name": "STAFFPORTAL_QA_OWNER_PASSWORD",
+      "type": "secret_text"
+    },
+    {
+      "name": "TIMEZONE",
+      "type": "plain_text",
+      "valueSha256": "93ba6a1325530174deafec7766d7968db9244fa82df6ecac134c47c3c59fb103"
+    },
+    {
+      "name": "WEATHER_PROVIDER_ENABLED",
+      "type": "plain_text",
+      "valueSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+    },
+    {
+      "name": "WORKFORCE_EMAIL_FROM",
+      "type": "plain_text",
+      "valueSha256": "bcc3434ad240e2b5b0837ad709611860de80f0b85d28e9e5363ba3e5a6f000fa"
+    }
+  ],
+  "settings": {
+    "compatibility_date": "2026-08-18",
+    "compatibility_flags": [],
+    "limits": {
+      "cpu_ms": 300000
+    },
+    "logpush": false,
+    "observability": null,
+    "tail_consumers": [],
+    "placement": {},
+    "cache_options": {
+      "enabled": false,
+      "cross_version_cache": false
+    }
+  },
+  "access": {
+    "enabled": true,
+    "previews_enabled": true
+  },
+  "notes": [
+    "Operator variable values are intentionally dynamic and must match the current private window.",
+    "Secret values are not exposed; identities and types only.",
+    "Captured observability was null; email allowed senders were not present in the capture."
+  ]
+}

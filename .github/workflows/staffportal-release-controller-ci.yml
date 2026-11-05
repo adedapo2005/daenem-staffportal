@@ -1,6 +1,7 @@
 name: StaffPortal Pre-Production Controller CI
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:

@@ -1,0 +1,327 @@
+#!/usr/bin/env python3
+"""StaffPortal approved artifact executor. No activation or database operations.
+
+Run with python -I. Cloudflare upload is available only inside the fixed reviewed
+GitHub workflow context. Tests inject dependencies; the CLI has no mock bypass.
+"""
+import argparse
+import contextlib
+import hashlib
+import importlib
+import json
+import os
+from pathlib import Path, PurePosixPath
+import re
+import subprocess
+import sys
+import tempfile
+import time
+import zipfile
+
+ROOT=Path(__file__).resolve().parent
+REPO='adedapo2005/daenem-staffportal'
+WORKFLOW='staffportal-approved-artifact-upload.yml'
+WORKFLOW_REF=REPO+'/.github/workflows/'+WORKFLOW+'@refs/heads/main'
+RELEASE_ID=434713012
+APP_SHA='a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080'
+RUNTIME_SHA='33b8903ebe37265deb8771f6e266bfdc88845ceeebda02623e049ef2fbae2c6f'
+OPERATOR_MANIFEST='c15e06e6e62ddcda71d2009b7d6ab97ebb6e9d724bee4fe3e2b640e5ea334cc4'
+PREPARER_SHA='391e463f9d54d465df2e92b426c7bc78978943085f2f91c75be1b12641143bd5'
+HEX=re.compile(r'[0-9a-f]{64}\Z')
+OP_FILES={'maintenance/worker.mjs','maintenance/wrangler.json','migration/worker.mjs','migration/wrangler.template.json','tools/operation.ps1','tools/prepare-window.ps1'}
+
+class Held(Exception):
+    def __init__(self,code): self.code=code;super().__init__(code)
+
+def sha_file(path):
+    h=hashlib.sha256()
+    with Path(path).open('rb') as f:
+        for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
+    return h.hexdigest()
+
+def read_json(path):return json.loads(Path(path).read_bytes().decode('utf-8-sig'))
+
+def atomic_json(path,obj,forbidden=()):
+    raw=(json.dumps(obj,indent=2,sort_keys=True)+'\n').encode()
+    if any(s and s.encode() in raw for s in forbidden):raise Held('SANITIZATION_REFUSED_OUTPUT')
+    path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+    fd,tmp=tempfile.mkstemp(dir=path.parent,prefix='.executor-')
+    try:
+        with os.fdopen(fd,'wb') as f:f.write(raw);f.flush();os.fsync(f.fileno())
+        os.replace(tmp,path)
+    finally:
+        if os.path.exists(tmp):os.unlink(tmp)
+
+class ExclusiveLock:
+    """OS-held lock. A leftover lock file is not a stale-lock deletion request."""
+    def __init__(self,path):self.path=Path(path);self.file=None
+    def __enter__(self):
+        self.path.parent.mkdir(parents=True,exist_ok=True);self.file=self.path.open('a+b')
+        self.file.seek(0,2)
+        if self.file.tell()==0:self.file.write(b'0');self.file.flush()
+        self.file.seek(0)
+        try:
+            if os.name=='nt':
+                import msvcrt
+                msvcrt.locking(self.file.fileno(),msvcrt.LK_NBLCK,1)
+            else:
+                import fcntl
+                fcntl.flock(self.file.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except OSError:
+            self.file.close();self.file=None;raise Held('EXECUTION_LOCKED') from None
+        return self
+    def __exit__(self,*args):
+        if self.file:
+            if os.name=='nt':
+                import msvcrt
+                self.file.seek(0);msvcrt.locking(self.file.fileno(),msvcrt.LK_UNLCK,1)
+            else:
+                import fcntl
+                fcntl.flock(self.file.fileno(),fcntl.LOCK_UN)
+            self.file.close()
+
+def load_runtime():
+    sys.dont_write_bytecode=True
+    pins=ROOT/'RUNTIME-PINS.json'
+    if sha_file(pins)!=RUNTIME_SHA:raise Held('RUNTIME_MANIFEST_CHANGED')
+    files=read_json(pins)['files'];directory=ROOT/'runtime'
+    actual={p.name for p in directory.iterdir()}
+    if actual!=set(files):raise Held('UNREVIEWED_RUNTIME_MEMBER')
+    for name,pin in files.items():
+        if Path(name).name!=name or sha_file(directory/name)!=pin:raise Held('RUNTIME_SOURCE_CHANGED')
+        module=sys.modules.get(Path(name).stem) if name.endswith('.py') else None
+        if module is not None and (not getattr(module,'__file__',None) or sha_file(module.__file__)!=pin):
+            raise Held('UNREVIEWED_PRELOADED_MODULE')
+    sys.path.insert(0,str(directory))
+    return {name:importlib.import_module(name) for name in ('publisher','workers_api_plan','workers_api_adapter')}
+
+def validate_operator_package(path):
+    path=Path(path)
+    if sha_file(path/'release-manifest.json')!=OPERATOR_MANIFEST:raise Held('OPERATOR_MANIFEST_CHANGED')
+    manifest=read_json(path/'release-manifest.json')
+    if set(manifest.get('files',{}))!=OP_FILES:raise Held('OPERATOR_INPUT_SET_CHANGED')
+    for name,pin in manifest['files'].items():
+        if sha_file(path/name)!=pin:raise Held('OPERATOR_INPUT_CHANGED')
+    if sha_file(path/'tools/prepare-window.ps1')!=PREPARER_SHA:raise Held('PREPARER_CHANGED')
+    return path
+
+def package_operator(source,output):
+    source=validate_operator_package(source).resolve();output=Path(output).resolve()
+    if source==output or source in output.parents:raise Held('OPERATOR_PACKAGE_OUTPUT_MUST_BE_SEPARATE')
+    names=OP_FILES|{'release-manifest.json'};payload={n:(source/n).read_bytes() for n in names}
+    manifest=json.loads(payload['release-manifest.json'].decode('utf-8-sig'))
+    if hashlib.sha256(payload['release-manifest.json']).hexdigest()!=OPERATOR_MANIFEST or any(hashlib.sha256(payload[n]).hexdigest()!=pin for n,pin in manifest['files'].items()):
+        raise Held('OPERATOR_SOURCE_CHANGED_DURING_CAPTURE')
+    output.parent.mkdir(parents=True,exist_ok=True)
+    with zipfile.ZipFile(output,'x',compression=zipfile.ZIP_DEFLATED) as z:
+        for name in sorted(names):
+            info=zipfile.ZipInfo(name,(1980,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED;z.writestr(info,payload[name])
+    with zipfile.ZipFile(output) as z:
+        if set(z.namelist())!=names or any(z.read(n)!=payload[n] for n in names):raise Held('OPERATOR_CAPTURE_VERIFICATION_FAILED')
+    validate_operator_package(source)
+    return {'state':'OPERATOR_INPUT_ARCHIVE_VERIFIED','files':7,'operatorArchiveSha256':sha_file(output),'operatorManifestSha256':OPERATOR_MANIFEST,'hostedCalls':0}
+
+
+def extract_operator(archive,destination):
+    destination=Path(destination)
+    if destination.exists():raise Held('OPERATOR_DESTINATION_EXISTS')
+    allowed=OP_FILES|{'release-manifest.json'}
+    with zipfile.ZipFile(archive) as z:
+        entries=[i for i in z.infolist() if not i.is_dir()]
+        if {i.filename for i in entries}!=allowed or len(entries)!=len(allowed):raise Held('OPERATOR_ARCHIVE_MEMBER_SET')
+        if any(i.file_size>64*1024*1024 or (i.external_attr>>16)&0o170000==0o120000 for i in entries):raise Held('OPERATOR_ARCHIVE_UNSUPPORTED')
+        # Authenticate the manifest before installing or invoking any input.
+        if hashlib.sha256(z.read('release-manifest.json')).hexdigest()!=OPERATOR_MANIFEST:raise Held('OPERATOR_MANIFEST_CHANGED')
+        manifest=json.loads(z.read('release-manifest.json').decode('utf-8-sig'))
+        if set(manifest['files'])!=OP_FILES:raise Held('OPERATOR_INPUT_SET_CHANGED')
+        payload={name:z.read(name) for name in allowed}
+        if any(hashlib.sha256(payload[n]).hexdigest()!=h for n,h in manifest['files'].items()):raise Held('OPERATOR_INPUT_CHANGED')
+    destination.mkdir(parents=True)
+    for name,raw in payload.items():
+        p=destination/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(raw)
+    validate_operator_package(destination)
+
+class GitHubReader:
+    def __init__(self,env):
+        if not env.get('GH_TOKEN'):raise Held('GITHUB_READ_TOKEN_MISSING')
+        self.env={**os.environ,'GH_TOKEN':env['GH_TOKEN'],'GH_HOST':'github.com'}
+    def json(self,path):
+        if not path.startswith('repos/'+REPO+'/'):raise Held('GITHUB_SCOPE_MISMATCH')
+        p=subprocess.run(['gh','api',path,'-H','Accept: application/vnd.github+json'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=self.env,check=False)
+        if p.returncode or len(p.stdout)>8*1024*1024:raise Held('GITHUB_READ_UNAVAILABLE')
+        try:return json.loads(p.stdout)
+        except (ValueError,UnicodeDecodeError):raise Held('GITHUB_READ_MALFORMED') from None
+    def download(self,asset_id,path):
+        with Path(path).open('xb') as f:
+            p=subprocess.run(['gh','api',f'repos/{REPO}/releases/assets/{asset_id}','-H','Accept: application/octet-stream'],stdout=f,stderr=subprocess.DEVNULL,env=self.env,check=False)
+        if p.returncode:raise Held('INPUT_DOWNLOAD_UNCONFIRMED')
+
+def github_context(env):
+    wanted={'GITHUB_ACTIONS':'true','GITHUB_REPOSITORY':REPO,'GITHUB_ACTOR':'adedapo2005','GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_REF':'refs/heads/main','GITHUB_RUN_ATTEMPT':'1','GITHUB_WORKFLOW_REF':WORKFLOW_REF}
+    if any(env.get(k)!=v for k,v in wanted.items()):raise Held('GITHUB_CONTEXT_NOT_APPROVED')
+    if not re.fullmatch(r'[0-9a-f]{40}',env.get('GITHUB_WORKFLOW_SHA','')) or env.get('GITHUB_SHA')!=env['GITHUB_WORKFLOW_SHA'] or not re.fullmatch(r'[1-9][0-9]*',env.get('GITHUB_RUN_ID','')):
+        raise Held('GITHUB_RUN_IDENTITY_INVALID')
+    return {'runId':env['GITHUB_RUN_ID'],'workflowSha':env['GITHUB_WORKFLOW_SHA'],'workflow':WORKFLOW,'repository':REPO}
+
+def workflow_guard(env,reader):
+    context=github_context(env)
+    wf=reader.json(f'repos/{REPO}/actions/workflows/{WORKFLOW}')
+    if type(wf.get('id')) is not int or wf.get('path')!='.github/workflows/'+WORKFLOW or wf.get('state')!='active':raise Held('WORKFLOW_IDENTITY_UNVERIFIED')
+    seen=set();declared=None
+    for page in range(1,21):
+        data=reader.json(f'repos/{REPO}/actions/workflows/{wf["id"]}/runs?per_page=100&page={page}')
+        rows=data.get('workflow_runs');total=data.get('total_count')
+        if not isinstance(rows,list) or type(total) is not int or total<1 or (declared is not None and total!=declared):raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+        declared=total
+        for row in rows:
+            rid=row.get('id')
+            if type(rid) is not int or rid in seen:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+            seen.add(rid)
+            if str(rid)!=context['runId'] or row.get('run_attempt')!=1:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+        if len(rows)<100:break
+    else:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+    if len(seen)!=declared or len(seen)!=1:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+    return {**context,'workflowId':wf['id'],'guard':'FIRST_RUN_ONLY','meaning':'administrative run-history guard; not a provider idempotency fence'}
+
+def fetch_inputs(reader,application_id,operator_id,operator_sha,destination):
+    if not re.fullmatch(r'[1-9][0-9]*',application_id) or not re.fullmatch(r'[1-9][0-9]*',operator_id) or application_id==operator_id or not HEX.fullmatch(operator_sha):raise Held('INPUT_IDENTIFIERS_INVALID')
+    required={int(application_id),int(operator_id)};found={}
+    for page in range(1,21):
+        rows=reader.json(f'repos/{REPO}/releases/{RELEASE_ID}/assets?per_page=100&page={page}')
+        if not isinstance(rows,list):raise Held('RELEASE_ASSET_LIST_UNAVAILABLE')
+        for item in rows:
+            if item.get('id') in required:
+                if item['id'] in found:raise Held('RELEASE_ASSET_LIST_INCOMPLETE')
+                found[item['id']]=item
+        if len(rows)<100:break
+    else:raise Held('RELEASE_ASSET_LIST_INCOMPLETE')
+    if set(found)!=required:raise Held('REQUIRED_INPUT_ASSETS_NOT_STAGED')
+    dest=Path(destination)
+    if dest.exists():raise Held('INPUT_DIRECTORY_EXISTS')
+    dest.mkdir(parents=True)
+    for aid,name,pin in [(int(application_id),'application.zip',APP_SHA),(int(operator_id),'operator.zip',operator_sha)]:
+        item=found[aid]
+        if type(item.get('size')) is not int or not 0<item['size']<=2*1024**3:raise Held('INPUT_SIZE_UNSUPPORTED')
+        path=dest/name;reader.download(aid,path)
+        if path.stat().st_size!=item['size'] or sha_file(path)!=pin:raise Held('INPUT_DOWNLOAD_HASH_MISMATCH')
+    extract_operator(dest/'operator.zip',dest/'operator')
+    return {'sourceReleaseId':RELEASE_ID,'applicationAssetId':int(application_id),'operatorAssetId':int(operator_id),'applicationSha256':APP_SHA,'operatorArchiveSha256':operator_sha}
+
+class Dependencies:
+    def __init__(self,runtime):self.runtime=runtime
+    def package(self,path):return self.runtime['publisher'].load_package(path)
+    def operator(self,path):return validate_operator_package(path)
+    def window(self,path,pin):return self.runtime['workers_api_plan'].PreparedWindow.load(path,pin)
+    def plan(self,window):return self.runtime['workers_api_plan'].WorkersAPIPlan(window)
+    def adapter(self,token,window,plan):return self.runtime['workers_api_adapter'].WorkersAPIAdapter(token,window,plan=plan)
+    def prepare(self,operator,start,window):
+        if os.name!='nt':raise Held('WINDOWS_PREPARATION_REQUIRES_WINDOWS')
+        p=subprocess.run(['pwsh.exe','-NoLogo','-NoProfile','-NonInteractive','-File',str(Path(operator)/'tools/prepare-window.ps1'),'-StartUtc',start,'-WindowDirectory',str(Path(window).resolve())],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+        if p.returncode:raise Held('WINDOW_PREPARATION_UNCONFIRMED')
+
+def paths_separate(state,private,operator):
+    state,private,operator=map(lambda p:Path(p).resolve(),(state,private,operator))
+    if any(a==b or a in b.parents or b in a.parents for a,b in ((state,private),(state,operator),(private,operator))):raise Held('PRIVATE_AND_PUBLIC_PATHS_OVERLAP')
+
+def execute(args,env=None,deps=None,reader=None):
+    env=os.environ if env is None else env
+    runtime=load_runtime();deps=deps or Dependencies(runtime)
+    out=Path(args.state_dir);out.mkdir(parents=True,exist_ok=True)
+    result_path=out/'result.json';journal_path=out/'journal.json';forbidden=[];journal=None
+    try:
+        if args.command=='package-operator':
+            result=package_operator(args.operator_package,args.output_zip);atomic_json(out/'operator-input.json',result);return result
+        if args.command=='guard':
+            result=workflow_guard(env,reader or GitHubReader(env));atomic_json(out/'github-guard.json',result);return result
+        if args.command=='fetch':
+            github_context(env)
+            result=fetch_inputs(reader or GitHubReader(env),args.application_asset_id,args.operator_asset_id,args.operator_archive_sha256,args.inputs_dir)
+            atomic_json(out/'inputs.json',result);return result
+        if args.command=='status':
+            if not journal_path.exists():return {'state':'NO_LOCAL_JOURNAL','meaning':'does not establish no earlier remote attempt'}
+            j=read_json(journal_path);v=j.get('version_id')
+            return {'state':j.get('execution_state','UNKNOWN'),'versionId':v if isinstance(v,str) and re.fullmatch('[0-9a-f-]{36}',v) else None,'pendingKind':(j.get('pending') or {}).get('kind'),'retryAuthorized':False}
+        paths_separate(out,args.window_dir,args.operator_package)
+        pkg=deps.package(args.application_zip);deps.operator(args.operator_package)
+        if args.command=='review':
+            result_path=out/'review.json'
+            result={'state':'LOCAL_INPUTS_VERIFIED','applicationSha256':APP_SHA,'runtimePinsSha256':RUNTIME_SHA,'operatorManifestSha256':OPERATOR_MANIFEST,'hostedCalls':0,'windowPrepared':False}
+            atomic_json(result_path,result);return result
+        if args.command=='prepare':
+            if not args.prepare_approved_window:raise Held('WINDOW_PREPARATION_NOT_REQUESTED')
+            if (out/'preparation.json').exists() or journal_path.exists():raise Held('EXISTING_WINDOW_OR_ATTEMPT_REQUIRES_REVIEW')
+            if Path(args.window_dir).exists():raise Held('WINDOW_DIRECTORY_MUST_BE_NEW')
+            if not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',args.start_utc):raise Held('EXPLICIT_UTC_START_REQUIRED')
+            deps.prepare(args.operator_package,args.start_utc,args.window_dir)
+            pin=sha_file(Path(args.window_dir)/'window.json');window=deps.window(args.window_dir,pin)
+            result={'state':'WINDOW_PREPARED_LOCALLY','windowSha256':pin,'preparedConfigSha256':window.config_sha256,'applicationSha256':APP_SHA,'runtimePinsSha256':RUNTIME_SHA,'hostedCalls':0}
+            atomic_json(out/'preparation.json',result);return result
+        if args.command!='upload':raise Held('UNSUPPORTED_COMMAND')
+        if not args.execute_approved_upload:raise Held('UPLOAD_NOT_REQUESTED')
+        context=github_context(env)
+        guard=read_json(out/'github-guard.json')
+        if any(guard.get(k)!=v for k,v in context.items()) or guard.get('guard')!='FIRST_RUN_ONLY':raise Held('MATCHING_RUN_GUARD_REQUIRED')
+        preparation=read_json(out/'preparation.json')
+        if preparation.get('state')!='WINDOW_PREPARED_LOCALLY' or preparation.get('applicationSha256')!=APP_SHA or preparation.get('runtimePinsSha256')!=RUNTIME_SHA:raise Held('PREPARATION_RECORD_MISMATCH')
+        window=deps.window(args.window_dir,preparation['windowSha256']);plan=deps.plan(window);plan.window.check(plan.clock)
+        if not re.fullmatch(r'[1-9][0-9]*',args.marker_artifact_id) or not HEX.fullmatch(args.marker_artifact_digest):raise Held('PREWRITE_ARTIFACT_RECEIPT_REQUIRED')
+        receipt=(reader or GitHubReader(env)).json(f'repos/{REPO}/actions/artifacts/{args.marker_artifact_id}')
+        if str(receipt.get('id'))!=args.marker_artifact_id or receipt.get('name')!='staffportal-pre-upload-'+context['runId'] or receipt.get('expired') is not False or receipt.get('digest')!='sha256:'+args.marker_artifact_digest or str((receipt.get('workflow_run') or {}).get('id'))!=context['runId']:
+            raise Held('PREWRITE_ARTIFACT_RECEIPT_MISMATCH')
+        token=env.get('CLOUDFLARE_API_TOKEN','')
+        if not token:raise Held('CLOUDFLARE_ENVIRONMENT_TOKEN_MISSING')
+        if env.get('CLOUDFLARE_ACCOUNT_ID')!=runtime['publisher'].ACCOUNT:raise Held('CLOUDFLARE_ACCOUNT_MISMATCH')
+        forbidden=[token,env.get('GH_TOKEN',''),*window.values().values()]
+        bind={**context,'archiveSha256':APP_SHA,'runtimePinsSha256':RUNTIME_SHA,'windowSha256':preparation['windowSha256'],'markerArtifactId':args.marker_artifact_id,'markerArtifactDigest':args.marker_artifact_digest}
+        BaseJournal=runtime['publisher'].Journal
+        class SafeJournal(BaseJournal):
+            def _save(self):
+                raw=json.dumps(self.data,sort_keys=True)
+                if any(s and s in raw for s in forbidden):raise Held('JOURNAL_SANITIZATION_REFUSED')
+                super()._save()
+        with ExclusiveLock(out/'execution.lock'):
+            journal=SafeJournal(journal_path)
+            if journal.data.get('execution_state') is not None or journal.data.get('pending') is not None or journal.data.get('version_attempted'):
+                raise Held('PRIOR_EXECUTION_REQUIRES_RECONCILIATION')
+            if journal.data.get('context') not in (None,bind):raise Held('JOURNAL_CONTEXT_MISMATCH')
+            journal.data['context']=bind;journal.data['execution_state']='STARTED_HOLD_IF_INTERRUPTED';journal._save()
+            adapter=deps.adapter(token,window,plan)
+            try:
+                evidence=runtime['publisher'].Publisher(adapter,journal,plan.publisher_expectations()).upload_only(pkg)
+            except Exception:
+                journal.data['execution_state']='HELD_NO_AUTOMATIC_RETRY';journal._save();raise
+            journal.data['execution_state']='UPLOAD_VERIFIED_ALLOCATION_UNCHANGED';journal._save()
+            result={'state':'UPLOAD_VERIFIED_ALLOCATION_UNCHANGED','context':bind,'verification':evidence,'activationPerformed':False,'deliveredBytesVerified':False,'retryAuthorized':False}
+            atomic_json(result_path,result,forbidden);return result
+    except Exception as error:
+        code=error.code if isinstance(error,Held) else 'EXECUTION_HELD'
+        result={'state':'HELD','code':code,'retryAuthorized':False,'activationPerformed':False}
+        if journal is not None:
+            v=journal.data.get('version_id');result['versionId']=v if isinstance(v,str) and re.fullmatch('[0-9a-f-]{36}',v) else None
+            result['pendingKind']=(journal.data.get('pending') or {}).get('kind')
+        atomic_json(out/('hold-'+str(time.time_ns())+'.json'),result,forbidden)
+        raise Held(code) from None
+
+def parser():
+    p=argparse.ArgumentParser(description=__doc__)
+    sub=p.add_subparsers(dest='command',required=True)
+    for cmd in ('review','prepare','upload','status','guard','fetch','package-operator'):
+        q=sub.add_parser(cmd);q.add_argument('--state-dir',required=True)
+        if cmd in ('review','prepare','upload'):
+            q.add_argument('--application-zip',required=True);q.add_argument('--operator-package',required=True);q.add_argument('--window-dir',required=True)
+        if cmd=='prepare':q.add_argument('--start-utc',required=True);q.add_argument('--prepare-approved-window',action='store_true')
+        if cmd=='upload':q.add_argument('--execute-approved-upload',action='store_true');q.add_argument('--marker-artifact-id',required=True);q.add_argument('--marker-artifact-digest',required=True)
+        if cmd=='package-operator':q.add_argument('--operator-package',required=True);q.add_argument('--output-zip',required=True)
+        if cmd=='fetch':q.add_argument('--application-asset-id',required=True);q.add_argument('--operator-asset-id',required=True);q.add_argument('--operator-archive-sha256',required=True);q.add_argument('--inputs-dir',required=True)
+    return p
+
+def main():
+    args=parser().parse_args()
+    try:
+        result=execute(args)
+        # Do not echo evidence, capabilities, inputs or provider responses.
+        print(json.dumps({'state':result.get('state',result.get('guard','COMPLETE')),'retryAuthorized':False}));return 0
+    except Exception as error:
+        print(json.dumps({'state':'HELD','code':error.code if isinstance(error,Held) else 'LOCAL_EXECUTOR_ERROR','retryAuthorized':False}));return 2
+
+if __name__=='__main__':raise SystemExit(main())
