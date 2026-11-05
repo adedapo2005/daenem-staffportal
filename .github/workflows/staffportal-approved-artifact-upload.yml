@@ -1,0 +1,127 @@
+# REVIEW DRAFT ONLY. Do not install until the Controller clears the exact
+# installation commit's external Workers Builds/Pages trigger implications.
+name: StaffPortal Approved Artifact Upload
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_archive_sha256:
+        description: Exact approved application ZIP SHA-256; upload only, no activation
+        required: true
+        type: string
+      application_asset_id:
+        description: Staged approved ZIP asset ID in draft release 434713012
+        required: true
+        type: string
+      operator_asset_id:
+        description: Staged seven-file operator input ZIP asset ID in the same release
+        required: true
+        type: string
+      start_utc:
+        description: Approved window UTC start, yyyy-MM-ddTHH:mm:ssZ
+        required: true
+        type: string
+permissions: {}
+concurrency:
+  group: staffportal-approved-artifact-a95c11fadb53
+  cancel-in-progress: false
+jobs:
+  upload:
+    if: >-
+      github.repository == 'adedapo2005/daenem-staffportal' &&
+      github.actor == 'adedapo2005' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 &&
+      inputs.confirm_archive_sha256 == 'a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080'
+    runs-on: windows-2022
+    timeout-minutes: 25
+    environment:
+      name: staffportal-api-staging
+      deployment: false
+    permissions:
+      contents: read
+      actions: read
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      SP_ROOT: ${{ github.workspace }}\ops\staffportal-release-executor
+      SP_PUBLIC: ${{ runner.temp }}\staffportal-artifact-upload\public
+      SP_INPUTS: ${{ runner.temp }}\staffportal-artifact-upload\inputs
+      SP_PRIVATE: ${{ runner.temp }}\staffportal-artifact-upload\private-window
+    steps:
+      - name: Check Out The Exact Workflow Commit
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: ops/staffportal-release-executor
+      - name: Verify Executor Inputs Before Running Python
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $manifest = Join-Path $env:SP_ROOT 'EXECUTOR-MANIFEST.json'
+          if ((Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'ce210206a7fafccbf08095ba1dec2ac7ff3d613b29ed3546da481d50c2541c50') { throw 'EXECUTOR_MANIFEST_CHANGED' }
+          $pins = Get-Content -Raw -LiteralPath $manifest | ConvertFrom-Json
+          foreach ($entry in $pins.files.PSObject.Properties) {
+            if ($entry.Name -match '(^[\\/]|\.\.|:)') { throw 'UNSAFE_EXECUTOR_MEMBER' }
+            $file = Join-Path $env:SP_ROOT $entry.Name
+            if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.Value) { throw 'EXECUTOR_SOURCE_CHANGED' }
+          }
+      - name: Set Up Pinned Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+          check-latest: false
+      - name: Reject Reruns And Earlier Attempts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -I "$env:SP_ROOT\release_executor.py" guard --state-dir "$env:SP_PUBLIC"
+          if ($LASTEXITCODE -ne 0) { throw 'EXECUTION_HISTORY_GATE_HELD' }
+      - name: Download Only The Hash-Pinned Inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SP_APP_ASSET: ${{ inputs.application_asset_id }}
+          SP_OP_ASSET: ${{ inputs.operator_asset_id }}
+          SP_OP_ARCHIVE_SHA: f35df1145b815eafed75166a347013ced98d580388832a649e63ca05f0162994
+        run: |
+          python -I "$env:SP_ROOT\release_executor.py" fetch --state-dir "$env:SP_PUBLIC" --inputs-dir "$env:SP_INPUTS" --application-asset-id "$env:SP_APP_ASSET" --operator-asset-id "$env:SP_OP_ASSET" --operator-archive-sha256 "$env:SP_OP_ARCHIVE_SHA"
+          if ($LASTEXITCODE -ne 0) { throw 'ARTIFACT_INPUT_GATE_HELD' }
+      - name: Prepare The Approved Local Window
+        env:
+          SP_START_UTC: ${{ inputs.start_utc }}
+        run: |
+          python -I "$env:SP_ROOT\release_executor.py" prepare --state-dir "$env:SP_PUBLIC" --application-zip "$env:SP_INPUTS\application.zip" --operator-package "$env:SP_INPUTS\operator" --window-dir "$env:SP_PRIVATE" --start-utc "$env:SP_START_UTC" --prepare-approved-window
+          if ($LASTEXITCODE -ne 0) { throw 'WINDOW_PREPARATION_GATE_HELD' }
+      - name: Preserve A Pre-Upload Attempt Marker
+        id: marker
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: staffportal-pre-upload-${{ github.run_id }}
+          path: |
+            ${{ env.SP_PUBLIC }}\github-guard.json
+            ${{ env.SP_PUBLIC }}\preparation.json
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: false
+      - name: Upload And Verify Without Activation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SP_MARKER_ID: ${{ steps.marker.outputs.artifact-id }}
+          SP_MARKER_DIGEST: ${{ steps.marker.outputs.artifact-digest }}
+        run: |
+          python -I "$env:SP_ROOT\release_executor.py" upload --state-dir "$env:SP_PUBLIC" --application-zip "$env:SP_INPUTS\application.zip" --operator-package "$env:SP_INPUTS\operator" --window-dir "$env:SP_PRIVATE" --marker-artifact-id "$env:SP_MARKER_ID" --marker-artifact-digest "$env:SP_MARKER_DIGEST" --execute-approved-upload
+          if ($LASTEXITCODE -ne 0) { throw 'UPLOAD_HELD_NO_AUTOMATIC_RETRY' }
+      - name: Preserve Sanitized Journal And Verification
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: staffportal-upload-evidence-${{ github.run_id }}
+          path: ${{ env.SP_PUBLIC }}\*.json
+          if-no-files-found: warn
+          retention-days: 90
+          overwrite: false

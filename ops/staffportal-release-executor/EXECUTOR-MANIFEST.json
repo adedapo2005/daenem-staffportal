@@ -1,0 +1,18 @@
+{
+  "scope": "staffportal approved artifact upload only; no activation",
+  "reviewedAdapterArchiveSha256": "a05bb13fac1db65661c1fb1cefc277e03966eff214cb48fd7b62742145f0ecff",
+  "reviewedAdapterPatchSha256": "a8a6cf890f4e405db7e9ad1b39b5051e5754425148aecf8043be272f05c4f89a",
+  "files": {
+    "RUNTIME-PINS.json": "33b8903ebe37265deb8771f6e266bfdc88845ceeebda02623e049ef2fbae2c6f",
+    "release_executor.py": "4d7ecdee630c8f171272bad4f1a18bd4fb7994b36c3638593c7384ae993764b3",
+    "runtime/asset-manifest-normalized.json": "39ef9da6b5335308c76ce9d23e0d72f5cb712c941fa75fa3164e2c8eb2c53b37",
+    "runtime/baseline.json": "e54462ae4e33d2e80a1eca23e65b297005946c768528de2fbca6b3e69d268046",
+    "runtime/baseline_contract.py": "7db2e74a7139d463e3769af3df34c816c3fceab6b779f100fbe1cc98a7282827",
+    "runtime/cloudflare_adapter.py": "96728bfe158c608c3454ae542aea09bf192fd43be3d93c348a8a5033ba562f6a",
+    "runtime/evidence.py": "adb9b9ccc44a52cc93ef828231a0f22249217e95550c048a40b08e326dd8684d",
+    "runtime/publisher.py": "fa50c0f8c88f838e5685ee2ef78c825198404ba5dad3f6acdd9b71ae5f00e8b1",
+    "runtime/reconciled-baseline.json": "70c90399a4125a274e151f8917dbb21ca241552a8502d68f9e5445ed7b853d9b",
+    "runtime/workers_api_adapter.py": "8c4423c3d3a7ddc3c48115fc68953605ecc03ef69e3191f6680be4c7723cd277",
+    "runtime/workers_api_plan.py": "6d86786286e2ad57e81cbb0dac8d554ccd4b4e641ec8d572cb475bccb4338e5f"
+  }
+}
