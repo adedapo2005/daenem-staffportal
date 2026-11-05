@@ -103,7 +103,7 @@ class CloudflareAdapter:
             elif path in ('/workers/scripts/'+WORKER+'/versions?bindings_inherit=strict',
                           '/workers/workers/'+WORKER+'/versions?deploy=false'): operation='worker-version'
             else: raise Stop('unrecognized write operation')
-        if allow_missing_result and (operation!='asset-bucket' or statuses!=(200,201)):
+        if allow_missing_result and (operation!='asset-bucket' or statuses not in ((200,201),(200,201,202))):
             raise Stop('optional result outside intermediate asset response')
         headers = {'Authorization': 'Bearer ' + token, 'Accept': 'application/json'}
         if ctype:
@@ -142,10 +142,10 @@ class CloudflareAdapter:
             raise Uncertain('malformed provider response')
         if not isinstance(obj, dict) or obj.get('success') is not True or obj.get('errors') not in (None, []):
             raise Uncertain('provider response incomplete')
-        # The asset API documents result as optional. Only a non-final HTTP 200
+        # The asset API documents result as optional. Only a non-final HTTP 200/202
         # bucket response may omit it. Null/wrong types and completion without
         # HTTP 201 plus a token still hold; session/version/GET remain strict.
-        if allow_missing_result and status==200 and 'result' not in obj:
+        if allow_missing_result and status in (200,202) and 'result' not in obj:
             return status,{}
         if not isinstance(obj.get('result'),dict):
             raise Uncertain('provider response incomplete')
@@ -212,9 +212,9 @@ class CloudflareAdapter:
         ctype, body = multipart(parts)
         self._state = 'bucket-pending'
         final = self._index == len(self._buckets) - 1
-        status, result = self._call('POST', '/workers/assets/upload?base64=true', jwt, body, ctype, statuses=(200, 201),allow_missing_result=not final)
+        status, result = self._call('POST', '/workers/assets/upload?base64=true', jwt, body, ctype, statuses=(200, 201, 202),allow_missing_result=not final)
         token = result.get('jwt')
-        if (not final and status != 200) or (final and (status != 201 or not isinstance(token, str) or not token or any(c in token for c in '\r\n'))):
+        if (not final and status not in (200,202)) or (final and (status != 201 or not isinstance(token, str) or not token or any(c in token for c in '\r\n'))):
             raise Uncertain('documented final completion response not established')
         self._progress.append({'stage': 'bucket', 'index': self._index, 'httpStatus': status, 'hashes': list(files)})
         self._index += 1

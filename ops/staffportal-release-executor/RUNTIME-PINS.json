@@ -2,9 +2,9 @@
   "reviewedArchiveSha256": "a05bb13fac1db65661c1fb1cefc277e03966eff214cb48fd7b62742145f0ecff",
   "reviewedPatchSha256": "a8a6cf890f4e405db7e9ad1b39b5051e5754425148aecf8043be272f05c4f89a",
   "files": {
-    "publisher.py": "7f298ed9042fe82c5226612e853631390088b6e88960650c8e94dd654ee9c5ea",
-    "cloudflare_adapter.py": "b483f65cd0db45f3fa319fae7a8bb3d7bfcc9d599bed2544420f8aca4be41649",
-    "evidence.py": "adb9b9ccc44a52cc93ef828231a0f22249217e95550c048a40b08e326dd8684d",
+    "publisher.py": "69fcb4d0ea5ca6b6e43947f1315d7bc1c1c9a4201ee0b39438348109b10d705c",
+    "cloudflare_adapter.py": "20c3cff5a3d4f707a7be81ea7dfe5630d03c938f60f72611a181aebcce10a5ae",
+    "evidence.py": "a3906bd8c14a655713e7bc7e547e936b40f1f5b16f1716535b5a93766e1dce7e",
     "baseline_contract.py": "7db2e74a7139d463e3769af3df34c816c3fceab6b779f100fbe1cc98a7282827",
     "workers_api_plan.py": "1d22d87b31aaeb6f5984f9c0b8e91e78b2f18a43bcd2ce28797c691d348d510c",
     "workers_api_adapter.py": "4cb9fb987bc68460c27e807efd55d1fc633cfc9150bd53acf96d64c29715138d",

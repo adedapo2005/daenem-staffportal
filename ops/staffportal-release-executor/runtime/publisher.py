@@ -156,7 +156,7 @@ class Publisher:
             seen.update(bucket)
             identity=digest(json.dumps([session_id,i,bucket],separators=(',',':')).encode())
             res=self._write('bucket',identity,lambda bucket=bucket:self.t.upload_bucket(upload_jwt,{h:byhash[h] for h in bucket}))
-            if res.get('status') not in (200,201): raise Stop('asset upload not confirmed')
+            if res.get('status') not in (200,201,202): raise Stop('asset upload not confirmed')
             if i < len(buckets)-1 and res.get('status') == 201:
                 raise Stop('premature completion response')
             if i == len(buckets)-1:
