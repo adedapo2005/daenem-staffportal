@@ -163,11 +163,55 @@ def github_context(env):
         raise Held('GITHUB_RUN_IDENTITY_INVALID')
     return {'runId':env['GITHUB_RUN_ID'],'workflowSha':env['GITHUB_WORKFLOW_SHA'],'workflow':WORKFLOW,'repository':REPO}
 
+def reconcile_known_preupload_failure(reader, row, workflow_id):
+    """One captured failure before inputs, preparation, marker or Cloudflare.
+
+    This is not a generic failed-run exception. Any changed attempt, metadata,
+    step outcome or artifact makes the historical attempt unresolved again.
+    """
+    rid=42053174449
+    if row.get('id')!=rid or row.get('run_attempt')!=1 or workflow_id!=408290809:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    prefix=f'repos/{REPO}/actions/runs/{rid}'
+    run=reader.json(prefix)
+    expected={'id':rid,'run_attempt':1,'workflow_id':workflow_id,
+              'head_sha':'c65f9c01e528c5e737e1de512a9b225e8104467c',
+              'head_branch':'main','event':'workflow_dispatch','status':'completed',
+              'conclusion':'failure','path':'.github/workflows/'+WORKFLOW}
+    if any(run.get(k)!=v for k,v in expected.items()):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/jobs?per_page=100')
+    jobs=data.get('jobs')
+    if data.get('total_count')!=1 or not isinstance(jobs,list) or len(jobs)!=1:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    job=jobs[0]
+    if job.get('id')!=127334404887 or job.get('name')!='upload' or job.get('status')!='completed' or job.get('conclusion')!='failure':
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    expected_steps=[
+        ('Set up job','success'),('Initialize Private Runner Paths','success'),
+        ('Check Out The Exact Workflow Commit','success'),
+        ('Verify Executor Inputs Before Running Python','failure'),
+        ('Set Up Pinned Python','skipped'),('Reject Reruns And Earlier Attempts','skipped'),
+        ('Download Only The Hash-Pinned Inputs','skipped'),
+        ('Prepare The Approved Local Window','skipped'),
+        ('Preserve A Pre-Upload Attempt Marker','skipped'),
+        ('Upload And Verify Without Activation','skipped'),
+        ('Preserve Sanitized Journal And Verification','success'),
+        ('Post Check Out The Exact Workflow Commit','success'),('Complete job','success')]
+    steps=job.get('steps')
+    if not isinstance(steps,list) or [(s.get('name'),s.get('conclusion')) for s in steps]!=expected_steps or any(s.get('status')!='completed' for s in steps):
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    artifacts=reader.json(prefix+'/artifacts?per_page=100')
+    if artifacts.get('total_count')!=0 or artifacts.get('artifacts')!=[]:
+        raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    return {'runId':rid,'sourceSha':expected['head_sha'],'jobId':job['id'],
+            'disposition':'verified failure before input download, preparation and Cloudflare step'}
+
 def workflow_guard(env,reader):
     context=github_context(env)
     wf=reader.json(f'repos/{REPO}/actions/workflows/{WORKFLOW}')
     if type(wf.get('id')) is not int or wf.get('path')!='.github/workflows/'+WORKFLOW or wf.get('state')!='active':raise Held('WORKFLOW_IDENTITY_UNVERIFIED')
-    seen=set();declared=None
+    seen=set();declared=None;reconciled=[]
     for page in range(1,21):
         data=reader.json(f'repos/{REPO}/actions/workflows/{wf["id"]}/runs?per_page=100&page={page}')
         rows=data.get('workflow_runs');total=data.get('total_count')
@@ -177,11 +221,16 @@ def workflow_guard(env,reader):
             rid=row.get('id')
             if type(rid) is not int or rid in seen:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
             seen.add(rid)
-            if str(rid)!=context['runId'] or row.get('run_attempt')!=1:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+            if str(rid)==context['runId']:
+                if row.get('run_attempt')!=1:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+            else:
+                reconciled.append(reconcile_known_preupload_failure(reader,row,wf['id']))
         if len(rows)<100:break
     else:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
-    if len(seen)!=declared or len(seen)!=1:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
-    return {**context,'workflowId':wf['id'],'guard':'FIRST_RUN_ONLY','meaning':'administrative run-history guard; not a provider idempotency fence'}
+    if len(seen)!=declared or int(context['runId']) not in seen or len(seen)!=1+len(reconciled):raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+    return {**context,'workflowId':wf['id'],'guard':'FIRST_PUBLISHING_RUN_ONLY',
+            'reconciledPreuploadRuns':reconciled,
+            'meaning':'administrative run-history guard; only the exact captured preupload failure is reconciled; not a provider idempotency fence'}
 
 def fetch_inputs(reader,application_id,operator_id,operator_sha,destination):
     if not re.fullmatch(r'[1-9][0-9]*',application_id) or not re.fullmatch(r'[1-9][0-9]*',operator_id) or application_id==operator_id or not HEX.fullmatch(operator_sha):raise Held('INPUT_IDENTIFIERS_INVALID')
@@ -260,7 +309,7 @@ def execute(args,env=None,deps=None,reader=None):
         if not args.execute_approved_upload:raise Held('UPLOAD_NOT_REQUESTED')
         context=github_context(env)
         guard=read_json(out/'github-guard.json')
-        if any(guard.get(k)!=v for k,v in context.items()) or guard.get('guard')!='FIRST_RUN_ONLY':raise Held('MATCHING_RUN_GUARD_REQUIRED')
+        if any(guard.get(k)!=v for k,v in context.items()) or guard.get('guard')!='FIRST_PUBLISHING_RUN_ONLY':raise Held('MATCHING_RUN_GUARD_REQUIRED')
         preparation=read_json(out/'preparation.json')
         if preparation.get('state')!='WINDOW_PREPARED_LOCALLY' or preparation.get('applicationSha256')!=APP_SHA or preparation.get('runtimePinsSha256')!=RUNTIME_SHA:raise Held('PREPARATION_RECORD_MISMATCH')
         window=deps.window(args.window_dir,preparation['windowSha256']);plan=deps.plan(window);plan.window.check(plan.clock)
