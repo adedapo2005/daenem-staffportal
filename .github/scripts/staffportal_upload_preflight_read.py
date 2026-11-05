@@ -1,0 +1,127 @@
+"""Fixed-target GET-only diagnosis. No uploader, preparation or mutation path."""
+import hashlib,json,os,re,sys,urllib.error,urllib.request
+from pathlib import Path
+
+REPO='adedapo2005/daenem-staffportal'
+BRANCH='ops/staffportal-upload-preflight-read-20261105'
+ACCOUNT='f322585f9882be1f55d8cf6dc7e77ee1'
+WORKER='daenem-staffportal-api-staging'
+SOURCE='47927e3c-827a-4b7a-842c-8bdd6e88883e'
+ROOT='/workers/workers/'+WORKER
+PATHS=(ROOT,ROOT+'/versions/'+SOURCE,'/workers/scripts/'+WORKER+'/settings',
+       '/workers/scripts/'+WORKER+'/script-settings','/workers/scripts/'+WORKER+'/deployments')
+API='https://api.cloudflare.com/client/v4/accounts/'+ACCOUNT
+MAX=4*1024*1024
+SAFE_REASONS={
+    'exactly 31 bindings required':'BINDING_COUNT_HELD',
+    'invalid or duplicate binding identity':'BINDING_IDENTITY_HELD',
+    '31-binding name set differs':'BINDING_NAME_SET_DRIFT',
+    'wrong or unresolved source inheritance':'SOURCE_INHERITANCE_HELD',
+    'binding type drift':'BINDING_TYPE_DRIFT',
+    'plain-text definition unavailable':'VARIABLE_DEFINITION_HELD',
+    'database binding aliases disagree':'DATABASE_BINDING_IDENTITY_HELD',
+    'binding resource, restriction or value drift':'BINDING_RESOURCE_OR_VALUE_DRIFT',
+    'version runtime setting drift or missing value':'RUNTIME_SETTING_HELD',
+    'default placement drift':'PLACEMENT_DRIFT',
+    'shared logging setting unavailable or enabled':'SHARED_LOGGING_HELD',
+    'observability is not effective off':'OBSERVABILITY_ENABLED_OR_UNKNOWN',
+    'unexpected enabled observability subsystem':'OBSERVABILITY_SUBSYSTEM_HELD',
+    'tail consumer drift':'TAIL_CONSUMER_DRIFT'}
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*args,**kwargs):return None
+
+def send(path,token):
+    if path not in PATHS:raise ValueError('OUTSIDE_FIXED_GET_SCOPE')
+    request=urllib.request.Request(API+path,headers={'Authorization':'Bearer '+token,
+        'Accept':'application/json','User-Agent':'StaffPortal-read-only-preflight'},method='GET')
+    opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect)
+    try:response=opener.open(request,timeout=30)
+    except urllib.error.HTTPError as error:response=error
+    with response:return response.status,dict(response.headers),response.read(MAX+1)
+
+class Held(Exception):pass
+
+def diagnose(token,plan,transport=send):
+    result={'scope':'fixed existing Worker GETs only; no upload, preparation or database access',
+            'state':'HELD','requests':[],'checks':[],'mutationMethodsPermitted':False}
+    def get(path):
+        row={'method':'GET','path':path};result['requests'].append(row)
+        try:
+            status,headers,body=transport(path,token)
+            row['status']=status
+            row['rayId']=re.sub('[^A-Za-z0-9-]','',str(next((v for k,v in headers.items() if k.lower()=='cf-ray'),'')))[:80]
+            if not isinstance(body,bytes) or len(body)>MAX:raise Held('RESPONSE_BOUND_HELD')
+            data=json.loads(body)
+            if isinstance(data,dict):row['providerErrorCodes']=[x['code'] for x in (data.get('errors') or []) if isinstance(x,dict) and type(x.get('code')) is int][:10]
+            if status!=200 or not isinstance(data,dict) or data.get('success') is not True or not isinstance(data.get('result'),dict) or data.get('errors') not in (None,[]):raise Held('GET_RESPONSE_HELD')
+            return data['result']
+        except Held:raise
+        except Exception as error:
+            row['exceptionClass']=type(error).__name__ if type(error).__name__ in ('TimeoutError','URLError','ValueError','JSONDecodeError','OSError') else 'READ_ERROR'
+            raise Held('GET_TRANSPORT_OR_PARSE_HELD') from None
+    def check(stage,call):
+        result['failureStage']=stage
+        try:call()
+        except Held:raise
+        except Exception as error:raise Held(SAFE_REASONS.get(str(error),'PINNED_COMPARISON_HELD')) from None
+        result['checks'].append(stage)
+    try:
+        result['failureStage']='worker-get';worker=get(ROOT)
+        expected=plan.projection()['access'];access=worker.get('subdomain')
+        flags={'nameMatches':worker.get('name')==WORKER,
+               'idWellFormed':isinstance(worker.get('id'),str) and bool(re.fullmatch('[A-Za-z0-9_-]{1,128}',worker['id'])),
+               'subdomainObject':isinstance(access,dict),
+               'accessMatches':isinstance(access,dict) and all(type(access.get(k)) is bool and access[k]==v for k,v in expected.items())}
+        result['workerIdentityChecks']=flags
+        if not all(flags.values()):raise Held('WORKER_IDENTITY_OR_ACCESS_HELD')
+        result['checks'].append('worker-identity-access')
+        result['failureStage']='source-version-get';source=get(ROOT+'/versions/'+SOURCE)
+        if source.get('id')!=SOURCE:raise Held('SOURCE_VERSION_IDENTITY_HELD')
+        result['sourceBindingCount']=len(source['bindings']) if isinstance(source.get('bindings'),list) else None
+        check('source-bindings',lambda:plan.binding_projection(source.get('bindings')))
+        source_bindings=plan.binding_projection(source.get('bindings'))
+        check('source-runtime',lambda:plan.version_settings(source))
+        result['failureStage']='settings-get';settings=get(PATHS[2])
+        result['currentBindingCount']=len(settings['bindings']) if isinstance(settings.get('bindings'),list) else None
+        check('current-bindings',lambda:plan.binding_projection(settings.get('bindings')))
+        check('current-runtime',lambda:plan.version_settings(settings))
+        if settings.get('placement')!={}:raise Held('CURRENT_PLACEMENT_HELD')
+        if plan.binding_projection(settings.get('bindings'))!=source_bindings:raise Held('SOURCE_CURRENT_BINDINGS_DIFFER')
+        result['failureStage']='script-settings-get';script=get(PATHS[3])
+        check('shared-settings',lambda:plan.shared_settings(worker,script))
+        result['failureStage']='deployment-get';deployments=get(PATHS[4]).get('deployments')
+        if not isinstance(deployments,list) or not deployments:raise Held('DEPLOYMENT_RESPONSE_HELD')
+        first=deployments[0];want=plan.expected_current()
+        if first.get('id')!=want['deployment'] or first.get('versions')!=want['versions']:raise Held('DEPLOYMENT_ALLOCATION_DRIFT')
+        result['checks'].append('deployment-allocation')
+        result.pop('failureStage',None);result['state']='FIXED_READ_PREFLIGHT_MATCHED'
+    except Held as error:result['reasonCode']=str(error)
+    raw=json.dumps(result,indent=2)
+    if token and token in raw:raise Held('SANITIZATION_HELD')
+    return result
+
+def main():
+    expected={'GITHUB_ACTIONS':'true','GITHUB_REPOSITORY':REPO,'GITHUB_ACTOR':'adedapo2005','GITHUB_EVENT_NAME':'pull_request_review'}
+    if any(os.environ.get(k)!=v for k,v in expected.items()):raise Held('CONTEXT_HELD')
+    event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+    if event.get('pull_request',{}).get('head',{}).get('ref')!=BRANCH:raise Held('BRANCH_HELD')
+    if ''.join(os.environ.get('CLOUDFLARE_ACCOUNT_ID','').split())!=ACCOUNT:raise Held('ACCOUNT_HELD')
+    token=os.environ.get('CLOUDFLARE_API_TOKEN','')
+    if not token or any(c in token for c in '\r\n'):raise Held('TOKEN_FORMAT_HELD')
+    root=Path(__file__).resolve().parents[2]/'ops/staffportal-release-executor'
+    pins=root/'RUNTIME-PINS.json'
+    if hashlib.sha256(pins.read_bytes()).hexdigest()!='33b8903ebe37265deb8771f6e266bfdc88845ceeebda02623e049ef2fbae2c6f':raise Held('RUNTIME_PINS_HELD')
+    for name,pin in json.loads(pins.read_text())['files'].items():
+        if Path(name).name!=name or hashlib.sha256((root/'runtime'/name).read_bytes()).hexdigest()!=pin:raise Held('RUNTIME_SOURCE_HELD')
+    sys.dont_write_bytecode=True;sys.path.insert(0,str(root/'runtime'))
+    from workers_api_plan import WorkersAPIPlan
+    # Only pure projection comparisons are called. No adapter or publisher is
+    # instantiated, and the only network function has a fixed GET-only scope.
+    result=diagnose(token,WorkersAPIPlan(None))
+    raw=json.dumps(result,indent=2);Path('staffportal-upload-preflight-read.json').write_text(raw);print(raw)
+
+if __name__=='__main__':
+    try:main()
+    except Exception:
+        print('READ_ONLY_PREFLIGHT_DIAGNOSTIC_HELD');raise SystemExit(2) from None
