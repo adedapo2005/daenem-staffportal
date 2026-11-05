@@ -1,0 +1,1604 @@
+{
+  "state": "PASS_REAL_WORKER_PROFILE_AND_DIRECT_ENTRY",
+  "syntheticOnly": true,
+  "apiMocked": false,
+  "hostedCalls": 0,
+  "artificialJobsPermissionAdded": false,
+  "checks": [
+    {
+      "name": "Real password-authenticated synthetic Owner has five existing company assignments",
+      "passed": true
+    },
+    {
+      "name": "No synthetic jobs.access permission inserted",
+      "passed": true
+    },
+    {
+      "name": "Unmodified approved frontend reproduces Profile Unavailable",
+      "passed": true
+    },
+    {
+      "name": "Corrected full portal opens without company-selection entry gate",
+      "passed": true
+    },
+    {
+      "name": "Corrected frontend renders the actual Worker Profile response",
+      "passed": true
+    },
+    {
+      "name": "Direct entry 3840px has no company gate, picker or default-company URL",
+      "passed": true
+    },
+    {
+      "name": "Actual Profile response renders at 3840px",
+      "passed": true
+    },
+    {
+      "name": "Profile has no horizontal page overflow at 3840px",
+      "passed": true
+    },
+    {
+      "name": "Direct entry 1440px has no company gate, picker or default-company URL",
+      "passed": true
+    },
+    {
+      "name": "Actual Profile response renders at 1440px",
+      "passed": true
+    },
+    {
+      "name": "Profile has no horizontal page overflow at 1440px",
+      "passed": true
+    },
+    {
+      "name": "Direct entry 390px has no company gate, picker or default-company URL",
+      "passed": true
+    },
+    {
+      "name": "Actual Profile response renders at 390px",
+      "passed": true
+    },
+    {
+      "name": "Profile has no horizontal page overflow at 390px",
+      "passed": true
+    },
+    {
+      "name": "No business write request was attempted",
+      "passed": true
+    },
+    {
+      "name": "No browser runtime error occurred",
+      "passed": true
+    },
+    {
+      "name": "No external browser request was attempted",
+      "passed": true
+    }
+  ],
+  "profileContract": {
+    "status": 200,
+    "code": null,
+    "bindingMatches": true,
+    "types": {
+      "displayName": "string",
+      "firstName": "null",
+      "lastName": "null",
+      "phone": "null",
+      "email": "string",
+      "jobTitle": "null",
+      "department": "null",
+      "status": "string"
+    }
+  },
+  "entry": {
+    "title": "Daenem Staff Portal",
+    "path": "/home",
+    "mainPresent": true,
+    "shellPresent": true,
+    "headings": [],
+    "entryCompanyGate": false,
+    "unavailableHeading": false,
+    "loading": false,
+    "profileRendered": false,
+    "knownProfileError": {
+      "unverified": false,
+      "sessionChanged": false,
+      "responseBindingMismatch": false
+    },
+    "horizontalOverflow": false
+  },
+  "baselineProfile": {
+    "title": "Daenem Staff Portal",
+    "path": "/profile",
+    "mainPresent": true,
+    "shellPresent": true,
+    "headings": [
+      "Profile Unavailable"
+    ],
+    "entryCompanyGate": false,
+    "unavailableHeading": true,
+    "loading": false,
+    "profileRendered": false,
+    "knownProfileError": {
+      "unverified": true,
+      "sessionChanged": false,
+      "responseBindingMismatch": false
+    },
+    "horizontalOverflow": false
+  },
+  "correctedProfile": {
+    "title": "Daenem Staff Portal",
+    "path": "/profile",
+    "mainPresent": true,
+    "shellPresent": true,
+    "headings": [
+      "Synthetic owner",
+      "Profile completeness",
+      "Assignment",
+      "Your work life. Your information.",
+      "Your next profile actions",
+      "Employment snapshot",
+      "Your recent profile activity"
+    ],
+    "entryCompanyGate": false,
+    "unavailableHeading": false,
+    "loading": false,
+    "profileRendered": true,
+    "knownProfileError": {
+      "unverified": false,
+      "sessionChanged": false,
+      "responseBindingMismatch": false
+    },
+    "horizontalOverflow": false
+  },
+  "viewports": [
+    {
+      "viewport": {
+        "width": 3840,
+        "height": 2160
+      },
+      "entry": {
+        "title": "Daenem Staff Portal",
+        "path": "/home",
+        "mainPresent": true,
+        "shellPresent": true,
+        "headings": [],
+        "entryCompanyGate": false,
+        "unavailableHeading": false,
+        "loading": false,
+        "profileRendered": false,
+        "knownProfileError": {
+          "unverified": false,
+          "sessionChanged": false,
+          "responseBindingMismatch": false
+        },
+        "horizontalOverflow": false
+      },
+      "profile": {
+        "title": "Daenem Staff Portal",
+        "path": "/profile",
+        "mainPresent": true,
+        "shellPresent": true,
+        "headings": [
+          "Synthetic owner",
+          "Profile completeness",
+          "Assignment",
+          "Your work life. Your information.",
+          "Your next profile actions",
+          "Employment snapshot",
+          "Your recent profile activity"
+        ],
+        "entryCompanyGate": false,
+        "unavailableHeading": false,
+        "loading": false,
+        "profileRendered": true,
+        "knownProfileError": {
+          "unverified": false,
+          "sessionChanged": false,
+          "responseBindingMismatch": false
+        },
+        "horizontalOverflow": false
+      },
+      "entryPickerCount": 0
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "entry": {
+        "title": "Daenem Staff Portal",
+        "path": "/home",
+        "mainPresent": true,
+        "shellPresent": true,
+        "headings": [],
+        "entryCompanyGate": false,
+        "unavailableHeading": false,
+        "loading": false,
+        "profileRendered": false,
+        "knownProfileError": {
+          "unverified": false,
+          "sessionChanged": false,
+          "responseBindingMismatch": false
+        },
+        "horizontalOverflow": false
+      },
+      "profile": {
+        "title": "Daenem Staff Portal",
+        "path": "/profile",
+        "mainPresent": true,
+        "shellPresent": true,
+        "headings": [
+          "Synthetic owner",
+          "Profile completeness",
+          "Assignment",
+          "Your work life. Your information.",
+          "Your next profile actions",
+          "Employment snapshot",
+          "Your recent profile activity"
+        ],
+        "entryCompanyGate": false,
+        "unavailableHeading": false,
+        "loading": false,
+        "profileRendered": true,
+        "knownProfileError": {
+          "unverified": false,
+          "sessionChanged": false,
+          "responseBindingMismatch": false
+        },
+        "horizontalOverflow": false
+      },
+      "entryPickerCount": 0
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": {
+        "title": "Daenem Staff Portal",
+        "path": "/home",
+        "mainPresent": true,
+        "shellPresent": true,
+        "headings": [],
+        "entryCompanyGate": false,
+        "unavailableHeading": false,
+        "loading": false,
+        "profileRendered": false,
+        "knownProfileError": {
+          "unverified": false,
+          "sessionChanged": false,
+          "responseBindingMismatch": false
+        },
+        "horizontalOverflow": false
+      },
+      "profile": {
+        "title": "Daenem Staff Portal",
+        "path": "/profile",
+        "mainPresent": true,
+        "shellPresent": true,
+        "headings": [
+          "Synthetic owner",
+          "Profile completeness",
+          "Assignment",
+          "Your work life. Your information.",
+          "Your next profile actions",
+          "Employment snapshot",
+          "Your recent profile activity"
+        ],
+        "entryCompanyGate": false,
+        "unavailableHeading": false,
+        "loading": false,
+        "profileRendered": true,
+        "knownProfileError": {
+          "unverified": false,
+          "sessionChanged": false,
+          "responseBindingMismatch": false
+        },
+        "horizontalOverflow": false
+      },
+      "entryPickerCount": 0
+    }
+  ],
+  "blockedBusinessRequests": [],
+  "runtimeErrors": [],
+  "external": [],
+  "workerOutbound": [
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://punchng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://guardian.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.premiumtimesng.com",
+      "path": "/feed",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.channelstv.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.vanguardngr.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://businessday.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://techcabal.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://nairametrics.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.thecable.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://dailytrust.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://leadership.ng",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://tribuneonlineng.com",
+      "path": "/feed/",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://feeds.bbci.co.uk",
+      "path": "/news/world/africa/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://www.aljazeera.com",
+      "path": "/xml/rss/all.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.un.org",
+      "path": "/feed/subscribe/en/news/all/rss.xml",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    },
+    {
+      "origin": "https://news.google.com",
+      "path": "/rss/search",
+      "method": "GET",
+      "blocked": true
+    }
+  ],
+  "sourceFileSha256": "e32c4280667264153f8b44f7b58328ab49707c7cd8b9d6ed80426b36747f9dfe"
+}
