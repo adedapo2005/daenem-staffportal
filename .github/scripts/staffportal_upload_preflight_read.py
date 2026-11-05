@@ -42,6 +42,38 @@ def send(path,token):
 
 class Held(Exception):pass
 
+def binding_comparisons(raw,expected):
+    """Fixed-name/field booleans only. Never export values, hashes or unknown keys."""
+    known_fields={'name','type','id','database_id','bucket_name','namespace_id',
+                  'queue_name','queue_id','allowed_sender_addresses','allowed_destination_addresses',
+                  'destination_address','jurisdiction','staging','remote','text','asset_version',
+                  'version','service','environment','entrypoint'}
+    out={}
+    for want in expected:
+        rows=[row for row in raw if isinstance(row,dict) and row.get('name')==want['name']]
+        flags={'uniquePresent':len(rows)==1}
+        if len(rows)==1:
+            item=dict(rows[0]);extra=set(item)-set(want)
+            if item.get('type')=='plain_text':
+                text=item.pop('text',None)
+                item['valueSha256']=hashlib.sha256(text.encode()).hexdigest() if isinstance(text,str) else None
+                extra=set(item)-set(want)
+            if item.get('type')=='d1':
+                identity=item.get('id',item.get('database_id'))
+                item['id']=item['database_id']=identity
+                extra=set(item)-set(want)
+            flags.update(typeMatches=item.get('type')==want['type'],
+                expectedFieldsMatch={key:(key in item and item[key]==value) for key,value in want.items() if key!='name'},
+                additionalKnownFields=sorted(extra & known_fields),
+                unknownAdditionalFieldCount=len(extra-known_fields),
+                additionalNullFieldCount=sum(item[k] is None for k in extra),
+                exactMatch=item==want)
+            # Dynamic values have no pinned source hash. Report shape only.
+            if want['type']=='plain_text' and 'valueSha256' not in want:
+                flags['exactMatch']=set(item)==set(want)|{'valueSha256'} and flags['typeMatches']
+        out[want['name']]=flags
+    return out
+
 def diagnose(token,plan,transport=send):
     result={'scope':'fixed existing Worker GETs only; no upload, preparation or database access',
             'state':'HELD','requests':[],'checks':[],'mutationMethodsPermitted':False}
@@ -79,6 +111,7 @@ def diagnose(token,plan,transport=send):
         result['failureStage']='source-version-get';source=get(ROOT+'/versions/'+SOURCE)
         if source.get('id')!=SOURCE:raise Held('SOURCE_VERSION_IDENTITY_HELD')
         result['sourceBindingCount']=len(source['bindings']) if isinstance(source.get('bindings'),list) else None
+        if isinstance(source.get('bindings'),list):result['sourceBindingComparisons']=binding_comparisons(source['bindings'],plan.projection().get('bindings',[]))
         check('source-bindings',lambda:plan.binding_projection(source.get('bindings')))
         source_bindings=plan.binding_projection(source.get('bindings'))
         check('source-runtime',lambda:plan.version_settings(source))
