@@ -132,6 +132,7 @@ def diagnose(token,plan_type,transport=send):
         result['moduleVerification']=module_checks(expanded)
         check('target-module-bytes',lambda:all(result['moduleVerification'].get(k) is True for k in
             ('singleModule','nameMatches','typeMatches','contentPresent','codeSha256Matches')) and result['moduleVerification'].get('unknownFieldCount')==0)
+        result['sharedReadShapes']={label:{'observabilityPresent':'observability' in obj,'observabilityNull':obj.get('observability') is None,'observabilityEnabledFalse':isinstance(obj.get('observability'),dict) and obj['observability'].get('enabled') is False,'logpushPresent':'logpush' in obj,'logpushFalse':obj.get('logpush') is False,'logpushNull':obj.get('logpush') is None,'logpushTrue':obj.get('logpush') is True,'tailConsumersEmpty':obj.get('tail_consumers')==[],'tailConsumersNull':obj.get('tail_consumers') is None} for label,obj in [('worker',worker),('script',script)]}
         check('shared-settings',lambda:plan.shared_settings(worker,script))
         rows=deployments.get('deployments');want=plan.expected_current()
         check('prior-serving-after-return',lambda:isinstance(rows,list) and bool(rows) and rows[0].get('id')=='b2009248-b0b6-4019-9ae6-812569fde8fb' and rows[0].get('versions')==[{'version_id':SOURCE,'percentage':100}])
