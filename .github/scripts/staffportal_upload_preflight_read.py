@@ -80,7 +80,7 @@ def module_checks(version):
 
 def diagnose(token,plan_type,transport=send):
     result={'state':'HELD','versionId':TARGET,'uploadRunId':42113465988,
-        'scope':'six fixed existing Worker GETs; no upload, activation or database access',
+        'scope':'six fixed existing Worker GETs after activation; this reader performs no upload, activation or database access',
         'mutationMethodsPermitted':False,'requests':[],'checks':{},'comparisonFailures':[]}
     def get(path):
         row={'method':'GET','path':path};result['requests'].append(row)
@@ -122,10 +122,13 @@ def diagnose(token,plan_type,transport=send):
             ('singleModule','nameMatches','typeMatches','contentPresent','codeSha256Matches')) and result['moduleVerification'].get('unknownFieldCount')==0)
         check('shared-settings',lambda:plan.shared_settings(worker,script))
         rows=deployments.get('deployments');want=plan.expected_current()
-        check('serving-allocation-unchanged',lambda:isinstance(rows,list) and bool(rows) and rows[0].get('id')==want['deployment'] and rows[0].get('versions')==want['versions'])
+        check('activated-serving-allocation',lambda:isinstance(rows,list) and bool(rows) and rows[0].get('id')=='c7efd7d7-ac83-4a09-9d5d-8721fbc308c5' and rows[0].get('versions')==[{'version_id':TARGET,'percentage':100}])
+        result['activationDeploymentIdMatches']=isinstance(rows,list) and bool(rows) and rows[0].get('id')=='c7efd7d7-ac83-4a09-9d5d-8721fbc308c5'
+        result['candidateExactly100Percent']=isinstance(rows,list) and bool(rows) and rows[0].get('versions')==[{'version_id':TARGET,'percentage':100}]
+        result['activationDeploymentId']='c7efd7d7-ac83-4a09-9d5d-8721fbc308c5'
         result['targetAllocated']=any(isinstance(v,dict) and v.get('version_id')==TARGET and v.get('percentage',0)>0 for v in (rows[0].get('versions',[]) if isinstance(rows,list) and rows and isinstance(rows[0],dict) else []))
-        check('target-not-activated',lambda:result['targetAllocated'] is False)
-        if not result['comparisonFailures']:result['state']='CREATED_VERSION_READ_VERIFIED_NOT_ACTIVATED'
+        check('target-activated',lambda:result['targetAllocated'] is True)
+        if not result['comparisonFailures']:result['state']='ACTIVATED_ALLOCATION_READ_VERIFIED'
     except Held as error:result['reasonCode']=str(error)
     except Exception:result['reasonCode']='READ_OR_SCHEMA_HELD'
     raw=json.dumps(result,indent=2)
