@@ -3,7 +3,7 @@
 No publisher, uploader, window preparation or application requests are invoked.
 Provider responses and binding values remain in memory; output is an allowlist.
 """
-import base64,hashlib,json,os,re,sys,urllib.error,urllib.request
+import base64,hashlib,json,os,re,sys,urllib.error,urllib.request,urllib.parse
 from pathlib import Path
 
 REPO='adedapo2005/daenem-staffportal'
@@ -78,9 +78,21 @@ def module_checks(version):
     except (ValueError,KeyError,TypeError):out['codeSha256Matches']=False
     return out
 
+def safe_version_urls(raw):
+    if not isinstance(raw,list) or len(raw)>10:return []
+    out=[]
+    pattern=r'(?:8e7ead65--?daenem-staffportal-api-staging|daenem-staffportal-api-staging--?8e7ead65)\.adedapo2005\.workers\.dev'
+    for value in raw:
+        if not isinstance(value,str) or len(value)>300:continue
+        u=urllib.parse.urlsplit(value)
+        try:port=u.port
+        except ValueError:continue
+        if u.scheme=='https' and u.path in ('','/') and not u.query and not u.fragment and not u.username and not u.password and port is None and re.fullmatch(pattern,u.hostname or ''):out.append(value)
+    return out
+
 def diagnose(token,plan_type,transport=send):
     result={'state':'HELD','versionId':TARGET,'uploadRunId':42113465988,
-        'scope':'six fixed existing Worker GETs after activation; this reader performs no upload, activation or database access',
+        'scope':'six fixed existing Worker GETs after return; existing candidate URL diagnosis only; no upload, activation or database access',
         'mutationMethodsPermitted':False,'requests':[],'checks':{},'comparisonFailures':[]}
     def get(path):
         row={'method':'GET','path':path};result['requests'].append(row)
@@ -122,13 +134,15 @@ def diagnose(token,plan_type,transport=send):
             ('singleModule','nameMatches','typeMatches','contentPresent','codeSha256Matches')) and result['moduleVerification'].get('unknownFieldCount')==0)
         check('shared-settings',lambda:plan.shared_settings(worker,script))
         rows=deployments.get('deployments');want=plan.expected_current()
-        check('activated-serving-allocation',lambda:isinstance(rows,list) and bool(rows) and rows[0].get('id')=='c7efd7d7-ac83-4a09-9d5d-8721fbc308c5' and rows[0].get('versions')==[{'version_id':TARGET,'percentage':100}])
-        result['activationDeploymentIdMatches']=isinstance(rows,list) and bool(rows) and rows[0].get('id')=='c7efd7d7-ac83-4a09-9d5d-8721fbc308c5'
-        result['candidateExactly100Percent']=isinstance(rows,list) and bool(rows) and rows[0].get('versions')==[{'version_id':TARGET,'percentage':100}]
-        result['activationDeploymentId']='c7efd7d7-ac83-4a09-9d5d-8721fbc308c5'
+        check('prior-serving-after-return',lambda:isinstance(rows,list) and bool(rows) and rows[0].get('id')=='b2009248-b0b6-4019-9ae6-812569fde8fb' and rows[0].get('versions')==[{'version_id':SOURCE,'percentage':100}])
+        result['servingDeploymentId']='b2009248-b0b6-4019-9ae6-812569fde8fb'
+        result['servingVersionId']=SOURCE
         result['targetAllocated']=any(isinstance(v,dict) and v.get('version_id')==TARGET and v.get('percentage',0)>0 for v in (rows[0].get('versions',[]) if isinstance(rows,list) and rows and isinstance(rows[0],dict) else []))
-        check('target-activated',lambda:result['targetAllocated'] is True)
-        if not result['comparisonFailures']:result['state']='ACTIVATED_ALLOCATION_READ_VERIFIED'
+        check('candidate-not-serving',lambda:result['targetAllocated'] is False)
+        urls=target.get('urls')
+        result['candidateVersionUrls']=safe_version_urls(urls)
+        check('existing-candidate-version-url',lambda:len(result['candidateVersionUrls'])==1)
+        if not result['comparisonFailures']:result['state']='PRESERVED_CANDIDATE_READ_VERIFIED_PRIOR_VERSION_SERVING'
     except Held as error:result['reasonCode']=str(error)
     except Exception:result['reasonCode']='READ_OR_SCHEMA_HELD'
     raw=json.dumps(result,indent=2)
