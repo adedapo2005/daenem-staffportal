@@ -24,7 +24,7 @@ WORKFLOW='staffportal-approved-artifact-upload.yml'
 WORKFLOW_REF=REPO+'/.github/workflows/'+WORKFLOW+'@refs/heads/main'
 RELEASE_ID=434713012
 APP_SHA='a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080'
-RUNTIME_SHA='33b8903ebe37265deb8771f6e266bfdc88845ceeebda02623e049ef2fbae2c6f'
+RUNTIME_SHA='537f3dfacc4bbee7ccd79ae0bf748796224543933859c36a916e6aca2d256c2d'
 OPERATOR_MANIFEST='c15e06e6e62ddcda71d2009b7d6ab97ebb6e9d724bee4fe3e2b640e5ea334cc4'
 PREPARER_SHA='391e463f9d54d465df2e92b426c7bc78978943085f2f91c75be1b12641143bd5'
 HEX=re.compile(r'[0-9a-f]{64}\Z')
@@ -270,12 +270,81 @@ def verify_account_identity(env,expected):
     if not isinstance(raw,str) or ''.join(raw.split())!=expected:
         raise Held('CLOUDFLARE_ACCOUNT_MISMATCH')
 
-def reconcile_known_preupload_failure(reader, row, workflow_id):
+def safe_failure_code(error,runtime):
+    """Fixed labels only; provider messages and exception text stay private."""
+    if isinstance(error,Held):return error.code
+    publisher=runtime['publisher']
+    if isinstance(error,publisher.Rejected):return 'CLOUDFLARE_REQUEST_REJECTED'
+    if isinstance(error,publisher.Uncertain):return 'CLOUDFLARE_REQUEST_OUTCOME_UNKNOWN'
+    if isinstance(error,publisher.Stop):
+        return {'binding resource, restriction or value drift':'BINDING_RESOURCE_OR_VALUE_DRIFT',
+                'AI project read metadata malformed':'AI_PROJECT_READ_METADATA_MALFORMED',
+                'AI project read metadata changed during execution':'AI_PROJECT_READ_METADATA_CHANGED',
+                'version runtime setting drift or missing value':'RUNTIME_SETTING_HELD',
+                'current and explicit source bindings differ':'SOURCE_CURRENT_BINDINGS_DIFFER',
+                'deployment/source allocation drift':'DEPLOYMENT_ALLOCATION_DRIFT',
+                'execution baseline changed between drift checks':'EXECUTION_BASELINE_CHANGED'
+                }.get(str(error),'PUBLISHER_BOUNDARY_HELD')
+    return 'EXECUTION_HELD'
+
+def review_prior_asset_staging(reader,row,workflow_id,owner_acceptance):
+    """Explicit fresh-session decision; never claim the prior asset outcome.
+
+    Both pinned ZIPs were inspected. The journal records no version attempt,
+    but completed asset operations are not retained by that old journal.
+    Keep that uncertainty and its old HELD state; never automatically resume it.
+    """
+    if owner_acceptance is not True:raise Held('PRIOR_ASSET_STAGING_OWNER_ACCEPTANCE_REQUIRED')
+    rid=42078524520;source='e39946b76c4194c8f68cbb78cc5576400292fae7'
+    expected={'id':rid,'run_attempt':1,'workflow_id':408290809,'head_sha':source,
+              'head_branch':'main','event':'workflow_dispatch','status':'completed',
+              'conclusion':'failure','path':'.github/workflows/'+WORKFLOW}
+    if workflow_id!=408290809 or any(row.get(k)!=v for k,v in expected.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    prefix=f'repos/{REPO}/actions/runs/{rid}'
+    run=reader.json(prefix)
+    if any(run.get(k)!=v for k,v in expected.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/jobs?per_page=100');jobs=data.get('jobs')
+    if data.get('total_count')!=1 or not isinstance(jobs,list) or len(jobs)!=1:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    job=jobs[0]
+    if any(job.get(k)!=v for k,v in {'id':127425094817,'run_id':rid,'name':'upload','status':'completed','conclusion':'failure'}.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    steps=[('Set up job','success'),('Initialize Private Runner Paths','success'),
+           ('Check Out The Exact Workflow Commit','success'),('Verify Executor Inputs Before Running Python','success'),
+           ('Set Up Pinned Python','success'),('Reject Reruns And Earlier Attempts','success'),
+           ('Verify Exact Cloudflare Account Before Preparation','success'),('Download Only The Hash-Pinned Inputs','success'),
+           ('Prepare The Approved Local Window','success'),('Preserve A Pre-Upload Attempt Marker','success'),
+           ('Upload And Verify Without Activation','failure'),('Preserve Sanitized Journal And Verification','success'),
+           ('Post Set Up Pinned Python','skipped'),('Post Check Out The Exact Workflow Commit','success'),('Complete job','success')]
+    actual=job.get('steps')
+    if not isinstance(actual,list) or [(s.get('name'),s.get('conclusion')) for s in actual]!=steps or any(s.get('status')!='completed' for s in actual):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    data=reader.json(prefix+'/artifacts?per_page=100');artifacts=data.get('artifacts')
+    if data.get('total_count')!=2 or not isinstance(artifacts,list) or len(artifacts)!=2:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    pins={13439382902:('staffportal-pre-upload-42078524520',1322,'49d2975dca923ea9f6e5d92e52fd7e6fd17ee0ea4f13bd83458884c82cb89c43'),
+          13438648323:('staffportal-upload-evidence-42078524520',2666,'72fc078d5a15b88f92e782192e2f0ef4b7a09b030a414495159b497b491aa622')}
+    seen=set()
+    for item in artifacts:
+        aid=item.get('id')
+        if aid not in pins or aid in seen:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+        seen.add(aid);name,size,digest=pins[aid]
+        identity={'id':rid,'repository_id':1363396851,'head_repository_id':1363396851,'head_sha':source,'head_branch':'main'}
+        if item.get('name')!=name or item.get('size_in_bytes')!=size or item.get('digest')!='sha256:'+digest or item.get('expired') is not False or any((item.get('workflow_run') or {}).get(k)!=v for k,v in identity.items()):raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+    return {'runId':rid,'sourceSha':source,'jobId':job['id'],'evidenceArtifactIds':sorted(seen),
+            'priorAssetStaging':'UNKNOWN','priorVersionAttempted':False,'priorJournalRemainsHeld':True,
+            'ownerDecision':'new Owner-approved session request; prior asset work may have committed',
+            'automaticRetryAuthorized':False}
+
+def require_fresh_session_review(env,guard):
+    if env.get('SP_FRESH_SESSION_REVIEW')!='42078524520' or guard.get('ownerAcceptedUnknownAssetStagingRun')!=42078524520:
+        raise Held('PRIOR_ASSET_STAGING_OWNER_ACCEPTANCE_REQUIRED')
+
+def reconcile_known_preupload_failure(reader, row, workflow_id, *, owner_acceptance=False):
     """Exact captured failures before Cloudflare adapter access.
 
     This is not a generic failed-run exception. Any changed attempt, metadata,
     step outcome or artifact makes the historical attempt unresolved again.
     """
+    if row.get('id')==42078524520:
+        if owner_acceptance is not True:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
+        return review_prior_asset_staging(reader,row,workflow_id,owner_acceptance)
     if row.get('id')==42075233917:
         return reconcile_account_rejection(reader,row,workflow_id)
     if row.get('id')==42064065206:
@@ -340,13 +409,16 @@ def workflow_guard(env,reader):
             if str(rid)==context['runId']:
                 if row.get('run_attempt')!=1:raise Held('PRIOR_RUN_REQUIRES_RECONCILIATION')
             else:
-                reconciled.append(reconcile_known_preupload_failure(reader,row,wf['id']))
+                reconciled.append(reconcile_known_preupload_failure(reader,row,wf['id'],owner_acceptance=env.get('SP_FRESH_SESSION_REVIEW')=='42078524520'))
         if len(rows)<100:break
     else:raise Held('WORKFLOW_HISTORY_INCOMPLETE')
     if len(seen)!=declared or int(context['runId']) not in seen or len(seen)!=1+len(reconciled):raise Held('WORKFLOW_HISTORY_INCOMPLETE')
+    accepted=42078524520 if any(r.get('runId')==42078524520 and r.get('priorAssetStaging')=='UNKNOWN' for r in reconciled) else None
+    if env.get('SP_FRESH_SESSION_REVIEW')=='42078524520' and accepted is None:raise Held('PRIOR_ASSET_STAGING_REVIEW_NOT_IN_HISTORY')
     return {**context,'workflowId':wf['id'],'guard':'FIRST_PUBLISHING_RUN_ONLY',
+            'ownerAcceptedUnknownAssetStagingRun':accepted,
             'reconciledPreuploadRuns':reconciled,
-            'meaning':'administrative run-history guard; only four exact captured failures before Cloudflare adapter access are reconciled; not a provider idempotency fence'}
+            'meaning':'exact captured history plus explicit Owner fresh-session acceptance of unknown asset staging; not a provider idempotency fence'}
 
 def fetch_inputs(reader,application_id,operator_id,operator_sha,destination):
     if not re.fullmatch(r'[1-9][0-9]*',application_id) or not re.fullmatch(r'[1-9][0-9]*',operator_id) or application_id==operator_id or not HEX.fullmatch(operator_sha):raise Held('INPUT_IDENTIFIERS_INVALID')
@@ -430,6 +502,7 @@ def execute(args,env=None,deps=None,reader=None):
         context=github_context(env)
         guard=read_json(out/'github-guard.json')
         if any(guard.get(k)!=v for k,v in context.items()) or guard.get('guard')!='FIRST_PUBLISHING_RUN_ONLY':raise Held('MATCHING_RUN_GUARD_REQUIRED')
+        require_fresh_session_review(env,guard)
         preparation=read_json(out/'preparation.json')
         if preparation.get('state')!='WINDOW_PREPARED_LOCALLY' or preparation.get('applicationSha256')!=APP_SHA or preparation.get('runtimePinsSha256')!=RUNTIME_SHA:raise Held('PREPARATION_RECORD_MISMATCH')
         window=deps.window(args.window_dir,preparation['windowSha256']);plan=deps.plan(window);plan.window.check(plan.clock)
@@ -463,7 +536,7 @@ def execute(args,env=None,deps=None,reader=None):
             result={'state':'UPLOAD_VERIFIED_ALLOCATION_UNCHANGED','context':bind,'verification':evidence,'activationPerformed':False,'deliveredBytesVerified':False,'retryAuthorized':False}
             atomic_json(result_path,result,forbidden);return result
     except Exception as error:
-        code=error.code if isinstance(error,Held) else 'EXECUTION_HELD'
+        code=safe_failure_code(error,runtime)
         result={'state':'HELD','code':code,'retryAuthorized':False,'activationPerformed':False}
         if journal is not None:
             v=journal.data.get('version_id');result['versionId']=v if isinstance(v,str) and re.fullmatch('[0-9a-f-]{36}',v) else None
