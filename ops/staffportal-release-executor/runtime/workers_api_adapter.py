@@ -50,7 +50,7 @@ class WorkersAPIAdapter(CloudflareAdapter):
         worker=self._worker()
         source=self.read_version(SOURCE_VERSION)
         source_bindings=self.plan.binding_projection(source.get('bindings'))
-        source_settings=self.plan.version_settings(source)
+        source_settings=self.plan.version_settings(source,version_read=True)
         settings=self._call('GET','/workers/scripts/'+WORKER+'/settings',self._token)[1]
         current_bindings=self.plan.binding_projection(settings.get('bindings'))
         current_settings=self.plan.version_settings(settings)
@@ -151,7 +151,7 @@ class WorkersAPIAdapter(CloudflareAdapter):
         self.plan.window.check(self.plan.clock)
         source=self.read_version(version)
         self.plan.binding_projection(source.get('bindings'),target=True)
-        self.plan.version_settings(source)
+        self.plan.version_settings(source,version_read=True)
         assets=source.get('assets')
         if not isinstance(assets,dict) or assets.get('config')!=self.plan.projection()['assetConfig']:
             raise Stop('uploaded asset routing differs from approved plan')
