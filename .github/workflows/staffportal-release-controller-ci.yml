@@ -89,39 +89,66 @@ jobs:
           node scripts/check-signin-release-blockers.mjs
           npm run check:postauth-live
 
+
   upload-preflight-read:
-    name: Read Back Exact StaffPortal Activation Only
+    name: Return To Previous StaffPortal Version After Failed Acceptance
     if: >-
       github.repository == 'adedapo2005/daenem-staffportal' &&
       github.actor == 'adedapo2005' &&
       github.event_name == 'pull_request_review' &&
-      github.event.pull_request.head.ref == 'ops/staffportal-upload-preflight-read-20261105'
+      github.event.pull_request.head.ref == 'ops/staffportal-upload-preflight-read-20261105' &&
+      github.event.review.body == 'STAFFPORTAL RETURN TO 47927e3c-827a-4b7a-842c-8bdd6e88883e AFTER FAILED ACCEPTANCE; OWNER APPROVED' &&
+      github.run_attempt == 1
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
+    concurrency:
+      group: staffportal-existing-worker-return-c7efd7d7
+      cancel-in-progress: false
     permissions:
       contents: read
+      actions: read
     environment:
       name: staffportal-api-staging
       deployment: false
     steps:
-      - name: Checkout Fixed Read Diagnostic
+      - name: Checkout Fixed Activation Candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
           sparse-checkout: |
             .github/scripts
             ops/staffportal-release-executor
-      - name: Diagnose Fixed Existing Worker Reads Only
+      - name: Verify Existing Version And Prepare One-Time Intent
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: python3 -I .github/scripts/staffportal_upload_preflight_read.py
-      - name: Preserve Sanitized Read Result
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I .github/scripts/staffportal_return_previous_once.py prepare
+      - name: Preserve Intent Before Activation
+        id: intent
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
-          name: staffportal-preflight-read-${{ github.run_id }}
-          path: staffportal-upload-preflight-read.json
+          name: staffportal-return-intent-c7efd7d7-47927e3c
+          path: |
+            staffportal-activation-evidence/intent.json
+            staffportal-activation-evidence/preflight.json
           if-no-files-found: error
           retention-days: 90
           overwrite: false
-
+      - name: Return To Exact Previous Version Once And Read Back Allocation
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+          SP_INTENT_ARTIFACT_ID: ${{ steps.intent.outputs.artifact-id }}
+          SP_INTENT_ARTIFACT_DIGEST: ${{ steps.intent.outputs.artifact-digest }}
+        run: python3 -I .github/scripts/staffportal_return_previous_once.py activate
+      - name: Preserve Sanitized Activation Result
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: staffportal-return-result-${{ github.run_id }}
+          path: staffportal-activation-evidence
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: false
