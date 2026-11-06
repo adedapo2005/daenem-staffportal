@@ -1,0 +1,412 @@
+--- a/src/historical-authority.ts
++++ b/src/historical-authority.ts
+@@ -1,3 +1,4 @@
++import{historicalFinanceAssignments}from'./historical-finance-destinations';
+ import{currentGroupReportLevel}from'./restored-group-permission';
+ import type {WorkforceContext} from './auth';
+ import type {Session,Company,Assignment} from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
+@@ -9,8 +10,8 @@
+  'statutory-payroll':'payroll','payroll-payments':'payroll-batches',
+  'owner-intelligence':'owner','sync-sessions':'sync','temporary-passwords':'recovery',
+  'user-support':'support',monitoring:'resources','communications-admin':'communication-settings',
+- 'whatsapp-inbox':'inbox','expense-requests':'spend','expense-create':'spend','expense-approvals':'spend',
+- 'spend-admin':'spend',
++ 'whatsapp-inbox':'inbox','expense-requests':'spend','expense-create':'spend','expense-approvals':'expense-approvals',
++ 'spend-admin':'cost-admin',
+  'jobs-applications':'applications','jobs-interviews':'interviews','jobs-hiring':'hiring','website-admin':'website',themes:'theme','layout-studio':'layout'
+ };
+ export const historicalModuleId=(id:string)=>aliases[id]||id;
+@@ -31,6 +32,7 @@
+  const personal=moduleDefinitions.find(m=>m.id==='employee')!;
+  if(isModuleVisible(context,personal,null,''))for(const id of ['self-service','workspace','tasks','files','saved-views'])
+   if(!assignments.some(a=>a.module===id))assignments.push({module:id,level:'View',companies:['group'],scope:'OWN',capabilities:[]});
++ assignments.push(...historicalFinanceAssignments(context,selectedCompanyId));
+  const globalOwner=context.roles.some(r=>r.code==='owner');
+  for(const company of context.companies.filter(c=>!selectedCompanyId||c.id===selectedCompanyId)){
+   const alias=('assigned-company:'+encodeURIComponent(company.id)) as Company;
+--- a/src/historical-module-navigation.ts
++++ b/src/historical-module-navigation.ts
+@@ -1,3 +1,4 @@
++import{withHistoricalFinanceNavigation}from'./historical-finance-destinations';
+ import{currentGroupReportLevel}from'./restored-group-permission';
+ import{GLOBAL_NAVIGATION}from'../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/navigation-adapter';
+ import type{WorkforceContext}from'./auth';
+@@ -47,8 +48,9 @@
+   const page:CommandCenterPage={kind:'page',id:'verified-group-spend',label:'Spend & Profit Intelligence',route:'/spend-intelligence',moduleId:'spend-intelligence',permissionModuleId:'spend-intelligence',globalId:'admin',breadcrumb:['Admin','Spend & Profit Intelligence']};
+   const area=remaining.find(a=>a.globalId==='admin');if(area)area.children.push(page);else remaining.push({kind:'group',id:'area:admin',label:'Admin',globalId:'admin',children:[page],source:GLOBAL_NAVIGATION.find(a=>a.id==='admin')});
+  }
+- return GLOBAL_NAVIGATION.map(source=>remaining.find(area=>area.globalId===source.id)||{
++ const finalAreas=GLOBAL_NAVIGATION.map<CommandCenterGroup>(source=>remaining.find(area=>area.globalId===source.id)||{
+   kind:'group',id:'area:'+source.id,label:source.label,globalId:source.id,children:[],source
+  });
++ return withHistoricalFinanceNavigation(finalAreas,context);
+ 
+ }
+--- a/src/qa-review-v115-runtime.tsx
++++ b/src/qa-review-v115-runtime.tsx
+@@ -1,3 +1,4 @@
++import HistoricalFinanceDestinationBridge from './historical-finance-destination-bridge';
+ import{HistoricalGeneralDestinations}from'./historical-general-destinations';
+ import{portalRoleFromContext}from'./verified-role-presentation';
+ import RestoredLauncherBridge from './restored-launcher-bridge';
+@@ -454,7 +455,7 @@
+ 
+         
+         {/^\/leave(?:\/company\/[^/?#]+)?\/?$/.test(routePathname) && <Stage1LiveLeave context={context} selectedCompanyId={selectedCompanyId} />}
+-        <HistoricalGeneralDestinations context={context} selectedCompanyId={selectedCompanyId}/><RestoredLauncherBridge context={context} selectedCompanyId={selectedCompanyId}/><HistoricalModuleBridge context={context} selectedCompanyId={selectedCompanyId}/><Stage1LiveErpRouteBridge context={context} directCompanyId={directOnly?selectedCompanyId:undefined} />
++        <HistoricalFinanceDestinationBridge context={context}/><HistoricalGeneralDestinations context={context} selectedCompanyId={selectedCompanyId}/><RestoredLauncherBridge context={context} selectedCompanyId={selectedCompanyId}/><HistoricalModuleBridge context={context} selectedCompanyId={selectedCompanyId}/><Stage1LiveErpRouteBridge context={context} directCompanyId={directOnly?selectedCompanyId:undefined} />
+         <LivePostLoginEnhancementsV116 />
+         <Stage1SearchResults enabled={stage1Enabled} />
+         <Stage1AccessibleMetrics enabled={stage1Enabled} />
+--- a/src/historical-spend-center.tsx
++++ b/src/historical-spend-center.tsx
+@@ -218,7 +218,7 @@
+   </div>;
+ }
+ 
+-export function SpendCenter({ context, initialTab, onClose, fixedCompanyId }: { context: WorkforceContext; initialTab: Tab; onClose: () => void; fixedCompanyId?: string }) {
++export function SpendCenter({ context, initialTab, onClose, fixedCompanyId, fixedTab }: { context: WorkforceContext; initialTab: Tab; onClose: () => void; fixedCompanyId?: string; fixedTab?: 'approvals'|'admin' }) {
+   const [tab, setTab] = useState<Tab>(initialTab);
+   // A company-specific page is routed from the authorised navigation, not a picker.
+   const scopedCompany = fixedCompanyId ? context.companies.find((item) => item.id === fixedCompanyId) : undefined;
+@@ -232,7 +232,7 @@
+   const canCreate = Boolean(company && can(context, 'expense.requests', 'create', company.id));
+   const canApprove = Boolean(company && can(context, 'expense.approve', 'view', company.id));
+   const canAdmin = Boolean(company && can(context, 'expense.master', 'manage', company.id));
+-  const ownerAccess = isOwner(context);
++  const ownerAccess = !fixedTab && isOwner(context);
+   const erpOptions = ERP_CONTEXTS.filter((item) => item.id === 'finance'
+     ? Boolean(ownerAccess || (company && (can(context, 'expense.requests', 'view', company.id) || can(context, 'expense.own', 'view', company.id))))
+     : Boolean(ownerAccess || (company && hasWorkforcePermission(context, `${item.id}.access`, 'view', company.id))));
+@@ -243,7 +243,8 @@
+ 
+   useEffect(() => {
+     let active = true;
+-    if (!company) return undefined;
++    // Approvals and Administration load their own permission-specific services.
++    if (!company || fixedTab) return undefined;
+     setLoadingMaster(true);
+     api<MasterData>('/api/spend/bootstrap?companyId=' + encodeURIComponent(company.id)).then(async (value) => {
+       if (!active) return;
+@@ -255,7 +256,7 @@
+       else if (active) setErrorMessage('Master data is not available offline for this company yet. Reconnect once to prepare controlled expense work.');
+     }).finally(() => { if (active) setLoadingMaster(false); });
+     return () => { active = false; };
+-  }, [company?.id, context.employee.id]);
++  }, [company?.id, context.employee.id, fixedTab]);
+ 
+   const tabs = [
+     ...((canCreate || Boolean(company && can(context, 'expense.own', 'view', company.id))) ? [{ id: 'requests' as Tab, label: 'My requests' }] : []),
+@@ -263,11 +264,11 @@
+     ...(canApprove ? [{ id: 'approvals' as Tab, label: 'Approval queue' }] : []),
+     ...(ownerAccess ? [{ id: 'intelligence' as Tab, label: 'Spend & profit' }] : []),
+     ...(canAdmin ? [{ id: 'admin' as Tab, label: 'Administration' }] : []),
+-  ];
++  ].filter(item=>!fixedTab||item.id===fixedTab);
+   const activeTab = tabs.some((item) => item.id === tab) ? tab : (tabs[0]?.id || 'requests');
+   const smartContextKey = activeTab === 'intelligence' ? 'spend-intelligence' : activeTab === 'admin' ? 'spend-admin' : activeTab === 'approvals' ? 'expense-approvals' : activeTab === 'create' ? 'expense-requests' : 'expense-requests';
+   return <div className="spend-backdrop" role="presentation" onClick={onClose}>
+-    <section className="spend-shell" role="dialog" aria-modal="true" aria-labelledby="spend-title" onClick={(event) => event.stopPropagation()}>
++    <section className="spend-shell" role={fixedTab?"region":"dialog"} aria-modal={fixedTab?undefined:true} aria-labelledby="spend-title" onClick={(event) => event.stopPropagation()}>
+       <header className="spend-header">
+         <div><span className="eyebrow">DAENEM GROUP · SHARED SPEND ENGINE</span><h2 id="spend-title">Spend, Cost & Profit Intelligence</h2><p>Requests, evidence and controlled allocation in one accountable workflow.</p></div>
+         <button type="button" className="spend-close" onClick={onClose} aria-label="Close Spend and Cost workspace"><X size={20} /></button>
+--- a/src/finance-center.tsx
++++ b/src/finance-center.tsx
+@@ -1,3 +1,4 @@
++import{verifiedFinancialReport,type VerifiedFinancialReport}from'./finance-report-contract';
+ import React,{useEffect,useMemo,useRef,useState}from'react';
+ import{BookOpen,ChartNoAxesCombined,CircleDollarSign,ClipboardList,Landmark,Plus,RefreshCw,Send,WalletCards,X}from'lucide-react';
+ import{api,type AccessLevel,type WorkforceContext}from'./auth';
+@@ -5,7 +6,7 @@
+ 
+ type Tab='overview'|'receivables'|'ledger'|'reports'|'budgets';
+ const ranks:Record<AccessLevel,number>={none:0,view:1,create:2,edit:3,approve:4,manage:5};const can=(c:WorkforceContext,p:string,l:AccessLevel='view')=>ranks[c.permissions[p]||'none']>=ranks[l];const ngn=(k?:number)=>new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(k||0)/100);const today=()=>new Date().toISOString().slice(0,10);
+-type Summary={companyId:string;month:string;balances:Record<string,number>;receivables:{openCount:number;openKobo:number;overdueKobo:number};approvedBudgetKobo:number;netFundingKobo:number;draftJournals:number};type Account={id:string;code:string;name:string;accountType:string;allowManualPosting:number;balanceKobo:number};type Receivable={id:string;customerName:string;invoiceNo?:string;invoiceDate:string;dueDate?:string;amountKobo:number;paidKobo:number;balanceKobo:number;status:string};type Journal={id:string;entryNo:string;entryDate:string;description:string;status:string;debitKobo:number;creditKobo:number};type Report={startDate:string;endDate:string;trialBalance:{accounts:Array<Account&{debitKobo:number;creditKobo:number}>;totalDebitKobo:number;totalCreditKobo:number;balanced:boolean};profitLoss:{revenueKobo:number;costOfSalesKobo:number;grossProfitKobo:number;operatingExpensesKobo:number;netProfitKobo:number}};type Budget={id:string;name:string;status:string;totalKobo:number;fiscalPeriod?:string};
++type Summary={companyId:string;month:string;balances:Record<string,number>;receivables:{openCount:number;openKobo:number;overdueKobo:number};approvedBudgetKobo:number;netFundingKobo:number;draftJournals:number};type Account={id:string;code:string;name:string;accountType:string;allowManualPosting:number;balanceKobo:number};type Receivable={id:string;customerName:string;invoiceNo?:string;invoiceDate:string;dueDate?:string;amountKobo:number;paidKobo:number;balanceKobo:number;status:string};type Journal={id:string;entryNo:string;entryDate:string;description:string;status:string;debitKobo:number;creditKobo:number};type Report=VerifiedFinancialReport;type Budget={id:string;name:string;status:string;totalKobo:number;fiscalPeriod?:string};
+ 
+ // Never render cross-company, incomplete or imprecise financial summary payloads.
+ function verifiedSummary(summary: Summary | null, companyId: string): summary is Summary {
+@@ -22,7 +23,7 @@
+     && Object.values(summary.balances).every(value => Number.isSafeInteger(value));
+ }
+ 
+-export function FinanceCenter({context,onClose}:{context:WorkforceContext;onClose:()=>void}){const isOwner=context.roles.some(role=>role.code==='owner');const financeCompanies=context.companies.filter(company=>Object.entries(context.companyPermissions?.[company.id]||{}).some(([permission,level])=>permission.startsWith('finance.')&&level!=='none'));const[companyId,setCompanyId]=useState(financeCompanies[0]?.id||''),[tab,setTab]=useState<Tab>('overview'),[summary,setSummary]=useState<Summary|null>(null),[message,setMessage]=useState('');const selectedCompanyRef=useRef(companyId),summaryRequestRef=useRef(0),summaryAuthorityRef=useRef('');const companyAllowed=financeCompanies.some(company=>company.id===companyId);const feedbackAuthority=JSON.stringify([context.sessionId,context.employee.id,context.employee.status,context.roles,context.companies,context.companyPermissions,companyId]);const feedbackAuthorityRef=useRef(feedbackAuthority);feedbackAuthorityRef.current=feedbackAuthority;const authorityEpochRef=useRef({value:feedbackAuthority,epoch:0});if(authorityEpochRef.current.value!==feedbackAuthority){authorityEpochRef.current.value=feedbackAuthority;authorityEpochRef.current.epoch++;}const setCompanyScopedMessage=React.useCallback((next:string)=>{if(selectedCompanyRef.current!==companyId||feedbackAuthorityRef.current!==feedbackAuthority||!companyAllowed)return;setMessage(next)},[feedbackAuthority,companyId,companyAllowed]);const scopedContext:WorkforceContext={...context,permissions:companyAllowed?context.companyPermissions?.[companyId]||{}:{}};async function loadSummary(){if(!companyAllowed||!can(scopedContext,'finance.reports'))return;const requestId=++summaryRequestRef.current;try{const latestSummary=await api<Summary>(`/api/finance/summary?companyId=${encodeURIComponent(companyId)}`);if(!verifiedSummary(latestSummary,companyId))throw new Error('Finance summary could not be verified for this company.');if(selectedCompanyRef.current===companyId&&summaryRequestRef.current===requestId&&feedbackAuthorityRef.current===feedbackAuthority&&companyAllowed){summaryAuthorityRef.current=feedbackAuthority;setSummary(latestSummary)}}catch(e){if(selectedCompanyRef.current===companyId&&summaryRequestRef.current===requestId&&feedbackAuthorityRef.current===feedbackAuthority&&companyAllowed){summaryAuthorityRef.current='';setSummary(null);setMessage((e as Error).message)}}}useEffect(()=>{if(!financeCompanies.some(company=>company.id===companyId)){const next=financeCompanies[0]?.id||'';selectedCompanyRef.current=next;summaryRequestRef.current++;setSummary(null);setMessage('');if(next!==companyId)setCompanyId(next)}},[context,companyId]);useEffect(()=>{selectedCompanyRef.current=companyId;summaryRequestRef.current++;setSummary(null);setMessage('')},[context]);useEffect(()=>{loadSummary()},[companyId,context]);useEffect(()=>{if(!companyAllowed)return;const required=tab==='overview'?'finance.reports':tab==='ledger'?'finance.ledger':`finance.${tab}`;if(!can(scopedContext,required))setTab(can(scopedContext,'finance.reports')?'overview':can(scopedContext,'finance.receivables')?'receivables':can(scopedContext,'finance.ledger')?'ledger':can(scopedContext,'finance.budgets')?'budgets':'overview')},[companyId,context,tab]);return <div className="fin-backdrop" onClick={onClose}><section className="fin-shell" onClick={e=>e.stopPropagation()}><header className="fin-head"><div><span><Landmark size={22}/></span><div><small>DAENEM GROUP · FINANCE ERP</small><h2>Finance Command Center</h2></div></div><aside><select value={companyId} onChange={e=>{selectedCompanyRef.current=e.target.value;summaryRequestRef.current++;setSummary(null);setMessage('');setCompanyId(e.target.value)}}>{financeCompanies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select><button onClick={loadSummary}><RefreshCw size={17}/></button><button onClick={onClose}><X size={19}/></button></aside></header><nav className="fin-tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}><CircleDollarSign size={15}/>Overview</button>{can(scopedContext,'finance.receivables')&&<button className={tab==='receivables'?'active':''} onClick={()=>setTab('receivables')}><WalletCards size={15}/>Receivables</button>}{can(scopedContext,'finance.ledger')&&<button className={tab==='ledger'?'active':''} onClick={()=>setTab('ledger')}><BookOpen size={15}/>Ledger & Journal</button>}{can(scopedContext,'finance.reports')&&<button className={tab==='reports'?'active':''} onClick={()=>setTab('reports')}><ChartNoAxesCombined size={15}/>Reports</button>}{can(scopedContext,'finance.budgets')&&<button className={tab==='budgets'?'active':''} onClick={()=>setTab('budgets')}><ClipboardList size={15}/>Budgets</button>}</nav>{message&&<div className="fin-message">{message}</div>}<main className="fin-content">{companyAllowed&&tab==='overview'&&can(scopedContext,'finance.reports')&&<Overview summary={summaryAuthorityRef.current===feedbackAuthority?summary:null}/>} {companyAllowed&&tab==='receivables'&&can(scopedContext,'finance.receivables')&&<Receivables key={authorityEpochRef.current.epoch} context={scopedContext} companyId={companyId} setMessage={setCompanyScopedMessage}/>} {companyAllowed&&tab==='ledger'&&can(scopedContext,'finance.ledger')&&<Ledger key={authorityEpochRef.current.epoch} context={scopedContext} companyId={companyId} setMessage={setCompanyScopedMessage}/>} {companyAllowed&&tab==='reports'&&can(scopedContext,'finance.reports')&&<Reports key={authorityEpochRef.current.epoch} companyId={companyId} setMessage={setCompanyScopedMessage}/>} {companyAllowed&&tab==='budgets'&&can(scopedContext,'finance.budgets')&&<Budgets key={authorityEpochRef.current.epoch} context={scopedContext} companyId={companyId} setMessage={setCompanyScopedMessage}/>}</main></section></div>}
++export function FinanceCenter({context,onClose,fixedCompanyId,fixedTab}:{context:WorkforceContext;onClose:()=>void;fixedCompanyId?:string;fixedTab?:'receivables'|'budgets'|'reports'}){const isOwner=context.roles.some(role=>role.code==='owner');const financeCompanies=context.companies.filter(company=>(!fixedCompanyId||company.id===fixedCompanyId)&&Object.entries(context.companyPermissions?.[company.id]||{}).some(([permission,level])=>permission.startsWith('finance.')&&level!=='none'));const[companyId,setCompanyId]=useState(fixedCompanyId||financeCompanies[0]?.id||''),[tab,setTab]=useState<Tab>(fixedTab||'overview'),[summary,setSummary]=useState<Summary|null>(null),[message,setMessage]=useState(''),[readRevision,setReadRevision]=useState(0);const selectedCompanyRef=useRef(companyId),summaryRequestRef=useRef(0),summaryAuthorityRef=useRef('');const companyAllowed=financeCompanies.some(company=>company.id===companyId);const feedbackAuthority=JSON.stringify([context.sessionId,context.employee.id,context.employee.status,context.roles,context.companies,context.companyPermissions,companyId]);const feedbackAuthorityRef=useRef(feedbackAuthority);feedbackAuthorityRef.current=feedbackAuthority;const authorityEpochRef=useRef({value:feedbackAuthority,epoch:0});if(authorityEpochRef.current.value!==feedbackAuthority){authorityEpochRef.current.value=feedbackAuthority;authorityEpochRef.current.epoch++;}const setCompanyScopedMessage=React.useCallback((next:string)=>{if(selectedCompanyRef.current!==companyId||feedbackAuthorityRef.current!==feedbackAuthority||!companyAllowed)return;setMessage(next)},[feedbackAuthority,companyId,companyAllowed]);const scopedContext:WorkforceContext={...context,permissions:companyAllowed?context.companyPermissions?.[companyId]||{}:{}};async function loadSummary(){if(fixedTab||!companyAllowed||!can(scopedContext,'finance.reports'))return;const requestId=++summaryRequestRef.current;try{const latestSummary=await api<Summary>(`/api/finance/summary?companyId=${encodeURIComponent(companyId)}`);if(!verifiedSummary(latestSummary,companyId))throw new Error('Finance summary could not be verified for this company.');if(selectedCompanyRef.current===companyId&&summaryRequestRef.current===requestId&&feedbackAuthorityRef.current===feedbackAuthority&&companyAllowed){summaryAuthorityRef.current=feedbackAuthority;setSummary(latestSummary)}}catch(e){if(selectedCompanyRef.current===companyId&&summaryRequestRef.current===requestId&&feedbackAuthorityRef.current===feedbackAuthority&&companyAllowed){summaryAuthorityRef.current='';setSummary(null);setMessage((e as Error).message)}}}useEffect(()=>{if(!financeCompanies.some(company=>company.id===companyId)){const next=financeCompanies[0]?.id||'';selectedCompanyRef.current=next;summaryRequestRef.current++;setSummary(null);setMessage('');if(next!==companyId)setCompanyId(next)}},[context,companyId]);useEffect(()=>{selectedCompanyRef.current=companyId;summaryRequestRef.current++;setSummary(null);setMessage('')},[context]);useEffect(()=>{loadSummary()},[companyId,context]);useEffect(()=>{if(!companyAllowed)return;if(fixedTab){if(tab!==fixedTab)setTab(fixedTab);return;}const required=tab==='overview'?'finance.reports':tab==='ledger'?'finance.ledger':`finance.${tab}`;if(!can(scopedContext,required))setTab(can(scopedContext,'finance.reports')?'overview':can(scopedContext,'finance.receivables')?'receivables':can(scopedContext,'finance.ledger')?'ledger':can(scopedContext,'finance.budgets')?'budgets':'overview')},[companyId,context,tab,fixedTab]);return <div className="fin-backdrop" onClick={onClose}><section className="fin-shell" onClick={e=>e.stopPropagation()}><header className="fin-head"><div><span><Landmark size={22}/></span><div><small>DAENEM GROUP · FINANCE ERP</small><h2>Finance Command Center</h2></div></div><aside>{fixedCompanyId?<strong>{financeCompanies.find(company=>company.id===companyId)?.name||'Company Unavailable'}</strong>:<select value={companyId} onChange={e=>{selectedCompanyRef.current=e.target.value;summaryRequestRef.current++;setSummary(null);setMessage('');setCompanyId(e.target.value)}}>{financeCompanies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>}<button aria-label="Refresh Finance Workspace" onClick={()=>fixedTab?setReadRevision(value=>value+1):void loadSummary()}><RefreshCw size={17}/></button><button aria-label="Return To Home" onClick={onClose}><X size={19}/></button></aside></header><nav className="fin-tabs">{!fixedTab&&<button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}><CircleDollarSign size={15}/>Overview</button>}{(!fixedTab||fixedTab==='receivables')&&can(scopedContext,'finance.receivables')&&<button className={tab==='receivables'?'active':''} onClick={()=>setTab('receivables')}><WalletCards size={15}/>Receivables</button>}{!fixedTab&&can(scopedContext,'finance.ledger')&&<button className={tab==='ledger'?'active':''} onClick={()=>setTab('ledger')}><BookOpen size={15}/>Ledger & Journal</button>}{(!fixedTab||fixedTab==='reports')&&can(scopedContext,'finance.reports')&&<button className={tab==='reports'?'active':''} onClick={()=>setTab('reports')}><ChartNoAxesCombined size={15}/>Reports</button>}{(!fixedTab||fixedTab==='budgets')&&can(scopedContext,'finance.budgets')&&<button className={tab==='budgets'?'active':''} onClick={()=>setTab('budgets')}><ClipboardList size={15}/>Budgets</button>}</nav>{message&&<div className="fin-message">{message}</div>}<main className="fin-content">{companyAllowed&&tab==='overview'&&can(scopedContext,'finance.reports')&&<Overview summary={summaryAuthorityRef.current===feedbackAuthority?summary:null}/>} {companyAllowed&&tab==='receivables'&&can(scopedContext,'finance.receivables')&&<Receivables key={authorityEpochRef.current.epoch+':'+readRevision} context={scopedContext} companyId={companyId} setMessage={setCompanyScopedMessage}/>} {companyAllowed&&tab==='ledger'&&can(scopedContext,'finance.ledger')&&<Ledger key={authorityEpochRef.current.epoch+':'+readRevision} context={scopedContext} companyId={companyId} setMessage={setCompanyScopedMessage}/>} {companyAllowed&&tab==='reports'&&can(scopedContext,'finance.reports')&&<Reports key={authorityEpochRef.current.epoch+':'+readRevision} companyId={companyId} setMessage={setCompanyScopedMessage}/>} {companyAllowed&&tab==='budgets'&&can(scopedContext,'finance.budgets')&&<Budgets key={authorityEpochRef.current.epoch+':'+readRevision} context={scopedContext} companyId={companyId} setMessage={setCompanyScopedMessage}/>}</main></section></div>}
+ function Overview({summary}:{summary:Summary|null}){if(!summary)return <div className="fin-empty" role="status" aria-live="polite">Finance summary has not been verified for this authorized view. Balances and counts are unavailable.</div>;const bal=summary.balances||{};return <div className="fin-stack"><section className="fin-kpis"><article><small>Open Receivables</small><strong>{ngn(summary?.receivables.openKobo)}</strong><span>{summary?.receivables.openCount??0} customer balance(s)</span></article><article className="warn"><small>Overdue</small><strong>{ngn(summary?.receivables.overdueKobo)}</strong><span>Needs collection follow-up</span></article><article><small>Approved Budget</small><strong>{ngn(summary?.approvedBudgetKobo)}</strong><span>{summary?.month||'Current month'}</span></article><article><small>Net Funding</small><strong>{ngn(summary?.netFundingKobo)}</strong><span>Owner/loan/grant/transfers</span></article></section><section className="fin-grid"><article className="fin-panel"><small>LEDGER SNAPSHOT</small><h3>Account-class balances</h3><div className="balance-list">{Object.entries(bal).map(([name,value])=><div key={name}><span>{name.replaceAll('_',' ')}</span><b>{ngn(Math.abs(value))}</b></div>)}{!Object.keys(bal).length&&<div className="fin-empty">Posted journal balances will appear here.</div>}</div></article><article className="fin-panel"><small>CONTROL STATUS</small><h3>Finance attention</h3><div className="control-list"><div><span>Draft journals waiting</span><b>{summary?.draftJournals??0}</b></div><div><span>Trial balance control</span><b>Double-entry</b></div><div><span>Currency</span><b>NGN</b></div><div><span>Posting</span><b>Permission controlled</b></div></div></article></section></div>}
+ type ReceivableCreateIntent={key:string;marker:string;body:string;scope:string;inFlight:boolean;state:'pending'|'confirmed'};
+ // No customer values, company identity, request body, key, or credentials are persisted.
+@@ -131,5 +132,24 @@
+   }
+ }return <div className="fin-grid"><article className="fin-panel"><div className="fin-panel-head"><div><small>ACCOUNTS RECEIVABLE</small><h3>Customer balances</h3></div><button onClick={load} aria-label="Refresh customer balances"><RefreshCw size={15}/></button></div><p className="fin-verification-note" role="note">Balances update only after verified bank/provider reconciliation or approved cash confirmation.</p>{registerStatus!=='ready'&&<p className="fin-verification-note" role="status" aria-live="polite">{registerStatus==='loading'?'Receivables register verification is pending; no balances are confirmed for this view.':'Receivables register unavailable or unverified. Do not infer that there are no balances or repeat an uncertain create operation.'}</p>}<div className="fin-table"><div className="thead"><span>Customer</span><span>Invoice</span><span>Due</span><span>Balance</span><span>Status</span></div>{registerStatus==='ready'&&rows.map(r=><div key={r.id}><span><b>{r.customerName}</b><small>{r.invoiceDate}</small></span><span>{r.invoiceNo||'—'}</span><span>{r.dueDate||'—'}</span><span>{ngn(r.balanceKobo)}</span><span><em className={`fin-status ${r.status}`}>{r.status.replaceAll('_',' ')}</em>{r.balanceKobo>0&&<small className="fin-payment-note">Awaiting verified payment</small>}</span></div>)}</div></article>{can(context,'finance.receivables','create')&&<article className="fin-panel"><small>NEW RECEIVABLE</small><h3>Record customer credit</h3><form className="fin-form" onSubmit={create}>{uncertain&&<p className="fin-verification-note" role="status" aria-live="polite">A previous receivable operation may be unresolved. Use the same details for a retry or review the authorized register; a new key is not issued automatically.</p>}{receivableCreateIntent?.scope===scope&&receivableCreateIntent.state==='confirmed'&&<button type="button" disabled={registerStatus!=='ready'} onClick={()=>{if(!permitted||authorityRef.current.scope!==scope||!authorityRef.current.permitted||registerStatus!=='ready')return;if(receivableCreateIntent?.scope!==scope||receivableCreateIntent.state!=='confirmed')return;releaseReceivableHold(receivableCreateIntent.marker);if(readReceivableHold())return;receivableCreateIntent=null;setUncertain(false);setMessage('Ready for a separate new receivable operation.')}}>I reviewed the register — start another receivable</button>}<label><span>Customer</span><input required value={form.customerName} onChange={e=>setForm({...form,customerName:e.target.value})}/></label><label><span>Invoice no.</span><input value={form.invoiceNo} onChange={e=>setForm({...form,invoiceNo:e.target.value})}/></label><div><label><span>Invoice date</span><input type="date" required value={form.invoiceDate} onChange={e=>setForm({...form,invoiceDate:e.target.value})}/></label><label><span>Due date</span><input type="date" value={form.dueDate} onChange={e=>setForm({...form,dueDate:e.target.value})}/></label></div><label><span>Amount (₦)</span><input type="number" min="0" step="0.01" required value={form.amountNaira} onChange={e=>setForm({...form,amountNaira:e.target.value})}/></label><label><span>Note</span><textarea rows={3} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></label><button className="fin-primary" disabled={creating} aria-busy={creating}><Plus size={15}/>Record receivable</button></form></article>}</div>}
+ function Ledger({context,companyId,setMessage}:{context:WorkforceContext;companyId:string;setMessage:(m:string)=>void}){const[accounts,setAccounts]=useState<Account[]>([]),[journals,setJournals]=useState<Journal[]>([]),[form,setForm]=useState({date:today(),description:'',reference:'',debitAccount:'',creditAccount:'',amount:''});async function load(){try{const[a,j]=await Promise.all([api<{accounts:Account[]}>(`/api/finance/accounts?companyId=${encodeURIComponent(companyId)}`),api<{journals:Journal[]}>(`/api/finance/journals?companyId=${encodeURIComponent(companyId)}`)]);setAccounts(a.accounts||[]);setJournals(j.journals||[])}catch(e){setMessage((e as Error).message)}}useEffect(()=>{load()},[companyId]);const posting=useMemo(()=>accounts.filter(a=>a.allowManualPosting),[accounts]);async function create(e:React.FormEvent){e.preventDefault();try{await api('/api/finance/journals',{method:'POST',body:JSON.stringify({companyId,entryDate:form.date,description:form.description,reference:form.reference,lines:[{accountId:form.debitAccount,debitNaira:Number(form.amount)},{accountId:form.creditAccount,creditNaira:Number(form.amount)}]})});setMessage('Balanced journal created as Draft.');setForm({...form,description:'',reference:'',amount:''});await load()}catch(err){setMessage((err as Error).message)}}async function post(id:string){try{await api('/api/finance/journals/post',{method:'POST',body:JSON.stringify({id})});setMessage('Journal approved and posted.');await load()}catch(e){setMessage((e as Error).message)}}return <div className="fin-stack"><section className="fin-grid"><article className="fin-panel"><small>CHART OF ACCOUNTS</small><h3>Ledger balances</h3><div className="account-list">{accounts.map(a=><div key={a.id}><span><b>{a.code}</b> {a.name}<small>{a.accountType.replaceAll('_',' ')}</small></span><strong>{ngn(Math.abs(a.balanceKobo))}</strong></div>)}</div></article>{can(context,'finance.journal','create')&&<article className="fin-panel"><small>MANUAL JOURNAL</small><h3>Balanced posting</h3><form className="fin-form" onSubmit={create}><label><span>Date</span><input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label><label><span>Description</span><input required value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><label><span>Debit account</span><select required value={form.debitAccount} onChange={e=>setForm({...form,debitAccount:e.target.value})}><option value="">Select…</option>{posting.map(a=><option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}</select></label><label><span>Credit account</span><select required value={form.creditAccount} onChange={e=>setForm({...form,creditAccount:e.target.value})}><option value="">Select…</option>{posting.map(a=><option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}</select></label><label><span>Amount (₦)</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label><label><span>Reference</span><input value={form.reference} onChange={e=>setForm({...form,reference:e.target.value})}/></label><button className="fin-primary"><Send size={15}/>Create draft journal</button></form></article>}</section><article className="fin-panel"><small>JOURNAL REGISTER</small><h3>Recent entries</h3><div className="journal-list">{journals.map(j=><div key={j.id}><span><b>{j.entryNo}</b><small>{j.entryDate} · {j.description}</small></span><span><b>{ngn(j.debitKobo)}</b><em className={`fin-status ${j.status}`}>{j.status}</em>{j.status==='draft'&&can(context,'finance.journal','approve')&&<button onClick={()=>post(j.id)}>Post</button>}</span></div>)}</div></article></div>}
+-function Reports({companyId,setMessage}:{companyId:string;setMessage:(m:string)=>void}){const[start,setStart]=useState(`${new Date().getFullYear()}-01-01`),[end,setEnd]=useState(today()),[report,setReport]=useState<Report|null>(null);async function load(){try{setReport(await api<Report>(`/api/finance/reports?companyId=${encodeURIComponent(companyId)}&startDate=${start}&endDate=${end}`))}catch(e){setMessage((e as Error).message)}}useEffect(()=>{load()},[companyId]);return <div className="fin-stack"><div className="report-filter"><label>From <input type="date" value={start} onChange={e=>setStart(e.target.value)}/></label><label>To <input type="date" value={end} onChange={e=>setEnd(e.target.value)}/></label><button className="fin-primary" onClick={load}>Run report</button></div><section className="fin-kpis"><article><small>Revenue</small><strong>{ngn(report?.profitLoss.revenueKobo)}</strong></article><article><small>Gross Profit</small><strong>{ngn(report?.profitLoss.grossProfitKobo)}</strong></article><article><small>Operating Expenses</small><strong>{ngn(report?.profitLoss.operatingExpensesKobo)}</strong></article><article><small>Net Profit</small><strong>{ngn(report?.profitLoss.netProfitKobo)}</strong></article></section><article className="fin-panel"><div className="fin-panel-head"><div><small>TRIAL BALANCE</small><h3>{report?.trialBalance.balanced?'Balanced':'Requires attention'}</h3></div><b>{ngn(report?.trialBalance.totalDebitKobo)} DR = {ngn(report?.trialBalance.totalCreditKobo)} CR</b></div><div className="fin-table report"><div className="thead"><span>Account</span><span>Type</span><span>Debit</span><span>Credit</span><span>Balance</span></div>{report?.trialBalance.accounts.filter(a=>a.debitKobo||a.creditKobo).map(a=><div key={a.id}><span>{a.code} · {a.name}</span><span>{a.accountType}</span><span>{ngn(a.debitKobo)}</span><span>{ngn(a.creditKobo)}</span><span>{ngn(Math.abs(a.balanceKobo))}</span></div>)}</div></article></div>}
+-function Budgets({context,companyId,setMessage}:{context:WorkforceContext;companyId:string;setMessage:(m:string)=>void}){const[rows,setRows]=useState<Budget[]>([]),[accounts,setAccounts]=useState<Account[]>([]),[form,setForm]=useState({name:'',accountId:'',periodKey:new Date().toISOString().slice(0,7),amount:''});async function load(){try{const[b,a]=await Promise.all([api<{budgets:Budget[]}>(`/api/finance/budgets?companyId=${encodeURIComponent(companyId)}`),api<{accounts:Account[]}>(`/api/finance/accounts?companyId=${encodeURIComponent(companyId)}`)]);setRows(b.budgets||[]);setAccounts(a.accounts||[])}catch(e){setMessage((e as Error).message)}}useEffect(()=>{load()},[companyId]);async function create(e:React.FormEvent){e.preventDefault();try{await api('/api/finance/budgets',{method:'POST',body:JSON.stringify({companyId,name:form.name,lines:form.accountId?[{accountId:form.accountId,periodKey:form.periodKey,amountNaira:Number(form.amount)}]:[]})});setMessage('Draft budget created.');setForm({...form,name:'',amount:''});await load()}catch(err){setMessage((err as Error).message)}}async function approve(id:string,lock=false){try{await api('/api/finance/budgets/approve',{method:'POST',body:JSON.stringify({id,lock})});setMessage(lock?'Budget approved and locked.':'Budget approved.');await load()}catch(e){setMessage((e as Error).message)}}return <div className="fin-grid"><article className="fin-panel"><small>BUDGET REGISTER</small><h3>Approved spending plans</h3><div className="budget-list">{rows.map(b=><div key={b.id}><span><b>{b.name}</b><small>{b.fiscalPeriod||'No fiscal period assigned'}</small></span><span><strong>{ngn(b.totalKobo)}</strong><em className={`fin-status ${b.status}`}>{b.status}</em>{b.status==='draft'&&can(context,'finance.budgets','approve')&&<button onClick={()=>approve(b.id)}>Approve</button>}{b.status==='approved'&&can(context,'finance.budgets','approve')&&<button onClick={()=>approve(b.id,true)}>Lock</button>}</span></div>)}</div></article>{can(context,'finance.budgets','create')&&<article className="fin-panel"><small>NEW BUDGET</small><h3>Create budget</h3><form className="fin-form" onSubmit={create}><label><span>Budget name</span><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label><span>Account</span><select value={form.accountId} onChange={e=>setForm({...form,accountId:e.target.value})}><option value="">Create empty budget</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}</select></label><label><span>Period</span><input type="month" value={form.periodKey} onChange={e=>setForm({...form,periodKey:e.target.value})}/></label><label><span>Amount (₦)</span><input type="number" min="0" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label><button className="fin-primary"><Plus size={15}/>Create draft budget</button></form></article>}</div>}
++function Reports({companyId,setMessage}:{companyId:string;setMessage:(m:string)=>void}){
++ const[start,setStart]=useState(`${new Date().getFullYear()}-01-01`),[end,setEnd]=useState(today()),[report,setReport]=useState<Report|null>(null);
++ const[phase,setPhase]=useState<'idle'|'loading'|'ready'|'unavailable'>('loading');
++ const generation=useRef(0),alive=useRef(true),pending=useRef<AbortController|null>(null);
++ function cancel(){generation.current++;pending.current?.abort();setReport(null);setPhase('idle')}
++ async function load(){
++  const run=++generation.current,from=start,to=end;pending.current?.abort();
++  const abort=new AbortController();pending.current=abort;setReport(null);setPhase('loading');
++  const current=()=>alive.current&&generation.current===run&&!abort.signal.aborted;
++  try{
++   const validDate=(value:string)=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(Date.parse(value+'T00:00:00Z'))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;
++   if(!validDate(from)||!validDate(to)||from>to)throw Error('Choose A Valid Reporting Period.');
++   const value=await api<unknown>(`/api/finance/reports?companyId=${encodeURIComponent(companyId)}&startDate=${encodeURIComponent(from)}&endDate=${encodeURIComponent(to)}`,{signal:abort.signal});
++   if(!current())return;
++   if(!verifiedFinancialReport(value,companyId,from,to))throw Error('The Financial Report Could Not Be Verified For This Company And Period.');
++   setReport(value);setPhase('ready');
++  }catch(error){if(current()){setReport(null);setPhase('unavailable');setMessage(error instanceof Error?error.message:'Financial Report Unavailable.')}}
++ }
++ useEffect(()=>{alive.current=true;void load();return()=>{alive.current=false;generation.current++;pending.current?.abort()}},[companyId]);
++ return <div className="fin-stack"><div className="report-filter"><label>From <input type="date" value={start} onChange={e=>{cancel();setStart(e.target.value)}}/></label><label>To <input type="date" value={end} onChange={e=>{cancel();setEnd(e.target.value)}}/></label><button className="fin-primary" onClick={load}>Run report</button></div>{!report?<div className="fin-empty" role="status">{phase==='loading'?'Loading The Current Verified Financial Report...':phase==='idle'?'Run The Report For The Selected Period.':'Financial Report Unavailable. No Verified Balances Are Shown.'}</div>:<><section className="fin-kpis"><article><small>Revenue</small><strong>{ngn(report?.profitLoss.revenueKobo)}</strong></article><article><small>Gross Profit</small><strong>{ngn(report?.profitLoss.grossProfitKobo)}</strong></article><article><small>Operating Expenses</small><strong>{ngn(report?.profitLoss.operatingExpensesKobo)}</strong></article><article><small>Net Profit</small><strong>{ngn(report?.profitLoss.netProfitKobo)}</strong></article></section><article className="fin-panel"><div className="fin-panel-head"><div><small>TRIAL BALANCE</small><h3>{report?.trialBalance.balanced?'Balanced':'Requires attention'}</h3></div><b>{ngn(report?.trialBalance.totalDebitKobo)} DR = {ngn(report?.trialBalance.totalCreditKobo)} CR</b></div><div className="fin-table report"><div className="thead"><span>Account</span><span>Type</span><span>Debit</span><span>Credit</span><span>Balance</span></div>{report?.trialBalance.accounts.filter(a=>a.debitKobo||a.creditKobo).map(a=><div key={a.id}><span>{a.code} · {a.name}</span><span>{a.accountType}</span><span>{ngn(a.debitKobo)}</span><span>{ngn(a.creditKobo)}</span><span>{ngn(Math.abs(a.balanceKobo))}</span></div>)}</div></article></>}</div>}
++function Budgets({context,companyId,setMessage}:{context:WorkforceContext;companyId:string;setMessage:(m:string)=>void}){const[rows,setRows]=useState<Budget[]>([]),[accounts,setAccounts]=useState<Account[]>([]),[form,setForm]=useState({name:'',accountId:'',periodKey:new Date().toISOString().slice(0,7),amount:''});async function load(){try{const[b,a]=await Promise.all([api<{budgets:Budget[]}>(`/api/finance/budgets?companyId=${encodeURIComponent(companyId)}`),can(context,'finance.budgets','create')&&can(context,'finance.coa')?api<{accounts:Account[]}>(`/api/finance/accounts?companyId=${encodeURIComponent(companyId)}`):Promise.resolve({accounts:[] as Account[]})]);setRows(b.budgets||[]);setAccounts(a.accounts||[])}catch(e){setMessage((e as Error).message)}}useEffect(()=>{load()},[companyId]);async function create(e:React.FormEvent){e.preventDefault();try{await api('/api/finance/budgets',{method:'POST',body:JSON.stringify({companyId,name:form.name,lines:form.accountId?[{accountId:form.accountId,periodKey:form.periodKey,amountNaira:Number(form.amount)}]:[]})});setMessage('Draft budget created.');setForm({...form,name:'',amount:''});await load()}catch(err){setMessage((err as Error).message)}}async function approve(id:string,lock=false){try{await api('/api/finance/budgets/approve',{method:'POST',body:JSON.stringify({id,lock})});setMessage(lock?'Budget approved and locked.':'Budget approved.');await load()}catch(e){setMessage((e as Error).message)}}return <div className="fin-grid"><article className="fin-panel"><small>BUDGET REGISTER</small><h3>Approved spending plans</h3><div className="budget-list">{rows.map(b=><div key={b.id}><span><b>{b.name}</b><small>{b.fiscalPeriod||'No fiscal period assigned'}</small></span><span><strong>{ngn(b.totalKobo)}</strong><em className={`fin-status ${b.status}`}>{b.status}</em>{b.status==='draft'&&can(context,'finance.budgets','approve')&&<button onClick={()=>approve(b.id)}>Approve</button>}{b.status==='approved'&&can(context,'finance.budgets','approve')&&<button onClick={()=>approve(b.id,true)}>Lock</button>}</span></div>)}</div></article>{can(context,'finance.budgets','create')&&<article className="fin-panel"><small>NEW BUDGET</small><h3>Create budget</h3><form className="fin-form" onSubmit={create}><label><span>Budget name</span><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label><span>Account</span><select value={form.accountId} onChange={e=>setForm({...form,accountId:e.target.value})}><option value="">Create empty budget</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}</select></label><label><span>Period</span><input type="month" value={form.periodKey} onChange={e=>setForm({...form,periodKey:e.target.value})}/></label><label><span>Amount (₦)</span><input type="number" min="0" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label><button className="fin-primary"><Plus size={15}/>Create draft budget</button></form></article>}</div>}
+--- /dev/null
++++ b/src/historical-finance-destinations.ts
+@@ -0,0 +1,65 @@
++import type {WorkforceContext} from './auth';
++import type {Assignment,Company} from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/model';
++import type {CommandCenterGroup,CommandCenterNode,CommandCenterPage} from './enterprise-command-center-model';
++
++export const historicalFinanceDestinations = {
++  receivables:{title:'Receivables',permission:'finance.receivables',minimum:'view',service:'finance',tab:'receivables'},
++  budgets:{title:'Budgets',permission:'finance.budgets',minimum:'view',service:'finance',tab:'budgets'},
++  'financial-reports':{title:'Financial Reports',permission:'finance.reports',minimum:'view',service:'finance',tab:'reports'},
++  'expense-approvals':{title:'Expense Approvals',permission:'expense.approve',minimum:'view',service:'spend',tab:'approvals'},
++  'cost-admin':{title:'Cost Administration',permission:'expense.master',minimum:'manage',service:'spend',tab:'admin'},
++} as const;
++export type HistoricalFinanceId=keyof typeof historicalFinanceDestinations;
++const ranks:Record<string,number>={none:0,view:1,create:2,edit:3,approve:4,manage:5};
++export function historicalFinanceDestination(id:string){
++  return Object.prototype.hasOwnProperty.call(historicalFinanceDestinations,id)
++    ? historicalFinanceDestinations[id as HistoricalFinanceId] : undefined;
++}
++export function historicalFinanceCompanies(context:WorkforceContext,id:string){
++  const destination=historicalFinanceDestination(id);
++  if(!destination||context.employee.status.trim().toLowerCase()!=='active')return [];
++  const seen=new Set<string>();
++  return context.companies.filter(company=>{
++    if(!company.id||seen.has(company.id))return false;
++    seen.add(company.id);
++    const permissions=context.companyPermissions?.[company.id];
++    if(!permissions||!Object.prototype.hasOwnProperty.call(permissions,destination.permission))return false;
++    const level=permissions[destination.permission];
++    return typeof level==='string'&&Object.prototype.hasOwnProperty.call(ranks,level)
++      &&ranks[level]>=ranks[destination.minimum];
++  });
++}
++export function bindHistoricalFinanceContext(context:WorkforceContext,id:string,companyId:string):WorkforceContext|null{
++  const company=historicalFinanceCompanies(context,id).find(item=>item.id===companyId);
++  if(!company)return null;
++  const permissions=context.companyPermissions![company.id];
++  return {...context,companies:[company],permissions,companyPermissions:{[company.id]:permissions},
++    roles:context.roles.filter(role=>role.companyId===company.id)};
++}
++export function historicalFinanceAssignments(context:WorkforceContext,selectedCompanyId?:string):Assignment[]{
++  return Object.keys(historicalFinanceDestinations).flatMap(id=>
++    historicalFinanceCompanies(context,id).filter(company=>!selectedCompanyId||company.id===selectedCompanyId)
++      .map(company=>({module:id,level:'View' as const,
++        companies:[('assigned-company:'+encodeURIComponent(company.id)) as Company],
++        scope:'ASSIGNED' as const,capabilities:[]})));
++}
++export function withHistoricalFinanceNavigation(areas:CommandCenterGroup[],context:WorkforceContext):CommandCenterGroup[]{
++  const prune=(nodes:CommandCenterNode[]):CommandCenterNode[]=>nodes.flatMap<CommandCenterNode>(node=>{
++    if(node.kind==='page')return historicalFinanceDestination(node.moduleId)?[]:[node];
++    const children=prune(node.children);return children.length?[{...node,children}]:[];
++  });
++  const next=areas.map(area=>({...area,children:prune(area.children)}));
++  const finance=next.find(area=>area.globalId==='finance');
++  if(!finance)return next;
++  for(const company of context.companies){
++    const pages:CommandCenterPage[]=Object.entries(historicalFinanceDestinations)
++      .filter(([id])=>historicalFinanceCompanies(context,id).some(item=>item.id===company.id))
++      .map(([id,destination])=>({kind:'page',id:'finance:'+company.id+':'+id,label:destination.title,
++        route:'/'+id+'/company/'+encodeURIComponent(company.id),moduleId:id,permissionModuleId:id,
++        globalId:'finance',breadcrumb:['Finance',company.name,destination.title]}));
++    if(pages.length&&!finance.children.some(node=>node.id==='finance:assigned:'+company.id))
++      finance.children.push({kind:'group',id:'finance:assigned:'+company.id,label:company.name,
++        globalId:'finance',children:pages});
++  }
++  return next;
++}
+--- /dev/null
++++ b/src/historical-finance-destination-bridge.tsx
+@@ -0,0 +1,50 @@
++import './historical-finance-destinations.css';
++import {lazy,Suspense,useEffect,useState} from 'react';
++import {createPortal} from 'react-dom';
++import type {WorkforceContext} from './auth';
++import {usePathname,useRouter} from './next-navigation-shim';
++import {Panel,Btn,Empty} from '../source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115/app/experience/ui';
++import {OfflinePlatformProvider} from './offline-sync';
++import {historicalFinanceDestination,historicalFinanceCompanies,bindHistoricalFinanceContext} from './historical-finance-destinations';
++const Finance=lazy(()=>import('./finance-center').then(module=>({default:module.FinanceCenter})));
++const Spend=lazy(()=>import('./historical-spend-center').then(module=>({default:module.SpendCenter})));
++
++export default function HistoricalFinanceDestinationBridge({context}:{context:WorkforceContext}){
++  const path=usePathname(),router=useRouter();
++  const match=path.match(/^\/([^/?#]+)(?:\/company\/([^/?#]+))?\/?$/);
++  const route=match?.[1]||'',destination=historicalFinanceDestination(route);
++  const [mount,setMount]=useState<HTMLElement|null>(null);
++  useEffect(()=>{
++    if(!destination){setMount(null);return;}
++    const locate=()=>setMount(document.querySelector<HTMLElement>('[data-approved-postlogin="qa-review-v115"] #main-content'));
++    locate();const observer=new MutationObserver(locate);
++    observer.observe(document.body,{childList:true,subtree:true});return()=>observer.disconnect();
++  },[path,destination]);
++  useEffect(()=>{
++    if(!mount||!destination)return;
++    mount.dataset.historicalLiveRoute=route;
++    return()=>{delete mount.dataset.historicalLiveRoute;};
++  },[mount,destination,route]);
++  if(!destination||!mount)return null;
++  const companies=historicalFinanceCompanies(context,route),close=()=>router.push('/home');
++  let companyId:string|undefined;
++  if(match?.[2]){try{companyId=decodeURIComponent(match[2]);}catch{companyId='';}}
++  const bound=companyId?bindHistoricalFinanceContext(context,route,companyId):null;
++  let content;
++  if(match?.[2]&&!bound)content=<Empty title="Workspace Access Not Assigned" message="This Destination Is Not Assigned For The Requested Company."/>;
++  else if(!bound)content=<Panel title={destination.title}>
++    <p>Your Authorized Company Modules</p><div className="p-button-row">
++      {companies.map(company=><Btn key={company.id} onClick={()=>router.push('/'+route+'/company/'+encodeURIComponent(company.id))}>{company.name}</Btn>)}
++    </div>{!companies.length&&<p role="status">No Current Company Assignment Is Available.</p>}
++  </Panel>;
++  else{
++    const company=bound.companies[0],identity=JSON.stringify([path,bound]);
++    const workspace=destination.service==='finance'
++      ? <Finance context={bound} onClose={close} fixedCompanyId={company.id} fixedTab={destination.tab}/>
++      : <OfflinePlatformProvider context={bound}><Spend context={bound} onClose={close}
++          fixedCompanyId={company.id} initialTab={destination.tab} fixedTab={destination.tab}/></OfflinePlatformProvider>;
++    content=<div key={identity}><h1>{destination.title}</h1><p>{company.name}</p>
++      <Suspense fallback={<p role="status">Loading Protected Workspace...</p>}>{workspace}</Suspense></div>;
++  }
++  return createPortal(<section className="historical-live-module" data-finance-destination={route} aria-label={destination.title}>{content}</section>,mount);
++}
+--- /dev/null
++++ b/src/historical-finance-destinations.css
+@@ -0,0 +1,21 @@
++/* Embed the existing finance/spend views in the approved portal shell. */
++[data-finance-destination] :is(.fin-backdrop,.spend-backdrop){
++  position:static;inset:auto;z-index:auto;display:block;padding:0;
++  background:transparent;backdrop-filter:none;
++}
++[data-finance-destination] :is(.fin-shell,.spend-shell){
++  width:100%;max-width:none;height:auto;max-height:none;min-width:0;
++  border-radius:var(--p-radius,18px);box-shadow:none;
++}
++[data-finance-destination] :is(.fin-content,.spend-content){overflow:visible;min-width:0}
++[data-finance-destination] .fin-head{gap:12px;flex-wrap:wrap}
++[data-finance-destination] .fin-head aside{min-width:0;flex-wrap:wrap}
++[data-finance-destination] .fin-grid>*{min-width:0}
++[data-finance-destination] :is(.fin-table,.spend-table){max-width:100%}
++@media(min-width:2560px){
++  [data-finance-destination] :is(.fin-shell,.spend-shell){font-size:18px}
++  [data-finance-destination] :is(small,label,input,select,button,.fin-status,.fin-payment-note){font-size:13px}
++  [data-finance-destination] .fin-table>div{font-size:15px}
++  [data-finance-destination] .fin-table .thead{font-size:13px}
++  [data-finance-destination] .fin-kpis strong{font-size:30px}
++}
+--- /dev/null
++++ b/src/finance-report-contract.ts
+@@ -0,0 +1,30 @@
++export type VerifiedFinancialReport={
++  companyId:string;startDate:string;endDate:string;
++  trialBalance:{accounts:Array<{id:string;code:string;name:string;accountType:string;debitKobo:number;creditKobo:number;balanceKobo:number}>;totalDebitKobo:number;totalCreditKobo:number;balanced:boolean};
++  profitLoss:{revenueKobo:number;costOfSalesKobo:number;grossProfitKobo:number;operatingExpensesKobo:number;netProfitKobo:number};
++};
++const object=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value);
++const integer=(value:unknown):value is number=>Number.isSafeInteger(value);
++export function verifiedFinancialReport(value:unknown,companyId:string,startDate:string,endDate:string):value is VerifiedFinancialReport{
++  if(!object(value)||!companyId||value.companyId!==companyId||value.startDate!==startDate||value.endDate!==endDate)return false;
++  const trial=value.trialBalance,profit=value.profitLoss;
++  if(!object(trial)||!object(profit)||!Array.isArray(trial.accounts)||typeof trial.balanced!=='boolean')return false;
++  const accounts:VerifiedFinancialReport['trialBalance']['accounts']=[],ids=new Set<string>();
++  let debit=0,credit=0;
++  for(const row of trial.accounts){
++    if(!object(row)||typeof row.id!=='string'||!row.id||ids.has(row.id)||typeof row.code!=='string'||typeof row.name!=='string'
++      ||!['asset','liability','equity','revenue','expense','cost_of_sales'].includes(String(row.accountType))
++      ||!integer(row.debitKobo)||row.debitKobo<0||!integer(row.creditKobo)||row.creditKobo<0
++      ||!integer(row.balanceKobo)||row.balanceKobo!==row.debitKobo-row.creditKobo)return false;
++    debit+=row.debitKobo;credit+=row.creditKobo;
++    if(!integer(debit)||!integer(credit))return false;
++    ids.add(row.id);accounts.push(row as unknown as VerifiedFinancialReport['trialBalance']['accounts'][number]);
++  }
++  if(!integer(trial.totalDebitKobo)||!integer(trial.totalCreditKobo)||trial.totalDebitKobo!==debit
++    ||trial.totalCreditKobo!==credit||trial.balanced!==(debit===credit))return false;
++  const total=(kind:string)=>accounts.filter(row=>row.accountType===kind).reduce((sum,row)=>sum+row.balanceKobo,0);
++  const revenue=accounts.filter(row=>row.accountType==='revenue').reduce((sum,row)=>sum+Math.max(0,-row.balanceKobo),0);
++  const costs=total('cost_of_sales'),expenses=total('expense'),gross=revenue-costs,net=gross-expenses;
++  const expected={revenueKobo:revenue,costOfSalesKobo:costs,grossProfitKobo:gross,operatingExpensesKobo:expenses,netProfitKobo:net};
++  return Object.entries(expected).every(([key,number])=>integer(number)&&integer(profit[key])&&profit[key]===number);
++}
+--- /dev/null
++++ b/scripts/test-historical-finance-destinations.mjs
+@@ -0,0 +1,55 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import vm from 'node:vm';
++import {buildSync} from 'esbuild';
++const load=file=>{const code=buildSync({entryPoints:[file],bundle:true,platform:'node',format:'cjs',write:false}).outputFiles[0].text;const mod={exports:{}};vm.runInNewContext(code,{module:mod,exports:mod.exports});return mod.exports};
++const m=load('src/historical-finance-destinations.ts'),r=load('src/finance-report-contract.ts');
++const results=[];const check=(name,fn)=>{fn();results.push({name,passed:true})};
++const copy=value=>JSON.parse(JSON.stringify(value)),plain=copy;
++const base={sessionId:'synthetic-session',employee:{id:'employee-a',displayName:'Synthetic Employee',status:'active'},
++ companies:[{id:'company-a',code:'A',name:'Company A',primary:true},{id:'company-b',code:'B',name:'Company B',primary:false}],
++ roles:[{id:'role-owner',code:'owner',name:'Owner',companyId:'company-a'},{id:'role-b',code:'employee',name:'Employee',companyId:'company-b'}],
++ permissions:{'finance.receivables':'manage','finance.budgets':'manage','finance.reports':'manage','expense.approve':'manage','expense.master':'manage'},
++ companyPermissions:{'company-a':{'finance.receivables':'view','expense.approve':'view','expense.master':'approve'},'company-b':{'finance.budgets':'view','finance.reports':'none'}}};
++check('Company-specific grants control each destination',()=>{assert.deepEqual(plain(m.historicalFinanceCompanies(base,'receivables')).map(x=>x.id),['company-a']);assert.deepEqual(plain(m.historicalFinanceCompanies(base,'budgets')).map(x=>x.id),['company-b'])});
++check('Owner label and global union never supply a missing company grant',()=>assert.equal(m.historicalFinanceCompanies(base,'financial-reports').length,0));
++check('Cost administration requires manage, not approve',()=>assert.equal(m.historicalFinanceCompanies(base,'cost-admin').length,0));
++check('Approvals require the existing view-level approval permission',()=>assert.equal(m.historicalFinanceCompanies(base,'expense-approvals')[0].id,'company-a'));
++for(const level of ['none','invalid','constructor',null,1,{},[]]){
++ check('Malformed or denied company level is refused: '+JSON.stringify(level),()=>{const c=copy(base);c.companyPermissions['company-a']['finance.receivables']=level;assert.equal(m.historicalFinanceCompanies(c,'receivables').length,0)});
++}
++check('Missing company map has no single-company/global fallback',()=>{const c=copy(base);delete c.companyPermissions;c.companies=c.companies.slice(0,1);assert.equal(m.historicalFinanceCompanies(c,'receivables').length,0)});
++check('Foreign grant without a current membership is not a company assignment',()=>{const c=copy(base);c.companyPermissions.foreign={'finance.receivables':'manage'};assert.deepEqual(plain(m.historicalFinanceCompanies(c,'receivables')).map(x=>x.id),['company-a'])});
++check('Inactive employees receive no destination',()=>{const c=copy(base);c.employee.status='suspended';assert.equal(m.historicalFinanceCompanies(c,'receivables').length,0)});
++check('Unknown and inherited object keys are not destinations',()=>{for(const id of ['unknown','constructor','__proto__'])assert.equal(m.historicalFinanceDestination(id),undefined)});
++check('Duplicate company entries do not duplicate assignments',()=>{const c=copy(base);c.companies.push(c.companies[0]);assert.equal(m.historicalFinanceCompanies(c,'receivables').length,1)});
++check('Explicit none wins despite other company and global grants',()=>{const c=copy(base);c.companyPermissions['company-a']['finance.receivables']='none';c.companyPermissions['company-b']['finance.receivables']='manage';assert.deepEqual(plain(m.historicalFinanceCompanies(c,'receivables')).map(x=>x.id),['company-b'])});
++check('Projection adds only View-level, company-bound, capability-free assignments',()=>{const a=plain(m.historicalFinanceAssignments(base));assert.equal(a.length,3);assert(a.every(x=>x.level==='View'&&x.scope==='ASSIGNED'&&x.capabilities.length===0&&x.companies.length===1&&x.companies[0].startsWith('assigned-company:')&&!x.companies.includes('group')))});
++check('Selected company filters projections; no default or replacement company is chosen',()=>{const a=plain(m.historicalFinanceAssignments(base,'company-b'));assert.deepEqual(a.map(x=>x.module),['budgets']);assert.equal(m.historicalFinanceAssignments(base,'foreign').length,0)});
++check('Bound context contains one company, its exact grants and its own assigned roles',()=>{const c=m.bindHistoricalFinanceContext(base,'budgets','company-b');assert.equal(c.companies.length,1);assert.deepEqual(plain(c.permissions),base.companyPermissions['company-b']);assert.deepEqual(plain(c.roles).map(x=>x.id),['role-b']);assert.deepEqual(Object.keys(c.companyPermissions),['company-b'])});
++check('Binding cannot substitute a company on a denied destination',()=>assert.equal(m.bindHistoricalFinanceContext(base,'receivables','company-b'),null));
++check('Encoded IDs retain their exact identity',()=>{const c=copy(base),id='company:a/b';c.companies[0].id=id;c.companyPermissions[id]=c.companyPermissions['company-a'];assert(m.historicalFinanceAssignments(c).some(x=>x.companies[0]==='assigned-company:'+encodeURIComponent(id)))});
++const area=id=>({kind:'group',id:'area:'+id,label:id,globalId:id,children:[]});
++const areas=['home','my-work','people','businesses','finance','communications','intelligence','tools','admin'].map(area);
++areas[4].children.push({kind:'page',id:'old',label:'Old Receivables',moduleId:'receivables',permissionModuleId:'receivables',route:'/receivables',globalId:'finance',breadcrumb:[]},{kind:'page',id:'retain',label:'Finance',moduleId:'finance',permissionModuleId:'finance',route:'/finance',globalId:'finance',breadcrumb:[]});
++check('Navigation preserves the nine areas and original input',()=>{const before=JSON.stringify(areas);const next=m.withHistoricalFinanceNavigation(areas,base);assert.equal(next.length,9);assert.equal(JSON.stringify(areas),before)});
++check('Authorized historical pages are restored under Finance with direct scoped URLs',()=>{const next=plain(m.withHistoricalFinanceNavigation(areas,base));const finance=next.find(x=>x.globalId==='finance');const pages=finance.children.flatMap(x=>x.kind==='group'?x.children:[x]);assert.equal(pages.filter(x=>x.moduleId==='receivables').length,1);assert(pages.some(x=>x.route==='/budgets/company/company-b'));assert(pages.some(x=>x.route==='/expense-approvals/company/company-a'));assert(pages.some(x=>x.id==='retain'));assert(!pages.some(x=>x.moduleId==='financial-reports'||x.moduleId==='cost-admin'))});
++const report={companyId:'company-a',startDate:'2026-01-01',endDate:'2026-11-06',trialBalance:{accounts:[{id:'cash',code:'100',name:'Cash',accountType:'asset',debitKobo:10000,creditKobo:0,balanceKobo:10000},{id:'revenue',code:'400',name:'Revenue',accountType:'revenue',debitKobo:0,creditKobo:12000,balanceKobo:-12000},{id:'expense',code:'500',name:'Expense',accountType:'expense',debitKobo:2000,creditKobo:0,balanceKobo:2000}],totalDebitKobo:12000,totalCreditKobo:12000,balanced:true},profitLoss:{revenueKobo:12000,costOfSalesKobo:0,grossProfitKobo:12000,operatingExpensesKobo:2000,netProfitKobo:10000}};
++const valid=x=>r.verifiedFinancialReport(x,'company-a',report.startDate,report.endDate);
++check('Complete matching safe-integer financial report is accepted',()=>assert(valid(report)));
++for(const [name,mutate] of [
++ ['company mismatch',x=>x.companyId='company-b'],['period mismatch',x=>x.endDate='2026-11-07'],
++ ['missing profit',x=>delete x.profitLoss],['duplicate account',x=>x.trialBalance.accounts.push(x.trialBalance.accounts[0])],
++ ['negative debit',x=>x.trialBalance.accounts[0].debitKobo=-1],['fractional money',x=>x.trialBalance.accounts[0].debitKobo=0.5],
++ ['unsafe integer',x=>x.trialBalance.accounts[0].debitKobo=Number.MAX_SAFE_INTEGER+1],
++ ['imprecise debit total',x=>x.trialBalance.totalDebitKobo=12001],['wrong balance',x=>x.trialBalance.accounts[0].balanceKobo=1],
++ ['wrong balanced flag',x=>x.trialBalance.balanced=false],['wrong profit',x=>x.profitLoss.netProfitKobo=9],
++ ['missing account name',x=>delete x.trialBalance.accounts[0].name],['malformed account list',x=>x.trialBalance.accounts={}],
++ ['unsupported account type',x=>x.trialBalance.accounts[0].accountType='invented']]){
++ check('Report refuses '+name,()=>{const x=copy(report);mutate(x);assert(!valid(x))});
++}
++check('An actual empty complete report is accepted, rather than manufacturing zeros during loading',()=>{const x=copy(report);x.trialBalance.accounts=[];x.trialBalance.totalDebitKobo=0;x.trialBalance.totalCreditKobo=0;for(const k of Object.keys(x.profitLoss))x.profitLoss[k]=0;assert(valid(x))});
++check('Validation does not mutate received financial data',()=>{const before=JSON.stringify(report);valid(report);assert.equal(JSON.stringify(report),before)});
++const result={state:'PASS',cases:results.length,results,hostedCalls:0,permissionsChanged:false,workerChanged:false};
++fs.writeFileSync('D:/DAENEM-QA/staffportal-full-module-review-20261105/finance-mapping-unit-results.json',JSON.stringify(result,null,2));
++console.log(JSON.stringify({state:result.state,cases:result.cases}));
+--- a/scripts/lib/historical-compatible-overlay.mjs
++++ b/scripts/lib/historical-compatible-overlay.mjs
+@@ -34,7 +34,7 @@
+   code=code.slice(0,from)+'        // Ignore historical simulated records; preserve the stored bytes.\n'+code.slice(to);
+   code=once(code,'        localStorage.setItem("daenem-demo-records-v3", JSON.stringify(records));','        // No simulated record persistence in the compatible portal.');
+  }
+- if(name==='workspaces.tsx'){code=once(code,'      "payslips",\n      "audit",','      "payslips",\n      "attendance",\n      "audit",');code=once(code,'import Profile from "./profile-v3";','import Profile from "../../../../src/historical-own-profile";');}
++ if(name==='workspaces.tsx'){code=once(code,'      "payslips",\n      "audit",','      "payslips",\n      "attendance",\n      "profile",\n      "audit",');code=once(code,'import Profile from "./profile-v3";','import Profile from "../../../../src/historical-own-profile";');}
+  if(name==='profile-v3.tsx'){
+   code="import{useHistoricalProfileContract}from'../../../../src/historical-own-profile';\n"+code;
+   code=once(code,"export default function ProfileV3(){","export default function ProfileV3(){ const current=useHistoricalProfileContract();");

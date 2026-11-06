@@ -1,0 +1,205 @@
+{
+  "state": "PARTIAL_RESTORATION_REVIEW_ONLY_NOT_DEPLOYED",
+  "applicationBaseSha256": "a95c11fadb53761e36e0f3295fd048b870e98d6d2b3486b73dfe61cdc4909080",
+  "sourceArchiveBaseSha256": "6d733a6406314555ecc96d0066b98d3a1ed68a14e8e44606e9d9a890a8eae207",
+  "sourceHashes": {
+    "src/historical-authority.ts": {
+      "sha256": "4b94a53250904a57deead2dc3882d45b134bc5e5b87ac435b69eee1b5a53e075",
+      "characters": 4641,
+      "bytes": 4641,
+      "trailingLf": true,
+      "beforeSha256": "c14208f21e59ca62d833d284893c8cf2261c8ecdf8ca0f5775a151149685e116"
+    },
+    "src/historical-module-navigation.ts": {
+      "sha256": "f9a4330b780c1d8af53c9997a8dd02397788d68b1e2e3943e141ae037cbf892c",
+      "characters": 5067,
+      "bytes": 5067,
+      "trailingLf": true,
+      "beforeSha256": "6ae60eefc9645d4ecc34cce613b06b7c42a6d1b645422bf4a93ff0bc292d4360"
+    },
+    "src/qa-review-v115-runtime.tsx": {
+      "sha256": "cbd3fe4183db902adff5787249f65065b41187c46d1b16e998dea0178b815e95",
+      "characters": 26198,
+      "bytes": 26248,
+      "trailingLf": true,
+      "beforeSha256": "3985245151cf79205632fd0f374a648a2e94db5412e8d81da8028634b85973ac"
+    },
+    "src/historical-spend-center.tsx": {
+      "sha256": "dd33f44ccca959d0df4f25de6d1f7728c683fe8af547de15ca3f35a1b336109f",
+      "characters": 81423,
+      "bytes": 81485,
+      "trailingLf": true,
+      "beforeSha256": "3c0bde4db2dfea5abe4ae37c5f2b6f9da465de8aca89ef219ec00d1a1d7c363a"
+    },
+    "src/finance-center.tsx": {
+      "sha256": "82c78ea76cb9bdac1dcd4b6d5495adca27c4b0b4412e410e4a014bc4ae8385bb",
+      "characters": 33147,
+      "bytes": 33169,
+      "trailingLf": true,
+      "beforeSha256": "54e85591bf0ae67e7e3d534a90042e91179afc7dad3801b4a5c5e25b98c55f09"
+    },
+    "src/historical-finance-destinations.ts": {
+      "sha256": "fc3ec958989a27ee7d17676fdcfa9d0b728aa30a86275e7dbaeca0865e2c7c68",
+      "characters": 4340,
+      "bytes": 4340,
+      "trailingLf": true,
+      "beforeSha256": null
+    },
+    "src/historical-finance-destination-bridge.tsx": {
+      "sha256": "b8ee34bc73c8c6c68a4387bd3c6ce5e6ae73a2a601069a012b5f9a49cc41d27b",
+      "characters": 3371,
+      "bytes": 3371,
+      "trailingLf": true,
+      "beforeSha256": null
+    },
+    "src/historical-finance-destinations.css": {
+      "sha256": "2d60525d6ddb6a1ff1790c0bf2d8301aeb820ef1157b6dd424afab27cec1de2f",
+      "characters": 1182,
+      "bytes": 1182,
+      "trailingLf": true,
+      "beforeSha256": null
+    },
+    "src/finance-report-contract.ts": {
+      "sha256": "fcf151b8ddaa378d564cc5358d2737d39a48440ed92061a9988058d05bdcec7a",
+      "characters": 2649,
+      "bytes": 2649,
+      "trailingLf": true,
+      "beforeSha256": null
+    },
+    "scripts/test-historical-finance-destinations.mjs": {
+      "sha256": "303c5185437826a6c803f7db7a932747acddfb8e18af2d623588e7da84c19a45",
+      "characters": 9140,
+      "bytes": 9140,
+      "trailingLf": true,
+      "beforeSha256": null
+    },
+    "scripts/lib/historical-compatible-overlay.mjs": {
+      "sha256": "686a1565e0d71708960dd3b8b528df57dffeade62dba14e77218383c29cea17b",
+      "characters": 13806,
+      "bytes": 13810,
+      "trailingLf": true,
+      "beforeSha256": "9461a157b9577ff7c34add526c3696109a2a54950ba2ef81d90c3ca36bae3fe0"
+    },
+    "src/own-profile-load.ts": {
+      "unchangedLoaderSha256": "ea0ac570e4b430a78cd23545f8926e468f58bc2095c6cebcd4959c40e587bab2"
+    }
+  },
+  "patchSha256": "fcfb5d89122955a2860ba6b93d28cc6ff12a8b9888faa4f14110a5a129f16cbf",
+  "destinationPermissions": [
+    {
+      "id": "receivables",
+      "permission": "finance.receivables",
+      "minimum": "view",
+      "service": "/api/finance/receivables"
+    },
+    {
+      "id": "budgets",
+      "permission": "finance.budgets",
+      "minimum": "view",
+      "service": "/api/finance/budgets"
+    },
+    {
+      "id": "financial-reports",
+      "permission": "finance.reports",
+      "minimum": "view",
+      "service": "/api/finance/reports"
+    },
+    {
+      "id": "expense-approvals",
+      "permission": "expense.approve",
+      "minimum": "view",
+      "service": "/api/spend/approvals"
+    },
+    {
+      "id": "cost-admin",
+      "permission": "expense.master",
+      "minimum": "manage",
+      "service": "/api/spend/admin/master"
+    }
+  ],
+  "verification": {
+    "unitCases": 41,
+    "unitState": "PASS",
+    "checks": {
+      "state": "PASS",
+      "checks": {
+        "typescript": {
+          "exitCode": 0,
+          "log": "D:\\DAENEM-QA\\staffportal-full-module-review-20261105\\finance-mapping-typescript.log"
+        },
+        "build": {
+          "exitCode": 0,
+          "log": "D:\\DAENEM-QA\\staffportal-full-module-review-20261105\\finance-mapping-build.log"
+        },
+        "static": {
+          "exitCode": 0,
+          "log": "D:\\DAENEM-QA\\staffportal-full-module-review-20261105\\finance-mapping-static.log"
+        },
+        "experienceLock": {
+          "exitCode": 0,
+          "log": "D:\\DAENEM-QA\\staffportal-full-module-review-20261105\\finance-mapping-experienceLock.log"
+        },
+        "signinLock": {
+          "exitCode": 0,
+          "log": "D:\\DAENEM-QA\\staffportal-full-module-review-20261105\\finance-mapping-signinLock.log"
+        }
+      },
+      "startedUtc": "2026-11-06T00:20:45.529804+00:00",
+      "protectedComparison": {
+        "worker": {
+          "files": 158,
+          "identical": true
+        },
+        "source-snapshots/DAENEM-StaffPortal-Post-SignIn-v115": {
+          "files": 683,
+          "identical": true
+        }
+      },
+      "finishedUtc": "2026-11-06T00:22:24.835078+00:00"
+    },
+    "financeRouteViewportCases": 9,
+    "spendRouteViewportCases": 6,
+    "viewports": [
+      1440,
+      3840,
+      390
+    ],
+    "viewOnlyProfileReadStatus": 200,
+    "viewOnlyEditControlDisabled": true,
+    "apiResponsesMocked": false,
+    "realOrHostedBusinessWrites": 0,
+    "profileLoaderUnchangedSha256": "ea0ac570e4b430a78cd23545f8926e468f58bc2095c6cebcd4959c40e587bab2",
+    "fixtureLimit": "The local Profile-only fixture captured and aborted one Home /api/ess/my-day request using the configured production API origin. This is outside the focused Finance/Profile acceptance. No Home-service acceptance is claimed and the zero-attempt network assertion remains false in the original report."
+  },
+  "fullLocalEvidenceRoot": "D:\\DAENEM-QA\\staffportal-full-module-review-20261105",
+  "sourceRoot": "D:\\DAENEM-QA\\staffportal-profile-display-candidate-20261105",
+  "originalFailuresPreserved": true,
+  "remaining": "Full StaffPortal restoration, remaining module/service mappings, a complete exact successor package, release-history/baseline reconciliation and the previously recorded shared-setting discrepancy remain unresolved. No upload, activation or settings change.",
+  "destinationOwnershipVerified": {
+    "privateRepository": true,
+    "authenticatedAccountMatchesRepositoryOwner": true,
+    "pushPermission": true
+  },
+  "notAnActivationApproval": true,
+  "patchPaths": [
+    "src/historical-authority.ts",
+    "src/historical-module-navigation.ts",
+    "src/qa-review-v115-runtime.tsx",
+    "src/historical-spend-center.tsx",
+    "src/finance-center.tsx",
+    "src/historical-finance-destinations.ts",
+    "src/historical-finance-destination-bridge.tsx",
+    "src/historical-finance-destinations.css",
+    "src/finance-report-contract.ts",
+    "scripts/test-historical-finance-destinations.mjs",
+    "scripts/lib/historical-compatible-overlay.mjs"
+  ],
+  "patchApplication": {
+    "normalizeOnlyPatchPathsTo": "UTF-8/LF after git apply",
+    "reverseAndForwardRoundtrip": "PASS",
+    "preimagesVerified": true,
+    "elevenAfterImageHashesVerified": true,
+    "realSourceMutatedByRoundtrip": false,
+    "initialLineEndingMismatchRecorded": true
+  }
+}
