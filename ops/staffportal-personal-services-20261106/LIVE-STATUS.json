@@ -1,0 +1,44 @@
+{
+  "status": "LIVE_VERIFIED_WITH_EXISTING_FEATURE_HOLDS",
+  "project": "StaffPortal Only",
+  "preproductionUrl": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev/home",
+  "newConnectedDestinations": [
+    "Action Center",
+    "Notice Board",
+    "Staff Messaging",
+    "AI Guide"
+  ],
+  "liveVerification": {
+    "HomeDirectEntryWithoutCompanyGate": true,
+    "ProfileRenders": true,
+    "fourNewCompanyScopedScreensRender": true,
+    "catalogCards": 146,
+    "distinctModuleIdsIncludingHomeAndHub": 148,
+    "disabledLegacyCardsBefore": 91,
+    "disabledLegacyCardsNow": 87,
+    "deliveredFilesMatchedToSealedPackage": 392,
+    "brokenImages": 0,
+    "horizontalOverflow": false
+  },
+  "localVerification": {
+    "browserChecksPassed": 39,
+    "responseContractChecksPassed": 32,
+    "protectedWorkerServiceChecksPassed": 17,
+    "productionBuild": "PASS",
+    "typeScript": "PASS",
+    "SignInLock": "PASS",
+    "approvedInterfaceLock": "PASS"
+  },
+  "hostingScope": "Existing StaffPortal Pre-Production Worker",
+  "unchanged": [
+    "Approved Sign-In",
+    "Backend Source",
+    "Existing Credentials",
+    "Existing Permissions",
+    "Database Schema",
+    "Existing Feature Holds"
+  ],
+  "hostedBusinessActionsDuringVerification": false,
+  "remainingScope": "87 unconnected legacy cards remain disabled; enabled launchers do not establish accepted business writes or production readiness.",
+  "receiptCustody": "Existing private workflow artifacts and release package remain preserved. The installation intent is consumed and must not be replayed."
+}
