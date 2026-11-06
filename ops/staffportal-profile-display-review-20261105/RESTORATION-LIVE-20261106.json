@@ -1,0 +1,147 @@
+{
+  "status": "CORRECTED_INTERFACE_LIVE_WITH_EXISTING_FEATURE_HOLDS",
+  "project": "StaffPortal Only",
+  "preproductionUrl": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev/home",
+  "moduleHubUrl": "https://daenem-staffportal-api-staging.adedapo2005.workers.dev/hub",
+  "worker": "daenem-staffportal-api-staging",
+  "versionId": "eb33552f-1d86-47ee-91c0-abf05c357579",
+  "deploymentId": "6c682134-c302-47f1-997c-0a186c1c5503",
+  "allocationPercentage": 100,
+  "executionHead": "2763a32319172d2c36dab145d8a2a34f970a6e88",
+  "successfulRun": {
+    "runId": 42150993201,
+    "jobId": 127673926057,
+    "reviewId": 5794990339,
+    "headSha": "2763a32319172d2c36dab145d8a2a34f970a6e88",
+    "versionId": "eb33552f-1d86-47ee-91c0-abf05c357579",
+    "deploymentId": "6c682134-c302-47f1-997c-0a186c1c5503",
+    "percentage": 100,
+    "state": "ACTIVATED_ALLOCATION_READ_VERIFIED",
+    "intentArtifactId": 13471164791,
+    "intentDigest": "a38688f5ae1f718a5ff32c4db6a3fc2718f1e2832a05c0c8fb51b22f488f99be",
+    "resultArtifactId": 13471129777,
+    "resultDigest": "fbc6ceb908f7fbd23210198279f9d16e8143c0c0ccd5ab1b43b6f4ce2e06819d",
+    "jobConclusion": "success",
+    "governanceCiPassed": true,
+    "journalPending": null
+  },
+  "package": {
+    "archive": "9bc80884e58a1fd72ecd1669559b3288b05d4c43d2054dd16377d3eba91e9632",
+    "config": "79653be90c48116e945c1fba0a961669d78f44462cc29b007f96f1fd46081e12",
+    "worker": "d63750041287fa412066ec4509b08bfa21dc7632dc61ae1458201a5023ee0b41",
+    "assets": "3b8e762d9672740ec6cfffc23c4c7837b6076fd71f4041810b0306583dbaa62a",
+    "count": 387,
+    "archiveBytes": 91376836,
+    "assetName": "staffportal-corrected-frontend-20261106-01.zip",
+    "sourceDeltaSha256": "a9fc8111b424df3fb81ef425922ff7ff40d1997ebe595b7dbbd4aae9d0c74eec",
+    "sourceDeltaPaths": 18,
+    "assetId": 715534213,
+    "releaseId": 434713012
+  },
+  "sourceReconstructionBaseSha256": "6d733a6406314555ecc96d0066b98d3a1ed68a14e8e44606e9d9a890a8eae207",
+  "sourceCandidateDirectory": "D:\\DAENEM-QA\\staffportal-profile-display-candidate-20261105",
+  "evidenceDirectory": "D:\\DAENEM-QA\\staffportal-corrected-release-20261106",
+  "liveBrowser": {
+    "profileRendered": true,
+    "profileNoOverflow": true,
+    "directEntryPath": "/home",
+    "entryCompanyGate": false,
+    "entryCompanyPicker": false,
+    "defaultCompanyInUrl": false,
+    "catalogCards": 146,
+    "disabledCards": 91,
+    "disabledNavigationMetadata": 91,
+    "catalogNoOverflow": true,
+    "brokenImages": 0
+  },
+  "liveFinanceDestinations": [
+    {
+      "route": "/receivables/company/company-printing",
+      "mounted": true,
+      "activeTab": "Receivables",
+      "visibleTabCount": 1,
+      "unavailableHeading": false,
+      "horizontalOverflow": false
+    },
+    {
+      "route": "/budgets/company/company-printing",
+      "mounted": true,
+      "activeTab": "Budgets",
+      "visibleTabCount": 1,
+      "unavailableHeading": false,
+      "horizontalOverflow": false
+    },
+    {
+      "route": "/financial-reports/company/company-printing",
+      "mounted": true,
+      "activeTab": "Reports",
+      "visibleTabCount": 1,
+      "unavailableHeading": false,
+      "horizontalOverflow": false
+    },
+    {
+      "route": "/expense-approvals/company/company-printing",
+      "mounted": true,
+      "activeTab": "Approval queue",
+      "visibleTabCount": 1,
+      "unavailableHeading": false,
+      "visibleErrorMessages": 0,
+      "horizontalOverflow": false
+    },
+    {
+      "route": "/cost-admin/company/company-printing",
+      "mounted": true,
+      "activeTab": "Administration",
+      "visibleTabCount": 1,
+      "unavailableHeading": false,
+      "visibleErrorMessages": 0,
+      "horizontalOverflow": false
+    }
+  ],
+  "deliveryAcceptance": {
+    "state": "ALL_387_DELIVERED_ASSETS_VERIFIED_WITH_FOUR_HTML_REDIRECTS",
+    "directByteMatches": 383,
+    "sameOriginHtmlRedirectByteMatches": 4,
+    "totalByteMatches": 387,
+    "scope": "Delivered byte counts and SHA256 match the sealed package; initial no-redirect report retained"
+  },
+  "moduleInventory": {
+    "distinctCoreAndOperationalModuleIds": 148,
+    "moduleHubCardsExcludingHomeAndHub": 146,
+    "disabledLegacyCards": 91,
+    "fullyAcceptedBusinessWorkflowCount": "Not Established; Existing Feature Holds Preserved"
+  },
+  "localValidation": {
+    "typeScript": "PASS",
+    "viteBuild": "PASS",
+    "realWorkerBrowserChecks": 19,
+    "viewports": [
+      3840,
+      1440,
+      390
+    ],
+    "focusedReleaseTestsLinux": 19,
+    "focusedReleaseTestsWindows": 19,
+    "actualRetainedReceiptsAndSealedPackage": "PASS",
+    "frozenReferenceFilesUnchanged": 683,
+    "backendSourceFilesUnchanged": 158,
+    "signInLock": "PASS",
+    "approvedExperienceLock": "PASS"
+  },
+  "scopeLimits": [
+    "91 unconnected legacy catalog cards remain disabled.",
+    "Existing performance, HR and other registered feature holds remain; enabled launchers are not proof of fully accepted business writes.",
+    "No hosted business-write acceptance or production-readiness claim.",
+    "No database migration, administrative database operation, credential rotation or permission-configuration change."
+  ],
+  "recovery": {
+    "settingsCorrectionRun": 42148842172,
+    "settingsReadRun": 42149412898,
+    "settingsWriteRepeatedDuringUpload": false,
+    "originalIntentRetained": true,
+    "successfulUploadJournalPending": null,
+    "previousVersionRetained": "47927e3c-827a-4b7a-842c-8bdd6e88883e",
+    "warning": "All mutation jobs and intents are consumed. Do not replay them."
+  },
+  "publication": "Execution PR288 remains unmerged; approved application and 18-file reconstruction delta are retained as private release asset715534213. Main was not changed by this installation."
+}
