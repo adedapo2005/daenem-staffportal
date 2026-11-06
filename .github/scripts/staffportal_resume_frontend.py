@@ -38,6 +38,9 @@ def validate_receipts(original,read,pins):
     shared=report.get('shared');m.require(isinstance(shared,dict) and set(shared)=={'worker','script'},'READ_SHARED_HELD')
     desired=original['preflight.json']['desiredSettings']
     expected_worker=json.loads(json.dumps(desired['worker']));expected_worker.pop('issues')
+    # Cloudflare documents [] as the destination default. Its Worker GET
+    # materializes that default after PATCH; nonempty destinations still fail.
+    for child in ('logs','traces'):expected_worker[child].setdefault('destinations',[])
     # The independent GET returned the already-approved effective-off shapes:
     # Worker logs/traces explicitly false, Issues omitted; script observability
     # null. Preserve those exact representations rather than resend the PATCH.
