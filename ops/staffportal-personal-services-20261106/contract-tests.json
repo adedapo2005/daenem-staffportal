@@ -1,0 +1,133 @@
+{
+  "state": "PASS_PERSONAL_CONTRACTS",
+  "checks": [
+    {
+      "name": "Exact company grants select only the assigned module",
+      "passed": true
+    },
+    {
+      "name": "Union permission never substitutes for a missing company grant",
+      "passed": true
+    },
+    {
+      "name": "Owner label never supplies a missing grant",
+      "passed": true
+    },
+    {
+      "name": "Inactive and provisional accounts receive no personal destinations",
+      "passed": true
+    },
+    {
+      "name": "Missing session receives no personal destinations",
+      "passed": true
+    },
+    {
+      "name": "Foreign scope cannot be bound",
+      "passed": true
+    },
+    {
+      "name": "Bound context contains only exact company permissions and roles",
+      "passed": true
+    },
+    {
+      "name": "Personal assignments are View OWN projections with no write capability",
+      "passed": true
+    },
+    {
+      "name": "Current matching identity is accepted",
+      "passed": true
+    },
+    {
+      "name": "Changed sessionId rejects a private response",
+      "passed": true
+    },
+    {
+      "name": "Changed employee rejects a private response",
+      "passed": true
+    },
+    {
+      "name": "Changed companies rejects a private response",
+      "passed": true
+    },
+    {
+      "name": "Changed companyPermissions rejects a private response",
+      "passed": true
+    },
+    {
+      "name": "Malformed identity fails closed",
+      "passed": true
+    },
+    {
+      "name": "Nullable normal notice fields are accepted",
+      "passed": true
+    },
+    {
+      "name": "Foreign and Group notices never appear in company view",
+      "passed": true
+    },
+    {
+      "name": "Broadcast actions use own recipient identity",
+      "passed": true
+    },
+    {
+      "name": "Missing recipient ID is rejected",
+      "passed": true
+    },
+    {
+      "name": "Missing company provenance is rejected",
+      "passed": true
+    },
+    {
+      "name": "Duplicate action identity is rejected",
+      "passed": true
+    },
+    {
+      "name": "Malformed ack state is rejected",
+      "passed": true
+    },
+    {
+      "name": "Nullable conversation preview is accepted",
+      "passed": true
+    },
+    {
+      "name": "Foreign conversations are excluded",
+      "passed": true
+    },
+    {
+      "name": "Invalid unread counts are rejected",
+      "passed": true
+    },
+    {
+      "name": "Message history cap rejects an incomplete oversized contract",
+      "passed": true
+    },
+    {
+      "name": "Duplicate message IDs are rejected",
+      "passed": true
+    },
+    {
+      "name": "Directory projection discards contact details and self",
+      "passed": true
+    },
+    {
+      "name": "Valid empty guide uses the actual catalog contract",
+      "passed": true
+    },
+    {
+      "name": "Wrong-company guide is rejected",
+      "passed": true
+    },
+    {
+      "name": "Malformed guide progress is rejected",
+      "passed": true
+    },
+    {
+      "name": "Wrong-company AI answer is rejected",
+      "passed": true
+    },
+    {
+      "name": "Duplicate private history identities are rejected",
+      "passed": true
+    }
+  ]
+}

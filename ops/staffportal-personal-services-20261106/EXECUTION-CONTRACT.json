@@ -1,0 +1,14 @@
+{
+  "publisherSha256": "38697c08c508a81a8ec4d4a8e9f5de2aa1e9c70a07767316ca7966effccb82e4",
+  "servingVersion": "eb33552f-1d86-47ee-91c0-abf05c357579",
+  "servingDeployment": "6c682134-c302-47f1-997c-0a186c1c5503",
+  "bindingInheritanceSource": "47927e3c-827a-4b7a-842c-8bdd6e88883e",
+  "preservedOperatorValuesSource": "8e7ead65-59c2-4856-ac1c-3ba63eb8f77e",
+  "workerSha256": "d63750041287fa412066ec4509b08bfa21dc7632dc61ae1458201a5023ee0b41",
+  "runtimeManifestSha256": "03d278600727236fd0ccb78a65df7e8e83c703d4b869a9c25e812fcca13ad7a1",
+  "intentName": "staffportal-personal-services-20261106-intent",
+  "marker": "STAFFPORTAL PERSONAL SERVICES 20261106 ONCE; OWNER APPROVED",
+  "settingsWritesPermitted": false,
+  "replayPermitted": false,
+  "testsLinux": 9
+}

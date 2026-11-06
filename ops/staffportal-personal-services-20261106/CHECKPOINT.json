@@ -1,0 +1,47 @@
+{
+  "state": "VERIFIED_RELEASE_ASSET_PUBLISHED_PENDING_HOSTED_INSTALLATION",
+  "project": "StaffPortal Only",
+  "servingVersionId": "eb33552f-1d86-47ee-91c0-abf05c357579",
+  "servingDeploymentId": "6c682134-c302-47f1-997c-0a186c1c5503",
+  "newDestinations": [
+    "notifications",
+    "communications",
+    "staff-messaging",
+    "help"
+  ],
+  "sourceDirectory": "D:\\DAENEM-QA\\staffportal-personal-services-candidate-20261106",
+  "evidenceDirectory": "D:\\DAENEM-QA\\staffportal-personal-services-review-20261106",
+  "localChecks": {
+    "protectedServiceProbe": 17,
+    "pureResponseContractTests": 32,
+    "typeScript": "PASS",
+    "viteBuild": "PASS",
+    "SignIn128FileLock": "PASS",
+    "approvedExperienceLock": "PASS",
+    "frozenV115683Files": "IDENTICAL",
+    "worker158Files": "IDENTICAL",
+    "publisherFocusedTestsLinux": 9,
+    "realWorkerBrowserChecks": 39
+  },
+  "hostedDeploymentThisBatch": false,
+  "existingFeatureHoldsPreserved": true,
+  "noRealStaffMessagesSent": true,
+  "catalog": {
+    "cards": 146,
+    "distinctIds": 148,
+    "disabledLegacyCards": 87
+  },
+  "package": {
+    "archive": "b4b860c4ced7282db7f0013dbda1c552d5384a516dce3e4520b1ac8aab76b9b3",
+    "config": "79653be90c48116e945c1fba0a961669d78f44462cc29b007f96f1fd46081e12",
+    "worker": "d63750041287fa412066ec4509b08bfa21dc7632dc61ae1458201a5023ee0b41",
+    "assets": "f98ed6301ca8d22bd3065e92521bde5c66fd843dfb423f6815b2c45b3fdd4312",
+    "count": 392,
+    "archiveBytes": 91412948,
+    "assetName": "staffportal-personal-services-20261106-01.zip",
+    "sourceDeltaSha256": "166b54959521d46cac412b3a4ebc4c1d17c249b115c89ab66e375701e31e43b6",
+    "sourceDeltaPaths": 25,
+    "assetId": 715809856,
+    "releaseId": 434713012
+  }
+}

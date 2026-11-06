@@ -1,0 +1,60 @@
+{
+  "createdAt": "2026-11-06T03:24:38.904095+00:00",
+  "files": [
+    {
+      "path": "src/qa-review-v115-runtime.tsx",
+      "beforeSha256": "cbd3fe4183db902adff5787249f65065b41187c46d1b16e998dea0178b815e95",
+      "afterSha256": "7e8ed8296c03f1a9fa47c72a8d542c4f9b9edf313aefeb0db34d72173beab05c"
+    },
+    {
+      "path": "src/restored-module-service.tsx",
+      "beforeSha256": "8df9017ccc48c0bffd9fddc7687039ce4b107e40b4db352341f16b2988da9fe9",
+      "afterSha256": "3ea3fb61b26165281d212a7c55de40be7c2c3f3e260c79f0364717e8e45680e7"
+    },
+    {
+      "path": "src/historical-module-navigation.ts",
+      "beforeSha256": "c4546f7a328378b8d08bdc7e5de97dbf348f132eea8915c74ef9081813f0a4e2",
+      "afterSha256": "9a51c3b7c469a27fe6385c0df4f9eb4ad14578d9277a79075869bf0798f80156"
+    },
+    {
+      "path": "src/stage1-scoped-workspace.tsx",
+      "beforeSha256": "be3bf919b784575e5cf62a4376bc885aefc04e339e33c7b7f4f77cafc102407c",
+      "afterSha256": "3a885b1b95879bcc9cdd3445edcf96aa5f2168c1d5da2500a73e8c2512c9d88b"
+    },
+    {
+      "path": "src/historical-authority.ts",
+      "beforeSha256": "f9abfcb5f21c8b58450f5d4da63cdcb1234d473952980aa42757e03607522838",
+      "afterSha256": "314a3182057ce483919887fdb0ada1d2d9152c58b5f657d72b286b7ea1d49d18"
+    },
+    {
+      "path": "src/historical-personal-contracts.ts",
+      "beforeSha256": null,
+      "afterSha256": "eabf1c81de322e849260bdf3375e870001f403209ac153995906603cc296be50"
+    },
+    {
+      "path": "src/historical-personal-destination-bridge.tsx",
+      "beforeSha256": null,
+      "afterSha256": "cbd4b3337c1bd16a6591227eefc980f64628953a59d43c3ff30ea12752fb18e9"
+    },
+    {
+      "path": "src/historical-personal-workspaces.tsx",
+      "beforeSha256": null,
+      "afterSha256": "f677767398ebcad3239114a49957c24dc2ecf198ab8d6e0830a1abf5c98cd653"
+    },
+    {
+      "path": "src/historical-personal-workspaces.css",
+      "beforeSha256": null,
+      "afterSha256": "7af82bd9bca4a5f8e42582bbc0faa52aecef6b49d99b3206968017619af99366"
+    },
+    {
+      "path": "src/verified-personal-api.ts",
+      "beforeSha256": null,
+      "afterSha256": "fe257a195eae822c89cefab4fb4f356c0d7c828f3099f5da5cefc9911f035ea7"
+    },
+    {
+      "path": "src/historical-ai-guide.tsx",
+      "beforeSha256": null,
+      "afterSha256": "0536cb690b8224e0c7c44be6b16c94d0d50f45853b3284a89a5b46cc0fd7c52b"
+    }
+  ]
+}

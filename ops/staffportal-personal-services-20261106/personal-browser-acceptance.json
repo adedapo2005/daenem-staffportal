@@ -1,0 +1,199 @@
+{
+  "state": "PASS_REAL_WORKER_PERSONAL_DESTINATIONS",
+  "checks": [
+    {
+      "name": "Existing Home opens directly without a company gate",
+      "passed": true
+    },
+    {
+      "name": "notifications has explicit authorized company modules without auto-selection",
+      "passed": true
+    },
+    {
+      "name": "communications has explicit authorized company modules without auto-selection",
+      "passed": true
+    },
+    {
+      "name": "staff-messaging has explicit authorized company modules without auto-selection",
+      "passed": true
+    },
+    {
+      "name": "help has explicit authorized company modules without auto-selection",
+      "passed": true
+    },
+    {
+      "name": "Action Center renders own notice and excludes another employee",
+      "passed": true
+    },
+    {
+      "name": "Opening destinations makes no automatic business write",
+      "passed": true
+    },
+    {
+      "name": "Own notice acknowledgement is confirmed in native D1",
+      "passed": true
+    },
+    {
+      "name": "Notice Board renders published own-recipient notices only",
+      "passed": true
+    },
+    {
+      "name": "Broadcast acknowledgement uses the own recipient row",
+      "passed": true
+    },
+    {
+      "name": "Thread participant sees real protected message history",
+      "passed": true
+    },
+    {
+      "name": "Explicit local message sends once and is read from D1",
+      "passed": true
+    },
+    {
+      "name": "A selected same-company colleague opens a confirmed direct conversation",
+      "passed": true
+    },
+    {
+      "name": "AI Guide renders the actual permission-filtered catalog",
+      "passed": true
+    },
+    {
+      "name": "Guide review is persisted by the existing service",
+      "passed": true
+    },
+    {
+      "name": "Local AI question returns verified catalog guidance without provider calls",
+      "passed": true
+    },
+    {
+      "name": "Guide never stores private catalog in browser storage",
+      "passed": true
+    },
+    {
+      "name": "notifications fits 3840px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "communications fits 3840px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "staff-messaging fits 3840px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "help fits 3840px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "notifications fits 1440px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "communications fits 1440px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "staff-messaging fits 1440px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "help fits 1440px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "notifications fits 390px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "communications fits 390px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "staff-messaging fits 390px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "help fits 390px without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "Malformed private response hides all module content",
+      "passed": true
+    },
+    {
+      "name": "Wrong-company guide response is rejected",
+      "passed": true
+    },
+    {
+      "name": "A failed refresh clears displayed private content",
+      "passed": true
+    },
+    {
+      "name": "Foreign company deep link is unavailable and makes no protected notice read",
+      "passed": true
+    },
+    {
+      "name": "View-only Chat has no create or send control",
+      "passed": true
+    },
+    {
+      "name": "Changed account removes the previous employee private notice",
+      "passed": true
+    },
+    {
+      "name": "Hub retains all 146 cards and 148 distinct IDs",
+      "passed": true
+    },
+    {
+      "name": "Exactly four newly connected destinations reduce disabled legacy cards to 87",
+      "passed": true
+    },
+    {
+      "name": "Every attempted external Worker request was blocked locally",
+      "passed": true
+    },
+    {
+      "name": "No browser runtime errors occurred",
+      "passed": true
+    }
+  ],
+  "catalog": {
+    "cards": 146,
+    "disabled": 87
+  },
+  "apiMockedForSuccessfulWorkflows": false,
+  "syntheticOnly": true,
+  "hostedCalls": 0,
+  "noExternalProviderRequestDelivered": true,
+  "negativeFaultInjections": [
+    {
+      "stage": "malformed",
+      "path": "/api/ess/notifications",
+      "kind": "malformed"
+    },
+    {
+      "stage": "wrong-company",
+      "path": "/api/ai/guide/catalog",
+      "kind": "wrong-company"
+    },
+    {
+      "stage": "failed-refresh",
+      "path": "/api/ess/notifications",
+      "kind": "http"
+    }
+  ],
+  "sourcePinsVerified": true,
+  "originalHeldReportPreserved": true,
+  "priorLocatorResolution": "The historical shell handles the denied-company route before the personal bridge. Final gates verified its actual unavailable response and no protected read. Original exact-title locator report remains held.",
+  "evidence": [
+    {
+      "file": "personal-browser-results.json",
+      "sha256": "e59a19eff4eef99d4b1fa12afbe6caa52194bad37a6f75deee6589f1cb7a0902"
+    },
+    {
+      "file": "personal-browser-final-gates.json",
+      "sha256": "2e41906edcb4ecc79bb710db455e675241705d581a9bac8056d73d7b765742a9"
+    }
+  ]
+}

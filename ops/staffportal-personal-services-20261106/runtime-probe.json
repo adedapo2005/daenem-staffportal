@@ -1,0 +1,145 @@
+{
+  "state": "PASS_EXISTING_PROTECTED_SERVICES",
+  "apiMocked": false,
+  "hostedCalls": 0,
+  "checks": [
+    {
+      "name": "Protected read /api/ess/notifications",
+      "passed": true
+    },
+    {
+      "name": "Protected read /api/ess/chat/threads",
+      "passed": true
+    },
+    {
+      "name": "Protected read /api/directory/employees?companyId=company-printing",
+      "passed": true
+    },
+    {
+      "name": "Protected read /api/ai/guide/catalog?companyId=company-printing",
+      "passed": true
+    },
+    {
+      "name": "Guide returns the complete company-bound screen contract",
+      "passed": true
+    },
+    {
+      "name": "Protected read /api/ai/guide/history?companyId=company-printing",
+      "passed": true
+    },
+    {
+      "name": "Only own notice is returned",
+      "passed": true
+    },
+    {
+      "name": "Existing atomic own acknowledgement succeeds locally",
+      "passed": true
+    },
+    {
+      "name": "Foreign notice cannot be acknowledged",
+      "passed": true
+    },
+    {
+      "name": "View-only Chat cannot create",
+      "passed": true
+    },
+    {
+      "name": "Assigned Create Chat creates a local conversation",
+      "passed": true
+    },
+    {
+      "name": "Local participant message succeeds",
+      "passed": true
+    },
+    {
+      "name": "Local participant reads the protected message",
+      "passed": true
+    },
+    {
+      "name": "Nonparticipant cannot read",
+      "passed": true
+    },
+    {
+      "name": "Own guide progress succeeds locally",
+      "passed": true
+    },
+    {
+      "name": "Guide answer has the existing company-bound contract without a provider call",
+      "passed": true
+    },
+    {
+      "name": "No external provider was contacted",
+      "passed": true
+    }
+  ],
+  "responses": [
+    {
+      "path": "/api/ess/notifications",
+      "status": 200,
+      "keys": [
+        "notifications",
+        "broadcasts"
+      ]
+    },
+    {
+      "path": "/api/ess/chat/threads",
+      "status": 200,
+      "keys": [
+        "threads"
+      ]
+    },
+    {
+      "path": "/api/directory/employees?companyId=company-printing",
+      "status": 200,
+      "keys": [
+        "employees"
+      ]
+    },
+    {
+      "path": "/api/ai/guide/catalog?companyId=company-printing",
+      "status": 200,
+      "keys": [
+        "employee",
+        "company",
+        "companies",
+        "roles",
+        "functions",
+        "progress",
+        "suggestions",
+        "guidance",
+        "accessControlAvailable"
+      ]
+    },
+    {
+      "path": "/api/ai/guide/history?companyId=company-printing",
+      "status": 200,
+      "keys": [
+        "history"
+      ]
+    },
+    {
+      "path": "notification-action",
+      "status": 200
+    },
+    {
+      "path": "chat-direct",
+      "status": 201
+    },
+    {
+      "path": "guide-progress",
+      "status": 200
+    },
+    {
+      "path": "guide-question",
+      "status": 200,
+      "keys": [
+        "answer",
+        "source",
+        "company",
+        "relatedFunctions",
+        "notice"
+      ]
+    }
+  ],
+  "outbound": []
+}
