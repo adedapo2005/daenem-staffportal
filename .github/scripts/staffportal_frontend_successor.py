@@ -130,6 +130,18 @@ def make_plan(plan_type,window,pins,settings=None):
                 require(worker.get('observability')==settings['worker'] and script.get('observability')==settings['script'],'SHARED_EXACT_READBACK_HELD')
             return value
     return FrontendPlan(window)
+def checked_current_bindings(plan,source_bindings,raw):
+    # /settings follows the retained latest upload after a deployment return.
+    # Only the two operator-window values may differ from serving PRIOR, and
+    # both must equal the independently pinned PRESERVED version, never latest.
+    current=plan.binding_projection(raw,target=True)
+    before={b['name']:b for b in source_bindings};after={b['name']:b for b in current}
+    require(set(before)==set(after),'CURRENT_BINDING_NAMES_HELD')
+    window_pins=plan.window.value_pins()
+    for name,binding in after.items():
+        if name in window_pins:require(binding.get('valueSha256')==window_pins[name],'CURRENT_WINDOW_VALUE_HELD')
+        else:require(binding==before[name],'CURRENT_STATIC_BINDING_HELD')
+    return current
 def inspect(token,plan,allow_issue=False):
     worker=request(ROOT,token)
     access=worker.get('subdomain');expected=plan.projection()['access']
@@ -140,14 +152,14 @@ def inspect(token,plan,allow_issue=False):
     require(source.get('id')==PRIOR,'SOURCE_IDENTITY_HELD')
     source_bindings=plan.binding_projection(source.get('bindings'));plan.version_settings(source,version_read=True)
     settings=request(SCRIPT+'/settings',token)
-    require(plan.binding_projection(settings.get('bindings'))==source_bindings,'CURRENT_BINDINGS_HELD');plan.version_settings(settings)
+    current_bindings=checked_current_bindings(plan,source_bindings,settings.get('bindings'));plan.version_settings(settings)
     require(settings.get('placement')=={},'PLACEMENT_HELD')
     script=request(SCRIPT+'/script-settings',token)
     desired,body=desired_settings(worker,script)
     if not allow_issue:plan.shared_settings(worker,script)
     deployment=request(SCRIPT+'/deployments',token).get('deployments')
     require(isinstance(deployment,list) and bool(deployment) and deployment[0].get('id')==DEPLOYMENT and deployment[0].get('versions')==[{'version_id':PRIOR,'percentage':100}],'SERVING_BASELINE_HELD')
-    proof={'workerId':worker['id'],'servingDeploymentId':DEPLOYMENT,'servingVersionId':PRIOR,'sourceBindings':source_bindings,'runtime':plan.version_settings(source,version_read=True),'observability':{'worker':worker['observability'],'script':script['observability']},'logpush':False,'tails':{'worker':worker.get('tail_consumers'),'script':script.get('tail_consumers')}}
+    proof={'workerId':worker['id'],'servingDeploymentId':DEPLOYMENT,'servingVersionId':PRIOR,'sourceBindings':source_bindings,'currentBindings':current_bindings,'runtime':plan.version_settings(source,version_read=True),'observability':{'worker':worker['observability'],'script':script['observability']},'logpush':False,'tails':{'worker':worker.get('tail_consumers'),'script':script.get('tail_consumers')}}
     return {'fingerprint':sha(canonical(proof)),'observabilityPins':{k:sha(canonical(v)) for k,v in proof['observability'].items()},'desiredSettings':desired,'patchBody':body,'patchNeeded':proof['observability']!=desired,'workerId':worker['id']}
 def download(pins):
     asset=github('/releases/assets/'+str(pins['assetId']))
@@ -161,9 +173,31 @@ def prior_candidate(token,plan_type,pins,created):
     target=request(ROOT+'/versions/'+PRESERVED+'?include=modules',token)
     require(target.get('id')==PRESERVED and modules_ok(target),'PRESERVED_CANDIDATE_CODE_HELD')
     window=PreservedValues(target,pins,created);plan=make_plan(plan_type,window,pins)
+    require(sha(canonical(plan.version_metadata()))=='5c0f1637bd4e83b5ec5d0542d857fdf95e2ef5710f47de140eca54f52fea8d10','PRESERVED_REQUEST_METADATA_HELD')
     plan.binding_projection(target.get('bindings'),target=True);plan.version_settings(target,version_read=True)
     require(routing_ok(target.get('assets',{}).get('config'),plan.projection()['assetConfig']),'PRESERVED_CANDIDATE_ROUTING_HELD')
     return window,plan
+def observe_frontend(adapter):
+    # Reviewed adapter observation, with explicit uploaded-versus-serving
+    # binding reconciliation above. No observed value is adopted as a new pin.
+    plan=adapter.plan;plan.invalidate();plan.window.check(plan.clock)
+    worker=adapter._worker();source=adapter.read_version(PRIOR)
+    source_bindings=plan.binding_projection(source.get('bindings'))
+    source_settings=plan.version_settings(source,version_read=True)
+    settings=adapter._call('GET',SCRIPT+'/settings',adapter._token)[1]
+    current_bindings=checked_current_bindings(plan,source_bindings,settings.get('bindings'))
+    current_settings=plan.version_settings(settings)
+    require(settings.get('placement')=={},'CURRENT_PLACEMENT_HELD')
+    script=adapter._call('GET',SCRIPT+'/script-settings',adapter._token)[1]
+    shared=plan.shared_settings(worker,script);current=adapter.current()
+    require(current==plan.expected_current(),'DEPLOYMENT_BASELINE_HELD')
+    proof={'workerId':worker['id'],'workerName':WORKER,'sourceVersionId':PRIOR,'preservedUploadedVersionId':PRESERVED,'sourceBindings':source_bindings,'currentBindings':current_bindings,'sourceSettings':source_settings,'currentSettings':current_settings,'deployment':current,'shared':{k:v for k,v in shared.items() if k!='representations'},'access':plan.projection()['access']}
+    fingerprint=sha(canonical(proof))
+    require(adapter._first_guard is None or adapter._first_guard==fingerprint,'EXECUTION_BASELINE_CHANGED_HELD')
+    adapter._first_guard=fingerprint
+    summary={'fingerprint':fingerprint,'workerId':worker['id'],'workerName':WORKER,'sourceVersionId':PRIOR,'preservedUploadedVersionId':PRESERVED,'baselineSha256':plan.identity_sha256(),'checkedAtUtc':plan.clock().isoformat(),'preparedWindowSha256':plan.window.record_sha256,'preparedConfigSha256':plan.window.config_sha256,'observabilityRepresentations':shared['representations'],'meaning':'point-in-time authenticated comparisons; existing values preserved; not an atomic provider fence'}
+    plan._proof=summary;adapter._last_guard=summary;plan.assert_publishable()
+    return summary
 def verify_candidate(token,plan,version):
     obj=request(ROOT+'/versions/'+version+'?include=modules',token)
     require(obj.get('id')==version and modules_ok(obj),'SUCCESSOR_CODE_HELD')
@@ -215,6 +249,7 @@ def main():
     plan=make_plan(plan_type,window,pins,preflight['desiredSettings'])
     verified=inspect(token,plan);save('settings-readback.json',verified)
     class FrontendAdapter(adapter_type):
+        def _observe(self):return observe_frontend(self)
         def verify_upload(self,version,pkg):
             proof=verify_candidate(token,self.plan,version)
             inspect(token,self.plan)

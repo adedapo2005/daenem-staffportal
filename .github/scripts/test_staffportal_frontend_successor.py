@@ -6,16 +6,32 @@ import staffportal_frontend_successor as m
 def shared(enabled=True):
     return {'enabled':False,'head_sampling_rate':0.25,'logs':{'enabled':False,'invocation_logs':False,'persist':False},'traces':{'enabled':False,'head_sampling_rate':0},'issues':{'enabled':enabled}}
 class Plan:
+    class Window:
+        def value_pins(self):return {}
+    window=Window()
     def projection(self):return {'access':{'enabled':True,'previews_enabled':True}}
-    def binding_projection(self,rows):
-        m.require(rows==['pinned'],'BINDINGS_HELD');return rows
+    def binding_projection(self,rows,**kw):
+        m.require(rows==[{'name':'resource','type':'fixture'}],'BINDINGS_HELD');return rows
     def version_settings(self,obj,**kw):
         m.require(obj.get('runtime')=='pinned','RUNTIME_HELD');return 'pinned'
     def shared_settings(self,w,s):
         m.require(not w['observability']['issues']['enabled'] and not s['observability']['issues']['enabled'],'SHARED_HELD')
 class Tests(unittest.TestCase):
     def fixture(self):
-        return {m.ROOT:{'name':m.WORKER,'id':'fixture-worker','subdomain':{'enabled':True,'previews_enabled':True},'observability':shared(),'logpush':False,'tail_consumers':[]},m.ROOT+'/versions/'+m.PRIOR:{'id':m.PRIOR,'bindings':['pinned'],'runtime':'pinned'},m.SCRIPT+'/settings':{'bindings':['pinned'],'runtime':'pinned','placement':{}},m.SCRIPT+'/script-settings':{'observability':shared(),'logpush':False,'tail_consumers':None},m.SCRIPT+'/deployments':{'deployments':[{'id':m.DEPLOYMENT,'versions':[{'version_id':m.PRIOR,'percentage':100}]}]}}
+        return {m.ROOT:{'name':m.WORKER,'id':'fixture-worker','subdomain':{'enabled':True,'previews_enabled':True},'observability':shared(),'logpush':False,'tail_consumers':[]},m.ROOT+'/versions/'+m.PRIOR:{'id':m.PRIOR,'bindings':[{'name':'resource','type':'fixture'}],'runtime':'pinned'},m.SCRIPT+'/settings':{'bindings':[{'name':'resource','type':'fixture'}],'runtime':'pinned','placement':{}},m.SCRIPT+'/script-settings':{'observability':shared(),'logpush':False,'tail_consumers':None},m.SCRIPT+'/deployments':{'deployments':[{'id':m.DEPLOYMENT,'versions':[{'version_id':m.PRIOR,'percentage':100}]}]}}
+    def test_only_pinned_retained_window_may_differ_from_serving_bindings(self):
+        class P:
+            class Window:
+                def value_pins(self):return {'SP_EFFECT_OPERATOR_SHA256':'retained-pin'}
+            window=Window()
+            def binding_projection(self,raw,**kw):return copy.deepcopy(raw)
+        old=[{'name':'resource','id':'same'},{'name':'SP_EFFECT_OPERATOR_SHA256','valueSha256':'prior-pin'}]
+        retained=[{'name':'resource','id':'same'},{'name':'SP_EFFECT_OPERATOR_SHA256','valueSha256':'retained-pin'}]
+        self.assertEqual(m.checked_current_bindings(P(),old,retained),retained)
+        unknown=copy.deepcopy(retained);unknown[1]['valueSha256']='unapproved'
+        with self.assertRaises(m.Held):m.checked_current_bindings(P(),old,unknown)
+        foreign=copy.deepcopy(retained);foreign[0]['id']='foreign'
+        with self.assertRaises(m.Held):m.checked_current_bindings(P(),old,foreign)
     def test_settings_request_changes_only_issues(self):
         data=self.fixture();old=copy.deepcopy(data)
         desired,body=m.desired_settings(data[m.ROOT],data[m.SCRIPT+'/script-settings'])
