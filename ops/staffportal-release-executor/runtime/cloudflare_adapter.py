@@ -84,16 +84,52 @@ class CloudflareAdapter:
         self._index = 0
         self._types = {}
         self._sizes = {}
+        self._event_sink = None
 
-    def _call(self, method, path, token, body=None, ctype=None, *, statuses=(200,)):
+    def set_event_sink(self, sink):
+        if self._event_sink is not None or self._state!='new' or not callable(sink):
+            raise Stop('transport receipt sink cannot be replaced')
+        self._event_sink=sink
+
+    def _event(self, operation, phase, **fields):
+        if operation is not None and self._event_sink is not None:
+            self._event_sink({'operation':operation,'phase':phase,**fields})
+
+    def _call(self, method, path, token, body=None, ctype=None, *, statuses=(200,), allow_missing_result=False):
+        operation=None
+        if method=='POST':
+            if path=='/workers/scripts/'+WORKER+'/assets-upload-session': operation='asset-session'
+            elif path=='/workers/assets/upload?base64=true': operation='asset-bucket'
+            elif path in ('/workers/scripts/'+WORKER+'/versions?bindings_inherit=strict',
+                          '/workers/workers/'+WORKER+'/versions?deploy=false'): operation='worker-version'
+            else: raise Stop('unrecognized write operation')
+        if allow_missing_result and (operation!='asset-bucket' or statuses not in ((200,201),(200,201,202))):
+            raise Stop('optional result outside intermediate asset response')
         headers = {'Authorization': 'Bearer ' + token, 'Accept': 'application/json'}
         if ctype:
             headers['Content-Type'] = ctype
+        # The first receipt must be durable before entering the sender. Receipt
+        # failure stops here; failure after dispatch leaves the journal pending.
+        self._event(operation,'DISPATCH_ENTERED')
         try:
             status, _, raw = self._send(method, API + path, headers, body)
         except Exception:
             # Injected transports must not leak credential-bearing exceptions.
+            self._event(operation,'TRANSPORT_EXCEPTION')
             raise Uncertain('HTTP outcome unknown') from None
+        obj=None
+        if isinstance(raw,bytes) and len(raw)<=MAX_RESPONSE:
+            try: obj=json.loads(raw)
+            except (ValueError,UnicodeDecodeError): pass
+        shape=('MALFORMED' if not isinstance(obj,dict) else 'ABSENT' if 'result' not in obj
+               else 'NULL' if obj['result'] is None else 'OBJECT' if isinstance(obj['result'],dict) else 'OTHER')
+        codes=[]
+        if isinstance(obj,dict) and isinstance(obj.get('errors'),list):
+            codes=sorted({e['code'] for e in obj['errors'] if isinstance(e,dict)
+                          and type(e.get('code')) is int and 1000<=e['code']<=999999})[:16]
+        fields={'resultShape':shape,'providerErrorCodes':codes}
+        if type(status) is int and 100<=status<=599: fields['httpStatus']=status
+        self._event(operation,'RESPONSE_RECEIVED',**fields)
         if type(status) is not int or not isinstance(raw, bytes) or len(raw) > MAX_RESPONSE:
             raise Uncertain('unsupported provider response')
         if status in (408, 409, 425, 429) or status >= 500:
@@ -102,11 +138,16 @@ class CloudflareAdapter:
             raise Rejected('provider rejected request (HTTP ' + str(status) + ')')
         if status not in statuses:
             raise Uncertain('unexpected successful HTTP status')
-        try:
-            obj = json.loads(raw)
-        except (ValueError, UnicodeDecodeError):
-            raise Uncertain('malformed provider response') from None
-        if not isinstance(obj, dict) or obj.get('success') is not True or not isinstance(obj.get('result'), dict) or obj.get('errors') not in (None, []):
+        if obj is None:
+            raise Uncertain('malformed provider response')
+        if not isinstance(obj, dict) or obj.get('success') is not True or obj.get('errors') not in (None, []):
+            raise Uncertain('provider response incomplete')
+        # The asset API documents result as optional. Only a non-final HTTP 200/202
+        # bucket response may omit it. Null/wrong types and completion without
+        # HTTP 201 plus a token still hold; session/version/GET remain strict.
+        if allow_missing_result and status in (200,202) and 'result' not in obj:
+            return status,{}
+        if not isinstance(obj.get('result'),dict):
             raise Uncertain('provider response incomplete')
         return status, obj['result']
 
@@ -170,10 +211,10 @@ class CloudflareAdapter:
             parts.append((h, self._types[h], base64.b64encode(data), h))
         ctype, body = multipart(parts)
         self._state = 'bucket-pending'
-        status, result = self._call('POST', '/workers/assets/upload?base64=true', jwt, body, ctype, statuses=(200, 201))
         final = self._index == len(self._buckets) - 1
+        status, result = self._call('POST', '/workers/assets/upload?base64=true', jwt, body, ctype, statuses=(200, 201, 202),allow_missing_result=not final)
         token = result.get('jwt')
-        if (not final and status != 200) or (final and (status != 201 or not isinstance(token, str) or not token or any(c in token for c in '\r\n'))):
+        if (not final and status not in (200,202)) or (final and (status != 201 or not isinstance(token, str) or not token or any(c in token for c in '\r\n'))):
             raise Uncertain('documented final completion response not established')
         self._progress.append({'stage': 'bucket', 'index': self._index, 'httpStatus': status, 'hashes': list(files)})
         self._index += 1

@@ -99,6 +99,7 @@ class WorkersAPIPlan:
             raise Stop('source version or deployment pin changed')
         self.window, self.clock = window, clock
         self._proof=None
+        self._ai_project_pin=None
 
     def identity_sha256(self): return PIN
     def projection(self): return copy.deepcopy(self._data)
@@ -154,6 +155,7 @@ class WorkersAPIPlan:
         out=[]
         for name,want in expected.items():
             item=copy.deepcopy(a[name]); kind=item.get('type')
+            read_project_pin=None
             if kind=='inherit':
                 # The source GET must resolve actual definitions. A target GET
                 # may retain the exact documented reference; validate its origin.
@@ -176,13 +178,30 @@ class WorkersAPIPlan:
                 if not isinstance(identity,str) or any(item.get(k,identity)!=identity for k in ('id','database_id')):
                     raise Stop('database binding aliases disagree')
                 item['id']=item['database_id']=identity
+            elif kind=='ai' and 'project' in item:
+                # The version/settings reads return opaque project metadata
+                # beyond the name/type write schema. Preserve its equality
+                # across every source/current/target observation; version
+                # creation still inherits AI from the exact source version.
+                project=item.pop('project')
+                if not isinstance(project,str):raise Stop('AI project read metadata malformed')
+                read_project_pin=sha(canonical(project))
+                if self._ai_project_pin is not None and self._ai_project_pin!=read_project_pin:
+                    raise Stop('AI project read metadata changed during execution')
+                self._ai_project_pin=read_project_pin
             if item!=want: raise Stop('binding resource, restriction or value drift')
+            if read_project_pin is not None:item['readProjectSha256']=read_project_pin
             out.append(item)
         return sorted(out,key=lambda b:b['name'])
 
-    def version_settings(self, source):
+    def version_settings(self, source, *, version_read=False):
         got={}
         for key in VERSION_SETTINGS:
+            # The version endpoint omits the empty flag list. Accept that
+            # representation only for version reads when [] is pinned; the
+            # current settings endpoint must still return its explicit [].
+            if key=='compatibility_flags' and key not in source and version_read and self._data['settings'][key]==[]:
+                got[key]=[];continue
             if key not in source or canonical(source[key])!=canonical(self._data['settings'][key]):
                 raise Stop('version runtime setting drift or missing value')
             got[key]=source[key]
