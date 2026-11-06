@@ -1,0 +1,13 @@
+{
+  "archive": "9bc80884e58a1fd72ecd1669559b3288b05d4c43d2054dd16377d3eba91e9632",
+  "config": "79653be90c48116e945c1fba0a961669d78f44462cc29b007f96f1fd46081e12",
+  "worker": "d63750041287fa412066ec4509b08bfa21dc7632dc61ae1458201a5023ee0b41",
+  "assets": "3b8e762d9672740ec6cfffc23c4c7837b6076fd71f4041810b0306583dbaa62a",
+  "count": 387,
+  "archiveBytes": 91376836,
+  "assetName": "staffportal-corrected-frontend-20261106-01.zip",
+  "sourceDeltaSha256": "a9fc8111b424df3fb81ef425922ff7ff40d1997ebe595b7dbbd4aae9d0c74eec",
+  "sourceDeltaPaths": 18,
+  "assetId": 715534213,
+  "releaseId": 434713012
+}
