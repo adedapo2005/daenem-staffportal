@@ -51,12 +51,12 @@ def github(path):
     p=subprocess.run(['gh','api','repos/'+REPO+path],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False)
     require(p.returncode==0 and len(p.stdout)<MAX,'GITHUB_READ_HELD')
     return json.loads(p.stdout)
-def context():
+def context(marker=MARKER):
     wanted={'GITHUB_ACTIONS':'true','GITHUB_REPOSITORY':REPO,'GITHUB_ACTOR':'adedapo2005','GITHUB_EVENT_NAME':'pull_request_review','GITHUB_RUN_ATTEMPT':'1'}
     require(all(os.environ.get(k)==v for k,v in wanted.items()),'CONTEXT_HELD')
     event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
     head=event.get('pull_request',{}).get('head',{})
-    require(head.get('ref')==BRANCH and event.get('review',{}).get('body')==MARKER,'EXACT_EVENT_HELD')
+    require(head.get('ref')==BRANCH and event.get('review',{}).get('body')==marker,'EXACT_EVENT_HELD')
     checkout=subprocess.run(['git','rev-parse','HEAD'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
     require(checkout.returncode==0 and checkout.stdout.decode().strip()==head.get('sha'),'EXACT_CHECKOUT_HELD')
     require(''.join(os.environ.get('CLOUDFLARE_ACCOUNT_ID','').split())==ACCOUNT,'ACCOUNT_HELD')
@@ -155,8 +155,10 @@ def inspect(token,plan,allow_issue=False):
     current_bindings=checked_current_bindings(plan,source_bindings,settings.get('bindings'));plan.version_settings(settings)
     require(settings.get('placement')=={},'PLACEMENT_HELD')
     script=request(SCRIPT+'/script-settings',token)
-    desired,body=desired_settings(worker,script)
-    if not allow_issue:plan.shared_settings(worker,script)
+    if allow_issue:desired,body=desired_settings(worker,script)
+    else:
+        plan.shared_settings(worker,script)
+        desired={'worker':worker.get('observability'),'script':script.get('observability')};body={}
     deployment=request(SCRIPT+'/deployments',token).get('deployments')
     require(isinstance(deployment,list) and bool(deployment) and deployment[0].get('id')==DEPLOYMENT and deployment[0].get('versions')==[{'version_id':PRIOR,'percentage':100}],'SERVING_BASELINE_HELD')
     proof={'workerId':worker['id'],'servingDeploymentId':DEPLOYMENT,'servingVersionId':PRIOR,'sourceBindings':source_bindings,'currentBindings':current_bindings,'runtime':plan.version_settings(source,version_read=True),'observability':{'worker':worker['observability'],'script':script['observability']},'logpush':False,'tails':{'worker':worker.get('tail_consumers'),'script':script.get('tail_consumers')}}
