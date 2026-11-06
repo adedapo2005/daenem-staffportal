@@ -132,7 +132,10 @@ def make_plan(plan_type,window,pins,settings=None):
     return FrontendPlan(window)
 def inspect(token,plan,allow_issue=False):
     worker=request(ROOT,token)
-    require(worker.get('name')==WORKER and worker.get('subdomain')==plan.projection()['access'],'WORKER_IDENTITY_HELD')
+    access=worker.get('subdomain');expected=plan.projection()['access']
+    # Reuse the reviewed adapter's access comparison. The response also carries
+    # descriptive URL metadata; it is not part of the two access settings.
+    require(worker.get('name')==WORKER and isinstance(worker.get('id'),str) and re.fullmatch('[A-Za-z0-9_-]{1,128}',worker['id']) and isinstance(access,dict) and all(type(access.get(k)) is bool and access[k]==v for k,v in expected.items()),'WORKER_IDENTITY_HELD')
     source=request(ROOT+'/versions/'+PRIOR,token)
     require(source.get('id')==PRIOR,'SOURCE_IDENTITY_HELD')
     source_bindings=plan.binding_projection(source.get('bindings'));plan.version_settings(source,version_read=True)

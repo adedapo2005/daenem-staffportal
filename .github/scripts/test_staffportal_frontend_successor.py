@@ -47,6 +47,11 @@ class Tests(unittest.TestCase):
     def test_changed_deployment_is_not_rebased(self):
         data=self.fixture();data[m.SCRIPT+'/deployments']['deployments'][0]['id']='foreign'
         with patch.object(m,'request',lambda p,*a,**kw:data[p]),self.assertRaises(m.Held):m.inspect('synthetic',Plan(),True)
+    def test_descriptive_url_metadata_does_not_change_access_flags(self):
+        data=self.fixture();data[m.ROOT]['subdomain']['hostname']='existing.example.test'
+        with patch.object(m,'request',lambda p,*a,**kw:data[p]):m.inspect('synthetic',Plan(),True)
+        data[m.ROOT]['subdomain']['previews_enabled']=False
+        with patch.object(m,'request',lambda p,*a,**kw:data[p]),self.assertRaises(m.Held):m.inspect('synthetic',Plan(),True)
     def test_fingerprint_covers_binding_runtime_and_unrelated_observability(self):
         data=self.fixture()
         with patch.object(m,'request',lambda p,*a,**kw:data[p]):first=m.inspect('synthetic',Plan(),True)
